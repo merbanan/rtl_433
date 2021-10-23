@@ -575,6 +575,8 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 /*
 Fine Offset WH51, ECOWITT WH51, MISOL/1 Soil Moisture Sensor
 
+Also: SwitchDoc Labs SM23 Soil Moisture Sensor.
+
 Test decoding with: rtl_433 -f 433920000  -X "n=soil_sensor,m=FSK_PCM,s=58,l=58,t=5,r=5000,g=4000,preamble=aa2dd4"
 
 Data format:
@@ -1060,7 +1062,7 @@ r_device fineoffset_WH25 = {
 };
 
 r_device fineoffset_WH51 = {
-    .name           = "Fine Offset Electronics/ECOWITT WH51 Soil Moisture Sensor",
+    .name           = "Fine Offset Electronics/ECOWITT WH51, SwitchDoc Labs SM23 Soil Moisture Sensor",
     .modulation     = FSK_PULSE_PCM,
     .short_width    = 58, // Bit width = 58µs (measured across 580 samples / 40 bits / 250 kHz )
     .long_width     = 58, // NRZ encoding (bit width = pulse width)

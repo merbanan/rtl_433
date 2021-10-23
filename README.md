@@ -225,7 +225,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [139]  Norgo NGE101
     [140]  Elantra2012 TPMS
     [141]  Auriol HG02832, HG05124A-DCF, Rubicson 48957 temperature/humidity sensor
-    [142]  Fine Offset Electronics/ECOWITT WH51 Soil Moisture Sensor
+    [142]  Fine Offset Electronics/ECOWITT WH51, SwitchDoc Labs SM23 Soil Moisture Sensor
     [143]  Holman Industries iWeather WS5029 weather station (older PWM)
     [144]  TBH weather sensor
     [145]  WS2032 weather station
