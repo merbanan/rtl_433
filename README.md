@@ -107,7 +107,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [17]  Cardin S466-TX2
     [18]  Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor
     [19]  Nexus, FreeTec NC-7345, NX-3980, Solight TE82S, TFA 30.3209 temperature/humidity sensor
-    [20]  Ambient Weather, TFA 30.3208.02 temperature sensor
+    [20]  Ambient Weather F007TH, TFA 30.3208.02, SwitchDocLabs F016TH temperature sensor
     [21]  Calibeur RF-104 Sensor
     [22]  X10 RF
     [23]  DSC Security Contact
