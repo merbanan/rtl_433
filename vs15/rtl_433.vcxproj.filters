@@ -538,6 +538,9 @@
     <ClCompile Include="..\src\devices\mebus.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\megacode.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\missil_ml0757.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

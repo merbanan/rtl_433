@@ -282,6 +282,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [196]  Atech-WS308 temperature sensor
     [197]  Acurite Grill/Meat Thermometer 01185M
     [198]* EnOcean ERP1
+    [199]  Linear Megacode Garage/Gate Remotes
 
 * Disabled by default, use -R n or -G
 
