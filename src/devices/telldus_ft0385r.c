@@ -66,6 +66,7 @@ telldus_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, 
 
     uint8_t expected   = b[36];
     uint8_t calculated = GetCRC(0xc0, b, 36);
+
     if (expected != calculated) {
         if (decoder->verbose) {
             fprintf(stderr, "Checksum error in Telldus Weather message.    Expected: %02x    Calculated: %02x\n", expected, calculated);
@@ -75,21 +76,20 @@ telldus_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, 
         return 0;
     }
 
-    // FIXME I really have no idea
-    //uint8_t device_id = (b[1] & 0xf0) >> 4;
-    //if (device_id != 0x02) {
-    //return 0; // not my device
-    //}
+    uint8_t length = b[1]; 
+    if (length != 0x23) {
+      return 0;
+    }
 
-    // uint8_t serial_no       = (b[1] & 0x0f) << 4 | (b[1] & 0xf0) >> 4; // FIXME I really have no idea
-    uint8_t flags           = b[2] & 0x0f;                             // FIXME Just a guess
+    uint8_t flags           = b[2];                                    // FIXME Just a guess
     uint8_t battery_low     = (flags & 0x08) >> 3;                     // FIXME just a guess
     uint16_t wind_speed_avg = b[3] | ((flags & 0x01) << 8);
     uint16_t gust           = b[4] | ((flags & 0x02) << 7);
     uint16_t wind_direction = b[5] | ((flags & 0x04) << 6);
-    // uint16_t unk6           = (b[6] << 8) + b[7];   // FIXME
-    // uint16_t unk8           = (b[8] << 8) + b[9];   // FIXME
-    // uint16_t rain_rate      = (b[10] << 8) + b[11]; // FIXME Just a guess
+    // uint16_t unk6           = b[6] | ((flags & 0x08) << 5);   // FIXME wind speed ?
+    // uint16_t unk7           = b[7] | ((flags & 0x10) << 4);   // FIXME wind direction ?
+    // uint16_t unk8           = b[8] | ((flags & 0x20) << 3);   // FIXME wind speed ?
+    // uint16_t unk9           = b[9] | ((flags & 0x40) << 2);   // FIXME wind direction ?
     uint16_t rain_1h        = (b[12] << 8) + b[13];
     uint16_t rain_24h       = (b[14] << 8) + b[15];
     uint16_t rain_week      = (b[16] << 8) + b[17];
@@ -120,15 +120,16 @@ telldus_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, 
     double temp_c = (((temperature - 400) / 10) - 32) / 1.8;
 
     /*
-    fprintf(stderr, "device_id = %02x %d\n", device_id, device_id);
-    fprintf(stderr, "serial_no = %02x %d\n", serial_no, serial_no);
+    fprintf(stderr, "length = %02x %d\n", length, length);
     fprintf(stderr, "flags = %01x %d\n", flags, flags);
     fprintf(stderr, "battery_low  = %01x %d\n", battery_low, battery_low);
     fprintf(stderr, "wind_speed_avg = %02x %d\n", wind_speed_avg, wind_speed_avg);
     fprintf(stderr, "gust = %02x %d\n", gust, gust);
     fprintf(stderr, "wind_direction = %02x %d\n", wind_direction, wind_direction);
     fprintf(stderr, "Unknown6 = %04x %d\n", unk6, unk6);
+    fprintf(stderr, "Unknown7 = %04x %d\n", unk7, unk7);
     fprintf(stderr, "Unknown8 = %04x %d\n", unk8, unk8);
+    fprintf(stderr, "Unknown9 = %04x %d\n", unk9, unk9);
     fprintf(stderr, "rain_rate = %04x %f mm\n", rain_rate, rain_rate * 0.1);
     fprintf(stderr, "rain_1h = %04x %f mm\n", rain_1h, rain_1h * 0.1);
     fprintf(stderr, "rain_24h = %04x %f mm\n", rain_24h, rain_24h * 0.1);
@@ -162,7 +163,7 @@ telldus_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, 
             "rain_day", "Rain 24h", DATA_FORMAT, "%.1f", DATA_DOUBLE, rain_24h * 0.1,
             "rain_week", "Rain week", DATA_FORMAT, "%.1f", DATA_DOUBLE, rain_week * 0.1,
             "rain_month", "Rain month", DATA_FORMAT, "%.1f", DATA_DOUBLE, rain_month * 0.1,
-            "cumulativerain", "Cum Rain", DATA_FORMAT, "%.1f", DATA_DOUBLE, rain_total * 0.1,
+            "cumulativerain", "Rain Total", DATA_FORMAT, "%.1f", DATA_DOUBLE, rain_total * 0.1,
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "humidity", "Humidity", DATA_INT, humidity,
             "humidity_2", "Indoor Humidity", DATA_INT, humidity_indoor,
