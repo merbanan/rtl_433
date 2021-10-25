@@ -90,6 +90,7 @@ telldus_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, 
     // uint16_t unk7           = b[7] | ((flags & 0x10) << 4);   // FIXME wind direction ?
     // uint16_t unk8           = b[8] | ((flags & 0x20) << 3);   // FIXME wind speed ?
     // uint16_t unk9           = b[9] | ((flags & 0x40) << 2);   // FIXME wind direction ?
+    // uint16_t rain_rate      = (b[10] << 8) | b[11]; // FIXME Just a guess
     uint16_t rain_1h        = (b[12] << 8) + b[13];
     uint16_t rain_24h       = (b[14] << 8) + b[15];
     uint16_t rain_week      = (b[16] << 8) + b[17];
@@ -98,7 +99,7 @@ telldus_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, 
     // uint16_t rain_total2    = (b[22] << 8) + b[23]; // FIXME this or previous ?
     uint16_t temperature    = ((b[24] & 0x0f) << 8) + b[25];
     uint8_t humidity        = b[26];
-    // uint8_t unk27           = b[27]; // FIXME flags ?
+    uint8_t temp_indoor     = b[27];
     uint8_t humidity_indoor = b[28];
     uint16_t pressure_abs   = (b[29] << 8) + b[30];
     uint16_t pressure_rel   = ((b[31]) << 8) + b[32];
@@ -107,7 +108,6 @@ telldus_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, 
     // uint8_t crc             = b[36];
 
     // Where is myLight and myUV ?
-    // Is there temperature in ?
 
     if (temperature == 0xFF) {
         return 0; //  Bad Data
@@ -118,6 +118,7 @@ telldus_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, 
     }
 
     double temp_c = (((temperature - 400) / 10) - 32) / 1.8;
+    double temp_in_c = (temp_indoor + 304) / 18.0;
 
     /*
     fprintf(stderr, "length = %02x %d\n", length, length);
@@ -139,21 +140,19 @@ telldus_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, 
     fprintf(stderr, "rain_total2 = %04x %d\n", rain_total2, rain_total2);
     fprintf(stderr, "temperature = %04x %d\n", temperature, temperature);
     fprintf(stderr, "humidity = %04x %d %%\n", humidity, humidity);
-    fprintf(stderr, "Unknown27 = %02x %d\n", unk27, unk27);
+    fprintf(stderr, "temp_indoor = %02x %d\n", temp_indoor, temp_indoor);
     fprintf(stderr, "humidity_indoor = %04x %d %%\n", humidity_indoor, humidity_indoor);
     fprintf(stderr, "pressure_abs = %04x %f\n", pressure_abs, pressure_abs * 0.1);
     fprintf(stderr, "pressure_rel = %04x %f\n", pressure_rel, pressure_rel * 0.1);
     fprintf(stderr, "Unknown33 = %04x %d\n", unk33, unk33);
     fprintf(stderr, "Unknown35 = %02x %d\n", unk35, unk35);
     fprintf(stderr, "crc = %02x %d\n", crc, crc);
-    //fprintf(stderr,"flags2 = %01x %d\n", flags2, flags2 );
     fprintf(stderr, "temp_c = %f\n", temp_c);
+    fprintf(stderr, "temp_in_c = %f\n", temp_in_c);
     */
 
     data_t *data = data_make(
             "model", "", DATA_STRING, "Telldus-FT0385R",
-            // "device", "Device", DATA_INT, device_id,
-            // "id",        "Serial Number",          DATA_INT, mySerial,
             "batterylow", "Battery Low", DATA_INT, battery_low,
             "avewindspeed", "Ave Wind Speed", DATA_FORMAT, "%.1f", DATA_DOUBLE, wind_speed_avg * 0.1,
             "gustwindspeed", "Gust", DATA_FORMAT, "%.1f", DATA_DOUBLE, gust * 0.1,
@@ -167,6 +166,7 @@ telldus_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, 
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "humidity", "Humidity", DATA_INT, humidity,
             "humidity_2", "Indoor Humidity", DATA_INT, humidity_indoor,
+            "temperature_2_C", "Indoor Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_in_c,
             "pressure", "Pressure", DATA_FORMAT, "%.1f", DATA_DOUBLE, pressure_abs * 0.1,
             "pressure_rel", "Pressure Rel", DATA_FORMAT, "%.1f", DATA_DOUBLE, pressure_rel * 0.1,
             "mic", "Integrity", DATA_STRING, "CRC",
@@ -202,8 +202,6 @@ telldus_weather_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
-        //   "device",
-        //   "id",
         "batterylow",
         "avewindspeed",
         "gustwindspeed",
@@ -215,6 +213,7 @@ static char *output_fields[] = {
         "rain_month",
         "cumulativerain",
         "temperature_C",
+        "temperature_2_C",
         "humidity",
         "humidity_2",
         "pressure",
