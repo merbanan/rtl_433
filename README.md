@@ -107,7 +107,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [17]  Cardin S466-TX2
     [18]  Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor
     [19]  Nexus, FreeTec NC-7345, NX-3980, Solight TE82S, TFA 30.3209 temperature/humidity sensor
-    [20]  Ambient Weather, TFA 30.3208.02 temperature sensor
+    [20]  Ambient Weather F007TH, TFA 30.3208.02, SwitchDocLabs F016TH temperature sensor
     [21]  Calibeur RF-104 Sensor
     [22]  X10 RF
     [23]  DSC Security Contact
@@ -225,7 +225,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [139]  Norgo NGE101
     [140]  Elantra2012 TPMS
     [141]  Auriol HG02832, HG05124A-DCF, Rubicson 48957 temperature/humidity sensor
-    [142]  Fine Offset Electronics/ECOWITT WH51 Soil Moisture Sensor
+    [142]  Fine Offset Electronics/ECOWITT WH51, SwitchDoc Labs SM23 Soil Moisture Sensor
     [143]  Holman Industries iWeather WS5029 weather station (older PWM)
     [144]  TBH weather sensor
     [145]  WS2032 weather station
@@ -236,7 +236,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [150]* Klimalogg
     [151]  Visonic powercode
     [152]  Eurochron EFTH-800 temperature and humidity sensor
-    [153]  Cotech 36-7959 wireless weather station with USB
+    [153]  Cotech 36-7959, SwitchDocLabs FT020T wireless weather station with USB
     [154]  Standard Consumption Message Plus (SCMplus)
     [155]  Fine Offset Electronics WH1080/WH3080 Weather Station (FSK)
     [156]  Abarth 124 Spider TPMS
@@ -282,6 +282,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [196]  Atech-WS308 temperature sensor
     [197]  Acurite Grill/Meat Thermometer 01185M
     [198]* EnOcean ERP1
+    [199]  Linear Megacode Garage/Gate Remotes
 
 * Disabled by default, use -R n or -G
 

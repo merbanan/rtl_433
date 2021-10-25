@@ -138,6 +138,7 @@ add_library(r_433 STATIC
     devices/maverick_et73.c
     devices/maverick_et73x.c
     devices/mebus.c
+    devices/megacode.c
     devices/missil_ml0757.c
     devices/new_template.c
     devices/newkaku.c
