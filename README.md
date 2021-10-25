@@ -283,6 +283,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [197]  Acurite Grill/Meat Thermometer 01185M
     [198]* EnOcean ERP1
     [199]  Linear Megacode Garage/Gate Remotes
+    [200]* Auriol 4-LD5661 temperature/rain sensor
 
 * Disabled by default, use -R n or -G
 
