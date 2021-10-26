@@ -21,19 +21,19 @@ The outdoor unit is the same as SwitchDoc Labs WeatherSense FT020T
  and Cotech 36-7959 Weatherstation.
 
 433Mhz, OOK modulated with Manchester encoding, halfbit-width 500 us.
-Message length is 5 + 296 bit. 
+Message length is 5 + 296 bit.
 Each message starts with bits 10100 11100001 00100011. First 13 bits is considered as a preamble.
 The first 5 bits of the preamble is ignored and the rest of the message is used in CRC calculation.
-Example raw message: 
-{298} e1 23 00 0c 17 2b 0b 5a 09 34 00 00 00 00 00 03 00 1b 03 90 12 1b 12 1b 43 6e 4c 92 23 27 49 28 c8 ff fa fa 4b 
+Example raw message:
+{298} e1 23 00 0c 17 2b 0b 5a 09 34 00 00 00 00 00 03 00 1b 03 90 12 1b 12 1b 43 6e 4c 92 23 27 49 28 c8 ff fa fa 4b
 
 Integrity check is done using CRC8 using poly=0x31  init=0xc0
 
 Message layout
     AAAAAAAA BBBBBBBB CJIHGFED DDDDDDDD EEEEEEEE FFFFFFFF GGGGGGGG HHHHHHHH IIIIIIII JJJJJJJJ
     KKKKKKKKKKKKKKKK LLLLLLLLLLLLLLLL MMMMMMMMMMMMMMMM NNNNNNNNNNNNNNNN OOOOOOOOOOOOOOOO PPPPPPPPPPPPPPPP
-    QQQQ RRRRRRRRRRRR SSSSSSSS TTTTTTTT UUUUUUUU VVVVVVVVVVVVVVVV WWWWWWWWWWWWWWWW 
-    XXXXXXXXXXXXXXXXXXXXXXXX YYYYYYYY
+    TTTT QQQQQQQQQQQQ RRRRRRRR SSSSSSSS TTTTTTTT UUUUUUUUUUUUUUUU VVVVVVVVVVVVVVVV
+    WWWWWWWWWWWWWWWWWWWWWWWW XXXXXXXX
 
 - A : 8 bit: ? Type code, fixed 0xe1
 - B : 8 bit: Length, fixed 0x23
@@ -51,15 +51,14 @@ Message layout
 - N : 16 bit: Rain week mm, scaled by 10
 - O : 16 bit: Rain month mm, scaled by 10
 - P : 16 bit: Rain total in mm, scaled by 10
-- Q : 4 bit: ? Flag bitmask, always the same sequence:  0100
-- R : 12 bit: Temperature in Fahrenheit, offset 400, scaled by 10
-- S : 8 bit: Humidity
-- T : 8 bit: Temperature indoor in Fahrenheit, offset -624, scaled by 10
-- U : 8 bit: Humidity indoor
-- V : 16 bit: Pressure absolute in hPa
-- W : 16 bit: Pressure relative in hPa
-- X : 24 bit: ? Fixed 0xfffafa
-- Y : 8 bit: CRC, poly 0x31, init 0xc0
+- Q : 12 bit: Temperature in Fahrenheit, offset 400, scaled by 10
+- R : 8 bit: Humidity
+- S : 12 bit: Temperature indoor in Fahrenheit, offset 400, scaled by 10. MSB in byte 24.
+- T : 8 bit: Humidity indoor
+- U : 16 bit: Pressure absolute in hPa
+- V : 16 bit: Pressure relative in hPa
+- W : 24 bit: ? Fixed 0xfffafa
+- X : 8 bit: CRC, poly 0x31, init 0xc0
 */
 
 #include "decoder.h"
@@ -130,10 +129,10 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int rain_mon  = ((b[18]) << 8) | (b[19]);                     // [144:12]
     int rain_tot  = ((b[20]) << 8) | (b[21]);                     // [160:16]
     int rain_tot2 = ((b[22]) << 8) | (b[23]);                     // [176:16]
-    int unk192    = (b[24] >> 4);                                 // [192:4]
+    int temp2_msb  = (b[24] & 0xf0) >> 4;                         // [192:4]
     int temp_raw  = ((b[24] & 0x0f) << 8) | (b[25]);              // [196:12]
     int humidity  = (b[26]);                                      // [208:8]
-    int temp2_raw = (b[27]);                                      // [216:8]
+    int temp2_raw = (temp2_msb << 8) | (b[27]);                   // [216:8]
     int humidity2 = (b[28]);                                      // [224:8]
     int pressure  = ((b[29]) << 8) | (b[30]);                     // [232:16]
     int pressure2 = ((b[31]) << 8) | (b[32]);                     // [248:16]
@@ -143,7 +142,7 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int crc       = (b[36]);                                      // [288:8]
 
     float temp_f = (temp_raw - 400) * 0.1f;
-    float temp2_f = (temp2_raw + 624) * 0.1f;
+    float temp2_f = (temp2_raw - 400) * 0.1f;
 
     if (decoder->verbose > 0) {
         fprintf(stderr, "length = %02x %d\n", length, length);
@@ -162,10 +161,9 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         fprintf(stderr, "rain_mon = %04x %f mm\n", rain_mon, rain_mon * 0.1);
         fprintf(stderr, "rain_tot = %04x %f mm\n", rain_tot, rain_tot * 0.1);
         fprintf(stderr, "rain_tot2 = %04x %d\n", rain_tot2, rain_tot2);
-        fprintf(stderr, "unk192 = %02x %d\n", unk192, unk192);
         fprintf(stderr, "temp_raw = %04x %d\n", temp_raw, temp_raw);
         fprintf(stderr, "humidity = %04x %d %%\n", humidity, humidity);
-        fprintf(stderr, "temp_indoor = %02x %d\n", temp2_raw, temp2_raw);
+        fprintf(stderr, "temp_indoor = %04x %d\n", temp2_raw, temp2_raw);
         fprintf(stderr, "humidity_indoor = %04x %d %%\n", humidity2, humidity2);
         fprintf(stderr, "pressure_abs = %04x %f\n", pressure, pressure * 0.1);
         fprintf(stderr, "pressure_rel = %04x %f\n", pressure2, pressure2 * 0.1);
@@ -176,7 +174,7 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         fprintf(stderr, "temp_f = %f F (%f C)\n", temp_f, (temp_f - 32) / 1.8);
         fprintf(stderr, "temp2_f = %f F (%f C)\n", temp2_f, (temp2_f - 32) / 1.8);
     }
- 
+
     /* clang-format off */
     data = data_make(
             "model",            "",                 DATA_STRING, "Telldus-FT0385R",
