@@ -33,9 +33,9 @@ Integrity check is done using CRC8 using poly=0x31  init=0xc0
 
 Message layout
     AAAABBBB BBBBCCCC ZJIHGFED DDDDDDDD EEEEEEEE FFFFFFFF GGGGGGGG HHHHHHHH IIIIIIII JJJJJJJJ
-    KKKKKKKKKKKKKKKK LLLLLLLLLLLLLLLL MMMMMMMMMMMMMMMM NNNNNNNNNNNNNNNN OOOOOOOOOOOOOOOO PPPPPPPPPPPPPPPP
-    TTTT QQQQQQQQQQQQ RRRRRRRR SSSSSSSS TTTTTTTT UUUUUUUUUUUUUUUU VVVVVVVVVVVVVVVV
-    WWWWWWWWWWWWWWWW XXXXXXXX YYYYYYYY
+    KKKKKKKK KKKKKKKK LLLLLLLL LLLLLLLL MMMMMMMM MMMMMMMM NNNNNNNN NNNNNNNN OOOOOOOO OOOOOOOO PPPPPPPP PPPPPPPP
+    SSSSQQQQ QQQQQQQQ RRRRRRRR SSSSSSSS TTTTTTTT UUUUUUUU UUUUUUUU VVVVVVVV VVVVVVVV
+    WWWWWWWW WWWWWWWW XXXXXXXX YYYYYYYY
 
 - A : 4 bit: ? Type code ?, fixed 0xe
 - B : 8 bit: ? Indoor serial number or flags. Changes in reset.
@@ -60,11 +60,12 @@ Message layout
 - T : 8 bit: Humidity indoor
 - U : 16 bit: Pressure absolute in hPa
 - V : 16 bit: Pressure relative in hPa
-- W : 16 bit: ? Fixed 0xfffa or 0xfffb, if outdoor data is unavailable
-- X : 8 bit: ? Fixed 0xfa or 0xfb, if outdoor data is unavailable
+- W : 16 bit: ? Light intensity. No sensor: 0xfffa, outdoor data is unavailable: 0xfffb
+- X : 8 bit: ? UV index. No sensor: 0xfa, outdoor data is unavailable: 0xfb
 - Y : 8 bit: CRC, poly 0x31, init 0xc0
 
-If outdoor data is unavailable, the value is 0xfb, 0x1fb, 0x3fb or 0xfffb
+If outdoor data is unavailable, the value is 0xfb, 0x1fb, 0x7fb or 0xfffb
+Telldus outdoor unit is missing Light and UV sensors, but they may be seen in the messages.
 
 */
 
@@ -144,8 +145,8 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int humidity2 = (b[28]);                                      // [224:8]
     int pressure  = ((b[29]) << 8) | (b[30]);                     // [232:16]
     int pressure2 = ((b[31]) << 8) | (b[32]);                     // [248:16]
-    int unk264    = ((b[33]) << 8) | (b[34]);                     // [264:16]
-    int unk280    = (b[35]);                                      // [280:8]
+    int light_lux = ((b[33]) << 8) | (b[34]);                     // [264:16]
+    int uv        = (b[35]);                                      // [280:8]
     int crc       = (b[36]);                                      // [288:8]
 
     int batt_low  = (flags & 0x04) >> 3;
@@ -178,8 +179,8 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         fprintf(stderr, "humidity_indoor = %04x %d %%\n", humidity2, humidity2);
         fprintf(stderr, "pressure_abs = %04x %f\n", pressure, pressure * 0.1);
         fprintf(stderr, "pressure_rel = %04x %f\n", pressure2, pressure2 * 0.1);
-        fprintf(stderr, "unk264 = %02x %d\n", unk264, unk264);
-        fprintf(stderr, "unk280 = %02x %d\n", unk280, unk280);
+        fprintf(stderr, "light_lux = %02x %d\n", light_lux, light_lux);
+        fprintf(stderr, "uv = %02x %d\n", uv, uv);
         fprintf(stderr, "crc = %02x %d\n", crc, crc);
         fprintf(stderr, "temp_f = %f F (%f C)\n", temp_f, (temp_f - 32) / 1.8);
         fprintf(stderr, "temp2_f = %f F (%f C)\n", temp2_f, (temp2_f - 32) / 1.8);
