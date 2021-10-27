@@ -22,22 +22,25 @@ The outdoor unit is the same as SwitchDoc Labs WeatherSense FT020T
 
 433Mhz, OOK modulated with Manchester encoding, halfbit-width 500 us.
 Message length is 5 + 296 bit.
-Each message starts with bits 10100 11100001 00100011. First 13 bits is considered as a preamble.
+Each message starts with bits 10100 1110. First 9 bits is considered as a preamble.
 The first 5 bits of the preamble is ignored and the rest of the message is used in CRC calculation.
 Example raw message:
 {298} e1 23 00 0c 17 2b 0b 5a 09 34 00 00 00 00 00 03 00 1b 03 90 12 1b 12 1b 43 6e 4c 92 23 27 49 28 c8 ff fa fa 4b
+Example raw message, if outdoor data is unavailable:
+{298} e0 73 7f fb fb fb fb fb fb fb ff fb ff fb 3f fb ff fb ff fb ff fb ff fb 47 fb 7b 6c 26 27 0a 27 93 ff fb fb 97
 
 Integrity check is done using CRC8 using poly=0x31  init=0xc0
 
 Message layout
-    AAAAAAAA BBBBBBBB CJIHGFED DDDDDDDD EEEEEEEE FFFFFFFF GGGGGGGG HHHHHHHH IIIIIIII JJJJJJJJ
+    AAAABBBB BBBBCCCC ZJIHGFED DDDDDDDD EEEEEEEE FFFFFFFF GGGGGGGG HHHHHHHH IIIIIIII JJJJJJJJ
     KKKKKKKKKKKKKKKK LLLLLLLLLLLLLLLL MMMMMMMMMMMMMMMM NNNNNNNNNNNNNNNN OOOOOOOOOOOOOOOO PPPPPPPPPPPPPPPP
     TTTT QQQQQQQQQQQQ RRRRRRRR SSSSSSSS TTTTTTTT UUUUUUUUUUUUUUUU VVVVVVVVVVVVVVVV
-    WWWWWWWWWWWWWWWWWWWWWWWW XXXXXXXX
+    WWWWWWWWWWWWWWWW XXXXXXXX YYYYYYYY
 
-- A : 8 bit: ? Type code, fixed 0xe1
-- B : 8 bit: Length, fixed 0x23
-- C : 1 bit: ? Battery indicator 0 = Ok, 1 = Battery low
+- A : 4 bit: ? Type code ?, fixed 0xe
+- B : 8 bit: ? Indoor serial number or flags. Changes in reset.
+- C : 4 bit: ? Flags, normally 0x3, Battery indicator 0 = Ok, 4 = Battery low ?
+- Z : 1 bit: ? Unknown, possibly not used
 - D : 9 bit: Wind Avg, scaled by 10. MSB in byte 2
 - E : 9 bit: Wind Gust, scaled by 10. MSB in byte 2
 - F : 9 bit: Wind direction in degrees. MSB in byte 2
@@ -47,7 +50,7 @@ Message layout
 - J : 9 bit: ? Wind direction 3 in degrees. MSB in byte 2
 - K : 16 bit: ? Rain rate in mm, scaled by 10
 - L : 16 bit: Rain 1h mm, scaled by 10
-- M : 16 bit: Rain 24h mm, scaled by 10
+- M : 16 bit: Rain 24h mm, scaled by 10. Unvailable value = 0x3ffb.
 - N : 16 bit: Rain week mm, scaled by 10
 - O : 16 bit: Rain month mm, scaled by 10
 - P : 16 bit: Rain total in mm, scaled by 10
@@ -57,15 +60,19 @@ Message layout
 - T : 8 bit: Humidity indoor
 - U : 16 bit: Pressure absolute in hPa
 - V : 16 bit: Pressure relative in hPa
-- W : 24 bit: ? Fixed 0xfffafa
-- X : 8 bit: CRC, poly 0x31, init 0xc0
+- W : 16 bit: ? Fixed 0xfffa or 0xfffb, if outdoor data is unavailable
+- X : 8 bit: ? Fixed 0xfa or 0xfb, if outdoor data is unavailable
+- Y : 8 bit: CRC, poly 0x31, init 0xc0
+
+If outdoor data is unavailable, the value is 0xfb, 0x1fb, 0x3fb or 0xfffb
+
 */
 
 #include "decoder.h"
 
 static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const preamble[] = {0x14, 0xe1}; // 13 bits
+    uint8_t const preamble[] = {0x14, 0xe0}; // 9 bits
 
     int r = -1;
     uint8_t b[37]; // 296 bits, 37 bytes
@@ -79,7 +86,7 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     for (int i = 0; i < bitbuffer->num_rows; ++i) {
-        unsigned pos = bitbuffer_search(bitbuffer, i, 0, preamble, 13);
+        unsigned pos = bitbuffer_search(bitbuffer, i, 0, preamble, 9);
         pos += 8;
 
         if (pos + 296 > bitbuffer->bits_per_row[i])
@@ -105,9 +112,10 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Extract data from buffer
-    //int header  = b[0];                                         // [0:8]
-    int length    = (b[1]);                                       // [8:8]
-    int batt_low  = (b[2] & 0x80) >> 7;                           // [16:1]
+    int header    = (b[0] & 0xf0) >> 4;                           // [0:4]
+    int serial    = ((b[0] & 0x0f) << 4) | ((b[1] & 0xf0) >> 4);  // [8:8]
+    int flags     = (b[1] & 0x0f);                                // [12:4]
+    int unk16     = (b[1] & 0x80) >> 7;                           // [16:1]
     int deg3_msb  = (b[2] & 0x40) >> 6;                           // [17:1]
     int wind3_msb = (b[2] & 0x20) >> 5;                           // [18:1]
     int deg2_msb  = (b[2] & 0x10) >> 4;                           // [19:1]
@@ -136,16 +144,19 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int humidity2 = (b[28]);                                      // [224:8]
     int pressure  = ((b[29]) << 8) | (b[30]);                     // [232:16]
     int pressure2 = ((b[31]) << 8) | (b[32]);                     // [248:16]
-    int unk264    = (b[33]);                                      // [264:8]
-    int unk272    = (b[34]);                                      // [272:8]
+    int unk264    = ((b[33]) << 8) | (b[34]);                     // [264:16]
     int unk280    = (b[35]);                                      // [280:8]
     int crc       = (b[36]);                                      // [288:8]
 
+    int batt_low  = (flags & 0x04) >> 3;
     float temp_f = (temp_raw - 400) * 0.1f;
     float temp2_f = (temp2_raw - 400) * 0.1f;
 
     if (decoder->verbose > 0) {
-        fprintf(stderr, "length = %02x %d\n", length, length);
+        fprintf(stderr, "header = %02x %d\n", header, header);
+        fprintf(stderr, "serial = %02x %d\n", serial, serial);
+        fprintf(stderr, "flags = %02x %d\n", flags, flags);
+        fprintf(stderr, "unk16 = %02x %d\n", unk16, unk16);
         fprintf(stderr, "batt_low  = %01x %d\n", batt_low, batt_low);
         fprintf(stderr, "wind = %02x %d\n", wind, wind);
         fprintf(stderr, "gust = %02x %d\n", gust, gust);
@@ -168,7 +179,6 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         fprintf(stderr, "pressure_abs = %04x %f\n", pressure, pressure * 0.1);
         fprintf(stderr, "pressure_rel = %04x %f\n", pressure2, pressure2 * 0.1);
         fprintf(stderr, "unk264 = %02x %d\n", unk264, unk264);
-        fprintf(stderr, "unk272 = %02x %d\n", unk272, unk272);
         fprintf(stderr, "unk280 = %02x %d\n", unk280, unk280);
         fprintf(stderr, "crc = %02x %d\n", crc, crc);
         fprintf(stderr, "temp_f = %f F (%f C)\n", temp_f, (temp_f - 32) / 1.8);
@@ -176,7 +186,8 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data = data_make(
+    if (temp_raw != 0x7fb) {
+        data = data_make(
             "model",            "",                 DATA_STRING, "Telldus-FT0385R",
             //"battery_ok",       "Battery",          DATA_INT,    !batt_low,
             "temperature_F",    "Temperature",      DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_f,
@@ -191,6 +202,17 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "wind_max_m_s",     "Gust",             DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust * 0.1f,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
+    } else {
+        // No outdoor data
+        data = data_make(
+            "model",            "",                 DATA_STRING, "Telldus-FT0385R",
+            //"battery_ok",       "Battery",          DATA_INT,    !batt_low,
+            "temperature_2_F",  "Temperature in",   DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp2_f,
+            "humidity_2",       "Humidity in",      DATA_FORMAT, "%u %%", DATA_INT, humidity2,
+            "pressure_hPa",     "Pressure",         DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure * 0.1f,
+            "mic",              "Integrity",        DATA_STRING, "CRC",
+            NULL);
+    }
     /* clang-format on */
 
     decoder_output_data(decoder, data);
