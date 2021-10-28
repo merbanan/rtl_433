@@ -262,6 +262,9 @@
     <ClCompile Include="..\src\devices\atech_ws308.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\auriol_4ld5661.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\auriol_aft77b2.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
