@@ -46,6 +46,8 @@ Payload format:
 To get raw data
 $ rtl_433 -f 917M -X 'name=WS5029,modulation=FSK_PCM,short=100,long=100,preamble={48}0xAAAAAAAAAAAA,reset=19200'
 
+@sa holman_ws5029pwm_decode()
+
 */
 
 #include "decoder.h"
