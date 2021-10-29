@@ -863,8 +863,10 @@ static int m_bus_decode_format_b(r_device *decoder, const m_bus_data_t *in, m_bu
     return 1;
 }
 
-static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const m_bus_block1_t *block1, const char *mode)
+static int m_bus_output_data(r_device *decoder, bitbuffer_t *bitbuffer, const m_bus_data_t *out, const m_bus_block1_t *block1, const char *mode)
 {
+    (void)bitbuffer; // note: to match the common decoder function signature
+
     data_t  *data;
     char    str_buf[1024];
 
@@ -877,55 +879,67 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
         char sn_str[7*2] = {0};
         for (unsigned n=0; n<6; n++) { sprintf(sn_str+n*2, "%02x", block1->knx_sn[n]); }
 
+        /* clang-format off */
         data = data_make(
-        "model",    "",             DATA_STRING,    "KNX-RF",
-        "sn",       "SN",           DATA_STRING,    sn_str,
-        "knx_ctrl", "KNX-Ctrl",     DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.knx_ctrl,
-        "src",      "Src",          DATA_FORMAT,    "0x%04X", DATA_INT, block1->block2.src,
-        "dst",      "Dst",          DATA_FORMAT,    "0x%04X", DATA_INT, block1->block2.dst,
-        "l_npci",   "L/NPCI",       DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.l_npci,
-        "tpci",     "TPCI",         DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.tpci,
-        "apci",     "APCI",         DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.apci,
-        "data_length","Data Length",DATA_INT,       out->length,
-        "data",     "Data",         DATA_STRING,    str_buf,
-        "mic",      "Integrity",    DATA_STRING,    "CRC",
-        NULL);
+                "model",    "",             DATA_STRING,    "KNX-RF",
+                "sn",       "SN",           DATA_STRING,    sn_str,
+                "knx_ctrl", "KNX-Ctrl",     DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.knx_ctrl,
+                "src",      "Src",          DATA_FORMAT,    "0x%04X", DATA_INT, block1->block2.src,
+                "dst",      "Dst",          DATA_FORMAT,    "0x%04X", DATA_INT, block1->block2.dst,
+                "l_npci",   "L/NPCI",       DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.l_npci,
+                "tpci",     "TPCI",         DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.tpci,
+                "apci",     "APCI",         DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.apci,
+                "data_length","Data Length",DATA_INT,       out->length,
+                "data",     "Data",         DATA_STRING,    str_buf,
+                "mic",      "Integrity",    DATA_STRING,    "CRC",
+                NULL);
+        /* clang-format on */
     } else {
+        /* clang-format off */
         data = data_make(
-        "model",    "",             DATA_STRING,    "Wireless-MBus",
-        "mode",     "Mode",         DATA_STRING,    mode,
-        "M",        "Manufacturer", DATA_STRING,    block1->M_str,
-        "id",       "ID",           DATA_INT,       block1->A_ID,
-        "version",  "Version",      DATA_INT,       block1->A_Version,
-        "type",     "Device Type",  DATA_FORMAT,    "0x%02X",   DATA_INT, block1->A_DevType,
-        "type_string",  "Device Type String",   DATA_STRING,        m_bus_device_type_str(block1->A_DevType),
-        "C",        "Control",      DATA_FORMAT,    "0x%02X",   DATA_INT, block1->C,
-//        "L",        "Length",       DATA_INT,       block1->L,
-        "data_length",  "Data Length",          DATA_INT,           out->length,
-        "data",     "Data",         DATA_STRING,    str_buf,
-        "mic",      "Integrity",    DATA_STRING,    "CRC",
-        NULL);
+                "model",    "",             DATA_STRING,    "Wireless-MBus",
+                "mode",     "Mode",         DATA_STRING,    mode,
+                "M",        "Manufacturer", DATA_STRING,    block1->M_str,
+                "id",       "ID",           DATA_INT,       block1->A_ID,
+                "version",  "Version",      DATA_INT,       block1->A_Version,
+                "type",     "Device Type",  DATA_FORMAT,    "0x%02X",   DATA_INT, block1->A_DevType,
+                "type_string",  "Device Type String",   DATA_STRING,        m_bus_device_type_str(block1->A_DevType),
+                "C",        "Control",      DATA_FORMAT,    "0x%02X",   DATA_INT, block1->C,
+//                "L",        "Length",       DATA_INT,       block1->L,
+                "data_length",  "Data Length",          DATA_INT,           out->length,
+                "data",     "Data",         DATA_STRING,    str_buf,
+                "mic",      "Integrity",    DATA_STRING,    "CRC",
+                NULL);
+        /* clang-format on */
     }
     if (block1->block2.CI) {
+        /* clang-format off */
         data = data_append(data,
-        "CI",     "Control Info",   DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.CI,
-        "AC",     "Access number",  DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.AC,
-        "ST",     "Device Type",    DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.ST,
-        "CW",     "Configuration Word",DATA_FORMAT, "0x%04X",   DATA_INT, block1->block2.CW,
-        NULL);
+                "CI",     "Control Info",   DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.CI,
+                "AC",     "Access number",  DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.AC,
+                "ST",     "Device Type",    DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.ST,
+                "CW",     "Configuration Word",DATA_FORMAT, "0x%04X",   DATA_INT, block1->block2.CW,
+                NULL);
+        /* clang-format on */
     }
     /* Encryption not supported */
     if (!(block1->block2.CW&0x0500)) {
         parse_payload(data, block1, out);
     } else {
+        /* clang-format off */
         data = data_append(data,
                 "payload_encrypted", "Payload Encrypted", DATA_FORMAT, "1", DATA_INT, NULL,
                 NULL);
+        /* clang-format on */
     }
     decoder_output_data(decoder, data);
+    return 1;
 }
 
-
+/**
+Wireless M-Bus, Mode C&T.
+@sa m_bus_output_data()
+*/
 static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     static const uint8_t PREAMBLE_T[]  = {0x54, 0x3D};      // Mode T Preamble (always format A - 3of6 encoded)
@@ -1006,11 +1020,14 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
     }   // Mode T
 
-    m_bus_output_data(decoder, &data_out, &block1, mode);
+    m_bus_output_data(decoder, bitbuffer, &data_out, &block1, mode);
     return 1;
 }
 
-
+/**
+Wireless M-Bus, Mode R.
+@sa m_bus_output_data()
+*/
 static int m_bus_mode_r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     static const uint8_t PREAMBLE_RA[]  = {0x55, 0x54, 0x76, 0x96};      // Mode R, format A (B not supported)
@@ -1039,11 +1056,16 @@ static int m_bus_mode_r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Decode
     if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
 
-    m_bus_output_data(decoder, &data_out, &block1, "R");
+    m_bus_output_data(decoder, bitbuffer, &data_out, &block1, "R");
     return 1;
 }
 
-// Untested code, signal samples missing
+/**
+Wireless M-Bus, Mode F.
+@sa m_bus_output_data()
+
+Untested code, signal samples missing.
+*/
 static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     static const uint8_t PREAMBLE_F[]  = {0x55, 0xF6};      // Mode F Preamble
@@ -1089,10 +1111,14 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return 0;
     }
 
-    //m_bus_output_data(decoder, &data_out, &block1, "F");
+    //m_bus_output_data(decoder, bitbuffer, &data_out, &block1, "F");
     return 1;
 }
 
+/**
+Wireless M-Bus, Mode S.
+@sa m_bus_output_data()
+*/
 static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     static const uint8_t PREAMBLE_S[]  = {0x54, 0x76, 0x96};  // Mode S Preamble
@@ -1114,7 +1140,7 @@ static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
 
-    m_bus_output_data(decoder, &data_out, &block1, "S");
+    m_bus_output_data(decoder, bitbuffer, &data_out, &block1, "S");
 
     return 1;
 }
