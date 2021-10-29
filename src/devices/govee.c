@@ -126,7 +126,7 @@ RevSum input for parity (first 5 bytes, and the parity extracted from the last b
 
 static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int model = GOVEE_WATER;
+    int model_num = GOVEE_WATER;
 
     if (bitbuffer->num_rows < 3) {
         return DECODE_ABORT_EARLY; // truncated transmission
@@ -208,7 +208,7 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     else if (event == 0xe7f) {
         // Only sent by the Contact sensor
-        model = GOVEE_CONTACT;
+        model_num = GOVEE_CONTACT;
         event_str = "Open";
     }
     else {
@@ -217,8 +217,8 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",        "",                 DATA_COND,   model == GOVEE_WATER,   DATA_STRING, "Govee-Water",
-            "model",        "",                 DATA_COND,   model == GOVEE_CONTACT, DATA_STRING, "Govee-Contact",
+            "model",        "",                 DATA_COND,   model_num == GOVEE_WATER,   DATA_STRING, "Govee-Water",
+            "model",        "",                 DATA_COND,   model_num == GOVEE_CONTACT, DATA_STRING, "Govee-Contact",
             "id"   ,        "",                 DATA_INT,    id,
             "battery_ok",   "Battery level",    DATA_COND,   battery, DATA_DOUBLE, battery_level,
             "battery_mV",   "Battery",          DATA_COND,   battery, DATA_FORMAT, "%d mV", DATA_INT, battery_mv,

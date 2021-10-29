@@ -259,7 +259,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [173]  Bresser Weather Center 7-in-1
     [174]  EcoDHOME Smart Socket and MCEE Solar monitor
     [175]  LaCrosse Technology View LTV-R1 Rainfall Gauge
-    [176]  BlueLine Power Monitor
+    [176]  BlueLine Innovations Power Cost Monitor
     [177]  Burnhard BBQ thermometer
     [178]  Security+ (Keyfob)
     [179]  Cavius smoke, heat and water detector

@@ -70,7 +70,7 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     uint8_t b[11];
     uint32_t id;
-    int flags, seq, offset, chk3, chk2, model;
+    int flags, seq, offset, chk3, chk2, model_num;
     int raw_temp, humidity;
     float temp_c;
 
@@ -93,7 +93,7 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose) {
            fprintf(stderr, "%s: packet length: %d\n", __func__, bitbuffer->bits_per_row[0]);
         }
-        model = (bitbuffer->bits_per_row[0] < 280) ? 3 : 2;
+        model_num = (bitbuffer->bits_per_row[0] < 280) ? 3 : 2;
     }
 
     offset = bitbuffer_search(bitbuffer, 0, 0,
@@ -138,7 +138,7 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-         "model",            "",                 DATA_STRING, model == 3 ? "LaCrosse-TH3" : "LaCrosse-TH2",
+         "model",            "",                 DATA_STRING, model_num == 3 ? "LaCrosse-TH3" : "LaCrosse-TH2",
          "id",               "Sensor ID",        DATA_FORMAT, "%06x", DATA_INT, id,
          "seq",              "Sequence",         DATA_INT,     seq,
          "flags",            "unknown",          DATA_INT,     flags,
