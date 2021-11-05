@@ -68,6 +68,10 @@ Mac OS X with Homebrew:
 
 ### CMake
 
+Get the `rtl_433` git repository if needed:
+
+    git clone https://github.com/merbanan/rtl_433.git
+
 Installation using CMake:
 
     cd rtl_433/
