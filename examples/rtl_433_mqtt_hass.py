@@ -513,6 +513,7 @@ def mqtt_connect(client, userdata, flags, rc):
     if rc != 0:
         logging.error("Could not connect. Error: " + str(rc))
     else:
+        logging.info("Subscribing to: " + args.rtl_topic)
         client.subscribe(args.rtl_topic)
 
 
@@ -523,6 +524,8 @@ def mqtt_disconnect(client, userdata, rc):
 
 def mqtt_message(client, userdata, msg):
     """Callback for MQTT message PUBLISH."""
+    logging.debug("MQTT message: " + json.dumps(msg.payload.decode()))
+
     try:
         # Decode JSON payload
         data = json.loads(msg.payload.decode())
@@ -572,6 +575,7 @@ def publish_config(mqttc, topic, model, instance, mapping):
     now = time.time()
     if path in discovery_timeouts:
         if discovery_timeouts[path] > now:
+            logging.debug("Discovery timeout in the future for: " + path)
             return False
 
     discovery_timeouts[path] = now + args.discovery_interval
@@ -585,7 +589,7 @@ def publish_config(mqttc, topic, model, instance, mapping):
     if args.force_update:
         config["force_update"] = "true"
 
-    logging.debug(path,":",json.dumps(config))
+    logging.debug(path + ":" + json.dumps(config))
 
     mqttc.publish(path, json.dumps(config), retain=args.retain)
 
@@ -596,6 +600,7 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
 
     if "model" not in data:
         # not a device event
+        logging.debug("Model is not defined. Not sending event to Home Assistant.")
         return
 
     model = sanitize(data["model"])
@@ -637,6 +642,7 @@ def rtl_433_bridge():
     mqttc.on_disconnect = mqtt_disconnect
     mqttc.on_message = mqtt_message
     mqttc.connect_async(args.host, args.port, 60)
+    logging.debug("MQTT Client: Starting Loop")
     mqttc.loop_start()
 
     while True:
