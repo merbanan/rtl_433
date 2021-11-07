@@ -98,6 +98,7 @@ There is a single global set of field mappings to Home Assistant meta data.
 
 import os
 import argparse
+import logging
 import time
 import json
 import paho.mqtt.client as mqtt
@@ -508,16 +509,16 @@ mappings = {
 def mqtt_connect(client, userdata, flags, rc):
     """Callback for MQTT connects."""
 
-    print("MQTT connected: " + mqtt.connack_string(rc))
+    logging.info("MQTT connected: " + mqtt.connack_string(rc))
     if rc != 0:
-        print("Could not connect. Error: " + str(rc))
+        logging.error("Could not connect. Error: " + str(rc))
     else:
         client.subscribe(args.rtl_topic)
 
 
 def mqtt_disconnect(client, userdata, rc):
     """Callback for MQTT disconnects."""
-    print("MQTT disconnected: " + mqtt.connack_string(rc))
+    logging.info("MQTT disconnected: " + mqtt.connack_string(rc))
 
 
 def mqtt_message(client, userdata, msg):
@@ -527,7 +528,7 @@ def mqtt_message(client, userdata, msg):
         data = json.loads(msg.payload.decode())
 
     except json.decoder.JSONDecodeError:
-        print("JSON decode error: " + msg.payload.decode())
+        logging.error("JSON decode error: " + msg.payload.decode())
         return
 
     topicprefix = "/".join(msg.topic.split("/", 2)[:2])
@@ -584,8 +585,7 @@ def publish_config(mqttc, topic, model, instance, mapping):
     if args.force_update:
         config["force_update"] = "true"
 
-    if args.debug:
-        print(path,":",json.dumps(config))
+    logging.debug(path,":",json.dumps(config))
 
     mqttc.publish(path, json.dumps(config), retain=args.retain)
 
@@ -606,8 +606,7 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
     instance = rtl_433_device_topic(data)
     if not instance:
         # no unique device identifier
-        if not args.quiet:
-            print("No suitable identifier found for model: ", model)
+        logging.warning("No suitable identifier found for model: ", model)
         return
 
     # detect known attributes
@@ -621,11 +620,11 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
             if key not in SKIP_KEYS:
                 skipped_keys.append(key)
 
-    if published_keys and not args.quiet:
-        print("Published %s: %s" % (instance, ", ".join(published_keys)))
+    if published_keys:
+        logging.info("Published %s: %s" % (instance, ", ".join(published_keys)))
 
-        if skipped_keys and not args.quiet:
-            print("Skipped %s: %s" % (instance, ", ".join(skipped_keys)))
+        if skipped_keys:
+            logging.info("Skipped %s: %s" % (instance, ", ".join(skipped_keys)))
 
 
 def rtl_433_bridge():
@@ -655,6 +654,7 @@ def run():
 
 
 if __name__ == "__main__":
+    logging.getLogger().setLevel(logging.INFO)
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
                                      description=AP_DESCRIPTION,
@@ -684,6 +684,16 @@ if __name__ == "__main__":
                         default=600,
                         help="Interval to republish config topics in seconds (default: %(default)d)")
     args = parser.parse_args()
+
+    if args.debug and args.quiet:
+        logging.critical("Debug and quiet can not be specified at the same time")
+        exit(1)
+
+    if args.debug:
+        logging.info("Enabling debug logging")
+        logging.getLogger().setLevel(logging.DEBUG)
+    if args.quiet:
+        logging.getLogger().setLevel(logging.ERROR)
 
     # allow setting MQTT username and password via environment variables
     if not args.user and 'MQTT_USERNAME' in os.environ:
