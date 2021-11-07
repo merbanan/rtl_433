@@ -56,7 +56,7 @@ static int auriol_4ld5661_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format off */
         data_t *data = data_make(
                 "model",            "Model",        DATA_STRING, "Auriol-4LD5661",
-                "id",               "ID",           DATA_FORMAT, "%2x", DATA_INT, id,
+                "id",               "ID",           DATA_FORMAT, "%02x", DATA_INT, id,
                 "battery_ok",       "Battery OK",   DATA_INT, batt_ok,
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
                 "rain_mm",          "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain,
