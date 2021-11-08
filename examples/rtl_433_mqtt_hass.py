@@ -636,6 +636,10 @@ def rtl_433_bridge():
     """Run a MQTT Home Assistant auto discovery bridge for rtl_433."""
 
     mqttc = mqtt.Client()
+
+    if args.debug:
+        mqttc.enable_logger()
+
     if args.user is not None:
         mqttc.username_pw_set(args.user, args.password)
     mqttc.on_connect = mqtt_connect
