@@ -712,4 +712,7 @@ if __name__ == "__main__":
     if not args.password and 'MQTT_PASSWORD' in os.environ:
         args.password = os.environ['MQTT_PASSWORD']
 
+    if not args.user or not args.password:
+        logging.warning("User or password is not set. Check credentials if subscriptions do not return messages.")
+
     run()
