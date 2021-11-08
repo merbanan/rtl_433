@@ -98,6 +98,7 @@ There is a single global set of field mappings to Home Assistant meta data.
 
 import os
 import argparse
+import logging
 import time
 import json
 import paho.mqtt.client as mqtt
@@ -508,26 +509,29 @@ mappings = {
 def mqtt_connect(client, userdata, flags, rc):
     """Callback for MQTT connects."""
 
-    print("MQTT connected: " + mqtt.connack_string(rc))
+    logging.info("MQTT connected: " + mqtt.connack_string(rc))
     if rc != 0:
-        print("Could not connect. Error: " + str(rc))
+        logging.error("Could not connect. Error: " + str(rc))
     else:
+        logging.info("Subscribing to: " + args.rtl_topic)
         client.subscribe(args.rtl_topic)
 
 
 def mqtt_disconnect(client, userdata, rc):
     """Callback for MQTT disconnects."""
-    print("MQTT disconnected: " + mqtt.connack_string(rc))
+    logging.info("MQTT disconnected: " + mqtt.connack_string(rc))
 
 
 def mqtt_message(client, userdata, msg):
     """Callback for MQTT message PUBLISH."""
+    logging.debug("MQTT message: " + json.dumps(msg.payload.decode()))
+
     try:
         # Decode JSON payload
         data = json.loads(msg.payload.decode())
 
     except json.decoder.JSONDecodeError:
-        print("JSON decode error: " + msg.payload.decode())
+        logging.error("JSON decode error: " + msg.payload.decode())
         return
 
     topicprefix = "/".join(msg.topic.split("/", 2)[:2])
@@ -571,6 +575,7 @@ def publish_config(mqttc, topic, model, instance, mapping):
     now = time.time()
     if path in discovery_timeouts:
         if discovery_timeouts[path] > now:
+            logging.debug("Discovery timeout in the future for: " + path)
             return False
 
     discovery_timeouts[path] = now + args.discovery_interval
@@ -584,8 +589,7 @@ def publish_config(mqttc, topic, model, instance, mapping):
     if args.force_update:
         config["force_update"] = "true"
 
-    if args.debug:
-        print(path,":",json.dumps(config))
+    logging.debug(path + ":" + json.dumps(config))
 
     mqttc.publish(path, json.dumps(config), retain=args.retain)
 
@@ -596,6 +600,7 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
 
     if "model" not in data:
         # not a device event
+        logging.debug("Model is not defined. Not sending event to Home Assistant.")
         return
 
     model = sanitize(data["model"])
@@ -606,8 +611,7 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
     instance = rtl_433_device_topic(data)
     if not instance:
         # no unique device identifier
-        if not args.quiet:
-            print("No suitable identifier found for model: ", model)
+        logging.warning("No suitable identifier found for model: ", model)
         return
 
     # detect known attributes
@@ -621,23 +625,28 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
             if key not in SKIP_KEYS:
                 skipped_keys.append(key)
 
-    if published_keys and not args.quiet:
-        print("Published %s: %s" % (instance, ", ".join(published_keys)))
+    if published_keys:
+        logging.info("Published %s: %s" % (instance, ", ".join(published_keys)))
 
-        if skipped_keys and not args.quiet:
-            print("Skipped %s: %s" % (instance, ", ".join(skipped_keys)))
+        if skipped_keys:
+            logging.info("Skipped %s: %s" % (instance, ", ".join(skipped_keys)))
 
 
 def rtl_433_bridge():
     """Run a MQTT Home Assistant auto discovery bridge for rtl_433."""
 
     mqttc = mqtt.Client()
+
+    if args.debug:
+        mqttc.enable_logger()
+
     if args.user is not None:
         mqttc.username_pw_set(args.user, args.password)
     mqttc.on_connect = mqtt_connect
     mqttc.on_disconnect = mqtt_disconnect
     mqttc.on_message = mqtt_message
     mqttc.connect_async(args.host, args.port, 60)
+    logging.debug("MQTT Client: Starting Loop")
     mqttc.loop_start()
 
     while True:
@@ -655,6 +664,7 @@ def run():
 
 
 if __name__ == "__main__":
+    logging.getLogger().setLevel(logging.INFO)
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
                                      description=AP_DESCRIPTION,
@@ -685,11 +695,24 @@ if __name__ == "__main__":
                         help="Interval to republish config topics in seconds (default: %(default)d)")
     args = parser.parse_args()
 
+    if args.debug and args.quiet:
+        logging.critical("Debug and quiet can not be specified at the same time")
+        exit(1)
+
+    if args.debug:
+        logging.info("Enabling debug logging")
+        logging.getLogger().setLevel(logging.DEBUG)
+    if args.quiet:
+        logging.getLogger().setLevel(logging.ERROR)
+
     # allow setting MQTT username and password via environment variables
     if not args.user and 'MQTT_USERNAME' in os.environ:
         args.user = os.environ['MQTT_USERNAME']
 
     if not args.password and 'MQTT_PASSWORD' in os.environ:
         args.password = os.environ['MQTT_PASSWORD']
+
+    if not args.user or not args.password:
+        logging.warning("User or password is not set. Check credentials if subscriptions do not return messages.")
 
     run()
