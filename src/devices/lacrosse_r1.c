@@ -68,16 +68,25 @@ does not have the CRC at byte 8 but a second 24 bit value and the check at byte 
 
 LTV-W1:
 
-    0fb220 0e aaaaaa 07f aaa fe [13 km Good battery]
-    0fb220 02 aaaaaa 0bf aaa ad [19 km Good battery]
-    0fb220 08 aaaaaa 011 aaa 39 [4 km Good battery]
-    0fb220 0a aaaaaa 000 aaa f2 [2 km Good battery]
-    0fb220 06 aaaaaa 000 aaa da [0 km Good battery]
-    0fb220 0e aaaaaa 000 aaa 05 [0 km]
-    0fb220 06 aaaaaa 000 aaa da [0 km]
-    0fb220 0e aaaaaa 000 aaa 05 [0 km]
-    0fb220 0a aaaaaa 000 aaa f2 [0 km]
+    ID:24h BATTLOW:1b STARTUP:1b ?:2b SEQ:3h ?:1b 8h8h8h WIND:12d 12h CRC:8h TRAILER 8h8h8h8h8h8h8h8h
 
+    d2aa2dd4 0fb220 0e aaaaaa 07f aaa fe 00000000000000 [13 km Good battery]
+    d2aa2dd4 0fb220 02 aaaaaa 0bf aaa ad 00000000000000 [19 km Good battery]
+    d2aa2dd4 0fb220 08 aaaaaa 011 aaa 39 00000000000000 [4 km Good battery]
+    d2aa2dd4 0fb220 0a aaaaaa 000 aaa f2 00000000000000 [2 km Good battery]
+    d2aa2dd4 0fb220 06 aaaaaa 000 aaa da 00000000000000 [0 km Good battery]
+    d2aa2dd4 0fb220 0e aaaaaa 000 aaa 05 00000000000000 [0 km]
+    d2aa2dd4 0fb220 06 aaaaaa 000 aaa da 00000000000000 [0 km]
+    d2aa2dd4 0fb220 0e aaaaaa 000 aaa 05 00000000000000 [0 km]
+    d2aa2dd4 0fb220 0a aaaaaa 000 aaa f2 00000000000000 [0 km]
+    d2aa2dd4 0fb220 42 aaaaaa 000 aaa 73 00000000000000 [startup good]
+    d2aa2dd4 0fb220 44 aaaaaa 000 aaa 67 00000000000000 [startup good]
+    d2aa2dd4 0fb220 0a aaaaaa 000 aaa f2 00000000000000 [good]
+    d2aa2dd4 0fb220 c2 aaaaaa 000 aaa cf 00000000000000 [startup weak]
+    d2aa2dd4 0fb220 c4 aaaaaa 000 aaa db 00000000000000 [startup weak]
+    d2aa2dd4 0fb220 c6 aaaaaa 000 aaa 38 00000000000000 [startup weak]
+    d2aa2dd4 0fb220 c8 aaaaaa 000 aaa f3 00000000000000 [weak]
+    d2aa2dd4 0fb220 8a aaaaaa 000 aaa 4e 00000000000000 [weak]
 */
 #include "decoder.h"
 
@@ -146,7 +155,9 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     int id        = (b[0] << 16) | (b[1] << 8) | b[2];
-    int flags     = (b[3] & 0xf1); // masks off seq bits
+    int flags     = (b[3] & 0x31); // masks off knonw bits
+    int batt_low  = (b[3] & 0x80) >> 7;
+    int startup   = (b[3] & 0x40) >> 6;
     int seq       = (b[3] & 0x0e) >> 1;
     int raw_rain1 = (b[4] << 16) | (b[5] << 8) | (b[6]);
     int raw_rain2 = (b[7] << 16) | (b[8] << 8) | (b[9]); // only LTV-R3
@@ -163,9 +174,11 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",                 DATA_COND,   rev == 1,  DATA_STRING, "LaCrosse-R1",
             "model",            "",                 DATA_COND,   rev == 3,  DATA_STRING, "LaCrosse-R3",
             "model",            "",                 DATA_COND,   rev == 9,  DATA_STRING, "LaCrosse-W1",
-            "id",               "Sensor ID",        DATA_FORMAT, "%06x",    DATA_INT, id,
+            "id",               "Sensor ID",        DATA_FORMAT, "%06x",    DATA_INT,    id,
+            "battery_ok",       "Battery level",    DATA_INT,    !batt_low,
+            "startup",          "Startup",          DATA_COND,   startup,   DATA_INT,    startup,
             "seq",              "Sequence",         DATA_INT,    seq,
-            "flags",            "unknown",          DATA_INT,    flags,
+            "flags",            "Unknown",          DATA_COND,   flags,     DATA_INT,    flags,
             "rain_mm",          "Total Rain",       DATA_COND,   rev != 9,  DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rain_mm,
             "rain2_mm",         "Total Rain2",      DATA_COND,   rev == 3,  DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rain2_mm,
             "wind_avg_km_h",    "Wind Speed",       DATA_COND,   rev == 9,  DATA_FORMAT, "%.1f km/h", DATA_DOUBLE, wspeed_kmh,
@@ -180,6 +193,8 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
         "model",
         "id",
+        "battery_ok",
+        "startup",
         "seq",
         "flags",
         "rain_mm",
