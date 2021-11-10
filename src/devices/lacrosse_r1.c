@@ -1,5 +1,5 @@
 /** @file
-    LaCrosse Technology View LTV-R1 Rainfall Gauge.
+    LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1 Wind Sensor.
 
     Copyright (C) 2020 Mike Bruski (AJ9X) <michael.bruski@gmail.com>
 
@@ -9,7 +9,7 @@
     (at your option) any later version.
 */
 /**
-LaCrosse Technology View LTV-R1 Rainfall Gauge.
+LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1 Wind Sensor.
 
 Note: This is an unfinished decoder.  It is able to read rainfall info
       from the sensor (raw_rain1 and raw_rain2) but does not calculate
@@ -66,6 +66,18 @@ does not have the CRC at byte 8 but a second 24 bit value and the check at byte 
     {144} 70f6a2 04 00aa0d 00aa0d  89  00...
     {143} 70f6a2 0c 00aa0d 00aa0d  56  00...
 
+LTV-W1:
+
+    0fb220 0e aaaaaa 07f aaa fe [13 km Good battery]
+    0fb220 02 aaaaaa 0bf aaa ad [19 km Good battery]
+    0fb220 08 aaaaaa 011 aaa 39 [4 km Good battery]
+    0fb220 0a aaaaaa 000 aaa f2 [2 km Good battery]
+    0fb220 06 aaaaaa 000 aaa da [0 km Good battery]
+    0fb220 0e aaaaaa 000 aaa 05 [0 km]
+    0fb220 06 aaaaaa 000 aaa da [0 km]
+    0fb220 0e aaaaaa 000 aaa 05 [0 km]
+    0fb220 0a aaaaaa 000 aaa f2 [0 km]
+
 */
 #include "decoder.h"
 
@@ -111,7 +123,12 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int rev = 1;
     int chk = crc8(b, 11, 0x31, 0x00);
-    if (chk == 0 && b[10] != 0) {
+    if (chk == 0
+            && b[4] == 0xaa && b[5] == 0xaa && b[6] == 0xaa
+            && (b[8] & 0x0f) == 0x0a && b[9] == 0xaa) {
+        rev = 9; // LTV-W1
+    }
+    else if (chk == 0 && b[10] != 0) {
         rev = 3; // LTV-R3
     }
     else {
@@ -133,20 +150,25 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int seq       = (b[3] & 0x0e) >> 1;
     int raw_rain1 = (b[4] << 16) | (b[5] << 8) | (b[6]);
     int raw_rain2 = (b[7] << 16) | (b[8] << 8) | (b[9]); // only LTV-R3
+    int raw_wind  = (b[7] << 4) | (b[8] >> 4); // only LTV-W1
 
     // Seems rain is 0.25mm per tip, not sure what rain2 is
-    float rain_mm = raw_rain1 * 0.25;
-    float rain2_mm = raw_rain2 * 0.25;
+    float rain_mm = raw_rain1 * 0.25f;
+    float rain2_mm = raw_rain2 * 0.25f;
+    // wind speed on LTV-W1
+    float wspeed_kmh = raw_wind * 0.1f;
 
     /* clang-format off */
     data_t *data = data_make(
             "model",            "",                 DATA_COND,   rev == 1,  DATA_STRING, "LaCrosse-R1",
             "model",            "",                 DATA_COND,   rev == 3,  DATA_STRING, "LaCrosse-R3",
+            "model",            "",                 DATA_COND,   rev == 9,  DATA_STRING, "LaCrosse-W1",
             "id",               "Sensor ID",        DATA_FORMAT, "%06x",    DATA_INT, id,
             "seq",              "Sequence",         DATA_INT,    seq,
             "flags",            "unknown",          DATA_INT,    flags,
-            "rain_mm",          "Total Rain",       DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rain_mm,
+            "rain_mm",          "Total Rain",       DATA_COND,   rev != 9,  DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rain_mm,
             "rain2_mm",         "Total Rain2",      DATA_COND,   rev == 3,  DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rain2_mm,
+            "wind_avg_km_h",    "Wind Speed",       DATA_COND,   rev == 9,  DATA_FORMAT, "%.1f km/h", DATA_DOUBLE, wspeed_kmh,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -162,13 +184,14 @@ static char *output_fields[] = {
         "flags",
         "rain_mm",
         "rain2_mm",
+        "wind_avg_km_h",
         "mic",
         NULL,
 };
 
 // flex decoder m=FSK_PCM, s=104, l=104, r=9600
 r_device lacrosse_r1 = {
-        .name        = "LaCrosse Technology View LTV-R1 Rainfall Gauge",
+        .name        = "LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1 Wind Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 104,
         .long_width  = 104,
