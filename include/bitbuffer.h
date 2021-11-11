@@ -161,7 +161,11 @@ static inline uint8_t bitrow_get_byte(uint8_t const *bitrow, unsigned bit_idx)
 /// Clear the content of the bitrow and sets bitrow_num_bits to 0.
 void bitrow_clear(bitrow_t bitrow, uint16_t *bitrow_num_bits);
 
-/// Add the given bit into the bitrow, at the bit_idx position and increments the position upon return
+/// Add the given bit into the bitrow, at the bit_idx position and increments the position upon return.
+/// free_row and max_rows are used when called via bitbuffer_add_bit to allow row spilling.
+void bitrow_add_bit_spillable(bitrow_t bitrow, uint16_t *bitrow_num_bits, int bit, uint16_t *free_row, int max_rows);
+
+/// Add the given bit into the bitrow, at the bit_idx position and increments the position upon return.
 void bitrow_add_bit(bitrow_t bitrow, uint16_t *bitrow_num_bits, int bit);
 
 /// Extract (potentially unaligned) bytes from the bit row. Len is bits.

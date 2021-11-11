@@ -33,7 +33,7 @@ void bitbuffer_add_bit(bitbuffer_t *bits, int bit)
         fprintf(stderr, "%s: Warning: row length limit (%u bits) reached\n", __func__, UINT16_MAX);
     }
 
-    bitrow_add_bit(bits->bb[bits->num_rows - 1], &bits->bits_per_row[bits->num_rows - 1], bit);
+    bitrow_add_bit_spillable(bits->bb[bits->num_rows - 1], &bits->bits_per_row[bits->num_rows - 1], bit, &bits->free_row, BITBUF_ROWS);
 }
 
 /// Set the width of the current (last) row by expanding or truncating as needed.
@@ -397,32 +397,49 @@ void bitrow_clear(bitrow_t bitrow, uint16_t *bitrow_num_bits)
     *bitrow_num_bits = 0;
 }
 
-void bitrow_add_bit(bitrow_t bitrow, uint16_t *bitrow_num_bits, int bit)
+void bitrow_add_bit_spillable(bitrow_t bitrow, uint16_t *bitrow_num_bits, int bit, uint16_t *free_row, int max_rows)
 {
-    uint16_t col_index = bits->bits_per_row[bits->num_rows - 1] / 8;
-    uint16_t bit_index = bits->bits_per_row[bits->num_rows - 1] % 8;
-    if (bits->bits_per_row[bits->num_rows - 1] > 0
-            && bits->bits_per_row[bits->num_rows - 1] % (BITBUF_COLS * 8) == 0) {
+    uint16_t col_index = *bitrow_num_bits / 8;
+    uint16_t bit_index = *bitrow_num_bits % 8;
+    if (*bitrow_num_bits > 0 && *bitrow_num_bits % (BITBUF_COLS * 8) == 0) {
         // spill into next row
         // fprintf(stderr, "%s: row spill [%d] to %d (%d)\n", __func__, bits->num_rows - 1, col_index, bits->free_row);
-        if (bits->free_row == BITBUF_ROWS - 1) {
+        if (*free_row == max_rows - 1) {
             //print_logf(LOG_WARNING, __func__, "Warning: row count limit (%d rows) reached", BITBUF_ROWS);
             fprintf(stderr, "%s: Warning: row count limit (%d rows) reached\n", __func__, BITBUF_ROWS);
         }
-        if (bits->free_row < BITBUF_ROWS) {
-            bits->free_row++;
+        if (*free_row < max_rows) {
+            (*free_row)++;
         }
         else {
             // fprintf(stderr, "%s: Could not add more rows\n", __func__);
             return;
         }
     }
-    else {
-        // fprintf(stderr, "ERROR: bitbuffer:: Could not add more columns\n");    // Some decoders may add many columns...
-    uint8_t *b = bits->bb[bits->num_rows - 1];
+    uint8_t *b = bitrow;
     b[col_index] |= (bit << (7 - bit_index));
-    bits->bits_per_row[bits->num_rows - 1]++;
+    (*bitrow_num_bits)++;
+
+/*
+    // preamble compression
+    if (*bitrow_num_bits == 60 * 8) {
+        uint8_t *b = bitrow;
+        for (int i = 21; i < 60; ++i) {
+            if (b[20] != b[i]) {
+                return;
+            }
+        }
+        // fprintf(stderr, "%s: preamble compression\n", __func__);
+        memset(&b[30], 0, 30);
+        (*bitrow_num_bits) = 30 * 8;
     }
+*/
+}
+
+void bitrow_add_bit(bitrow_t bitrow, uint16_t *bitrow_num_bits, int bit)
+{
+    uint16_t free_row = 0;
+    bitrow_add_bit_spillable(bitrow, bitrow_num_bits, bit, &free_row, 0);
 }
 
 void bitrow_extract_bytes(bitrow_t const bits, unsigned pos, uint8_t *out, unsigned len)
