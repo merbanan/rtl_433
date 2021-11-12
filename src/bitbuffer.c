@@ -391,9 +391,9 @@ int bitbuffer_find_repeated_prefix(bitbuffer_t *bits, unsigned min_repeats, unsi
     return -1;
 }
 
-void bitrow_clear(bitrow_t bitrow, uint16_t *bitrow_num_bits)
+void bitrow_clear(bitrow_t bitrow, uint16_t *bitrow_num_bits, uint16_t bitrow_num_bytes)
 {
-    memset(&bitrow[0], 0, BITBUF_COLS);
+    memset(&bitrow[0], 0, bitrow_num_bytes);
     *bitrow_num_bits = 0;
 }
 

@@ -268,7 +268,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             break;
         }
 
-        bitrow_clear(bits, &bits_num_bits);
+        bitrow_clear(bits, &bits_num_bits, sizeof(bits));
         bits_num_bits = 0;
         bitbuffer_manchester_decode(bitbuffer, row, search_index + 26, bits, &bits_num_bits, EXPECTED_NUM_BITS);
 

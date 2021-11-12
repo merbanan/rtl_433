@@ -222,8 +222,8 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
     for (int j = 1; j < max_pkt_len; j++) {
         unsigned y;
         start_pos += 28;
-        bitrow_clear(i_bits, &i_bits_num_bits);
-        bitrow_clear(d_bits, &d_bits_num_bits);
+        bitrow_clear(i_bits, &i_bits_num_bits, sizeof(i_bits));
+        bitrow_clear(d_bits, &d_bits_num_bits, sizeof(d_bits));
         next_pos = bitbuffer_manchester_decode(bits, row, start_pos, i_bits, &i_bits_num_bits, I_EXPECTED_NUM_BITS);
         next_pos = bitbuffer_manchester_decode(bits, row, next_pos, d_bits, &d_bits_num_bits, D_EXPECTED_NUM_BITS);
 
