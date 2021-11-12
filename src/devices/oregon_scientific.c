@@ -630,7 +630,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         msg_len = bitbuffer->bits_per_row[0] - alt_pos;
     }
 
-    if (msg_len == 0 || msg_len > sizeof(msg) * 8)
+    if (msg_len == 0 || msg_len > (int)sizeof(msg) * 8)
         return DECODE_ABORT_EARLY;
 
     bitbuffer_extract_bytes(bitbuffer, 0, msg_pos, msg, msg_len);
