@@ -568,7 +568,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
     return 0;
 }
 
-// ceil( (335 + 11) / 8 ) 
+// ceil( (335 + 11) / 8 )
 #define EXPECTED_NUM_BYTES 44
 
 static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
