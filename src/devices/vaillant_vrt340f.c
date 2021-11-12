@@ -47,6 +47,9 @@ static int validate_checksum(r_device *decoder, uint8_t *b, int from, int to, in
     return !chk;
 }
 
+#define MIN_NUM_BITS 128
+#define MAX_NUM_BITS MIN_NUM_BITS * 2
+
 static int vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t *b = bitbuffer->bb[0];
@@ -54,12 +57,12 @@ static int vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // TODO: Use repeat signal for error checking / correction!
 
     // each row needs to have at least 128 bits (plus a few more due to bit stuffing)
-    if (bitbuffer->bits_per_row[0] < 128)
+    if (bitbuffer->bits_per_row[0] < MIN_NUM_BITS)
         return DECODE_ABORT_LENGTH;
 
     // The protocol uses bit-stuffing => remove 0 bit after five consecutive 1 bits
     // Also, each byte is represented with least significant bit first -> swap them!
-    bitrow_t bits = {0};
+    uint8_t bits[NUM_BYTES(MAX_NUM_BITS)] = {0};
     uint16_t bits_num_bits = 0;
     int ones = 0;
     for (uint16_t k = 0; k < bitbuffer->bits_per_row[0]; k++) {

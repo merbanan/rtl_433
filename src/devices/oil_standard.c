@@ -40,12 +40,15 @@ Start of frame full preamble is depending on first data bit either
     01 0101 0101 0101 0101 0111 01
     01 0101 0101 0101 0101 1000 10
 */
+
+#define EXPECTED_NUM_BITS 41
+
 static int oil_standard_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    bitrow_t databits = {0};
+    uint8_t databits[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
     uint16_t databits_num_bits = 0;
 
-    bitbuffer_manchester_decode(bitbuffer, row, bitpos, databits, &databits_num_bits, 41);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, databits, &databits_num_bits, EXPECTED_NUM_BITS);
 
     if (databits_num_bits < 32 || databits_num_bits > 40 || (databits[4] & 0xfe) != 0)
         return 0; // TODO: fix calling code to handle negative return values

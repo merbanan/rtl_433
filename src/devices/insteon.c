@@ -111,13 +111,16 @@ static uint8_t gen_crc(uint8_t *dat)
     return (r);
 }
 
+#define I_EXPECTED_NUM_BITS 5
+#define D_EXPECTED_NUM_BITS 8
+
 static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int row, unsigned int start_pos)
 {
     uint8_t results[35]   = {0};
     uint8_t results_len   = 0;
-    bitrow_t i_bits    = {0};
+    uint8_t i_bits[NUM_BYTES(I_EXPECTED_NUM_BITS)] = {0};
     uint16_t i_bits_num_bits = 0;
-    bitrow_t d_bits    = {0};
+    uint8_t d_bits[NUM_BYTES(D_EXPECTED_NUM_BITS)] = {0};
     uint16_t d_bits_num_bits = 0;
     unsigned int next_pos = 0;
     uint8_t i             = 0;
@@ -156,10 +159,10 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
 
     */
 
-    next_pos = bitbuffer_manchester_decode(bits, row, start_pos, i_bits, &i_bits_num_bits, 5);
+    next_pos = bitbuffer_manchester_decode(bits, row, start_pos, i_bits, &i_bits_num_bits, I_EXPECTED_NUM_BITS);
     pkt_i    = reverse8(i_bits[0]);
 
-    next_pos               = bitbuffer_manchester_decode(bits, row, next_pos, d_bits, &d_bits_num_bits, 8);
+    next_pos               = bitbuffer_manchester_decode(bits, row, next_pos, d_bits, &d_bits_num_bits, D_EXPECTED_NUM_BITS);
     pkt_d                  = reverse8(d_bits[0]);
     results[results_len++] = pkt_d;
 
@@ -221,8 +224,8 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
         start_pos += 28;
         bitrow_clear(i_bits, &i_bits_num_bits);
         bitrow_clear(d_bits, &d_bits_num_bits);
-        next_pos = bitbuffer_manchester_decode(bits, row, start_pos, i_bits, &i_bits_num_bits, 5);
-        next_pos = bitbuffer_manchester_decode(bits, row, next_pos, d_bits, &d_bits_num_bits, 8);
+        next_pos = bitbuffer_manchester_decode(bits, row, start_pos, i_bits, &i_bits_num_bits, I_EXPECTED_NUM_BITS);
+        next_pos = bitbuffer_manchester_decode(bits, row, next_pos, d_bits, &d_bits_num_bits, D_EXPECTED_NUM_BITS);
 
         y = (next_pos - start_pos);
         if (y != 26) {

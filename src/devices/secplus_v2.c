@@ -236,6 +236,7 @@ static int secplus_v2_decode_v2_half(r_device *decoder, bitrow_t bits, uint16_t 
 
 static const uint8_t _preamble[] = {0xaa, 0xaa, 0x95, 0x60};
 unsigned _preamble_len           = 28;
+#define EXPECTED_NUM_BITS 80
 
 /**
 Security+ 2.0 rolling code.
@@ -244,16 +245,16 @@ Security+ 2.0 rolling code.
 static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     unsigned search_index = 0;
-    bitrow_t bits = {0};
+    uint8_t bits[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
     uint16_t bits_num_bits = 0;
 
     uint16_t fixed_1_num_bits = 0;
-    bitrow_t fixed_1 = {0};
+    uint8_t fixed_1[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
 
     uint8_t rolling_1[16] = {0};
 
     uint16_t fixed_2_num_bits = 0;
-    bitrow_t fixed_2 = {0};
+    uint8_t fixed_2[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
     uint8_t rolling_2[16] = {0};
 
     for (uint16_t row = 0; row < bitbuffer->num_rows; ++row) {
@@ -269,7 +270,8 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         bitrow_clear(bits, &bits_num_bits);
         bits_num_bits = 0;
-        bitbuffer_manchester_decode(bitbuffer, row, search_index + 26, bits, &bits_num_bits, 80);
+        bitbuffer_manchester_decode(bitbuffer, row, search_index + 26, bits, &bits_num_bits, EXPECTED_NUM_BITS);
+
         search_index += 20;
         if (bits_num_bits < 42) {
             continue; // DECODE_ABORT_LENGTH;

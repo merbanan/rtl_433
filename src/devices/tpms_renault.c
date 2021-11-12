@@ -26,10 +26,12 @@ Packet nibbles:
 
 #include "decoder.h"
 
+#define EXPECTED_NUM_BITS 160
+
 static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
-    bitrow_t packet_bits = {0};
+    uint8_t packet_bits[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
     uint16_t packet_bits_num_bits = 0;
     uint8_t *b;
     int flags;
@@ -40,7 +42,7 @@ static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     double pressure_kpa;
     char code_str[5];
 
-    bitbuffer_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, 160);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, EXPECTED_NUM_BITS);
     // require 72 data bits
     if (packet_bits_num_bits < 72) {
         return 0;

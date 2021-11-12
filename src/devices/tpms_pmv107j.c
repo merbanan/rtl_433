@@ -27,13 +27,15 @@ based on work by Werner Johansson.
 
 #include "decoder.h"
 
+#define EXPECTED_NUM_BITS 70
+
 static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    bitrow_t packet_bits = {0};
+    uint8_t packet_bits[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
     uint16_t packet_bits_num_bits = 0;
     uint8_t b[9];
 
-    unsigned start_pos = bitbuffer_differential_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, 70); // 67 bits expected
+    unsigned start_pos = bitbuffer_differential_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, EXPECTED_NUM_BITS); // 67 bits expected
     if (start_pos - bitpos < 67 * 2) {
         return 0;
     }

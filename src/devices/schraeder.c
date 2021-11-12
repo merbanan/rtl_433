@@ -236,7 +236,7 @@ static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Check and decode the Manchester bits
-    bitrow_t decoded = { 0 };
+    uint8_t decoded[NUM_BYTES(NUM_BITS_DATA)] = { 0 };
     uint16_t decoded_num_bits = 0;
     int ret = bitbuffer_manchester_decode(bitbuffer, 0, NUM_BITS_PREAMBLE,
             decoded, &decoded_num_bits, NUM_BITS_DATA);
@@ -259,7 +259,7 @@ static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int pressure  = ((b[3] & 0x1f) <<  3) | (b[4] >> 5);
     int check     = ((b[4] & 0x18) >> 3);
 
-    decoder_logf_bitbuffer(decoder, 3, __func__, &decoded, "Parity: %d%d Check: %d%d", parity >> 1, parity & 1, check >> 1, check & 1);
+    decoder_logf_bitrow(decoder, 3, __func__, decoded, decoded_num_bits, "Parity: %d%d Check: %d%d", parity >> 1, parity & 1, check >> 1, check & 1);
 
     // reject all-zero data
     if (!flags && !serial_id && !pressure) {

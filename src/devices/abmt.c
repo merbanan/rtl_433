@@ -28,6 +28,7 @@ F - ones
 #include "decoder.h"
 
 #define SYNC_PATTERN_START_OFF 72
+#define EXPECTED_NUM_BITS 48
 
 // Convert two BCD encoded nibbles to an integer
 static unsigned bcd2int(uint8_t bcd)
@@ -39,7 +40,7 @@ static int abmt_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int row;
     float temp_c;
-    bitrow_t packet_bits = {0};
+    uint8_t packet_bits[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
     uint16_t packet_bits_num_bits = 0;
     unsigned int id;
     data_t *data;
@@ -63,7 +64,7 @@ static int abmt_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
 
     // sync bitstream
-    bitbuffer_manchester_decode(bitbuffer, row, bitpos - SYNC_PATTERN_START_OFF, packet_bits, &packet_bits_num_bits, 48);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos - SYNC_PATTERN_START_OFF, packet_bits, &packet_bits_num_bits, EXPECTED_NUM_BITS);
     bitrow_invert(packet_bits, packet_bits_num_bits);
 
     b      = packet_bits;

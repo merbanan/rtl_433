@@ -43,6 +43,7 @@ Raw data:
     rtl_433 -R 0 -X 'n=RainPoint,m=OOK_PCM,s=500,l=500,r=1500'
 
 */
+#define EXPECTED_NUM_BYTES 12
 
 static int rainpoint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -63,18 +64,18 @@ static int rainpoint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     start_pos += sizeof (preamble_pattern) * 8 - 2; // keep initial data bit
 
-    bitrow_t msg = {0};
+    uint8_t msg[EXPECTED_NUM_BYTES] = {0};
     uint16_t msg_num_bits = 0;
-    unsigned len = bitbuffer_manchester_decode(bitbuffer, 0, start_pos, msg, &msg_num_bits, 12 * 8);
-    if (len - start_pos != 12 * 2 * 8) {
+    unsigned len = bitbuffer_manchester_decode(bitbuffer, 0, start_pos, msg, &msg_num_bits, EXPECTED_NUM_BYTES * 8);
+    if (len - start_pos != EXPECTED_NUM_BYTES * 2 * 8) {
         decoder_logf(decoder, 2, __func__, "Manchester decode failed, got %u bits", len - start_pos);
         return DECODE_ABORT_LENGTH;
     }
     bitrow_invert(msg, msg_num_bits);
 
     uint8_t *b = msg;
-    reflect_bytes(b, 12);
-    decoder_log_bitrow(decoder, 2, __func__, b, 12 * 8, "");
+    reflect_bytes(b, EXPECTED_NUM_BYTES);
+    decoder_log_bitrow(decoder, 2, __func__, b, EXPECTED_NUM_BYTES * 8, "");
 
     // Checksum, add nibbles with carry
     int sum = add_nibbles(b, 10);

@@ -59,6 +59,9 @@ The command is fixed to 0xf, which we use as idication that an actual command is
 
 #include "decoder.h"
 
+#define EXPECTED_NUM_BITS 56
+#define MAX_NUM_BITS 80
+
 static int somfy_rts_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     char const *const control_strs[] = {
@@ -145,9 +148,9 @@ static int somfy_rts_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitpos + 56 * 2 > bitbuffer->bits_per_row[decode_row])
         return DECODE_ABORT_LENGTH;
 
-    bitrow_t decoded = { 0 };
+    uint8_t decoded[NUM_BYTES(MAX_NUM_BITS)] = {0};
     uint16_t decoded_num_bits = 0;
-    if (bitbuffer_manchester_decode(bitbuffer, decode_row, bitpos, decoded, &decoded_num_bits, 80) < 56)
+    if (bitbuffer_manchester_decode(bitbuffer, decode_row, bitpos, decoded, &decoded_num_bits, MAX_NUM_BITS) < EXPECTED_NUM_BITS)
         return DECODE_ABORT_LENGTH;
 
     uint8_t *b = decoded;

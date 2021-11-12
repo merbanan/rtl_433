@@ -36,6 +36,7 @@ Sometimes the receiver samplerate has to be at 250ksps to decode properly.
 */
 
 #include "decoder.h"
+#define EXPECTED_NUM_BYTES 11
 
 static int cavius_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -59,14 +60,14 @@ static int cavius_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     bit_offset += sizeof(preamble) * 8; // skip sync
 
-    bitrow_t databits = {0};
+    uint8_t databits[EXPECTED_NUM_BYTES] = {0};
     uint16_t databits_num_bits = 0;
 
-    bitbuffer_manchester_decode(bitbuffer, 0, bit_offset, databits, &databits_num_bits, 11 * 8);
+    bitbuffer_manchester_decode(bitbuffer, 0, bit_offset, databits, &databits_num_bits, EXPECTED_NUM_BYTES * 8);
     bitrow_invert(databits, databits_num_bits);
 
     // we require 11 bytes
-    if (databits_num_bits < 11 * 8) {
+    if (databits_num_bits < EXPECTED_NUM_BYTES * 8) {
         return DECODE_FAIL_SANITY; // manchester_decode fail
     }
 

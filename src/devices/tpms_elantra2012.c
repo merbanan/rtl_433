@@ -49,10 +49,12 @@ Preamble is 111 0001 0101 0101 (0x7155).
 
 #include "decoder.h"
 
+#define EXPECTED_NUM_BITS 64
+
 static int tpms_elantra2012_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
-    bitrow_t packet_bits = {0};
+    uint8_t packet_bits[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
     uint16_t packet_bits_num_bits = 0;
     uint8_t *b;
     uint32_t id;
@@ -63,9 +65,9 @@ static int tpms_elantra2012_decode(r_device *decoder, bitbuffer_t *bitbuffer, un
     int temperature_c;
     int triggered, battery_low, storage;
 
-    bitbuffer_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, 64);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, EXPECTED_NUM_BITS);
     // require 64 data bits
-    if (packet_bits_num_bits < 64) {
+    if (packet_bits_num_bits < EXPECTED_NUM_BITS) {
         return DECODE_ABORT_LENGTH;
     }
     b = packet_bits;

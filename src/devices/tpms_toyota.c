@@ -28,11 +28,13 @@ The pressure seems to be 1/4 PSI offset by -7 PSI (i.e. 28 raw = 0 PSI).
 
 #include "decoder.h"
 
+#define EXPECTED_NUM_BITS 80
+
 static int tpms_toyota_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
     unsigned int start_pos;
-    bitrow_t packet_bits = {0};
+    uint8_t packet_bits[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
     uint16_t packet_bits_num_bits = 0;
     uint8_t *b;
     unsigned id;
@@ -41,7 +43,7 @@ static int tpms_toyota_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
     int crc;
 
     // skip the first 1 bit, i.e. raw "01" to get 72 bits
-    start_pos = bitbuffer_differential_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, 80);
+    start_pos = bitbuffer_differential_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, EXPECTED_NUM_BITS);
     if (start_pos - bitpos < 144) {
         return 0;
     }

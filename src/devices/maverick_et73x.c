@@ -40,10 +40,12 @@ note that the mentioned quaternary conversion is actually manchester code.
 
 #include "decoder.h"
 
+#define EXPECTED_NUM_BITS 104
+
 static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    bitrow_t mc = {0};
+    uint8_t mc[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
     uint16_t mc_num_bits = 0;
 
     if (bitbuffer->num_rows != 1)
@@ -58,7 +60,7 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY; // preamble missing
 
     // decode the inner manchester encoding
-    bitbuffer_manchester_decode(bitbuffer, 0, 0, mc, &mc_num_bits, 104);
+    bitbuffer_manchester_decode(bitbuffer, 0, 0, mc, &mc_num_bits, EXPECTED_NUM_BITS);
 
     // we require 7 bytes 13 nibble rounded up (b[6] highest reference below)
     if (mc_num_bits < 52) {

@@ -25,6 +25,8 @@ since the Nexa uses two different bit lengths for ON and OFF.
 
 #include "decoder.h"
 
+#define EXPECTED_NUM_BITS 80
+
 static int nexa_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
@@ -37,10 +39,10 @@ static int nexa_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[0] != 64 && bitbuffer->bits_per_row[0] != 72)
         return DECODE_ABORT_LENGTH;
 
-    bitrow_t databits = {0};
+    uint8_t databits[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
     uint16_t databits_num_bits = 0;
     // note: not manchester encoded but actually ternary
-    unsigned pos = bitbuffer_manchester_decode(bitbuffer, 0, 0, databits, &databits_num_bits, 80);
+    unsigned pos = bitbuffer_manchester_decode(bitbuffer, 0, 0, databits, &databits_num_bits, EXPECTED_NUM_BITS);
     bitrow_invert(databits, databits_num_bits);
 
     /* Reject codes when Manchester decoding fails */

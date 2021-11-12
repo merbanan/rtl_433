@@ -53,10 +53,12 @@ Packet nibbles:
 
 #include "decoder.h"
 
+#define EXPECTED_NUM_BITS 160
+
 static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
-    bitrow_t packet_bits = {0};
+    uint8_t packet_bits[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
     uint16_t packet_bits_num_bits = 0;
     uint8_t *b;
     unsigned id;
@@ -71,7 +73,7 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     int unknown;
     int unknown_3;
 
-    bitbuffer_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, 160);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, EXPECTED_NUM_BITS);
 
     // require 64 data bits
     if (packet_bits_num_bits < 64) {

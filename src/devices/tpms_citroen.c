@@ -29,10 +29,12 @@ Packet nibbles:
 
 #include "decoder.h"
 
+#define EXPECTED_NUM_BITS 88
+
 static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
-    bitrow_t packet_bits = {0};
+    uint8_t packet_bits[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
     uint16_t packet_bits_num_bits = 0;
     uint8_t *b;
     int state;
@@ -46,10 +48,10 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     int maybe_battery;
     int crc;
 
-    bitbuffer_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, 88);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, EXPECTED_NUM_BITS);
 
     // decoder_logf(decoder, 3, __func__, "bits %d", packet_bits.bits_per_row[0]);
-    if (packet_bits_num_bits < 80) {
+    if (packet_bits_num_bits < EXPECTED_NUM_BITS - 8) {
         return DECODE_FAIL_SANITY; // sanity check failed
     }
 

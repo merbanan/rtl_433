@@ -18,6 +18,8 @@ Tested devices:
 - Sensor Systems Watchman Sonic
 - Kingspan Watchman Sonic Plus
 */
+#define EXPECTED_NUM_BITS 64
+
 static int oil_watchman_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // Start of frame preamble is 111000xx
@@ -36,10 +38,10 @@ static int oil_watchman_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // Skip the matched preamble bits to point to the data
         bitpos += 6;
 
-        bitrow_t databits = {0};
+        uint8_t databits[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
         uint16_t databits_num_bits = 0;
-        bitpos = bitbuffer_manchester_decode(bitbuffer, 0, bitpos, databits, &databits_num_bits, 64);
-        if (databits_num_bits != 64)
+        bitpos = bitbuffer_manchester_decode(bitbuffer, 0, bitpos, databits, &databits_num_bits, EXPECTED_NUM_BITS);
+        if (databits_num_bits != EXPECTED_NUM_BITS)
             continue; // DECODE_ABORT_LENGTH
 
         uint8_t *b = databits;

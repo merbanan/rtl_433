@@ -61,7 +61,7 @@ static unsigned ge_decode(bitbuffer_t *inbuf, unsigned row, unsigned start, bitr
 static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned start_pos)
 {
     data_t *data;
-    bitrow_t packet_bits = {0};
+    uint8_t packet_bits[3] = {0};
     uint16_t packet_bits_num_bits = 0;
 
     ge_decode(bitbuffer, row, start_pos, packet_bits, &packet_bits_num_bits);

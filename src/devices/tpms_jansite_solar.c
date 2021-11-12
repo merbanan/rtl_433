@@ -41,10 +41,12 @@ TODO: identify battery bits
 
 #include "decoder.h"
 
+#define EXPECTED_NUM_BITS 88
+
 static int tpms_jansite_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
-    bitrow_t packet_bits = {0};
+    uint8_t packet_bits[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
     uint16_t packet_bits_num_bits = 0;
     uint8_t *b;
     unsigned id;
@@ -54,10 +56,10 @@ static int tpms_jansite_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer, 
     int temperature;
     char code_str[9 * 2 + 1];
 
-    bitbuffer_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, 88);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, EXPECTED_NUM_BITS);
     bitrow_invert(packet_bits, packet_bits_num_bits);
 
-    if (packet_bits_num_bits < 88) {
+    if (packet_bits_num_bits < EXPECTED_NUM_BITS) {
         return DECODE_FAIL_SANITY;
     }
     b = packet_bits;

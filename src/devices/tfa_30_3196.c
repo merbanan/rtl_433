@@ -47,6 +47,7 @@ Example data:
 */
 
 #include "decoder.h"
+#define EXPECTED_NUM_BITS 48
 
 static int tfa_303196_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -54,7 +55,7 @@ static int tfa_303196_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int row;
     data_t *data;
     uint8_t *b;
-    bitrow_t databits = {0};
+    uint8_t databits[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
     uint16_t databits_num_bits = 0;
 
     row = bitbuffer_find_repeated_row(bitbuffer, 2, 48 * 2 + 12); // expected are 4 rows, require 2
@@ -67,9 +68,9 @@ static int tfa_303196_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[row] - start_pos < 48 * 2)
         return DECODE_ABORT_LENGTH; // short buffer or preamble not found
 
-    bitbuffer_manchester_decode(bitbuffer, row, start_pos, databits, &databits_num_bits, 48);
+    bitbuffer_manchester_decode(bitbuffer, row, start_pos, databits, &databits_num_bits, EXPECTED_NUM_BITS);
 
-    if (databits_num_bits < 48)
+    if (databits_num_bits < EXPECTED_NUM_BITS)
         return DECODE_ABORT_LENGTH; // payload malformed MC
 
     b = databits;
