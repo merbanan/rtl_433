@@ -47,7 +47,7 @@ Nibble content:
 
 #include "decoder.h"
 
-#define NUM_BYTES 10    // Output contains 21 nibbles, but skip first nibble 0xE, as it is not part of CRC and to get byte alignment
+#define DANFOSS_NUM_BYTES 10    // Output contains 21 nibbles, but skip first nibble 0xE, as it is not part of CRC and to get byte alignment
 static const uint8_t HEADER[] = { 0x36, 0x5c }; // Encoded prefix. Full prefix is 3 nibbles => 18 bits (but checking 16 is ok)
 
 // Mapping from 6 bits to 4 bits
@@ -78,7 +78,7 @@ static uint8_t danfoss_decode_nibble(uint8_t byte)
 
 static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t bytes[NUM_BYTES]; // Decoded bytes with two 4 bit nibbles in each
+    uint8_t bytes[DANFOSS_NUM_BYTES]; // Decoded bytes with two 4 bit nibbles in each
     data_t *data;
 
     // Validate package
@@ -93,7 +93,7 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         bit_offset += 6; // Skip first nibble 0xE to get byte alignment and remove from CRC calculation
 
         // Decode input 6 bit nibbles to output 4 bit nibbles (packed in bytes)
-        for (unsigned n = 0; n < NUM_BYTES; ++n) {
+        for (unsigned n = 0; n < DANFOSS_NUM_BYTES; ++n) {
             uint8_t nibble_h = danfoss_decode_nibble(bitrow_get_byte(bitbuffer->bb[0], n * 12 + bit_offset) >> 2);
             uint8_t nibble_l = danfoss_decode_nibble(bitrow_get_byte(bitbuffer->bb[0], n * 12 + bit_offset + 6) >> 2);
             if (nibble_h > 0xF || nibble_l > 0xF) {
@@ -104,10 +104,10 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         // Output raw decoded data for debug
-        decoder_log_bitrow(decoder, 1, __func__, bytes, NUM_BYTES * 8, "Danfoss: Raw 6b/4b decoded");
+        decoder_log_bitrow(decoder, 1, __func__, bytes, DANFOSS_NUM_BYTES * 8, "Danfoss: Raw 6b/4b decoded");
 
         // Validate Prefix and CRC
-        uint16_t crc_calc = crc16(bytes, NUM_BYTES-2, 0x1021, 0x0000);
+        uint16_t crc_calc = crc16(bytes, DANFOSS_NUM_BYTES-2, 0x1021, 0x0000);
         if (bytes[0] != 0x02        // Somewhat redundant to header search, but checks last bits
          || crc_calc != (((uint16_t)bytes[8] << 8) | bytes[9])
         ) {
