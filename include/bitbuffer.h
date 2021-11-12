@@ -15,7 +15,7 @@
 #include <stdint.h>
 
 // NOTE: Wireless mbus protocol needs at least ((256+16*2+3)*12)/8 => 437 bytes
-//       but it will not be included if RTL_433_REDUCE_STACK_USE is defined
+//       which fits even if RTL_433_REDUCE_STACK_USE is defined because of row spilling
 #ifdef RTL_433_REDUCE_STACK_USE
 #define BITBUF_COLS 40 // Number of bytes in a column
 #define BITBUF_ROWS 25
