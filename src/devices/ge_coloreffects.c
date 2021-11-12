@@ -29,7 +29,7 @@ Decodes the following encoding scheme:
 - 10 = 0
 - 1100 = 1
 */
-static unsigned ge_decode(bitbuffer_t *inbuf, unsigned row, unsigned start, bitrow_t outrow, uint16_t *outrow_num_bits)
+static unsigned ge_decode(bitbuffer_t *inbuf, unsigned row, unsigned start, uint8_t *outrow, uint16_t *outrow_num_bits)
 {
     uint8_t *bits = inbuf->bb[row];
     unsigned int len = inbuf->bits_per_row[row];

@@ -259,11 +259,18 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         for (i = 0; i < bitbuffer->num_rows; i++) {
             // TODO: refactor to bitbuffer_decode_dm_row()
             unsigned len = bitbuffer->bits_per_row[i];
-            bitbuffer_t tmp = {0};
-            bitbuffer_differential_manchester_decode(bitbuffer, i, 0, &tmp, len);
-            len = tmp.bits_per_row[0];
-            memcpy(bitbuffer->bb[i], tmp.bb[0], (len + 7) / 8); // safe to write over: can only be shorter
-            bitbuffer->bits_per_row[i] = len;
+            uint8_t* tmp = malloc(len / 8);
+            if (!tmp) {
+                WARN_MALLOC("flex_callback()");
+            }
+            else {
+                uint16_t tmp_num_bits = 0;
+                bitbuffer_differential_manchester_decode(bitbuffer, i, 0, tmp, &tmp_num_bits, len);
+                len = tmp_num_bits;
+                memcpy(bitbuffer->bb[i], tmp, (len + 7) / 8); // safe to write over: can only be shorter
+                bitbuffer->bits_per_row[i] = len;
+                free(tmp);
+            }
         }
     }
 

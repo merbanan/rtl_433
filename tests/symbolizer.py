@@ -222,10 +222,12 @@ def process_source(path, name):
 
             # static int foo_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             # static int foo_callback(r_device *decoder, bitbuffer_t *bitbuffer, ...
+            # static int foo_callback(r_device *decoder, uint8_t const *bits, uint16_t bits_num_bits)
+            # static int foo_callback(r_device *decoder, uint8_t const *bits, uint16_t bits_num_bits, ...)
             # static int
             # foo_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             m = re.match(
-                r'(?:\s*static\s*int\s*)?([a-zA-Z0-9_]+)\(\s*r_device\s+\*\s*[a-z]+\s*,\s*bitbuffer_t\s+\*\s*[a-z]+', line)
+                r'(?:\s*static\s*int\s*)?([a-zA-Z0-9_]+)\(\s*r_device\s+\*\s*[a-z]+\s*,\s*(?:bitbuffer_t\s+\*|uint8_t\s+const\s+\*[a-z]+,\s*uint16_t)\s*[a-z]+', line)
             if m:
                 # print(m.group(1))
                 fName = m.group(1)

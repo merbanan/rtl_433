@@ -49,24 +49,27 @@ Example data:
 
 #include "decoder.h"
 
+#define EXPECTED_BITS 76
+
 static int tpms_truck_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    bitbuffer_t packet_bits = {0};
-    bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 76);
+    uint8_t packet_bits[NUM_BYTES(EXPECTED_BITS)] = {0};
+    uint16_t packet_bits_num_bits = 0;
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, EXPECTED_BITS);
 
-    if (packet_bits.bits_per_row[row] < 76) {
+    if (packet_bits_num_bits < EXPECTED_BITS) {
         return 0; // DECODE_FAIL_SANITY;
     }
 
     uint8_t b[9] = {0};
-    bitbuffer_extract_bytes(&packet_bits, 0, 4, b, 72);
+    bitrow_extract_bytes(packet_bits, 4, b, 72);
 
     int chk = xor_bytes(b, 9);
     if (chk != 0) {
         return 0; // DECODE_FAIL_MIC;
     }
 
-    int state       = packet_bits.bb[0][0] >> 4; // fixed 0xa? could be sync
+    int state       = packet_bits[0] >> 4; // fixed 0xa? could be sync
     unsigned id     = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
     int wheel       = b[4];
     int flags       = b[5] >> 4;

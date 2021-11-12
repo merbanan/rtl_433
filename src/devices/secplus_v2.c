@@ -68,7 +68,7 @@ Once the above has been run twice the two are merged
 
 */
 
-static int secplus_v2_decode_v2_half(r_device *decoder, bitrow_t bits, uint16_t bits_num_bits, uint8_t roll_array[], bitrow_t fixed_p, uint16_t* fixed_p_count)
+static int secplus_v2_decode_v2_half(r_device *decoder, uint8_t const *bits, uint16_t bits_num_bits, uint8_t roll_array[], uint8_t *fixed_p, uint16_t* fixed_p_count)
 {
     uint8_t invert = 0;
     uint8_t order  = 0;

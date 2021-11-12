@@ -266,7 +266,7 @@ static uint8_t next(const uint8_t *bb, unsigned *ipos, unsigned num_bytes)
     return r;
 }
 
-static int parse_msg(bitrow_t bmsg, uint16_t bmsg_num_bits, message_t *msg)
+static int parse_msg(uint8_t const *bmsg, uint16_t bmsg_num_bits, message_t *msg)
 {
     if (bmsg_num_bits < 8)
         return DECODE_ABORT_LENGTH;

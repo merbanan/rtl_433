@@ -391,13 +391,13 @@ int bitbuffer_find_repeated_prefix(bitbuffer_t *bits, unsigned min_repeats, unsi
     return -1;
 }
 
-void bitrow_clear(bitrow_t bitrow, uint16_t *bitrow_num_bits, uint16_t bitrow_num_bytes)
+void bitrow_clear(uint8_t *bitrow, uint16_t *bitrow_num_bits, uint16_t bitrow_num_bytes)
 {
     memset(&bitrow[0], 0, bitrow_num_bytes);
     *bitrow_num_bits = 0;
 }
 
-void bitrow_add_bit_spillable(bitrow_t bitrow, uint16_t *bitrow_num_bits, int bit, uint16_t *free_row, int max_rows)
+void bitrow_add_bit_spillable(uint8_t *bitrow, uint16_t *bitrow_num_bits, int bit, uint16_t *free_row, int max_rows)
 {
     uint16_t col_index = *bitrow_num_bits / 8;
     uint16_t bit_index = *bitrow_num_bits % 8;
@@ -436,13 +436,13 @@ void bitrow_add_bit_spillable(bitrow_t bitrow, uint16_t *bitrow_num_bits, int bi
 */
 }
 
-void bitrow_add_bit(bitrow_t bitrow, uint16_t *bitrow_num_bits, int bit)
+void bitrow_add_bit(uint8_t *bitrow, uint16_t *bitrow_num_bits, int bit)
 {
     uint16_t free_row = 0;
     bitrow_add_bit_spillable(bitrow, bitrow_num_bits, bit, &free_row, 0);
 }
 
-void bitrow_extract_bytes(bitrow_t const bits, unsigned pos, uint8_t *out, unsigned len)
+void bitrow_extract_bytes(uint8_t const *const bits, unsigned pos, uint8_t *out, unsigned len)
 {
     if (len == 0)
         return;
@@ -468,7 +468,7 @@ void bitrow_extract_bytes(bitrow_t const bits, unsigned pos, uint8_t *out, unsig
         out[(len - 1) / 8] &= 0xff00 >> (len & 7); // mask off bottom bits
 }
 
-void bitrow_invert(bitrow_t bitrow, uint16_t bitrow_num_bits)
+void bitrow_invert(uint8_t *bitrow, uint16_t bitrow_num_bits)
 {
     if (bitrow_num_bits > 0) {
         const unsigned last_col  = (bitrow_num_bits - 1) / 8;
@@ -480,8 +480,8 @@ void bitrow_invert(bitrow_t bitrow, uint16_t bitrow_num_bits)
     }
 }
 
-unsigned bitrow_manchester_decode(bitrow_t const inrow, uint16_t inrow_num_bits, unsigned start,
-        bitrow_t outrow, uint16_t *outrow_num_bits, unsigned max)
+unsigned bitrow_manchester_decode(uint8_t const *inrow, uint16_t inrow_num_bits, unsigned start,
+        uint8_t *outrow, uint16_t *outrow_num_bits, unsigned max)
 {
     uint8_t const *bits     = inrow;
     unsigned int len  = inrow_num_bits;
@@ -505,10 +505,10 @@ unsigned bitrow_manchester_decode(bitrow_t const inrow, uint16_t inrow_num_bits,
     return ipos;
 }
 
-unsigned bitrow_differential_manchester_decode(bitrow_t const inrow, uint16_t inrow_num_bits, unsigned start,
-        bitrow_t outrow, uint16_t *outrow_num_bits, unsigned max)
+unsigned bitrow_differential_manchester_decode(uint8_t const *inrow, uint16_t inrow_num_bits, unsigned start,
+        uint8_t *outrow, uint16_t *outrow_num_bits, unsigned max)
 {
-    uint8_t *bits     = inrow;
+    uint8_t const *bits = inrow;
     unsigned int len  = inrow_num_bits;
     unsigned int ipos = start;
     uint8_t bit1, bit2 = 0;

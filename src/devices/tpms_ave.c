@@ -30,10 +30,13 @@ Packet nibbles:
 
 #include "decoder.h"
 
+#define EXPECTED_BITS 160
+
 static int tpms_ave_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
-    bitbuffer_t packet_bits = {0};
+    uint8_t packet_bits[NUM_BYTES(EXPECTED_BITS)] = {0};
+    uint16_t packet_bits_num_bits = 0;
     uint8_t *b;
     unsigned id;
     char id_str[9 + 1];
@@ -47,14 +50,14 @@ static int tpms_ave_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned r
     double ratio;
     double offset;
 
-    bitbuffer_differential_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
+    bitbuffer_differential_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, EXPECTED_BITS);
 
-    if (packet_bits.bits_per_row[row] < 64) {
+    if (packet_bits_num_bits < 64) {
         return DECODE_ABORT_LENGTH; // too short to be a whole packet
     }
-    decoder_log_bitbuffer(decoder, 1, __func__, &packet_bits, "");
+    decoder_log_bitrow(decoder, 1, __func__, packet_bits, packet_bits_num_bits, "");
 
-    b = packet_bits.bb[row];
+    b = &packet_bits[0];
 
     id            = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
     pressure_raw  = b[4];
