@@ -75,7 +75,7 @@ static int vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
-    b = &bits[0];
+    b = bits;
     uint16_t bitcount = bits_num_bits;
 
     // Change to least-significant-bit last (protocol uses least-significant-bit first)
