@@ -231,8 +231,10 @@ int atoi_time(char const *str, char const *error_hint)
                 break;
             }
             // intentional fallthrough
-#if (defined(__GNUC__) || defined(__clang__)) && __has_attribute(fallthrough)
+#if defined(__GNUC__) || defined(__clang__)
+#if __has_attribute(fallthrough)
             __attribute__((fallthrough));
+#endif
 #endif
         case ':':
             ++colons;
