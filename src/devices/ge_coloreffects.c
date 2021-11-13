@@ -33,7 +33,7 @@ static inline int bit(const uint8_t *bytes, unsigned bit)
  * 10 = 0
  *  1100 = 1
  */
-unsigned ge_decode(bitbuffer_t *inbuf, unsigned row, unsigned start, bitbuffer_t *outbuf)
+static unsigned ge_decode(bitbuffer_t *inbuf, unsigned row, unsigned start, bitbuffer_t *outbuf)
 {
     uint8_t *bits = inbuf->bb[row];
     unsigned int len = inbuf->bits_per_row[row];

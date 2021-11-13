@@ -20,7 +20,7 @@ static inline int bit(const uint8_t *bytes, unsigned bit)
 }
 
 /// extract all mask bits skipping unmasked bits of a number up to 32/64 bits
-unsigned long compact_number(uint8_t *data, unsigned bit_offset, unsigned long mask)
+static unsigned long compact_number(uint8_t *data, unsigned bit_offset, unsigned long mask)
 {
     // clz (fls) is not worth the trouble
     int top_bit = 0;
@@ -38,7 +38,7 @@ unsigned long compact_number(uint8_t *data, unsigned bit_offset, unsigned long m
 }
 
 /// extract a number up to 32/64 bits from given offset with given bit length
-unsigned long extract_number(uint8_t *data, unsigned bit_offset, unsigned bit_count)
+static unsigned long extract_number(uint8_t *data, unsigned bit_offset, unsigned bit_count)
 {
     unsigned pos = bit_offset / 8;            // the first byte we need
     unsigned shl = bit_offset - pos * 8;      // shift left we need to align
@@ -429,7 +429,7 @@ static unsigned parse_bits(const char *code, uint8_t *bitrow)
     return len;
 }
 
-const char *parse_map(const char *arg, struct flex_get *getter)
+static const char *parse_map(const char *arg, struct flex_get *getter)
 {
     const char *c = arg;
     int i = 0;
@@ -510,6 +510,9 @@ static void parse_getter(const char *arg, struct flex_get *getter)
                 getter->bit_offset, getter->bit_count, getter->mask, getter->name);
     */
 }
+
+// NOTE: this is declared in rtl_433.c also.
+r_device *flex_create_device(char *spec);
 
 r_device *flex_create_device(char *spec)
 {

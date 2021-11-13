@@ -211,11 +211,9 @@ add_library(r_433 STATIC
     devices/x10_sec.c
 )
 
-if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
-    set_source_files_properties(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format -Wno-format-security")
-endif()
-if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
-    set_source_files_properties(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format-pedantic -Wno-format-security -Wno-large-by-value-copy")
+if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+    # untouched upstream code, disable all warnings
+    set_source_files_properties(mongoose.c PROPERTIES COMPILE_FLAGS "-w")
 endif()
 
 add_executable(rtl_433 rtl_433.c)

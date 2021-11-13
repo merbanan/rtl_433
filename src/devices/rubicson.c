@@ -32,6 +32,8 @@ The sensor can be bought at Kjell&Co
 #include "decoder.h"
 
 // NOTE: this is used in nexus.c and solight_te44.c
+int rubicson_crc_check(uint8_t *b);
+
 int rubicson_crc_check(uint8_t *b)
 {
     uint8_t tmp[5];

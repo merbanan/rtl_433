@@ -70,19 +70,19 @@ void check_write_file_info(file_info_t *info)
 char const *file_info_string(file_info_t *info)
 {
     switch (info->format) {
-    case CU8_IQ:    return "CU8 IQ (2ch uint8)"; break;
-    case S16_AM:    return "S16 AM (1ch int16)"; break;
-    case S16_FM:    return "S16 FM (1ch int16)"; break;
-    case CF32_IQ:   return "CF32 IQ (2ch float32)"; break;
-    case CS16_IQ:   return "CS16 IQ (2ch int16)"; break;
-    case F32_AM:    return "F32 AM (1ch float32)"; break;
-    case F32_FM:    return "F32 FM (1ch float32)"; break;
-    case F32_I:     return "F32 I (1ch float32)"; break;
-    case F32_Q:     return "F32 Q (1ch float32)"; break;
-    case VCD_LOGIC: return "VCD logic (text)"; break;
-    case U8_LOGIC:  return "U8 logic (1ch uint8)"; break;
-    case PULSE_OOK: return "OOK pulse data (text)"; break;
-    default:        return "Unknown";  break;
+    case CU8_IQ:    return "CU8 IQ (2ch uint8)";
+    case S16_AM:    return "S16 AM (1ch int16)";
+    case S16_FM:    return "S16 FM (1ch int16)";
+    case CF32_IQ:   return "CF32 IQ (2ch float32)";
+    case CS16_IQ:   return "CS16 IQ (2ch int16)";
+    case F32_AM:    return "F32 AM (1ch float32)";
+    case F32_FM:    return "F32 FM (1ch float32)";
+    case F32_I:     return "F32 I (1ch float32)";
+    case F32_Q:     return "F32 Q (1ch float32)";
+    case VCD_LOGIC: return "VCD logic (text)";
+    case U8_LOGIC:  return "U8 logic (1ch uint8)";
+    case PULSE_OOK: return "OOK pulse data (text)";
+    default:        return "Unknown";
     }
 }
 
@@ -270,7 +270,7 @@ int parse_file_info(char const *filename, file_info_t *info)
 
 // Unit testing
 #ifdef _TEST
-void assert_file_type(int check, char const *spec)
+static void assert_file_type(int check, char const *spec)
 {
     file_info_t info = {0};
     int ret = parse_file_info(spec, &info);
@@ -281,7 +281,7 @@ void assert_file_type(int check, char const *spec)
     }
 }
 
-void assert_str_equal(char const *a, char const *b)
+static void assert_str_equal(char const *a, char const *b)
 {
     if (a != b && (!a || !b || strcmp(a, b))) {
         fprintf(stderr, "\nTEST failed: \"%s\" == \"%s\"\n", a, b);

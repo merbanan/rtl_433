@@ -76,6 +76,7 @@ int win_alarm(unsigned seconds)
 /*
  * Just so this compilation unit isn't empty.
  */
+int win_alarm(unsigned seconds);
 int win_alarm(unsigned seconds)
 {
    (void) seconds;

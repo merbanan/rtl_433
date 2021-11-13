@@ -68,7 +68,7 @@ Once the above has been run twice the two are merged
 
 */
 
-int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_p, int verbose)
+static int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_p, int verbose)
 {
     uint8_t invert = 0;
     uint8_t order  = 0;

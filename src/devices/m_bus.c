@@ -86,7 +86,7 @@ static int m_bus_crc_valid(r_device *decoder, const uint8_t *bytes, unsigned crc
 
 
 // Decode two bytes into three letters of five bits
-static void m_bus_manuf_decode(uint16_t m_field, char* three_letter_code)
+static void m_bus_manuf_decode(uint16_t m_field, char *three_letter_code)
 {
     three_letter_code[0] = (m_field >> 10 & 0x1F) + 0x40;
     three_letter_code[1] = (m_field >> 5 & 0x1F) + 0x40;
@@ -96,7 +96,7 @@ static void m_bus_manuf_decode(uint16_t m_field, char* three_letter_code)
 
 
 // Decode device type string
-const char* m_bus_device_type_str(uint8_t devType)
+static char const *m_bus_device_type_str(uint8_t devType)
 {
     char *str = "";
     switch(devType) {
@@ -179,14 +179,14 @@ typedef struct {
 static float humidity_factor[2] = { 0.1, 1 };
 
 
-static char* oms_hum[4][4] = {
+static char *oms_hum[4][4] = {
 {"humidity","average_humidity_1h","average_humidity_24h","error_04", },
 {"maximum_humidity_1h","maximum_humidity_24h","error_13","error_14",},
 {"minimum_humidity_1h","minimum_humidity_24h","error_23","error_24",},
 {"error_31","error_32","error_33","error_34",}
 };
 
-static char* oms_hum_el[4][4] = {
+static char *oms_hum_el[4][4] = {
 {"Humidity","Average Humidity 1h","Average Humidity 24h","Error [0][4]", },
 {"Maximum Humidity 1h","Maximum Humidity 24h","Error [1][3]","Error [1][4]",},
 {"Minimum Humidity 1h","Minimum Humidity 24h","Error [2][3]","Error [2][4]",},
@@ -282,7 +282,7 @@ static char *unit_names[][3] = {
 static double pow10_table[8] = { 0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000 };
 
 
-static data_t *append_str(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, const char* extra, const char* value)
+static data_t *append_str(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, char const *extra, char const *value)
 {
     char key[100] = {0};
     char pretty[100] = {0};
@@ -301,9 +301,9 @@ static data_t *append_str(data_t *data, enum UnitType unit_type, uint8_t value_t
 
 }
 
-static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, const char* extra, int64_t val, int exp)
+static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, char const *extra, int64_t val, int exp)
 {
-    const char *prefix = "";
+    char const *prefix = "";
     char buffer_val[256] = {0};
 
     if (exp < -6) {
@@ -337,7 +337,7 @@ static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_t
     return append_str(data, unit_type, value_type, sn, extra, buffer_val);
 }
 
-size_t m_bus_tm_decode(const uint8_t *data, size_t data_size, char *output, size_t output_size)
+static size_t m_bus_tm_decode(const uint8_t *data, size_t data_size, char *output, size_t output_size)
 {
     size_t out_len = 0;
 
@@ -657,6 +657,7 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
                 default:
                     break;
             }
+            break;
         default:
             break;
     }
@@ -863,7 +864,7 @@ static int m_bus_decode_format_b(r_device *decoder, const m_bus_data_t *in, m_bu
     return 1;
 }
 
-static int m_bus_output_data(r_device *decoder, bitbuffer_t *bitbuffer, const m_bus_data_t *out, const m_bus_block1_t *block1, const char *mode)
+static int m_bus_output_data(r_device *decoder, bitbuffer_t *bitbuffer, const m_bus_data_t *out, const m_bus_block1_t *block1, char const *mode)
 {
     (void)bitbuffer; // note: to match the common decoder function signature
 

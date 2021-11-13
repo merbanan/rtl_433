@@ -404,10 +404,10 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
             }
 
             fprintf(stderr, "view at https://triq.org/pdv/#");
-            for (unsigned i = 0; i < hexstr_cnt; ++i) {
-                if (i > 0)
+            for (unsigned j = 0; j < hexstr_cnt; ++j) {
+                if (j > 0)
                     fprintf(stderr, "+");
-                hexstr_print(&hexstrs[i], stderr);
+                hexstr_print(&hexstrs[j], stderr);
             }
             fprintf(stderr, "\n");
             if (hexstr_cnt >= HEXSTR_MAX_COUNT) {

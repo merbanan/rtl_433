@@ -72,6 +72,13 @@ if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES 
     ADD_DEFINITIONS(-Wsign-compare)
     ADD_DEFINITIONS(-std=c99)
     ADD_DEFINITIONS(-pedantic)
+    ADD_DEFINITIONS(-Wshadow)
+    ADD_DEFINITIONS(-Wmissing-prototypes)
+    ADD_DEFINITIONS(-Wimplicit-fallthrough)
+    #ADD_DEFINITIONS(-Wfloat-equal)
+    #ADD_DEFINITIONS(-Wbad-function-cast)
+    #ADD_DEFINITIONS(-Wdocumentation)
+
     # for strdup, setenv, use either
     #ADD_DEFINITIONS(-D_POSIX_C_SOURCE=200809) # does not work with uClibc
     ADD_DEFINITIONS(-D_GNU_SOURCE)
