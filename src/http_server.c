@@ -909,7 +909,7 @@ static void handle_cmd_rpc(struct mg_connection *nc, struct http_message *hm)
     }
     char *endptr = NULL;
     rpc.val = strtol(val, &endptr, 10);
-    fprintf(stderr, "POST Got %s, arg %s, val %s (%d)\n", cmd, arg, val, rpc.val);
+    fprintf(stderr, "POST Got %s, arg %s, val %s (%u)\n", cmd, arg, val, rpc.val);
 
     rpc_exec(&rpc, ctx->cfg);
 }

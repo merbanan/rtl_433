@@ -29,7 +29,7 @@ void bitbuffer_add_bit(bitbuffer_t *bits, int bit)
         return;
     }
     if (bits->bits_per_row[bits->num_rows - 1] == UINT16_MAX - 1) {
-        fprintf(stderr, "%s: Warning: row length limit (%d bits) reached\n", __func__, UINT16_MAX);
+        fprintf(stderr, "%s: Warning: row length limit (%u bits) reached\n", __func__, UINT16_MAX);
     }
 
     uint16_t col_index = bits->bits_per_row[bits->num_rows - 1] / 8;
@@ -330,7 +330,7 @@ static void print_bitbuffer(const bitbuffer_t *bits, int always_binary)
             highest_indent = indent_this_row;
     }
 
-    fprintf(stderr, "bitbuffer:: Number of rows: %d \n", bits->num_rows);
+    fprintf(stderr, "bitbuffer:: Number of rows: %u \n", bits->num_rows);
     for (row = 0; row < bits->num_rows; ++row) {
         fprintf(stderr, "[%02u] ", row);
         print_bitrow(bits->bb[row], bits->bits_per_row[row], highest_indent, always_binary);
