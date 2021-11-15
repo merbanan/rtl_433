@@ -646,7 +646,7 @@ static int acurite_5n1_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t
     int wind_speed_raw = ((bb[3] & 0x1F) << 3)| ((bb[4] & 0x70) >> 4);
     float wind_speed_kph = 0;
     if (wind_speed_raw > 0) {
-        wind_speed_kph = wind_speed_raw * 0.8278 + 1.0;
+        wind_speed_kph = wind_speed_raw * 0.8278f + 1.0f;
     }
 
     if (message_type == ACURITE_MSGTYPE_5N1_WINDSPEED_WINDDIR_RAINFALL) {
@@ -861,7 +861,7 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
         if ((bb[4] & 0x30) != 0)
             exception++;
 
-        tempf = (temp_raw - 400) * 0.1;
+        tempf = (temp_raw - 400) * 0.1f;
         if (tempf < -40.0 || tempf > 158.0) {
             decoder_logf(decoder, 1, __func__, "Atlas 0x%04X Ch %s, invalid temperature: %0.1f F",
                          sensor_id, channel_str, tempf);

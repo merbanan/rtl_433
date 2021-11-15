@@ -73,7 +73,7 @@ static int tpms_eezrv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     char id_str[7];
     sprintf(id_str, "%02x%02x%02x", b[0], b[1], b[2]);
-    float pressure_kPa = b[3] * 2.5;
+    float pressure_kPa = b[3] * 2.5f;
     int temperature_C  = b[4] - 50;
     int flags          = b[5];
     char flags_str[3];

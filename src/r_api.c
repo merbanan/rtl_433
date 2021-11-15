@@ -176,9 +176,9 @@ void r_init_cfg(r_cfg_t *cfg)
     if (!cfg->demod)
         FATAL_CALLOC("r_init_cfg()");
 
-    cfg->demod->level_limit = 0.0;
-    cfg->demod->min_level = -12.1442;
-    cfg->demod->min_snr = 9.0;
+    cfg->demod->level_limit = 0.0f;
+    cfg->demod->min_level = -12.1442f;
+    cfg->demod->min_snr = 9.0f;
     // Pulse detect will only print LOG_NOTICE and lower.
     cfg->demod->detect_verbosity = LOG_WARNING;
 
@@ -326,8 +326,8 @@ void calc_rssi_snr(r_cfg_t *cfg, pulse_data_t *pulse_data)
     float ook_high_estimate = pulse_data->ook_high_estimate > 0 ? pulse_data->ook_high_estimate : 1;
     float ook_low_estimate = pulse_data->ook_low_estimate > 0 ? pulse_data->ook_low_estimate : 1;
     float asnr   = ook_high_estimate / ook_low_estimate;
-    float foffs1 = (float)pulse_data->fsk_f1_est / INT16_MAX * cfg->samp_rate / 2.0;
-    float foffs2 = (float)pulse_data->fsk_f2_est / INT16_MAX * cfg->samp_rate / 2.0;
+    float foffs1 = (float)pulse_data->fsk_f1_est / INT16_MAX * cfg->samp_rate / 2.0f;
+    float foffs2 = (float)pulse_data->fsk_f2_est / INT16_MAX * cfg->samp_rate / 2.0f;
     pulse_data->freq1_hz = (foffs1 + cfg->center_frequency);
     pulse_data->freq2_hz = (foffs2 + cfg->center_frequency);
     pulse_data->centerfreq_hz = cfg->center_frequency;
@@ -353,7 +353,7 @@ void calc_rssi_snr(r_cfg_t *cfg, pulse_data_t *pulse_data)
 char *time_pos_str(r_cfg_t *cfg, unsigned samples_ago, char *buf)
 {
     if (cfg->report_time == REPORT_TIME_SAMPLES) {
-        double s_per_sample = 1.0 / cfg->samp_rate;
+        double s_per_sample = 1.0f / cfg->samp_rate;
         return sample_pos_str(cfg->demod->sample_file_pos - samples_ago * s_per_sample, buf);
     }
     else {

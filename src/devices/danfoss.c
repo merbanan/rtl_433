@@ -126,8 +126,8 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         default: str_sw = "ERROR";
         }
 
-        float temp_meas = (float)bytes[5] + (float)bytes[4] / 256.0;
-        float temp_setp = (float)bytes[7] + (float)bytes[6] / 256.0;
+        float temp_meas = (float)bytes[5] + (float)bytes[4] / 256.0f;
+        float temp_setp = (float)bytes[7] + (float)bytes[6] / 256.0f;
 
         /* clang-format off */
         data = data_make(
