@@ -672,7 +672,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         bb = bitbuffer->bb[brow];
 
         if (decoder->verbose > 1)
-            fprintf(stderr, "%s: row %d bits %d, bytes %d \n", __func__, brow, bitbuffer->bits_per_row[brow], browlen);
+            fprintf(stderr, "%s: row %u bits %u, bytes %d \n", __func__, brow, bitbuffer->bits_per_row[brow], browlen);
 
         if ((bitbuffer->bits_per_row[brow] < ACURITE_TXR_BITLEN ||
                 bitbuffer->bits_per_row[brow] > ACURITE_5N1_BITLEN + 1)
@@ -1014,7 +1014,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     for (uint16_t brow = 0; brow < bitbuffer->num_rows; ++brow) {
 
         if (decoder->verbose > 1)
-            fprintf(stderr, "%s: row %d bits %d, bytes %d \n", __func__, brow, bitbuffer->bits_per_row[brow], browlen);
+            fprintf(stderr, "%s: row %u bits %u, bytes %d \n", __func__, brow, bitbuffer->bits_per_row[brow], browlen);
 
         if (bitbuffer->bits_per_row[brow] < 39 ||
             bitbuffer->bits_per_row[brow] > 43 ) {

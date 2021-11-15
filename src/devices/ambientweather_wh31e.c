@@ -192,7 +192,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (start_pos == bitbuffer->bits_per_row[row])
             continue; // DECODE_ABORT_EARLY
         if (decoder->verbose)
-            fprintf(stderr, "%s: WH31E/WH31B/WH40 detected, buffer is %d bits length\n", __func__, bitbuffer->bits_per_row[row]);
+            fprintf(stderr, "%s: WH31E/WH31B/WH40 detected, buffer is %u bits length\n", __func__, bitbuffer->bits_per_row[row]);
 
         // remove preamble, keep whole payload
         bitbuffer_extract_bytes(bitbuffer, row, start_pos + 24, b, 18 * 8);

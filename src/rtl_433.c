@@ -1411,7 +1411,7 @@ int main(int argc, char **argv) {
             }
             abuf_printf(&p, " ]");
         }
-        fprintf(stderr, "Registered %zu out of %d device decoding protocols%s\n",
+        fprintf(stderr, "Registered %zu out of %u device decoding protocols%s\n",
                 demod->r_devs.len, cfg->num_r_devices, decoders_str);
     }
 
