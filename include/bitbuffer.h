@@ -92,7 +92,7 @@ void bitrow_debug(uint8_t const *bitrow, unsigned bit_len);
 /// @param size the size of @p str
 ///
 /// @return the number of characters printed (not including the trailing `\0`).
-int bitrow_snprint(uint8_t const *bitrow, unsigned bit_len, char *str, unsigned size);
+int bitrow_snprint(uint8_t const *bitrow, unsigned bit_len, char *str, size_t size);
 
 /// Parse a string into a bitbuffer.
 ///
