@@ -256,8 +256,8 @@ void pulse_analyzer(pulse_data_t *data, int package_type, r_device* device)
             data->rssi_db, data->snr_db, data->noise_db);
     fprintf(stderr, "Frequency offsets [F1, F2]:  %6i, %6i\t(%+.1f kHz, %+.1f kHz)\n",
             data->fsk_f1_est, data->fsk_f2_est,
-            (float)data->fsk_f1_est / INT16_MAX * data->sample_rate / 2.0 / 1000.0,
-            (float)data->fsk_f2_est / INT16_MAX * data->sample_rate / 2.0 / 1000.0);
+            ((float)data->fsk_f1_est / INT16_MAX) * (data->sample_rate / 2.0 / 1000.0),
+            ((float)data->fsk_f2_est / INT16_MAX) * (data->sample_rate / 2.0 / 1000.0));
 
     fprintf(stderr, "Guessing modulation: ");
     device->name    = "Analyzer Device",
