@@ -13,6 +13,7 @@
 #define INCLUDE_BITBUFFER_H_
 
 #include <stdint.h>
+#include <stddef.h>
 
 // NOTE: Wireless mbus protocol needs at least ((256+16*2+3)*12)/8 => 437 bytes
 //       which fits even if RTL_433_REDUCE_STACK_USE is defined because of row spilling
