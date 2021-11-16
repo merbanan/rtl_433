@@ -680,9 +680,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     if (cfg->hop_now && !cfg->exit_async) {
         cfg->hop_now = 0;
         time(&cfg->hop_start_time);
-        cfg->frequency_index  = (cfg->frequency_index + 1) % cfg->frequencies;
-        cfg->center_frequency = cfg->frequency[cfg->frequency_index];
-        sdr_set_center_freq(cfg->dev, cfg->center_frequency, 0);
+        cfg->frequency_index = (cfg->frequency_index + 1) % cfg->frequencies;
+        sdr_set_center_freq(cfg->dev, cfg->frequency[cfg->frequency_index], 0);
     }
 }
 
@@ -1266,16 +1265,19 @@ static void sdr_handler(sdr_event_t *ev, void *ctx)
 
     data_t *data = NULL;
     if (ev->ev & SDR_EV_RATE) {
+        cfg->samp_rate = ev->sample_rate;
         data = data_append(data,
                 "sample_rate", "", DATA_INT, ev->sample_rate,
                 NULL);
     }
     if (ev->ev & SDR_EV_CORR) {
+        cfg->ppm_error = ev->freq_correction;
         data = data_append(data,
                 "freq_correction", "", DATA_INT, ev->freq_correction,
                 NULL);
     }
     if (ev->ev & SDR_EV_FREQ) {
+        cfg->center_frequency = ev->center_frequency;
         data = data_append(data,
                 "center_frequency", "", DATA_INT, ev->center_frequency,
                 "frequencies", "", DATA_COND, cfg->frequencies > 1, DATA_ARRAY, data_array(cfg->frequencies, DATA_INT, cfg->frequency),
@@ -1332,6 +1334,15 @@ int main(int argc, char **argv) {
     }
 
     parse_conf_args(cfg, argc, argv);
+    // apply hop defaults and set first frequency
+    if (cfg->frequencies == 0) {
+        cfg->frequency[0] = DEFAULT_FREQUENCY;
+        cfg->frequencies  = 1;
+    }
+    cfg->center_frequency = cfg->frequency[cfg->frequency_index];
+    if (cfg->frequencies > 1 && cfg->hop_times == 0) {
+        cfg->hop_time[cfg->hop_times++] = DEFAULT_HOP_TIME;
+    }
 
     // add all remaining positional arguments as input files
     while (argc > optind) {
@@ -1722,13 +1733,6 @@ int main(int argc, char **argv) {
         fprintf(stderr, "WARNING: Failed to reset buffers.\n");
     r = sdr_activate(cfg->dev);
 
-    if (cfg->frequencies == 0) {
-        cfg->frequency[0] = DEFAULT_FREQUENCY;
-        cfg->frequencies = 1;
-    }
-    if (cfg->frequencies > 1 && cfg->hop_times == 0) {
-        cfg->hop_time[cfg->hop_times++] = DEFAULT_HOP_TIME;
-    }
     if (cfg->verbosity) {
         fprintf(stderr, "Reading samples in async mode...\n");
     }
@@ -1737,7 +1741,6 @@ int main(int argc, char **argv) {
         cfg->stop_time += cfg->duration;
     }
 
-    cfg->center_frequency = cfg->frequency[cfg->frequency_index];
     r = sdr_set_center_freq(cfg->dev, cfg->center_frequency, 1); // always verbose
 
         time(&cfg->hop_start_time);

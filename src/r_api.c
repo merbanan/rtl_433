@@ -104,18 +104,19 @@ void set_center_freq(r_cfg_t *cfg, uint32_t center_freq)
     cfg->frequencies = 1;
     cfg->frequency_index = 0;
     cfg->frequency[0] = center_freq;
+    // cfg->center_frequency = center_freq; // actually applied in the sdr event
     sdr_set_center_freq(cfg->dev, center_freq, 0);
 }
 
 void set_freq_correction(r_cfg_t *cfg, int freq_correction)
 {
-    cfg->ppm_error = freq_correction;
+    // cfg->ppm_error = freq_correction; // actually applied in the sdr event
     sdr_set_freq_correction(cfg->dev, freq_correction, 0);
 }
 
 void set_sample_rate(r_cfg_t *cfg, uint32_t sample_rate)
 {
-    cfg->samp_rate = sample_rate;
+    // cfg->samp_rate = sample_rate; // actually applied in the sdr event
     sdr_set_sample_rate(cfg->dev, sample_rate, 0);
 }
 
