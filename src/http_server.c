@@ -315,7 +315,7 @@ static data_t *protocols_data(r_cfg_t *cfg)
     }
 
     data_t *data = data_make(
-            "protocols", "", DATA_ARRAY, data_array(devs.len, DATA_DATA, devs.elems),
+            "protocols", "", DATA_ARRAY, data_array((int)devs.len, DATA_DATA, devs.elems),
             NULL);
     list_free_elems(&devs, NULL);
     return data;
@@ -1091,7 +1091,7 @@ static void http_broadcast_send(struct http_server_context *ctx, char const *msg
             mg_set_timer(nc, mg_time() + KEEP_ALIVE); // reset keep alive timer
         }
         else if (cctx && !cctx->is_chunked) {
-            mg_send(nc, msg, len);
+            mg_send(nc, msg, (int)len);
             mg_send(nc, "\r\n", 2);
             mg_set_timer(nc, mg_time() + KEEP_ALIVE); // reset keep alive timer
         }

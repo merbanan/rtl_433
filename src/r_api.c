@@ -476,7 +476,7 @@ char const **determine_csv_fields(r_cfg_t *cfg, char const *const *well_known, i
     convert_csv_fields(cfg, (char const **)field_list.elems);
 
     if (num_fields)
-        *num_fields = field_list.len;
+        *num_fields = (int)field_list.len;
     return (char const **)field_list.elems;
 }
 
@@ -963,7 +963,7 @@ data_t *create_report_data(r_cfg_t *cfg, int level)
             "enabled",          "", DATA_INT, r_devs->len,
             "since",            "", DATA_STRING, since_str,
             "frames",           "", DATA_DATA, data,
-            "stats",            "", DATA_ARRAY, data_array(dev_data_list.len, DATA_DATA, dev_data_list.elems),
+            "stats",            "", DATA_ARRAY, data_array((int)dev_data_list.len, DATA_DATA, dev_data_list.elems),
             NULL);
 
     list_free_elems(&dev_data_list, NULL);

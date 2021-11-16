@@ -63,7 +63,7 @@ static void gpsd_client_event(struct mg_connection *nc, int ev, void *ev_data)
             // Success
             fprintf(stderr, "GPSd Connected...\n");
             if (ctx->init_str && *ctx->init_str) {
-                mg_send(nc, ctx->init_str, strlen(ctx->init_str));
+                mg_send(nc, ctx->init_str, (int)strlen(ctx->init_str));
             }
         }
         else {
