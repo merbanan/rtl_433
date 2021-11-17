@@ -77,6 +77,7 @@ static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *kw9015b_csv_output_fields[] = {
         "model",
         "id",
+        "battery_ok",
         "temperature_C",
         "rain", // TODO: remove this
         "rain_mm",
