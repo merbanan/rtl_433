@@ -242,7 +242,7 @@ static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model", "", DATA_STRING, "New Template",
+            "model", "", DATA_STRING, "New-Template",
             "id",    "", DATA_INT,    sensor_id,
             "data",  "", DATA_INT,    value,
             "mic",   "", DATA_STRING, "CHECKSUM", // CRC, CHECKSUM, or PARITY

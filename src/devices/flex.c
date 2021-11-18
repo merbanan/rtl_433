@@ -242,7 +242,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model", "", DATA_STRING, params->name, // "User-defined model"
+                "model", "", DATA_STRING, params->name, // "User-defined"
                 "count", "", DATA_INT, match_count,
                 "num_rows", "", DATA_INT, bitbuffer->num_rows,
                 "len", "", DATA_INT, bitbuffer->bits_per_row[r],
@@ -260,7 +260,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (params->count_only) {
         /* clang-format off */
         data = data_make(
-                "model", "", DATA_STRING, params->name, // "User-defined model"
+                "model", "", DATA_STRING, params->name, // "User-defined"
                 "count", "", DATA_INT, match_count,
                 NULL);
         /* clang-format on */
@@ -291,7 +291,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     /* clang-format off */
     data = data_make(
-            "model", "", DATA_STRING, params->name, // "User-defined model"
+            "model", "", DATA_STRING, params->name, // "User-defined"
             "count", "", DATA_INT, match_count,
             "num_rows", "", DATA_INT, bitbuffer->num_rows,
             "rows", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_DATA, row_data),

@@ -128,7 +128,7 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, "Inkbird ITH-20R",
+            "model",            "",             DATA_STRING, "Inkbird-ITH20R",
             "id",               "",             DATA_INT,    sensor_id,
             "battery",          "Battery",      DATA_INT,    battery,
             "sensor_num",       "",             DATA_INT,    sensor_num,
