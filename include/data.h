@@ -128,9 +128,15 @@ data_t *data_retain(data_t *data);
 /** Releases a structure object if retain is zero, decrement retain otherwise. */
 void data_free(data_t *data);
 
+typedef enum data_output_type {
+    DATA_OUTPUT_OTHER,  /**< Regular data output */
+    DATA_OUTPUT_API,    /**< API-type data output  */
+} data_output_type_t;
+
 struct data_output;
 
 typedef struct data_output {
+    data_output_type_t output_type;
     void (*print_data)(struct data_output *output, data_t *data, char const *format);
     void (*print_array)(struct data_output *output, data_array_t *data, char const *format);
     void (*print_string)(struct data_output *output, const char *data, char const *format);

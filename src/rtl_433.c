@@ -398,6 +398,15 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         fprintf(stderr, "Current %s level %.1f dB, estimated noise %.1f dB\n",
                 noise_only ? "noise" : "signal", avg_db, demod->noise_level);
     }
+    if (last_frame_sec != demod->now.tv_sec) {
+        /* clang-format off */
+        data_t *data = data_make(
+                "level_dB", "", DATA_FORMAT, "%.1f dB", DATA_DOUBLE, avg_db,
+                "noise_dB", "", DATA_FORMAT, "%.1f dB", DATA_DOUBLE, demod->noise_level,
+                NULL);
+        /* clang-format on */
+        event_occurred_handler_api(cfg, data);
+    }
 
     if (process_frame)
     baseband_low_pass_filter(demod->buf.temp, demod->am_buf, n_samples, &demod->lowpass_filter_state);
@@ -474,6 +483,14 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                     data_t *data = pulse_data_print_data(&demod->pulse_data);
                     event_occurred_handler(cfg, data);
                 }
+                if (p_events == 0 && demod->pulse_data.num_pulses > 1) {
+                    data_t *data = pulse_data_print_undecoded(&demod->pulse_data);
+                    if (cfg->report_undecoded) {
+                        event_occurred_handler(cfg, data);
+                    } else {
+                        event_occurred_handler_api(cfg, data);
+                    }
+                }
                 if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
                     pulse_analyzer(&demod->pulse_data, package_type);
                 }
@@ -497,6 +514,14 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 if (cfg->raw_mode == 1 || (cfg->raw_mode == 2 && p_events == 0) || (cfg->raw_mode == 3 && p_events > 0)) {
                     data_t *data = pulse_data_print_data(&demod->fsk_pulse_data);
                     event_occurred_handler(cfg, data);
+                }
+                if (p_events == 0 && demod->fsk_pulse_data.num_pulses > 1) {
+                    data_t *data = pulse_data_print_undecoded(&demod->fsk_pulse_data);
+                    if (cfg->report_undecoded) {
+                        event_occurred_handler(cfg, data);
+                    } else {
+                        event_occurred_handler_api(cfg, data);
+                    }
                 }
                 if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0))) {
                     pulse_analyzer(&demod->fsk_pulse_data, package_type);
@@ -996,6 +1021,8 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         else if (!strcasecmp(arg, "noutc"))
             cfg->report_time_utc = 0;
 
+        else if (!strcasecmp(arg, "undecoded"))
+            cfg->report_undecoded = 1;
         else if (!strcasecmp(arg, "protocol"))
             cfg->report_protocol = 1;
         else if (!strcasecmp(arg, "noprotocol"))

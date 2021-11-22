@@ -1241,6 +1241,7 @@ struct data_output *data_output_http_create(struct mg_mgr *mgr, char const *host
         return NULL;
     }
 
+    http->output.output_type  = DATA_OUTPUT_API;
     http->output.print_data   = print_http_data;
     http->output.output_free  = data_output_http_free;
 

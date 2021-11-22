@@ -76,6 +76,7 @@ typedef struct r_cfg {
     int verbosity; ///< 0=normal, 1=verbose, 2=verbose decoders, 3=debug decoders, 4=trace decoding.
     int verbose_bits;
     conversion_mode_t conversion_mode;
+    int report_undecoded;
     int report_meta;
     int report_noise;
     int report_protocol;

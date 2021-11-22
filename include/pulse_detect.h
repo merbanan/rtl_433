@@ -106,6 +106,9 @@ void pulse_data_dump(FILE *file, pulse_data_t *data);
 /// Print the content of a pulse_data_t structure as OOK json.
 data_t *pulse_data_print_data(pulse_data_t *data);
 
+/// Print the content of a pulse_data_t structure as "Undecoded" model.
+data_t *pulse_data_print_undecoded(pulse_data_t *data);
+
 pulse_detect_t *pulse_detect_create(void);
 
 void pulse_detect_free(pulse_detect_t *pulse_detect);

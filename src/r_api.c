@@ -566,6 +566,27 @@ void event_occurred_handler(r_cfg_t *cfg, data_t *data)
     data_free(data);
 }
 
+/** Pass the data structure to only the http handlers. Frees data afterwards. */
+void event_occurred_handler_api(r_cfg_t *cfg, data_t *data)
+{
+    // prepend "time" if requested
+    if (cfg->report_time != REPORT_TIME_OFF) {
+        char time_str[LOCAL_TIME_BUFLEN];
+        time_pos_str(cfg, 0, time_str);
+        data = data_prepend(data,
+                "time", "", DATA_STRING, time_str,
+                NULL);
+    }
+
+    for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
+        data_output_t *output = cfg->output_handler.elems[i];
+        if (output->output_type == DATA_OUTPUT_API) {
+            data_output_print(output, data);
+        }
+    }
+    data_free(data);
+}
+
 /** Pass the data structure to all output handlers. Frees data afterwards. */
 void data_acquired_handler(r_device *r_dev, data_t *data)
 {

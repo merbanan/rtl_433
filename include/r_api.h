@@ -59,6 +59,8 @@ int run_fsk_demods(struct list *r_devs, struct pulse_data *fsk_pulse_data);
 
 void event_occurred_handler(struct r_cfg *cfg, struct data *data);
 
+void event_occurred_handler_api(struct r_cfg *cfg, struct data *data);
+
 void data_acquired_handler(struct r_device *r_dev, struct data *data);
 
 struct data *create_report_data(struct r_cfg *cfg, int level);
