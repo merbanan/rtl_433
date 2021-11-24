@@ -172,7 +172,7 @@ mappings = {
             "device_class": "battery",
             "name": "Battery",
             "unit_of_measurement": "%",
-            "value_template": "{{ float(value|int) * 99 + 1 }}",
+            "value_template": "{{ float(value) * 99 + 1 }}",
             "state_class": "measurement"
         }
     },
