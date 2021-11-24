@@ -323,10 +323,11 @@ void calc_rssi_snr(r_cfg_t *cfg, pulse_data_t *pulse_data)
         pulse_data->noise_db = 10.0f * log10f(ook_low_estimate) - 42.1442f; // 10*log10f(16384.0f)
         pulse_data->snr_db   = 10.0f * log10f(asnr);
     }
-    else { // magnitude (CS16)
+    else { // magnitude (CU8, CS16)
         pulse_data->range_db = 84.2884f; // 20*log10f(16384.0f)
-        // actually 12 bit is 20*log10f(2048.0f) = 66.2266f,
-        // actually 16 bit is 20*log10f(32768.0f) = 90.3090f,
+        // lowest (scaled x128) reading at  8 bit is -20*log10(128) = -42.1442 (eff. -36 dB)
+        // lowest (scaled div2) reading at 12 bit is -20*log10(1024) = -60.2060 (eff. -54 dB)
+        // lowest (scaled div2) reading at 16 bit is -20*log10(16384) = -84.2884 (eff. -78 dB)
         pulse_data->rssi_db  = 20.0f * log10f(ook_high_estimate) - 84.2884f; // 20*log10f(16384.0f)
         pulse_data->noise_db = 20.0f * log10f(ook_low_estimate) - 84.2884f; // 20*log10f(16384.0f)
         pulse_data->snr_db   = 20.0f * log10f(asnr);
