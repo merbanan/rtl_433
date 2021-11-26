@@ -38,7 +38,7 @@
 
    This decoder decodes generic LaCrosse IT+ frames and filters TX34 ones.
    Could be merged with existing TX29 decoder... or not.
- */
+*/
 
 #include "decoder.h"
 
@@ -51,9 +51,6 @@
 
 static int lacrosse_tx34_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-  //     fprintf(stderr,"lacrosse_tx34 callback was triggered :-) \n");
-  //     bitbuffer_print(bitbuffer);
-  //     return 1;
   data_t *data;
   int row;
   uint8_t payload[5];
