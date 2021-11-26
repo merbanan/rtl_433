@@ -123,6 +123,7 @@ static int lacrosse_tx34_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 		       "battery_ok", "Battery", DATA_INT, 1 - weak_bat,
 		       "newbattery", "New battery", DATA_INT, new_bat,
 		       "rain_mm", "Total rain", DATA_DOUBLE, rain_mm,
+		       "rain_raw", "Raw rain", DATA_INT, rain_tick,
 		       "mic", "Integrity", DATA_STRING, "CRC",
 		       NULL);
       /* clang-format on */
@@ -139,6 +140,7 @@ static char *output_fields[] =
     "battery_ok",
     "newbattery",
     "rain_mm",
+    "rain_raw",
     "mic",
     NULL
   };
