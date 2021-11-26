@@ -36,7 +36,7 @@
    | CCCCCCCCC | CCCCCCCC: CRC8 on previous 4 bytes
    -------------
 
-   This decoder decodes generic LaCrosse IT+ frames and filter TX34 ones.
+   This decoder decodes generic LaCrosse IT+ frames and filters TX34 ones.
    Could be merged with existing TX29 decoder... or not.
  */
 
