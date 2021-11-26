@@ -30,10 +30,10 @@
    -------------
    | MMMM DDDD | MMMM: sensor model (5 for rain gauge, 9 for thermo/hydro...)
    | DDNW 0000 | DDDDDD: device ID (0 to 63, random at startup)
-   | GGGGGGGGG | N: new battery (on for about 420 minutes after startup)
-   | GGGGGGGGG | W: weak battery (on when battery voltage < 2 volts)
+   | GGGG GGGG | N: new battery (on for about 420 minutes after startup)
+   | GGGG GGGG | W: weak battery (on when battery voltage < 2 volts)
    ------------- GGGGGGGGGGGGGGGG: gauge "ticks" (about 0.222 mm/m² each)
-   | CCCCCCCCC | CCCCCCCC: CRC8 on previous 4 bytes
+   | CCCC CCCC | CCCCCCCC: CRC8 on previous 4 bytes
    -------------
 
    This decoder decodes generic LaCrosse IT+ frames and filters TX34 ones.
@@ -63,7 +63,7 @@ static int lacrosse_tx34_callback(r_device *decoder, bitbuffer_t *bitbuffer)
   float rain_mm;
   int events;
 
-  // 22 bits preamble ()shifted left): 101010b 0x2DD4
+  // 22 bits preamble (shifted left): 101010b 0x2DD4
   static const uint8_t preamble[] = { 0xA8, 0xB7, 0x50 };
 
   // process rows
