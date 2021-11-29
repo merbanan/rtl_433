@@ -75,11 +75,11 @@ static int lacrosse_tx34_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         start_pos = bitbuffer_search(bitbuffer, row, 0, preamble,
             LACROSSE_TX34_PREAMBLE_BITS);
         if (start_pos == bitbuffer->bits_per_row[row])
-        continue; // preamble not found
+            continue; // preamble not found
         payload_bits = bitbuffer->bits_per_row[row] - start_pos -
         LACROSSE_TX34_PREAMBLE_BITS;
         if (payload_bits < LACROSSE_TX34_PAYLOAD_BITS)
-        continue; // probably truncated frame
+            continue; // probably truncated frame
         if (decoder->verbose)
         fprintf(stderr,
             "LaCrosse IT frame detected (%d bits payload)\n",
@@ -96,10 +96,11 @@ static int lacrosse_tx34_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (r_crc != c_crc)
         {
             // bad CRC: reject IT frame
-            fprintf(stderr,
-                "LaCrosse IT frame bad CRC: calculated %02x, "
-                "received %02x\n",
-                c_crc, r_crc);
+            if (decoder->verbose)
+                fprintf(stderr,
+                    "LaCrosse IT frame bad CRC: calculated %02x, "
+                    "received %02x\n",
+                    c_crc, r_crc);
             continue;
         }
 
