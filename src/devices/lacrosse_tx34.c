@@ -124,7 +124,7 @@ static int lacrosse_tx34_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "rain_mm",    "Total rain",  DATA_DOUBLE, rain_mm,
             "rain_raw",   "Raw rain",    DATA_INT,    rain_tick,
             "mic",        "Integrity",   DATA_STRING, "CRC",
-            NULL,
+            NULL
         );
         /* clang-format on */
         decoder_output_data(decoder, data);
