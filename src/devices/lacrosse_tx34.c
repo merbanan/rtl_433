@@ -1,8 +1,8 @@
 /** @file
     LaCrosse TX34-IT rain gauge decoder.
-    
+
     Copyright (C) 2021 Reynald Poittevin
-    
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -13,17 +13,19 @@
    LaCrosse TX34-IT rain gauge.
 
    Can be bought here: https://en.lacrossetechnology.fr/P-20-A1-WSTX34IT.html
-   
-   The whole LaCrosse "IT+" family share the same specifications:
+
+   This sensor sends a frame every 6.5 s.
+
+   The LaCrosse "IT+" family share some specifications:
    - Frequency: 868.3 MHz
-   - Modulation FSK/PCM
-   - Bit duration: 58 µs
+   - Modulation: FSK/PCM
+   - Bit duration: 58 Âµs
    - Frame size: 64 bits (including preamble)
 
    Frame format:
 
    -------------
-   | 1010 1010 | preamble (up  to the first two bits may be lost)
+   | 1010 1010 | preamble (up to the first two bits may be lost)
    -------------
    | 0010 1101 | 0x2DD4: LaCrosse IT frame identifier
    | 1101 0100 |
@@ -32,7 +34,7 @@
    | DDNW 0000 | DDDDDD: device ID (0 to 63, random at startup)
    | GGGG GGGG | N: new battery (on for about 420 minutes after startup)
    | GGGG GGGG | W: weak battery (on when battery voltage < 2 volts)
-   ------------- GGGGGGGGGGGGGGGG: gauge "ticks" (about 0.222 mm/m² each)
+   ------------- GGGGGGGGGGGGGGGG: bucket tipping counter
    | CCCC CCCC | CCCCCCCC: CRC8 on previous 4 bytes
    -------------
 
