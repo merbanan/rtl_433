@@ -63,44 +63,42 @@ static int lacrosse_tx34_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int events;
 
     // 22 bits preamble (shifted left): 101010b 0x2DD4
-    static const uint8_t preamble[] = { 0xA8, 0xB7, 0x50 };
+    static const uint8_t preamble[] = {0xA8, 0xB7, 0x50};
 
     // process rows
     events = 0;
-    for (row = 0; row <= bitbuffer->num_rows; ++row)
-    {
+    for (row = 0; row <= bitbuffer->num_rows; ++row) {
         unsigned int start_pos, payload_bits;
 
         // search for preamble
         start_pos = bitbuffer_search(bitbuffer, row, 0, preamble,
-            LACROSSE_TX34_PREAMBLE_BITS);
+                LACROSSE_TX34_PREAMBLE_BITS);
         if (start_pos == bitbuffer->bits_per_row[row])
             continue; // preamble not found
         payload_bits = bitbuffer->bits_per_row[row] - start_pos -
-        LACROSSE_TX34_PREAMBLE_BITS;
+                       LACROSSE_TX34_PREAMBLE_BITS;
         if (payload_bits < LACROSSE_TX34_PAYLOAD_BITS)
             continue; // probably truncated frame
         if (decoder->verbose)
-        fprintf(stderr,
-            "LaCrosse IT frame detected (%d bits payload)\n",
-            payload_bits);
+            fprintf(stderr,
+                    "LaCrosse IT frame detected (%d bits payload)\n",
+                    payload_bits);
 
         // get payload
         bitbuffer_extract_bytes(bitbuffer, row,
-            start_pos + LACROSSE_TX34_PREAMBLE_BITS,
-            payload, LACROSSE_TX34_PAYLOAD_BITS);
+                start_pos + LACROSSE_TX34_PREAMBLE_BITS,
+                payload, LACROSSE_TX34_PAYLOAD_BITS);
         // verify CRC
         r_crc = payload[4];
         c_crc = crc8(&payload[0], 4,
-            LACROSSE_TX34_CRC_POLY, LACROSSE_TX34_CRC_INIT);
-        if (r_crc != c_crc)
-        {
+                LACROSSE_TX34_CRC_POLY, LACROSSE_TX34_CRC_INIT);
+        if (r_crc != c_crc) {
             // bad CRC: reject IT frame
             if (decoder->verbose)
                 fprintf(stderr,
-                    "LaCrosse IT frame bad CRC: calculated %02x, "
-                    "received %02x\n",
-                    c_crc, r_crc);
+                        "LaCrosse IT frame bad CRC: calculated %02x, "
+                        "received %02x\n",
+                        c_crc, r_crc);
             continue;
         }
 
@@ -112,10 +110,10 @@ static int lacrosse_tx34_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         // decode payload
         sensor_id = ((payload[0] & 0x0F) << 2) + (payload[1] >> 6);
-        new_bat = (payload[1] & 0x20) >> 5;
-        weak_bat = (payload[1] && 0x10) >> 4;
-        rain_tick = (payload[2] << 8 ) + payload[3];
-        rain_mm = rain_tick * LACROSSE_TX34_RAIN_FACTOR;
+        new_bat   = (payload[1] & 0x20) >> 5;
+        weak_bat  = (payload[1] && 0x10) >> 4;
+        rain_tick = (payload[2] << 8) + payload[3];
+        rain_mm   = rain_tick * LACROSSE_TX34_RAIN_FACTOR;
         /* clang-format off */
         data = data_make(
             "model",      "",            DATA_STRING, "LaCrosse TX34-IT",
@@ -134,26 +132,24 @@ static int lacrosse_tx34_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events;
 }
 
-static char *output_fields[] =
-{
-    "model",
-    "id",
-    "battery_ok",
-    "newbattery",
-    "rain_mm",
-    "rain_raw",
-    "mic",
-    NULL,
+static char *output_fields[] = {
+        "model",
+        "id",
+        "battery_ok",
+        "newbattery",
+        "rain_mm",
+        "rain_raw",
+        "mic",
+        NULL,
 };
 
-r_device lacrosse_tx34 =
-{
-    .name           = "LaCrosse TX34-IT rain gauge",
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = 58,
-    .long_width     = 58,
-    .reset_limit    = 4000,
-    .decode_fn      = &lacrosse_tx34_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+r_device lacrosse_tx34 = {
+        .name        = "LaCrosse TX34-IT rain gauge",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 58,
+        .long_width  = 58,
+        .reset_limit = 4000,
+        .decode_fn   = &lacrosse_tx34_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };
