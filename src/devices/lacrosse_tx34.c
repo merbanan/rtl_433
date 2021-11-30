@@ -105,8 +105,6 @@ static int lacrosse_tx34_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // check model
         if (((payload[0] & 0xF0) >> 4) != LACROSSE_TX34_ITMODEL)
             continue; // not a rain gauge...
-        if (decoder->verbose)
-            fprintf(stderr, "LaCrosse TX34-IT detected\n");
 
         // decode payload
         sensor_id = ((payload[0] & 0x0F) << 2) + (payload[1] >> 6);
