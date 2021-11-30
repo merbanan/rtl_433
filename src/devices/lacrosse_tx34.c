@@ -113,7 +113,7 @@ static int lacrosse_tx34_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         rain_mm   = rain_tick * LACROSSE_TX34_RAIN_FACTOR;
         /* clang-format off */
         data = data_make(
-            "model",      "",            DATA_STRING, "LaCrosse TX34-IT",
+            "model",      "",            DATA_STRING, "LaCrosse-TX34IT",
             "id",         "",            DATA_INT,    sensor_id,
             "battery_ok", "Battery",     DATA_INT,    1 - weak_bat,
             "newbattery", "New battery", DATA_INT,    new_bat,
