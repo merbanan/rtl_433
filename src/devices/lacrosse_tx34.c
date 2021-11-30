@@ -68,15 +68,14 @@ static int lacrosse_tx34_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // process rows
     events = 0;
     for (row = 0; row <= bitbuffer->num_rows; ++row) {
-        unsigned int start_pos, payload_bits;
 
         // search for preamble
-        start_pos = bitbuffer_search(bitbuffer, row, 0, preamble,
+        unsigned start_pos = bitbuffer_search(bitbuffer, row, 0, preamble,
                 LACROSSE_TX34_PREAMBLE_BITS);
         if (start_pos == bitbuffer->bits_per_row[row])
             continue; // preamble not found
-        payload_bits = bitbuffer->bits_per_row[row] - start_pos -
-                       LACROSSE_TX34_PREAMBLE_BITS;
+        unsigned payload_bits = bitbuffer->bits_per_row[row] - start_pos -
+                                LACROSSE_TX34_PREAMBLE_BITS;
         if (payload_bits < LACROSSE_TX34_PAYLOAD_BITS)
             continue; // probably truncated frame
         if (decoder->verbose)
