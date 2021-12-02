@@ -14,6 +14,8 @@ Decoder for Inkbird ITH-20R.
 
 https://www.ink-bird.com/products-data-logger-ith20r.html
 
+Also: Inkbird IBS-P01R Pool Thermometer.
+
 The compact 3-in-1 multifunction outdoor sensor transmits the data on 433.92 MHz.
 The device uses FSK-PCM encoding,
 The device sends a transmission every ~80 sec.
@@ -28,7 +30,7 @@ Decoding borrowed from https://groups.google.com/forum/#!topic/rtl_433/oeExmwoBI
 - 0-2     D3910F      Always the same across devices, a device type?
 - 3       00          00 - normal work , 40 - unlink sensor (button pressed 5s), 80 - battery replaced
 - 4       01          Changes from 1 to 2 if external sensor present
-- 5-6     0301        Unknown (also seen 0201), sw version?
+- 5-6     0301        Unknown (also seen 0201), sw version? Seen 0x0001 on IBS-P01R.
 - 7       58          Battery % 0-100
 - 8-9     A221        Device id, always the same for a sensor but each sensor is different
 - 10-11   D600        Temperature in C * 10, little endian, so 0xD200 is 210, 21.0C or 69.8F
@@ -124,6 +126,7 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         fprintf(stderr, "%s byte18= 0x%02X\n", __func__, word18);
     }
 
+    /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, "Inkbird ITH-20R",
             "id",               "",             DATA_INT,    sensor_id,
@@ -134,32 +137,31 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "temperature2_C",   "Temperature2", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_ext,
             "humidity",         "Humidity",     DATA_FORMAT, "%.1f %%", DATA_DOUBLE, humidity,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
-
     return 1;
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "battery",
-    "sensor_num",
-    "mic",
-    "temperature_C",
-    "temperature2_C",
-    "humidity",
-    NULL
+        "model",
+        "id",
+        "battery",
+        "sensor_num",
+        "mic",
+        "temperature_C",
+        "temperature2_C",
+        "humidity",
+        NULL,
 };
 
 r_device inkbird_ith20r = {
-    .name          = "Inkbird ITH-20R temperature humidity sensor",
-    .modulation    = FSK_PULSE_PCM,
-    .sync_width    = 0,     // No sync bit used
-    .short_width   = 100,   // Width of a '0' gap
-    .long_width    = 100,   // Width of a '1' gap
-    .reset_limit   = 4000,  // Maximum gap size before End Of Message [us]
-    .decode_fn     = &inkbird_ith20r_callback,
-    .disabled      = 0,
-    .fields        = output_fields,
+        .name        = "Inkbird ITH-20R temperature humidity sensor",
+        .modulation  = FSK_PULSE_PCM,
+        .sync_width  = 0,    // No sync bit used
+        .short_width = 100,  // Width of a '0' gap
+        .long_width  = 100,  // Width of a '1' gap
+        .reset_limit = 4000, // Maximum gap size before End Of Message [us]
+        .decode_fn   = &inkbird_ith20r_callback,
+        .fields      = output_fields,
 };
