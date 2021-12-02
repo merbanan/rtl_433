@@ -47,14 +47,14 @@ Decoder written by Dmitriy Kozyrev, 2020
 
 #include "decoder.h"
 
-static const uint8_t preamble_pattern[] = { 0xaa, 0xaa, 0xaa, 0x2d, 0xd4 };
-
 #define INKBIRD_ITH20R_CRC_POLY 0xA001  // reflected 0x8005
 #define INKBIRD_ITH20R_CRC_INIT 0x86F4  // reflected 0x2f61
 
 
 static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    uint8_t const preamble_pattern[] = {0xaa, 0xaa, 0xaa, 0x2d, 0xd4};
+
     data_t *data;
     uint8_t msg[19];
 
