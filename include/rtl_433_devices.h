@@ -208,6 +208,7 @@
     DECL(enocean_erp1) \
     DECL(megacode) \
     DECL(auriol_4ld5661) \
+    DECL(tpms_truck) \
 
     /* Add new decoders here. */
 

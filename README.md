@@ -284,6 +284,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [198]* EnOcean ERP1
     [199]  Linear Megacode Garage/Gate Remotes
     [200]* Auriol 4-LD5661 temperature/rain sensor
+    [201]  Unbranded SolarTPMS for trucks
 
 * Disabled by default, use -R n or -G
 
