@@ -54,8 +54,6 @@ static int tpms_truck_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned
     bitbuffer_t packet_bits = {0};
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 76);
 
-    bitbuffer_printf(&packet_bits, "%s: ", __func__);
-
     if (packet_bits.bits_per_row[row] < 76) {
         return 0; // DECODE_FAIL_SANITY;
     }
