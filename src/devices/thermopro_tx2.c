@@ -38,8 +38,6 @@ The data is grouped in 9 nibbles
 
 #include "decoder.h"
 
-extern int alecto_checksum(uint8_t *b);
-
 static int thermopro_tx2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t *b;
@@ -66,10 +64,6 @@ static int thermopro_tx2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     b = bitbuffer->bb[r];
 
     if ((b[0] & 0xF0) != 0x90 && (b[0] & 0xF0) != 0x50)
-        return DECODE_FAIL_SANITY;
-
-    // Check for Alecto collision, if the checksum is correct it's not Prologue/ThermoPro-TX2
-    if (alecto_checksum(b))
         return DECODE_FAIL_SANITY;
 
     // Prologue/ThermoPro-TX2 sensor
@@ -120,5 +114,6 @@ r_device thermopro_tx2 = {
         .reset_limit = 10000,
         .decode_fn   = &thermopro_tx2_decode,
         .disabled    = 1,
+        .priority    = 10, // Alecto collision, if Alecto checksum is correct it's not Prologue/ThermoPro-TX2
         .fields      = output_fields,
 };
