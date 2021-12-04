@@ -1,20 +1,18 @@
-/** @file funkbus.c
- *  @author Markus Sattler
- *  @date 2021-12-04
- *
- *  @brief Funkbus / Instafunk
- *  used by Berker, Jira, Jung and may more
- *  developed by Insta GmbH
- *
- *  @copyright Copyright (C) 2021 Markus Sattler
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+/** @file
+    Funkbus / Instafunk
+    used by Berker, Jira, Jung and may more
+    developed by Insta GmbH
+
+    Copyright (C) 2021 Markus Sattler
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
  */
 
-/*
+/**
     frequency: 433.92Mhz
     preamble: 4000us
     short: 500us
@@ -88,7 +86,7 @@ static uint8_t calc_parity(uint8_t const *bitrow, size_t len)
     return result & 0x01;
 }
 
-static int funkbus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int funkbus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
 
     for (uint16_t row = 0; row < bitbuffer->num_rows; row++) {
@@ -108,7 +106,7 @@ static int funkbus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         packet.typ    = get(4);
         packet.subtyp = get(4);
 
-        // remote
+        // only handle packet typ for remotes remote
         if (packet.typ != 0x4 || packet.subtyp != 0x3) {
             return DECODE_ABORT_EARLY;
         }
@@ -135,30 +133,21 @@ static int funkbus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data_t *data = data_make(
-                "model",        "",                DATA_STRING, "funkbus",
-                "typ",          "",                DATA_STRING, "remote",
+                "model",        "",                DATA_STRING, "Funkbus-Remote",
                 "id",           "id",              DATA_INT, id,
                 "sn",           "serial number",   DATA_INT, packet.sn,
-                "bat",          "battery empty",   DATA_INT, packet.bat,
+                "battery_ok",   "Battery",         DATA_INT, packet.bat ? 0 : 1,
                 "sw",           "switch",          DATA_INT, packet.sw,
-                "ch",           "channel",         DATA_INT, packet.ch,
+                "channel",      "channel",         DATA_INT, packet.ch,
                 "action",       "action",          DATA_INT, packet.action,
                 "repeat",       "repeat",          DATA_INT, packet.repeat,
                 "global",       "global",          DATA_INT, packet.global,
-#ifdef DEBUG
-                "parity",       "parity",          DATA_INT, packet.parity,
-                "check",        "check",           DATA_INT, packet.check,
-#endif
                 "mic",          "integrity",       DATA_STRING, "PARITY",
                 NULL);
         /* clang-format on */
 
         decoder_output_data(decoder, data);
     }
-
-#ifdef DEBUG
-    bitbuffer_debug(bitbuffer);
-#endif
 
     return 1;
 }
@@ -174,16 +163,12 @@ static char *output_fields[] = {
         "action",
         "repeat",
         "global",
-#ifdef DEBUG
-        "parity",
-        "check",
-#endif
         "mic",
         NULL,
 };
 
 r_device funkbus_remote = {
-        .name        = "Funkbus remote",
+        .name        = "Funkbus / Instafunk (Berker, Jira, Jung)",
         .modulation  = OOK_PULSE_DMC,
         .short_width = 500,
         .long_width  = 1000,
@@ -191,7 +176,7 @@ r_device funkbus_remote = {
         .gap_limit   = 1500,
         .sync_width  = 4000,
         .tolerance   = 300, // us
-        .decode_fn   = &funkbus_callback,
+        .decode_fn   = &funkbus_decode,
         .disabled    = 0,
         .fields      = output_fields,
 };
