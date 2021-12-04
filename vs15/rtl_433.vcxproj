@@ -225,6 +225,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\fordremote.c" />
     <ClCompile Include="..\src\devices\fs20.c" />
     <ClCompile Include="..\src\devices\ft004b.c" />
+    <ClCompile Include="..\src\devices\funkbus.c" />
     <ClCompile Include="..\src\devices\ge_coloreffects.c" />
     <ClCompile Include="..\src\devices\generic_motion.c" />
     <ClCompile Include="..\src\devices\generic_remote.c" />

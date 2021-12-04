@@ -412,6 +412,9 @@
     <ClCompile Include="..\src\devices\ft004b.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\funkbus.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\ge_coloreffects.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
