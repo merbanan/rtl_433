@@ -87,6 +87,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
 
     // if there is a run of bit-wide toggles (preamble) tune the bit period
     int min_count = s_short == s_long ? 12 : 4;
+    int preamble_len = 0;
     // RZ
     for (unsigned n = 0; s_short != s_long && n < pulses->num_pulses; ++n) {
         int swidth = 0;
@@ -107,12 +108,38 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
             f_long  = (float)count / lwidth;
             f_short = (float)count / swidth;
             min_count = count;
+            preamble_len = count;
             if (device->verbose > 1) {
                 float to_us = 1e6 / pulses->sample_rate;
                 fprintf(stderr, "Exact bit width (in us) is %.2f vs %.2f (pulse width %.2f vs %.2f), %d bit preamble\n",
                         to_us / f_long, to_us * s_long,
                         to_us / f_short, to_us * s_short, count);
             }
+        }
+    }
+    // RZ bits within tolerance anywhere
+    int rzs_width = 0;
+    int rzl_width = 0;
+    int rz_count = 0;
+    for (unsigned n = 0; preamble_len == 0 && s_short != s_long && n < pulses->num_pulses; ++n) {
+        if (pulses->pulse[n] >= s_short - s_tolerance
+                && pulses->pulse[n] <= s_short + s_tolerance
+                && pulses->pulse[n] + pulses->gap[n] >= s_long - s_tolerance
+                && pulses->pulse[n] + pulses->gap[n] <= s_long + s_tolerance) {
+            rzs_width += pulses->pulse[n];
+            rzl_width += pulses->pulse[n] + pulses->gap[n];
+            rz_count += 1;
+        }
+    }
+    // require at least 8 bits measured
+    if (rz_count > 8) {
+        f_long  = (float)rz_count / rzl_width;
+        f_short = (float)rz_count / rzs_width;
+        if (device->verbose > 1) {
+            float to_us = 1e6 / pulses->sample_rate;
+            fprintf(stderr, "Exact bit width (in us) is %.2f vs %.2f (pulse width %.2f vs %.2f), %d bit measured\n",
+                    to_us / f_long, to_us * s_long,
+                    to_us / f_short, to_us * s_short, rz_count);
         }
     }
     // NRZ
@@ -130,11 +157,46 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
         if (count >= min_count) {
             f_short = f_long = (float)count / width;
             min_count = count;
+            preamble_len = count;
             if (device->verbose > 1) {
                 float to_us = 1e6 / pulses->sample_rate;
                 fprintf(stderr, "Exact bit width (in us) is %.2f vs %.2f, %d bit preamble\n",
                         to_us / f_short, to_us * s_short, count);
             }
+        }
+    }
+    // NRZ pulse/gap of len 1 or 2 within tolerance anywhere
+    int nrz_width = 0;
+    int nrz_count = 0;
+    for (unsigned n = 0; preamble_len == 0 && s_short == s_long && n < pulses->num_pulses; ++n) {
+        if (pulses->pulse[n] >= s_short - s_tolerance
+                && pulses->pulse[n] <= s_short + s_tolerance) {
+            nrz_width += pulses->pulse[n];
+            nrz_count += 1;
+        }
+        if (pulses->pulse[n] >= 2 * s_short - s_tolerance
+                && pulses->pulse[n] <= 2 * s_short + s_tolerance) {
+            nrz_width += pulses->pulse[n];
+            nrz_count += 2;
+        }
+        if (pulses->gap[n] >= s_long - s_tolerance
+                && pulses->gap[n] <= s_long + s_tolerance) {
+            nrz_width += pulses->gap[n];
+            nrz_count += 1;
+        }
+        if (pulses->gap[n] >= 2 * s_long - s_tolerance
+                && pulses->gap[n] <= 2 * s_long + s_tolerance) {
+            nrz_width += pulses->gap[n];
+            nrz_count += 2;
+        }
+    }
+    // require at least 10 bits measured
+    if (nrz_count > 20) {
+        f_short = f_long = (float)nrz_count / nrz_width;
+        if (device->verbose > 1) {
+            float to_us = 1e6 / pulses->sample_rate;
+            fprintf(stderr, "%s: Exact bit width (in us) is %.2f vs %.2f, %d bit measured\n", device->name,
+                    to_us / f_short, to_us * s_short, nrz_count);
         }
     }
 
