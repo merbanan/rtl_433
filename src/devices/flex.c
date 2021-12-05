@@ -338,6 +338,7 @@ static void help()
             "\treset=<reset> (or: r=<reset>)\n"
             "\tgap=<gap> (or: g=<gap>)\n"
             "\ttolerance=<tolerance> (or: t=<tolerance>)\n"
+            "\tpriority=<n> : run decoder only as fallback\n"
             "where:\n"
             "<name> can be any descriptive name tag you need in the output\n"
             "<modulation> is one of:\n"
@@ -573,6 +574,8 @@ r_device *flex_create_device(char *spec)
             dev->reset_limit = atoi(val);
         else if (!strcasecmp(key, "t") || !strcasecmp(key, "tolerance"))
             dev->tolerance = atoi(val);
+        else if (!strcasecmp(key, "prio") || !strcasecmp(key, "priority"))
+            dev->priority = atoi(val);
 
         else if (!strcasecmp(key, "bits>"))
             params->min_bits = val ? atoi(val) : 0;
