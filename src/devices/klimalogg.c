@@ -55,7 +55,7 @@ static int klimalogg_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t msg[12] = {0};
     uint8_t crc, sequence_nr, temp_ad, humidity, battery_low;
     int16_t id, temp_bd;
-    char temperature_str[10] = {0};
+    float temperature;
     data_t *data;
 
     if (bitbuffer->bits_per_row[0] < 12*8) {
@@ -85,7 +85,7 @@ static int klimalogg_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     id = (msg[2]&0x7f)<<8 | msg[3];
     temp_bd = bcd_decode8((msg[4]&0x0F)<<4 | (msg[5]&0xF0)>>4) - 40;
     temp_ad = bcd_decode8((msg[5]&0x0F));
-    sprintf(temperature_str, "%d.%d C", temp_bd, temp_ad);
+    temperature = (float) temp_bd + temp_ad / 10.0;
     humidity = msg[6]&0x7F;
     battery_low = (msg[7]&0x80) >> 7;
     sequence_nr = (msg[8]&0xF0) >> 4;
@@ -95,7 +95,7 @@ static int klimalogg_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",                 DATA_STRING, "Klimalogg Pro",
             "id",               "Id",               DATA_FORMAT, "%04x", DATA_INT, id,
             "battery_ok",       "Battery",          DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",      DATA_STRING, temperature_str,
+            "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",      DATA_DOUBLE, temperature,
             "humidity",         "Humidity",         DATA_INT,    humidity,
             "sequence_nr",      "Sequence Number",  DATA_INT,    sequence_nr,
             "mic",              "Integrity",        DATA_STRING, "CRC",
