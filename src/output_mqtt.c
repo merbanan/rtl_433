@@ -15,6 +15,7 @@
 #include "util.h"
 #include "fatal.h"
 #include "r_util.h"
+#include "rfraw.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -23,6 +24,8 @@
 #include "mongoose.h"
 
 /* MQTT client abstraction */
+
+typedef void (*mqtt_publish_cb)(const struct mg_str *topic, const struct mg_str *payload);
 
 typedef struct mqtt_client {
     struct mg_connect_opts connect_opts;
@@ -33,6 +36,9 @@ typedef struct mqtt_client {
     char client_id[256];
     uint16_t message_id;
     int publish_flags; // MG_MQTT_RETAIN | MG_MQTT_QOS(0)
+    size_t num_subscriptions;
+    struct mg_mqtt_topic_expression *subscriptions;
+    mqtt_publish_cb *publish_callbacks;
 } mqtt_client_t;
 
 static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
@@ -70,6 +76,7 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
         }
         else {
             fprintf(stderr, "MQTT Connection established.\n");
+            mg_mqtt_subscribe(nc, ctx->subscriptions, ctx->num_subscriptions, ++ctx->message_id);
         }
         break;
     case MG_EV_MQTT_PUBACK:
@@ -81,6 +88,12 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
     case MG_EV_MQTT_PUBLISH: {
         fprintf(stderr, "MQTT Incoming message %.*s: %.*s\n", (int)msg->topic.len,
                 msg->topic.p, (int)msg->payload.len, msg->payload.p);
+        for (size_t i = 0; i < ctx->num_subscriptions; i++) {
+            if (mg_mqtt_vmatch_topic_expression(ctx->subscriptions[i].topic, msg->topic)) {
+                if (ctx->publish_callbacks[i])
+                    ctx->publish_callbacks[i](&msg->topic, &msg->payload);
+            }
+        }
         break;
     }
     case MG_EV_CLOSE:
@@ -160,13 +173,49 @@ static void mqtt_client_publish(mqtt_client_t *ctx, char const *topic, char cons
     mg_mqtt_publish(ctx->conn, topic, ctx->message_id, ctx->publish_flags, str, strlen(str));
 }
 
+static int mqtt_client_subscribe(mqtt_client_t *ctx, const char *topic, uint8_t qos, mqtt_publish_cb cb)
+{
+    size_t i = ctx->num_subscriptions++;
+    ctx->subscriptions = realloc(ctx->subscriptions, ctx->num_subscriptions * sizeof(struct mg_mqtt_topic_expression));
+    if (!ctx->subscriptions) {
+        WARN_REALLOC("mqtt_client_subscribe()");
+        return -1;
+    }
+    ctx->publish_callbacks = realloc(ctx->publish_callbacks, ctx->num_subscriptions * sizeof(mqtt_publish_cb));
+    if (!ctx->publish_callbacks) {
+        WARN_REALLOC("mqtt_client_subscribe()");
+        return -1;
+    }
+    ctx->subscriptions[i].topic = strdup(topic);
+    if (!ctx->subscriptions[i].topic)
+    {
+        WARN_STRDUP("mqtt_client_subscribe()");
+        ctx->num_subscriptions--;
+        return -1;
+    }
+    ctx->subscriptions[i].qos = qos;
+    ctx->publish_callbacks[i] = cb;
+
+    return 0;
+}
+
 static void mqtt_client_free(mqtt_client_t *ctx)
 {
-    if (ctx && ctx->conn) {
-        ctx->conn->user_data = NULL;
-        ctx->conn->flags |= MG_F_CLOSE_IMMEDIATELY;
+    if (ctx) {
+        for (size_t i = 0; i < ctx->num_subscriptions; i++) {
+            free((char *) ctx->subscriptions[i].topic);
+        }
+        free(ctx->subscriptions);
+        free(ctx->publish_callbacks);
+        ctx->subscriptions = NULL;
+        ctx->publish_callbacks = NULL;
+
+        if (ctx->conn) {
+            ctx->conn->user_data = NULL;
+            ctx->conn->flags |= MG_F_CLOSE_IMMEDIATELY;
+        }
+        free(ctx);
     }
-    free(ctx);
 }
 
 /* Helper */
@@ -194,6 +243,8 @@ typedef struct {
     //char *homie;
     //char *hass;
 } data_output_mqtt_t;
+
+data_output_mqtt_t	*active_mqtt = NULL;
 
 static void print_mqtt_array(data_output_t *output, data_array_t *array, char const *format)
 {
@@ -435,6 +486,9 @@ static void data_output_mqtt_free(data_output_t *output)
     if (!mqtt)
         return;
 
+    if (mqtt == active_mqtt)
+        active_mqtt = NULL;
+
     free(mqtt->devices);
     free(mqtt->events);
     free(mqtt->states);
@@ -582,5 +636,57 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
 
     mqtt->mqc = mqtt_client_init(mgr, &tls_opts, host, port, user, pass, client_id, retain, qos);
 
+    if (!active_mqtt)
+        active_mqtt = mqtt;
+
     return &mqtt->output;
+}
+
+static pulse_data_t *active_pulse = NULL;
+
+static void rfraw_received(const struct mg_str *topic, const struct mg_str *payload)
+{
+    UNUSED(topic);
+
+    char buf[4096];
+    int n = -1;
+
+    if (!active_pulse)
+        return;
+
+    if (sscanf(payload->p, " { \"%*1[Tt]%*1[Ii]%*1[Mm]%*1[Ee]\" : \"%*[^\"]\" , \"%*1[Rr]%*1[Ff]%*1[Rr]%*1[Aa]%*1[Ww]\" : { \"%*1[Dd]%*1[Aa]%*1[Tt]%*1[Aa]\" : \" %4095[0-9A-Fa-f ] \" } } %n", buf, &n) != 1)
+        return;
+    if ((size_t) n != payload->len)
+        return;
+
+    if (!rfraw_parse(active_pulse, buf)) {
+        active_pulse->num_pulses = 0;
+    }
+}
+
+const char *input_mqtt_rfraw_config(const char *topic)
+{
+    if (!active_mqtt)
+        return "MQTT input couldn't be enabled without activating MQTT output";
+
+    mqtt_client_subscribe(active_mqtt->mqc, topic, MG_MQTT_QOS(0), rfraw_received);
+
+    return NULL;
+}
+
+int input_mqtt_rfraw_read(pulse_data_t *data)
+{
+    if (!active_mqtt)
+        return 0;
+
+    pulse_data_clear(data);
+    active_pulse = data;
+
+    do {
+        mg_mgr_poll(active_mqtt->mqc->conn->mgr, 1000);
+    } while (data->num_pulses == 0);
+
+    active_pulse = NULL;
+
+    return 1;
 }

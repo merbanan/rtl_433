@@ -13,9 +13,13 @@
 #define INCLUDE_OUTPUT_MQTT_H_
 
 #include "data.h"
+#include "pulse_detect.h"
 
 struct mg_mgr;
 
 struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, char const *dev_hint);
+
+const char *input_mqtt_rfraw_config(const char *topic);
+int input_mqtt_rfraw_read(pulse_data_t *data);
 
 #endif /* INCLUDE_OUTPUT_MQTT_H_ */
