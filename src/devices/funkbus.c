@@ -58,9 +58,9 @@ typedef struct {
     uint8_t bat : 1; // 1 == battery low
     uint8_t r2 : 1;  // unknown
 
-    uint8_t sw : 3;    // button on the remote
-    uint8_t group : 2; // remote channel group 0-2 (A-C) are switches, 3 == light scene
-    uint8_t r3 : 1;    // unknown
+    uint8_t command : 3; // button on the remote
+    uint8_t group : 2;   // remote channel group 0-2 (A-C) are switches, 3 == light scene
+    uint8_t r3 : 1;      // unknown
 
     funkbus_action_t action : 2;
     uint8_t repeat : 1;    // 1 == not first send of packet
@@ -141,7 +141,7 @@ static int funkbus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         packet.r1        = get(2);
         packet.bat       = get(1);
         packet.r2        = get(2);
-        packet.sw        = get(3);
+        packet.command   = get(3);
         packet.group     = get(2);
         packet.r3        = get(1);
         packet.action    = get(2);
@@ -161,9 +161,8 @@ static int funkbus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",        "",                DATA_STRING, "Funkbus-Remote",
                 "id",           "Serial number",   DATA_INT, packet.sn,
                 "battery_ok",   "Battery",         DATA_INT, packet.bat ? 0 : 1,
-                "sw",           "Switch",          DATA_INT, packet.sw,
+                "command",      "Switch",          DATA_INT, packet.command,
                 "group",        "Group",           DATA_INT, packet.group,
-                "channel",      "Channel",         DATA_INT, ((packet.group << 3) + packet.sw),
                 "action",       "Action",          DATA_INT, packet.action,
                 "repeat",       "Repeat",          DATA_INT, packet.repeat,
                 "longpress",    "Longpress",       DATA_INT, packet.longpress,
@@ -181,9 +180,8 @@ static char *output_fields[] = {
         "model",
         "id",
         "battery_ok",
-        "sw",
+        "command",
         "group",
-        "channel",
         "action",
         "repeat",
         "global",
