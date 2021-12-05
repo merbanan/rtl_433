@@ -24,9 +24,10 @@
     _|     |__ __|  |__|     |__|  |__.....
      |  0  |  0  | 	1  |  0  |  1  |
 
-    mic: parity + unknown 4bit checksum
+    mic: parity + lfsr with 8bit mask 0x8C sifted left by 2 bit
     bits: 48
     structure: see funkbus_packet_t
+    endian: LSB
 
 
     some details can be found by searching
@@ -35,6 +36,10 @@
 */
 
 #include "decoder.h"
+#include <limits.h>
+
+#define BIT_MASK(x) \
+    ((((unsigned)x) >= sizeof(unsigned) * CHAR_BIT) ? (unsigned)-1 : (1U << (x)) - 1)
 
 typedef enum {
     FB_ACTION_STOP,
@@ -50,18 +55,18 @@ typedef struct {
     uint32_t sn : 20;
 
     uint8_t r1 : 2;  // unknown
-    uint8_t bat : 1; // battery low
+    uint8_t bat : 1; // 1 == battery low
     uint8_t r2 : 1;  // unknown
 
-    uint8_t sw : 3; // button on the remote
-    uint8_t ch : 2; // remote channel 0-2 are switches 3 == light scene
-    uint8_t r3 : 1; // unknown
+    uint8_t sw : 3;    // button on the remote
+    uint8_t group : 2; // remote channel group 0-2 (A-C) are switches, 3 == light scene
+    uint8_t r3 : 1;    // unknown
 
     funkbus_action_t action : 2;
-    uint8_t repeat : 1; // 1 == not first send of packet
-    uint8_t global : 1; // 1 == global ON / OFF button
-    uint8_t parity : 1; // parity over all bits
-    uint8_t check : 4;  // how to calculate is unknown
+    uint8_t repeat : 1;    // 1 == not first send of packet
+    uint8_t longpress : 1; // longpress of button for (dim up/down, scene lerning)
+    uint8_t parity : 1;    // parity over all bits before
+    uint8_t check : 4;     // lfsr with 8bit mask 0x8C sifted left by 2 bit
 } __attribute__((packed)) funkbus_packet_t;
 
 static uint64_t get_data_lsb(uint8_t const *bitrow, size_t start, uint8_t end)
@@ -75,23 +80,44 @@ static uint64_t get_data_lsb(uint8_t const *bitrow, size_t start, uint8_t end)
     return result;
 }
 
-static uint8_t calc_parity(uint8_t const *bitrow, size_t len)
+static uint8_t calc_checksum(uint8_t const *bitrow, size_t len)
 {
-    uint8_t result = 0;
-    for (uint8_t i = 0; i < len; i++) {
-        if (bitrow_get_bit(bitrow, i)) {
-            result++;
-        }
+    const uint8_t full_bytes = len / 8;
+    const uint8_t bits_left  = len % 8;
+
+    uint8_t xor = xor_bytes(bitrow, full_bytes);
+    if (bits_left) {
+        xor ^= bitrow[full_bytes] & ~BIT_MASK(8 - bits_left);
     }
-    return result & 0x01;
+
+    const uint8_t xor_nibble = ((xor&0xF0) >> 4) ^ (xor&0x0F);
+
+    uint8_t result = 0;
+    if (xor_nibble & 0x8) {
+        result ^= 0x8C;
+    }
+    if (xor_nibble & 0x4) {
+        result ^= 0x32;
+    }
+    if (xor_nibble & 0x2) {
+        result ^= 0xC8;
+    }
+    if (xor_nibble & 0x01) {
+        result ^= 0x23;
+    }
+
+    result = result & 0xF;
+    result |= (parity8(xor) << 4);
+
+    return result;
 }
 
 static int funkbus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
 
     for (uint16_t row = 0; row < bitbuffer->num_rows; row++) {
-        uint16_t len = bitbuffer->bits_per_row[row];
-        uint8_t *bin  = bitbuffer->bb[row];
+        const uint16_t len = bitbuffer->bits_per_row[row];
+        const uint8_t *bin = bitbuffer->bb[row];
 
         if (len < 48) {
             return DECODE_ABORT_LENGTH;
@@ -111,38 +137,37 @@ static int funkbus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             return DECODE_ABORT_EARLY;
         }
 
-        packet.sn     = get(20);
-        packet.r1     = get(2);
-        packet.bat    = get(1);
-        packet.r2     = get(2);
-        packet.sw     = get(3);
-        packet.ch     = get(2);
-        packet.r3     = get(1);
-        packet.action = get(2);
-        packet.repeat = get(1);
-        packet.global = get(1);
-        packet.parity = get(1);
-        packet.check  = get(4); // how to calc?
+        packet.sn        = get(20);
+        packet.r1        = get(2);
+        packet.bat       = get(1);
+        packet.r2        = get(2);
+        packet.sw        = get(3);
+        packet.group     = get(2);
+        packet.r3        = get(1);
+        packet.action    = get(2);
+        packet.repeat    = get(1);
+        packet.longpress = get(1);
+        packet.parity    = get(1);
+        packet.check     = get(4);
 
-        if (packet.parity != calc_parity(bin, 43)) {
+        uint8_t checksum = calc_checksum(bin, 43);
+        if (packet.check != reflect4(checksum & 0xF) ||
+                packet.parity != (checksum >> 4)) {
             return DECODE_FAIL_MIC;
         }
-
-        // calc id based on sn, ch + sw
-        uint64_t id = packet.sw + (packet.ch << 4) + (packet.sn << 8);
 
         /* clang-format off */
         data_t *data = data_make(
                 "model",        "",                DATA_STRING, "Funkbus-Remote",
-                "id",           "id",              DATA_INT, id,
-                "sn",           "serial number",   DATA_INT, packet.sn,
+                "id",           "Serial number",   DATA_INT, packet.sn,
                 "battery_ok",   "Battery",         DATA_INT, packet.bat ? 0 : 1,
-                "sw",           "switch",          DATA_INT, packet.sw,
-                "channel",      "channel",         DATA_INT, packet.ch,
-                "action",       "action",          DATA_INT, packet.action,
-                "repeat",       "repeat",          DATA_INT, packet.repeat,
-                "global",       "global",          DATA_INT, packet.global,
-                "mic",          "integrity",       DATA_STRING, "PARITY",
+                "sw",           "Switch",          DATA_INT, packet.sw,
+                "group",        "Group",           DATA_INT, packet.group,
+                "channel",      "Channel",         DATA_INT, ((packet.group << 3) + packet.sw),
+                "action",       "Action",          DATA_INT, packet.action,
+                "repeat",       "Repeat",          DATA_INT, packet.repeat,
+                "longpress",    "Longpress",       DATA_INT, packet.longpress,
+                "mic",          "Integrity",       DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
 
@@ -154,12 +179,11 @@ static int funkbus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
-        "typ",
         "id",
-        "sn",
-        "bat",
+        "battery_ok",
         "sw",
-        "ch",
+        "group",
+        "channel",
         "action",
         "repeat",
         "global",
