@@ -1581,12 +1581,13 @@ int main(int argc, char **argv) {
             }
             fprintf(stderr, "Test mode active. Reading samples from file: %s\n", cfg->in_filename);  // Essential information (not quiet)
             if (demod->load_info.format == CU8_IQ
+                    || demod->load_info.format == CS8_IQ
                     || demod->load_info.format == S16_AM
                     || demod->load_info.format == S16_FM) {
                 demod->sample_size = sizeof(uint8_t) * 2; // CU8, AM, FM
             } else if (demod->load_info.format == CS16_IQ
                     || demod->load_info.format == CF32_IQ) {
-                demod->sample_size = sizeof(int16_t) * 2; // CF32, CS16
+                demod->sample_size = sizeof(int16_t) * 2; // CS16, CF32 (after conversion)
             } else if (demod->load_info.format == PULSE_OOK) {
                 // ignore
             } else {
@@ -1640,6 +1641,7 @@ int main(int argc, char **argv) {
             int n_blocks = 0;
             unsigned long n_read;
             do {
+                // Convert CF32 file to CS16 buffer
                 if (demod->load_info.format == CF32_IQ) {
                     n_read = fread(test_mode_float_buf, sizeof(float), DEFAULT_BUF_LENGTH / 2, in_file);
                     // clamp float to [-1,1] and scale to Q0.15
@@ -1654,6 +1656,13 @@ int main(int argc, char **argv) {
                     n_read *= 2; // convert to byte count
                 } else {
                     n_read = fread(test_mode_buf, 1, DEFAULT_BUF_LENGTH, in_file);
+
+                    // Convert CS8 file to CU8 buffer
+                    if (demod->load_info.format == CS8_IQ) {
+                        for (unsigned long n = 0; n < n_read; n++) {
+                            test_mode_buf[n] = ((int8_t)test_mode_buf[n]) + 128;
+                        }
+                    }
                 }
                 if (n_read == 0) break;  // sdr_callback() will Segmentation Fault with len=0
                 demod->sample_file_pos = ((float)n_blocks * DEFAULT_BUF_LENGTH + n_read) / cfg->samp_rate / demod->sample_size;

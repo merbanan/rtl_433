@@ -46,6 +46,7 @@ void file_info_clear(file_info_t *info)
 void file_info_check_read(file_info_t *info)
 {
     if (info->format != CU8_IQ
+            && info->format != CS8_IQ
             && info->format != CS16_IQ
             && info->format != CF32_IQ
             && info->format != S16_AM
