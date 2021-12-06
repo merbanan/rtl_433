@@ -147,7 +147,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     data_t *row_data[BITBUF_ROWS];
     char *row_codes[BITBUF_ROWS];
-    char row_bytes[BITBUF_COLS * 2 + 1];
+    char row_bytes[BITBUF_ROWS * BITBUF_COLS * 2 + 1]; // TODO: this is a lot of stack
 
     struct flex_params *params = decoder->decode_ctx;
 
