@@ -556,6 +556,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 out_buf = (uint8_t *)demod->buf.temp;
                 out_len = n_samples * 2 * sizeof(uint8_t);
             }
+            watermark_set_cu8(out_buf, cfg->samp_rate, cfg->center_frequency);
         }
         else if (dumper->format == CS16_IQ) {
             if (demod->sample_size == 2) {
@@ -564,6 +565,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 out_buf = (uint8_t *)demod->buf.temp; // this buffer is too small if out_block_size is large
                 out_len = n_samples * 2 * sizeof(int16_t);
             }
+            watermark_set_cs16((int16_t *)out_buf, cfg->samp_rate, cfg->center_frequency);
         }
         else if (dumper->format == CS8_IQ) {
             if (demod->sample_size == 2) {
@@ -576,6 +578,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             }
             out_buf = (uint8_t *)demod->buf.temp;
             out_len = n_samples * 2 * sizeof(int8_t);
+            watermark_set_cs8((int8_t *)out_buf, cfg->samp_rate, cfg->center_frequency);
         }
         else if (dumper->format == CF32_IQ) {
             if (demod->sample_size == 2) {
@@ -588,6 +591,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             }
             out_buf = (uint8_t *)demod->buf.temp; // this buffer is too small if out_block_size is large
             out_len = n_samples * 2 * sizeof(float);
+            watermark_set_cf32((float *)out_buf, cfg->samp_rate, cfg->center_frequency);
         }
         else if (dumper->format == S16_AM) {
             out_buf = (uint8_t *)demod->am_buf;
@@ -1642,6 +1646,18 @@ int main(int argc, char **argv) {
             do {
                 if (demod->load_info.format == CF32_IQ) {
                     n_read = fread(test_mode_float_buf, sizeof(float), DEFAULT_BUF_LENGTH / 2, in_file);
+
+                    if (n_blocks == 0) {
+                        // decode possible 128 bit watermark
+                        file_info_get_watermark(&demod->load_info, (uint8_t *)test_mode_float_buf, cfg->verbosity);
+                        if (demod->load_info.format != CF32_IQ) {
+                            fprintf(stderr, "Unhandled input format for .cf32 file: %s\n", file_info_string(&demod->load_info));
+                        }
+                        // apply info or default
+                        cfg->samp_rate        = demod->load_info.sample_rate ? demod->load_info.sample_rate : sample_rate_0;
+                        cfg->center_frequency = demod->load_info.center_frequency ? demod->load_info.center_frequency : cfg->frequency[0];
+                    }
+
                     // clamp float to [-1,1] and scale to Q0.15
                     for (unsigned long n = 0; n < n_read; n++) {
                         int s_tmp = test_mode_float_buf[n] * INT16_MAX;
@@ -1654,6 +1670,17 @@ int main(int argc, char **argv) {
                     n_read *= 2; // convert to byte count
                 } else {
                     n_read = fread(test_mode_buf, 1, DEFAULT_BUF_LENGTH, in_file);
+
+                    if (n_blocks == 0) {
+                        // decode possible 128 bit watermark
+                        file_info_get_watermark(&demod->load_info, test_mode_buf, cfg->verbosity);
+                        if (demod->load_info.format != CU8_IQ) {
+                            fprintf(stderr, "Unhandled input format for .cu8 file: %s\n", file_info_string(&demod->load_info));
+                        }
+                        // apply info or default
+                        cfg->samp_rate        = demod->load_info.sample_rate ? demod->load_info.sample_rate : sample_rate_0;
+                        cfg->center_frequency = demod->load_info.center_frequency ? demod->load_info.center_frequency : cfg->frequency[0];
+                    }
                 }
                 if (n_read == 0) break;  // sdr_callback() will Segmentation Fault with len=0
                 demod->sample_file_pos = ((float)n_blocks * DEFAULT_BUF_LENGTH + n_read) / cfg->samp_rate / demod->sample_size;
