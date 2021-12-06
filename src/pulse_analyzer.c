@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #define MAX_HIST_BINS 16
 
@@ -345,7 +346,8 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
             hexstr_push_byte(&hexstr, 0xb1);
             hexstr_push_byte(&hexstr, hist_timings.bins_count);
             for (unsigned b = 0; b < hist_timings.bins_count; ++b) {
-                hexstr_push_word(&hexstr, hist_timings.bins[b].mean * to_us);
+                double w = hist_timings.bins[b].mean * to_us;
+                hexstr_push_word(&hexstr, w < USHRT_MAX ? w : USHRT_MAX);
             }
             for (unsigned i = 0; i < data->num_pulses; ++i) {
                 int p = histogram_find_bin_index(&hist_timings, data->pulse[i]);
@@ -377,7 +379,8 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
                 hexstr_push_byte(hexstr, hist_timings.bins_count);
                 hexstr_push_byte(hexstr, 1); // repeats
                 for (unsigned b = 0; b < hist_timings.bins_count; ++b) {
-                    hexstr_push_word(hexstr, hist_timings.bins[b].mean * to_us);
+                    double w =hist_timings.bins[b].mean * to_us;
+                    hexstr_push_word(hexstr, w < USHRT_MAX ? w : USHRT_MAX);
                 }
                 for (; i < data->num_pulses; ++i) {
                     int p = histogram_find_bin_index(&hist_timings, data->pulse[i]);
