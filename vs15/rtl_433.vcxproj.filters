@@ -712,6 +712,9 @@
     <ClCompile Include="..\src\devices\tpms_pmv107j.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\tpms_porsche.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\tpms_renault.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

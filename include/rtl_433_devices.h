@@ -210,6 +210,7 @@
     DECL(auriol_4ld5661) \
     DECL(tpms_truck) \
     DECL(funkbus_remote) \
+    DECL(tpms_porsche) \
 
     /* Add new decoders here. */
 
