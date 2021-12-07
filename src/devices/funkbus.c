@@ -1,7 +1,5 @@
 /** @file
-    Funkbus / Instafunk
-    used by Berker, Jira, Jung and may more
-    developed by Insta GmbH
+    Funkbus / Instafunk.
 
     Copyright (C) 2021 Markus Sattler
 
@@ -9,30 +7,48 @@
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
-
- */
+*/
 
 /**
-    frequency: 433.92Mhz
-    preamble: 4000us
-    short: 500us
-    long: 1000us
-    encoding: Differential Manchester Biphase–Mark (BP-M)
+Funkbus / Instafunk
+used by Berker, Jira, Jung and may more
+developed by Insta GmbH.
+
+- Frequency: 433.92Mhz
+- Preamble: 4000us
+- Short: 500us
+- Long: 1000us
+- Encoding: Differential Manchester Biphase–Mark (BP-M)
 
       __ __       __    __ __    __
      |     |     |  |  |     |  |  |
     _|     |__ __|  |__|     |__|  |__.....
      |  0  |  0  | 	1  |  0  |  1  |
 
-    mic: parity + lfsr with 8bit mask 0x8C sifted left by 2 bit
-    bits: 48
-    structure: see funkbus_packet_t
-    endian: LSB
+- Mic: parity + lfsr with 8bit mask 0x8C shifted left by 2 bit
+- Bits: 48
+- Endian: LSB
 
+Data layout:
 
-    some details can be found by searching
-    "instafunk RX/TX-Modul pdf"
+    TS II II IF FA AX
 
+- T: 4 bit type, there are multible types
+- S: 4 bit subtype
+- I: 20 bit serial number
+- F: 2 bit r1, unknown
+- F: 1 bit bat, 1 == battery low
+- F: 2 bit r2,  // unknown
+- F: 3 bit command, button on the remote
+- A: 2 bit group, remote channel group 0-2 (A-C) are switches, 3 == light scene
+- A: 1 bit r3, unknown
+- A: 2 bit action
+- A: 1 bit repeat, 1 == not first send of packet
+- A: 1 bit longpress, longpress of button for (dim up/down, scene lerning)
+- A: 1 bit parity, parity over all bits before
+- X: 4 bit check, LFSR with 8 bit mask 0x8C shifted left by 2 each bit
+
+Some details can be found by searching  "instafunk RX/TX-Modul pdf".
 */
 
 #include "decoder.h"
@@ -56,7 +72,7 @@ typedef struct {
 
     uint8_t r1 : 2;  // unknown
     uint8_t bat : 1; // 1 == battery low
-    uint8_t r2 : 1;  // unknown
+    uint8_t r2 : 2;  // unknown
 
     uint8_t command : 3; // button on the remote
     uint8_t group : 2;   // remote channel group 0-2 (A-C) are switches, 3 == light scene
@@ -66,13 +82,14 @@ typedef struct {
     uint8_t repeat : 1;    // 1 == not first send of packet
     uint8_t longpress : 1; // longpress of button for (dim up/down, scene lerning)
     uint8_t parity : 1;    // parity over all bits before
-    uint8_t check : 4;     // lfsr with 8bit mask 0x8C sifted left by 2 bit
+    uint8_t check : 4;     // lfsr with 8bit mask 0x8C shifted left by 2 each bit
 } __attribute__((packed)) funkbus_packet_t;
 
-static uint64_t get_data_lsb(uint8_t const *bitrow, size_t start, uint8_t end)
+static uint32_t get_bits_reflect(uint8_t const *bitrow, unsigned start, unsigned len)
 {
-    uint64_t result = 0;
-    uint64_t mask   = 1;
+    unsigned end = start + len - 1;
+    uint32_t result = 0;
+    uint32_t mask   = 1;
     result          = 0;
     for (; start <= end; mask <<= 1)
         if (bitrow_get_bit(bitrow, start++) != 0)
@@ -80,7 +97,7 @@ static uint64_t get_data_lsb(uint8_t const *bitrow, size_t start, uint8_t end)
     return result;
 }
 
-static uint8_t calc_checksum(uint8_t const *bitrow, size_t len)
+static uint8_t calc_checksum(uint8_t const *bitrow, unsigned len)
 {
     const uint8_t full_bytes = len / 8;
     const uint8_t bits_left  = len % 8;
@@ -114,43 +131,38 @@ static uint8_t calc_checksum(uint8_t const *bitrow, size_t len)
 
 static int funkbus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    int events = 0;
 
-    for (uint16_t row = 0; row < bitbuffer->num_rows; row++) {
-        const uint16_t len = bitbuffer->bits_per_row[row];
-        const uint8_t *bin = bitbuffer->bb[row];
-
-        if (len < 48) {
+    for (int row = 0; row < bitbuffer->num_rows; row++) {
+        if (bitbuffer->bits_per_row[row] < 48) {
             return DECODE_ABORT_LENGTH;
         }
 
-        uint8_t get_c = 0;
-#define get(x) \
-    get_data_lsb(bin, get_c, get_c + x - 1); \
-    get_c += x
+        uint8_t *b = bitbuffer->bb[row];
 
         funkbus_packet_t packet;
-        packet.typ    = get(4);
-        packet.subtyp = get(4);
+        packet.typ    = get_bits_reflect(b, 0, 4);
+        packet.subtyp = get_bits_reflect(b, 4, 4);
 
-        // only handle packet typ for remotes remote
+        // only handle packet typ for remotes
         if (packet.typ != 0x4 || packet.subtyp != 0x3) {
             return DECODE_ABORT_EARLY;
         }
 
-        packet.sn        = get(20);
-        packet.r1        = get(2);
-        packet.bat       = get(1);
-        packet.r2        = get(2);
-        packet.command   = get(3);
-        packet.group     = get(2);
-        packet.r3        = get(1);
-        packet.action    = get(2);
-        packet.repeat    = get(1);
-        packet.longpress = get(1);
-        packet.parity    = get(1);
-        packet.check     = get(4);
+        packet.sn        = get_bits_reflect(b, 8, 20);
+        packet.r1        = get_bits_reflect(b, 28, 2);
+        packet.bat       = get_bits_reflect(b, 30, 1);
+        packet.r2        = get_bits_reflect(b, 31, 2);
+        packet.command   = get_bits_reflect(b, 33, 3);
+        packet.group     = get_bits_reflect(b, 36, 2);
+        packet.r3        = get_bits_reflect(b, 38, 1);
+        packet.action    = get_bits_reflect(b, 39, 2);
+        packet.repeat    = get_bits_reflect(b, 41, 1);
+        packet.longpress = get_bits_reflect(b, 42, 1);
+        packet.parity    = get_bits_reflect(b, 43, 1);
+        packet.check     = get_bits_reflect(b, 44, 4);
 
-        uint8_t checksum = calc_checksum(bin, 43);
+        uint8_t checksum = calc_checksum(b, 43);
         if (packet.check != reflect4(checksum & 0xF) ||
                 packet.parity != (checksum >> 4)) {
             return DECODE_FAIL_MIC;
@@ -166,14 +178,15 @@ static int funkbus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "action",       "Action",          DATA_INT, packet.action,
                 "repeat",       "Repeat",          DATA_INT, packet.repeat,
                 "longpress",    "Longpress",       DATA_INT, packet.longpress,
-                "mic",          "Integrity",       DATA_STRING, "CRC",
+                "mic",          "Integrity",       DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
 
         decoder_output_data(decoder, data);
+        events++;
     }
 
-    return 1;
+    return events;
 }
 
 static char *output_fields[] = {
@@ -184,7 +197,7 @@ static char *output_fields[] = {
         "group",
         "action",
         "repeat",
-        "global",
+        "longpress",
         "mic",
         NULL,
 };
@@ -199,6 +212,5 @@ r_device funkbus_remote = {
         .sync_width  = 4000,
         .tolerance   = 300, // us
         .decode_fn   = &funkbus_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };
