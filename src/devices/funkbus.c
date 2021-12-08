@@ -42,7 +42,7 @@ Data layout:
 - F: 3 bit command, button on the remote
 - A: 2 bit group, remote channel group 0-2 (A-C) are switches, 3 == light scene
 - A: 1 bit r3, unknown
-- A: 2 bit action
+- A: 2 bit action, STOP, OFF, ON, SCENE
 - A: 1 bit repeat, 1 == not first send of packet
 - A: 1 bit longpress, longpress of button for (dim up/down, scene lerning)
 - A: 1 bit parity, parity over all bits before
@@ -56,34 +56,6 @@ Some details can be found by searching  "instafunk RX/TX-Modul pdf".
 
 #define BIT_MASK(x) \
     ((((unsigned)x) >= sizeof(unsigned) * CHAR_BIT) ? (unsigned)-1 : (1U << (x)) - 1)
-
-typedef enum {
-    FB_ACTION_STOP,
-    FB_ACTION_OFF,
-    FB_ACTION_ON,
-    FB_ACTION_SCENE
-} funkbus_action_t;
-
-typedef struct {
-    uint8_t typ : 4; // there are multible types
-    uint8_t subtyp : 4;
-
-    uint32_t sn : 20;
-
-    uint8_t r1 : 2;  // unknown
-    uint8_t bat : 1; // 1 == battery low
-    uint8_t r2 : 2;  // unknown
-
-    uint8_t command : 3; // button on the remote
-    uint8_t group : 2;   // remote channel group 0-2 (A-C) are switches, 3 == light scene
-    uint8_t r3 : 1;      // unknown
-
-    funkbus_action_t action : 2;
-    uint8_t repeat : 1;    // 1 == not first send of packet
-    uint8_t longpress : 1; // longpress of button for (dim up/down, scene lerning)
-    uint8_t parity : 1;    // parity over all bits before
-    uint8_t check : 4;     // lfsr with 8bit mask 0x8C shifted left by 2 each bit
-} __attribute__((packed)) funkbus_packet_t;
 
 static uint32_t get_bits_reflect(uint8_t const *bitrow, unsigned start, unsigned len)
 {
@@ -140,44 +112,43 @@ static int funkbus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         uint8_t *b = bitbuffer->bb[row];
 
-        funkbus_packet_t packet;
-        packet.typ    = get_bits_reflect(b, 0, 4);
-        packet.subtyp = get_bits_reflect(b, 4, 4);
+        int typ    = get_bits_reflect(b, 0, 4);
+        int subtyp = get_bits_reflect(b, 4, 4);
 
         // only handle packet typ for remotes
-        if (packet.typ != 0x4 || packet.subtyp != 0x3) {
+        if (typ != 0x4 || subtyp != 0x3) {
             return DECODE_ABORT_EARLY;
         }
 
-        packet.sn        = get_bits_reflect(b, 8, 20);
-        packet.r1        = get_bits_reflect(b, 28, 2);
-        packet.bat       = get_bits_reflect(b, 30, 1);
-        packet.r2        = get_bits_reflect(b, 31, 2);
-        packet.command   = get_bits_reflect(b, 33, 3);
-        packet.group     = get_bits_reflect(b, 36, 2);
-        packet.r3        = get_bits_reflect(b, 38, 1);
-        packet.action    = get_bits_reflect(b, 39, 2);
-        packet.repeat    = get_bits_reflect(b, 41, 1);
-        packet.longpress = get_bits_reflect(b, 42, 1);
-        packet.parity    = get_bits_reflect(b, 43, 1);
-        packet.check     = get_bits_reflect(b, 44, 4);
+        int sn        = get_bits_reflect(b, 8, 20);
+        // int r1        = get_bits_reflect(b, 28, 2); // unknown
+        int bat       = get_bits_reflect(b, 30, 1); // 1 == battery low
+        // int r2        = get_bits_reflect(b, 31, 2); // unknown
+        int command   = get_bits_reflect(b, 33, 3); // button on the remote
+        int group     = get_bits_reflect(b, 36, 2); // remote channel group 0-2 (A-C) are switches, 3 == light scene
+        // int r3        = get_bits_reflect(b, 38, 1); // unknown
+        int action    = get_bits_reflect(b, 39, 2); // STOP, OFF, ON, SCENE
+        int repeat    = get_bits_reflect(b, 41, 1); // 1 == not first send of packet
+        int longpress = get_bits_reflect(b, 42, 1); // longpress of button for (dim up/down, scene lerning)
+        int parity    = get_bits_reflect(b, 43, 1); // parity over all bits before
+        int check     = get_bits_reflect(b, 44, 4); // lfsr with 8bit mask 0x8C shifted left by 2 each bit
 
         uint8_t checksum = calc_checksum(b, 43);
-        if (packet.check != reflect4(checksum & 0xF) ||
-                packet.parity != (checksum >> 4)) {
+        if (check != reflect4(checksum & 0xF) ||
+                parity != (checksum >> 4)) {
             return DECODE_FAIL_MIC;
         }
 
         /* clang-format off */
         data_t *data = data_make(
                 "model",        "",                DATA_STRING, "Funkbus-Remote",
-                "id",           "Serial number",   DATA_INT, packet.sn,
-                "battery_ok",   "Battery",         DATA_INT, packet.bat ? 0 : 1,
-                "command",      "Switch",          DATA_INT, packet.command,
-                "group",        "Group",           DATA_INT, packet.group,
-                "action",       "Action",          DATA_INT, packet.action,
-                "repeat",       "Repeat",          DATA_INT, packet.repeat,
-                "longpress",    "Longpress",       DATA_INT, packet.longpress,
+                "id",           "Serial number",   DATA_INT, sn,
+                "battery_ok",   "Battery",         DATA_INT, bat ? 0 : 1,
+                "command",      "Switch",          DATA_INT, command,
+                "group",        "Group",           DATA_INT, group,
+                "action",       "Action",          DATA_INT, action,
+                "repeat",       "Repeat",          DATA_INT, repeat,
+                "longpress",    "Longpress",       DATA_INT, longpress,
                 "mic",          "Integrity",       DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
