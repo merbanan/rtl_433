@@ -139,7 +139,6 @@ typedef struct data_output {
     void (*output_start)(struct data_output *output, char const *const *fields, int num_fields);
     void (*output_flush)(struct data_output *output);
     void (*output_free)(struct data_output *output);
-    FILE *file;
 } data_output_t;
 
 /** Construct data output for CSV printer.

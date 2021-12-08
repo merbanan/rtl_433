@@ -458,85 +458,101 @@ void print_array_value(data_output_t *output, data_array_t *array, char const *f
 
 /* JSON printer */
 
-static void print_file_flush(data_output_t *output)
-{
-    if (output && output->file) {
-        fputc('\n', output->file);
-        fflush(output->file);
-    }
-}
+typedef struct {
+    struct data_output output;
+    FILE *file;
+} data_output_json_t;
 
 static void print_json_array(data_output_t *output, data_array_t *array, char const *format)
 {
-    fprintf(output->file, "[");
+    data_output_json_t *json = (data_output_json_t *)output;
+
+    fprintf(json->file, "[");
     for (int c = 0; c < array->num_values; ++c) {
         if (c)
-            fprintf(output->file, ", ");
+            fprintf(json->file, ", ");
         print_array_value(output, array, format, c);
     }
-    fprintf(output->file, "]");
+    fprintf(json->file, "]");
 }
 
 static void print_json_data(data_output_t *output, data_t *data, char const *format)
 {
     UNUSED(format);
+    data_output_json_t *json = (data_output_json_t *)output;
+
     bool separator = false;
-    fputc('{', output->file);
+    fputc('{', json->file);
     while (data) {
         if (separator)
-            fprintf(output->file, ", ");
+            fprintf(json->file, ", ");
         output->print_string(output, data->key, NULL);
-        fprintf(output->file, " : ");
+        fprintf(json->file, " : ");
         print_value(output, data->type, data->value, data->format);
         separator = true;
         data = data->next;
     }
-    fputc('}', output->file);
+    fputc('}', json->file);
 }
 
 static void print_json_string(data_output_t *output, const char *str, char const *format)
 {
     UNUSED(format);
+    data_output_json_t *json = (data_output_json_t *)output;
 
     size_t str_len = strlen(str);
     if (str[0] == '{' && str[str_len - 1] == '}') {
         // Print embedded JSON object verbatim
-        fprintf(output->file, "%s", str);
+        fprintf(json->file, "%s", str);
         return;
     }
 
-    fprintf(output->file, "\"");
+    fprintf(json->file, "\"");
     while (*str) {
         if (*str == '\r') {
-            fprintf(output->file, "\\r");
+            fprintf(json->file, "\\r");
             continue;
         }
         if (*str == '\n') {
-            fprintf(output->file, "\\n");
+            fprintf(json->file, "\\n");
             continue;
         }
         if (*str == '\t') {
-            fprintf(output->file, "\\t");
+            fprintf(json->file, "\\t");
             continue;
         }
         if (*str == '"' || *str == '\\')
-            fputc('\\', output->file);
-        fputc(*str, output->file);
+            fputc('\\', json->file);
+        fputc(*str, json->file);
         ++str;
     }
-    fprintf(output->file, "\"");
+    fprintf(json->file, "\"");
 }
 
 static void print_json_double(data_output_t *output, double data, char const *format)
 {
     UNUSED(format);
-    fprintf(output->file, "%.3f", data);
+    data_output_json_t *json = (data_output_json_t *)output;
+
+    fprintf(json->file, "%.3f", data);
 }
 
 static void print_json_int(data_output_t *output, int data, char const *format)
 {
     UNUSED(format);
-    fprintf(output->file, "%d", data);
+    data_output_json_t *json = (data_output_json_t *)output;
+
+    fprintf(json->file, "%d", data);
+}
+
+static void print_json_flush(data_output_t *output)
+{
+    data_output_json_t *json = (data_output_json_t *)output;
+
+    if (json && json->file) {
+        fputc('\n', json->file);
+        fflush(json->file);
+    }
 }
 
 static void data_output_json_free(data_output_t *output)
@@ -549,22 +565,22 @@ static void data_output_json_free(data_output_t *output)
 
 struct data_output *data_output_json_create(FILE *file)
 {
-    data_output_t *output = calloc(1, sizeof(data_output_t));
-    if (!output) {
+    data_output_json_t *json = calloc(1, sizeof(data_output_json_t));
+    if (!json) {
         WARN_CALLOC("data_output_json_create()");
         return NULL; // NOTE: returns NULL on alloc failure.
     }
 
-    output->print_data   = print_json_data;
-    output->print_array  = print_json_array;
-    output->print_string = print_json_string;
-    output->print_double = print_json_double;
-    output->print_int    = print_json_int;
-    output->output_flush = print_file_flush;
-    output->output_free  = data_output_json_free;
-    output->file         = file;
+    json->output.print_data   = print_json_data;
+    json->output.print_array  = print_json_array;
+    json->output.print_string = print_json_string;
+    json->output.print_double = print_json_double;
+    json->output.print_int    = print_json_int;
+    json->output.output_flush = print_json_flush;
+    json->output.output_free  = data_output_json_free;
+    json->file                = file;
 
-    return output;
+    return &json->output;
 }
 
 /* Pretty Key-Value printer */
@@ -606,6 +622,7 @@ static int kv_break_after_key(char const *key)
 
 typedef struct {
     struct data_output output;
+    FILE *file;
     void *term;
     int color;
     int ring_bell;
@@ -634,7 +651,7 @@ static void print_kv_data(data_output_t *output, data_t *data, char const *forma
         char sep[] = KV_SEP KV_SEP KV_SEP KV_SEP;
         if (kv->term_width < (int)sizeof(sep))
             sep[kv->term_width > 0 ? kv->term_width - 1 : 40] = '\0';
-        fprintf(output->file, "%s\n", sep);
+        fprintf(kv->file, "%s\n", sep);
         if (color)
             term_set_fg(kv->term, TERM_COLOR_RESET);
     }
@@ -642,7 +659,7 @@ static void print_kv_data(data_output_t *output, data_t *data, char const *forma
     else {
         if (color)
             term_set_fg(kv->term, TERM_COLOR_RESET);
-        fprintf(output->file, "\n");
+        fprintf(kv->file, "\n");
         kv->column = 0;
     }
 
@@ -650,22 +667,22 @@ static void print_kv_data(data_output_t *output, data_t *data, char const *forma
     while (data) {
         // break before some known keys
         if (kv->column > 0 && kv_break_before_key(data->key)) {
-            fprintf(output->file, "\n");
+            fprintf(kv->file, "\n");
             kv->column = 0;
         }
         // break if not enough width left
         else if (kv->column >= kv->term_width - 26) {
-            fprintf(output->file, "\n");
+            fprintf(kv->file, "\n");
             kv->column = 0;
         }
         // pad to next alignment if there is enough width left
         else if (kv->column > 0 && kv->column < kv->term_width - 26) {
-            kv->column += fprintf(output->file, "%*s", 25 - kv->column % 26, " ");
+            kv->column += fprintf(kv->file, "%*s", 25 - kv->column % 26, " ");
         }
 
         // print key
         char *key = *data->pretty_key ? data->pretty_key : data->key;
-        kv->column += fprintf(output->file, "%-10s: ", key);
+        kv->column += fprintf(kv->file, "%-10s: ", key);
         // print value
         if (color)
             term_set_fg(kv->term, kv_color_for_key(data->key));
@@ -684,41 +701,53 @@ static void print_kv_data(data_output_t *output, data_t *data, char const *forma
 
     // top-level: always end with newline
     if (!kv->data_recursion && kv->column > 0) {
-        //fprintf(output->file, "\n"); // data_output_print() already adds a newline
+        //fprintf(kv->file, "\n"); // data_output_print() already adds a newline
         kv->column = 0;
     }
 }
 
 static void print_kv_array(data_output_t *output, data_array_t *array, char const *format)
 {
-    //fprintf(output->file, "[ ");
+    data_output_kv_t *kv = (data_output_kv_t *)output;
+
+    //fprintf(kv->file, "[ ");
     for (int c = 0; c < array->num_values; ++c) {
         if (c)
-            fprintf(output->file, ", ");
+            fprintf(kv->file, ", ");
         print_array_value(output, array, format, c);
     }
-    //fprintf(output->file, " ]");
+    //fprintf(kv->file, " ]");
 }
 
 static void print_kv_double(data_output_t *output, double data, char const *format)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
-    kv->column += fprintf(output->file, format ? format : "%.3f", data);
+    kv->column += fprintf(kv->file, format ? format : "%.3f", data);
 }
 
 static void print_kv_int(data_output_t *output, int data, char const *format)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
-    kv->column += fprintf(output->file, format ? format : "%d", data);
+    kv->column += fprintf(kv->file, format ? format : "%d", data);
 }
 
 static void print_kv_string(data_output_t *output, const char *data, char const *format)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
-    kv->column += fprintf(output->file, format ? format : "%s", data);
+    kv->column += fprintf(kv->file, format ? format : "%s", data);
+}
+
+static void print_kv_flush(data_output_t *output)
+{
+    data_output_kv_t *kv = (data_output_kv_t *)output;
+
+    if (kv && kv->file) {
+        fputc('\n', kv->file);
+        fflush(kv->file);
+    }
 }
 
 static void data_output_kv_free(data_output_t *output)
@@ -746,9 +775,9 @@ struct data_output *data_output_kv_create(FILE *file)
     kv->output.print_string = print_kv_string;
     kv->output.print_double = print_kv_double;
     kv->output.print_int    = print_kv_int;
-    kv->output.output_flush = print_file_flush;
+    kv->output.output_flush = print_kv_flush;
     kv->output.output_free  = data_output_kv_free;
-    kv->output.file         = file;
+    kv->file                = file;
 
     kv->term = term_init(file);
     kv->color = term_has_color(kv->term);
@@ -762,6 +791,7 @@ struct data_output *data_output_kv_create(FILE *file)
 
 typedef struct {
     struct data_output output;
+    FILE *file;
     const char **fields;
     int data_recursion;
     const char *separator;
@@ -793,7 +823,7 @@ static void print_csv_data(data_output_t *output, data_t *data, char const *form
         const char *key = fields[i];
         data_t *found = NULL;
         if (i)
-            fprintf(output->file, "%s", csv->separator);
+            fprintf(csv->file, "%s", csv->separator);
         for (data_t *iter = data; !found && iter; iter = iter->next)
             if (strcmp(iter->key, key) == 0)
                 found = iter;
@@ -806,9 +836,11 @@ static void print_csv_data(data_output_t *output, data_t *data, char const *form
 
 static void print_csv_array(data_output_t *output, data_array_t *array, char const *format)
 {
+    data_output_csv_t *csv = (data_output_csv_t *)output;
+
     for (int c = 0; c < array->num_values; ++c) {
         if (c)
-            fprintf(output->file, ";");
+            fprintf(csv->file, ";");
         print_array_value(output, array, format, c);
     }
 }
@@ -820,8 +852,8 @@ static void print_csv_string(data_output_t *output, const char *str, char const 
 
     while (*str) {
         if (strncmp(str, csv->separator, strlen(csv->separator)) == 0)
-            fputc('\\', output->file);
-        fputc(*str, output->file);
+            fputc('\\', csv->file);
+        fputc(*str, csv->file);
         ++str;
     }
 }
@@ -898,9 +930,9 @@ static void data_output_csv_start(struct data_output *output, char const *const 
 
     // Output the CSV header
     for (i = 0; csv->fields[i]; ++i) {
-        fprintf(csv->output.file, "%s%s", i > 0 ? csv->separator : "", csv->fields[i]);
+        fprintf(csv->file, "%s%s", i > 0 ? csv->separator : "", csv->fields[i]);
     }
-    fprintf(csv->output.file, "\n");
+    fprintf(csv->file, "\n");
     return;
 
 alloc_error:
@@ -914,13 +946,27 @@ alloc_error:
 static void print_csv_double(data_output_t *output, double data, char const *format)
 {
     UNUSED(format);
-    fprintf(output->file, "%.3f", data);
+    data_output_csv_t *csv = (data_output_csv_t *)output;
+
+    fprintf(csv->file, "%.3f", data);
 }
 
 static void print_csv_int(data_output_t *output, int data, char const *format)
 {
     UNUSED(format);
-    fprintf(output->file, "%d", data);
+    data_output_csv_t *csv = (data_output_csv_t *)output;
+
+    fprintf(csv->file, "%d", data);
+}
+
+static void print_csv_flush(data_output_t *output)
+{
+    data_output_csv_t *csv = (data_output_csv_t *)output;
+
+    if (csv && csv->file) {
+        fputc('\n', csv->file);
+        fflush(csv->file);
+    }
 }
 
 static void data_output_csv_free(data_output_t *output)
@@ -945,9 +991,9 @@ struct data_output *data_output_csv_create(FILE *file)
     csv->output.print_double = print_csv_double;
     csv->output.print_int    = print_csv_int;
     csv->output.output_start = data_output_csv_start;
-    csv->output.output_flush = print_file_flush;
+    csv->output.output_flush = print_csv_flush;
     csv->output.output_free  = data_output_csv_free;
-    csv->output.file         = file;
+    csv->file                = file;
 
     return &csv->output;
 }
