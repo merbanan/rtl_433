@@ -22,6 +22,7 @@ add_library(r_433 STATIC
     list.c
     mongoose.c
     optparse.c
+    output_file.c
     output_influx.c
     output_mqtt.c
     pulse_analyzer.c
