@@ -137,6 +137,7 @@ typedef struct data_output {
     void (*print_double)(struct data_output *output, double data, char const *format);
     void (*print_int)(struct data_output *output, int data, char const *format);
     void (*output_start)(struct data_output *output, char const *const *fields, int num_fields);
+    void (*output_flush)(struct data_output *output);
     void (*output_free)(struct data_output *output);
     FILE *file;
 } data_output_t;
@@ -164,7 +165,7 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
 */
 void data_output_start(struct data_output *output, char const *const *fields, int num_fields);
 
-/** Prints a structured data object. */
+/** Prints a structured data object, flushes the output if applicable. */
 void data_output_print(struct data_output *output, data_t *data);
 
 void data_output_free(struct data_output *output);

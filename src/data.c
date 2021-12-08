@@ -396,10 +396,9 @@ void data_output_print(data_output_t *output, data_t *data)
     if (!output)
         return;
     output->print_data(output, data, NULL);
-    if (output->file) {
-        fputc('\n', output->file);
-        fflush(output->file);
-    }
+
+    if (output->output_flush)
+        output->output_flush(output);
 }
 
 void data_output_start(struct data_output *output, char const *const *fields, int num_fields)
@@ -458,6 +457,14 @@ void print_array_value(data_output_t *output, data_array_t *array, char const *f
 }
 
 /* JSON printer */
+
+static void print_file_flush(data_output_t *output)
+{
+    if (output && output->file) {
+        fputc('\n', output->file);
+        fflush(output->file);
+    }
+}
 
 static void print_json_array(data_output_t *output, data_array_t *array, char const *format)
 {
@@ -553,6 +560,7 @@ struct data_output *data_output_json_create(FILE *file)
     output->print_string = print_json_string;
     output->print_double = print_json_double;
     output->print_int    = print_json_int;
+    output->output_flush = print_file_flush;
     output->output_free  = data_output_json_free;
     output->file         = file;
 
@@ -738,6 +746,7 @@ struct data_output *data_output_kv_create(FILE *file)
     kv->output.print_string = print_kv_string;
     kv->output.print_double = print_kv_double;
     kv->output.print_int    = print_kv_int;
+    kv->output.output_flush = print_file_flush;
     kv->output.output_free  = data_output_kv_free;
     kv->output.file         = file;
 
@@ -936,6 +945,7 @@ struct data_output *data_output_csv_create(FILE *file)
     csv->output.print_double = print_csv_double;
     csv->output.print_int    = print_csv_int;
     csv->output.output_start = data_output_csv_start;
+    csv->output.output_flush = print_file_flush;
     csv->output.output_free  = data_output_csv_free;
     csv->output.file         = file;
 
