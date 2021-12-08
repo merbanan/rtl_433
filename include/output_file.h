@@ -27,6 +27,4 @@ struct data_output *data_output_json_create(FILE *file);
 
 struct data_output *data_output_kv_create(FILE *file);
 
-struct data_output *data_output_syslog_create(const char *host, const char *port);
-
 #endif /* INCLUDE_OUTPUT_FILE_H_ */

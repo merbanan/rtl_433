@@ -30,6 +30,7 @@
 #include "list.h"
 #include "optparse.h"
 #include "output_file.h"
+#include "output_udp.h"
 #include "output_mqtt.h"
 #include "output_influx.h"
 #include "write_sigrok.h"
