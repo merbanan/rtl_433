@@ -390,29 +390,29 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code)
             continue;
         }
         else if (*c == '{') {
+            if (width >= 0) {
+                bits->bits_per_row[bits->num_rows - 1] = width;
+            }
             if (bits->num_rows == 0) {
-                bits->num_rows++;
+                bits->free_row = bits->num_rows = 1;
             }
             else {
                 bitbuffer_add_row(bits);
             }
-            if (width >= 0) {
-                bits->bits_per_row[bits->num_rows - 2] = width;
-            }
 
             width = strtol(c + 1, (char **)&c, 0);
-            if (width > BITBUF_COLS * 8)
-                width = BITBUF_COLS * 8;
+            if (width > BITBUF_ROWS * BITBUF_COLS * 8)
+                width = BITBUF_ROWS * BITBUF_COLS * 8;
             if (!*c)
                 break; // no closing brace and end of string
             continue;
         }
         else if (*c == '/') {
-            bitbuffer_add_row(bits);
             if (width >= 0) {
-                bits->bits_per_row[bits->num_rows - 2] = width;
+                bits->bits_per_row[bits->num_rows - 1] = width;
                 width = -1;
             }
+            bitbuffer_add_row(bits);
             continue;
         }
         else if (*c >= '0' && *c <= '9') {
@@ -430,9 +430,6 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code)
         bitbuffer_add_bit(bits, data >> 0 & 0x01);
     }
     if (width >= 0) {
-        if (bits->num_rows == 0) {
-            bits->num_rows++;
-        }
         bits->bits_per_row[bits->num_rows - 1] = width;
     }
 }
