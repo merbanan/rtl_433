@@ -29,7 +29,7 @@ Data layout (nibbles):
     II II II II PP TT SS SS CC
 
 - I: 32 bit ID
-- P: 8 bit Pressure (scale?)
+- P: 8 bit Pressure (scale 2.5 offset 100, minimum seen 41 = 0 kPa)
 - T: 8 bit Temperature (deg. C offset by 40)
 - S: Status?
 - C: 16 bit Checksum, CRC-16 poly 0x1021 init 0xffff
@@ -61,6 +61,9 @@ static int tpms_porsche_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     int temperature = b[5];
     int flags       = b[6] << 8 | b[7];
 
+    int pressure_kpa  = pressure * 5 / 2 - 100;
+    int temperature_c = temperature - 40;
+
     char id_str[4 * 2 + 1];
     sprintf(id_str, "%08x", id);
 
@@ -69,9 +72,9 @@ static int tpms_porsche_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
             "model",            "",             DATA_STRING, "Porsche",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,
-            "pressure",         "Pressure",     DATA_INT, pressure, // need to find the scaling
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (float)temperature - 40.0,
-            "flags",            "",             DATA_FORMAT, "%04x", DATA_INT, flags,
+            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa",    DATA_DOUBLE, (float)pressure_kpa,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C",      DATA_DOUBLE, (float)temperature_c,
+            "flags",            "",             DATA_FORMAT, "%04x",        DATA_INT,    flags,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
