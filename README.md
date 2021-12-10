@@ -289,6 +289,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [203]  Porsche Boxster/Cayman TPMS
     [204]  Jasco/GE Choice Alert Security Devices
     [205]  Telldus weather station FT0385R sensors
+    [206]  LaCrosse TX34-IT rain gauge
 
 * Disabled by default, use -R n or -G
 

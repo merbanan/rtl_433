@@ -1146,6 +1146,7 @@ static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
+// NOTE: we'd need to add "value_types_tab X unit_names X n" fields
 static char *output_fields[] = {
     "model",
     "mode",
