@@ -114,6 +114,7 @@ static char *output_fields[] = {
     "model",
     "id",
     "channel",
+    "battery_ok",
     "temperature_F",
     "humidity",
     "mic",

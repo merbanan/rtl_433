@@ -119,7 +119,10 @@ static data_t *decode_device_ids(const message_t *msg, data_t *data, int style)
     return data_append(data, "ids", "Device IDs", DATA_STRING, ds, NULL);
 }
 
-#define UNKNOWN_IF(C) if (C) { return data_append(data, "unknown", "", DATA_FORMAT, "%04x", DATA_INT, msg->command, NULL); }
+#define UNKNOWN_IF(C) do { \
+                        if (C) \
+                           return data_append(data, "unknown", "", DATA_FORMAT, "%04x", DATA_INT, msg->command, NULL); \
+                      } while (0)
 
 static data_t *interpret_message(const message_t *msg, data_t *data, int verbose)
 {

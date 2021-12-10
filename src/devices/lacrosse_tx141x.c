@@ -14,7 +14,8 @@
 /**
 LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX145wsdth sensor.
 
-Also TFA 30.3221.02 (a TX141TH-Bv2).
+Also TFA 30.3221.02 (a TX141TH-Bv2),
+also TFA 30.3222.02 (a LaCrosse-TX141W).
 
 LaCrosse Color Forecast Station (model C85845), or other LaCrosse product
 utilizing the remote temperature/humidity sensor TX141TH-Bv2 transmitting

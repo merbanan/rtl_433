@@ -79,6 +79,9 @@ typedef struct pulse_detect pulse_detect_t;
 /// Clear the content of a pulse_data_t structure.
 void pulse_data_clear(pulse_data_t *data);
 
+/// Shift out part of the data to make room for more.
+void pulse_data_shift(pulse_data_t *data);
+
 /// Print the content of a pulse_data_t structure (for debug).
 void pulse_data_print(pulse_data_t const *data);
 
@@ -130,9 +133,10 @@ void pulse_detect_set_levels(pulse_detect_t *pulse_detect, int use_mag_est, floa
 /// @param[in,out] pulses Will return a pulse_data_t structure
 /// @param[in,out] fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
 /// @param fpdm Index of filter setting to use
-/// @return 0 if all input sample data is processed
-/// @return 1 if OOK package is detected (but all sample data is still not completely processed)
-/// @return 2 if FSK package is detected (but all sample data is still not completely processed)
+/// @return if a package is detected
+/// @retval 0 all input sample data is processed
+/// @retval 1 OOK package is detected (but all sample data is still not completely processed)
+/// @retval 2 FSK package is detected (but all sample data is still not completely processed)
 int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses, unsigned fpdm);
 
 

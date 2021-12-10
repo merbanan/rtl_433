@@ -46,12 +46,12 @@ Data bits are NRZ encoded.  Logical 1 and 0 bits are 104us in
 length for the LTV-TH3 and 107us for the LTV-TH2.
 
 LTV-TH3
-    SYN:32h ID:24h ?:4b SEQ:3b ?:1b TEMP:12d HUM:12d CHK:8h END:
+    SYNC:32h ID:24h ?:4b SEQ:3b ?:1b TEMP:12d HUM:12d CHK:8h END:
 
     CHK is CRC-8 poly 0x31 init 0x00 over 7 bytes following SYN
 
 LTV-TH2
-    SYN:32h ID:24h ?:4b SEQ:3b ?:1b TEMP:12d HUM:12d CHK:8h END:
+    SYNC:32h ID:24h ?:4b SEQ:3b ?:1b TEMP:12d HUM:12d CHK:8h END:
 
 Sequence# 2 & 6
     CHK is CRC-8 poly 0x31 init 0x00 over 7 bytes following SYN
@@ -70,7 +70,7 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     uint8_t b[11];
     uint32_t id;
-    int flags, seq, offset, chk3, chk2, model;
+    int flags, seq, offset, chk3, chk2, model_num;
     int raw_temp, humidity;
     float temp_c;
 
@@ -93,7 +93,7 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose) {
            fprintf(stderr, "%s: packet length: %d\n", __func__, bitbuffer->bits_per_row[0]);
         }
-        model = (bitbuffer->bits_per_row[0] < 280) ? 3 : 2;
+        model_num = (bitbuffer->bits_per_row[0] < 280) ? 3 : 2;
     }
 
     offset = bitbuffer_search(bitbuffer, 0, 0,
@@ -113,7 +113,7 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // this is not a LTV-TH3 or LTV-TH2 sensor
     chk3 = crc8(b, 8, 0x31, 0x00);
     chk2 = crc8(b, 8, 0x31, 0xac);
-    if (!(chk3 || chk2)) {
+    if (chk3 != 0 && chk2 != 0) {
         if (decoder->verbose) {
            fprintf(stderr, "%s: CRC failed!\n", __func__);
         }
@@ -138,7 +138,7 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-         "model",            "",                 DATA_STRING, model == 3 ? "LaCrosse-TH3" : "LaCrosse-TH2",
+         "model",            "",                 DATA_STRING, model_num == 3 ? "LaCrosse-TH3" : "LaCrosse-TH2",
          "id",               "Sensor ID",        DATA_FORMAT, "%06x", DATA_INT, id,
          "seq",              "Sequence",         DATA_INT,     seq,
          "flags",            "unknown",          DATA_INT,     flags,

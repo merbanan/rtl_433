@@ -198,6 +198,19 @@
     DECL(marlec_solar) \
     DECL(somfy_iohc) \
     DECL(fineoffset_wh31l) \
+    DECL(markisol) \
+    DECL(govee) \
+    DECL(cmr113) \
+    DECL(inkbird_ith20r) \
+    DECL(rainpoint) \
+    DECL(atech_ws308) \
+    DECL(acurite_01185m) \
+    DECL(enocean_erp1) \
+    DECL(megacode) \
+    DECL(auriol_4ld5661) \
+    DECL(tpms_truck) \
+    DECL(funkbus_remote) \
+    DECL(tpms_porsche) \
     DECL(jasco) \
 
     /* Add new decoders here. */

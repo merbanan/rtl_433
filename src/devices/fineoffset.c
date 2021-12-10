@@ -62,13 +62,18 @@ There is an extra, unidentified 7th byte in WH2A packages.
 Based on reverse engineering with gnu-radio and the nice article here:
 http://lucsmall.com/2012/04/29/weather-station-hacking-part-2/
 */
+#define MODEL_WH2 2
+#define MODEL_WH2A 3
+#define MODEL_WH5 5
+#define MODEL_RB 6
+#define MODEL_TP 7
 static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     bitrow_t *bb = bitbuffer->bb;
     uint8_t b[6] = {0};
     data_t *data;
 
-    char *model;
+    int model_num;
     int type;
     uint8_t id;
     int16_t temp;
@@ -78,24 +83,24 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[0] == 48 &&
             bb[0][0] == 0xFF) { // WH2
         bitbuffer_extract_bytes(bitbuffer, 0, 8, b, 40);
-        model = "Fineoffset-WH2";
+        model_num = MODEL_WH2;
 
     } else if (bitbuffer->bits_per_row[0] == 55 &&
             bb[0][0] == 0xFE) { // WH2A
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 48);
-        model = "Fineoffset-WH2A";
+        model_num = MODEL_WH2A;
 
     } else if (bitbuffer->bits_per_row[0] == 47 &&
             bb[0][0] == 0xFE) { // WH5
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 40);
-        model = "Fineoffset-WH5";
+        model_num = MODEL_WH5;
         if (decoder->decode_ctx) // don't care for the actual value
-            model = "Rosenborg-66796";
+            model_num = MODEL_RB;
 
     } else if (bitbuffer->bits_per_row[0] == 49 &&
             bb[0][0] == 0xFF && (bb[0][1]&0x80) == 0x80) { // Telldus
         bitbuffer_extract_bytes(bitbuffer, 0, 9, b, 40);
-        model = "Fineoffset-TelldusProove";
+        model_num = MODEL_TP;
 
     } else
         return DECODE_ABORT_LENGTH;
@@ -108,7 +113,7 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     type = b[0] >> 4;
     if (type != 4) {
         if (decoder->verbose)
-            fprintf(stderr, "%s: Unknown type: %d\n", model, type);
+            fprintf(stderr, "%s: Unknown type: (%d) %d\n", __func__, model_num, type);
         return DECODE_FAIL_SANITY;
     }
 
@@ -132,31 +137,21 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Nibble 8,9 contains humidity
     humidity = b[3];
 
-    // Thermo
-    if (b[3] == 0xFF) {
-        /* clang-format off */
-        data = data_make(
-                "model",            "",             DATA_STRING, model,
-                "id",               "ID",           DATA_INT, id,
-                "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
-                "mic",              "Integrity",    DATA_STRING, "CRC",
-                NULL);
-        /* clang-format on */
-        decoder_output_data(decoder, data);
-    }
-    // Thermo/Hygro
-    else {
-        /* clang-format off */
-        data = data_make(
-                "model",            "",             DATA_STRING, model,
-                "id",               "ID",           DATA_INT, id,
-                "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
-                "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                "mic",              "Integrity",    DATA_STRING, "CRC",
-                NULL);
-        /* clang-format on */
-        decoder_output_data(decoder, data);
-    }
+    /* clang-format off */
+    data = data_make(
+            "model",            "",             DATA_COND, model_num == MODEL_WH2,  DATA_STRING, "Fineoffset-WH2",
+            "model",            "",             DATA_COND, model_num == MODEL_WH2A, DATA_STRING, "Fineoffset-WH2A",
+            "model",            "",             DATA_COND, model_num == MODEL_WH5,  DATA_STRING, "Fineoffset-WH5",
+            "model",            "",             DATA_COND, model_num == MODEL_RB,   DATA_STRING, "Rosenborg-66796",
+            "model",            "",             DATA_COND, model_num == MODEL_TP,   DATA_STRING, "Fineoffset-TelldusProove",
+            "id",               "ID",           DATA_INT, id,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
+            "humidity",         "Humidity",     DATA_COND, humidity != 0xff, DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "mic",              "Integrity",    DATA_STRING, "CRC",
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
     return 1;
 }
 
@@ -574,6 +569,8 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 /*
 Fine Offset WH51, ECOWITT WH51, MISOL/1 Soil Moisture Sensor
+
+Also: SwitchDoc Labs SM23 Soil Moisture Sensor.
 
 Test decoding with: rtl_433 -f 433920000  -X "n=soil_sensor,m=FSK_PCM,s=58,l=58,t=5,r=5000,g=4000,preamble=aa2dd4"
 
@@ -1060,7 +1057,7 @@ r_device fineoffset_WH25 = {
 };
 
 r_device fineoffset_WH51 = {
-    .name           = "Fine Offset Electronics/ECOWITT WH51 Soil Moisture Sensor",
+    .name           = "Fine Offset Electronics/ECOWITT WH51, SwitchDoc Labs SM23 Soil Moisture Sensor",
     .modulation     = FSK_PULSE_PCM,
     .short_width    = 58, // Bit width = 58µs (measured across 580 samples / 40 bits / 250 kHz )
     .long_width     = 58, // NRZ encoding (bit width = pulse width)

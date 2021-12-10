@@ -74,7 +74,7 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* First row should be sync, second row should be 41 bit message */
     if (bitbuffer->bits_per_row[1] < 41) {
-        if (decoder->verbose)
+        if (decoder->verbose && bitbuffer->bits_per_row[1] != 0)
             fprintf(stderr, "X10SEC: DECODE_ABORT_LENGTH, Received message length=%i\n", bitbuffer->bits_per_row[1]);
         return DECODE_ABORT_LENGTH;
     }

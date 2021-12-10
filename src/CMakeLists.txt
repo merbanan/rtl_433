@@ -22,8 +22,10 @@ add_library(r_433 STATIC
     list.c
     mongoose.c
     optparse.c
+    output_file.c
     output_influx.c
     output_mqtt.c
+    output_udp.c
     pulse_analyzer.c
     pulse_demod.c
     pulse_detect.c
@@ -38,12 +40,15 @@ add_library(r_433 STATIC
     write_sigrok.c
     devices/abmt.c
     devices/acurite.c
+    devices/acurite_01185m.c
     devices/akhan_100F14.c
     devices/alecto.c
     devices/ambient_weather.c
     devices/ambientweather_tx8300.c
     devices/ambientweather_wh31e.c
     devices/archos_tbh.c
+    devices/atech_ws308.c
+    devices/auriol_4ld5661.c
     devices/auriol_aft77b2.c
     devices/auriol_afw2a1.c
     devices/auriol_ahfl.c
@@ -61,6 +66,7 @@ add_library(r_433 STATIC
     devices/cardin.c
     devices/cavius.c
     devices/chuango.c
+    devices/cmr113.c
     devices/companion_wtr001.c
     devices/cotech_36_7959.c
     devices/current_cost.c
@@ -77,6 +83,7 @@ add_library(r_433 STATIC
     devices/elro_db286a.c
     devices/elv.c
     devices/emontx.c
+    devices/enocean_erp1.c
     devices/ert_idm.c
     devices/ert_scm.c
     devices/esa.c
@@ -91,10 +98,12 @@ add_library(r_433 STATIC
     devices/fordremote.c
     devices/fs20.c
     devices/ft004b.c
+    devices/funkbus.c
     devices/ge_coloreffects.c
     devices/generic_motion.c
     devices/generic_remote.c
     devices/generic_temperature_sensor.c
+    devices/govee.c
     devices/gt_tmbbq05.c
     devices/gt_wt_02.c
     devices/gt_wt_03.c
@@ -109,6 +118,7 @@ add_library(r_433 STATIC
     devices/ibis_beacon.c
     devices/ikea_sparsnas.c
     devices/infactory.c
+    devices/inkbird_ith20r.c
     devices/inovalley-kw9015b.c
     devices/insteon.c
     devices/interlogix.c
@@ -128,10 +138,12 @@ add_library(r_433 STATIC
     devices/lacrossews.c
     devices/lightwave_rf.c
     devices/m_bus.c
+    devices/markisol.c
     devices/marlec_solar.c
     devices/maverick_et73.c
     devices/maverick_et73x.c
     devices/mebus.c
+    devices/megacode.c
     devices/missil_ml0757.c
     devices/new_template.c
     devices/newkaku.c
@@ -151,6 +163,7 @@ add_library(r_433 STATIC
     devices/proove.c
     devices/quhwa.c
     devices/radiohead_ask.c
+    devices/rainpoint.c
     devices/rftech.c
     devices/rojaflex.c
     devices/rubicson.c
@@ -186,8 +199,10 @@ add_library(r_433 STATIC
     devices/tpms_jansite.c
     devices/tpms_jansite_solar.c
     devices/tpms_pmv107j.c
+    devices/tpms_porsche.c
     devices/tpms_renault.c
     devices/tpms_toyota.c
+    devices/tpms_truck.c
     devices/ts_ft002.c
     devices/ttx201.c
     devices/vaillant_vrt340f.c
@@ -202,11 +217,9 @@ add_library(r_433 STATIC
     devices/x10_sec.c
 )
 
-if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
-    set_source_files_properties(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format -Wno-format-security")
-endif()
-if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
-    set_source_files_properties(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format-pedantic -Wno-format-security -Wno-large-by-value-copy")
+if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+    # untouched upstream code, disable all warnings
+    set_source_files_properties(mongoose.c PROPERTIES COMPILE_FLAGS "-w")
 endif()
 
 add_executable(rtl_433 rtl_433.c)

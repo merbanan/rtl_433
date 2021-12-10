@@ -38,11 +38,17 @@ Depending on your system, you may need to install the following libraries.
 
 Debian:
 
-    sudo apt-get install libtool libusb-1.0-0-dev librtlsdr-dev rtl-sdr build-essential cmake pkg-config
+* If you require TLS connections, install `libssl-dev`.
+
+````
+sudo apt-get install libtool libusb-1.0-0-dev librtlsdr-dev rtl-sdr build-essential cmake pkg-config
+````
+
 
 Centos/Fedora/RHEL with EPEL repo using cmake:
 
   * If `dnf` doesn't exist, use `yum`.
+  * If you require TLS connections, install `openssl-devel`.
 
 ````
 sudo dnf install libtool libusbx-devel rtl-sdr-devel rtl-sdr cmake
@@ -50,13 +56,21 @@ sudo dnf install libtool libusbx-devel rtl-sdr-devel rtl-sdr cmake
 
 Mac OS X with MacPorts:
 
-    sudo port install rtl-sdr cmake
+* If you require TLS connections, install `openssl` from either MacPorts or Homebrew.
+
+````
+sudo port install rtl-sdr cmake
+````
 
 Mac OS X with Homebrew:
 
     brew install rtl-sdr cmake pkg-config
 
 ### CMake
+
+Get the `rtl_433` git repository if needed:
+
+    git clone https://github.com/merbanan/rtl_433.git
 
 Installation using CMake:
 
@@ -71,6 +85,12 @@ Use CMake with `-DENABLE_SOAPYSDR=ON` (default: `AUTO`) to require SoapySDR (e.g
 E.g. use:
 
     cmake -DENABLE_SOAPYSDR=ON ..
+
+::: warning
+If you experience trouble with SoapySDR when compiling or running: you likely mixed version 0.7 and version 0.8 headers and libs.
+Purge all SoapySDR packages and source installation from /usr/local.
+Then install only from packages (version 0.7) or only from source (version 0.8).
+:::
 
 ## Windows
 

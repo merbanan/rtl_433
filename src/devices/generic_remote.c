@@ -22,8 +22,7 @@ Tested devices:
 static int generic_remote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    bitrow_t *bb = bitbuffer->bb;
-    uint8_t *b = bb[0];
+    uint8_t *b = bitbuffer->bb[0];
     char tristate[23];
     char *p = tristate;
 

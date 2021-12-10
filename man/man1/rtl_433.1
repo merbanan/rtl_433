@@ -225,6 +225,9 @@ gap=<gap> (or: g=<gap>)
 .RS
 tolerance=<tolerance> (or: t=<tolerance>)
 .RE
+.RS
+priority=<n> : run decoder only as fallback
+.RE
 where:
 <name> can be any descriptive name tag you need in the output
 <modulation> is one of:
@@ -327,7 +330,7 @@ Specify MQTT server with e.g. \-F mqtt://localhost:1883
 Add MQTT options with e.g. \-F "mqtt://host:1883,opt=arg"
 .RE
 .RS
-MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
+MQTT options are: user=foo, pass=bar, retain[=0|1], qos=N, <format>[=topic]
 .RE
 .RS
 Supported MQTT formats: (default is all)

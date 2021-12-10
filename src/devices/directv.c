@@ -175,7 +175,7 @@ static const char *dtv_button_label[] = {
     [0x100] = "unknown",
 };
 
-const char *get_dtv_button_label(uint8_t button_id)
+static const char *get_dtv_button_label(uint8_t button_id)
 {
     const char *label = dtv_button_label[button_id];
     if (!label) {
@@ -186,7 +186,7 @@ const char *get_dtv_button_label(uint8_t button_id)
 
 /// Set a single bit in a bitrow at bit_idx position.  Assume success, no bounds checking, so be careful!
 /// Maybe this can graduate to bitbuffer.c someday?
-void bitrow_set_bit(bitrow_t bitrow, unsigned bit_idx, unsigned bit_val)
+static void bitrow_set_bit(uint8_t *bitrow, unsigned bit_idx, unsigned bit_val)
 {
     if (bit_val == 0) {
         bitrow[bit_idx >> 3] &= ~(1 << (7 - (bit_idx & 7)));
@@ -222,8 +222,8 @@ void bitrow_set_bit(bitrow_t bitrow, unsigned bit_idx, unsigned bit_val)
 /// sync_pos.  If desired, call again with bit_len = sync_pos to find this data.
 ///
 /// Maybe this can graduate to bitbuffer.c someday?
-unsigned bitrow_dpwm_decode(bitrow_t const bitrow, unsigned bit_len, unsigned start,
-        bitrow_t bitrow_buf, unsigned *sync_pos, unsigned *sync_len)
+static unsigned bitrow_dpwm_decode(uint8_t const *bitrow, unsigned bit_len, unsigned start,
+        uint8_t *bitrow_buf, unsigned *sync_pos, unsigned *sync_len)
 {
     unsigned bitrow_pos;
     int bitrow_buf_pos          = -1;
@@ -276,9 +276,9 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     int r;                   // a row index
-    bitrow_t bitrow;         // space for a possibly modified bitbuffer row
+    uint8_t bitrow[13];      // space for a possibly modified bitbuffer row, up to 99 bits
     uint8_t bit_len;         // row length is variable, so need to keep track of this
-    bitrow_t dtv_buf= {0};   // A location for our decoded bitrow data
+    uint8_t dtv_buf[13] = {0}; // decoded bitrow data, 40 bits (5 bytes)
     unsigned dtv_bit_len;
     unsigned row_sync_pos;
     unsigned row_sync_len;

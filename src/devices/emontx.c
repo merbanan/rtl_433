@@ -149,6 +149,7 @@ static char *output_fields[] = {
         "temp5_C",
         "temp6_C",
         "pulse",
+        "mic",
         NULL,
 };
 

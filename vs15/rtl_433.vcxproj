@@ -54,7 +54,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>RTLSDR;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>RTLSDR;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\include\;..\src\;..\..\rtl-sdr\;..\..\libusb\include\libusb-1.0</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -112,8 +112,10 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClInclude Include="..\include\list.h" />
     <ClInclude Include="..\include\mongoose.h" />
     <ClInclude Include="..\include\optparse.h" />
+    <ClInclude Include="..\include\output_file.h" />
     <ClInclude Include="..\include\output_influx.h" />
     <ClInclude Include="..\include\output_mqtt.h" />
+    <ClInclude Include="..\include\output_udp.h" />
     <ClInclude Include="..\include\pulse_analyzer.h" />
     <ClInclude Include="..\include\pulse_demod.h" />
     <ClInclude Include="..\include\pulse_detect.h" />
@@ -150,8 +152,10 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\list.c" />
     <ClCompile Include="..\src\mongoose.c" />
     <ClCompile Include="..\src\optparse.c" />
+    <ClCompile Include="..\src\output_file.c" />
     <ClCompile Include="..\src\output_influx.c" />
     <ClCompile Include="..\src\output_mqtt.c" />
+    <ClCompile Include="..\src\output_udp.c" />
     <ClCompile Include="..\src\pulse_analyzer.c" />
     <ClCompile Include="..\src\pulse_demod.c" />
     <ClCompile Include="..\src\pulse_detect.c" />
@@ -167,12 +171,15 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\write_sigrok.c" />
     <ClCompile Include="..\src\devices\abmt.c" />
     <ClCompile Include="..\src\devices\acurite.c" />
+    <ClCompile Include="..\src\devices\acurite_01185m.c" />
     <ClCompile Include="..\src\devices\akhan_100F14.c" />
     <ClCompile Include="..\src\devices\alecto.c" />
     <ClCompile Include="..\src\devices\ambient_weather.c" />
     <ClCompile Include="..\src\devices\ambientweather_tx8300.c" />
     <ClCompile Include="..\src\devices\ambientweather_wh31e.c" />
     <ClCompile Include="..\src\devices\archos_tbh.c" />
+    <ClCompile Include="..\src\devices\atech_ws308.c" />
+    <ClCompile Include="..\src\devices\auriol_4ld5661.c" />
     <ClCompile Include="..\src\devices\auriol_aft77b2.c" />
     <ClCompile Include="..\src\devices\auriol_afw2a1.c" />
     <ClCompile Include="..\src\devices\auriol_ahfl.c" />
@@ -190,6 +197,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\cardin.c" />
     <ClCompile Include="..\src\devices\cavius.c" />
     <ClCompile Include="..\src\devices\chuango.c" />
+    <ClCompile Include="..\src\devices\cmr113.c" />
     <ClCompile Include="..\src\devices\companion_wtr001.c" />
     <ClCompile Include="..\src\devices\cotech_36_7959.c" />
     <ClCompile Include="..\src\devices\current_cost.c" />
@@ -206,6 +214,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\elro_db286a.c" />
     <ClCompile Include="..\src\devices\elv.c" />
     <ClCompile Include="..\src\devices\emontx.c" />
+    <ClCompile Include="..\src\devices\enocean_erp1.c" />
     <ClCompile Include="..\src\devices\ert_idm.c" />
     <ClCompile Include="..\src\devices\ert_scm.c" />
     <ClCompile Include="..\src\devices\esa.c" />
@@ -220,10 +229,12 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\fordremote.c" />
     <ClCompile Include="..\src\devices\fs20.c" />
     <ClCompile Include="..\src\devices\ft004b.c" />
+    <ClCompile Include="..\src\devices\funkbus.c" />
     <ClCompile Include="..\src\devices\ge_coloreffects.c" />
     <ClCompile Include="..\src\devices\generic_motion.c" />
     <ClCompile Include="..\src\devices\generic_remote.c" />
     <ClCompile Include="..\src\devices\generic_temperature_sensor.c" />
+    <ClCompile Include="..\src\devices\govee.c" />
     <ClCompile Include="..\src\devices\gt_tmbbq05.c" />
     <ClCompile Include="..\src\devices\gt_wt_02.c" />
     <ClCompile Include="..\src\devices\gt_wt_03.c" />
@@ -238,6 +249,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\ibis_beacon.c" />
     <ClCompile Include="..\src\devices\ikea_sparsnas.c" />
     <ClCompile Include="..\src\devices\infactory.c" />
+    <ClCompile Include="..\src\devices\inkbird_ith20r.c" />
     <ClCompile Include="..\src\devices\inovalley-kw9015b.c" />
     <ClCompile Include="..\src\devices\insteon.c" />
     <ClCompile Include="..\src\devices\interlogix.c" />
@@ -257,10 +269,12 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\lacrossews.c" />
     <ClCompile Include="..\src\devices\lightwave_rf.c" />
     <ClCompile Include="..\src\devices\m_bus.c" />
+    <ClCompile Include="..\src\devices\markisol.c" />
     <ClCompile Include="..\src\devices\marlec_solar.c" />
     <ClCompile Include="..\src\devices\maverick_et73.c" />
     <ClCompile Include="..\src\devices\maverick_et73x.c" />
     <ClCompile Include="..\src\devices\mebus.c" />
+    <ClCompile Include="..\src\devices\megacode.c" />
     <ClCompile Include="..\src\devices\missil_ml0757.c" />
     <ClCompile Include="..\src\devices\new_template.c" />
     <ClCompile Include="..\src\devices\newkaku.c" />
@@ -280,6 +294,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\proove.c" />
     <ClCompile Include="..\src\devices\quhwa.c" />
     <ClCompile Include="..\src\devices\radiohead_ask.c" />
+    <ClCompile Include="..\src\devices\rainpoint.c" />
     <ClCompile Include="..\src\devices\rftech.c" />
     <ClCompile Include="..\src\devices\rojaflex.c" />
     <ClCompile Include="..\src\devices\rubicson.c" />
@@ -315,8 +330,10 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\tpms_jansite.c" />
     <ClCompile Include="..\src\devices\tpms_jansite_solar.c" />
     <ClCompile Include="..\src\devices\tpms_pmv107j.c" />
+    <ClCompile Include="..\src\devices\tpms_porsche.c" />
     <ClCompile Include="..\src\devices\tpms_renault.c" />
     <ClCompile Include="..\src\devices\tpms_toyota.c" />
+    <ClCompile Include="..\src\devices\tpms_truck.c" />
     <ClCompile Include="..\src\devices\ts_ft002.c" />
     <ClCompile Include="..\src\devices\ttx201.c" />
     <ClCompile Include="..\src\devices\vaillant_vrt340f.c" />

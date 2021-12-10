@@ -144,8 +144,6 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // the max of 130 is just a guess
     if (bitbuffer->bits_per_row[0] < 84 || bitbuffer->bits_per_row[0] > 130) {
-        if (decoder->verbose)
-            (void)fprintf(stderr, "%s:return  DECODE_ABORT_LENGTH\n", __func__);
         return DECODE_ABORT_LENGTH;
     }
 
@@ -394,20 +392,15 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-
-        // Common fields
         "model",
-
+        "id",
         "id0",
         "id1",
         "switch_id",
-
         "pad_id",
         "pin",
-
         "remote_id",
         "button_id",
-
         "fixed",
         "rolling",
         NULL,

@@ -12,6 +12,9 @@
 /**
 Cotech 36-7959 Weatherstation, 433Mhz.
 
+Also: SwitchDoc Labs Weather FT020T.
+Also: Sainlogic Weather Station WS019T
+
 OOK modulated with Manchester encoding, halfbit-width 500 us.
 Message length is 112 bit, every second time it will transmit two identical messages, packet gap 5400 us.
 Example raw message: {112}c6880000e80000846d20fffbfb39
@@ -94,14 +97,14 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int wind      = (wind_msb << 8) | b[2];                       // [16:8]
     int gust      = (gust_msb << 8) | b[3];                       // [24:8]
     int wind_dir  = (deg_msb << 8) | b[4];                        // [32:8]
-    //int unk1      = (b[5] >> 4);                                  // [40:4]
+    //int rain_msb  = (b[5] >> 4);                                  // [40:4]
     int rain      = ((b[5] & 0x0f) << 8) | (b[6]);                // [44:12]
     int flags     = (b[7] & 0xf0) >> 4;                           // [56:4]
     int temp_raw  = ((b[7] & 0x0f) << 8) | (b[8]);                // [60:12]
     int humidity  = (b[9]);                                       // [72:8]
     int light_lux = (b[10] << 8) + b[11] + ((flags & 0x08) << 9); // [80:16]
     int uv        = (b[12]);                                      // [96:8]
-    //int unk3      = (b[13]);                                      // [104:8]
+    //int crc       = (b[13]);                                      // [104:8]
 
     float temp_c = (temp_raw - 400) * 0.1f;
 
@@ -145,10 +148,10 @@ static char *cotech_36_7959_output_fields[] = {
 };
 
 r_device cotech_36_7959 = {
-        .name        = "Cotech 36-7959 wireless weather station with USB",
+        .name        = "Cotech 36-7959, SwitchDocLabs FT020T wireless weather station with USB",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 500,
-        .long_width  = 0, // not used
+        .long_width  = 0,    // not used
         .gap_limit   = 1200, // Not used
         .reset_limit = 1200, // Packet gap is 5400 us.
         .decode_fn   = &cotech_36_7959_decode,

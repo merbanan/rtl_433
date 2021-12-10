@@ -116,8 +116,10 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
                     s->fsk_pulse_length = 0;
                     // When pulse buffer is full go to error state
                     if (fsk_pulses->num_pulses >= PD_MAX_PULSES) {
-                        fprintf(stderr, "pulse_FSK_detect(): Maximum number of pulses reached!\n");
-                        s->fsk_state = PD_FSK_STATE_ERROR;
+                        //fprintf(stderr, "pulse_FSK_detect(): Maximum number of pulses reached!\n");
+                        //s->fsk_state = PD_FSK_STATE_ERROR;
+                        // TODO: workaround, specifically for the Inkbird-ITH20R: free some of the buffer
+                        pulse_data_shift(fsk_pulses);
                     }
                 }
                 // Else rewind to last pulse
@@ -211,8 +213,10 @@ void pulse_FSK_detect_mm(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state
                     s->fsk_pulse_length = 0;
                     // When pulse buffer is full go to error state
                     if (fsk_pulses->num_pulses >= PD_MAX_PULSES) {
-//                        fprintf(stderr, "pulse_FSK_detect(): Maximum number of pulses reached!\n");
-                        s->fsk_state = PD_FSK_STATE_ERROR;
+                        //fprintf(stderr, "pulse_FSK_detect(): Maximum number of pulses reached!\n");
+                        //s->fsk_state = PD_FSK_STATE_ERROR;
+                        // TODO: workaround, specifically for the Inkbird-ITH20R: free some of the buffer
+                        pulse_data_shift(fsk_pulses);
                     }
                 }
                 s->fm_f1_est += fm_n / FSK_EST_SLOW - s->fm_f1_est / FSK_EST_SLOW; // Slow estimator

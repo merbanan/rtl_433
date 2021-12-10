@@ -28,6 +28,15 @@ void pulse_data_clear(pulse_data_t *data)
     *data = (pulse_data_t const){0};
 }
 
+void pulse_data_shift(pulse_data_t *data)
+{
+    int offs = PD_MAX_PULSES / 2; // shift out half the data
+    memmove(data->pulse, &data->pulse[offs], (PD_MAX_PULSES - offs) * sizeof(*data->pulse));
+    memmove(data->gap, &data->gap[offs], (PD_MAX_PULSES - offs) * sizeof(*data->gap));
+    data->num_pulses -= offs;
+    data->offset += offs;
+}
+
 void pulse_data_print(pulse_data_t const *data)
 {
     fprintf(stderr, "Pulse data: %u pulses\n", data->num_pulses);

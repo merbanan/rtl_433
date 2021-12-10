@@ -19,7 +19,7 @@ Tested devices:
 static int oil_watchman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // Start of frame preamble is 111000xx
-    uint8_t const preamble_pattern = 0xe0;
+    uint8_t const preamble_pattern[] = {0xe0};
 
     // End of frame is 00xxxxxx or 11xxxxxx depending on final data bit
     uint8_t const postamble_pattern[2] = { 0x00, 0xc0 };
@@ -37,7 +37,7 @@ static int oil_watchman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int events = 0;
 
     // Find a preamble with enough bits after it that it could be a complete packet
-    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, &preamble_pattern, 6)) + 136 <=
+    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 6)) + 136 <=
             bitbuffer->bits_per_row[0]) {
 
         // Skip the matched preamble bits to point to the data

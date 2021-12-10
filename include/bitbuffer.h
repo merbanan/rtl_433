@@ -15,8 +15,14 @@
 #include <stdint.h>
 
 // NOTE: Wireless mbus protocol needs at least ((256+16*2+3)*12)/8 => 437 bytes
-#define BITBUF_COLS 450 // Number of bytes in a column
+//       which fits even if RTL_433_REDUCE_STACK_USE is defined because of row spilling
+#ifdef RTL_433_REDUCE_STACK_USE
+#define BITBUF_COLS 40 // Number of bytes in a column
 #define BITBUF_ROWS 25
+#else
+#define BITBUF_COLS 128 // Number of bytes in a column
+#define BITBUF_ROWS 50
+#endif
 #define BITBUF_MAX_PRINT_BITS 50 // Maximum number of bits to print (in addition to hex values)
 
 typedef uint8_t bitrow_t[BITBUF_COLS];
@@ -24,10 +30,11 @@ typedef bitrow_t bitarray_t[BITBUF_ROWS];
 
 /// Bit buffer.
 typedef struct bitbuffer {
-    uint16_t num_rows;                      // Number of active rows
-    uint16_t bits_per_row[BITBUF_ROWS];     // Number of active bits per row
-    uint16_t syncs_before_row[BITBUF_ROWS]; // Number of sync pulses before row
-    bitarray_t bb;                          // The actual bits buffer
+    uint16_t num_rows;                      ///< Number of active rows
+    uint16_t free_row;                      ///< Index of next free row
+    uint16_t bits_per_row[BITBUF_ROWS];     ///< Number of active bits per row
+    uint16_t syncs_before_row[BITBUF_ROWS]; ///< Number of sync pulses before row
+    bitarray_t bb;                          ///< The actual bits buffer
 } bitbuffer_t;
 
 /// Clear the content of the bitbuffer.
@@ -109,13 +116,13 @@ unsigned count_repeats(bitbuffer_t *bits, unsigned row);
 int bitbuffer_find_repeated_row(bitbuffer_t *bits, unsigned min_repeats, unsigned min_bits);
 
 /// Return a single bit from a bitrow at bit_idx position.
-static inline uint8_t bitrow_get_bit(const bitrow_t bitrow, unsigned bit_idx)
+static inline uint8_t bitrow_get_bit(uint8_t const *bitrow, unsigned bit_idx)
 {
     return bitrow[bit_idx >> 3] >> (7 - (bit_idx & 7)) & 1;
 }
 
 /// Return a single byte from a bitrow at bit_idx position (which may be unaligned).
-static inline uint8_t bitrow_get_byte(const bitrow_t bitrow, unsigned bit_idx)
+static inline uint8_t bitrow_get_byte(uint8_t const *bitrow, unsigned bit_idx)
 {
     return (uint8_t)((bitrow[(bit_idx >> 3)] << (bit_idx & 7)) |
                      (bitrow[(bit_idx >> 3) + 1] >> (8 - (bit_idx & 7))));
