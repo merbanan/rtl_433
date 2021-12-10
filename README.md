@@ -287,6 +287,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [201]  Unbranded SolarTPMS for trucks
     [202]  Funkbus / Instafunk (Berker, Jira, Jung)
     [203]  Porsche Boxster/Cayman TPMS
+    [204]  Jasco/GE Choice Alert Security Devices
 
 * Disabled by default, use -R n or -G
 

@@ -499,6 +499,9 @@
     <ClCompile Include="..\src\devices\intertechno.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\jasco.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\kedsum.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

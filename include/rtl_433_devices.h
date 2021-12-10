@@ -211,6 +211,7 @@
     DECL(tpms_truck) \
     DECL(funkbus_remote) \
     DECL(tpms_porsche) \
+    DECL(jasco) \
 
     /* Add new decoders here. */
 

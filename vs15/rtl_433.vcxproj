@@ -254,6 +254,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\insteon.c" />
     <ClCompile Include="..\src\devices\interlogix.c" />
     <ClCompile Include="..\src\devices\intertechno.c" />
+    <ClCompile Include="..\src\devices\jasco.c" />
     <ClCompile Include="..\src\devices\kedsum.c" />
     <ClCompile Include="..\src\devices\kerui.c" />
     <ClCompile Include="..\src\devices\klimalogg.c" />
