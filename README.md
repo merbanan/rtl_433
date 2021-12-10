@@ -284,6 +284,11 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [198]* EnOcean ERP1
     [199]  Linear Megacode Garage/Gate Remotes
     [200]* Auriol 4-LD5661 temperature/rain sensor
+    [201]  Unbranded SolarTPMS for trucks
+    [202]  Funkbus / Instafunk (Berker, Jira, Jung)
+    [203]  Porsche Boxster/Cayman TPMS
+    [204]  Jasco/GE Choice Alert Security Devices
+    [205]  Telldus weather station FT0385R sensors
 
 * Disabled by default, use -R n or -G
 
@@ -321,6 +326,7 @@ Common keys are:
 	reset=<reset> (or: r=<reset>)
 	gap=<gap> (or: g=<gap>)
 	tolerance=<tolerance> (or: t=<tolerance>)
+	priority=<n> : run decoder only as fallback
 where:
 <name> can be any descriptive name tag you need in the output
 <modulation> is one of:

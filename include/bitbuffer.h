@@ -23,6 +23,7 @@
 #define BITBUF_COLS 128 // Number of bytes in a column
 #define BITBUF_ROWS 50
 #endif
+#define BITBUF_MAX_ROW_BITS (BITBUF_ROWS * BITBUF_COLS * 8) // Maximum number of bits per row, max UINT16_MAX
 #define BITBUF_MAX_PRINT_BITS 50 // Maximum number of bits to print (in addition to hex values)
 
 typedef uint8_t bitrow_t[BITBUF_COLS];

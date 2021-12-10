@@ -905,7 +905,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             help_read();
 
         add_infile(cfg, arg);
-        // TODO: check_read_file_info()
+        // TODO: file_info_check_read()
         break;
     case 'w':
         if (!arg)
@@ -1343,6 +1343,8 @@ int main(int argc, char **argv) {
     if (cfg->frequencies > 1 && cfg->hop_times == 0) {
         cfg->hop_time[cfg->hop_times++] = DEFAULT_HOP_TIME;
     }
+    // save sample rate, this should be a hop config too
+    uint32_t sample_rate_0 = cfg->samp_rate;
 
     // add all remaining positional arguments as input files
     while (argc > optind) {
@@ -1561,8 +1563,13 @@ int main(int argc, char **argv) {
         for (void **iter = cfg->in_files.elems; iter && *iter; ++iter) {
             cfg->in_filename = *iter;
 
-            parse_file_info(cfg->in_filename, &demod->load_info);
-            if (strcmp(demod->load_info.path, "-") == 0) { /* read samples from stdin */
+            file_info_clear(&demod->load_info); // reset all info
+            file_info_parse_filename(&demod->load_info, cfg->in_filename);
+            // apply file info or default
+            cfg->samp_rate        = demod->load_info.sample_rate ? demod->load_info.sample_rate : sample_rate_0;
+            cfg->center_frequency = demod->load_info.center_frequency ? demod->load_info.center_frequency : cfg->frequency[0];
+
+            if (strcmp(demod->load_info.path, "-") == 0) { // read samples from stdin
                 in_file = stdin;
                 cfg->in_filename = "<stdin>";
             } else {
@@ -1574,12 +1581,13 @@ int main(int argc, char **argv) {
             }
             fprintf(stderr, "Test mode active. Reading samples from file: %s\n", cfg->in_filename);  // Essential information (not quiet)
             if (demod->load_info.format == CU8_IQ
+                    || demod->load_info.format == CS8_IQ
                     || demod->load_info.format == S16_AM
                     || demod->load_info.format == S16_FM) {
                 demod->sample_size = sizeof(uint8_t) * 2; // CU8, AM, FM
             } else if (demod->load_info.format == CS16_IQ
                     || demod->load_info.format == CF32_IQ) {
-                demod->sample_size = sizeof(int16_t) * 2; // CF32, CS16
+                demod->sample_size = sizeof(int16_t) * 2; // CS16, CF32 (after conversion)
             } else if (demod->load_info.format == PULSE_OOK) {
                 // ignore
             } else {
@@ -1633,6 +1641,7 @@ int main(int argc, char **argv) {
             int n_blocks = 0;
             unsigned long n_read;
             do {
+                // Convert CF32 file to CS16 buffer
                 if (demod->load_info.format == CF32_IQ) {
                     n_read = fread(test_mode_float_buf, sizeof(float), DEFAULT_BUF_LENGTH / 2, in_file);
                     // clamp float to [-1,1] and scale to Q0.15
@@ -1647,6 +1656,13 @@ int main(int argc, char **argv) {
                     n_read *= 2; // convert to byte count
                 } else {
                     n_read = fread(test_mode_buf, 1, DEFAULT_BUF_LENGTH, in_file);
+
+                    // Convert CS8 file to CU8 buffer
+                    if (demod->load_info.format == CS8_IQ) {
+                        for (unsigned long n = 0; n < n_read; n++) {
+                            test_mode_buf[n] = ((int8_t)test_mode_buf[n]) + 128;
+                        }
+                    }
                 }
                 if (n_read == 0) break;  // sdr_callback() will Segmentation Fault with len=0
                 demod->sample_file_pos = ((float)n_blocks * DEFAULT_BUF_LENGTH + n_read) / cfg->samp_rate / demod->sample_size;

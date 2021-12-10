@@ -172,7 +172,7 @@ mappings = {
             "device_class": "battery",
             "name": "Battery",
             "unit_of_measurement": "%",
-            "value_template": "{{ float(value|int) * 99 + 1 }}",
+            "value_template": "{{ float(value) * 99 + 1 }}",
             "state_class": "measurement"
         }
     },
@@ -266,7 +266,7 @@ mappings = {
         "config": {
             "name": "Wind Average",
             "unit_of_measurement": "km/h",
-            "value_template": "{{ float(value|float) * 3.6 | round(2) }}",
+            "value_template": "{{ (float(value|float) * 3.6) | round(2) }}",
             "state_class": "measurement"
         }
     },
@@ -299,7 +299,7 @@ mappings = {
         "config": {
             "name": "Wind max",
             "unit_of_measurement": "km/h",
-            "value_template": "{{ float(value|float) * 3.6 | round(2) }}",
+            "value_template": "{{ (float(value|float) * 3.6) | round(2) }}",
             "state_class": "measurement"
         }
     },
@@ -354,7 +354,7 @@ mappings = {
         "config": {
             "name": "Rain Total",
             "unit_of_measurement": "mm",
-            "value_template": "{{ float(value|float) * 25.4 | round(2) }}",
+            "value_template": "{{ (float(value|float) * 25.4) | round(2) }}",
             "state_class": "total_increasing"
         }
     },
@@ -365,7 +365,7 @@ mappings = {
         "config": {
             "name": "Rain Rate",
             "unit_of_measurement": "mm/h",
-            "value_template": "{{ float(value|float) * 25.4 | round(2) }}",
+            "value_template": "{{ (float(value|float) * 25.4) | round(2) }}",
             "state_class": "measurement"
         }
     },

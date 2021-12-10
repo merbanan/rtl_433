@@ -22,8 +22,10 @@ add_library(r_433 STATIC
     list.c
     mongoose.c
     optparse.c
+    output_file.c
     output_influx.c
     output_mqtt.c
+    output_udp.c
     pulse_analyzer.c
     pulse_demod.c
     pulse_detect.c
@@ -96,6 +98,7 @@ add_library(r_433 STATIC
     devices/fordremote.c
     devices/fs20.c
     devices/ft004b.c
+    devices/funkbus.c
     devices/ge_coloreffects.c
     devices/generic_motion.c
     devices/generic_remote.c
@@ -120,6 +123,7 @@ add_library(r_433 STATIC
     devices/insteon.c
     devices/interlogix.c
     devices/intertechno.c
+    devices/jasco.c
     devices/kedsum.c
     devices/kerui.c
     devices/klimalogg.c
@@ -179,6 +183,7 @@ add_library(r_433 STATIC
     devices/somfy_rts.c
     devices/springfield.c
     devices/steelmate.c
+    devices/telldus_ft0385r.c
     devices/tfa_30_3196.c
     devices/tfa_30_3221.c
     devices/tfa_drop_30.3233.c
@@ -196,8 +201,10 @@ add_library(r_433 STATIC
     devices/tpms_jansite.c
     devices/tpms_jansite_solar.c
     devices/tpms_pmv107j.c
+    devices/tpms_porsche.c
     devices/tpms_renault.c
     devices/tpms_toyota.c
+    devices/tpms_truck.c
     devices/ts_ft002.c
     devices/ttx201.c
     devices/vaillant_vrt340f.c

@@ -112,8 +112,10 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClInclude Include="..\include\list.h" />
     <ClInclude Include="..\include\mongoose.h" />
     <ClInclude Include="..\include\optparse.h" />
+    <ClInclude Include="..\include\output_file.h" />
     <ClInclude Include="..\include\output_influx.h" />
     <ClInclude Include="..\include\output_mqtt.h" />
+    <ClInclude Include="..\include\output_udp.h" />
     <ClInclude Include="..\include\pulse_analyzer.h" />
     <ClInclude Include="..\include\pulse_demod.h" />
     <ClInclude Include="..\include\pulse_detect.h" />
@@ -150,8 +152,10 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\list.c" />
     <ClCompile Include="..\src\mongoose.c" />
     <ClCompile Include="..\src\optparse.c" />
+    <ClCompile Include="..\src\output_file.c" />
     <ClCompile Include="..\src\output_influx.c" />
     <ClCompile Include="..\src\output_mqtt.c" />
+    <ClCompile Include="..\src\output_udp.c" />
     <ClCompile Include="..\src\pulse_analyzer.c" />
     <ClCompile Include="..\src\pulse_demod.c" />
     <ClCompile Include="..\src\pulse_detect.c" />
@@ -225,6 +229,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\fordremote.c" />
     <ClCompile Include="..\src\devices\fs20.c" />
     <ClCompile Include="..\src\devices\ft004b.c" />
+    <ClCompile Include="..\src\devices\funkbus.c" />
     <ClCompile Include="..\src\devices\ge_coloreffects.c" />
     <ClCompile Include="..\src\devices\generic_motion.c" />
     <ClCompile Include="..\src\devices\generic_remote.c" />
@@ -249,6 +254,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\insteon.c" />
     <ClCompile Include="..\src\devices\interlogix.c" />
     <ClCompile Include="..\src\devices\intertechno.c" />
+    <ClCompile Include="..\src\devices\jasco.c" />
     <ClCompile Include="..\src\devices\kedsum.c" />
     <ClCompile Include="..\src\devices\kerui.c" />
     <ClCompile Include="..\src\devices\klimalogg.c" />
@@ -307,6 +313,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\somfy_rts.c" />
     <ClCompile Include="..\src\devices\springfield.c" />
     <ClCompile Include="..\src\devices\steelmate.c" />
+    <ClCompile Include="..\src\devices\telldus_ft0385r.c" />
     <ClCompile Include="..\src\devices\tfa_30_3196.c" />
     <ClCompile Include="..\src\devices\tfa_30_3221.c" />
     <ClCompile Include="..\src\devices\tfa_drop_30.3233.c" />
@@ -324,8 +331,10 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\tpms_jansite.c" />
     <ClCompile Include="..\src\devices\tpms_jansite_solar.c" />
     <ClCompile Include="..\src\devices\tpms_pmv107j.c" />
+    <ClCompile Include="..\src\devices\tpms_porsche.c" />
     <ClCompile Include="..\src\devices\tpms_renault.c" />
     <ClCompile Include="..\src\devices\tpms_toyota.c" />
+    <ClCompile Include="..\src\devices\tpms_truck.c" />
     <ClCompile Include="..\src\devices\ts_ft002.c" />
     <ClCompile Include="..\src\devices\ttx201.c" />
     <ClCompile Include="..\src\devices\vaillant_vrt340f.c" />

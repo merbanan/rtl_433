@@ -29,6 +29,8 @@
 #include "data_tag.h"
 #include "list.h"
 #include "optparse.h"
+#include "output_file.h"
+#include "output_udp.h"
 #include "output_mqtt.h"
 #include "output_influx.h"
 #include "write_sigrok.h"
@@ -323,10 +325,11 @@ void calc_rssi_snr(r_cfg_t *cfg, pulse_data_t *pulse_data)
         pulse_data->noise_db = 10.0f * log10f(ook_low_estimate) - 42.1442f; // 10*log10f(16384.0f)
         pulse_data->snr_db   = 10.0f * log10f(asnr);
     }
-    else { // magnitude (CS16)
+    else { // magnitude (CU8, CS16)
         pulse_data->range_db = 84.2884f; // 20*log10f(16384.0f)
-        // actually 12 bit is 20*log10f(2048.0f) = 66.2266f,
-        // actually 16 bit is 20*log10f(32768.0f) = 90.3090f,
+        // lowest (scaled x128) reading at  8 bit is -20*log10(128) = -42.1442 (eff. -36 dB)
+        // lowest (scaled div2) reading at 12 bit is -20*log10(1024) = -60.2060 (eff. -54 dB)
+        // lowest (scaled div2) reading at 16 bit is -20*log10(16384) = -84.2884 (eff. -78 dB)
         pulse_data->rssi_db  = 20.0f * log10f(ook_high_estimate) - 84.2884f; // 20*log10f(16384.0f)
         pulse_data->noise_db = 20.0f * log10f(ook_low_estimate) - 84.2884f; // 20*log10f(16384.0f)
         pulse_data->snr_db   = 20.0f * log10f(asnr);
@@ -467,43 +470,56 @@ int run_ook_demods(list_t *r_devs, pulse_data_t *pulse_data)
 {
     int p_events = 0;
 
-    for (void **iter = r_devs->elems; iter && *iter; ++iter) {
-        r_device *r_dev = *iter;
-        switch (r_dev->modulation) {
-        case OOK_PULSE_PCM_RZ:
-            p_events += pulse_demod_pcm(pulse_data, r_dev);
-            break;
-        case OOK_PULSE_PPM:
-            p_events += pulse_demod_ppm(pulse_data, r_dev);
-            break;
-        case OOK_PULSE_PWM:
-            p_events += pulse_demod_pwm(pulse_data, r_dev);
-            break;
-        case OOK_PULSE_MANCHESTER_ZEROBIT:
-            p_events += pulse_demod_manchester_zerobit(pulse_data, r_dev);
-            break;
-        case OOK_PULSE_PIWM_RAW:
-            p_events += pulse_demod_piwm_raw(pulse_data, r_dev);
-            break;
-        case OOK_PULSE_PIWM_DC:
-            p_events += pulse_demod_piwm_dc(pulse_data, r_dev);
-            break;
-        case OOK_PULSE_DMC:
-            p_events += pulse_demod_dmc(pulse_data, r_dev);
-            break;
-        case OOK_PULSE_PWM_OSV1:
-            p_events += pulse_demod_osv1(pulse_data, r_dev);
-            break;
-        case OOK_PULSE_NRZS:
-            p_events += pulse_demod_nrzs(pulse_data, r_dev);
-            break;
-        // FSK decoders
-        case FSK_PULSE_PCM:
-        case FSK_PULSE_PWM:
-        case FSK_PULSE_MANCHESTER_ZEROBIT:
-            break;
-        default:
-            fprintf(stderr, "Unknown modulation %u in protocol!\n", r_dev->modulation);
+    unsigned next_priority = 0; // next smallest on each loop through decoders
+    // run all decoders of each priority, stop if an event is produced
+    for (unsigned priority = 0; !p_events && priority < UINT_MAX; priority = next_priority) {
+        next_priority = UINT_MAX;
+        for (void **iter = r_devs->elems; iter && *iter; ++iter) {
+            r_device *r_dev = *iter;
+
+            // Find next smallest priority
+            if (r_dev->priority > priority && r_dev->priority < next_priority)
+                next_priority = r_dev->priority;
+            // Run only current priority
+            if (r_dev->priority != priority)
+                continue;
+
+            switch (r_dev->modulation) {
+            case OOK_PULSE_PCM_RZ:
+                p_events += pulse_demod_pcm(pulse_data, r_dev);
+                break;
+            case OOK_PULSE_PPM:
+                p_events += pulse_demod_ppm(pulse_data, r_dev);
+                break;
+            case OOK_PULSE_PWM:
+                p_events += pulse_demod_pwm(pulse_data, r_dev);
+                break;
+            case OOK_PULSE_MANCHESTER_ZEROBIT:
+                p_events += pulse_demod_manchester_zerobit(pulse_data, r_dev);
+                break;
+            case OOK_PULSE_PIWM_RAW:
+                p_events += pulse_demod_piwm_raw(pulse_data, r_dev);
+                break;
+            case OOK_PULSE_PIWM_DC:
+                p_events += pulse_demod_piwm_dc(pulse_data, r_dev);
+                break;
+            case OOK_PULSE_DMC:
+                p_events += pulse_demod_dmc(pulse_data, r_dev);
+                break;
+            case OOK_PULSE_PWM_OSV1:
+                p_events += pulse_demod_osv1(pulse_data, r_dev);
+                break;
+            case OOK_PULSE_NRZS:
+                p_events += pulse_demod_nrzs(pulse_data, r_dev);
+                break;
+            // FSK decoders
+            case FSK_PULSE_PCM:
+            case FSK_PULSE_PWM:
+            case FSK_PULSE_MANCHESTER_ZEROBIT:
+                break;
+            default:
+                fprintf(stderr, "Unknown modulation %u in protocol!\n", r_dev->modulation);
+            }
         }
     }
 
@@ -514,31 +530,44 @@ int run_fsk_demods(list_t *r_devs, pulse_data_t *fsk_pulse_data)
 {
     int p_events = 0;
 
-    for (void **iter = r_devs->elems; iter && *iter; ++iter) {
-        r_device *r_dev = *iter;
-        switch (r_dev->modulation) {
-        // OOK decoders
-        case OOK_PULSE_PCM_RZ:
-        case OOK_PULSE_PPM:
-        case OOK_PULSE_PWM:
-        case OOK_PULSE_MANCHESTER_ZEROBIT:
-        case OOK_PULSE_PIWM_RAW:
-        case OOK_PULSE_PIWM_DC:
-        case OOK_PULSE_DMC:
-        case OOK_PULSE_PWM_OSV1:
-        case OOK_PULSE_NRZS:
-            break;
-        case FSK_PULSE_PCM:
-            p_events += pulse_demod_pcm(fsk_pulse_data, r_dev);
-            break;
-        case FSK_PULSE_PWM:
-            p_events += pulse_demod_pwm(fsk_pulse_data, r_dev);
-            break;
-        case FSK_PULSE_MANCHESTER_ZEROBIT:
-            p_events += pulse_demod_manchester_zerobit(fsk_pulse_data, r_dev);
-            break;
-        default:
-            fprintf(stderr, "Unknown modulation %u in protocol!\n", r_dev->modulation);
+    unsigned next_priority = 0; // next smallest on each loop through decoders
+    // run all decoders of each priority, stop if an event is produced
+    for (unsigned priority = 0; !p_events && priority < UINT_MAX; priority = next_priority) {
+        next_priority = UINT_MAX;
+        for (void **iter = r_devs->elems; iter && *iter; ++iter) {
+            r_device *r_dev = *iter;
+
+            // Find next smallest priority
+            if (r_dev->priority > priority && r_dev->priority < next_priority)
+                next_priority = r_dev->priority;
+            // Run only current priority
+            if (r_dev->priority != priority)
+                continue;
+
+            switch (r_dev->modulation) {
+            // OOK decoders
+            case OOK_PULSE_PCM_RZ:
+            case OOK_PULSE_PPM:
+            case OOK_PULSE_PWM:
+            case OOK_PULSE_MANCHESTER_ZEROBIT:
+            case OOK_PULSE_PIWM_RAW:
+            case OOK_PULSE_PIWM_DC:
+            case OOK_PULSE_DMC:
+            case OOK_PULSE_PWM_OSV1:
+            case OOK_PULSE_NRZS:
+                break;
+            case FSK_PULSE_PCM:
+                p_events += pulse_demod_pcm(fsk_pulse_data, r_dev);
+                break;
+            case FSK_PULSE_PWM:
+                p_events += pulse_demod_pwm(fsk_pulse_data, r_dev);
+                break;
+            case FSK_PULSE_MANCHESTER_ZEROBIT:
+                p_events += pulse_demod_manchester_zerobit(fsk_pulse_data, r_dev);
+                break;
+            default:
+                fprintf(stderr, "Unknown modulation %u in protocol!\n", r_dev->modulation);
+            }
         }
     }
 
@@ -1016,7 +1045,7 @@ void add_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
         FATAL_CALLOC("add_dumper()");
     list_push(&cfg->demod->dumper, dumper);
 
-    parse_file_info(spec, dumper);
+    file_info_parse_filename(dumper, spec);
     if (strcmp(dumper->path, "-") == 0) { /* Write samples to stdout */
         dumper->file = stdout;
 #ifdef _WIN32

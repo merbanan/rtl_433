@@ -6,6 +6,7 @@
 #define INCLUDE_DECODER_H_
 
 #include <string.h>
+#include <stdio.h>
 #include "r_device.h"
 #include "bitbuffer.h"
 #include "data.h"

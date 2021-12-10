@@ -129,7 +129,7 @@ void decoder_output_message(r_device *decoder, char const *msg)
 static char *bitrow_asprint_code(uint8_t const *bitrow, unsigned bit_len)
 {
     char *row_code;
-    char row_bytes[BITBUF_COLS * 2 + 1];
+    char row_bytes[BITBUF_ROWS * BITBUF_COLS * 2 + 1]; // TODO: this is a lot of stack
 
     row_bytes[0] = '\0';
     // print byte-wide
@@ -217,7 +217,7 @@ void decoder_output_bitbuffer_array(r_device *decoder, bitbuffer_t const *bitbuf
     data_t *data;
     data_t *row_data[BITBUF_ROWS];
     char *row_codes[BITBUF_ROWS];
-    char row_bytes[BITBUF_COLS * 2 + 1];
+    char row_bytes[BITBUF_ROWS * BITBUF_COLS * 2 + 1]; // TODO: this is a lot of stack
     unsigned i;
 
     for (i = 0; i < bitbuffer->num_rows; i++) {

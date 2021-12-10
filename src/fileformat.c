@@ -36,9 +36,17 @@ char const *file_basename(char const *path)
         return path;
 }
 
-void check_read_file_info(file_info_t *info)
+void file_info_clear(file_info_t *info)
+{
+    if (info) {
+        *info = (file_info_t const){0};
+    }
+}
+
+void file_info_check_read(file_info_t *info)
 {
     if (info->format != CU8_IQ
+            && info->format != CS8_IQ
             && info->format != CS16_IQ
             && info->format != CF32_IQ
             && info->format != S16_AM
@@ -48,7 +56,7 @@ void check_read_file_info(file_info_t *info)
     }
 }
 
-void check_write_file_info(file_info_t *info)
+void file_info_check_write(file_info_t *info)
 {
     if (info->format != CU8_IQ
             && info->format != CS8_IQ
@@ -241,7 +249,7 @@ overrides, e.g.: am:s16:path/filename.ext
 other styles are detected but discouraged, e.g.:
   am-s16:path/filename.ext, am.s16:path/filename.ext, path/filename.am_s16
 */
-int parse_file_info(char const *filename, file_info_t *info)
+int file_info_parse_filename(file_info_t *info, char const *filename)
 {
     if (!filename) {
         return 0;
@@ -273,7 +281,7 @@ int parse_file_info(char const *filename, file_info_t *info)
 static void assert_file_type(int check, char const *spec)
 {
     file_info_t info = {0};
-    int ret = parse_file_info(spec, &info);
+    int ret = file_info_parse_filename(&info, spec);
     if (check != ret) {
         fprintf(stderr, "\nTEST failed: determine_file_type(\"%s\", &foo) = %8x == %8x\n", spec, ret, check);
     } else {
