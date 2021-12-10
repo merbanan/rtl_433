@@ -313,6 +313,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\somfy_rts.c" />
     <ClCompile Include="..\src\devices\springfield.c" />
     <ClCompile Include="..\src\devices\steelmate.c" />
+    <ClCompile Include="..\src\devices\telldus_ft0385r.c" />
     <ClCompile Include="..\src\devices\tfa_30_3196.c" />
     <ClCompile Include="..\src\devices\tfa_30_3221.c" />
     <ClCompile Include="..\src\devices\tfa_drop_30.3233.c" />

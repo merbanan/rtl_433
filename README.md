@@ -288,6 +288,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [202]  Funkbus / Instafunk (Berker, Jira, Jung)
     [203]  Porsche Boxster/Cayman TPMS
     [204]  Jasco/GE Choice Alert Security Devices
+    [205]  Telldus weather station FT0385R sensors
 
 * Disabled by default, use -R n or -G
 

@@ -182,6 +182,7 @@ add_library(r_433 STATIC
     devices/somfy_rts.c
     devices/springfield.c
     devices/steelmate.c
+    devices/telldus_ft0385r.c
     devices/tfa_30_3196.c
     devices/tfa_30_3221.c
     devices/tfa_drop_30.3233.c

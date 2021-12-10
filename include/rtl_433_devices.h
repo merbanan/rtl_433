@@ -212,6 +212,7 @@
     DECL(funkbus_remote) \
     DECL(tpms_porsche) \
     DECL(jasco) \
+    DECL(telldus_ft0385r) \
 
     /* Add new decoders here. */
 
