@@ -11,71 +11,57 @@ Jasco/GE Choice Alert Wireless Device Decoder.
 
 - Frequency: 318.01 MHz
 
-v0.1 based on the contact and water sensors Model 45131 / FCC ID QOB45131-3
+Manchester PCM with a de-sync preamble of 0xFC0C (11111100000011000).
 
-v0.2 corrected decoder
-
-v0.3 internal naming consistancies
+Packets are 32 bit, 24 bit data and 8 bit XOR checksum.
 
 */
 
 #include "decoder.h"
 
-#define JASCO_MSG_BIT_LEN 86
-
 static int jasco_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    uint8_t const preamble[] = {0xfc, 0x0c}; // length 16
 
-    if (bitbuffer->bits_per_row[0] != JASCO_MSG_BIT_LEN && bitbuffer->bits_per_row[0] != JASCO_MSG_BIT_LEN+1) {
+    if (bitbuffer->bits_per_row[0] < 80
+            || bitbuffer->bits_per_row[0] > 87) {
         if (decoder->verbose > 1 && bitbuffer->bits_per_row[0] > 0) {
-            fprintf(stderr, "%s: invalid bit count %d\n", __func__,
-                     bitbuffer->bits_per_row[0]);
+            fprintf(stderr, "%s: invalid bit count %d\n", __func__, bitbuffer->bits_per_row[0]);
         }
+        return DECODE_ABORT_EARLY;
+    }
+
+    unsigned start_pos = bitbuffer_search(bitbuffer, 0, 0, preamble, 16) + 16;
+
+    if (start_pos + 64 > bitbuffer->bits_per_row[0]) {
         return DECODE_ABORT_LENGTH;
     }
 
-    uint8_t b[4];
-    uint8_t chk;
-    uint32_t sensor_id = 0;
-    int s_closed=0;
-//    int battery=0;
-    bitbuffer_t packet_bits;
-    data_t *data;
-    uint8_t const preamble[] = {0xfc, 0x0c};
-    unsigned bitpos = 0;
+    bitbuffer_t packet_bits = {0};
+    bitbuffer_manchester_decode(bitbuffer, 0, start_pos, &packet_bits, 32);
 
-    if (decoder->verbose > 1) {
-        bitbuffer_debug(bitbuffer);
-    }
-    bitpos = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
-
-    bitpos = bitbuffer_manchester_decode(bitbuffer, 0, bitpos, &packet_bits, 87);
-
-    bitbuffer_extract_bytes(&packet_bits, 0, 0,b, 32);
-
-    if (decoder->verbose > 1) {
-        bitbuffer_debug(&packet_bits);
+    if (packet_bits.bits_per_row[0] < 32) {
+        return DECODE_ABORT_LENGTH;
     }
 
-    bitbuffer_clear(&packet_bits);
+    uint8_t *b = packet_bits.bb[0];
 
-    chk = b[0] ^ b[1] ^ b[2];
-    if (chk != b[3]) {
+    int chk = b[0] ^ b[1] ^ b[2] ^ b[3];
+    if (chk) {
         return DECODE_FAIL_MIC;
     }
 
+    int sensor_id = (b[0] << 8) | b[1];
 
-    sensor_id = (b[0] << 8)+ b[1];
-
-    s_closed = ((b[2] & 0xef) == 0xef);
-
+    int s_closed = ((b[2] & 0xef) == 0xef);
+    // int battery = 0;
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "Jasco/GE Choice Alert Security Devices",
+    data_t *data = data_make(
+            "model",            "",             DATA_STRING, "Jasco-Security",
             "id",               "Id",           DATA_INT,    sensor_id,
             "status",           "Closed",       DATA_INT,    s_closed,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
