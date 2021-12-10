@@ -132,6 +132,7 @@ add_library(r_433 STATIC
     devices/lacrosse_r1.c
     devices/lacrosse_th3.c
     devices/lacrosse_tx141x.c
+    devices/lacrosse_tx34.c
     devices/lacrosse_tx35.c
     devices/lacrosse_wr1.c
     devices/lacrosse_ws7000.c
