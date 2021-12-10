@@ -301,7 +301,8 @@ static void print_influx_data(data_output_t *output, data_t *data, char const *f
         else if (!strcmp(data->key, "type")
                 || !strcmp(data->key, "subtype")
                 || !strcmp(data->key, "id")
-                || !strcmp(data->key, "channel")) {
+                || !strcmp(data->key, "channel")
+                || !strcmp(data->key, "mic")) {
             str = mbuf_snprintf(buf, ",%s=", data->key);
             str++;
             end = &buf->buf[buf->len - 1];
@@ -329,7 +330,8 @@ static void print_influx_data(data_output_t *output, data_t *data, char const *f
         else if (!strcmp(data->key, "type")
                 || !strcmp(data->key, "subtype")
                 || !strcmp(data->key, "id")
-                || !strcmp(data->key, "channel")) {
+                || !strcmp(data->key, "channel")
+                || !strcmp(data->key, "mic")) {
             // skip
         }
         else {

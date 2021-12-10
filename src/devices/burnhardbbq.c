@@ -36,11 +36,6 @@ static int burnhardbbq_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b;
     data_t *data;
 
-    uint8_t id, channel, temperature_alarm, timer_alarm, timer_active;
-    float temperature, temperature_setpoint;
-    char timer_str[6];
-    char *meat, *taste;
-
     bitbuffer_invert(bitbuffer);
 
     // All three rows contain the same information. Return on first decoded row.
@@ -65,15 +60,20 @@ static int burnhardbbq_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             continue;
         }
 
-        id = b[0];
-        channel = b[1] & 0x07;
-        temperature_alarm = (b[1] & 0x80) > 0;
-        timer_alarm = (b[1] & 0x40) > 0;
-        timer_active = (b[1] & 0x10) > 0;
-        temperature_setpoint = ((b[6] | (b[7] & 0x0f) << 8) - 500) * 0.1f;
-        temperature = ((b[8] | (b[7] & 0xf0) << 4) - 500) * 0.1f;
+        int id           = (b[0]);
+        int channel      = (b[1] & 0x07);
+        int temp_alarm   = (b[1] & 0x80) > 7;
+        int timer_alarm  = (b[1] & 0x40) > 6;
+        int timer_active = (b[1] & 0x10) > 4;
+        int setpoint_raw = ((b[7] & 0x0f) << 8) | b[6];
+        int temp_raw     = ((b[7] & 0xf0) << 4) | b[8];
+        float setpoint_c = (setpoint_raw - 500) * 0.1f;
+        float temp_c     = (temp_raw - 500) * 0.1f;
+
+        char timer_str[6];
         sprintf(timer_str, "%02x:%02x", b[3], b[4] & 0x7f);
 
+        char *meat;
         switch(b[5] >> 4) {
             case 0: meat = "free"; break;
             case 1: meat = "beef"; break;
@@ -86,6 +86,7 @@ static int burnhardbbq_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             default: meat = "";
         }
 
+        char *taste;
         switch(b[5] & 0x0f) {
             case 0: taste = "rare"; break;
             case 1: taste = "medium rare"; break;
@@ -100,9 +101,9 @@ static int burnhardbbq_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",             "",                     DATA_STRING, "BurnhardBBQ",
                 "id",                "ID",                   DATA_INT,    id,
                 "channel",           "Channel",              DATA_INT,    channel,
-                "temperature_C",     "Temperature",          DATA_COND,   temperature != -50.0f, DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
-                "setpoint_C",        "Temperature setpoint", DATA_FORMAT, "%.0f C", DATA_DOUBLE, temperature_setpoint,
-                "temperature_alarm", "Temperature alarm",    DATA_INT,    temperature_alarm,
+                "temperature_C",     "Temperature",          DATA_COND,   temp_raw != 0, DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
+                "setpoint_C",        "Temperature setpoint", DATA_FORMAT, "%.0f C", DATA_DOUBLE, setpoint_c,
+                "temperature_alarm", "Temperature alarm",    DATA_INT,    temp_alarm,
                 "timer",             "Timer",                DATA_STRING, timer_str,
                 "timer_active",      "Timer active",         DATA_INT,    timer_active,
                 "timer_alarm",       "Timer alarm",          DATA_INT,    timer_alarm,

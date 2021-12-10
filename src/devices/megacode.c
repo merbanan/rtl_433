@@ -23,17 +23,17 @@ binary 0 or binary 1. If the pulse is within the first half of the frame, it
 represents binary 0. The second half of the frame represents a binary 1.
 
 References:
-https://github.com/aaronsp777/megadecoder/blob/main/Protocol.md
-https://wiki.cuvoodoo.info/doku.php?id=megacode
-https://fccid.io/EF4ACP00872/Test-Report/Megacode-2-112615.pdf
+- https://github.com/aaronsp777/megadecoder/blob/main/Protocol.md
+- https://wiki.cuvoodoo.info/doku.php?id=megacode
+- https://fccid.io/EF4ACP00872/Test-Report/Megacode-2-112615.pdf
 
 Example:
 
-  raw: 8DF78A
-  facility: 1 id: 48881 button: 2
-  bits: 10010000010000010000000010000010010000000010000010000010000010000010010000000010000010000010000010010000010000010000000010010000000010010... (up to 148 bits)
+    raw: 8DF78A
+    facility: 1 id: 48881 button: 2
+    bits: 10010000010000010000000010000010010000000010000010000010000010000010010000000010000010000010000010010000010000010000000010010000000010010... (up to 148 bits)
 
-$ rtl_433 -g 100 -f 318M -X "n=Megacode,m=OOK_PCM,s=1000,l=1000,g=8000,r=10000"
+    $ rtl_433 -g 100 -f 318M -X "n=Megacode,m=OOK_PCM,s=1000,l=1000,g=8000,r=10000"
 
 */
 
@@ -76,8 +76,8 @@ static int megacode_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "button",   "Button",         DATA_INT,    button,
             NULL);
     /* clang-format on */
-    decoder_output_data(decoder, data);
 
+    decoder_output_data(decoder, data);
     return 1;
 }
 
@@ -87,7 +87,8 @@ static char *output_fields[] = {
         "raw",
         "facility",
         "button",
-        NULL};
+        NULL,
+};
 
 r_device megacode = {
         .name        = "Linear Megacode Garage/Gate Remotes",
@@ -98,4 +99,5 @@ r_device megacode = {
         .reset_limit = 20000,
         .decode_fn   = &megacode_callback,
         .disabled    = 0,
-        .fields      = output_fields};
+        .fields      = output_fields,
+};

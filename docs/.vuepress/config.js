@@ -15,6 +15,8 @@ module.exports = {
       'CHANGELOG',
       'CONTRIBUTING',
       'PRIMER',
+      'IQ_FORMATS',
+      'ANALYZE',
       'OPERATION',
       'DATA_FORMAT',
       'HARDWARE',

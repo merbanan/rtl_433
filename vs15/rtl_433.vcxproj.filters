@@ -74,10 +74,16 @@
     <ClInclude Include="..\include\optparse.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\output_file.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\output_influx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\output_mqtt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\output_udp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\pulse_analyzer.h">
@@ -184,10 +190,16 @@
     <ClCompile Include="..\src\optparse.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\output_file.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\output_influx.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\output_mqtt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\output_udp.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\pulse_analyzer.c">
@@ -260,6 +272,9 @@
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\atech_ws308.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\auriol_4ld5661.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\auriol_aft77b2.c">
@@ -409,6 +424,9 @@
     <ClCompile Include="..\src\devices\ft004b.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\funkbus.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\ge_coloreffects.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -479,6 +497,9 @@
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\intertechno.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\jasco.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\kedsum.c">
@@ -709,10 +730,16 @@
     <ClCompile Include="..\src\devices\tpms_pmv107j.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\tpms_porsche.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\tpms_renault.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\tpms_toyota.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\tpms_truck.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\ts_ft002.c">

@@ -191,9 +191,7 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // We have enough bits so search for a message preamble followed by
         // enough bits that it could be a complete message.
         bitpos = 0;
-        while ((bitpos = bitbuffer_search(bitbuffer, r, bitpos,
-                        (const uint8_t *)&preamble_pattern, 8)) +
-                        XC0324_MESSAGE_BITLEN <=
+        while ((bitpos = bitbuffer_search(bitbuffer, r, bitpos, preamble_pattern, 8)) + XC0324_MESSAGE_BITLEN <=
                 bitbuffer->bits_per_row[r]) {
             ret = decode_xc0324_message(decoder, bitbuffer,
                     r, bitpos, events, &data);

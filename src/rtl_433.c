@@ -680,9 +680,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     if (cfg->hop_now && !cfg->exit_async) {
         cfg->hop_now = 0;
         time(&cfg->hop_start_time);
-        cfg->frequency_index  = (cfg->frequency_index + 1) % cfg->frequencies;
-        cfg->center_frequency = cfg->frequency[cfg->frequency_index];
-        sdr_set_center_freq(cfg->dev, cfg->center_frequency, 0);
+        cfg->frequency_index = (cfg->frequency_index + 1) % cfg->frequencies;
+        sdr_set_center_freq(cfg->dev, cfg->frequency[cfg->frequency_index], 0);
     }
 }
 
@@ -906,7 +905,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             help_read();
 
         add_infile(cfg, arg);
-        // TODO: check_read_file_info()
+        // TODO: file_info_check_read()
         break;
     case 'w':
         if (!arg)
@@ -1266,16 +1265,19 @@ static void sdr_handler(sdr_event_t *ev, void *ctx)
 
     data_t *data = NULL;
     if (ev->ev & SDR_EV_RATE) {
+        cfg->samp_rate = ev->sample_rate;
         data = data_append(data,
                 "sample_rate", "", DATA_INT, ev->sample_rate,
                 NULL);
     }
     if (ev->ev & SDR_EV_CORR) {
+        cfg->ppm_error = ev->freq_correction;
         data = data_append(data,
                 "freq_correction", "", DATA_INT, ev->freq_correction,
                 NULL);
     }
     if (ev->ev & SDR_EV_FREQ) {
+        cfg->center_frequency = ev->center_frequency;
         data = data_append(data,
                 "center_frequency", "", DATA_INT, ev->center_frequency,
                 "frequencies", "", DATA_COND, cfg->frequencies > 1, DATA_ARRAY, data_array(cfg->frequencies, DATA_INT, cfg->frequency),
@@ -1332,6 +1334,17 @@ int main(int argc, char **argv) {
     }
 
     parse_conf_args(cfg, argc, argv);
+    // apply hop defaults and set first frequency
+    if (cfg->frequencies == 0) {
+        cfg->frequency[0] = DEFAULT_FREQUENCY;
+        cfg->frequencies  = 1;
+    }
+    cfg->center_frequency = cfg->frequency[cfg->frequency_index];
+    if (cfg->frequencies > 1 && cfg->hop_times == 0) {
+        cfg->hop_time[cfg->hop_times++] = DEFAULT_HOP_TIME;
+    }
+    // save sample rate, this should be a hop config too
+    uint32_t sample_rate_0 = cfg->samp_rate;
 
     // add all remaining positional arguments as input files
     while (argc > optind) {
@@ -1411,7 +1424,7 @@ int main(int argc, char **argv) {
             }
             abuf_printf(&p, " ]");
         }
-        fprintf(stderr, "Registered %zu out of %d device decoding protocols%s\n",
+        fprintf(stderr, "Registered %zu out of %u device decoding protocols%s\n",
                 demod->r_devs.len, cfg->num_r_devices, decoders_str);
     }
 
@@ -1550,8 +1563,13 @@ int main(int argc, char **argv) {
         for (void **iter = cfg->in_files.elems; iter && *iter; ++iter) {
             cfg->in_filename = *iter;
 
-            parse_file_info(cfg->in_filename, &demod->load_info);
-            if (strcmp(demod->load_info.path, "-") == 0) { /* read samples from stdin */
+            file_info_clear(&demod->load_info); // reset all info
+            file_info_parse_filename(&demod->load_info, cfg->in_filename);
+            // apply file info or default
+            cfg->samp_rate        = demod->load_info.sample_rate ? demod->load_info.sample_rate : sample_rate_0;
+            cfg->center_frequency = demod->load_info.center_frequency ? demod->load_info.center_frequency : cfg->frequency[0];
+
+            if (strcmp(demod->load_info.path, "-") == 0) { // read samples from stdin
                 in_file = stdin;
                 cfg->in_filename = "<stdin>";
             } else {
@@ -1563,12 +1581,13 @@ int main(int argc, char **argv) {
             }
             fprintf(stderr, "Test mode active. Reading samples from file: %s\n", cfg->in_filename);  // Essential information (not quiet)
             if (demod->load_info.format == CU8_IQ
+                    || demod->load_info.format == CS8_IQ
                     || demod->load_info.format == S16_AM
                     || demod->load_info.format == S16_FM) {
                 demod->sample_size = sizeof(uint8_t) * 2; // CU8, AM, FM
             } else if (demod->load_info.format == CS16_IQ
                     || demod->load_info.format == CF32_IQ) {
-                demod->sample_size = sizeof(int16_t) * 2; // CF32, CS16
+                demod->sample_size = sizeof(int16_t) * 2; // CS16, CF32 (after conversion)
             } else if (demod->load_info.format == PULSE_OOK) {
                 // ignore
             } else {
@@ -1622,6 +1641,7 @@ int main(int argc, char **argv) {
             int n_blocks = 0;
             unsigned long n_read;
             do {
+                // Convert CF32 file to CS16 buffer
                 if (demod->load_info.format == CF32_IQ) {
                     n_read = fread(test_mode_float_buf, sizeof(float), DEFAULT_BUF_LENGTH / 2, in_file);
                     // clamp float to [-1,1] and scale to Q0.15
@@ -1636,6 +1656,13 @@ int main(int argc, char **argv) {
                     n_read *= 2; // convert to byte count
                 } else {
                     n_read = fread(test_mode_buf, 1, DEFAULT_BUF_LENGTH, in_file);
+
+                    // Convert CS8 file to CU8 buffer
+                    if (demod->load_info.format == CS8_IQ) {
+                        for (unsigned long n = 0; n < n_read; n++) {
+                            test_mode_buf[n] = ((int8_t)test_mode_buf[n]) + 128;
+                        }
+                    }
                 }
                 if (n_read == 0) break;  // sdr_callback() will Segmentation Fault with len=0
                 demod->sample_file_pos = ((float)n_blocks * DEFAULT_BUF_LENGTH + n_read) / cfg->samp_rate / demod->sample_size;
@@ -1722,13 +1749,6 @@ int main(int argc, char **argv) {
         fprintf(stderr, "WARNING: Failed to reset buffers.\n");
     r = sdr_activate(cfg->dev);
 
-    if (cfg->frequencies == 0) {
-        cfg->frequency[0] = DEFAULT_FREQUENCY;
-        cfg->frequencies = 1;
-    }
-    if (cfg->frequencies > 1 && cfg->hop_times == 0) {
-        cfg->hop_time[cfg->hop_times++] = DEFAULT_HOP_TIME;
-    }
     if (cfg->verbosity) {
         fprintf(stderr, "Reading samples in async mode...\n");
     }
@@ -1737,7 +1757,6 @@ int main(int argc, char **argv) {
         cfg->stop_time += cfg->duration;
     }
 
-    cfg->center_frequency = cfg->frequency[cfg->frequency_index];
     r = sdr_set_center_freq(cfg->dev, cfg->center_frequency, 1); // always verbose
 
         time(&cfg->hop_start_time);

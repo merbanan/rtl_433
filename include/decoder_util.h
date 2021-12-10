@@ -17,6 +17,12 @@
 #include "data.h"
 #include "r_device.h"
 
+#if defined _MSC_VER || defined ESP32 // Microsoft Visual Studio or ESP32
+    // MSC and ESP32 have something like C99 restrict as __restrict
+    #ifndef restrict
+    #define restrict  __restrict
+    #endif
+#endif
 // Defined in newer <sal.h> for MSVC.
 #ifndef _Printf_format_string_
 #define _Printf_format_string_

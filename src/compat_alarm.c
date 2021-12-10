@@ -36,7 +36,6 @@ static void alarm_delete(void)
        return;
     signal(SIGALRM, SIG_IGN);
     DeleteTimerQueueTimer(NULL, alarm_hnd, NULL);
-    CloseHandle(alarm_hnd);
     alarm_hnd = INVALID_HANDLE_VALUE;
 }
 
@@ -77,6 +76,7 @@ int win_alarm(unsigned seconds)
 /*
  * Just so this compilation unit isn't empty.
  */
+int win_alarm(unsigned seconds);
 int win_alarm(unsigned seconds)
 {
    (void) seconds;

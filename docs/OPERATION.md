@@ -1,14 +1,16 @@
 # Basic rtl_433 operation
 
-A startup rtl_433 will read config files and parse command line arguments, then it will loop through these steps:
+The principle buildings blocks of rtl_433 are: Inputs, Loaders, Processing, Analysis, Decoders, Dumpers, Outputs.
 
-- Inputs
-- Loaders
-- Processing
-- Analysis
-- Decoders
-- Dumper
-- Outputs
+At startup rtl_433 will read config files and parse command line arguments, then it will loop through these steps:
+
+- Inputs: rtl_tcp, RTL-SDR, SoapySDR
+- Loaders: Raw data files (cu8, cs16, ...)
+- Processing: OOK and FSK demod, pulse detector, slicers, coding
+- Analysis: Show statistics on pulses
+- Decoders: Over 200 protocols
+- Dumpers: Raw data files (cu8, cs16, ..., sr, ...)
+- Outputs: Screen (kv), JSON, CSV, MQTT, Influx, UDP (syslog), HTTP
 
 rtl_433 will either acquire a live signal from an input or read a sample file with a loader.
 Then process that signal, analyse it's properties (if enabled) and write the signal with dumpers (if enabled).

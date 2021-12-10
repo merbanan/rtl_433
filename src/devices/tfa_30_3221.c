@@ -110,5 +110,6 @@ r_device tfa_30_3221 = {
         .reset_limit = 850,
         .sync_width  = 836,
         .decode_fn   = &tfa_303221_callback,
+        .priority    = 10, // This is the same as LaCrosse-TX141THBv2
         .fields      = output_fields,
 };

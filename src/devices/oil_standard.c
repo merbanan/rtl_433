@@ -18,10 +18,6 @@
 
 #include "decoder.h"
 
-static const unsigned char preamble_pattern0[2] = {0x55, 0x5D};
-static const unsigned char preamble_pattern1[2] = {0x55, 0x62};
-// End of frame is the last half-bit repeated additional 4 times
-
 /**
 Oil tank monitor using manchester encoded FSK/ASK protocol.
 
@@ -108,18 +104,22 @@ Oil tank monitor using manchester encoded FSK/ASK protocol.
 */
 static int oil_standard_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    uint8_t const preamble_pattern0[2] = {0x55, 0x5D};
+    uint8_t const preamble_pattern1[2] = {0x55, 0x62};
+    // End of frame is the last half-bit repeated additional 4 times
+
     unsigned bitpos = 0;
     int events = 0;
 
     // Find a preamble with enough bits after it that it could be a complete packet
-    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, (uint8_t *)&preamble_pattern0, 16)) + 78 <=
+    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern0, 16)) + 78 <=
             bitbuffer->bits_per_row[0]) {
         events += oil_standard_decode(decoder, bitbuffer, 0, bitpos + 14);
         bitpos += 2;
     }
 
     bitpos = 0;
-    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, (uint8_t *)&preamble_pattern1, 16)) + 78 <=
+    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern1, 16)) + 78 <=
             bitbuffer->bits_per_row[0]) {
         events += oil_standard_decode(decoder, bitbuffer, 0, bitpos + 14);
         bitpos += 2;

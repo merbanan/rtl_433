@@ -258,8 +258,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [172]  Bresser Weather Center 6-in-1, 7-in-1 indoor, new 5-in-1, 3-in-1 wind gauge, Froggit WH6000, Ventus C8488A
     [173]  Bresser Weather Center 7-in-1
     [174]  EcoDHOME Smart Socket and MCEE Solar monitor
-    [175]  LaCrosse Technology View LTV-R1 Rainfall Gauge
-    [176]  BlueLine Power Monitor
+    [175]  LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1 Wind Sensor
+    [176]  BlueLine Innovations Power Cost Monitor
     [177]  Burnhard BBQ thermometer
     [178]  Security+ (Keyfob)
     [179]  Cavius smoke, heat and water detector
@@ -283,7 +283,12 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [197]  Acurite Grill/Meat Thermometer 01185M
     [198]* EnOcean ERP1
     [199]  Linear Megacode Garage/Gate Remotes
-    [200]  Telldus weather station FT0385R sensors
+    [200]* Auriol 4-LD5661 temperature/rain sensor
+    [201]  Unbranded SolarTPMS for trucks
+    [202]  Funkbus / Instafunk (Berker, Jira, Jung)
+    [203]  Porsche Boxster/Cayman TPMS
+    [204]  Jasco/GE Choice Alert Security Devices
+    [205]  Telldus weather station FT0385R sensors
 
 * Disabled by default, use -R n or -G
 
@@ -321,6 +326,7 @@ Common keys are:
 	reset=<reset> (or: r=<reset>)
 	gap=<gap> (or: g=<gap>)
 	tolerance=<tolerance> (or: t=<tolerance>)
+	priority=<n> : run decoder only as fallback
 where:
 <name> can be any descriptive name tag you need in the output
 <modulation> is one of:

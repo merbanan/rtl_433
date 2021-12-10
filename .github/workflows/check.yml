@@ -35,6 +35,14 @@ jobs:
       run: |
         ./maintainer_update.py
         [ -z "$(git status --untracked-files=no --porcelain)" ]
+  symbolizer_check_job:
+    runs-on: ubuntu-latest
+    name: Check symbol errors
+    steps:
+    - uses: actions/checkout@v2
+    - name: Symbolizer report
+      run: |
+        ./tests/symbolizer.py check
   analyzer_check_job:
     # https://github.com/actions/virtual-environments
     # - Ubuntu 20.04 	ubuntu-20.04 	ubuntu-20.04
