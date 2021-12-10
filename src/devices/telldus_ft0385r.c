@@ -10,28 +10,34 @@
 */
 
 /**
-Telldus weather station indoor unit
+Telldus weather station indoor unit.
 
 As the indoor unit receives a message from the outdoor unit,
- it sends 3 radio messages
- * - Oregon-WGR800
- * - Oregon-THGR810 or Oregon-PCR800
- * - Telldus-FT0385R (this one)
+it sends 3 radio messages
+- Oregon-WGR800
+- Oregon-THGR810 or Oregon-PCR800
+- Telldus-FT0385R (this one)
+
 The outdoor unit is the same as SwitchDoc Labs WeatherSense FT020T
- and Cotech 36-7959 Weatherstation.
+and Cotech 36-7959 Weatherstation.
 
 433Mhz, OOK modulated with Manchester encoding, halfbit-width 500 us.
 Message length is 5 + 296 bit.
 Each message starts with bits 10100 1110. First 9 bits is considered as a preamble.
 The first 5 bits of the preamble is ignored and the rest of the message is used in CRC calculation.
+
 Example raw message:
-{298} e1 23 00 0c 17 2b 0b 5a 09 34 00 00 00 00 00 03 00 1b 03 90 12 1b 12 1b 43 6e 4c 92 23 27 49 28 c8 ff fa fa 4b
+
+    {298} e1 23 00 0c 17 2b 0b 5a 09 34 00 00 00 00 00 03 00 1b 03 90 12 1b 12 1b 43 6e 4c 92 23 27 49 28 c8 ff fa fa 4b
+
 Example raw message, if outdoor data is unavailable:
-{298} e0 73 7f fb fb fb fb fb fb fb ff fb ff fb 3f fb ff fb ff fb ff fb ff fb 47 fb 7b 6c 26 27 0a 27 93 ff fb fb 97
+
+    {298} e0 73 7f fb fb fb fb fb fb fb ff fb ff fb 3f fb ff fb ff fb ff fb ff fb 47 fb 7b 6c 26 27 0a 27 93 ff fb fb 97
 
 Integrity check is done using CRC8 using poly=0x31  init=0xc0
 
 Message layout
+
     AAAABBBB BBBBCCCC ZJIHGFED DDDDDDDD EEEEEEEE FFFFFFFF GGGGGGGG HHHHHHHH IIIIIIII JJJJJJJJ
     KKKKKKKK KKKKKKKK LLLLLLLL LLLLLLLL MMMMMMMM MMMMMMMM NNNNNNNN NNNNNNNN OOOOOOOO OOOOOOOO PPPPPPPP PPPPPPPP
     SSSSQQQQ QQQQQQQQ RRRRRRRR SSSSSSSS TTTTTTTT UUUUUUUU UUUUUUUU VVVVVVVV VVVVVVVV
@@ -153,7 +159,7 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_f = (temp_raw - 400) * 0.1f;
     float temp2_f = (temp2_raw - 400) * 0.1f;
 
-    if (decoder->verbose > 0) {
+    if (decoder->verbose > 1) {
         fprintf(stderr, "header = %02x %d\n", header, header);
         fprintf(stderr, "serial = %02x %d\n", serial, serial);
         fprintf(stderr, "flags = %02x %d\n", flags, flags);
