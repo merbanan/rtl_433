@@ -193,7 +193,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "H",
         "config": {
-            "device_class": "moisture",
+            "device_class": "humidity",
             "name": "Moisture",
             "unit_of_measurement": "%",
             "value_template": "{{ value|float }}",
