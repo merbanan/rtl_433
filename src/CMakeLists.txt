@@ -160,6 +160,7 @@ add_library(r_433 STATIC
     devices/oregon_scientific_v1.c
     devices/philips_aj3650.c
     devices/philips_aj7010.c
+    devices/proflame2.c
     devices/prologue.c
     devices/proove.c
     devices/quhwa.c

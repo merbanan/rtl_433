@@ -291,6 +291,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\oregon_scientific_v1.c" />
     <ClCompile Include="..\src\devices\philips_aj3650.c" />
     <ClCompile Include="..\src\devices\philips_aj7010.c" />
+    <ClCompile Include="..\src\devices\proflame2.c" />
     <ClCompile Include="..\src\devices\prologue.c" />
     <ClCompile Include="..\src\devices\proove.c" />
     <ClCompile Include="..\src\devices\quhwa.c" />

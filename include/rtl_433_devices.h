@@ -214,6 +214,7 @@
     DECL(jasco) \
     DECL(telldus_ft0385r) \
     DECL(lacrosse_tx34) \
+    DECL(proflame2) \
 
     /* Add new decoders here. */
 

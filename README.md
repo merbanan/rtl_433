@@ -290,6 +290,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [204]  Jasco/GE Choice Alert Security Devices
     [205]  Telldus weather station FT0385R sensors
     [206]  LaCrosse TX34-IT rain gauge
+    [207]  SmartFire Proflame 2 remote control
 
 * Disabled by default, use -R n or -G
 

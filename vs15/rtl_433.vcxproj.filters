@@ -610,6 +610,9 @@
     <ClCompile Include="..\src\devices\philips_aj7010.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\proflame2.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\prologue.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
