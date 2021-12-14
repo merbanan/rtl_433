@@ -134,6 +134,11 @@ Basically run `rtl_433` with `-F syslog:127.0.0.1:1433` and the relay script as 
     rtl_433_mqtt_relay.py &
     rtl_433 -F syslog:127.0.0.1:1433
 
+### SQL
+
+An example to push data to SQL is at [Domifry/RTL_433_SQL_Connection](https://github.com/Domifry/RTL_433_SQL_Connection/),
+see also [#1828](https://github.com/merbanan/rtl_433/issues/1828).
+
 ### RRD
 
 See [rtl_433_rrd_relay.py](https://github.com/merbanan/rtl_433/tree/master/examples/rtl_433_rrd_relay.py)
