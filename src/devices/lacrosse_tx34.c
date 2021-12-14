@@ -1,7 +1,7 @@
 /** @file
     LaCrosse TX34-IT rain gauge decoder.
 
-    Copyright (C) 2021 Reynald Poittevin
+    Copyright (C) 2021 Reynald Poittevin <reynald@poittevin.name>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
