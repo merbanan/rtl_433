@@ -83,6 +83,34 @@
 #endif
 #endif
 
+typedef struct timeval delay_timer_t;
+
+static void delay_timer_init(delay_timer_t *delay_timer)
+{
+    // set to current wall clock
+    get_time_now(delay_timer);
+}
+
+static void delay_timer_wait(delay_timer_t *delay_timer, unsigned delay_us)
+{
+    // sync to wall clock
+    struct timeval now_tv;
+    get_time_now(&now_tv);
+
+    time_t elapsed_s  = now_tv.tv_sec - delay_timer->tv_sec;
+    time_t elapsed_us = 1000000 * elapsed_s + now_tv.tv_usec - delay_timer->tv_usec;
+
+    // set next wanted start time
+    delay_timer->tv_usec += delay_us;
+    while (delay_timer->tv_usec > 1000000) {
+        delay_timer->tv_usec -= 1000000;
+        delay_timer->tv_sec += 1;
+    }
+
+    if ((time_t)delay_us > elapsed_us)
+        usleep(delay_us - elapsed_us);
+}
+
 r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
 static void print_version(void)
@@ -269,6 +297,7 @@ static void help_meta(void)
             "\tUse \"time:utc\" to output time in UTC.\n"
             "\t\t(this may also be accomplished by invocation with TZ environment variable set).\n"
             "\t\t\"usec\" and \"utc\" can be combined with other options, eg. \"time:unix:utc:usec\".\n"
+            "\tUse \"replay[:N]\" to replay file inputs at (N-times) realtime.\n"
             "\tUse \"protocol\" / \"noprotocol\" to output the decoder protocol number meta data.\n"
             "\tUse \"level\" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.\n"
             "\tUse \"noise[:secs]\" to report estimated noise level at intervals (default: 10 seconds).\n"
@@ -1020,6 +1049,8 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             time(&cfg->stats_time);
             cfg->stats_time += cfg->stats_interval;
         }
+        else if (!strncasecmp(arg, "replay", 6))
+            cfg->in_replay = atobv(arg_param(arg), 1);
         else
             cfg->report_meta = atobv(arg, 1);
         break;
@@ -1640,7 +1671,17 @@ int main(int argc, char **argv) {
             // default case for file-inputs
             int n_blocks = 0;
             unsigned long n_read;
+            delay_timer_t delay_timer;
+            delay_timer_init(&delay_timer);
             do {
+                // Replay in realtime if requested
+                if (cfg->in_replay) {
+                    // per block delay
+                    unsigned delay_us = (unsigned)(1000000llu * DEFAULT_BUF_LENGTH / cfg->samp_rate / demod->sample_size / cfg->in_replay);
+                    if (demod->load_info.format == CF32_IQ)
+                        delay_us /= 2; // adjust for float only reading half as many samples
+                    delay_timer_wait(&delay_timer, delay_us);
+                }
                 // Convert CF32 file to CS16 buffer
                 if (demod->load_info.format == CF32_IQ) {
                     n_read = fread(test_mode_float_buf, sizeof(float), DEFAULT_BUF_LENGTH / 2, in_file);
