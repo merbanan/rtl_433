@@ -83,6 +83,9 @@
     <ClInclude Include="..\include\output_mqtt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\output_trigger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\output_udp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -197,6 +200,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\output_mqtt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\output_trigger.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\output_udp.c">

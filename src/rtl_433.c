@@ -163,7 +163,7 @@ static void usage(int exit_code)
             "  [-w <filename> | help] Save data stream to output file (a '-' dumps samples to stdout)\n"
             "  [-W <filename> | help] Save data stream to output file, overwrite existing file\n"
             "\t\t= Data output options =\n"
-            "  [-F kv | json | csv | mqtt | influx | syslog | null | help] Produce decoded output in given format.\n"
+            "  [-F kv | json | csv | mqtt | influx | syslog | trigger | null | help] Produce decoded output in given format.\n"
             "       Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "       Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
             "  [-M time[:<options>] | protocol | level | noise[:secs] | stats | bits | help] Add various meta data to each output.\n"
@@ -239,7 +239,7 @@ static void help_output(void)
 {
     term_help_printf(
             "\t\t= Output format option =\n"
-            "  [-F kv|json|csv|mqtt|influx|syslog|null] Produce decoded output in given format.\n"
+            "  [-F kv|json|csv|mqtt|influx|syslog|trigger|null] Produce decoded output in given format.\n"
             "\tWithout this option the default is KV output. Use \"-F null\" to remove the default.\n"
             "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\tSpecify MQTT server with e.g. -F mqtt://localhost:1883\n"
@@ -1127,6 +1127,9 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         }
         else if (strncmp(optarg, "http", 4) == 0) {
             add_http_output(cfg, arg_param(optarg));
+        }
+        else if (strncmp(arg, "trigger", 7) == 0) {
+            add_trigger_output(cfg, arg_param(arg));
         }
         else if (strncmp(arg, "null", 4) == 0) {
             add_null_output(cfg, arg_param(arg));

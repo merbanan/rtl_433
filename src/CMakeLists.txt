@@ -25,6 +25,7 @@ add_library(r_433 STATIC
     output_file.c
     output_influx.c
     output_mqtt.c
+    output_trigger.c
     output_udp.c
     pulse_analyzer.c
     pulse_demod.c
