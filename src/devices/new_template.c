@@ -19,6 +19,14 @@
 
     Remove all other multiline (slash-star) comments.
     Use single-line (slash-slash) comments to annontate important lines if needed.
+
+    To use this:
+    - Copy this template to a new file
+    - Change at least `new_template` in the source
+    - Add to include/rtl_433_devices.h
+    - Run ./maintainer_update.py (needs a clean git stage or commit)
+
+    Note that for simple devices doorbell/PIR/remotes a flex conf (see conf dir) is prefered.
 */
 
 /**
