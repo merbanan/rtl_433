@@ -291,6 +291,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [205]  Telldus weather station FT0385R sensors
     [206]  LaCrosse TX34-IT rain gauge
     [207]  SmartFire Proflame 2 remote control
+    [208]  AVE TPMS
 
 * Disabled by default, use -R n or -G
 

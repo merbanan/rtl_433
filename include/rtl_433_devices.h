@@ -215,6 +215,7 @@
     DECL(telldus_ft0385r) \
     DECL(lacrosse_tx34) \
     DECL(proflame2) \
+    DECL(tpms_ave) \
 
     /* Add new decoders here. */
 
