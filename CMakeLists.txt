@@ -127,6 +127,29 @@ if(FORCE_COLORED_BUILD)
 endif()
 
 ########################################################################
+# Find FFTW build dependencies
+########################################################################
+set(ENABLE_FFTW OFF CACHE STRING "Enable FFTW support")
+set_property(CACHE ENABLE_FFTW PROPERTY STRINGS AUTO ON OFF)
+if(ENABLE_FFTW) # AUTO / ON
+
+find_package(FFTW COMPONENTS DOUBLE_LIB)
+if(FFTW_FOUND)
+    message(STATUS "FFTW support will be compiled.")
+    include_directories(${FFTW_INCLUDE_DIRS})
+    list(APPEND SDR_LIBRARIES ${FFTW_LIBRARIES})
+    ADD_DEFINITIONS(-DFFTW)
+elseif(ENABLE_FFTW STREQUAL "AUTO")
+    message(STATUS "FFTW development files not found, FFT won't be possible.")
+else()
+    message(FATAL_ERROR "FFTW development files not found.")
+endif()
+
+else()
+    message(STATUS "FFTW disabled.")
+endif()
+
+########################################################################
 # Find OpenSSL build dependencies
 ########################################################################
 set(ENABLE_OPENSSL AUTO CACHE STRING "Enable OpenSSL TLS support")
@@ -157,7 +180,6 @@ set(ENABLE_RTLSDR ON CACHE STRING "Enable RTL-SDR (lbrtlsdr) driver support")
 set_property(CACHE ENABLE_RTLSDR PROPERTY STRINGS AUTO ON OFF)
 if(ENABLE_RTLSDR) # AUTO / ON
 
-find_package(PkgConfig)
 find_package(LibRTLSDR)
 find_package(LibUSB)
 if(LibRTLSDR_FOUND)
