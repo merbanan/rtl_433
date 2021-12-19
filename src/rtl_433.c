@@ -28,6 +28,10 @@
 #include <errno.h>
 #include <signal.h>
 
+#ifdef FFTW
+#include <fftw3.h>
+#endif
+
 #include "rtl_433.h"
 #include "r_private.h"
 #include "r_device.h"
@@ -109,6 +113,151 @@ static void delay_timer_wait(delay_timer_t *delay_timer, unsigned delay_us)
 
     if ((time_t)delay_us > elapsed_us)
         usleep(delay_us - elapsed_us);
+}
+
+#ifdef FFTW
+typedef struct fft {
+    int N;
+    fftw_complex *in;
+    fftw_complex *out;
+    fftw_plan p;
+    double *window;
+    double weight;
+    double block_norm;
+    double block_norm_db;
+} fft_t;
+
+static fft_t fft = {0};
+
+/// Blackman-Harris window generator function.
+static double *blackmanharris_window(int N, double *out_weight)
+{
+    double const a0 = 0.35875;
+    double const a1 = 0.48829;
+    double const a2 = 0.14128;
+    double const a3 = 0.01168;
+
+    double *window = malloc(sizeof(double) * N);
+    double weight = 0.0;
+    for (int i = 0; i < N; ++i) {
+        weight += window[i] = a0
+                - (a1 * cos((2.0 * M_PI * i) / (N - 1)))
+                + (a2 * cos((4.0 * M_PI * i) / (N - 1)))
+                - (a3 * cos((6.0 * M_PI * i) / (N - 1)));
+    }
+    if (out_weight)
+        *out_weight = weight;
+    return window;
+}
+
+/// Setup FFT
+static void fft_init(int N)
+{
+    fft.N   = N;
+    fft.in  = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * fft.N);
+    fft.out = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * fft.N);
+    fft.p   = fftw_plan_dft_1d(fft.N, fft.in, fft.out, FFTW_FORWARD, FFTW_ESTIMATE);
+
+    fft.window        = blackmanharris_window(fft.N, &fft.weight);
+    fft.block_norm    = 1.0 / fft.weight;
+    fft.block_norm_db = 10 * log10(fft.block_norm);
+}
+
+/// Print FFT bins
+static void fft_print(unsigned center_frequency, unsigned samp_rate)
+{
+    fprintf(stderr, "block_norm = %.6f, %.1f dB, window weight = %.3f\n", fft.block_norm, fft.block_norm_db, fft.weight);
+    // show bins
+    for (int k = 0; k < fft.N; k += 32) {
+        float frel    = k < fft.N / 2 ? k : k - fft.N;
+        float foffs   = (float)frel * samp_rate / fft.N;
+        float freq_hz = (foffs + center_frequency);
+        fprintf(stderr, "%u: %.0f %0.3f\n", k, foffs, freq_hz / 1e6);
+    }
+}
+#endif
+
+typedef struct history_elem {
+    int f_khz;
+    unsigned prev_time;
+} history_elem_t;
+
+list_t history_list = {0};
+
+static inline unsigned history_update(int f_khz, int curr_time)
+{
+    history_elem_t *hist = NULL;
+    for (void **iter = history_list.elems; iter && *iter; ++iter) {
+        history_elem_t *elem = *iter;
+        if (elem->f_khz == f_khz) {
+            hist = elem;
+            break;
+        }
+    }
+    if (!hist) {
+        hist = malloc(sizeof(*hist));
+        hist->f_khz = f_khz;
+        hist->prev_time = curr_time;
+        list_push(&history_list, hist);
+    }
+    unsigned ret = hist->prev_time;
+    hist->prev_time = curr_time;
+    return ret;
+}
+
+/// Weighted moving average, arithmetic mean with variance
+typedef struct wmavg {
+    int fsum;
+    int wsum;
+    long long esum;
+    int idx;
+    int len;
+    int fs[32];
+    int ws[32];
+    int es[32];
+} wmavg_t;
+
+static wmavg_t wmavg = {0};
+
+static inline void wmavg_reset()
+{
+    wmavg.fsum = 0;
+    wmavg.wsum = 0;
+    wmavg.esum = 0;
+    for (int k = 0; k < 32; ++k) {
+        wmavg.fs[k] = 0;
+        wmavg.ws[k] = 0;
+        wmavg.es[k] = 0;
+    }
+    wmavg.len = 0;
+}
+
+static inline void wmavg_push(int f, int w)
+{
+    int fw = f * w;
+    int e = f * f * w;
+
+    // https://stackoverflow.com/questions/14635735/how-to-efficiently-calculate-a-moving-standard-deviation
+    // SUM(i=1..n){values[i]^2} - period*(average^2)
+
+    // running fw sum
+    wmavg.fsum -= wmavg.fs[wmavg.idx];
+    wmavg.fsum += fw;
+    wmavg.fs[wmavg.idx] = fw;
+
+    // running weight sum
+    wmavg.wsum -= wmavg.ws[wmavg.idx];
+    wmavg.wsum += w;
+    wmavg.ws[wmavg.idx] = w;
+
+    // running error squares sum
+    wmavg.esum -= wmavg.es[wmavg.idx];
+    wmavg.esum += e;
+    wmavg.es[wmavg.idx] = e;
+
+    if (wmavg.len < 16)
+        wmavg.len++;
+    wmavg.idx = (wmavg.idx + 1) % 16;
 }
 
 r_device *flex_create_device(char *spec); // maybe put this in some header file?
@@ -384,6 +533,213 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     if (demod->samp_grab) {
         samp_grab_push(demod->samp_grab, iq_buf, len);
     }
+
+#define FFT_BEEPS
+#ifdef FFT_BEEPS
+    // FFT
+#define PWR_SCALE 10
+    int fhits = 0;
+    float h_freq_hz = 0.0f;
+    double h_abs2_max0 = 0.0;
+    double h_abs2_max1 = 0.0;
+    double h_abs2_max2 = 0.0;
+    double h_abs2_max3 = 0.0;
+
+    for (unsigned n = 0; n < n_samples;) {
+        if (n + fft.N > n_samples) break;
+        // fill fft_in
+        for (int k = 0; k < fft.N; ++k) {
+            fft.in[k][0] = fft.window[k] * (iq_buf[2 * (n + k) + 0] - 128) / 128.0;
+            fft.in[k][1] = fft.window[k] * (iq_buf[2 * (n + k) + 1] - 128) / 128.0;
+        }
+        n += fft.N; // stride
+
+        fftw_execute(fft.p); /* repeat as needed */
+        // examine fft.out
+        double abs2_n[1024];
+        double abs2_max0 = 0;
+        double abs2_max1 = 0;
+        double abs2_max2 = 0;
+        double abs2_max3 = 0;
+        int abs2_k = -1;
+        for (int k = 0; k < fft.N; ++k) { // exclude DC?
+            double real = fft.out[k][0];
+            double imag = fft.out[k][1];
+            double abs2 = real * real + imag * imag;
+            if (abs2 > abs2_max0) {
+                abs2_max3 = abs2_max2;
+                abs2_max2 = abs2_max1;
+                abs2_max1= abs2_max0;
+                abs2_max0 = abs2;
+                abs2_k = k;
+            }
+            abs2_n[k] = abs2;
+            //double dBfs   = 5 * log10(abs2) + block_norm_db;
+        }
+        // the positive frequencies are stored in the first half of the output and the
+        // negative frequencies are stored in backwards order in the second half of the
+        // output. (The frequency -k/n is the same as the frequency (n-k)/n.)
+        int abs2_i = abs2_k < fft.N / 2 ? abs2_k : abs2_k - fft.N;
+        int wght = abs2_max0 * PWR_SCALE;
+        //wmavg_push(abs2_i, 1);
+        wmavg_push(abs2_i, wght);
+        //fprintf(stderr, "PSH  %d  %d\n", abs2_i, wght);
+
+        //if (wmavg.wsum <= 0)
+        //    fprintf(stderr, "wmavg.wsum <= 0 %d\n", wmavg.wsum);
+        int avg = wmavg.wsum > 0 ? wmavg.fsum / wmavg.wsum : 0;
+        int var2 = wmavg.wsum > 0 ? wmavg.esum / wmavg.wsum - avg * avg : 0;
+
+        if (wmavg.wsum > 0 && wmavg.len >= 16 && var2 < 3 * 3) {
+            //fprintf(stderr, "--  %d  %d  (%d)\n", wmavg.fsum, wmavg.wsum, wmavg.len);
+
+            int f_min = INT_MAX;
+            int f_max = -INT_MAX;
+            int w_min = INT_MAX;
+            int w_max = -INT_MAX;
+            int w_avg = 0;
+            for (int k = 0; k < wmavg.len; ++k) {
+                w_avg += wmavg.ws[k];
+                if (wmavg.ws[k] > w_max) w_max = wmavg.ws[k];
+                if (wmavg.ws[k] < w_min) w_min = wmavg.ws[k];
+                if (wmavg.fs[k] > f_max) f_max = wmavg.fs[k];
+                if (wmavg.fs[k] < f_min) f_min = wmavg.fs[k];
+            }
+            w_avg /= wmavg.len;
+
+            float foffs   = (float)avg * cfg->samp_rate / fft.N;
+            float freq_hz = (foffs + cfg->center_frequency);
+            double dBfs_avg = 5 * log10(w_avg / PWR_SCALE) + fft.block_norm_db;
+            double dBfs_min = 5 * log10(w_min / PWR_SCALE) + fft.block_norm_db;
+            double dBfs_max = 5 * log10(w_max / PWR_SCALE) + fft.block_norm_db;
+
+            unsigned now_ms    = cfg->demod->now.tv_sec * 1000 + cfg->demod->now.tv_usec / 1000; // TODO: offset for frame pos
+            unsigned prev_ms = history_update(10 * (int)(freq_hz / 1e4 + 0.5), now_ms);
+            unsigned diff_ms = now_ms - prev_ms;
+
+            /* clang-format off */
+            data_t *data = data_make(
+                    "model",            "",             DATA_STRING,    "Beep-Tracker",
+                    "channel_MHz",      "Channel",      DATA_FORMAT,    "%.3f MHz",     DATA_DOUBLE, freq_hz / 1e6,
+                    "distance_ms",      "Distance",     DATA_FORMAT,    "%d ms",        DATA_INT,    (int)diff_ms,
+                    "power_dB",         "Power",        DATA_FORMAT,    "%.1f dB",      DATA_DOUBLE, dBfs_avg,
+                    NULL);
+            /* clang-format on */
+            event_occurred_handler(cfg, data);
+
+            time_pos_str(cfg, n_samples - n - fft.N, time_str);
+            fprintf(stderr, "   [%s] %.3f MHz +%4dms : Avg %4d (%4d - %4d / %7d, %2d), Var2 %4d, Pwr %4d (%4d - %4d): %.1f dB (%.1f - %.1f)\n",
+                    time_str, freq_hz / 1e6, diff_ms,
+                    avg, f_min * wmavg.len / wmavg.wsum, f_max * wmavg.len / wmavg.wsum,
+                    wmavg.wsum, wmavg.len,
+                    var2, w_avg / PWR_SCALE, w_min / PWR_SCALE, w_max / PWR_SCALE, dBfs_avg, dBfs_min, dBfs_max);
+
+            wmavg_reset(); // flush this hit
+        }
+
+        if (abs2_k > 0 && abs2_max2 * 3 < abs2_max0 && abs2_max0 > 100000) { // disabled
+            float foffs   = abs2_k < fft.N / 2 ? (float)abs2_k * cfg->samp_rate / fft.N : (float)(abs2_k - fft.N) * cfg->samp_rate / fft.N;
+            float freq_hz = (foffs + cfg->center_frequency);
+            //fprintf(stderr, "(%0.3f %.1f %.1f) ", freq_hz / 1e6, dBfs0, dBfs2);
+            //fprintf(stderr, "(%0.3f) ", freq_hz / 1e6);
+            fhits++;
+            h_freq_hz = freq_hz;
+            h_abs2_max0 = abs2_max0;
+            h_abs2_max1 = abs2_max1;
+            h_abs2_max2 = abs2_max2;
+            h_abs2_max3 = abs2_max3;
+        }
+        else if (fhits) {
+            double time_ms = fhits * 1e6 / cfg->samp_rate;
+            double dBfs0   = 5 * log10(h_abs2_max0) + fft.block_norm_db;
+            double dBfs1   = 5 * log10(h_abs2_max1) + fft.block_norm_db;
+            double dBfs2   = 5 * log10(h_abs2_max2) + fft.block_norm_db;
+            double dBfs3   = 5 * log10(h_abs2_max3) + fft.block_norm_db;
+
+            time_pos_str(cfg, demod->pulse_data.start_ago, time_str);
+            fprintf(stderr, "=> [%s] %0.3f MHz for %.1f ms, %.1f %.1f %.1f %.1f\n",
+                    time_str, h_freq_hz / 1e6, time_ms, dBfs0, dBfs1, dBfs2, dBfs3);
+            fhits = 0;
+        }
+    }
+    return;
+
+    baseband_demod_FM(iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, 0.5f, &demod->demod_FM_state);
+#define AVG_SIZE 1024
+    int mavg_val[AVG_SIZE] = {0};
+    int mavg_sqr[AVG_SIZE] = {0};
+    int mavg_idx = 0;
+    int mavg_len = 0;
+    long long mavg_vals = 0;
+    long long mavg_sqrs = 0;
+    int hits = 0;
+    float a_freq_hz = 0.0f;
+    for (unsigned n = 0; n < n_samples;) {
+        int i = 0;
+        mavg_vals = 0;
+        mavg_sqrs = 0;
+        for (; i < AVG_SIZE && n < n_samples; ++i) {
+            int acc = demod->buf.fm[n++];
+            mavg_vals += acc;
+            mavg_sqrs += acc*acc;
+        }
+        int avg = mavg_vals / i;
+        long long var2 = mavg_sqrs / i - avg * avg;
+        //double var  = sqrt(var2); // max 12000, min 2000
+        //fprintf(stderr, "%6d ", avg);
+        //fprintf(stderr, "%6d ", var2);
+        //fprintf(stderr, "%.0f ", var);
+        if (var2 > 1 && var2 < 3000 * 3000) {
+            hits++;
+            float foffs = (float)avg / INT16_MAX * cfg->samp_rate / 2.0;
+            float freq_hz = (foffs + cfg->center_frequency);
+            //float voffs   = (float)var / INT16_MAX * cfg->samp_rate / 2.0;
+            //fprintf(stderr, "%.3f (%.1f)", freq_hz / 1e6, voffs / 1e3);
+            //fprintf(stderr, "%6d,%6d ", avg, var2);
+            //fprintf(stderr, "%d ", avg);
+            //fprintf(stderr, "%.2f ", freq_hz / 1e6);
+            a_freq_hz = freq_hz;
+        }
+        else if (hits) {
+            double time_ms = hits * 1e6 / cfg->samp_rate;
+            fprintf(stderr, "-> %0.3f MHz for %.1f ms\n", a_freq_hz / 1e6, time_ms);
+            hits = 0;
+        }
+    }
+    return;
+
+    for (unsigned n = 0; n < n_samples;) {
+        int i = 0;
+        int acc = 0;
+        for (; i < 64 && n < n_samples; ++i) {
+            acc += demod->buf.fm[n++];
+        }
+        acc /= i;
+        //int acc = demod->buf.fm[n];
+
+        mavg_vals -= mavg_val[mavg_idx];
+        mavg_vals += acc;
+        mavg_val[mavg_idx] = acc;
+
+        mavg_sqrs -= mavg_sqr[mavg_idx];
+        mavg_sqrs += acc*acc;
+        mavg_sqr[mavg_idx] = acc*acc;
+
+        if (mavg_len < AVG_SIZE) mavg_len++;
+        mavg_idx = (mavg_idx + 1) % AVG_SIZE;
+
+        int avg = mavg_vals / AVG_SIZE;
+        long long var2 = mavg_sqrs / mavg_len - avg * avg;
+
+        //fprintf(stderr, "%6d ", avg);
+        //fprintf(stderr, "%6d ", var2);
+        //if (mavg_idx % 128 == 0)
+        if (var2 < 10000)
+            fprintf(stderr, "%6d ", avg);
+    }
+    fprintf(stderr, "\n");
+    return;
+#endif /* FFT_BEEPS */
 
     // AM demodulation
     float avg_db;
@@ -1380,6 +1736,13 @@ int main(int argc, char **argv) {
     // save sample rate, this should be a hop config too
     uint32_t sample_rate_0 = cfg->samp_rate;
 
+    // Setup FFT
+#ifdef FFTW
+    fft_init(1024);
+    if (cfg->verbosity > 1)
+        fft_print(cfg->center_frequency, cfg->samp_rate);
+#endif
+
     // add all remaining positional arguments as input files
     while (argc > optind) {
         add_infile(cfg, argv[optind++]);
@@ -1828,6 +2191,13 @@ int main(int argc, char **argv) {
     if (cfg->exit_code >= 0)
         r = cfg->exit_code;
     r_free_cfg(cfg);
+
+    // Tear down FFT
+#ifdef FFTW
+    fftw_destroy_plan(fft.p);
+    fftw_free(fft.in);
+    fftw_free(fft.out);
+#endif
 
     return r >= 0 ? r : -r;
 }
