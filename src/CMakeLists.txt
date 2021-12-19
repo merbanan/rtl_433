@@ -25,6 +25,7 @@ add_library(r_433 STATIC
     output_file.c
     output_influx.c
     output_mqtt.c
+    output_rtltcp.c
     output_trigger.c
     output_udp.c
     pulse_analyzer.c
@@ -33,6 +34,7 @@ add_library(r_433 STATIC
     pulse_detect_fsk.c
     r_api.c
     r_util.c
+    raw_output.c
     rfraw.c
     samp_grab.c
     sdr.c

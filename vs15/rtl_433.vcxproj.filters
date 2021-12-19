@@ -86,6 +86,9 @@
     <ClInclude Include="..\include\output_mqtt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\output_rtltcp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\output_trigger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -114,6 +117,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\r_util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\raw_output.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\rfraw.h">
@@ -205,6 +211,9 @@
     <ClCompile Include="..\src\output_mqtt.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\output_rtltcp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\output_trigger.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -227,6 +236,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\r_util.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\raw_output.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\rfraw.c">
