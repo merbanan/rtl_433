@@ -148,7 +148,7 @@ static char *output_fields[] = {
         "type",
         "id",
         "mode",
-        "pressure_PSI",
+        "pressure_kPa",
         "temperature_C",
         "battery_level",
         "flags",
