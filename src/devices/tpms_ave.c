@@ -90,7 +90,6 @@ static int tpms_ave_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned r
         break;
     }
     pressure = ((double)pressure_raw - offset) * ratio;
-    pressure *= 0.1450377377; // kPa to PSI conversion
 
     sprintf(id_str, "%08x", id);
 
@@ -100,7 +99,7 @@ static int tpms_ave_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned r
             "type",             "Type",          DATA_STRING, "TPMS",
             "id",               "Id",            DATA_STRING, id_str,
             "mode",             "Mode",          DATA_FORMAT, "M%i", DATA_INT, mode,
-            "pressure_PSI",     "Pressure",      DATA_FORMAT, "%.1f PSI", DATA_DOUBLE, pressure,
+            "pressure_kPa",     "Pressure",      DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, pressure,
             "temperature_C",    "Temperature",   DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature - 50.0,
             "battery_ok",       "Battery level", DATA_COND, battery_level < 6, DATA_DOUBLE, 1.0,
             "battery_ok",       "Battery level", DATA_COND, battery_level == 6, DATA_DOUBLE, 0.75,
