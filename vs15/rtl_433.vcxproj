@@ -326,6 +326,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\thermopro_tp12.c" />
     <ClCompile Include="..\src\devices\thermopro_tx2.c" />
     <ClCompile Include="..\src\devices\tpms_abarth124.c" />
+    <ClCompile Include="..\src\devices\tpms_ave.c" />
     <ClCompile Include="..\src\devices\tpms_citroen.c" />
     <ClCompile Include="..\src\devices\tpms_elantra2012.c" />
     <ClCompile Include="..\src\devices\tpms_ford.c" />
