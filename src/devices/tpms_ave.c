@@ -52,7 +52,7 @@ static int tpms_ave_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned r
     if (packet_bits.bits_per_row[row] < 64) {
         return DECODE_ABORT_LENGTH; // too short to be a whole packet
     }
-    if (decoder->verbose > 1) {
+    if (decoder->verbose) {
         bitbuffer_print(&packet_bits);
     }
 
@@ -76,6 +76,7 @@ static int tpms_ave_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned r
         offset = 47.0f;
         break;
     case 1:
+    default:
         ratio = 2.352f;
         offset = 0.0f;
         break;
@@ -89,7 +90,7 @@ static int tpms_ave_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned r
         break;
     }
     pressure = ((double)pressure_raw - offset) * ratio;
-    pressure *= 0.1450377377;
+    pressure *= 0.1450377377; // kPa to PSI conversion
 
     sprintf(id_str, "%08x", id);
 
@@ -101,9 +102,9 @@ static int tpms_ave_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned r
             "mode",             "Mode",          DATA_FORMAT, "M%i", DATA_INT, mode,
             "pressure_PSI",     "Pressure",      DATA_FORMAT, "%.1f PSI", DATA_DOUBLE, pressure,
             "temperature_C",    "Temperature",   DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature - 50.0,
-            "battery_ok",       "Battery level", DATA_COND, battery_level < 6, DATA_STRING, "full",
-            "battery_ok",       "Battery level", DATA_COND, battery_level == 6, DATA_STRING, "ok",
-            "battery_ok",       "Battery level", DATA_COND, battery_level == 7, DATA_STRING, "low",
+            "battery_ok",       "Battery level", DATA_COND, battery_level < 6, DATA_DOUBLE, 1.0,
+            "battery_ok",       "Battery level", DATA_COND, battery_level == 6, DATA_DOUBLE, 0.75,
+            "battery_ok",       "Battery level", DATA_COND, battery_level == 7, DATA_DOUBLE, 0.25,
             "flags",            "Flags",         DATA_FORMAT, "0x%x", DATA_INT, flags,
             "mic",              "Integrity",     DATA_STRING, "CRC",
             NULL);
@@ -129,14 +130,13 @@ static int tpms_ave_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     for (row = 0; row < bitbuffer->num_rows; ++row) {
         bitpos = 0;
         // Find a preamble with enough bits after it that it could be a complete packet
-	fprintf(stderr, "Bits: %i\n", bitbuffer->bits_per_row[0]);
         while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 32)) + 132 <=
                 bitbuffer->bits_per_row[0]) {
             ret = tpms_ave_decode(decoder, bitbuffer, row, bitpos + 32);
             if (ret > 0) {
                 events += ret;
-	    	bitpos += 132;
-	    }
+                bitpos += 132;
+            }
             bitpos += 31;
         }
     }
@@ -160,7 +160,7 @@ static char *output_fields[] = {
 r_device tpms_ave = {
         .name        = "AVE TPMS",
         .modulation  = FSK_PULSE_PCM,
-        .short_width = 100, 
+        .short_width = 100,
         .long_width  = 100,
         .reset_limit = 400,
         .tolerance   = 15,
