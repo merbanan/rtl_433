@@ -15,7 +15,7 @@ Note: work in progress
 
 - Modulation: FSK PCM
 - Frequency: 868.95MHz
-- 25 us bit time 
+- 25 us bit time
 - 40000 baud
 - based on Semtech SX1211
 - manual CRC
@@ -30,7 +30,7 @@ Known Data:
 - Length       {8}
 - Unknown      {8}  always 0xff
 - Msg No.      {8}
-- Msg Type     {8}  
+- Msg Type     {8}
    - 0x01        standard message
    - 0x02        setup message
    - 0x03        actor identifcation beacon (click/clack)
@@ -51,9 +51,9 @@ payload data
 - CRC16       {16}
 
 The length including payload is whitened using CCITT whitening enabled in SX1211 chipset.
-The payload contains some garbage at the end. The documentation of the SX1211 assume to 
+The payload contains some garbage at the end. The documentation of the SX1211 assume to
 exclude the length byte from length calculation, but the CRC16 checksum at the end is so placed,
-that the length byte is included. Maybe someone read the docs wrong. The garbage after the 
+that the length byte is included. Maybe someone read the docs wrong. The garbage after the
 checksum contains data from previous larger messages.
 
 So the last two bytes contains the CRC16(Poly=0x1021,Init=0x0000) value.
@@ -79,7 +79,7 @@ static void ccitt_dewhitening(uint8_t *whitening_key_msb_p, uint8_t *whitening_k
         reverted_whitening_key_lsb = (reverted_whitening_key_lsb & 0xaa) >> 1 | (reverted_whitening_key_lsb & 0x55) << 1;
 
         buffer[buffer_pos] ^= reverted_whitening_key_lsb;
-        
+
         for (uint8_t rol_counter = 0; rol_counter < 8; rol_counter++) {
             whitening_key_msb_previous = whitening_key_msb;
             whitening_key_msb = (whitening_key_lsb & 0x01) ^ ((whitening_key_lsb >> 5) & 0x01);
