@@ -71,6 +71,7 @@ add_library(r_433 STATIC
     devices/cotech_36_7959.c
     devices/current_cost.c
     devices/danfoss.c
+    devices/deltadore_x3d.c
     devices/digitech_xc0324.c
     devices/directv.c
     devices/dish_remote_6_3.c
