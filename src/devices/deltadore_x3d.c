@@ -108,9 +108,12 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Validate message and reject it as fast as possible : check for preamble
     unsigned start_pos = bitbuffer_search(bitbuffer, row, 0, preamble, sizeof (preamble) * 8);
 
-    if (start_pos == bitbuffer->bits_per_row[row]) {
+    if (start_pos >= bitbuffer->bits_per_row[row]) {
         return DECODE_ABORT_EARLY; // no preamble detected
     }
+
+    // start after preamble
+    start_pos += sizeof (preamble) * 8;
 
     // check min length
     if (bitbuffer->bits_per_row[row] < 10 * 8) { //preamble(4) + sync(4) + len(1) + data(1)
@@ -121,7 +124,7 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t whitening_key_lsb = 0xff;
 
     uint8_t len;
-    bitbuffer_extract_bytes(bitbuffer, row, start_pos + sizeof (preamble) * 8, &len, 8);
+    bitbuffer_extract_bytes(bitbuffer, row, start_pos, &len, 8);
 
     // dewhite length
     ccitt_dewhitening(&whitening_key_msb, &whitening_key_lsb, &len, 1);
@@ -137,7 +140,7 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     frame[0] = len;
 
     // Get frame (len include the length byte)
-    bitbuffer_extract_bytes(bitbuffer, row, start_pos + (sizeof (preamble) + 1) * 8, &frame[1], (len - 1) * 8);
+    bitbuffer_extract_bytes(bitbuffer, row, start_pos + 8, &frame[1], (len - 1) * 8);
 
     // dewhite data
     ccitt_dewhitening(&whitening_key_msb, &whitening_key_lsb, &frame[1], len - 1);
@@ -156,14 +159,14 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     char frame_str[64 * 2 + 1] = {0};
-    // do not put lenght and crc to raw data
+    // do not put length and crc to raw data
     for (int i = 0; i < len - 3; ++i) {
         sprintf(&frame_str[i * 2], "%02x", frame[i + 1]);
     }
 
     /* clang-format off */
     data = data_make(
-            "model",        "",                 DATA_STRING, "DeltaDore X3D",
+            "model",        "",                 DATA_STRING, "DeltaDore-X3D",
             "raw",          "Raw data",         DATA_STRING, frame_str,
             "mic",          "Integrity",        DATA_STRING, "CRC",
             NULL);
