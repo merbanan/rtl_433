@@ -60,7 +60,7 @@ So the last two bytes contains the CRC16(Poly=0x1021,Init=0x0000) value.
 
 To get raw data:
 
-    ./rtl_433 -f 868.95M -X 'n=DeltaDore,m=FSK_PCM,s=25,l=25,r=25600,preamble=aa8169967e'
+    ./rtl_433 -f 868.95M -X 'n=DeltaDore,m=FSK_PCM,s=25,l=25,r=800,preamble=aa8169967e'
 */
 
 #include "decoder.h"
@@ -188,7 +188,7 @@ r_device deltadore_x3d = {
         .modulation  = FSK_PULSE_PCM,
         .short_width = 25,
         .long_width  = 25,
-        .reset_limit = 25600,
+        .reset_limit = 800,
         .decode_fn   = &deltadore_x3d_decode,
         .fields      = output_fields,
 };
