@@ -83,6 +83,11 @@
 #endif
 #endif
 
+#ifdef _WIN32
+#include <windows.h>
+#define usleep(us) Sleep((us) / 1000)
+#endif
+
 typedef struct timeval delay_timer_t;
 
 static void delay_timer_init(delay_timer_t *delay_timer)
