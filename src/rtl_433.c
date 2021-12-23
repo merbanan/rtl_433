@@ -1232,23 +1232,27 @@ static r_cfg_t g_cfg;
 #define SIGINFO 29
 #endif
 
+// NOTE: printf is not async safe per signal-safety(7)
+// writes a static string, without the terminating zero, to stderr, ignores return value
+#define write_err(s) (void)!write(STDERR_FILENO, (s), sizeof(s) - 1)
+
 #ifdef _WIN32
 BOOL WINAPI
 console_handler(int signum)
 {
     if (CTRL_C_EVENT == signum) {
-        fprintf(stderr, "Signal caught, exiting!\n");
+        write_err("Signal caught, exiting!\n");
         g_cfg.exit_async = 1;
         sdr_stop(g_cfg.dev);
         return TRUE;
     }
     else if (CTRL_BREAK_EVENT == signum) {
-        fprintf(stderr, "CTRL-BREAK detected, hopping to next frequency (-f). Use CTRL-C to quit.\n");
+        write_err("CTRL-BREAK detected, hopping to next frequency (-f). Use CTRL-C to quit.\n");
         g_cfg.hop_now = 1;
         return TRUE;
     }
     else if (signum == SIGALRM) {
-        fprintf(stderr, "Async read stalled, exiting!\n");
+        write_err("Async read stalled, exiting!\n");
         g_cfg.exit_code = 3;
         g_cfg.exit_async = 1;
         sdr_stop(g_cfg.dev);
@@ -1279,11 +1283,11 @@ static void sighandler(int signum)
         return;
     }
     else if (signum == SIGALRM) {
-        fprintf(stderr, "Async read stalled, exiting!\n");
+        write_err("Async read stalled, exiting!\n");
         g_cfg.exit_code = 3;
     }
     else {
-        fprintf(stderr, "Signal caught, exiting!\n");
+        write_err("Signal caught, exiting!\n");
     }
     g_cfg.exit_async = 1;
     sdr_stop(g_cfg.dev);
