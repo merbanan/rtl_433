@@ -83,6 +83,11 @@
 #endif
 #endif
 
+// STDERR_FILENO is not defined in at least MSVC
+#ifndef STDERR_FILENO
+#define STDERR_FILENO 2
+#endif
+
 #ifdef _WIN32
 #include <windows.h>
 #define usleep(us) Sleep((us) / 1000)
