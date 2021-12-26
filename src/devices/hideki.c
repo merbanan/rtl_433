@@ -45,18 +45,12 @@ Rain:
 
 enum sensortypes { HIDEKI_UNKNOWN, HIDEKI_TEMP, HIDEKI_TS04, HIDEKI_WIND, HIDEKI_RAIN };
 
-static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int hideki_ts04_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
-    uint8_t *b = bitbuffer->bb[0]; // TODO: handle the 3 row, need change in PULSE_CLOCK decoding
-    uint8_t packet[HIDEKI_MAX_BYTES_PER_ROW];
-    int sensortype, chk;
-    int channel, rc, battery_ok;
-    int temp, humidity, rain_units;
-    int wind_speed, gust_speed, wind_direction, wind_approach;
-
-    // Expect 8, 9, 10, or 14 unstuffed bytes
-    int unstuffed_len = bitbuffer->bits_per_row[0] / 9;
+    for (int row = 0; row < bitbuffer->num_rows; row++) {
+    int sensortype;
+    // Expect 8, 9, 10, or 14 unstuffed bytes, allow up to 4 missing bits
+    int unstuffed_len = (bitbuffer->bits_per_row[row] + 4) / 9;
     if (unstuffed_len == 14)
         sensortype = HIDEKI_WIND;
     else if (unstuffed_len == 10)
@@ -67,17 +61,34 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         sensortype = HIDEKI_TEMP;
     else
         return DECODE_ABORT_LENGTH;
+    unstuffed_len -= 1; // exclude sync
+
+    uint8_t *b = bitbuffer->bb[row];
+    // Expect a start (not inverted) of 00000110 1, but allow missing bits
+    int sync = b[0] << 1 | b[1] >> 7;
+    int startpos = -1;
+    for (int i = 0; i < 4; ++i) {
+        if (sync == 0x0d) {
+            startpos = 9 - i;
+            break;
+        }
+        sync >>= 1;
+    }
+    if (startpos < 0) {
+        return DECODE_ABORT_EARLY;
+    }
 
     // Invert all bits
     bitbuffer_invert(bitbuffer);
 
+    uint8_t packet[HIDEKI_MAX_BYTES_PER_ROW];
     // Strip (unstuff) and check parity bit
     // TODO: refactor to util function
     for (int i = 0; i < unstuffed_len; ++i) {
-        unsigned int offset = i / 8;
-        packet[i] = (b[i + offset] << (i % 8)) | (b[i + offset + 1] >> (8 - i % 8));
+        unsigned int offset = startpos + i * 9;
+        packet[i] = (b[offset / 8] << (offset % 8)) | (b[offset / 8 + 1] >> (8 - offset % 8));
         // check parity
-        uint8_t parity = (b[i + offset + 1] >> (7 - i % 8)) & 1;
+        uint8_t parity = (b[offset / 8 + 1] >> (7 - offset % 8)) & 1;
         if (parity != parity8(packet[i])) {
             if (decoder->verbose)
                 fprintf(stderr, "%s: Parity error at %d\n", __func__, i);
@@ -86,7 +97,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // XOR check all bytes
-    chk = xor_bytes(&packet[1], unstuffed_len - 2);
+    int chk = xor_bytes(packet, unstuffed_len - 1);
     if (chk) {
         if (decoder->verbose)
             fprintf(stderr, "%s: XOR error\n", __func__);
@@ -94,7 +105,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // CRC-8 poly=0x07 init=0x00
-    if (crc8(&packet[1], unstuffed_len - 1, 0x07, 0x00)) {
+    if (crc8(packet, unstuffed_len, 0x07, 0x00)) {
         if (decoder->verbose)
             fprintf(stderr, "%s: CRC error\n", __func__);
         return DECODE_FAIL_MIC;
@@ -103,37 +114,33 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Reflect LSB first to LSB last
     reflect_bytes(packet, unstuffed_len);
 
-    // Parse data
-    if (packet[0] != 0x9f) // NOTE: other valid ids might exist
-        return DECODE_FAIL_SANITY;
-
-    int pkt_len  = (packet[2] >> 1) & 0x1f;
-    //int pkt_seq  = packet[3] >> 6;
-    //int pkt_type = packet[3] & 0x1f;
+    int pkt_len  = (packet[1] >> 1) & 0x1f;
+    //int pkt_seq  = packet[2] >> 6;
+    //int pkt_type = packet[2] & 0x1f;
     // 0x0C Anemometer
     // 0x0D UV sensor
     // 0x0E Rain level meter
     // 0x1E Thermo/hygro-sensor
 
-    if (pkt_len +3 != unstuffed_len) {
+    if (pkt_len + 2 != unstuffed_len) {
         if (decoder->verbose)
             fprintf(stderr, "%s: LEN error\n", __func__);
         return DECODE_ABORT_LENGTH;
     }
 
-    channel = (packet[1] >> 5) & 0x0F;
+    int channel = (packet[0] >> 5) & 0x0F;
     if (channel >= 5) channel -= 1;
-    rc = packet[1] & 0x0F;
-    temp = (packet[5] & 0x0F) * 100 + ((packet[4] & 0xF0) >> 4) * 10 + (packet[4] & 0x0F);
-    if (((packet[5]>>7) & 1) == 0) {
+    int rc = packet[0] & 0x0F;
+    int temp = (packet[4] & 0x0F) * 100 + ((packet[3] & 0xF0) >> 4) * 10 + (packet[3] & 0x0F);
+    if (((packet[4]>>7) & 1) == 0) {
         temp = -temp;
     }
-    battery_ok = (packet[5]>>6) & 1;
+    int battery_ok = (packet[4] >> 6) & 1;
 
     if (sensortype == HIDEKI_TS04) {
-        humidity = ((packet[6] & 0xF0) >> 4) * 10 + (packet[6] & 0x0F);
+        int humidity = ((packet[5] & 0xF0) >> 4) * 10 + (packet[5] & 0x0F);
         /* clang-format off */
-        data = data_make(
+        data_t *data = data_make(
                 "model",            "",                 DATA_STRING, "Hideki-TS04",
                 "id",               "Rolling Code",     DATA_INT,    rc,
                 "channel",          "Channel",          DATA_INT,    channel,
@@ -148,14 +155,14 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     if (sensortype == HIDEKI_WIND) {
         int const wd[] = { 0, 15, 13, 14, 9, 10, 12, 11, 1, 2, 4, 3, 8, 7, 5, 6 };
-        wind_direction = wd[((packet[11] & 0xF0) >> 4)] * 225;
-        wind_speed = (packet[9] & 0x0F) * 100 + (packet[8] >> 4) * 10 + (packet[8] & 0x0F);
-        gust_speed = (packet[10] >> 4) * 100 + (packet[10] & 0x0F) * 10 + (packet[9] >> 4);
+        int wind_direction = wd[((packet[10] & 0xF0) >> 4)] * 225;
+        int wind_speed = (packet[8] & 0x0F) * 100 + (packet[7] >> 4) * 10 + (packet[7] & 0x0F);
+        int gust_speed = (packet[9] >> 4) * 100 + (packet[9] & 0x0F) * 10 + (packet[8] >> 4);
         int const ad[] = { 0, 1, -1, 2 }; // i.e. None, CW, CCW, invalid
-        wind_approach = ad[(packet[11] >> 2) & 0x03];
+        int wind_approach = ad[(packet[10] >> 2) & 0x03];
 
         /* clang-format off */
-        data = data_make(
+        data_t *data = data_make(
                 "model",            "",                 DATA_STRING, "Hideki-Wind",
                 "id",               "Rolling Code",     DATA_INT,    rc,
                 "channel",          "Channel",          DATA_INT,    channel,
@@ -173,7 +180,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     if (sensortype == HIDEKI_TEMP) {
         /* clang-format off */
-        data = data_make(
+        data_t *data = data_make(
                 "model",            "",                 DATA_STRING, "Hideki-Temperature",
                 "id",               "Rolling Code",     DATA_INT,    rc,
                 "channel",          "Channel",          DATA_INT,    channel,
@@ -186,11 +193,11 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
     }
     if (sensortype == HIDEKI_RAIN) {
-        rain_units = (packet[5] << 8) | packet[4];
-        battery_ok = (packet[2] >> 6) & 1;
+        int rain_units = (packet[4] << 8) | packet[3];
+        battery_ok = (packet[1] >> 6) & 1;
 
         /* clang-format off */
-        data = data_make(
+        data_t *data = data_make(
                 "model",            "",                 DATA_STRING, "Hideki-Rain",
                 "id",               "Rolling Code",     DATA_INT,    rc,
                 "channel",          "Channel",          DATA_INT,    channel,
@@ -204,6 +211,8 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     // unknown sensor type
     return DECODE_FAIL_SANITY;
+    }
+    return 0;
 }
 
 static char *output_fields[] = {
@@ -229,6 +238,6 @@ r_device hideki_ts04 = {
         .long_width  = 1040, // bit width 1040 us
         .reset_limit = 4000,
         .tolerance   = 240,
-        .decode_fn   = &hideki_ts04_callback,
+        .decode_fn   = &hideki_ts04_decode,
         .fields      = output_fields,
 };
