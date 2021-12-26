@@ -47,6 +47,7 @@ enum sensortypes { HIDEKI_UNKNOWN, HIDEKI_TEMP, HIDEKI_TS04, HIDEKI_WIND, HIDEKI
 
 static int hideki_ts04_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    int ret = 0;
     for (int row = 0; row < bitbuffer->num_rows; row++) {
         int sensortype;
         // Expect 8, 9, 10, or 14 unstuffed bytes, allow up to 4 missing bits
@@ -59,8 +60,10 @@ static int hideki_ts04_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             sensortype = HIDEKI_RAIN;
         else if (unstuffed_len == 8)
             sensortype = HIDEKI_TEMP;
-        else
-            return DECODE_ABORT_LENGTH;
+        else {
+            ret = DECODE_ABORT_LENGTH;
+            continue;
+        }
         unstuffed_len -= 1; // exclude sync
 
         uint8_t *b = bitbuffer->bb[row];
@@ -75,7 +78,8 @@ static int hideki_ts04_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             sync >>= 1;
         }
         if (startpos < 0) {
-            return DECODE_ABORT_EARLY;
+            ret = DECODE_ABORT_EARLY;
+            continue;
         }
 
         // Invert all bits
@@ -84,6 +88,7 @@ static int hideki_ts04_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t packet[HIDEKI_MAX_BYTES_PER_ROW];
         // Strip (unstuff) and check parity bit
         // TODO: refactor to util function
+        int unstuff_error = 0;
         for (int i = 0; i < unstuffed_len; ++i) {
             unsigned int offset = startpos + i * 9;
             packet[i] = (b[offset / 8] << (offset % 8)) | (b[offset / 8 + 1] >> (8 - offset % 8));
@@ -92,8 +97,13 @@ static int hideki_ts04_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             if (parity != parity8(packet[i])) {
                 if (decoder->verbose)
                     fprintf(stderr, "%s: Parity error at %d\n", __func__, i);
-                return DECODE_FAIL_MIC;
+                ret = DECODE_FAIL_MIC;
+                unstuff_error = i;
+                break;
             }
+        }
+        if (unstuff_error) {
+            continue;
         }
 
         // XOR check all bytes
@@ -101,14 +111,16 @@ static int hideki_ts04_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (chk) {
             if (decoder->verbose)
                 fprintf(stderr, "%s: XOR error\n", __func__);
-            return DECODE_FAIL_MIC;
+            ret = DECODE_FAIL_MIC;
+            continue;
         }
 
         // CRC-8 poly=0x07 init=0x00
         if (crc8(packet, unstuffed_len, 0x07, 0x00)) {
             if (decoder->verbose)
                 fprintf(stderr, "%s: CRC error\n", __func__);
-            return DECODE_FAIL_MIC;
+            ret = DECODE_FAIL_MIC;
+            continue;
         }
 
         // Reflect LSB first to LSB last
@@ -125,7 +137,8 @@ static int hideki_ts04_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (pkt_len + 2 != unstuffed_len) {
             if (decoder->verbose)
                 fprintf(stderr, "%s: LEN error\n", __func__);
-            return DECODE_ABORT_LENGTH;
+            ret = DECODE_ABORT_LENGTH;
+            continue;
         }
 
         int channel = (packet[0] >> 5) & 0x0F;
@@ -212,7 +225,7 @@ static int hideki_ts04_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // unknown sensor type
         return DECODE_FAIL_SANITY;
     }
-    return 0;
+    return ret;
 }
 
 static char *output_fields[] = {
