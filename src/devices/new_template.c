@@ -26,7 +26,7 @@
     - Add to include/rtl_433_devices.h
     - Run ./maintainer_update.py (needs a clean git stage or commit)
 
-    Note that for simple devices doorbell/PIR/remotes a flex conf (see conf dir) is prefered.
+    Note that for simple devices doorbell/PIR/remotes a flex conf (see conf dir) is preferred.
 */
 
 /**

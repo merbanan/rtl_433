@@ -279,7 +279,7 @@ The output might not be too useful, best to use the newer `-A` option.
 
 The `-A` option enables the (new) pulse analyzer.
 Each received transmission will be displayed in a statistical overview.
-A probable coding will be infered and attempted to decode.
+A probable coding will be inferred and attempted to decode.
 
 The "Pulse width distribution", "Gap width distribution", and "Pulse period distribution"
 can tell you about the timing in the `width` column,

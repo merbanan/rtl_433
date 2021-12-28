@@ -178,7 +178,7 @@ void pulse_FSK_detect_mm(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state
     int16_t mid = 0;
 
     /* Skip a few samples in the beginning, need for framing
-     * otherwise the min/max trackers wont converge properly
+     * otherwise the min/max trackers won't converge properly
      */
     if (!s->skip_samples) {
         s->var_test_max = MAX(fm_n, s->var_test_max);

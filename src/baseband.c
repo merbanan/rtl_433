@@ -134,7 +134,7 @@ float magnitude_true_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
     - Q1.15*Q15.0 = Q16.15
     - Q16.15>>1 = Q15.14
     - Q15.14 + Q15.14 + Q15.14 could possibly overflow to 17.14
-    - but the b coeffs are small so it wont happen
+    - but the b coeffs are small so it won't happen
     - Q15.14>>14 = Q15.0
 */
 void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t len, filter_state_t *state)

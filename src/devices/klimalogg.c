@@ -25,7 +25,7 @@ Data layout:
 -  II(14:0): 15 bit ID of sensor (printed on the back and displayed after powerup)
 -  II(15) is either 1 or 0 (fixed, depends on the sensor)
 -  s(3:0): Learning sequence 0...f, after learning fixed 8
--  TTT: Temperatur in BCD in .1degC steps, offset +40degC (-> -40...+60)
+-  TTT: Temperature in BCD in .1degC steps, offset +40degC (-> -40...+60)
 -  HH(6:0): rel. Humidity in % (binary coded, no BCD!)
 -  BB(7): Low battery if =1
 -  BB(6:4): 110 or 111 (for 3199)

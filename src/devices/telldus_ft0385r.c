@@ -56,7 +56,7 @@ Message layout
 - J : 9 bit: ? Wind direction 3 in degrees. MSB in byte 2
 - K : 16 bit: ? Rain rate in mm, scaled by 10
 - L : 16 bit: Rain 1h mm, scaled by 10
-- M : 16 bit: Rain 24h mm, scaled by 10. Unvailable value = 0x3ffb.
+- M : 16 bit: Rain 24h mm, scaled by 10. Unavailable value = 0x3ffb.
 - N : 16 bit: Rain week mm, scaled by 10
 - O : 16 bit: Rain month mm, scaled by 10
 - P : 16 bit: Rain total in mm, scaled by 10

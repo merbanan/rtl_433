@@ -16,7 +16,7 @@ First a radio data packet is found and framed.
 
 Get on overview of the band. Check if the transmission is visible and in the expected frequency range.
 Use CubicSDR, Gqrx, SigDigger, SDR#, SDRangel or similar SDR UIs to verify you receice a signal.
-If you have the SDR reciever on a headless machine try `rtl_tcp` to transport data to a GUI.
+If you have the SDR receiver on a headless machine try `rtl_tcp` to transport data to a GUI.
 
 ::: tip
 A quick substitute for an SDR UI is to record a sample, e.g. `-w file_433.92M_250k.cu -T 60` (adjust for the actual frequency and sample rate).

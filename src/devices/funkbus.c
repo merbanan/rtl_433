@@ -33,7 +33,7 @@ Data layout:
 
     TS II II IF FA AX
 
-- T: 4 bit type, there are multible types
+- T: 4 bit type, there are multiple types
 - S: 4 bit subtype
 - I: 20 bit serial number
 - F: 2 bit r1, unknown
@@ -44,7 +44,7 @@ Data layout:
 - A: 1 bit r3, unknown
 - A: 2 bit action, STOP, OFF, ON, SCENE
 - A: 1 bit repeat, 1 == not first send of packet
-- A: 1 bit longpress, longpress of button for (dim up/down, scene lerning)
+- A: 1 bit longpress, longpress of button for (dim up/down, scene learning)
 - A: 1 bit parity, parity over all bits before
 - X: 4 bit check, LFSR with 8 bit mask 0x8C shifted left by 2 each bit
 
@@ -129,7 +129,7 @@ static int funkbus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // int r3        = get_bits_reflect(b, 38, 1); // unknown
         int action    = get_bits_reflect(b, 39, 2); // STOP, OFF, ON, SCENE
         int repeat    = get_bits_reflect(b, 41, 1); // 1 == not first send of packet
-        int longpress = get_bits_reflect(b, 42, 1); // longpress of button for (dim up/down, scene lerning)
+        int longpress = get_bits_reflect(b, 42, 1); // longpress of button for (dim up/down, scene learning)
         int parity    = get_bits_reflect(b, 43, 1); // parity over all bits before
         int check     = get_bits_reflect(b, 44, 4); // lfsr with 8bit mask 0x8C shifted left by 2 each bit
 

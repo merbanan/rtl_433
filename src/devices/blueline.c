@@ -128,7 +128,7 @@ which you should then use as a parameter when you re-run rtl_433 in the future.
 
 Finally, passing a parameter to this decoder requires specifying it explicitly, which normally disables all
 other default decoders.  If you want to pass an option to this decoder without disabling all the other defaults,
-the simplest method is to explicity exclude this one decoder (which implicitly says to leave all other defaults
+the simplest method is to explicitly exclude this one decoder (which implicitly says to leave all other defaults
 enabled), then add this decoder back with a parameter.  The command line looks like this:
 
     rtl_433 -R -176 -R 176:45364

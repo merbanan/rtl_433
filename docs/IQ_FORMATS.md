@@ -17,7 +17,7 @@ The nature of an I/Q sample allows to use a bandwidth equal to the sample rate
 (with a purely real signal the Nyquist–Shannon sampling theorem would only allow half the bandwidth).
 
 Generally the data formats are header- (and thus metadata-)less,
-the used center frequency and sample rate must be transfered separately or encoded in the filename.
+the used center frequency and sample rate must be transferred separately or encoded in the filename.
 
 Formats differ in sample-(bit-)width and (bit-)number format,
 used bit-widths are 4, 8, 12, 16, 32, and 64, bit-formats are unsigned integer, signed integer, and float:
