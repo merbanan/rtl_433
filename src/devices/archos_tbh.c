@@ -30,7 +30,7 @@ To get raw data:
 
 The application data is obfuscated by doing data[n] xor data[n-1] xor info[n%16].
 
-Payload foramt:
+Payload format:
 - Device id         {32}
 - Frame type        {8}
 - Frame Data        {x}

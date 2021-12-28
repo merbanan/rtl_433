@@ -118,7 +118,7 @@ Format string:
 
     ID:16h FLAGS:4h TEMP:12h HUMI:8h CRC:8h
 
-...Decoding notes like endianess, signedness
+...Decoding notes like endianness, signedness
 */
 ```
 

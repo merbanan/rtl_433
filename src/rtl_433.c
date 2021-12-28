@@ -1052,7 +1052,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         else if (!strcasecmp(arg, "oldmodel"))
             fprintf(stderr, "oldmodel option (-M) is deprecated.\n");
         else if (!strncasecmp(arg, "stats", 5)) {
-            // there also should be options to set wether to flush on report
+            // there also should be options to set whether to flush on report
             char *p = arg_param(arg);
             cfg->report_stats = atoiv(p, 1);
             cfg->stats_interval = atoiv(arg_param(p), 600); // atoi_time_default()
