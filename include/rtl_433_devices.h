@@ -216,6 +216,7 @@
     DECL(lacrosse_tx34) \
     DECL(proflame2) \
     DECL(tpms_ave) \
+    DECL(simplisafe_gen3) \
 
     /* Add new decoders here. */
 

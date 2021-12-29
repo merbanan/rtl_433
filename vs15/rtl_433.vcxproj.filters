@@ -664,6 +664,9 @@
     <ClCompile Include="..\src\devices\simplisafe.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\simplisafe_gen3.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\smoke_gs558.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

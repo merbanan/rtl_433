@@ -309,6 +309,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\sharp_spc775.c" />
     <ClCompile Include="..\src\devices\silvercrest.c" />
     <ClCompile Include="..\src\devices\simplisafe.c" />
+    <ClCompile Include="..\src\devices\simplisafe_gen3.c" />
     <ClCompile Include="..\src\devices\smoke_gs558.c" />
     <ClCompile Include="..\src\devices\solight_te44.c" />
     <ClCompile Include="..\src\devices\somfy_iohc.c" />

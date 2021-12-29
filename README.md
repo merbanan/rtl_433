@@ -292,6 +292,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [206]  LaCrosse TX34-IT rain gauge
     [207]  SmartFire Proflame 2 remote control
     [208]  AVE TPMS
+    [209]  SimpliSafe Gen 3 Home Security System
 
 * Disabled by default, use -R n or -G
 

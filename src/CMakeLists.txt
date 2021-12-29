@@ -178,6 +178,7 @@ add_library(r_433 STATIC
     devices/sharp_spc775.c
     devices/silvercrest.c
     devices/simplisafe.c
+    devices/simplisafe_gen3.c
     devices/smoke_gs558.c
     devices/solight_te44.c
     devices/somfy_iohc.c
