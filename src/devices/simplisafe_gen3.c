@@ -16,6 +16,11 @@ SimpliSafe Gen 3 protocol.
 
 The data is sent at 433.9MHz using FSK at 4800 baud with a preamble and sync of `aaaaaaa 930b 51de`.
 
+Known message length/types:
+- Arm: 15 01
+- Disarm: 18 01
+- Sensors: 16 02
+
 Data Layout:
 
     LEN:8h TYP:8h ID:32h CTR:24h CMAC:32h ENCR:80h CHK:16h
@@ -38,31 +43,31 @@ static int simplisafe_gen3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
     }
 
-    // a row needs to have at least 1+22+2 bytes
-    if (bitpos + 25 * 8 > bitbuffer->bits_per_row[0]) {
+    // a row needs to have at least 1+21+2 bytes
+    if (bitpos + 24 * 8 > bitbuffer->bits_per_row[0]) {
         return DECODE_ABORT_LENGTH;
     }
 
-    uint8_t b[25];
-    bitbuffer_extract_bytes(bitbuffer, 0, bitpos, b, 25 * 8);
+    uint8_t b[27]; // for length 21 to 24 (plus 3)
+    bitbuffer_extract_bytes(bitbuffer, 0, bitpos, b, 27 * 8);
 
-    // The row must start with len 22 (0x16) indicator
-    if (b[0] != 0x16)
+    // The row must start with length indicator of 21, 22, or 24 (0x15, 0x16, 0x18)
+    if (b[0] != 0x15 && b[0] != 0x16 && b[0] != 0x18)
         return DECODE_ABORT_EARLY;
 
-    // int len      = (b[0]);
+    int len      = (b[0]); // verified to be 21, 22, or 24
     int msg_type = (b[1]);
     int id       = ((unsigned)b[2] << 24) | (b[3] << 16) | (b[4] << 8) | (b[5]);
-    int ctr      = (b[6] << 16) | (b[7] << 8) | (b[8]);
+    int ctr      = (b[8] << 16) | (b[7] << 8) | (b[6]); // note: little endian
     int cmac     = ((unsigned)b[9] << 24) | (b[10] << 16) | (b[11] << 8) | (b[12]);
     // int crc      = (b[23] << 8) | (b[24]);
-    char encr[10 * 2 + 1]; // 13-22
-    bitrow_snprint(&b[13], 10 * 8, encr, sizeof(encr));
+    char encr[12 * 2 + 1]; // 9, 10, or 12 hex bytes
+    bitrow_snprint(&b[13], (len - 12) * 8, encr, sizeof(encr));
 
-    int chk = crc16(b, 25, 0x8005, 0xffff);
+    int chk = crc16(b, len + 3, 0x8005, 0xffff);
     if (chk) {
         if (decoder->verbose)
-            bitrow_printf(b, 25 * 8, "%s: crc failed (%04x) ", __func__, chk);
+            bitrow_printf(b, (len + 3) * 8, "%s: crc failed (%04x) ", __func__, chk);
         return DECODE_FAIL_MIC;
     }
 
