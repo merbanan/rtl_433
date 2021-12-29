@@ -46,6 +46,8 @@ Payload format:
 To get raw data
 $ rtl_433 -f 917M -X 'name=WS5029,modulation=FSK_PCM,short=100,long=100,preamble={48}0xAAAAAAAAAAAA,reset=19200'
 
+@sa holman_ws5029pwm_decode()
+
 */
 
 #include "decoder.h"
@@ -140,17 +142,20 @@ r_device holman_ws5029pcm = {
         .fields      = output_fields,
 };
 
-// The checksum used is an xor of all 11 bytes.
-// The bottom nybble results in 0. The top does not
-// and I've been unable to figure out why. We only
-// check the bottom nybble therefore.
-// Have tried all permutations of init/poly for lfsr8 & crc8
-// Rain is 0.79mm / count
-//  618 counts / 488.2mm - 190113 - Multiplier is exactly 0.79
-// Wind is discrete kph
-//
-// Preamble is 0xaa 0xa5. Device is 0x98
+/**
+Holman Industries WS5029 weather station using PWM.
 
+- The checksum used is an xor of all 11 bytes.
+- The bottom nybble results in 0. The top does not
+- and I've been unable to figure out why. We only
+- check the bottom nybble therefore.
+- Have tried all permutations of init/poly for lfsr8 & crc8
+- Rain is 0.79mm / count
+  618 counts / 488.2mm - 190113 - Multiplier is exactly 0.79
+- Wind is discrete kph
+- Preamble is 0xaa 0xa5. Device is 0x98
+
+*/
 static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble[] = {0x55, 0x5a, 0x67}; // Preamble/Device inverted

@@ -225,6 +225,9 @@ gap=<gap> (or: g=<gap>)
 .RS
 tolerance=<tolerance> (or: t=<tolerance>)
 .RE
+.RS
+priority=<n> : run decoder only as fallback
+.RE
 where:
 <name> can be any descriptive name tag you need in the output
 <modulation> is one of:
@@ -398,6 +401,9 @@ Use "time:utc" to output time in UTC.
 .RE
 .RS
 	"usec" and "utc" can be combined with other options, eg. "time:unix:utc:usec".
+.RE
+.RS
+Use "replay[:N]" to replay file inputs at (N\-times) realtime.
 .RE
 .RS
 Use "protocol" / "noprotocol" to output the decoder protocol number meta data.

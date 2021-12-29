@@ -8,7 +8,7 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/** @fn int auriol_afT77_b2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+/** @fn int auriol_aft77_b2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 Auriol AFT 77 B2 protocol. The sensor can be bought at Lidl.
 
 The sensor sends 68 bits at least 3 times, before the packets are 9 sync pulses

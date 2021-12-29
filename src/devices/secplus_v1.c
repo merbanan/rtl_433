@@ -253,7 +253,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         memcpy(cached_result, result_2, 21);
         if (decoder->verbose)
             fprintf(stderr, "%s: caching part 2\n", __func__);
-        return -2; // found only 2st part
+        return -2; // found only 2nd part
     }
     else if (status == 3) {
         // fprintf(stderr, "%s: got both\n", __func__);

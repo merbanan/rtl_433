@@ -29,8 +29,7 @@ Aligning at [..] (insert 2 bits) we get:
 
 #include "decoder.h"
 
-static int
-ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t* msg;
     float temperature;

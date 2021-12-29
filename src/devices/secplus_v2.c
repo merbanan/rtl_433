@@ -68,7 +68,7 @@ Once the above has been run twice the two are merged
 
 */
 
-int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_p, int verbose)
+static int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_p, int verbose)
 {
     uint8_t invert = 0;
     uint8_t order  = 0;
@@ -224,7 +224,7 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
                 roll_array[4], roll_array[5], roll_array[6], roll_array[7], roll_array[8]);
     }
 
-    // SANITY check trinary valuse, 00/01/10 are valid,  11 is not
+    // SANITY check trinary values, 00/01/10 are valid,  11 is not
     for (int i = 0; i < 9; i++) {
         if (roll_array[i] == 3) {
             fprintf(stderr, "roll_array val  FAIL\n");
@@ -302,7 +302,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             _decode_v2_half(&bits, rolling_1, &fixed_1, decoder->verbose);
         }
 
-        // break if we've received both halfs
+        // break if we've received both halves
         if (fixed_1.bits_per_row[0] > 1 && fixed_2.bits_per_row[0] > 1) {
             break;
         }

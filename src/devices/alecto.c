@@ -75,8 +75,8 @@ Format for Winddirection & Windgust:
 
 #include "decoder.h"
 
-/* return 1 if the checksum passes and 0 if it fails */
-int alecto_checksum(uint8_t *b)
+// return 1 if the checksum passes and 0 if it fails
+static int alecto_checksum(uint8_t *b)
 {
     int csum = 0;
     for (int i = 0; i < 4; i++) {

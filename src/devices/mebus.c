@@ -82,6 +82,6 @@ r_device mebus433 = {
     .gap_limit      = 2400,
     .reset_limit    = 6000,
     .decode_fn      = &mebus433_callback,
-    .disabled       = 1, // add docs, tests, false positive checks and then reenable
+    .disabled       = 1, // add docs, tests, false positive checks and then re-enable
     .fields         = output_fields,
 };

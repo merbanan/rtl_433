@@ -38,7 +38,7 @@ described below in the correct space, i.e. after the buffer has been
 inverted.
 
 Not every tip of the bucket triggers a message immediately. In some
-cases, artifically tipping the bucket many times lead to the base
+cases, artificially tipping the bucket many times lead to the base
 station ignoring the signal completely until the device was reset.
 
 Data layout:

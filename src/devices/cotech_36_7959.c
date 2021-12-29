@@ -13,6 +13,7 @@
 Cotech 36-7959 Weatherstation, 433Mhz.
 
 Also: SwitchDoc Labs Weather FT020T.
+Also: Sainlogic Weather Station WS019T
 
 OOK modulated with Manchester encoding, halfbit-width 500 us.
 Message length is 112 bit, every second time it will transmit two identical messages, packet gap 5400 us.

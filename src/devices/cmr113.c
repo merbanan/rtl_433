@@ -1,5 +1,5 @@
 /** @file
-    Clipsal CMR113 cent-a-meter power meter
+    Clipsal CMR113 cent-a-meter power meter.
 
     Copyright (C) 2021 Michael Neuling <mikey@neuling.org>
 
@@ -8,41 +8,44 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/**
-    The demodulation comes in a few stages:
-
-     A) Firstly we look at the pulse lengths both high and low. These
-        are demodulated using OOK_PULSE_PIWM_DC before we hit this
-        driver. Any short pulse (high or low) is assigned a 1 and a
-        long pulse (high or low) is assigned a 0. ie every pulse is a
-        bit.
-
-     B) We then look for two patterns in this new bitstream:
-         - 0b00 (ie long long from stream A)
-         - 0b011 (ie long short short from stream A)
-
-     C) We start off with an output bit of '0'.  When we see a 0b00
-        (from B), the next output bit is the same as the last
-        bit. When we see a 0b011 (from B), the next output is
-        toggled. If we don't see ether of these patterns, we fail.
-
-     D) The output from C represents the final bitstream. This is 83
-        bits repeated twice. There are some timestamps, transmitter
-        IDs and CRC but all we decode below are the 3 current values
-        which are 10 bits each representing AMPS/10. We do check the
-        two 83 bit are identical and fail if not.
-
-     Kudos to Jon Oxer for decoding this stream and putting it here:
-          https://github.com/jonoxer/CentAReceiver
-
-**/
 
 #include "decoder.h"
+
+/**
+Clipsal CMR113 cent-a-meter power meter.
+
+The demodulation comes in a few stages:
+
+A) Firstly we look at the pulse lengths both high and low. These
+   are demodulated using OOK_PULSE_PIWM_DC before we hit this
+   driver. Any short pulse (high or low) is assigned a 1 and a
+   long pulse (high or low) is assigned a 0. ie every pulse is a
+   bit.
+
+B) We then look for two patterns in this new bitstream:
+    - 0b00 (ie long long from stream A)
+    - 0b011 (ie long short short from stream A)
+
+C) We start off with an output bit of '0'.  When we see a 0b00
+   (from B), the next output bit is the same as the last
+   bit. When we see a 0b011 (from B), the next output is
+   toggled. If we don't see ether of these patterns, we fail.
+
+D) The output from C represents the final bitstream. This is 83
+   bits repeated twice. There are some timestamps, transmitter
+   IDs and CRC but all we decode below are the 3 current values
+   which are 10 bits each representing AMPS/10. We do check the
+   two 83 bit are identical and fail if not.
+
+Kudos to Jon Oxer for decoding this stream and putting it here:
+https://github.com/jonoxer/CentAReceiver
+
+*/
 
 #define COMPARE_BITS 83
 #define COMPARE_BYTES (COMPARE_BITS/8)
 
-static int cmr113_decoder(r_device *decoder, bitbuffer_t *bitbuffer)
+static int cmr113_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int start, bit;
     uint8_t buf[4];
@@ -71,34 +74,38 @@ static int cmr113_decoder(r_device *decoder, bitbuffer_t *bitbuffer)
             bit = 1 - bit; // toggle
             bitbuffer_add_bit(&b, bit);
         } else if (start == 0)
-            start += 1; /* first bit doesn't decode */
+            start += 1; // first bit doesn't decode
         else
-            /* we don't have enough bits */
+            // we don't have enough bits
             return DECODE_ABORT_LENGTH;
     }
+
     if (b.bits_per_row[0] < 2*COMPARE_BITS + 2)
         return DECODE_ABORT_LENGTH;
-    /* Compare the repeated section to ensure data integrity */
+
+    // Compare the repeated section to ensure data integrity
     bitbuffer_extract_bytes(&b, 0, 0, b1, COMPARE_BITS);
     bitbuffer_extract_bytes(&b, 0, COMPARE_BITS+2, b2, COMPARE_BITS);
     if (memcmp(b1, b2, COMPARE_BYTES) != 0)
         return DECODE_FAIL_MIC;
 
-    /* Data is all good, so extract 3 phases of current */
-    for (int i = 0; i < 3 ; i++) {
-        bitbuffer_extract_bytes(&b, 0, 36 + i*10, buf, 10);
+    // Data is all good, so extract 3 phases of current
+    for (int i = 0; i < 3; i++) {
+        bitbuffer_extract_bytes(&b, 0, 36 + i * 10, buf, 10);
         reflect_bytes(buf, 2);
-        current[i] = ((float)buf[0] + ((buf[1] & 0x3) << 8))/10.0;
+        current[i] = ((float)buf[0] + ((buf[1] & 0x3) << 8)) * 0.1;
     }
 
+    /* clang-format off */
     data = data_make(
-            "model", "", DATA_STRING, "Clipsal-CMR113",
-            "current_1_A", "Current", DATA_FORMAT, "%.1f A", DATA_DOUBLE, current[0],
-            "current_2_A", "Current", DATA_FORMAT, "%.1f A", DATA_DOUBLE, current[1],
-            "current_3_A", "Current", DATA_FORMAT, "%.1f A", DATA_DOUBLE, current[2],
+            "model",        "",             DATA_STRING, "Clipsal-CMR113",
+            "current_1_A",  "Current 1",    DATA_FORMAT, "%.1f A", DATA_DOUBLE, current[0],
+            "current_2_A",  "Current 2",    DATA_FORMAT, "%.1f A", DATA_DOUBLE, current[1],
+            "current_3_A",  "Current 3",    DATA_FORMAT, "%.1f A", DATA_DOUBLE, current[2],
             NULL);
-    decoder_output_data(decoder, data);
+    /* clang-format on */
 
+    decoder_output_data(decoder, data);
     return 1;
 }
 
@@ -110,9 +117,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-/* Short high and low pulses are quite different in length so we have
- * a high tolerance of 200
- */
+// Short high and low pulses are quite different in length so we have a high tolerance of 200
 r_device cmr113 = {
         .name        = "Clipsal CMR113 Cent-a-meter power meter",
         .modulation  = OOK_PULSE_PIWM_DC,
@@ -121,7 +126,7 @@ r_device cmr113 = {
         .sync_width  = 2028,
         .reset_limit = 2069,
         .tolerance   = 200,
-        .decode_fn   = &cmr113_decoder,
+        .decode_fn   = &cmr113_decode,
         .disabled    = 0,
         .fields      = output_fields,
 };

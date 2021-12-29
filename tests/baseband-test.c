@@ -45,7 +45,7 @@ typedef SSIZE_T ssize_t;
         printf("Time elapsed in ms: %f for: %s\n", elapsed, label);        \
     } while (0)
 
-int read_buf(const char *filename, void *buf, size_t nbyte)
+static int read_buf(const char *filename, void *buf, size_t nbyte)
 {
     int fd = open(filename, O_RDONLY);
     if (fd < 0) {
@@ -57,7 +57,7 @@ int read_buf(const char *filename, void *buf, size_t nbyte)
     return ret;
 }
 
-int write_buf(const char *filename, const void *buf, size_t nbyte)
+static int write_buf(const char *filename, const void *buf, size_t nbyte)
 {
     int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0) {

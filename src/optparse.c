@@ -231,6 +231,11 @@ int atoi_time(char const *str, char const *error_hint)
                 break;
             }
             // intentional fallthrough
+#if defined __has_attribute
+#if __has_attribute(fallthrough)
+            __attribute__((fallthrough));
+#endif
+#endif
         case ':':
             ++colons;
             if (colons == 1)
@@ -306,7 +311,7 @@ char *asepc(char **stringp, char delim)
     return p;
 }
 
-static char *achrb(char const *s, int c, int b)
+static char *achrb(char *s, int c, int b)
 {
     for (; s && *s && *s != b; ++s)
         if (*s == c) return (char *)s;

@@ -64,7 +64,7 @@ static int rainpoint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     start_pos += sizeof (preamble_pattern) * 8 - 2; // keep initial data bit
 
-    bitbuffer_t msg;
+    bitbuffer_t msg = {0};
     unsigned len = bitbuffer_manchester_decode(bitbuffer, 0, start_pos, &msg, 12 * 8);
     if (len - start_pos != 12 * 2 * 8) {
         if (decoder->verbose > 1)

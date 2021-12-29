@@ -100,7 +100,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_c, wind_dir, wind_spd, rain_mm;
     data_t *data;
 
-    for (row = 0; row < BITBUF_ROWS; row++) {
+    for (row = 0; row < bitbuffer->num_rows; row++) {
         // break out the message nybbles into separate bytes
         if (lacrossews_detect(decoder, bitbuffer->bb[row], msg_nybbles, bitbuffer->bits_per_row[row]) <= 0)
             continue; // DECODE_ABORT_EARLY

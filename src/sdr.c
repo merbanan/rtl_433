@@ -1138,7 +1138,7 @@ uint32_t sdr_get_center_freq(sdr_dev_t *dev)
 
 #ifdef SOAPYSDR
     if (dev->soapy_dev)
-        return (int)SoapySDRDevice_getFrequency(dev->soapy_dev, SOAPY_SDR_RX, 0);
+        return (uint32_t)SoapySDRDevice_getFrequency(dev->soapy_dev, SOAPY_SDR_RX, 0);
 #endif
 
 #ifdef RTLSDR
@@ -1384,7 +1384,7 @@ uint32_t sdr_get_sample_rate(sdr_dev_t *dev)
 
 #ifdef SOAPYSDR
     if (dev->soapy_dev)
-        return (int)SoapySDRDevice_getSampleRate(dev->soapy_dev, SOAPY_SDR_RX, 0);
+        return (uint32_t)SoapySDRDevice_getSampleRate(dev->soapy_dev, SOAPY_SDR_RX, 0);
 #endif
 
 #ifdef RTLSDR

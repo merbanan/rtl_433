@@ -21,7 +21,7 @@ also tested with:
 - Mini Pir P831
 
 Note: simple 24 bit fixed ID protocol (x1527 style) and should be handled by the flex decoder.
-There is a leading sync bit with a wide gap which runs into the preceeding packet, it's ignored as 25th data bit.
+There is a leading sync bit with a wide gap which runs into the preceding packet, it's ignored as 25th data bit.
 
 There are slight timing differences between the older sensors and new ones like Water leak sensor WD51 and Mini Pir P831.
 Long: 860-1016 us, short: 304-560 us, older sync: 480 us, newer sync: 340 us,

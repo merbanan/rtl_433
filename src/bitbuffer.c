@@ -29,7 +29,7 @@ void bitbuffer_add_bit(bitbuffer_t *bits, int bit)
         return;
     }
     if (bits->bits_per_row[bits->num_rows - 1] == UINT16_MAX - 1) {
-        fprintf(stderr, "%s: Warning: row length limit (%d bits) reached\n", __func__, UINT16_MAX);
+        fprintf(stderr, "%s: Warning: row length limit (%u bits) reached\n", __func__, UINT16_MAX);
     }
 
     uint16_t col_index = bits->bits_per_row[bits->num_rows - 1] / 8;
@@ -67,6 +67,36 @@ void bitbuffer_add_bit(bitbuffer_t *bits, int bit)
         bits->bits_per_row[bits->num_rows - 1] = 30 * 8;
     }
 */
+}
+
+/// Set the width of the current (last) row by expanding or truncating as needed.
+static void bitbuffer_set_width(bitbuffer_t *bits, uint16_t width)
+{
+    if (bits->num_rows == 0)
+        bits->free_row = bits->num_rows = 1; // Add first row automatically
+
+    unsigned remaining_rows = BITBUF_ROWS - bits->num_rows + 1;
+    unsigned remaining_bits = remaining_rows * BITBUF_COLS * 8;
+    if (width > remaining_bits) {
+        // fprintf(stderr, "%s: Could not add more bits\n", __func__);
+        width = remaining_bits;
+    }
+
+    // clear bits when truncating
+    if (bits->bits_per_row[bits->num_rows - 1] > width) {
+        uint8_t *b = bits->bb[bits->num_rows - 1];
+        unsigned clr_from = (width + 7) / 8;
+        unsigned clr_end  = (bits->bits_per_row[bits->num_rows - 1] + 7) / 8;
+        memset(&b[clr_from], 0, clr_end - clr_from);
+
+        // note that width became strictly smaller, that way we don't overflow
+        b[width / 8] &= 0xff00 >> (width % 8);
+    }
+
+    bits->bits_per_row[bits->num_rows - 1] = width;
+
+    unsigned extra_rows = width == 0 ? 0 : (width - 1) / (BITBUF_COLS * 8);
+    bits->free_row = bits->num_rows + extra_rows;
 }
 
 void bitbuffer_add_row(bitbuffer_t *bits)
@@ -330,7 +360,7 @@ static void print_bitbuffer(const bitbuffer_t *bits, int always_binary)
             highest_indent = indent_this_row;
     }
 
-    fprintf(stderr, "bitbuffer:: Number of rows: %d \n", bits->num_rows);
+    fprintf(stderr, "bitbuffer:: Number of rows: %u \n", bits->num_rows);
     for (row = 0; row < bits->num_rows; ++row) {
         fprintf(stderr, "[%02u] ", row);
         print_bitrow(bits->bb[row], bits->bits_per_row[row], highest_indent, always_binary);
@@ -390,29 +420,26 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code)
             continue;
         }
         else if (*c == '{') {
-            if (bits->num_rows == 0) {
-                bits->num_rows++;
-            }
-            else {
-                bitbuffer_add_row(bits);
-            }
             if (width >= 0) {
-                bits->bits_per_row[bits->num_rows - 2] = width;
+                bitbuffer_set_width(bits, width);
+            }
+            if (bits->num_rows > 0) {
+                bitbuffer_add_row(bits);
             }
 
             width = strtol(c + 1, (char **)&c, 0);
-            if (width > BITBUF_COLS * 8)
-                width = BITBUF_COLS * 8;
+            if (width > BITBUF_MAX_ROW_BITS)
+                width = BITBUF_MAX_ROW_BITS;
             if (!*c)
                 break; // no closing brace and end of string
             continue;
         }
         else if (*c == '/') {
-            bitbuffer_add_row(bits);
             if (width >= 0) {
-                bits->bits_per_row[bits->num_rows - 2] = width;
+                bitbuffer_set_width(bits, width);
                 width = -1;
             }
+            bitbuffer_add_row(bits);
             continue;
         }
         else if (*c >= '0' && *c <= '9') {
@@ -430,10 +457,7 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code)
         bitbuffer_add_bit(bits, data >> 0 & 0x01);
     }
     if (width >= 0) {
-        if (bits->num_rows == 0) {
-            bits->num_rows++;
-        }
-        bits->bits_per_row[bits->num_rows - 1] = width;
+        bitbuffer_set_width(bits, width);
     }
 }
 

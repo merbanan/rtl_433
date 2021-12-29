@@ -208,6 +208,14 @@
     DECL(enocean_erp1) \
     DECL(megacode) \
     DECL(auriol_4ld5661) \
+    DECL(tpms_truck) \
+    DECL(funkbus_remote) \
+    DECL(tpms_porsche) \
+    DECL(jasco) \
+    DECL(telldus_ft0385r) \
+    DECL(lacrosse_tx34) \
+    DECL(proflame2) \
+    DECL(tpms_ave) \
 
     /* Add new decoders here. */
 

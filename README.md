@@ -258,8 +258,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [172]  Bresser Weather Center 6-in-1, 7-in-1 indoor, new 5-in-1, 3-in-1 wind gauge, Froggit WH6000, Ventus C8488A
     [173]  Bresser Weather Center 7-in-1
     [174]  EcoDHOME Smart Socket and MCEE Solar monitor
-    [175]  LaCrosse Technology View LTV-R1 Rainfall Gauge
-    [176]  BlueLine Power Monitor
+    [175]  LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1 Wind Sensor
+    [176]  BlueLine Innovations Power Cost Monitor
     [177]  Burnhard BBQ thermometer
     [178]  Security+ (Keyfob)
     [179]  Cavius smoke, heat and water detector
@@ -275,7 +275,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [189]  Somfy io-homecontrol
     [190]  Ambient Weather WH31L (FineOffset WH57) Lightning-Strike sensor
     [191]  Markisol, E-Motion, BOFU, Rollerhouse, BF-30x, BF-415 curtain remote
-    [192]  Govee Water Leak Dectector H5054, Door Contact Sensor B5023
+    [192]  Govee Water Leak Detector H5054, Door Contact Sensor B5023
     [193]  Clipsal CMR113 Cent-a-meter power meter
     [194]  Inkbird ITH-20R temperature humidity sensor
     [195]  RainPoint soil temperature and moisture sensor
@@ -284,6 +284,14 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [198]* EnOcean ERP1
     [199]  Linear Megacode Garage/Gate Remotes
     [200]* Auriol 4-LD5661 temperature/rain sensor
+    [201]  Unbranded SolarTPMS for trucks
+    [202]  Funkbus / Instafunk (Berker, Jira, Jung)
+    [203]  Porsche Boxster/Cayman TPMS
+    [204]  Jasco/GE Choice Alert Security Devices
+    [205]  Telldus weather station FT0385R sensors
+    [206]  LaCrosse TX34-IT rain gauge
+    [207]  SmartFire Proflame 2 remote control
+    [208]  AVE TPMS
 
 * Disabled by default, use -R n or -G
 
@@ -321,6 +329,7 @@ Common keys are:
 	reset=<reset> (or: r=<reset>)
 	gap=<gap> (or: g=<gap>)
 	tolerance=<tolerance> (or: t=<tolerance>)
+	priority=<n> : run decoder only as fallback
 where:
 <name> can be any descriptive name tag you need in the output
 <modulation> is one of:
@@ -398,6 +407,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	Use "time:utc" to output time in UTC.
 		(this may also be accomplished by invocation with TZ environment variable set).
 		"usec" and "utc" can be combined with other options, eg. "time:unix:utc:usec".
+	Use "replay[:N]" to replay file inputs at (N-times) realtime.
 	Use "protocol" / "noprotocol" to output the decoder protocol number meta data.
 	Use "level" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.
 	Use "noise[:secs]" to report estimated noise level at intervals (default: 10 seconds).

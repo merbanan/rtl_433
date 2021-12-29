@@ -21,6 +21,7 @@
 #include <stdio.h>
 
 #include "data.h"
+#include "output_file.h"
 
 int main()
 {

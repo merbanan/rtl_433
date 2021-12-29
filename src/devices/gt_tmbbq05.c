@@ -23,7 +23,7 @@ Next 8 bits are static per device (even after battery change)
 Next 2 bits contain the upper 2 bits of the temperature
 Next 1 bit is unknown
 Next 1 bit is an odd parity bit
-Last 4 bits are the sum of the preceeding 5 nibbles (mod 0xf)
+Last 4 bits are the sum of the preceding 5 nibbles (mod 0xf)
 
 Here's the data I used to reverse engineer, more sampes in rtl_test
 

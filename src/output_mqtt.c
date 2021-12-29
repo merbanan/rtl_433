@@ -66,14 +66,14 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
     }
     case MG_EV_MQTT_CONNACK:
         if (msg->connack_ret_code != MG_EV_MQTT_CONNACK_ACCEPTED) {
-            fprintf(stderr, "MQTT Connection error: %d\n", msg->connack_ret_code);
+            fprintf(stderr, "MQTT Connection error: %u\n", msg->connack_ret_code);
         }
         else {
             fprintf(stderr, "MQTT Connection established.\n");
         }
         break;
     case MG_EV_MQTT_PUBACK:
-        fprintf(stderr, "MQTT Message publishing acknowledged (msg_id: %d)\n", msg->message_id);
+        fprintf(stderr, "MQTT Message publishing acknowledged (msg_id: %u)\n", msg->message_id);
         break;
     case MG_EV_MQTT_SUBACK:
         fprintf(stderr, "MQTT Subscription acknowledged.\n");

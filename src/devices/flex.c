@@ -20,7 +20,7 @@ static inline int bit(const uint8_t *bytes, unsigned bit)
 }
 
 /// extract all mask bits skipping unmasked bits of a number up to 32/64 bits
-unsigned long compact_number(uint8_t *data, unsigned bit_offset, unsigned long mask)
+static unsigned long compact_number(uint8_t *data, unsigned bit_offset, unsigned long mask)
 {
     // clz (fls) is not worth the trouble
     int top_bit = 0;
@@ -38,7 +38,7 @@ unsigned long compact_number(uint8_t *data, unsigned bit_offset, unsigned long m
 }
 
 /// extract a number up to 32/64 bits from given offset with given bit length
-unsigned long extract_number(uint8_t *data, unsigned bit_offset, unsigned bit_count)
+static unsigned long extract_number(uint8_t *data, unsigned bit_offset, unsigned bit_count)
 {
     unsigned pos = bit_offset / 8;            // the first byte we need
     unsigned shl = bit_offset - pos * 8;      // shift left we need to align
@@ -147,7 +147,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     data_t *row_data[BITBUF_ROWS];
     char *row_codes[BITBUF_ROWS];
-    char row_bytes[BITBUF_COLS * 2 + 1];
+    char row_bytes[BITBUF_ROWS * BITBUF_COLS * 2 + 1]; // TODO: this is a lot of stack
 
     struct flex_params *params = decoder->decode_ctx;
 
@@ -242,7 +242,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model", "", DATA_STRING, params->name,
+                "model", "", DATA_STRING, params->name, // "User-defined model"
                 "count", "", DATA_INT, match_count,
                 "num_rows", "", DATA_INT, bitbuffer->num_rows,
                 "len", "", DATA_INT, bitbuffer->bits_per_row[r],
@@ -260,7 +260,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (params->count_only) {
         /* clang-format off */
         data = data_make(
-                "model", "", DATA_STRING, params->name,
+                "model", "", DATA_STRING, params->name, // "User-defined model"
                 "count", "", DATA_INT, match_count,
                 NULL);
         /* clang-format on */
@@ -291,7 +291,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     /* clang-format off */
     data = data_make(
-            "model", "", DATA_STRING, params->name,
+            "model", "", DATA_STRING, params->name, // "User-defined model"
             "count", "", DATA_INT, match_count,
             "num_rows", "", DATA_INT, bitbuffer->num_rows,
             "rows", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_DATA, row_data),
@@ -338,6 +338,7 @@ static void help()
             "\treset=<reset> (or: r=<reset>)\n"
             "\tgap=<gap> (or: g=<gap>)\n"
             "\ttolerance=<tolerance> (or: t=<tolerance>)\n"
+            "\tpriority=<n> : run decoder only as fallback\n"
             "where:\n"
             "<name> can be any descriptive name tag you need in the output\n"
             "<modulation> is one of:\n"
@@ -429,7 +430,7 @@ static unsigned parse_bits(const char *code, uint8_t *bitrow)
     return len;
 }
 
-const char *parse_map(const char *arg, struct flex_get *getter)
+static const char *parse_map(const char *arg, struct flex_get *getter)
 {
     const char *c = arg;
     int i = 0;
@@ -511,6 +512,9 @@ static void parse_getter(const char *arg, struct flex_get *getter)
     */
 }
 
+// NOTE: this is declared in rtl_433.c also.
+r_device *flex_create_device(char *spec);
+
 r_device *flex_create_device(char *spec)
 {
     if (!spec || !*spec || *spec == '?' || !strncasecmp(spec, "help", strlen(spec))) {
@@ -570,6 +574,8 @@ r_device *flex_create_device(char *spec)
             dev->reset_limit = atoi(val);
         else if (!strcasecmp(key, "t") || !strcasecmp(key, "tolerance"))
             dev->tolerance = atoi(val);
+        else if (!strcasecmp(key, "prio") || !strcasecmp(key, "priority"))
+            dev->priority = atoi(val);
 
         else if (!strcasecmp(key, "bits>"))
             params->min_bits = val ? atoi(val) : 0;

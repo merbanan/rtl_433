@@ -119,7 +119,7 @@ static unsigned short int cm180i_power(uint8_t const *msg,unsigned int offset)
     unsigned short int val = 0;
 
     val = (msg[4+offset*2] << 8) | (msg[3+offset*2] & 0xF0);
-    // tested accross situations varying from 700 watt to more than 8000 watt to
+    // tested across situations varying from 700 watt to more than 8000 watt to
     // get same value as showed in physical CM180 panel (exactly equals to 1+1/160)
     val *= 1.00625;
     return val;
@@ -144,7 +144,7 @@ static unsigned short int cm180_power(uint8_t const *msg)
 {
     unsigned short int val = 0;
     val = (msg[4] << 8) | (msg[3] & 0xF0);
-    // tested accross situations varying from 700 watt to more than 8000 watt to
+    // tested across situations varying from 700 watt to more than 8000 watt to
     // get same value as showed in physical CM180 panel (exactly equals to 1+1/160)
     val *= 1.00625;
     return val;
@@ -568,6 +568,9 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
     return 0;
 }
 
+// ceil( (335 + 11) / 8 )
+#define EXPECTED_NUM_BYTES 44
+
 static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t *b = bitbuffer->bb[0];
@@ -583,7 +586,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         return DECODE_ABORT_EARLY;
     }
 
-    unsigned char msg[BITBUF_COLS] = {0};
+    unsigned char msg[EXPECTED_NUM_BYTES] = {0};
     int msg_pos = 0;
     int msg_len = 0;
 
@@ -627,7 +630,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         msg_len = bitbuffer->bits_per_row[0] - alt_pos;
     }
 
-    if (msg_len == 0)
+    if (msg_len == 0 || msg_len > (int)sizeof(msg) * 8)
         return DECODE_ABORT_EARLY;
 
     bitbuffer_extract_bytes(bitbuffer, 0, msg_pos, msg, msg_len);
@@ -759,7 +762,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     else if (msg[0] == 0x26) { // Owl CM180 readings
         msg[0]    = msg[0] & 0x0f;
         int valid = validate_os_checksum(decoder, msg, 23);
-        for (int k = 0; k < BITBUF_COLS; k++) { // Reverse nibbles
+        for (int k = 0; k < EXPECTED_NUM_BYTES; k++) { // Reverse nibbles
             msg[k] = (msg[k] & 0xF0) >> 4 | (msg[k] & 0x0F) << 4;
         }
         // TODO: should we return if valid == 0?
@@ -791,7 +794,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         msg[0]    = msg[0] & 0x0f;
         // to be done
         // int valid = validate_os_checksum(decoder, msg, 23);
-        for (int k = 0; k < BITBUF_COLS; k++) { // Reverse nibbles
+        for (int k = 0; k < EXPECTED_NUM_BYTES; k++) { // Reverse nibbles
             msg[k] = (msg[k] & 0xF0) >> 4 | (msg[k] & 0x0F) << 4;
         }
         // TODO: should we return if valid == 0?

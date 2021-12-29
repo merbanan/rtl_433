@@ -86,16 +86,14 @@ static int ambient_weather_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     for (row = 0; row < bitbuffer->num_rows; ++row) {
         bitpos = 0;
         // Find a preamble with enough bits after it that it could be a complete packet
-        while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
-                (const uint8_t *)&preamble_pattern, 12)) + 8+6*8 <=
+        while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos, preamble_pattern, 12)) + 8 + 6 * 8 <=
                 bitbuffer->bits_per_row[row]) {
             ret = ambient_weather_decode(decoder, bitbuffer, row, bitpos + 8);
             if (ret > 0) return ret; // for now, break after first successful message
             bitpos += 16;
         }
         bitpos = 0;
-        while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
-                (const uint8_t *)&preamble_inverted, 12)) + 8+6*8 <=
+        while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos, preamble_inverted, 12)) + 8 + 6 * 8 <=
                 bitbuffer->bits_per_row[row]) {
             ret = ambient_weather_decode(decoder, bitbuffer, row, bitpos + 8);
             if (ret > 0) return ret; // for now, break after first successful message

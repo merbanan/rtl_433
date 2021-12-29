@@ -1,5 +1,6 @@
 name: Release
 on:
+  workflow_dispatch:
   push:
     tags:
     - '*'
@@ -39,6 +40,7 @@ jobs:
     - name: Create Release info
       run: ./.deploy/gen_release_info.py
     - uses: actions/create-release@v1
+      if: github.event_name == 'push'
       id: create_release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -71,7 +73,7 @@ jobs:
     - name: "Sysroot Build with Mingw-w64"
       run: ./do_sysroot.sh
     - uses: actions/upload-release-asset@v1
-      if: matrix.arch == 'x86-64'
+      if: matrix.arch == 'x86-64' && github.event_name == 'push'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
@@ -80,7 +82,7 @@ jobs:
         asset_name: rtl_433-win-x64-${{ needs.release_job.outputs.release_version }}.zip
         asset_content_type: application/zip
     - uses: actions/upload-release-asset@v1
-      if: matrix.arch == 'x86-64'
+      if: matrix.arch == 'x86-64' && github.event_name == 'push'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
@@ -182,7 +184,7 @@ jobs:
         ls -al dist
         7z a rtl_433-win-msvc-x64.zip ./dist/*
     - uses: actions/upload-release-asset@v1
-      if: matrix.os == 'windows-2019' && matrix.platform == 'x64'
+      if: matrix.os == 'windows-2019' && matrix.platform == 'x64' && github.event_name == 'push'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
