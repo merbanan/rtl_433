@@ -459,7 +459,7 @@ mappings = {
         }
     },
 
-    "lux": {
+    "light_lux": {
         "device_type": "sensor",
         "object_suffix": "lux",
         "config": {
