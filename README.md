@@ -293,6 +293,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [207]  SmartFire Proflame 2 remote control
     [208]  AVE TPMS
     [209]  SimpliSafe Gen 3 Home Security System
+    [210]  Yale HSA (Home Security Alarm), YES-Alarmkit
 
 * Disabled by default, use -R n or -G
 

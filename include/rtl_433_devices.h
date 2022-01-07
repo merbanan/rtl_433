@@ -217,6 +217,7 @@
     DECL(proflame2) \
     DECL(tpms_ave) \
     DECL(simplisafe_gen3) \
+    DECL(yale_hsa) \
 
     /* Add new decoders here. */
 

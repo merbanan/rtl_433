@@ -351,6 +351,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\wt450.c" />
     <ClCompile Include="..\src\devices\x10_rf.c" />
     <ClCompile Include="..\src\devices\x10_sec.c" />
+    <ClCompile Include="..\src\devices\yale_hsa.c" />
     <ClCompile Include="..\src\getopt\getopt.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

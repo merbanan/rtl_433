@@ -790,5 +790,8 @@
     <ClCompile Include="..\src\devices\x10_sec.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\yale_hsa.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
