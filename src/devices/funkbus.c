@@ -11,7 +11,7 @@
 
 /**
 Funkbus / Instafunk
-used by Berker, Jira, Jung and may more
+used by Berker, Gira, Jung and may more
 developed by Insta GmbH.
 
 - Frequency: 433.92Mhz
@@ -174,7 +174,7 @@ static char *output_fields[] = {
 };
 
 r_device funkbus_remote = {
-        .name        = "Funkbus / Instafunk (Berker, Jira, Jung)",
+        .name        = "Funkbus / Instafunk (Berker, Gira, Jung)",
         .modulation  = OOK_PULSE_DMC,
         .short_width = 500,
         .long_width  = 1000,
