@@ -371,7 +371,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // fprintf(stderr,  "# Security+:  rolling=2320615320  fixed=1846948897  (id1=2 id0=0 switch=1 remote_id=68405514 button=left)\n");
     /* clang-format off */
     data_t *data = data_make(
-            "model",        "",             DATA_STRING, "Secplus_v1",
+            "model",        "",             DATA_STRING, "Secplus-v1",
             "id",           "",             DATA_INT,    id,
             "id0",          "ID_0",         DATA_INT,    id0,
             "id1",          "ID_1",         DATA_INT,    id1,

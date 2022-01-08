@@ -156,7 +156,7 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",                 DATA_STRING, "SCM+", // TODO: bad name for e.g. MQTT
+            "model",            "",                 DATA_STRING, "SCMplus",
             "id",               "",                 DATA_INT,    endpoint_id,
             "ProtocolID",       "Protocol_ID",      DATA_STRING, protocol_id_str, // TODO: this should be int
             "EndpointType",     "Endpoint_Type",    DATA_STRING, endpoint_type_str, // TODO: this should be int

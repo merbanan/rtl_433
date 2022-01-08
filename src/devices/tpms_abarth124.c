@@ -74,7 +74,7 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, "Abarth 124 Spider",
+            "model",            "",             DATA_STRING, "Abarth-124Spider",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,
             "flags",            "",             DATA_STRING, flags,

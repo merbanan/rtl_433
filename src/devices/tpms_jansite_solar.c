@@ -82,7 +82,7 @@ static int tpms_jansite_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer, 
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, "Jansite Solar",
+            "model",            "",             DATA_STRING, "Jansite-Solar",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,
             "flags",            "",             DATA_INT, flags,
