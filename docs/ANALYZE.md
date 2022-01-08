@@ -32,6 +32,7 @@ Do not plug the receiver directly in a USB port, avoid noise and use a short usb
 Note the frequency, pick a frequency a little off, e.g 50k above or below.
 Then grab the signal with rtl_433, e.g. `rtl_433 -f 433.92M -S unknown`
 Visually verify the samples in https://triq.net/iqs
+
 ::: tip
 The modes for the sample grabber are
 - `-S all`: grab all frames found

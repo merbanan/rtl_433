@@ -78,7 +78,16 @@ void bitrow_print(uint8_t const *bitrow, unsigned bit_len);
 void bitrow_debug(uint8_t const *bitrow, unsigned bit_len);
 
 /// Print the content of a bit row (byte buffer) to a string buffer.
-/// The output is always null-terminated, unless size is 0.
+///
+/// Write at most @p size - 1 characters,
+/// the output is always null-terminated, unless size is 0.
+///
+/// @param bitrow the row of bytes to print
+/// @param bit_len the number of bits in @p bitrow to print
+/// @param str an output string buffer of sufficient size
+/// @param size the size of @p str
+///
+/// @return the number of characters printed (not including the trailing `\0`).
 int bitrow_snprint(uint8_t const *bitrow, unsigned bit_len, char *str, unsigned size);
 
 /// Parse a string into a bitbuffer.
