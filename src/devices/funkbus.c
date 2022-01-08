@@ -14,7 +14,7 @@ Funkbus / Instafunk
 used by Berker, Jira, Jung and may more
 developed by Insta GmbH.
 
-- Frequency: 433.92Mhz
+- Frequency: 433.42MHz
 - Preamble: 4000us
 - Short: 500us
 - Long: 1000us
