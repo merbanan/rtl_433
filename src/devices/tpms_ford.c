@@ -12,13 +12,17 @@
 FSK 8 byte Manchester encoded TPMS with simple checksum.
 Seen on Ford Fiesta, Focus, Kuga, Escape ...
 
+Seen on 433.92 MHz.
+Likely VDO-Sensors, Type "S180084730Z", built by "Continental Automotive GmbH".
+
 Packet nibbles:
 
-    II II II II PP TT FF CC
+    II II II II PP TT EF CC
 
 - I = ID
 - P = Pressure, maybe PSI scale 0.25?
-- T = Temperature, maybe F?
+- T = Temperature, in C, offset about 56
+- E = high nibble flags ?tp?, t: temperature related bit, p: 9th pressure bit
 - F = Flags, (46: 87% 1e: 5% 06: 2% 4b: 1% 66: 1% 0e: 1% 44: 1%)
 - C = Checksum, SUM bytes 0 to 6 = byte 7
 */
@@ -35,7 +39,8 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     int code;
     char code_str[7];
     float pressure_psi;
-    int temperature_f;
+    int temperature_c;
+    int psibits;
 
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
 
@@ -45,7 +50,7 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     }
     b = packet_bits.bb[0];
 
-    if (((b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]) & 0xff) != b[7]) {
+    if (((b[0] + b[1] + b[2] + b[3] + b[4] + b[5] + b[6]) & 0xff) != b[7]) {
         return 0;
     }
 
@@ -55,8 +60,15 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     code = b[4] << 16 | b[5] << 8 | b[6];
     sprintf(code_str, "%06x", code);
 
-    pressure_psi  = 0.3 + b[4] * 0.25f; // BdyCM + FORScan
-    temperature_f = b[5];         // empirical guess
+    /* range seems to have different formulas */
+    psibits = (((b[6]&0x20)<<3) | b[4]);
+    if (psibits < 90)
+        pressure_psi  = 0.3 + psibits * 0.25f; // BdyCM + FORScan
+    else
+        pressure_psi  = 6.8 + psibits * 0.2122727273;
+    temperature_c = b[5] - 56; // approximate
+    if (b[6] & 0x40) // temperature scale mode?
+        temperature_c = (b[5] ^ 0x80) - 56;
 
     /* clang-format off */
     data = data_make(
@@ -64,7 +76,7 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,
             "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.2f PSI", DATA_DOUBLE, pressure_psi,
-            "temperature_F",    "Temperature",  DATA_FORMAT, "%.1f F",   DATA_DOUBLE, (double)temperature_f,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C",   DATA_DOUBLE, (float)temperature_c,
             "code",             "",             DATA_STRING, code_str,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
@@ -109,7 +121,8 @@ static char *output_fields[] = {
         "id",
         "flags",
         "pressure_PSI",
-        "temperature_F",
+        "temperature_C",
+        "code",
         "mic",
         NULL,
 };

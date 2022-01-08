@@ -72,14 +72,16 @@ static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         bitbuffer_print(bitbuffer);
     }
 
+    /* clang-format off */
     data = data_make(
-            "model", "", DATA_STRING, _X("WT0124-Pool","WT0124 Pool Thermometer"),
-            _X("id","rid"),    "Random ID", DATA_INT,    sensor_rid,
-            "channel",       "Channel",     DATA_INT,    channel,
-            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "mic",      "Integrity",      DATA_STRING, "CHECKSUM",
-            "data",  "Data", DATA_INT,    value,
+            "model",            "",             DATA_STRING, "WT0124-Pool",
+            "id",               "Random ID",    DATA_INT,    sensor_rid,
+            "channel",          "Channel",      DATA_INT,    channel,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+            "data",             "Data",         DATA_INT,    value,
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
 
@@ -96,12 +98,11 @@ static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
  */
 static char *output_fields[] = {
         "model",
-        "rid", // TODO: delete this
         "id",
         "channel",
         "temperature_C",
-        "mic",
         "data",
+        "mic",
         NULL,
 };
 

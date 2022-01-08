@@ -16,32 +16,99 @@
 
 void bitbuffer_clear(bitbuffer_t *bits)
 {
-    bits->num_rows = 0;
-    memset(bits->bits_per_row, 0, BITBUF_ROWS * 2);
-    memset(bits->bb, 0, BITBUF_ROWS * BITBUF_COLS);
+    memset(bits, 0, sizeof(*bits));
 }
 
 void bitbuffer_add_bit(bitbuffer_t *bits, int bit)
 {
     if (bits->num_rows == 0)
-        bits->num_rows++; // Add first row automatically
+        bits->free_row = bits->num_rows = 1; // Add first row automatically
+
+    if (bits->bits_per_row[bits->num_rows - 1] == UINT16_MAX) {
+        // fprintf(stderr, "%s: Could not add more bits\n", __func__);
+        return;
+    }
+    if (bits->bits_per_row[bits->num_rows - 1] == UINT16_MAX - 1) {
+        fprintf(stderr, "%s: Warning: row length limit (%u bits) reached\n", __func__, UINT16_MAX);
+    }
+
     uint16_t col_index = bits->bits_per_row[bits->num_rows - 1] / 8;
     uint16_t bit_index = bits->bits_per_row[bits->num_rows - 1] % 8;
-    if ((col_index < BITBUF_COLS) && (bits->num_rows <= BITBUF_ROWS)) {
-        bits->bb[bits->num_rows - 1][col_index] |= (bit << (7 - bit_index));
-        bits->bits_per_row[bits->num_rows - 1]++;
+    if (bits->bits_per_row[bits->num_rows - 1] > 0
+            && bits->bits_per_row[bits->num_rows - 1] % (BITBUF_COLS * 8) == 0) {
+        // spill into next row
+        // fprintf(stderr, "%s: row spill [%d] to %d (%d)\n", __func__, bits->num_rows - 1, col_index, bits->free_row);
+        if (bits->free_row == BITBUF_ROWS - 1) {
+            fprintf(stderr, "%s: Warning: row count limit (%d rows) reached\n", __func__, BITBUF_ROWS);
+        }
+        if (bits->free_row < BITBUF_ROWS) {
+            bits->free_row++;
+        }
+        else {
+            // fprintf(stderr, "%s: Could not add more rows\n", __func__);
+            return;
+        }
     }
-    else {
-        // fprintf(stderr, "ERROR: bitbuffer:: Could not add more columns\n");    // Some decoders may add many columns...
+    uint8_t *b = bits->bb[bits->num_rows - 1];
+    b[col_index] |= (bit << (7 - bit_index));
+    bits->bits_per_row[bits->num_rows - 1]++;
+
+/*
+    // preamble compression
+    if (bits->bits_per_row[bits->num_rows - 1] == 60 * 8) {
+        uint8_t *b = bits->bb[bits->num_rows - 1];
+        for (int i = 21; i < 60; ++i) {
+            if (b[20] != b[i]) {
+                return;
+            }
+        }
+        // fprintf(stderr, "%s: preamble compression\n", __func__);
+        memset(&b[30], 0, 30);
+        bits->bits_per_row[bits->num_rows - 1] = 30 * 8;
     }
+*/
+}
+
+/// Set the width of the current (last) row by expanding or truncating as needed.
+static void bitbuffer_set_width(bitbuffer_t *bits, uint16_t width)
+{
+    if (bits->num_rows == 0)
+        bits->free_row = bits->num_rows = 1; // Add first row automatically
+
+    unsigned remaining_rows = BITBUF_ROWS - bits->num_rows + 1;
+    unsigned remaining_bits = remaining_rows * BITBUF_COLS * 8;
+    if (width > remaining_bits) {
+        // fprintf(stderr, "%s: Could not add more bits\n", __func__);
+        width = remaining_bits;
+    }
+
+    // clear bits when truncating
+    if (bits->bits_per_row[bits->num_rows - 1] > width) {
+        uint8_t *b = bits->bb[bits->num_rows - 1];
+        unsigned clr_from = (width + 7) / 8;
+        unsigned clr_end  = (bits->bits_per_row[bits->num_rows - 1] + 7) / 8;
+        memset(&b[clr_from], 0, clr_end - clr_from);
+
+        // note that width became strictly smaller, that way we don't overflow
+        b[width / 8] &= 0xff00 >> (width % 8);
+    }
+
+    bits->bits_per_row[bits->num_rows - 1] = width;
+
+    unsigned extra_rows = width == 0 ? 0 : (width - 1) / (BITBUF_COLS * 8);
+    bits->free_row = bits->num_rows + extra_rows;
 }
 
 void bitbuffer_add_row(bitbuffer_t *bits)
 {
     if (bits->num_rows == 0)
-        bits->num_rows++; // Add first row automatically
-    if (bits->num_rows < BITBUF_ROWS) {
-        bits->num_rows++;
+        bits->free_row = bits->num_rows = 1; // Add first row automatically
+    if (bits->free_row == BITBUF_ROWS - 1) {
+        // fprintf(stderr, "%s: Warning: row count limit (%d rows) reached\n", __func__, BITBUF_ROWS);
+    }
+    if (bits->free_row < BITBUF_ROWS) {
+        bits->free_row++;
+        bits->num_rows = bits->free_row;
     }
     else {
         bits->bits_per_row[bits->num_rows - 1] = 0; // Clear last row to handle overflow somewhat gracefully
@@ -52,7 +119,7 @@ void bitbuffer_add_row(bitbuffer_t *bits)
 void bitbuffer_add_sync(bitbuffer_t *bits)
 {
     if (bits->num_rows == 0)
-        bits->num_rows++; // Add first row automatically
+        bits->free_row = bits->num_rows = 1; // Add first row automatically
     if (bits->bits_per_row[bits->num_rows - 1]) {
         bitbuffer_add_row(bits);
     }
@@ -63,12 +130,14 @@ void bitbuffer_invert(bitbuffer_t *bits)
 {
     for (unsigned row = 0; row < bits->num_rows; ++row) {
         if (bits->bits_per_row[row] > 0) {
+            uint8_t *b = bits->bb[row];
+
             const unsigned last_col  = (bits->bits_per_row[row] - 1) / 8;
             const unsigned last_bits = ((bits->bits_per_row[row] - 1) % 8) + 1;
             for (unsigned col = 0; col <= last_col; ++col) {
-                bits->bb[row][col] = ~bits->bb[row][col]; // Invert
+                b[col] = ~b[col]; // Invert
             }
-            bits->bb[row][last_col] ^= 0xFF >> last_bits; // Re-invert unused bits in last byte
+            b[last_col] ^= 0xFF >> last_bits; // Re-invert unused bits in last byte
         }
     }
 }
@@ -77,16 +146,18 @@ void bitbuffer_nrzs_decode(bitbuffer_t *bits)
 {
     for (unsigned row = 0; row < bits->num_rows; ++row) {
         if (bits->bits_per_row[row] > 0) {
+            uint8_t *b = bits->bb[row];
+
             const unsigned last_col  = (bits->bits_per_row[row] - 1) / 8;
             const unsigned last_bits = ((bits->bits_per_row[row] - 1) % 8) + 1;
 
             int prev = 0;
             for (unsigned col = 0; col <= last_col; ++col) {
-                int mask           = (prev << 7) | bits->bb[row][col] >> 1;
-                prev               = bits->bb[row][col];
-                bits->bb[row][col] = bits->bb[row][col] ^ ~mask;
+                int mask = (prev << 7) | b[col] >> 1;
+                prev     = b[col];
+                b[col]   = b[col] ^ ~mask;
             }
-            bits->bb[row][last_col] &= 0xFF << (8 - last_bits); // Clear unused bits in last byte
+            b[last_col] &= 0xFF << (8 - last_bits); // Clear unused bits in last byte
         }
     }
 }
@@ -95,16 +166,18 @@ void bitbuffer_nrzm_decode(bitbuffer_t *bits)
 {
     for (unsigned row = 0; row < bits->num_rows; ++row) {
         if (bits->bits_per_row[row] > 0) {
+            uint8_t *b = bits->bb[row];
+
             const unsigned last_col  = (bits->bits_per_row[row] - 1) / 8;
             const unsigned last_bits = ((bits->bits_per_row[row] - 1) % 8) + 1;
 
             int prev = 0;
             for (unsigned col = 0; col <= last_col; ++col) {
-                int mask           = (prev << 7) | bits->bb[row][col] >> 1;
-                prev               = bits->bb[row][col];
-                bits->bb[row][col] = bits->bb[row][col] ^ mask;
+                int mask = (prev << 7) | b[col] >> 1;
+                prev     = b[col];
+                b[col]   = b[col] ^ mask;
             }
-            bits->bb[row][last_col] &= 0xFF << (8 - last_bits); // Clear unused bits in last byte
+            b[last_col] &= 0xFF << (8 - last_bits); // Clear unused bits in last byte
         }
     }
 }
@@ -287,7 +360,7 @@ static void print_bitbuffer(const bitbuffer_t *bits, int always_binary)
             highest_indent = indent_this_row;
     }
 
-    fprintf(stderr, "bitbuffer:: Number of rows: %d \n", bits->num_rows);
+    fprintf(stderr, "bitbuffer:: Number of rows: %u \n", bits->num_rows);
     for (row = 0; row < bits->num_rows; ++row) {
         fprintf(stderr, "[%02u] ", row);
         print_bitrow(bits->bb[row], bits->bits_per_row[row], highest_indent, always_binary);
@@ -317,6 +390,18 @@ void bitrow_debug(uint8_t const *bitrow, unsigned bit_len)
     print_bitrow(bitrow, bit_len, 0, 1);
 }
 
+int bitrow_snprint(uint8_t const *bitrow, unsigned bit_len, char *str, unsigned size)
+{
+    if (bit_len == 0 && size > 0) {
+        str[0] = '\0';
+    }
+    int len = 0;
+    for (unsigned i = 0; size > (unsigned)len && i < (bit_len + 7) / 8; ++i) {
+        len += snprintf(str + len, size - len, "%02x", bitrow[i]);
+    }
+    return len;
+}
+
 void bitbuffer_parse(bitbuffer_t *bits, const char *code)
 {
     const char *c;
@@ -335,29 +420,26 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code)
             continue;
         }
         else if (*c == '{') {
-            if (bits->num_rows == 0) {
-                bits->num_rows++;
-            }
-            else {
-                bitbuffer_add_row(bits);
-            }
             if (width >= 0) {
-                bits->bits_per_row[bits->num_rows - 2] = width;
+                bitbuffer_set_width(bits, width);
+            }
+            if (bits->num_rows > 0) {
+                bitbuffer_add_row(bits);
             }
 
             width = strtol(c + 1, (char **)&c, 0);
-            if (width > BITBUF_COLS * 8)
-                width = BITBUF_COLS * 8;
+            if (width > BITBUF_MAX_ROW_BITS)
+                width = BITBUF_MAX_ROW_BITS;
             if (!*c)
                 break; // no closing brace and end of string
             continue;
         }
         else if (*c == '/') {
-            bitbuffer_add_row(bits);
             if (width >= 0) {
-                bits->bits_per_row[bits->num_rows - 2] = width;
+                bitbuffer_set_width(bits, width);
                 width = -1;
             }
+            bitbuffer_add_row(bits);
             continue;
         }
         else if (*c >= '0' && *c <= '9') {
@@ -375,10 +457,7 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code)
         bitbuffer_add_bit(bits, data >> 0 & 0x01);
     }
     if (width >= 0) {
-        if (bits->num_rows == 0) {
-            bits->num_rows++;
-        }
-        bits->bits_per_row[bits->num_rows - 1] = width;
+        bitbuffer_set_width(bits, width);
     }
 }
 

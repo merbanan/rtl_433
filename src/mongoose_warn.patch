@@ -1,0 +1,22 @@
+diff --git a/src/mongoose.c b/src/mongoose.c
+index 6db561bc..2a284ee8 100644
+--- a/src/mongoose.c
++++ b/src/mongoose.c
+@@ -1221,7 +1221,7 @@ void cs_md5_update(cs_md5_ctx *ctx, const unsigned char *buf, size_t len) {
+   memcpy(ctx->in, buf, len);
+ }
+ 
+-void cs_md5_final(unsigned char digest[16], cs_md5_ctx *ctx) {
++void cs_md5_final(unsigned char *digest, cs_md5_ctx *ctx) {
+   unsigned count;
+   unsigned char *p;
+   uint32_t *a;
+@@ -4965,7 +4965,7 @@ static enum mg_ssl_if_result mg_use_cert(SSL_CTX *ctx, const char *cert,
+       DH_free(dh);
+     }
+ #if OPENSSL_VERSION_NUMBER > 0x10002000L
+-    SSL_CTX_set_ecdh_auto(ctx, 1);
++    (void) SSL_CTX_set_ecdh_auto(ctx, 1);
+ #endif
+ #endif
+   }

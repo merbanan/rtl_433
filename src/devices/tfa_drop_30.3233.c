@@ -38,7 +38,7 @@ described below in the correct space, i.e. after the buffer has been
 inverted.
 
 Not every tip of the bucket triggers a message immediately. In some
-cases, artifically tipping the bucket many times lead to the base
+cases, artificially tipping the bucket many times lead to the base
 station ignoring the signal completely until the device was reset.
 
 Data layout:
@@ -176,7 +176,7 @@ static int tfa_drop_303233_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",      "",           DATA_STRING, "TFA-Drop",
             "id",         "",           DATA_FORMAT, "%5x", DATA_INT,  sensor_id,
-            "battery_ok", "Battery OK", DATA_INT,    !battery_low,
+            "battery_ok", "Battery",    DATA_INT,    !battery_low,
             "rain_mm",    "Rain in MM", DATA_DOUBLE, rain_mm,
             "mic",        "Integrity",  DATA_STRING, "CHECKSUM",
             NULL);

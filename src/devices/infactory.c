@@ -61,17 +61,10 @@ static int infactory_crc_check(uint8_t *b) {
 
 static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    bitrow_t *bb;
-    data_t *data;
-    uint8_t *b;
-    int id, battery_low, temp_raw, humidity, channel;
-    float temp_f;
-
     if (bitbuffer->bits_per_row[0] != 40)
         return DECODE_ABORT_LENGTH;
 
-    bb = bitbuffer->bb;
-    b = bb[0];
+    uint8_t *b = bitbuffer->bb[0];
 
     /* Check that the last 4 bits of message are not 0 (channel number 1 - 3) */
     if (!(b[4]&0x0F))
@@ -80,20 +73,20 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (!infactory_crc_check(b))
         return DECODE_FAIL_MIC;
 
-    id          = b[0];
-    battery_low = (b[1] >> 2) & 1;
-    temp_raw    = (b[2] << 4) | (b[3] >> 4);
-    humidity    = (b[3] & 0x0F) * 10 + (b[4] >> 4); // BCD, 'A0'=100%rH
-    channel     = b[4] & 0x03;
+    int id          = b[0];
+    int battery_low = (b[1] >> 2) & 1;
+    int temp_raw    = (b[2] << 4) | (b[3] >> 4);
+    int humidity    = (b[3] & 0x0F) * 10 + (b[4] >> 4); // BCD, 'A0'=100%rH
+    int channel     = b[4] & 0x03;
 
-    temp_f      = (float)temp_raw * 0.1 - 90;
+    float temp_f    = (float)temp_raw * 0.1 - 90;
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, _X("inFactory-TH","inFactory sensor"),
-            "id",               "ID",           DATA_INT, id,
-            "channel",          "Channel",      DATA_INT, channel,
-            "battery_ok",       "Battery OK",   DATA_INT, !battery_low,
+    data_t *data = data_make(
+            "model",            "",             DATA_STRING, "inFactory-TH",
+            "id",               "ID",           DATA_INT,    id,
+            "channel",          "Channel",      DATA_INT,    channel,
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",              "Integrity",    DATA_STRING, "CRC",

@@ -80,7 +80,7 @@ static int proove_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, _X("Proove-Security","Proove"),
+            "model",         "",            DATA_STRING, "Proove-Security",
             "id",            "House Code",  DATA_INT,    id,
             "channel",       "Channel",     DATA_INT,    channel,
             "state",         "State",       DATA_STRING, on_bit ? "ON" : "OFF",

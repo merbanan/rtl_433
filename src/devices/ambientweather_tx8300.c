@@ -67,7 +67,7 @@ static int ambientweather_tx8300_callback(r_device *decoder, bitbuffer_t *bitbuf
     /* length check */
     if (74 != bitbuffer->bits_per_row[0]) {
         if (decoder->verbose > 1)
-            fprintf(stderr, "AmbientWeather-TX8300: wrong size (%i bits)\n", bitbuffer->bits_per_row[0]);
+            fprintf(stderr, "AmbientWeather-TX8300: wrong size (%u bits)\n", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH;
     }
 
@@ -107,11 +107,11 @@ static int ambientweather_tx8300_callback(r_device *decoder, bitbuffer_t *bitbuf
     /* clang-format off */
     data = data_make(
             "model",         "",            DATA_STRING, "AmbientWeather-TX8300",
-            "id",            "",            DATA_INT, sensor_id,
-            "channel",       "",            DATA_INT, channel,
-            "battery",       "Battery",     DATA_INT, battery_low, // mapping unknown
+            "id",            "",            DATA_INT,    sensor_id,
+            "channel",       "",            DATA_INT,    channel,
+            "battery",       "Battery",     DATA_INT,    battery_low, // mapping unknown
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "humidity",      "Humidity",    DATA_COND, humidity >= 0, DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "humidity",      "Humidity",    DATA_COND,   humidity >= 0, DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",           "MIC",         DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */

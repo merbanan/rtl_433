@@ -22,8 +22,7 @@ Tested devices:
 static int generic_remote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    bitrow_t *bb = bitbuffer->bb;
-    uint8_t *b = bb[0];
+    uint8_t *b = bitbuffer->bb[0];
     char tristate[23];
     char *p = tristate;
 
@@ -58,12 +57,14 @@ static int generic_remote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     *p = '\0';
 
+    /* clang-format off */
     data = data_make(
-            "model",        "",             DATA_STRING, _X("Generic-Remote","Generic Remote"),
+            "model",        "",             DATA_STRING, "Generic-Remote",
             "id",           "House Code",   DATA_INT, id_16b,
             "cmd",          "Command",      DATA_INT, cmd_8b,
             "tristate",     "Tri-State",    DATA_STRING, tristate,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
 

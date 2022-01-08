@@ -112,6 +112,7 @@ or `(echo "GET /stream HTTP/1.0\n"; sleep 600) | socat - tcp:127.0.0.1:8433`
 #define INDEX_HTML \
     "<!DOCTYPE html>" \
     "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" \
+    "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">" \
     "<link rel=\"icon\" href=\"https://triq.org/rxui/favicon.ico\">" \
     "<title>rxui</title>" \
     "<link href=\"https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons\" rel=\"stylesheet\">" \
@@ -137,7 +138,7 @@ typedef struct {
     void **tail;
 } ring_list_t;
 
-ring_list_t *ring_list_new(unsigned size)
+static ring_list_t *ring_list_new(unsigned size)
 {
     ring_list_t *ring = calloc(1, sizeof(ring_list_t));
     if (!ring) {
@@ -159,7 +160,7 @@ ring_list_t *ring_list_new(unsigned size)
 }
 
 // the ring needs to be empty before calling this
-void ring_list_free(ring_list_t *ring)
+static void ring_list_free(ring_list_t *ring)
 {
     if (ring) {
         if (ring->data)
@@ -169,7 +170,7 @@ void ring_list_free(ring_list_t *ring)
 }
 
 // free the data returned
-void *ring_list_shift(ring_list_t *ring)
+static void *ring_list_shift(ring_list_t *ring)
 {
     if (!ring->head)
         return NULL;
@@ -186,7 +187,7 @@ void *ring_list_shift(ring_list_t *ring)
 }
 
 // retain data before passing in and free the data returned.
-void *ring_list_push(ring_list_t *ring, void *data)
+static void *ring_list_push(ring_list_t *ring, void *data)
 {
     *ring->tail = data;
 
@@ -203,12 +204,12 @@ void *ring_list_push(ring_list_t *ring, void *data)
     return NULL;
 }
 
-void **ring_list_iter(ring_list_t *ring)
+static void **ring_list_iter(ring_list_t *ring)
 {
     return ring->head;
 }
 
-void **ring_list_next(ring_list_t *ring, void **iter)
+static void **ring_list_next(ring_list_t *ring, void **iter)
 {
     if (!iter)
         return NULL;
@@ -292,7 +293,7 @@ static data_t *protocols_data(r_cfg_t *cfg)
                 continue;
         }
         int fields_len = 0;
-        for (char **iter = dev->fields; iter && *iter; ++iter) {
+        for (char **iter2 = dev->fields; iter2 && *iter2; ++iter2) {
             fields_len++;
         }
         data_t *data = data_make(
@@ -511,7 +512,7 @@ static int jsonrpc_parse(rpc_t *rpc, struct mg_str const *json)
     return 0;
 }
 
-void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
+static void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
 {
     if (!rpc || !rpc->method || !*rpc->method) {
         rpc->response(rpc, -1, "Method invalid", 0);
@@ -570,7 +571,7 @@ void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
         data_free(data);
     }
     else if (!strcmp(rpc->method, "get_protocols")) {
-        char buf[51200]; // we expect the protocol string to be around 40k bytes.
+        char buf[65536]; // we expect the protocol string to be around 60k bytes.
         data_t *data = protocols_data(cfg);
         data_print_jsons(data, buf, sizeof(buf));
         rpc->response(rpc, 1, buf, 0);
@@ -908,7 +909,7 @@ static void handle_cmd_rpc(struct mg_connection *nc, struct http_message *hm)
     }
     char *endptr = NULL;
     rpc.val = strtol(val, &endptr, 10);
-    fprintf(stderr, "POST Got %s, arg %s, val %s (%d)\n", cmd, arg, val, rpc.val);
+    fprintf(stderr, "POST Got %s, arg %s, val %s (%u)\n", cmd, arg, val, rpc.val);
 
     rpc_exec(&rpc, ctx->cfg);
 }
@@ -1244,6 +1245,9 @@ struct data_output *data_output_http_create(struct mg_mgr *mgr, char const *host
     http->output.output_free  = data_output_http_free;
 
     http->server = http_server_start(mgr, host, port, cfg, &http->output);
+    if (!http->server) {
+        exit(1);
+    }
 
     return &http->output;
 }

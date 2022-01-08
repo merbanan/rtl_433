@@ -40,12 +40,11 @@ typedef void (*sdr_event_cb_t)(sdr_event_t *ev, void *ctx);
 /** Find the closest matching device, optionally report status.
 
     @param out_dev device output returned
-    @param sample_size stream output sample width returned
     @param dev_query a string to be parsed as device spec
     @param verbose the verbosity level for reports to stderr
     @return dev 0 if successful
 */
-int sdr_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose);
+int sdr_open(sdr_dev_t **out_dev, char const *dev_query, int verbose);
 
 /** Close the device.
 
@@ -60,6 +59,20 @@ int sdr_close(sdr_dev_t *dev);
     @return JSON device info string
 */
 char const *sdr_get_dev_info(sdr_dev_t *dev);
+
+/** Get sample size.
+
+    @param dev the device handle
+    @return Sample size of I/Q elements in bytes (CU8: 2, CS16: 4, ...)
+*/
+int sdr_get_sample_size(sdr_dev_t *dev);
+
+/** Get sample signedness.
+
+    @param dev the device handle
+    @return 1 if the samples are signed (CS8, CS16, ...), 0 otherwise (CU8, ...)
+*/
+int sdr_get_sample_signed(sdr_dev_t *dev);
 
 /** Set device frequency, optionally report status.
 

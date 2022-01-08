@@ -22,6 +22,10 @@
 #include "fatal.h"
 #ifdef RTLSDR
 #include <rtl-sdr.h>
+#if defined(__linux__) && (defined(__GNUC__) || defined(__clang__))
+// not available in rtlsdr 0.5.3, allow weak link for Linux
+int __attribute__((weak)) rtlsdr_set_bias_tee(rtlsdr_dev_t *dev, int on);
+#endif
 #ifdef LIBUSB1
 #include <libusb.h> /* libusb_error_name(), libusb_strerror() */
 #endif
@@ -31,6 +35,9 @@
 #include <SoapySDR/Device.h>
 #include <SoapySDR/Formats.h>
 #include <SoapySDR/Logger.h>
+#if (SOAPY_SDR_API_VERSION < 0x00080000)
+#define SoapySDR_free(ptr) free(ptr)
+#endif
 #endif
 
 #ifndef _MSC_VER
@@ -92,6 +99,7 @@ struct sdr_dev {
     size_t buffer_size;
 
     int sample_size;
+    int sample_signed;
 
     int apply_rate;
     int apply_freq;
@@ -159,14 +167,19 @@ struct rtl_tcp_info {
 };
 #pragma pack(pop)
 
-static int rtltcp_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose)
+static int rtltcp_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
 {
     UNUSED(verbose);
     char *host = "localhost";
     char *port = "1234";
+    char hostport[280]; // 253 chars DNS name plus extra chars
 
-    char *param = arg_param(dev_query);
-    hostport_param(param, &host, &port);
+    char *param = arg_param(dev_query); // strip scheme
+    hostport[0] = '\0';
+    if (param)
+        strncpy(hostport, param, sizeof(hostport) - 1);
+    hostport[sizeof(hostport) - 1] = '\0';
+    hostport_param(hostport, &host, &port);
 
     fprintf(stderr, "rtl_tcp input from %s port %s\n", host, port);
 
@@ -245,8 +258,8 @@ static int rtltcp_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, i
     }
 
     dev->rtl_tcp = sock;
-    dev->sample_size = sizeof(uint8_t); // CU8
-    *sample_size = sizeof(uint8_t); // CU8
+    dev->sample_size = sizeof(uint8_t) * 2; // CU8
+    dev->sample_signed = 0;
 
     *out_dev = dev;
     return 0;
@@ -357,7 +370,7 @@ static int rtltcp_command(sdr_dev_t *dev, char cmd, int param)
 
 #ifdef RTLSDR
 
-static int sdr_open_rtl(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose)
+static int sdr_open_rtl(sdr_dev_t **out_dev, char const *dev_query, int verbose)
 {
     uint32_t device_count = rtlsdr_get_device_count();
     if (!device_count) {
@@ -418,8 +431,8 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, int *sample_size, char *dev_query, 
             if (verbose)
                 fprintf(stderr, "Using device %u: %s\n",
                         i, rtlsdr_get_device_name(i));
-            dev->sample_size = sizeof(uint8_t); // CU8
-            *sample_size = sizeof(uint8_t); // CU8
+            dev->sample_size = sizeof(uint8_t) * 2; // CU8
+            dev->sample_signed = 0;
 
             size_t info_len = 41 + strlen(vendor) + strlen(product) + strlen(serial);
             dev->dev_info = malloc(info_len);
@@ -584,7 +597,7 @@ static int soapysdr_direct_sampling(SoapySDRDevice *dev, int on)
         fprintf(stderr, "Enabled direct sampling mode, input 2/Q.\n");}
     else if (set_num == 3) {
         fprintf(stderr, "Enabled no-mod direct sampling mode.\n");}
-    free(set_value);
+    SoapySDR_free(set_value);
     return r;
 }
 
@@ -607,7 +620,7 @@ static int soapysdr_offset_tuning(SoapySDRDevice *dev)
     else {
         fprintf(stderr, "Offset tuning mode enabled.\n");
     }
-    free(set_value);
+    SoapySDR_free(set_value);
     return r;
 }
 
@@ -648,7 +661,7 @@ static int soapysdr_auto_gain(SoapySDRDevice *dev, int verbose)
         }
 
     }
-    free(driver);
+    SoapySDR_free(driver);
     // otherwise leave unset, hopefully the driver has good defaults
 
     return r;
@@ -740,7 +753,7 @@ static void soapysdr_show_device_info(SoapySDRDevice *dev)
 
     hwkey = SoapySDRDevice_getHardwareKey(dev);
     fprintf(stderr, "Using device %s: ", hwkey);
-    free(hwkey);
+    SoapySDR_free(hwkey);
 
     args = SoapySDRDevice_getHardwareInfo(dev);
     for (i = 0; i < args.size; ++i) {
@@ -780,7 +793,7 @@ static void soapysdr_show_device_info(SoapySDRDevice *dev)
         fprintf(stderr, "%.0f - %.0f (step %.0f) ", frequencyRanges[i].minimum, frequencyRanges[i].maximum, frequencyRanges[i].step);
     }
     fprintf(stderr, "\n");
-    free(frequencyRanges);
+    SoapySDR_free(frequencyRanges);
 
     rates = SoapySDRDevice_getSampleRateRange(dev, direction, channel, &len);
     fprintf(stderr, "Found %zu sample rate range(s): ", len);
@@ -791,7 +804,7 @@ static void soapysdr_show_device_info(SoapySDRDevice *dev)
             fprintf(stderr, "%.0f - %.0f (step %.0f) ", rates[i].minimum, rates[i].maximum, rates[i].step);
     }
     fprintf(stderr, "\n");
-    free(rates);
+    SoapySDR_free(rates);
 
     bandwidths = SoapySDRDevice_getBandwidthRange(dev, direction, channel, &len);
     fprintf(stderr, "Found %zu bandwidth range(s): ", len);
@@ -799,7 +812,7 @@ static void soapysdr_show_device_info(SoapySDRDevice *dev)
         fprintf(stderr, "%.0f - %.0f (step %.0f) ", bandwidths[i].minimum, bandwidths[i].maximum, bandwidths[i].step);
     }
     fprintf(stderr, "\n");
-    free(bandwidths);
+    SoapySDR_free(bandwidths);
 
     double bandwidth = SoapySDRDevice_getBandwidth(dev, direction, channel);
     fprintf(stderr, "Found current bandwidth %.0f\n", bandwidth);
@@ -814,10 +827,10 @@ static void soapysdr_show_device_info(SoapySDRDevice *dev)
 
     native_stream_format = SoapySDRDevice_getNativeStreamFormat(dev, direction, channel, &fullScale);
     fprintf(stderr, "Found native stream format: %s (full scale: %.1f)\n", native_stream_format, fullScale);
-    free(native_stream_format);
+    SoapySDR_free(native_stream_format);
 }
 
-static int sdr_open_soapy(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose)
+static int sdr_open_soapy(sdr_dev_t **out_dev, char const *dev_query, int verbose)
 {
     if (verbose)
         SoapySDR_setLogLevel(SOAPY_SDR_DEBUG);
@@ -846,28 +859,31 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, int *sample_size, char *dev_query
     if (!strcmp(SOAPY_SDR_CU8, native_format)) {
         // actually not supported by SoapySDR
         selected_format = SOAPY_SDR_CU8;
-        *sample_size = sizeof(uint8_t); // CU8
+        dev->sample_size = sizeof(uint8_t); // CU8
+        dev->sample_signed = 0;
     }
 //    else if (!strcmp(SOAPY_SDR_CS8, native_format)) {
 //        // TODO: CS8 needs conversion to CU8
 //        // e.g. RTL-SDR (8 bit), scale is 128.0
 //        selected_format = SOAPY_SDR_CS8;
-//        *sample_size = sizeof(int8_t); // CS8
+//        dev->sample_size = sizeof(int8_t) * 2; // CS8
+//        dev->sample_signed = 1;
 //    }
     else if (!strcmp(SOAPY_SDR_CS16, native_format)) {
         // e.g. LimeSDR-mini (12 bit), native scale is 2048.0
         // e.g. SDRplay RSP1A (14 bit), native scale is 32767.0
         selected_format = SOAPY_SDR_CS16;
-        *sample_size = sizeof(int16_t); // CS16
+        dev->sample_size = sizeof(int16_t) * 2; // CS16
+        dev->sample_signed = 1;
     }
     else {
         // force CS16
         selected_format = SOAPY_SDR_CS16;
-        *sample_size = sizeof(int16_t); // CS16
+        dev->sample_size = sizeof(int16_t) * 2; // CS16
+        dev->sample_signed = 1;
         dev->fullScale = 32768.0; // assume max for SOAPY_SDR_CS16
     }
-    dev->sample_size = *sample_size;
-    free(native_format);
+    SoapySDR_free(native_format);
 
     SoapySDRKwargs args = SoapySDRDevice_getHardwareInfo(dev->soapy_dev);
     size_t info_len     = 2;
@@ -881,6 +897,7 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, int *sample_size, char *dev_query
         p += sprintf(p, "%s\"%s\":\"%s\"", i ? "," : "{", args.keys[i], args.vals[i]);
     }
     sprintf(p, "}");
+    SoapySDRKwargs_clear(&args);
 
     SoapySDRKwargs stream_args = {0};
     int r;
@@ -918,7 +935,7 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint
     }
     int16_t *buffer = dev->buffer;
 
-    size_t buf_elems = buf_len / 2 / dev->sample_size;
+    size_t buf_elems = buf_len / dev->sample_size;
 
     dev->running = 1;
     do {
@@ -967,7 +984,7 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint
         sdr_event_t ev = {
                 .ev  = SDR_EV_DATA,
                 .buf = buffer,
-                .len = n_read * 2 * dev->sample_size,
+                .len = n_read * dev->sample_size,
         };
         dev->polling = 1;
         if (n_read > 0) // prevent a crash in callback
@@ -984,10 +1001,10 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint
 
 /* Public API */
 
-int sdr_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose)
+int sdr_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
 {
     if (dev_query && !strncmp(dev_query, "rtl_tcp", 7))
-        return rtltcp_open(out_dev, sample_size, dev_query, verbose);
+        return rtltcp_open(out_dev, dev_query, verbose);
 
 #if !defined(RTLSDR) && !defined(SOAPYSDR)
     if (verbose)
@@ -998,7 +1015,7 @@ int sdr_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose
     /* Open RTLSDR by default or if index or serial given, if available */
     if (!dev_query || *dev_query == ':' || (*dev_query >= '0' && *dev_query <= '9')) {
 #ifdef RTLSDR
-        return sdr_open_rtl(out_dev, sample_size, dev_query, verbose);
+        return sdr_open_rtl(out_dev, dev_query, verbose);
 #else
         fprintf(stderr, "No input driver for RTL-SDR compiled in.\n");
         return -1;
@@ -1011,8 +1028,9 @@ int sdr_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose
     UNUSED(soapysdr_offset_tuning);
 
     /* Open SoapySDR otherwise, if available */
-    return sdr_open_soapy(out_dev, sample_size, dev_query, verbose);
+    return sdr_open_soapy(out_dev, dev_query, verbose);
 #endif
+    fprintf(stderr, "No input driver for SoapySDR compiled in.\n");
 
     return -1;
 }
@@ -1049,6 +1067,22 @@ char const *sdr_get_dev_info(sdr_dev_t *dev)
         return NULL;
 
     return dev->dev_info;
+}
+
+int sdr_get_sample_size(sdr_dev_t *dev)
+{
+    if (!dev)
+        return 0;
+
+    return dev->sample_size;
+}
+
+int sdr_get_sample_signed(sdr_dev_t *dev)
+{
+    if (!dev)
+        return 0;
+
+    return dev->sample_signed;
 }
 
 int sdr_set_center_freq(sdr_dev_t *dev, uint32_t freq, int verbose)
@@ -1104,7 +1138,7 @@ uint32_t sdr_get_center_freq(sdr_dev_t *dev)
 
 #ifdef SOAPYSDR
     if (dev->soapy_dev)
-        return (int)SoapySDRDevice_getFrequency(dev->soapy_dev, SOAPY_SDR_RX, 0);
+        return (uint32_t)SoapySDRDevice_getFrequency(dev->soapy_dev, SOAPY_SDR_RX, 0);
 #endif
 
 #ifdef RTLSDR
@@ -1350,7 +1384,7 @@ uint32_t sdr_get_sample_rate(sdr_dev_t *dev)
 
 #ifdef SOAPYSDR
     if (dev->soapy_dev)
-        return (int)SoapySDRDevice_getSampleRate(dev->soapy_dev, SOAPY_SDR_RX, 0);
+        return (uint32_t)SoapySDRDevice_getSampleRate(dev->soapy_dev, SOAPY_SDR_RX, 0);
 #endif
 
 #ifdef RTLSDR
@@ -1367,50 +1401,114 @@ int sdr_apply_settings(sdr_dev_t *dev, char const *sdr_settings, int verbose)
         return -1;
 
     POSSIBLY_UNUSED(verbose);
-    int r = -1;
+    int r = 0;
 
     if (!sdr_settings || !*sdr_settings)
         return 0;
 
-#ifdef SOAPYSDR
-    if (!dev->soapy_dev) {
-        fprintf(stderr, "WARNING: sdr settings only available for SoapySDR devices.\n");
-        return -1;
+    if (dev->rtl_tcp) {
+        while (sdr_settings && *sdr_settings) {
+            char const *val = NULL;
+            // This mirrors the settings of SoapyRTLSDR
+            if (kwargs_match(sdr_settings, "direct_samp", &val)) {
+                int direct_sampling = atoiv(val, 1);
+                r = rtltcp_command(dev, RTLTCP_SET_DIRECT_SAMPLING, direct_sampling);
+            }
+            else if (kwargs_match(sdr_settings, "offset_tune", &val)) {
+                int offset_tuning = atobv(val, 1);
+                r = rtltcp_command(dev, RTLTCP_SET_OFFSET_TUNING, offset_tuning);
+            }
+            else if (kwargs_match(sdr_settings, "digital_agc", &val)) {
+                int digital_agc = atobv(val, 1);
+                r = rtltcp_command(dev, RTLTCP_SET_AGC_MODE, digital_agc);
+            }
+            else if (kwargs_match(sdr_settings, "biastee", &val)) {
+                int biastee = atobv(val, 1);
+                r = rtltcp_command(dev, RTLTCP_SET_BIAS_TEE, biastee);
+            }
+            else {
+                fprintf(stderr, "Unknown rtl_tcp setting: %s\n", sdr_settings);
+                return -1;
+            }
+            sdr_settings = kwargs_skip(sdr_settings);
+        }
+        return r;
     }
 
-    SoapySDRKwargs settings = SoapySDRKwargs_fromString(sdr_settings);
-    for (size_t i = 0; i < settings.size; ++i) {
-        const char *key   = settings.keys[i];
-        const char *value = settings.vals[i];
-        if (verbose)
-            fprintf(stderr, "Setting %s to %s\n", key, value);
-        if (!strcmp(key, "antenna")) {
-            if (SoapySDRDevice_setAntenna(dev->soapy_dev, SOAPY_SDR_RX, 0, value) != 0) {
-                r = -1;
-                fprintf(stderr, "WARNING: Antenna setting failed: %s\n", SoapySDRDevice_lastError());
+#ifdef SOAPYSDR
+    if (dev->soapy_dev) {
+        SoapySDRKwargs settings = SoapySDRKwargs_fromString(sdr_settings);
+        for (size_t i = 0; i < settings.size; ++i) {
+            const char *key   = settings.keys[i];
+            const char *value = settings.vals[i];
+            if (verbose)
+                fprintf(stderr, "Setting %s to %s\n", key, value);
+            if (!strcmp(key, "antenna")) {
+                if (SoapySDRDevice_setAntenna(dev->soapy_dev, SOAPY_SDR_RX, 0, value) != 0) {
+                    r = -1;
+                    fprintf(stderr, "WARNING: Antenna setting failed: %s\n", SoapySDRDevice_lastError());
+                }
+            }
+            else if (!strcmp(key, "bandwidth")) {
+                uint32_t f_value = atouint32_metric(value, "-t bandwidth= ");
+                if (SoapySDRDevice_setBandwidth(dev->soapy_dev, SOAPY_SDR_RX, 0, (double)f_value) != 0) {
+                    r = -1;
+                    fprintf(stderr, "WARNING: Bandwidth setting failed: %s\n", SoapySDRDevice_lastError());
+                }
+            }
+            else {
+                if (SoapySDRDevice_writeSetting(dev->soapy_dev, key, value) != 0) {
+                    r = -1;
+                    fprintf(stderr, "WARNING: sdr setting failed: %s\n", SoapySDRDevice_lastError());
+                }
             }
         }
-        else if (!strcmp(key, "bandwidth")) {
-            uint32_t f_value = atouint32_metric(value, "-t bandwidth= ");
-            if (SoapySDRDevice_setBandwidth(dev->soapy_dev, SOAPY_SDR_RX, 0, (double)f_value) != 0) {
-                r = -1;
-                fprintf(stderr, "WARNING: Bandwidth setting failed: %s\n", SoapySDRDevice_lastError());
-            }
-        }
-        else {
-            if (SoapySDRDevice_writeSetting(dev->soapy_dev, key, value) != 0) {
-                r = -1;
-                fprintf(stderr, "WARNING: sdr setting failed: %s\n", SoapySDRDevice_lastError());
-            }
-        }
+        SoapySDRKwargs_clear(&settings);
+        return r;
     }
-    SoapySDRKwargs_clear(&settings);
-    return r;
 #endif
 
-    fprintf(stderr, "WARNING: sdr settings only available for SoapySDR devices.\n");
+#ifdef RTLSDR
+    if (dev->rtlsdr_dev) {
+        while (sdr_settings && *sdr_settings) {
+            char const *val = NULL;
+            // This mirrors the settings of SoapyRTLSDR
+            if (kwargs_match(sdr_settings, "direct_samp", &val)) {
+                int direct_sampling = atoiv(val, 1);
+                r = rtlsdr_set_direct_sampling(dev->rtlsdr_dev, direct_sampling);
+            }
+            else if (kwargs_match(sdr_settings, "offset_tune", &val)) {
+                int offset_tuning = atobv(val, 1);
+                r = rtlsdr_set_offset_tuning(dev->rtlsdr_dev, offset_tuning);
+            }
+            else if (kwargs_match(sdr_settings, "digital_agc", &val)) {
+                int digital_agc = atobv(val, 1);
+                r = rtlsdr_set_agc_mode(dev->rtlsdr_dev, digital_agc);
+            }
+            else if (kwargs_match(sdr_settings, "biastee", &val)) {
+#if defined(__linux__) && (defined(__GNUC__) || defined(__clang__))
+                // check weak link for Linux with older rtlsdr
+                if (!rtlsdr_set_bias_tee) {
+                    fprintf(stderr, "This librtlsdr version does not support biastee setting\n");
+                    return -1;
+                }
+#endif
+                int biastee = atobv(val, 1);
+                r = rtlsdr_set_bias_tee(dev->rtlsdr_dev, biastee);
+            }
+            else {
+                fprintf(stderr, "Unknown RTLSDR setting: %s\n", sdr_settings);
+                return -1;
+            }
+            sdr_settings = kwargs_skip(sdr_settings);
+        }
+        return r;
+    }
+#endif
 
-    return r;
+    fprintf(stderr, "WARNING: sdr settings not available.\n"); // no open device
+
+    return -1;
 }
 
 int sdr_activate(sdr_dev_t *dev)

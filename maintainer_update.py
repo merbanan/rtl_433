@@ -130,13 +130,6 @@ repl = '\n    ' + ('\n    '.join(repl)) + '\n'
 replace_block(r'add_library\(r_433 STATIC$',
               r'^\)', repl, 'src/CMakeLists.txt')
 
-# src/Makefile.am
-# replace everything between 'rtl_433_SOURCES = ' and \n\n with *.c and devices/*.c from src
-repl = src_files + device_files
-repl = (' \\\n                       '.join(repl)) + '\n'
-replace_block(r'rtl_433_SOURCES      = ',
-              r'^$', repl, 'src/Makefile.am')
-
 # include/rtl_433.h
 # update '#define MAX_PROTOCOLS ?' with actual count
 #replace_text(r'(?m)(#define\s+MAX_PROTOCOLS\s+)\d+',

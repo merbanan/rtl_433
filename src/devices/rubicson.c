@@ -32,6 +32,8 @@ The sensor can be bought at Kjell&Co
 #include "decoder.h"
 
 // NOTE: this is used in nexus.c and solight_te44.c
+int rubicson_crc_check(uint8_t *b);
+
 int rubicson_crc_check(uint8_t *b)
 {
     uint8_t tmp[5];
@@ -75,10 +77,10 @@ static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, _X("Rubicson-Temperature","Rubicson Temperature Sensor"),
+            "model",            "",             DATA_STRING, "Rubicson-Temperature",
             "id",               "House Code",   DATA_INT,    id,
             "channel",          "Channel",      DATA_INT,    channel,
-            "battery",          "Battery",      DATA_STRING, battery ? "OK" : "LOW",
+            "battery_ok",       "Battery",      DATA_INT,    !!battery,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
@@ -92,7 +94,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "mic",
         NULL,

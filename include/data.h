@@ -21,14 +21,7 @@
 #ifndef INCLUDE_DATA_H_
 #define INCLUDE_DATA_H_
 
-#include <stdio.h>
-
-#if defined(_MSC_VER) && !defined(__clang__)
-    // MSVC has something like C99 restrict as __restrict
-    #ifndef restrict
-    #define restrict __restrict
-    #endif
-#endif
+#include <stddef.h>
 
 typedef enum {
     DATA_DATA,   /**< pointer to data is stored */
@@ -136,24 +129,10 @@ typedef struct data_output {
     void (*print_string)(struct data_output *output, const char *data, char const *format);
     void (*print_double)(struct data_output *output, double data, char const *format);
     void (*print_int)(struct data_output *output, int data, char const *format);
-    void (*output_start)(struct data_output *output, const char **fields, int num_fields);
+    void (*output_start)(struct data_output *output, char const *const *fields, int num_fields);
+    void (*output_flush)(struct data_output *output);
     void (*output_free)(struct data_output *output);
-    FILE *file;
 } data_output_t;
-
-/** Construct data output for CSV printer.
-
-    @param file the output stream
-    @return The auxiliary data to pass along with data_csv_printer to data_print.
-            You must release this object with data_output_free once you're done with it.
-*/
-struct data_output *data_output_csv_create(FILE *file);
-
-struct data_output *data_output_json_create(FILE *file);
-
-struct data_output *data_output_kv_create(FILE *file);
-
-struct data_output *data_output_syslog_create(const char *host, const char *port);
 
 /** Setup known field keys and start output, used by CSV only.
 
@@ -162,9 +141,9 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
                   strings not. The list may contain duplicates and they are eliminated.
     @param num_fields number of fields
 */
-void data_output_start(struct data_output *output, const char **fields, int num_fields);
+void data_output_start(struct data_output *output, char const *const *fields, int num_fields);
 
-/** Prints a structured data object. */
+/** Prints a structured data object, flushes the output if applicable. */
 void data_output_print(struct data_output *output, data_t *data);
 
 void data_output_free(struct data_output *output);

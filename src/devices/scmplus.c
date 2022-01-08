@@ -156,7 +156,7 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",                 DATA_STRING, "SCM+", // TODO: bad name for e.g. MQTT
+            "model",            "",                 DATA_STRING, "SCMplus",
             "id",               "",                 DATA_INT,    endpoint_id,
             "ProtocolID",       "Protocol_ID",      DATA_STRING, protocol_id_str, // TODO: this should be int
             "EndpointType",     "Endpoint_Type",    DATA_STRING, endpoint_type_str, // TODO: this should be int
@@ -175,6 +175,7 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
+        "id",
         "ProtocolID",
         "EndpointType",
         "EndpointID",
@@ -193,7 +194,7 @@ r_device scmplus = {
         .name        = "Standard Consumption Message Plus (SCMplus)",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 30,
-        .long_width  = 30,
+        .long_width  = 0, // not used
         .gap_limit   = 0,
         .reset_limit = 64,
         .decode_fn   = &scmplus_decode,

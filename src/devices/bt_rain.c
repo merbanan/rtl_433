@@ -36,7 +36,7 @@ static int bt_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b;
     int row;
     int id, battery, rain, button, channel;
-    int16_t temp_raw;
+    int temp_raw;
     float temp_c, rainrate;
 
     row = bitbuffer_find_repeated_row(bitbuffer, 4, NUM_BITS);
@@ -56,7 +56,7 @@ static int bt_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     channel  = ((b[1] & 0x30) >> 4) + 1; // either this or the rain top bits could be wrong
     button = (b[1] & 0x08) >> 3;
 
-    temp_raw = ((b[1] & 0x07) << 13) | (b[2] << 5); // use sign extend
+    temp_raw = (int16_t)(((b[1] & 0x07) << 13) | (b[2] << 5)); // uses sign extend
     temp_c = (temp_raw >> 5) * 0.1f;
 
     rain = ((b[1] & 0x07) << 4) | b[3]; // either b[1] or the channel above bould be wrong
@@ -70,12 +70,12 @@ static int bt_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",            "",                 DATA_STRING, "Biltema-Rain",
-            "id",               "ID",               DATA_INT, id,
-            "channel",          "Channel",          DATA_INT, channel,
-            "battery",          "Battery",          DATA_STRING, battery ? "LOW" : "OK",
+            "id",               "ID",               DATA_INT,    id,
+            "channel",          "Channel",          DATA_INT,    channel,
+            "battery_ok",       "Battery",          DATA_INT,    !battery,
             "transmit",         "Transmit",         DATA_STRING, button ? "MANUAL" : "AUTO", // TODO: delete this
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
-            _X("rain_rate_mm_h","rainrate"),         "Rain per hour",    DATA_FORMAT, "%.02f mm/h", DATA_DOUBLE, rainrate,
+            "rain_rate_mm_h",   "Rain per hour",    DATA_FORMAT, "%.02f mm/h", DATA_DOUBLE, rainrate,
             "button",           "Button",       DATA_INT, button,
             NULL);
     /* clang-format on */
@@ -88,10 +88,9 @@ static char *output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "transmit", // TODO: delete this
         "temperature_C",
-        "rainrate", // TODO: remove this
         "rain_rate_mm_h",
         "button",
         NULL,

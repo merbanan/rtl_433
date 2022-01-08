@@ -82,8 +82,7 @@ Data decoded:
 #define MSG_PAD_BITS         ((((MSG_PACKET_BITS / 8) + 1) * 8) - MSG_PACKET_BITS)
 #define MSG_PACKET_LEN       ((MSG_PACKET_BITS + MSG_PAD_BITS) / 8)
 
-static int
-checksum_calculate(uint8_t *b)
+static int checksum_calculate(uint8_t *b)
 {
     int i;
     int sum = 0;
@@ -94,8 +93,7 @@ checksum_calculate(uint8_t *b)
     return sum & 0x3f;
 }
 
-static int
-ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+static int ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     uint8_t b[MSG_PACKET_LEN];
     int bits = bitbuffer->bits_per_row[row];
@@ -121,7 +119,7 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
                         row, bits, MSG_PACKET_BITS);
             }
         }
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     bitbuffer_extract_bytes(bitbuffer, row, bitpos + MSG_PAD_BITS, b, MSG_PACKET_BITS + MSG_PAD_BITS);
@@ -157,13 +155,13 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
         if (decoder->verbose > 1)
             fprintf(stderr, "Packet #%u wrong postmark 0x%02x (expected 0x%02x).\n",
                     row, postmark, MSG_PACKET_POSTMARK);
-        return 0;
+        return DECODE_FAIL_SANITY;
     }
 
     if (checksum != checksum_calculated) {
         if (decoder->verbose > 1)
             fprintf(stderr, "Packet #%u checksum error.\n", row);
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     device_id = b[1];
@@ -172,16 +170,18 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
     temperature   = (int16_t)(((b[3] & 0x0f) << 12) | (b[4] << 4)); // uses sign extend
     temperature_c = (temperature >> 4) * 0.1f;
 
+    /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, _X("Emos-TTX201","Emos TTX201"),
-            "id",            "House Code",  DATA_INT,    device_id,
-            "channel",       "Channel",     DATA_INT,    channel,
-            "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
-            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_c,
-            "mic",           "MIC",         DATA_STRING, "CHECKSUM",
+            "model",            "",             DATA_STRING, "Emos-TTX201",
+            "id",               "House Code",   DATA_INT,    device_id,
+            "channel",          "Channel",      DATA_INT,    channel,
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_c,
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
-    decoder_output_data(decoder, data);
+    /* clang-format on */
 
+    decoder_output_data(decoder, data);
     return 1;
 }
 
@@ -189,8 +189,7 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
 Emos TTX201 Thermo Remote Sensor.
 @sa ttx201_decode()
 */
-static int
-ttx201_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int ttx201_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int row;
     int ret    = 0;
@@ -213,7 +212,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "mic",
         NULL,

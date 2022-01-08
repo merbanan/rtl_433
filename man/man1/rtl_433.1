@@ -80,14 +80,26 @@ Enable blacklisted device decoding protocols, for testing only.
 [ \fB\-X\fI <spec> | help\fP ]
 Add a general purpose decoder (prepend \-R 0 to disable all decoders)
 .TP
-[ \fB\-Y\fI level=<dB level>\fP ]
-Manual detection level used to determine pulses (\-1.0 to \-30.0) (0=auto)
-.TP
-[ \fB\-n\fI <value>\fP ]
-Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)
-.TP
 [ \fB\-Y\fI auto | classic | minmax\fP ]
 FSK pulse detector mode.
+.TP
+[ \fB\-Y\fI level=<dB level>\fP ]
+Manual detection level used to determine pulses (\-1.0 to \-30.0) (0=auto).
+.TP
+[ \fB\-Y\fI minlevel=<dB level>\fP ]
+Manual minimum detection level used to determine pulses (\-1.0 to \-99.0).
+.TP
+[ \fB\-Y\fI minsnr=<dB level>\fP ]
+Minimum SNR to determine pulses (1.0 to 99.0).
+.TP
+[ \fB\-Y\fI autolevel\fP ]
+Set minlevel automatically based on average estimated noise.
+.TP
+[ \fB\-Y\fI squelch\fP ]
+Skip frames below estimated noise level to reduce cpu load.
+.TP
+[ \fB\-Y\fI ampest | magest\fP ]
+Choose amplitude or magnitude level estimator.
 .SS "Analyze/Debug options"
 .TP
 [ \fB\-a\fI\fP ]
@@ -120,7 +132,7 @@ Produce decoded output in given format.
        Append output to file with :<filename> (e.g. \-F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. \-F syslog:127.0.0.1:1514
 .TP
-[ \fB\-M\fI time[:<options>] | protocol | level | stats | bits | help\fP ]
+[ \fB\-M\fI time[:<options>] | protocol | level | noise[:secs] | stats | bits | help\fP ]
 Add various meta data to each output.
 .TP
 [ \fB\-K\fI FILE | PATH | <tag> | <key>=<tag>\fP ]
@@ -128,6 +140,9 @@ Add an expanded token or fixed tag to every output line.
 .TP
 [ \fB\-C\fI native | si | customary\fP ]
 Convert units in decoded output.
+.TP
+[ \fB\-n\fI <value>\fP ]
+Specify number of samples to take (each sample is an I/Q pair)
 .TP
 [ \fB\-T\fI <seconds>\fP ]
 Specify number of seconds to run, also 12:34 or 1h23m45s
@@ -209,6 +224,9 @@ gap=<gap> (or: g=<gap>)
 .RE
 .RS
 tolerance=<tolerance> (or: t=<tolerance>)
+.RE
+.RS
+priority=<n> : run decoder only as fallback
 .RE
 where:
 <name> can be any descriptive name tag you need in the output
@@ -312,7 +330,7 @@ Specify MQTT server with e.g. \-F mqtt://localhost:1883
 Add MQTT options with e.g. \-F "mqtt://host:1883,opt=arg"
 .RE
 .RS
-MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
+MQTT options are: user=foo, pass=bar, retain[=0|1], qos=N, <format>[=topic]
 .RE
 .RS
 Supported MQTT formats: (default is all)
@@ -352,7 +370,7 @@ Specify host/port for syslog with e.g. \-F syslog:127.0.0.1:1514
 .RE
 .SS "Meta information option"
 .TP
-[ \fB\-M\fI time[:<options>]|protocol|level|stats|bits|oldmodel\fP ]
+[ \fB\-M\fI time[:<options>]|protocol|level|noise[:<secs>]|stats|bits\fP ]
 Add various metadata to every output line.
 .RS
 Use "time" to add current date and time meta data (preset for live inputs).
@@ -385,10 +403,16 @@ Use "time:utc" to output time in UTC.
 	"usec" and "utc" can be combined with other options, eg. "time:unix:utc:usec".
 .RE
 .RS
+Use "replay[:N]" to replay file inputs at (N\-times) realtime.
+.RE
+.RS
 Use "protocol" / "noprotocol" to output the decoder protocol number meta data.
 .RE
 .RS
 Use "level" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.
+.RE
+.RS
+Use "noise[:secs]" to report estimated noise level at intervals (default: 10 seconds).
 .RE
 .RS
 Use "stats[:[<level>][:<interval>]]" to report statistics (default: 600 seconds).
@@ -398,9 +422,6 @@ Use "stats[:[<level>][:<interval>]]" to report statistics (default: 600 seconds)
 .RE
 .RS
 Use "bits" to add bit representation to code outputs (for debug).
-.RE
-.RS
-Note: You can use "oldmodel" to get the old model keys. This will be removed shortly.
 .RE
 .SS "Read file option"
 .TP

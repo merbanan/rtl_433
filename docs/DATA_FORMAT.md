@@ -1,11 +1,10 @@
 # JSON Data fields
 
 See also the discussion and rationale in https://github.com/merbanan/rtl_433/pull/827
-Note that you can use `-M oldmodel` to still get the legacy names for a short while.
 
 ## Message Data
 These fields are the primary data fields containing the most basic message data and used to identify the specific device.
-For some devices these are the *only* fields contained in the message, as the message itself consitutes an event from this
+For some devices these are the *only* fields contained in the message, as the message itself constitutes an event from this
 particular device model.
 
 * **time** (string) (Required)

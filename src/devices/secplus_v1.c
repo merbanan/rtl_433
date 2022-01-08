@@ -44,6 +44,7 @@ Binary | Trinary
 
 The patterns `1 1 1 1` or `0 0 0 0` should never happen
 
+note: due to implementation this needs 44 bytes output in worst case of invalid data.
 */
 
 static int _decode_v1_half(uint8_t *bits, uint8_t *result, int verbose)
@@ -143,8 +144,6 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // the max of 130 is just a guess
     if (bitbuffer->bits_per_row[0] < 84 || bitbuffer->bits_per_row[0] > 130) {
-        if (decoder->verbose)
-            (void)fprintf(stderr, "%s:return  DECODE_ABORT_LENGTH\n", __func__);
         return DECODE_ABORT_LENGTH;
     }
 
@@ -155,8 +154,8 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     search_index = 0;
     while (search_index < bitbuffer->bits_per_row[0] && status == 0) {
         int dr            = 0;
-        uint8_t buffy[32] = {0};
-        uint8_t buffi[32] = {0};
+        uint8_t buffy[44] = {0}; // actually we expect 22 bytes on valid decode
+        uint8_t buffi[11] = {0};
 
         search_index = find_next(bitbuffer, search_index);
 
@@ -172,7 +171,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         dr = _decode_v1_half(buffi, buffy, decoder->verbose);
 
-        if (dr < 0) {
+        if (dr < 0 || dr == 1) {
             // fprintf(stderr, "decode error\n");
             search_index += 4;
             continue;
@@ -254,7 +253,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         memcpy(cached_result, result_2, 21);
         if (decoder->verbose)
             fprintf(stderr, "%s: caching part 2\n", __func__);
-        return -2; // found only 2st part
+        return -2; // found only 2nd part
     }
     else if (status == 3) {
         // fprintf(stderr, "%s: got both\n", __func__);
@@ -371,26 +370,20 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // fprintf(stderr,  "# Security+:  rolling=2320615320  fixed=1846948897  (id1=2 id0=0 switch=1 remote_id=68405514 button=left)\n");
     /* clang-format off */
-    data_t *data;
-    data = data_make(
-            "model",       "",    DATA_STRING, "Secplus_v1",
-
-            "id",        "",         DATA_INT, id,
-            "id0",       "ID_0",         DATA_INT, id0,
-            "id1",       "ID_1",        DATA_INT, id1,
-            "switch_id", "Switch-ID",   DATA_INT, switch_id,
-
-            "pad_id",      "Pad-ID",       DATA_COND,  pad_id,    DATA_INT, pad_id,
-            "pin",         "Pin",          DATA_COND,  pin,       DATA_STRING, pin_s,
-
-            "remote_id",   "Remote-ID",    DATA_COND,  remote_id, DATA_INT,  remote_id,
-            "button_id",   "Button-ID",    DATA_COND,  remote_id,    DATA_STRING,    button,
-
-
-            // "fixed",       "Fixed_Code",    DATA_INT,    fixed,
-            "fixed",       "Fixed_Code",    DATA_STRING,    fixed_str,
-            // "rolling",     "Rolling_Code",    DATA_INT,    rolling,
-            "rolling",     "Rolling_Code",    DATA_STRING,    rolling_str,
+    data_t *data = data_make(
+            "model",        "",             DATA_STRING, "Secplus-v1",
+            "id",           "",             DATA_INT,    id,
+            "id0",          "ID_0",         DATA_INT,    id0,
+            "id1",          "ID_1",         DATA_INT,    id1,
+            "switch_id",    "Switch-ID",    DATA_INT,    switch_id,
+            "pad_id",       "Pad-ID",       DATA_COND,   pad_id,    DATA_INT,    pad_id,
+            "pin",          "Pin",          DATA_COND,   pin,       DATA_STRING, pin_s,
+            "remote_id",    "Remote-ID",    DATA_COND,   remote_id, DATA_INT,    remote_id,
+            "button_id",    "Button-ID",    DATA_COND,   remote_id, DATA_STRING, button,
+            // "fixed",        "Fixed_Code",   DATA_INT,    fixed,
+            "fixed",        "Fixed_Code",   DATA_STRING, fixed_str,
+            // "rolling",      "Rolling_Code", DATA_INT,    rolling,
+            "rolling",      "Rolling_Code", DATA_STRING, rolling_str,
             NULL);
     /* clang-format on */
 
@@ -399,20 +392,15 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-
-        // Common fields
         "model",
-
+        "id",
         "id0",
         "id1",
         "switch_id",
-
         "pad_id",
         "pin",
-
         "remote_id",
         "button_id",
-
         "fixed",
         "rolling",
         NULL,

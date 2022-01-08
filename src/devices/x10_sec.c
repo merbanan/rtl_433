@@ -74,7 +74,7 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* First row should be sync, second row should be 41 bit message */
     if (bitbuffer->bits_per_row[1] < 41) {
-        if (decoder->verbose)
+        if (decoder->verbose && bitbuffer->bits_per_row[1] != 0)
             fprintf(stderr, "X10SEC: DECODE_ABORT_LENGTH, Received message length=%i\n", bitbuffer->bits_per_row[1]);
         return DECODE_ABORT_LENGTH;
     }
@@ -176,12 +176,12 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /* build and handle data set for normal output */
     /* clang-format off */
     data = data_make(
-            "model",        "",             DATA_STRING, _X("X10-Security","X10 Security"),
+            "model",        "",             DATA_STRING, "X10-Security",
             "id",           "Device ID",    DATA_STRING, x10_id_str,
             "code",         "Code",         DATA_STRING, x10_code_str,
             "event",        "Event",        DATA_STRING, event_str,
             "delay",        "Delay",        DATA_COND,   delay,         DATA_INT, delay,
-            "battery_ok",   "Battery OK",   DATA_COND,   battery_low,   DATA_INT, !battery_low,
+            "battery_ok",   "Battery",      DATA_COND,   battery_low,   DATA_INT, !battery_low,
             "tamper",       "Tamper",       DATA_COND,   tamper,        DATA_INT, tamper,
             "mic",          "Integrity",    DATA_STRING, "CRC",
             NULL);

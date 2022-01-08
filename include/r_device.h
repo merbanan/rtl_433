@@ -53,11 +53,11 @@ typedef struct r_device {
     float tolerance;
     int (*decode_fn)(struct r_device *decoder, struct bitbuffer *bitbuffer);
     struct r_device *(*create_fn)(char *args);
-    unsigned disabled;
+    unsigned priority; ///< Run later and only if no previous events were produced
+    unsigned disabled; ///< 0: default enabled, 1: default disabled, 2: disabled, 3: disabled and hidden
     char **fields; ///< List of fields this decoder produces; required for CSV output. NULL-terminated.
 
     /* public for each decoder */
-    int old_model_keys; ///< TODO: temporary allow to change to old style model keys
     int verbose;
     int verbose_bits;
     void (*output_fn)(struct r_device *decoder, struct data *data);

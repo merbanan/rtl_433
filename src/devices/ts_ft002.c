@@ -93,9 +93,9 @@ static int ts_ft002_decoder(r_device *decoder, bitbuffer_t *bitbuffer)
             "depth_cm",         "Depth",                DATA_INT,    depth,
             "temperature_C",    "Temperature",          DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
             "transmit_s",       "Transmit Interval",    DATA_INT,    transmit,
-            //"battery_ok",       "Battery Flag",         DATA_INT,    batt_low,
-            "flags",            "Battery Flag?",         DATA_INT,    batt_low,
-            "mic",              "MIC",                  DATA_STRING, "CHECKSUM",
+            //"battery_ok",       "Battery",              DATA_INT,    batt_low,
+            "flags",            "Battery Flag?",        DATA_INT,    batt_low,
+            "mic",              "Integrity",            DATA_STRING, "CHECKSUM",
             NULL);
     decoder_output_data(decoder, data);
     /* clang-format on */

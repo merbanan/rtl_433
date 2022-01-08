@@ -24,8 +24,7 @@ All bytes are sent with least significant bit FIRST (1000 0111 = 0xE1)
 
 #include "decoder.h"
 
-static void
-ss_get_id(char *id, uint8_t *b)
+static void ss_get_id(char *id, uint8_t *b)
 {
     char *p = id;
 
@@ -45,8 +44,7 @@ ss_get_id(char *id, uint8_t *b)
     *p = '\0';
 }
 
-static int
-ss_sensor_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
+static int ss_sensor_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 {
     data_t *data;
     uint8_t *b = bitbuffer->bb[row];
@@ -73,21 +71,21 @@ ss_sensor_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
         strcpy(extradata,"Alarm Off");
     }
 
+    /* clang-format off */
     data = data_make(
-            "model",        "",             DATA_STRING, _X("SimpliSafe-Sensor","SimpliSafe Sensor"),
-            _X("id","device"),       "Device ID",    DATA_STRING, id,
-            "seq",          "Sequence",     DATA_INT, seq,
-            "state",        "State",        DATA_INT, state,
+            "model",        "",             DATA_STRING, "SimpliSafe-Sensor",
+            "id",           "Device ID",    DATA_STRING, id,
+            "seq",          "Sequence",     DATA_INT,    seq,
+            "state",        "State",        DATA_INT,    state,
             "extradata",    "Extra Data",   DATA_STRING, extradata,
-            NULL
-    );
-    decoder_output_data(decoder, data);
+            NULL);
+    /* clang-format on */
 
+    decoder_output_data(decoder, data);
     return 1;
 }
 
-static int
-ss_pinentry_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
+static int ss_pinentry_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 {
     data_t *data;
     uint8_t *b = bitbuffer->bb[row];
@@ -108,20 +106,20 @@ ss_pinentry_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 
     sprintf(extradata, "Disarm Pin: %x%x%x%x", digits[0], digits[1], digits[2], digits[3]);
 
+    /* clang-format off */
     data = data_make(
-            "model",        "",             DATA_STRING, _X("SimpliSafe-Keypad","SimpliSafe Keypad"),
-            _X("id","device"),       "Device ID",    DATA_STRING, id,
-            "seq",          "Sequence",     DATA_INT, b[9],
+            "model",        "",             DATA_STRING, "SimpliSafe-Keypad",
+            "id",           "Device ID",    DATA_STRING, id,
+            "seq",          "Sequence",     DATA_INT,    b[9],
             "extradata",    "Extra Data",   DATA_STRING, extradata,
-            NULL
-    );
-    decoder_output_data(decoder, data);
+            NULL);
+    /* clang-format on */
 
+    decoder_output_data(decoder, data);
     return 1;
 }
 
-static int
-ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row)
+static int ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 {
     data_t *data;
     uint8_t *b = bitbuffer->bb[row];
@@ -144,15 +142,16 @@ ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 
     ss_get_id(id, b);
 
+    /* clang-format off */
     data = data_make(
-            "model",        "",             DATA_STRING, _X("SimpliSafe-Keypad","SimpliSafe Keypad"),
-            _X("id","device"),       "Device ID",    DATA_STRING, id,
-            "seq",          "Sequence",     DATA_INT, b[9],
+            "model",        "",             DATA_STRING, "SimpliSafe-Keypad",
+            "id",           "Device ID",    DATA_STRING, id,
+            "seq",          "Sequence",     DATA_INT,    b[9],
             "extradata",    "Extra Data",   DATA_STRING, extradata,
-            NULL
-    );
-    decoder_output_data(decoder, data);
+            NULL);
+    /* clang-format on */
 
+    decoder_output_data(decoder, data);
     return 1;
 }
 
@@ -160,8 +159,7 @@ ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 Protocol of the SimpliSafe Sensors.
 @sa ss_sensor_parser() ss_pinentry_parser() ss_keypad_commands()
 */
-static int
-ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // Require two identical rows.
     int row = bitbuffer_find_repeated_row(bitbuffer, 2, 90);
@@ -189,23 +187,21 @@ ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *sensor_output_fields[] = {
-    "model",
-    "device", // TODO: delete this
-    "id",
-    "seq",
-    "state",
-    "extradata",
-    NULL
+        "model",
+        "id",
+        "seq",
+        "state",
+        "extradata",
+        NULL,
 };
 
 r_device ss_sensor = {
-    .name           = "SimpliSafe Home Security System (May require disabling automatic gain for KeyPad decodes)",
-    .modulation     = OOK_PULSE_PIWM_DC,
-    .short_width    = 500,  // half-bit width 500 us
-    .long_width     = 1000, // bit width 1000 us
-    .reset_limit    = 2200,
-    .tolerance      = 100, // us
-    .decode_fn      = &ss_sensor_callback,
-    .disabled       = 0,
-    .fields         = sensor_output_fields
+        .name        = "SimpliSafe Home Security System (May require disabling automatic gain for KeyPad decodes)",
+        .modulation  = OOK_PULSE_PIWM_DC,
+        .short_width = 500,  // half-bit width 500 us
+        .long_width  = 1000, // bit width 1000 us
+        .reset_limit = 2200,
+        .tolerance   = 100, // us
+        .decode_fn   = &ss_sensor_callback,
+        .fields      = sensor_output_fields,
 };

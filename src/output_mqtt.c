@@ -66,14 +66,14 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
     }
     case MG_EV_MQTT_CONNACK:
         if (msg->connack_ret_code != MG_EV_MQTT_CONNACK_ACCEPTED) {
-            fprintf(stderr, "MQTT Connection error: %d\n", msg->connack_ret_code);
+            fprintf(stderr, "MQTT Connection error: %u\n", msg->connack_ret_code);
         }
         else {
             fprintf(stderr, "MQTT Connection established.\n");
         }
         break;
     case MG_EV_MQTT_PUBACK:
-        fprintf(stderr, "MQTT Message publishing acknowledged (msg_id: %d)\n", msg->message_id);
+        fprintf(stderr, "MQTT Message publishing acknowledged (msg_id: %u)\n", msg->message_id);
         break;
     case MG_EV_MQTT_SUBACK:
         fprintf(stderr, "MQTT Subscription acknowledged.\n");
@@ -101,7 +101,7 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
     }
 }
 
-static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, tls_opts_t *tls_opts, char const *host, char const *port, char const *user, char const *pass, char const *client_id, int retain)
+static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, tls_opts_t *tls_opts, char const *host, char const *port, char const *user, char const *pass, char const *client_id, int retain, int qos)
 {
     mqtt_client_t *ctx = calloc(1, sizeof(*ctx));
     if (!ctx)
@@ -109,7 +109,7 @@ static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, tls_opts_t *tls_opts,
 
     ctx->mqtt_opts.user_name = user;
     ctx->mqtt_opts.password  = pass;
-    ctx->publish_flags  = MG_MQTT_QOS(0) | (retain ? MG_MQTT_RETAIN : 0);
+    ctx->publish_flags  = MG_MQTT_QOS(qos) | (retain ? MG_MQTT_RETAIN : 0);
     // TODO: these should be user configurable options
     //ctx->opts.keepalive = 60;
     //ctx->timeout = 10000L;
@@ -378,8 +378,7 @@ static void print_mqtt_data(data_output_t *output, data_t *data, char const *for
     }
 
     while (data) {
-        if (!strcmp(data->key, "brand")
-                || !strcmp(data->key, "type")
+        if (!strcmp(data->key, "type")
                 || !strcmp(data->key, "model")
                 || !strcmp(data->key, "subtype")) {
             // skip, except "id", "channel"
@@ -500,13 +499,14 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
     char *user = NULL;
     char *pass = NULL;
     int retain = 0;
+    int qos = 0;
 
     // parse host and port
     tls_opts_t tls_opts = {0};
     if (strncmp(param, "mqtts", 5) == 0) {
         tls_opts.tls_ca_cert = "*"; // TLS is enabled but no cert verification is performed.
     }
-    param      = arg_param(param);
+    param      = arg_param(param); // strip scheme
     char *host = "localhost";
     char *port = tls_opts.tls_ca_cert ? "8883" : "1883";
     char *opts = hostport_param(param, &host, &port);
@@ -525,6 +525,8 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
             pass = val;
         else if (!strcasecmp(key, "r") || !strcasecmp(key, "retain"))
             retain = atobv(val, 1);
+        else if (!strcasecmp(key, "q") || !strcasecmp(key, "qos"))
+            qos = atoiv(val, 1);
         // Simple key-topic mapping
         else if (!strcasecmp(key, "d") || !strcasecmp(key, "devices"))
             mqtt->devices = mqtt_topic_default(val, base_topic, path_devices);
@@ -578,7 +580,7 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
     mqtt->output.print_int    = print_mqtt_int;
     mqtt->output.output_free  = data_output_mqtt_free;
 
-    mqtt->mqc = mqtt_client_init(mgr, &tls_opts, host, port, user, pass, client_id, retain);
+    mqtt->mqc = mqtt_client_init(mgr, &tls_opts, host, port, user, pass, client_id, retain, qos);
 
     return &mqtt->output;
 }

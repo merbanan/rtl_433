@@ -79,15 +79,17 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
         if (sign)
             tempC = -tempC;
 
+        /* clang-format off */
         data = data_make(
-                "brand",        "",             DATA_STRING,    "OS",
-                "model",        "",             DATA_STRING,    _X("Oregon-v1","OSv1 Temperature Sensor"),
-                _X("id","sid"),         "SID",          DATA_INT,       sid,
-                "channel",      "Channel",      DATA_INT,       channel,
-                "battery",      "Battery",      DATA_STRING,    battery ? "LOW" : "OK",
-                "temperature_C","Temperature",  DATA_FORMAT,    "%.01f C",              DATA_DOUBLE,    tempC,
-                "mic",          "Integrity",    DATA_STRING,    "CHECKSUM",
-            NULL);
+                "model",            "",             DATA_STRING,    "Oregon-v1",
+                "id",               "SID",          DATA_INT,       sid,
+                "channel",          "Channel",      DATA_INT,       channel,
+                "battery_ok",       "Battery",      DATA_INT,       !battery,
+                "temperature_C",    "Temperature",  DATA_FORMAT,    "%.01f C",              DATA_DOUBLE,    tempC,
+                "mic",              "Integrity",    DATA_STRING,    "CHECKSUM",
+                NULL);
+        /* clang-format on */
+
         decoder_output_data(decoder, data);
         ret++;
     }
@@ -95,12 +97,10 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
 }
 
 static char *output_fields[] = {
-    "brand",
     "model",
-    "sid", // TODO: delete this
     "id",
     "channel",
-    "battery",
+    "battery_ok",
     "temperature_C",
     "mic",
     NULL,

@@ -98,10 +98,9 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // uint8_t msg_data, msg_unknown, msg_checksum;
     int msg_value_bcd, msg_value_bcd2, msg_value_bin;
     float temp_c, wind_dir, wind_spd, rain_mm;
-    char *wind_key, *wind_label;
     data_t *data;
 
-    for (row = 0; row < BITBUF_ROWS; row++) {
+    for (row = 0; row < bitbuffer->num_rows; row++) {
         // break out the message nybbles into separate bytes
         if (lacrossews_detect(decoder, bitbuffer->bb[row], msg_nybbles, bitbuffer->bits_per_row[row]) <= 0)
             continue; // DECODE_ABORT_EARLY
@@ -126,7 +125,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
             /* clang-format off */
             data = data_make(
-                    "model",            "",             DATA_STRING, ws_id == 0x6 ? "LaCrosse-WS3600" : _X("LaCrosse-WS2310", "LaCrosse WS"),
+                    "model",            "",             DATA_STRING, ws_id == 0x6 ? "LaCrosse-WS3600" : "LaCrosse-WS2310",
                     "id",               "",             DATA_INT,    sensor_id,
                     "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
                     NULL);
@@ -146,7 +145,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
             /* clang-format off */
             data = data_make(
-                    "model",            "",             DATA_STRING, ws_id == 0x6 ? "LaCrosse-WS3600" : _X("LaCrosse-WS2310", "LaCrosse WS"),
+                    "model",            "",             DATA_STRING, ws_id == 0x6 ? "LaCrosse-WS3600" : "LaCrosse-WS2310",
                     "id",               "",             DATA_INT,    sensor_id,
                     "humidity",         "Humidity",     DATA_INT,    msg_value_bcd2,
                     NULL);
@@ -161,9 +160,9 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
             /* clang-format off */
             data = data_make(
-                    "model",            "",             DATA_STRING, ws_id == 0x6 ? "LaCrosse-WS3600" : _X("LaCrosse-WS2310", "LaCrosse WS"),
+                    "model",            "",             DATA_STRING, ws_id == 0x6 ? "LaCrosse-WS3600" : "LaCrosse-WS2310",
                     "id",               "",             DATA_INT,    sensor_id,
-                    _X("rain_mm", "rainfall_mm"), "Rainfall", DATA_FORMAT, "%3.2f mm", DATA_DOUBLE, rain_mm,
+                    "rain_mm",          "Rainfall",     DATA_FORMAT, "%3.2f mm", DATA_DOUBLE, rain_mm,
                     NULL);
             /* clang-format on */
 
@@ -184,15 +183,13 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 break;
             }
 
-            wind_key   = msg_type == 3 ? _X("wind_avg_m_s", "wind_speed_ms") : _X("wind_max_m_s", "gust_speed_ms");
-            wind_label = msg_type == 3 ? "Wind speed" : "Gust speed";
-
             /* clang-format off */
             data = data_make(
-                    "model",            "",             DATA_STRING, ws_id == 0x6 ? "LaCrosse-WS3600" : _X("LaCrosse-WS2310", "LaCrosse WS"),
+                    "model",            "",             DATA_STRING, ws_id == 0x6 ? "LaCrosse-WS3600" : "LaCrosse-WS2310",
                     "id",               "",             DATA_INT,    sensor_id,
-                    wind_key,           wind_label,     DATA_FORMAT, "%3.1f m/s", DATA_DOUBLE, wind_spd,
-                    _X("wind_dir_deg", "wind_direction"), "Direction", DATA_DOUBLE, wind_dir, NULL);
+                    "wind_avg_m_s",     "Wind speed",   DATA_COND,   msg_type == 3, DATA_FORMAT, "%3.1f m/s", DATA_DOUBLE, wind_spd,
+                    "wind_max_m_s",     "Gust speed",   DATA_COND,   msg_type != 3, DATA_FORMAT, "%3.1f m/s", DATA_DOUBLE, wind_spd,
+                    "wind_dir_deg",     "Direction",    DATA_DOUBLE, wind_dir, NULL);
             /* clang-format on */
 
             decoder_output_data(decoder, data);
@@ -217,13 +214,9 @@ static char *output_fields[] = {
         "id",
         "temperature_C",
         "humidity",
-        "rainfall_mm", // TODO: delete this
         "rain_mm",
-        "wind_speed_ms", // TODO: delete this
-        "gust_speed_ms", // TODO: delete this
         "wind_avg_m_s",
         "wind_max_m_s",
-        "wind_direction", // TODO: delete this
         "wind_dir_deg",
         NULL,
 };

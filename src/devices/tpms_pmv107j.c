@@ -78,18 +78,20 @@ static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
 
     sprintf(id_str, "%08x", id);
 
+    /* clang-format off */
     data = data_make(
-        "model",            "",     DATA_STRING,    "PMV-107J",
-        "type",             "",     DATA_STRING,    "TPMS",
-        "id",               "",     DATA_STRING,    id_str,
-        "status",           "",     DATA_INT,       status,
-        "battery",          "",     DATA_STRING,    battery_low ? "LOW" : "OK",
-        "counter",          "",     DATA_INT,       counter,
-        "failed",           "",     DATA_STRING,    failed ? "FAIL" : "OK",
-        "pressure_kPa",     "",     DATA_DOUBLE,    pressure_kpa,
-        "temperature_C",    "",     DATA_DOUBLE,    temperature_c,
-        "mic",              "",     DATA_STRING,    "CRC",
-        NULL);
+            "model",            "",             DATA_STRING,    "PMV-107J",
+            "type",             "",             DATA_STRING,    "TPMS",
+            "id",               "",             DATA_STRING,    id_str,
+            "status",           "",             DATA_INT,       status,
+            "battery_ok",       "",             DATA_INT,       !battery_low,
+            "counter",          "",             DATA_INT,       counter,
+            "failed",           "",             DATA_STRING,    failed ? "FAIL" : "OK",
+            "pressure_kPa",     "",             DATA_DOUBLE,    pressure_kpa,
+            "temperature_C",    "",             DATA_DOUBLE,    temperature_c,
+            "mic",              "Integrity",    DATA_STRING,    "CRC",
+            NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
@@ -122,7 +124,7 @@ static char *output_fields[] = {
     "type",
     "id",
     "status",
-    "battery",
+    "battery_ok",
     "counter",
     "failed",
     "pressure_kPa",

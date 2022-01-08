@@ -23,7 +23,7 @@ Next 8 bits are static per device (even after battery change)
 Next 2 bits contain the upper 2 bits of the temperature
 Next 1 bit is unknown
 Next 1 bit is an odd parity bit
-Last 4 bits are the sum of the preceeding 5 nibbles (mod 0xf)
+Last 4 bits are the sum of the preceding 5 nibbles (mod 0xf)
 
 Here's the data I used to reverse engineer, more sampes in rtl_test
 
@@ -75,10 +75,6 @@ static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t b[4],p[4];
     data_t *data;
 
-    if (decoder->verbose > 1) {
-        bitbuffer_printf(bitbuffer, "%s: Possible Quigg BBQ: ", __func__);
-    }
-
     // 33 bit, repeated multiple times (technically it is repeated 8 times, look for 5 identical versions)
     int r = bitbuffer_find_repeated_row(bitbuffer, 5, 33);
 
@@ -112,7 +108,9 @@ static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int sum = add_nibbles(b, 3) + (b[3] >> 4);
     if ((sum & 0xf) != (b[3] & 0xf)) {
-        bitrow_printf(b, 32, "%s: Bad checksum (%x) ", __func__, sum);
+        if (decoder->verbose > 1) {
+            bitrow_printf(b, 32, "%s: Bad checksum (%x) ", __func__, sum);
+        }
         return DECODE_FAIL_MIC;
     }
 

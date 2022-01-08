@@ -23,45 +23,36 @@ normal sequence of bit rows:
 
 static int thermopro_tp11_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int temp_raw, row;
-    float temp_c;
-    bitrow_t *bb = bitbuffer->bb;
-    unsigned int device, value;
-    data_t *data;
-    uint8_t ic;
-
     // Compare first four bytes of rows that have 32 or 33 bits.
-    row = bitbuffer_find_repeated_row(bitbuffer, 2, 32);
+    int row = bitbuffer_find_repeated_row(bitbuffer, 2, 32);
     if (row < 0)
         return DECODE_ABORT_EARLY;
+    uint8_t *b = bitbuffer->bb[row];
 
     if (bitbuffer->bits_per_row[row] > 33)
         return DECODE_ABORT_LENGTH;
 
-    ic = lfsr_digest8_reflect(bb[row], 3, 0x51, 0x04);
-    if (ic != bb[row][3]) {
+    uint8_t ic = lfsr_digest8_reflect(b, 3, 0x51, 0x04);
+    if (ic != b[3]) {
         return DECODE_FAIL_MIC;
     }
 
-
     // No need to decode/extract values for simple test
-    if ( (!bb[row][0] && !bb[row][1] && !bb[row][2] && !bb[row][3])
-       || (bb[row][0] == 0xff && bb[row][1] == 0xff && bb[row][2] == 0xff && bb[row][3] == 0xff)) {
+    if ( (!b[0] && !b[1] && !b[2] && !b[3])
+       || (b[0] == 0xff && b[1] == 0xff && b[2] == 0xff && b[3] == 0xff)) {
         if (decoder->verbose > 1) {
             fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00 or 0xFF\n", __func__);
         }
         return DECODE_FAIL_SANITY;
     }
 
-    value = (bb[row][0] << 16) + (bb[row][1] << 8) + bb[row][2];
-    device = value >> 12;
-
-    temp_raw = value & 0xfff;
-    temp_c = (temp_raw - 200) * 0.1f;
+    int device   = (b[0] << 4) | (b[1] >> 4);
+    int temp_raw = ((b[1] & 0x0f) << 8) | b[2];
+    float temp_c = (temp_raw - 200) * 0.1f;
 
     /* clang-format off */
-    data = data_make(
-            "model",         "",            DATA_STRING, _X("Thermopro-TP11","Thermopro TP11 Thermometer"),
+    data_t *data = data_make(
+            "model",         "",            DATA_STRING, "Thermopro-TP11",
             "id",            "Id",          DATA_INT,    device,
             "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
             "mic",           "Integrity",   DATA_STRING, "CRC",

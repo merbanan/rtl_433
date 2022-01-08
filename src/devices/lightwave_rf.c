@@ -125,13 +125,15 @@ static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         fprintf(stderr, "  Row 0 = Input, Row 1 = Zero bit stuffing, Row 2 = Stripped delimiters, Row 3 = Decoded nibbles\n");
     }
 
+    /* clang-format off */
     data = data_make(
-            "model",        "", DATA_STRING, _X("Lightwave-RF","LightwaveRF"),
+            "model",        "", DATA_STRING, "Lightwave-RF",
             "id",           "", DATA_FORMAT, "%06x", DATA_INT, id,
-            "subunit",      "", DATA_INT, subunit,
-            "command",      "", DATA_INT, command,
-            "parameter",    "", DATA_INT, parameter,
+            "subunit",      "", DATA_INT,    subunit,
+            "command",      "", DATA_INT,    command,
+            "parameter",    "", DATA_INT,    parameter,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
 

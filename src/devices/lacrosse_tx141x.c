@@ -14,7 +14,8 @@
 /**
 LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX145wsdth sensor.
 
-Also TFA 30.3221.02 (a TX141TH-Bv2).
+Also TFA 30.3221.02 (a TX141TH-Bv2),
+also TFA 30.3222.02 (a LaCrosse-TX141W).
 
 LaCrosse Color Forecast Station (model C85845), or other LaCrosse product
 utilizing the remote temperature/humidity sensor TX141TH-Bv2 transmitting
@@ -105,7 +106,7 @@ Addition of TX141W and TX145wsdth:
 
 - type 1 has temp+hum (temp is offset 500 and scale 10)
 - type 2 has wind speed (km/h scale 10) and direction (degrees)
-- checksum is CRC-8 poly 0x31 init 0x00 over preceeding 7 bytes
+- checksum is CRC-8 poly 0x31 init 0x00 over preceding 7 bytes
 
 */
 
@@ -256,21 +257,21 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (device == LACROSSE_TX141B) {
         /* clang-format off */
         data = data_make(
-                "model",         "",              DATA_STRING, _X("LaCrosse-TX141B","LaCrosse TX141B sensor"),
+                "model",         "",              DATA_STRING, "LaCrosse-TX141B",
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-                "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
+                "battery_ok",    "Battery",       DATA_INT,    !battery_low,
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
                 NULL);
         /* clang-format on */
     } else if (device == LACROSSE_TX141) {
         /* clang-format off */
         data = data_make(
-                "model",         "",              DATA_STRING, _X("LaCrosse-TX141Bv2","LaCrosse TX141-Bv2 sensor"),
+                "model",         "",              DATA_STRING, "LaCrosse-TX141Bv2",
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
                 "channel",       "Channel",       DATA_FORMAT, "%02x", DATA_INT, channel,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-                "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
+                "battery_ok",    "Battery",       DATA_INT,    !battery_low,
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
                 NULL);
         /* clang-format on */
@@ -281,7 +282,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",         "",              DATA_STRING, "LaCrosse-TX141Bv3",
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
                 "channel",       "Channel",       DATA_FORMAT, "%02x", DATA_INT, channel,
-                "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
+                "battery_ok",    "Battery",       DATA_INT,    !battery_low,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
                 NULL);
@@ -294,10 +295,10 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
         /* clang-format off */
         data = data_make(
-                "model",         "",              DATA_STRING, _X("LaCrosse-TX141THBv2","LaCrosse TX141TH-Bv2 sensor"),
+                "model",         "",              DATA_STRING, "LaCrosse-TX141THBv2",
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
                 "channel",       "Channel",       DATA_FORMAT, "%02x", DATA_INT, channel,
-                "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
+                "battery_ok",    "Battery",       DATA_INT,    !battery_low,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 "humidity",      "Humidity",      DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
@@ -314,7 +315,6 @@ static char *output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
         "battery_ok",
         "temperature_C",
         "humidity",

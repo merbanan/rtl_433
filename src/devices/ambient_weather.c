@@ -13,7 +13,8 @@
 /**
 Ambient Weather F007TH Thermo-Hygrometer.
 
-Also TFA senders 30.3208.02 from the TFA "Klima-Monitor" 30.3054
+Also: TFA senders 30.3208.02 from the TFA "Klima-Monitor" 30.3054,
+also: SwitchDoc Labs F016TH.
 
 The check is an LFSR Digest-8, gen 0x98, key 0x3e, init 0x64
 */
@@ -42,6 +43,7 @@ static int ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
         return DECODE_FAIL_MIC;
     }
 
+    // int model_number = b[0] & 0x0F; // fixed 0x05, at least for "SwitchDoc Labs F016TH"
     deviceID = b[1];
     isBatteryLow = (b[2] & 0x80) != 0; // if not zero, battery is low
     channel = ((b[2] & 0x70) >> 4) + 1;
@@ -49,17 +51,19 @@ static int ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
     temperature = (temp_f - 400) * 0.1f;
     humidity = b[4];
 
+    /* clang-format off */
     data = data_make(
-            "model",          "",             DATA_STRING, _X("Ambientweather-F007TH","Ambient Weather F007TH Thermo-Hygrometer"),
-            _X("id","device"),         "House Code",   DATA_INT,    deviceID,
+            "model",          "",             DATA_STRING, "Ambientweather-F007TH",
+            "id",             "House Code",   DATA_INT,    deviceID,
             "channel",        "Channel",      DATA_INT,    channel,
-            "battery",        "Battery",      DATA_STRING, isBatteryLow ? "Low" : "OK",
+            "battery_ok",     "Battery",      DATA_INT,    !isBatteryLow,
             "temperature_F",  "Temperature",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, temperature,
             "humidity",       "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",            "Integrity",    DATA_STRING, "CRC",
             NULL);
-    decoder_output_data(decoder, data);
+    /* clang-format on */
 
+    decoder_output_data(decoder, data);
     return 1;
 }
 
@@ -82,16 +86,14 @@ static int ambient_weather_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     for (row = 0; row < bitbuffer->num_rows; ++row) {
         bitpos = 0;
         // Find a preamble with enough bits after it that it could be a complete packet
-        while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
-                (const uint8_t *)&preamble_pattern, 12)) + 8+6*8 <=
+        while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos, preamble_pattern, 12)) + 8 + 6 * 8 <=
                 bitbuffer->bits_per_row[row]) {
             ret = ambient_weather_decode(decoder, bitbuffer, row, bitpos + 8);
             if (ret > 0) return ret; // for now, break after first successful message
             bitpos += 16;
         }
         bitpos = 0;
-        while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
-                (const uint8_t *)&preamble_inverted, 12)) + 8+6*8 <=
+        while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos, preamble_inverted, 12)) + 8 + 6 * 8 <=
                 bitbuffer->bits_per_row[row]) {
             ret = ambient_weather_decode(decoder, bitbuffer, row, bitpos + 8);
             if (ret > 0) return ret; // for now, break after first successful message
@@ -99,15 +101,16 @@ static int ambient_weather_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
+    // TODO: returns 0 when no data is found in the messages.
+    // What would be a better return value? Maybe DECODE_ABORT_SANITY?
     return ret;
 }
 
 static char *output_fields[] = {
         "model",
-        "device", // TODO: delete this
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "temperature_F",
         "humidity",
         "mic",
@@ -115,7 +118,7 @@ static char *output_fields[] = {
 };
 
 r_device ambient_weather = {
-        .name        = "Ambient Weather, TFA 30.3208.02 temperature sensor",
+        .name        = "Ambient Weather F007TH, TFA 30.3208.02, SwitchDocLabs F016TH temperature sensor",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 500,
         .long_width  = 0, // not used

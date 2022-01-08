@@ -21,7 +21,7 @@ Decoder for Bresser Weather Center 6-in-1.
 - also Bresser 3-in-1 Professional Wind Gauge / Anemometer PN 7002531
 
 There are at least two different message types:
-- 24 seconds interval for temperatur, hum, uv and rain (alternating messages)
+- 24 seconds interval for temperature, hum, uv and rain (alternating messages)
 - 12 seconds interval for wind data (every message)
 
 Also Bresser Explore Scientific SM60020 Soil moisture Sensor.
@@ -186,7 +186,7 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, "Bresser-6in1",
             "id",               "",             DATA_FORMAT, "%08x", DATA_INT,    id,
             "channel",          "",             DATA_INT,    chan,
-            "battery_ok",       "Battery OK",   DATA_INT,    batt,
+            "battery_ok",       "Battery",      DATA_INT,    batt,
             "temperature_C",    "Temperature",  DATA_COND, temp_ok, DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",     DATA_COND, temp_ok && moisture < 0, DATA_INT,    humidity,
             "sensor_type",      "Sensor type",  DATA_INT,    s_type,

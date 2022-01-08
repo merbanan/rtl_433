@@ -60,7 +60,7 @@ static int auriol_afw2a1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int channel;
     int battery_ok;
     int tx_button;
-    int16_t temp_raw;
+    int temp_raw;
     float temp_c;
     int humidity;
 
@@ -75,7 +75,7 @@ static int auriol_afw2a1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     battery_ok  = b[1] >> 7;
     tx_button   = (b[1] & 0x40) >> 6;
     channel     = (b[1] & 0x30) >> 4;
-    temp_raw    = ((b[1] & 0x0f) << 12) | (b[2] << 4); // use sign extend
+    temp_raw    = (int16_t)(((b[1] & 0x0f) << 12) | (b[2] << 4)); // uses sign extend
     temp_c      = (temp_raw >> 4) * 0.1f;
     // 0xa is fixed. If it differs, it is a wrong device. Could anyone confirm that?
     if ((b[3] >> 4) != 0xa) {

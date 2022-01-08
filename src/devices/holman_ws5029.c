@@ -46,6 +46,8 @@ Payload format:
 To get raw data
 $ rtl_433 -f 917M -X 'name=WS5029,modulation=FSK_PCM,short=100,long=100,preamble={48}0xAAAAAAAAAAAA,reset=19200'
 
+@sa holman_ws5029pwm_decode()
+
 */
 
 #include "decoder.h"
@@ -95,7 +97,7 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int temp_raw      = (int16_t)((b[11] << 8) | (b[12] & 0xf0)); // uses sign-extend
     float temp_c      = (temp_raw >> 4) * 0.1f;
     int humidity      = ((b[12] & 0x0f) << 4) | ((b[13] & 0xf0) >> 4);
-    int rain_raw      = ((b[13] & 0x0f) << 12) | b[14];
+    int rain_raw      = ((b[13] & 0x0f) << 8) | b[14];
     float rain_mm     = rain_raw * 0.79f;
     int speed_kmh     = b[15];
     int direction_deg = wind_dir_degr[(b[16] & 0xf0) >> 4];
@@ -108,7 +110,7 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%",    DATA_INT,    humidity,
             "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain_mm,
             "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%u km/h",  DATA_INT,    speed_kmh,
-            _X("wind_dir_deg","direction_deg"),     "Wind Direction",    DATA_INT, direction_deg,
+            "wind_dir_deg",     "Wind Direction",   DATA_INT, direction_deg,
             NULL);
     /* clang-format on */
 
@@ -124,8 +126,7 @@ static char *output_fields[] = {
         "battery_ok",
         "rain_mm",
         "wind_avg_km_h",
-        "direction_deg", // TODO: remove this
-        "wind_dir_deg", // TODO: remove this
+        "wind_dir_deg",
         "mic",
         NULL,
 };
@@ -141,17 +142,20 @@ r_device holman_ws5029pcm = {
         .fields      = output_fields,
 };
 
-// The checksum used is an xor of all 11 bytes.
-// The bottom nybble results in 0. The top does not
-// and I've been unable to figure out why. We only
-// check the bottom nybble therefore.
-// Have tried all permutations of init/poly for lfsr8 & crc8
-// Rain is 0.79mm / count
-//  618 counts / 488.2mm - 190113 - Multiplier is exactly 0.79
-// Wind is discrete kph
-//
-// Preamble is 0xaa 0xa5. Device is 0x98
+/**
+Holman Industries WS5029 weather station using PWM.
 
+- The checksum used is an xor of all 11 bytes.
+- The bottom nybble results in 0. The top does not
+- and I've been unable to figure out why. We only
+- check the bottom nybble therefore.
+- Have tried all permutations of init/poly for lfsr8 & crc8
+- Rain is 0.79mm / count
+  618 counts / 488.2mm - 190113 - Multiplier is exactly 0.79
+- Wind is discrete kph
+- Preamble is 0xaa 0xa5. Device is 0x98
+
+*/
 static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble[] = {0x55, 0x5a, 0x67}; // Preamble/Device inverted
@@ -195,12 +199,12 @@ static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",            "",                 DATA_STRING, "Holman-WS5029",
             "id",               "",                 DATA_INT,    id,
-            "battery_ok",       "",                 DATA_INT,    !battery_low,
+            "battery_ok",       "Battery",          DATA_INT,    !battery_low,
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C",  DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%",    DATA_INT,    humidity,
             "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain_mm,
             "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%u km/h",  DATA_INT,    speed_kmh,
-            _X("wind_dir_deg","direction_deg"),     "Wind Direction",    DATA_INT, (int)(wind_dir * 22.5),
+            "wind_dir_deg",     "Wind Direction",   DATA_INT,    (int)(wind_dir * 22.5),
             "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */

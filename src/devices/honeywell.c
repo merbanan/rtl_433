@@ -105,17 +105,18 @@ static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",        "", DATA_STRING, _X("Honeywell-Security","Honeywell Door/Window Sensor"),
-            "id",           "", DATA_FORMAT, "%05x", DATA_INT, device_id,
-            "channel",      "", DATA_INT,    channel,
-            "event",        "", DATA_FORMAT, "%02x", DATA_INT, event,
-            "state",        "", DATA_STRING, contact ? "open" : "closed", // Ignore the reed switch legacy.
-            "contact_open", "", DATA_INT,    contact,
-            "reed_open",    "", DATA_INT,    reed,
-            "alarm",        "", DATA_INT,    alarm,
-            "tamper",       "", DATA_INT,    tamper,
-            "battery_ok",   "", DATA_INT,    !battery_low,
-            "heartbeat",    "", DATA_INT,    heartbeat,
+            "model",        "",         DATA_STRING, "Honeywell-Security",
+            "id",           "",         DATA_FORMAT, "%05x", DATA_INT, device_id,
+            "channel",      "",         DATA_INT,    channel,
+            "event",        "",         DATA_FORMAT, "%02x", DATA_INT, event,
+            "state",        "",         DATA_STRING, contact ? "open" : "closed", // Ignore the reed switch legacy.
+            "contact_open", "",         DATA_INT,    contact,
+            "reed_open",    "",         DATA_INT,    reed,
+            "alarm",        "",         DATA_INT,    alarm,
+            "tamper",       "",         DATA_INT,    tamper,
+            "battery_ok",   "Battery",  DATA_INT,    !battery_low,
+            "heartbeat",    "",         DATA_INT,    heartbeat,
+            "mic",          "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -135,6 +136,7 @@ static char *output_fields[] = {
         "tamper",
         "battery_ok",
         "heartbeat",
+        "mic",
         NULL,
 };
 

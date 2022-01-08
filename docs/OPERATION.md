@@ -1,14 +1,16 @@
 # Basic rtl_433 operation
 
-A startup rtl_433 will read config files and parse command line arguments, then it will loop through these steps:
+The principle buildings blocks of rtl_433 are: Inputs, Loaders, Processing, Analysis, Decoders, Dumpers, Outputs.
 
-- Inputs
-- Loaders
-- Processing
-- Analysis
-- Decoders
-- Dumper
-- Outputs
+At startup rtl_433 will read config files and parse command line arguments, then it will loop through these steps:
+
+- Inputs: rtl_tcp, RTL-SDR, SoapySDR
+- Loaders: Raw data files (cu8, cs16, ...)
+- Processing: OOK and FSK demod, pulse detector, slicers, coding
+- Analysis: Show statistics on pulses
+- Decoders: Over 200 protocols
+- Dumpers: Raw data files (cu8, cs16, ..., sr, ...)
+- Outputs: Screen (kv), JSON, CSV, MQTT, Influx, UDP (syslog), HTTP
 
 rtl_433 will either acquire a live signal from an input or read a sample file with a loader.
 Then process that signal, analyse it's properties (if enabled) and write the signal with dumpers (if enabled).
@@ -277,7 +279,7 @@ The output might not be too useful, best to use the newer `-A` option.
 
 The `-A` option enables the (new) pulse analyzer.
 Each received transmission will be displayed in a statistical overview.
-A probable coding will be infered and attempted to decode.
+A probable coding will be inferred and attempted to decode.
 
 The "Pulse width distribution", "Gap width distribution", and "Pulse period distribution"
 can tell you about the timing in the `width` column,
@@ -439,7 +441,7 @@ Use `-F mqtt` to add an output in MQTT format.
 Specify MQTT server with e.g. `-F mqtt://localhost:1883`.
 
 Add MQTT options with e.g. `-F "mqtt://host:1883,opt=arg"`.
-Supported MQTT options are: `user=foo`, `pass=bar`, `retain[=0|1]`, `<format>[=<topic>]`.
+Supported MQTT options are: `user=foo`, `pass=bar`, `retain[=0|1]`, `qos=N`, `<format>[=<topic>]`.
 
 Supported MQTT formats: (default is all formats)
 - `events`: posts JSON event data
@@ -496,7 +498,7 @@ Without any `-F` option the default is KV output. Use `-F null` to remove that d
 ### Meta information
 
 ```
-  [-M time[:<options>]|protocol|level|stats|bits|oldmodel]
+  [-M time[:<options>]|protocol|level|stats|bits]
     Add various metadata to every output line.
 ```
 - Use `time` to add current date and time meta data (preset for live inputs).
