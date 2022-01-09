@@ -159,24 +159,22 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return DECODE_ABORT_LENGTH;
 }
 
-
 static char *output_fields[] = {
-    "model",
-    "id",
-    "temperature_C",
-    "setpoint_C",
-    "switch",
-    "mic",
-    NULL
+        "model",
+        "id",
+        "temperature_C",
+        "setpoint_C",
+        "switch",
+        "mic",
+        NULL,
 };
 
 r_device danfoss_CFR = {
-    .name           = "Danfoss CFR Thermostat",
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = 100,  // NRZ decoding
-    .long_width     = 100,  // Bit width
-    .reset_limit    = 500,  // Maximum run is 4 zeroes/ones
-    .decode_fn      = &danfoss_cfr_callback,
-    .disabled       = 0,
-    .fields         = output_fields
+        .name        = "Danfoss CFR Thermostat",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 100, // NRZ decoding
+        .long_width  = 100, // Bit width
+        .reset_limit = 500, // Maximum run is 4 zeroes/ones
+        .decode_fn   = &danfoss_cfr_callback,
+        .fields      = output_fields,
 };

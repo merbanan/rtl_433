@@ -118,27 +118,26 @@ static int tpms_citroen_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "type",
-    "id",
-    "state",
-    "flags",
-    "repeat",
-    "pressure_kPa",
-    "temperature_C",
-    "maybe_battery",
-    "code",
-    "mic",
-    NULL,
+        "model",
+        "type",
+        "id",
+        "state",
+        "flags",
+        "repeat",
+        "pressure_kPa",
+        "temperature_C",
+        "maybe_battery",
+        "code",
+        "mic",
+        NULL,
 };
 
 r_device tpms_citroen = {
-    .name           = "Citroen TPMS",
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = 52, // 12-13 samples @250k
-    .long_width     = 52, // FSK
-    .reset_limit    = 150, // Maximum gap size before End Of Message [us].
-    .decode_fn      = &tpms_citroen_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Citroen TPMS",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 52,  // 12-13 samples @250k
+        .long_width  = 52,  // FSK
+        .reset_limit = 150, // Maximum gap size before End Of Message [us].
+        .decode_fn   = &tpms_citroen_callback,
+        .fields      = output_fields,
 };

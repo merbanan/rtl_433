@@ -164,6 +164,5 @@ r_device tpms_ave = {
         .reset_limit = 400,
         .tolerance   = 15,
         .decode_fn   = &tpms_ave_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

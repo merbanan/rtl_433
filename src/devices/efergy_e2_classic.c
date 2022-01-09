@@ -127,6 +127,5 @@ r_device efergy_e2_classic = {
         .gap_limit   = 200,
         .reset_limit = 400,
         .decode_fn   = &efergy_e2_classic_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

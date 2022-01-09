@@ -416,6 +416,5 @@ r_device secplus_v2 = {
         .gap_limit   = 1500,
         .reset_limit = 9000,
         .decode_fn = &secplus_v2_callback,
-        .disabled  = 0,
         .fields    = output_fields,
 };

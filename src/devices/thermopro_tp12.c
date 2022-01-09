@@ -118,6 +118,5 @@ r_device thermopro_tp12 = {
         .gap_limit   = 2000,
         .reset_limit = 4000,
         .decode_fn   = &thermopro_tp12_sensor_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

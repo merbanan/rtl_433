@@ -120,26 +120,25 @@ static int tpms_pmv107j_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "type",
-    "id",
-    "status",
-    "battery_ok",
-    "counter",
-    "failed",
-    "pressure_kPa",
-    "temperature_C",
-    "mic",
-    NULL,
+        "model",
+        "type",
+        "id",
+        "status",
+        "battery_ok",
+        "counter",
+        "failed",
+        "pressure_kPa",
+        "temperature_C",
+        "mic",
+        NULL,
 };
 
 r_device tpms_pmv107j = {
-    .name           = "PMV-107J (Toyota) TPMS",
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = 100, // 25 samples @250k
-    .long_width     = 100, // FSK
-    .reset_limit    = 250, // Maximum gap size before End Of Message [us].
-    .decode_fn      = &tpms_pmv107j_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "PMV-107J (Toyota) TPMS",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 100, // 25 samples @250k
+        .long_width  = 100, // FSK
+        .reset_limit = 250, // Maximum gap size before End Of Message [us].
+        .decode_fn   = &tpms_pmv107j_callback,
+        .fields      = output_fields,
 };

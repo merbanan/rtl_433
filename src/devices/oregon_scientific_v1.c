@@ -97,23 +97,22 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "channel",
-    "battery_ok",
-    "temperature_C",
-    "mic",
-    NULL,
+        "model",
+        "id",
+        "channel",
+        "battery_ok",
+        "temperature_C",
+        "mic",
+        NULL,
 };
 
 r_device oregon_scientific_v1 = {
-    .name           = "OSv1 Temperature Sensor",
-    .modulation     = OOK_PULSE_PWM_OSV1,
-    .short_width    = 1465, // nominal half-bit width
-    .sync_width     = 5780,
-    .gap_limit      = 3500,
-    .reset_limit    = 14000,
-    .decode_fn      = &oregon_scientific_v1_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "OSv1 Temperature Sensor",
+        .modulation  = OOK_PULSE_PWM_OSV1,
+        .short_width = 1465, // nominal half-bit width
+        .sync_width  = 5780,
+        .gap_limit   = 3500,
+        .reset_limit = 14000,
+        .decode_fn   = &oregon_scientific_v1_callback,
+        .fields      = output_fields,
 };

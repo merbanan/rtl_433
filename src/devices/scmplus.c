@@ -198,6 +198,5 @@ r_device scmplus = {
         .gap_limit   = 0,
         .reset_limit = 64,
         .decode_fn   = &scmplus_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

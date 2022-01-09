@@ -87,22 +87,21 @@ static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "cmd",
-    "cmd_id",
-    NULL,
+        "model",
+        "id",
+        "cmd",
+        "cmd_id",
+        NULL,
 };
 
 r_device chuango = {
-    .name           = "Chuango Security Technology",
-    .modulation     = OOK_PULSE_PWM,
-    .short_width    = 568,  // Pulse: Short 568µs, Long 1704µs
-    .long_width     = 1704, // Gaps:  Short 568µs, Long 1696µs
-    .reset_limit    = 1800, // Intermessage Gap 17200µs (individually for now)
-    .sync_width     = 0,    // No sync bit used
-    .tolerance      = 160,  // us
-    .decode_fn      = &chuango_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Chuango Security Technology",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 568,  // Pulse: Short 568µs, Long 1704µs
+        .long_width  = 1704, // Gaps:  Short 568µs, Long 1696µs
+        .reset_limit = 1800, // Intermessage Gap 17200µs (individually for now)
+        .sync_width  = 0,    // No sync bit used
+        .tolerance   = 160,  // us
+        .decode_fn   = &chuango_callback,
+        .fields      = output_fields,
 };

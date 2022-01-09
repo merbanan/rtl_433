@@ -138,6 +138,5 @@ r_device infactory = {
         .reset_limit = 5000,  // Maximum gap size before End Of Message [us]
         .tolerance   = 750,   // Width interval 0=[1250..2750] 1=[3250..4750], should be quite robust
         .decode_fn   = &infactory_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

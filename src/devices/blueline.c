@@ -444,6 +444,5 @@ r_device blueline = {
         .reset_limit = 8000,
         .decode_fn   = &blueline_decode,
         .create_fn   = &blueline_create,
-        .disabled    = 0,
         .fields      = output_fields,
 };

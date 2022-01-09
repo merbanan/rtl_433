@@ -132,6 +132,5 @@ r_device visonic_powercode = {
         .gap_limit   = 900,
         .reset_limit = 5000,
         .decode_fn   = &visonic_powercode_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -128,33 +128,31 @@ static int oil_standard_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "flags",
-    "alarm",
-    "binding_countdown",
-    "depth_cm",
-    NULL,
+        "model",
+        "id",
+        "flags",
+        "alarm",
+        "binding_countdown",
+        "depth_cm",
+        NULL,
 };
 
 r_device oil_standard = {
-    .name           = "Oil Ultrasonic STANDARD FSK",
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = 500,
-    .long_width     = 500,
-    .reset_limit    = 2000,
-    .decode_fn      = &oil_standard_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Oil Ultrasonic STANDARD FSK",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 500,
+        .long_width  = 500,
+        .reset_limit = 2000,
+        .decode_fn   = &oil_standard_callback,
+        .fields      = output_fields,
 };
 
 r_device oil_standard_ask = {
-    .name           = "Oil Ultrasonic STANDARD ASK",
-    .modulation     = OOK_PULSE_PCM_RZ,
-    .short_width    = 500,
-    .long_width     = 500,
-    .reset_limit    = 2000,
-    .decode_fn      = &oil_standard_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Oil Ultrasonic STANDARD ASK",
+        .modulation  = OOK_PULSE_PCM_RZ,
+        .short_width = 500,
+        .long_width  = 500,
+        .reset_limit = 2000,
+        .decode_fn   = &oil_standard_callback,
+        .fields      = output_fields,
 };

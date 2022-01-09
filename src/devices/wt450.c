@@ -137,6 +137,5 @@ r_device wt450 = {
         .reset_limit = 18000,
         .tolerance   = 100, // us
         .decode_fn   = &wt450_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

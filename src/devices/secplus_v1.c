@@ -416,9 +416,7 @@ r_device secplus_v1 = {
         .long_width  = 500,
         .tolerance   = 20,
         .gap_limit   = 15000,
-
         .reset_limit = 80000,
         .decode_fn   = &secplus_v1_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -117,6 +117,5 @@ r_device auriol_ahfl = {
         .gap_limit   = 4248,
         .reset_limit = 9150,
         .decode_fn   = &auriol_ahfl_decode,
-        .disabled    = 0, // No side effects known.
         .fields      = output_fields,
 };

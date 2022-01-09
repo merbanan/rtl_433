@@ -104,6 +104,5 @@ r_device wg_pb12v1 = {
         .long_width  = 1476, // Maximum pulse period (long pulse + fixed gap)
         .reset_limit = 2500, // We just want 1 package
         .decode_fn   = &wg_pb12v1_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

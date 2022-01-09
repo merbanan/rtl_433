@@ -111,24 +111,23 @@ static int esperanza_ews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "channel",
-    "battery_ok",
-    "temperature_F",
-    "humidity",
-    "mic",
-    NULL
+        "model",
+        "id",
+        "channel",
+        "battery_ok",
+        "temperature_F",
+        "humidity",
+        "mic",
+        NULL,
 };
 
 r_device esperanza_ews = {
-    .name           = "Esperanza EWS",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 2000,
-    .long_width     = 4000,
-    .gap_limit      = 4400,
-    .reset_limit    = 9400,
-    .decode_fn      = &esperanza_ews_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Esperanza EWS",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 2000,
+        .long_width  = 4000,
+        .gap_limit   = 4400,
+        .reset_limit = 9400,
+        .decode_fn   = &esperanza_ews_callback,
+        .fields      = output_fields,
 };

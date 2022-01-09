@@ -54,19 +54,19 @@ static int elro_db286a_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    NULL
+        "model",
+        "id",
+        NULL,
 };
 
 r_device elro_db286a = {
-    .name           = "Elro DB286A Doorbell",
-    .modulation     = OOK_PULSE_PWM,
-    .short_width    = 456,
-    .long_width     = 1448,
-    .gap_limit      = 2000,
-    .reset_limit    = 8000,
-    .decode_fn      = &elro_db286a_callback,
-    .disabled       = 1,
-    .fields         = output_fields
+        .name        = "Elro DB286A Doorbell",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 456,
+        .long_width  = 1448,
+        .gap_limit   = 2000,
+        .reset_limit = 8000,
+        .decode_fn   = &elro_db286a_callback,
+        .disabled    = 1,
+        .fields      = output_fields,
 };

@@ -98,6 +98,5 @@ r_device tfa_pool_thermometer = {
         .gap_limit   = 7800,
         .reset_limit = 10000,
         .decode_fn   = &tfa_pool_thermometer_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

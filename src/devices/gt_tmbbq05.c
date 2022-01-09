@@ -149,6 +149,5 @@ r_device gt_tmbbq05 = {
         .gap_limit   = 4200,
         .reset_limit = 9100,
         .decode_fn   = &gt_tmbbq05_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

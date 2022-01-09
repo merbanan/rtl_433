@@ -130,6 +130,5 @@ r_device auriol_afw2a1 = {
         .gap_limit   = 2012,
         .reset_limit = 3954,
         .decode_fn   = &auriol_afw2a1_decode,
-        .disabled    = 0, // No side effects known.
         .fields      = output_fields,
 };

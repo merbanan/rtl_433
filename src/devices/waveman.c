@@ -80,24 +80,23 @@ static int waveman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "channel",
-    "button",
-    "state",
-    NULL
+        "model",
+        "id",
+        "channel",
+        "button",
+        "state",
+        NULL,
 };
 
 r_device waveman = {
-    .name           = "Waveman Switch Transmitter",
-    .modulation     = OOK_PULSE_PWM,
-    .short_width    = 357,
-    .long_width     = 1064,
-    .gap_limit      = 1400,
-    .reset_limit    = 12000,
-    .sync_width     = 0,    // No sync bit used
-    .tolerance      = 200,  // us
-    .decode_fn      = &waveman_callback,
-    .disabled       = 0,
-    .fields         = output_fields
+        .name        = "Waveman Switch Transmitter",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 357,
+        .long_width  = 1064,
+        .gap_limit   = 1400,
+        .reset_limit = 12000,
+        .sync_width  = 0,   // No sync bit used
+        .tolerance   = 200, // us
+        .decode_fn   = &waveman_callback,
+        .fields      = output_fields,
 };

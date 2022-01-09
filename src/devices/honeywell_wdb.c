@@ -139,7 +139,6 @@ r_device honeywell_wdb = {
         .reset_limit = 5000,
         .sync_width  = 500,
         .decode_fn   = &honeywell_wdb_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };
 
@@ -152,6 +151,5 @@ r_device honeywell_wdb_fsk = {
         .reset_limit = 560,
         .sync_width  = 500,
         .decode_fn   = &honeywell_wdb_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

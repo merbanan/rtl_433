@@ -93,6 +93,5 @@ r_device newkaku = {
         .tolerance   = 200,
         .reset_limit = 3200,
         .decode_fn   = &newkaku_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -155,6 +155,5 @@ r_device companion_wtr001 = {
         .reset_limit = 8000, //
         .sync_width  = 1464, // 1464 us pulse + 1464 us gap between each row
         .decode_fn   = &companion_wtr001_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

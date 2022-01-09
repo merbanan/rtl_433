@@ -61,21 +61,20 @@ static int akhan_rke_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "data",
-    NULL
+        "model",
+        "id",
+        "data",
+        NULL,
 };
 
 r_device akhan_100F14 = {
-    .name          = "Akhan 100F14 remote keyless entry",
-    .modulation    = OOK_PULSE_PWM,
-    .short_width   = 316,
-    .long_width    = 1020,
-    .reset_limit   = 1800,
-    .sync_width    = 0,
-    .tolerance     = 80, // us
-    .decode_fn     = &akhan_rke_callback,
-    .disabled      = 0,
-    .fields        = output_fields,
+        .name        = "Akhan 100F14 remote keyless entry",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 316,
+        .long_width  = 1020,
+        .reset_limit = 1800,
+        .sync_width  = 0,
+        .tolerance   = 80, // us
+        .decode_fn   = &akhan_rke_callback,
+        .fields      = output_fields,
 };

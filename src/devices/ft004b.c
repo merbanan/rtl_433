@@ -79,6 +79,5 @@ r_device ft004b = {
         .gap_limit   = 4000,
         .reset_limit = 4000,
         .decode_fn   = &ft004b_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

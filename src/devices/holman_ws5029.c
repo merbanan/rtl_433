@@ -138,7 +138,6 @@ r_device holman_ws5029pcm = {
         .long_width  = 100,
         .reset_limit = 19200,
         .decode_fn   = &holman_ws5029pcm_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };
 
@@ -221,6 +220,5 @@ r_device holman_ws5029pwm = {
         .reset_limit = 6000,
         .gap_limit   = 2000,
         .decode_fn   = &holman_ws5029pwm_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

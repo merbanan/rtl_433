@@ -63,25 +63,25 @@ static int mebus433_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "channel",
-    "battery_ok",
-    "unknown1",
-    "unknown2",
-    "temperature_C",
-    "humidity",
-    NULL,
+        "model",
+        "id",
+        "channel",
+        "battery_ok",
+        "unknown1",
+        "unknown2",
+        "temperature_C",
+        "humidity",
+        NULL,
 };
 
 r_device mebus433 = {
-    .name           = "Mebus 433",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 800, // guessed, no samples available
-    .long_width     = 1600, // guessed, no samples available
-    .gap_limit      = 2400,
-    .reset_limit    = 6000,
-    .decode_fn      = &mebus433_callback,
-    .disabled       = 1, // add docs, tests, false positive checks and then re-enable
-    .fields         = output_fields,
+        .name        = "Mebus 433",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 800,  // guessed, no samples available
+        .long_width  = 1600, // guessed, no samples available
+        .gap_limit   = 2400,
+        .reset_limit = 6000,
+        .decode_fn   = &mebus433_callback,
+        .disabled    = 1, // add docs, tests, false positive checks and then re-enable
+        .fields      = output_fields,
 };

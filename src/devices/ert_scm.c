@@ -116,6 +116,5 @@ r_device ert_scm = {
         .gap_limit   = 0,
         .reset_limit = 64,
         .decode_fn   = &ert_scm_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

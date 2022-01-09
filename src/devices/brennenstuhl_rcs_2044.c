@@ -109,21 +109,21 @@ static int brennenstuhl_rcs_2044_callback(r_device *decoder, bitbuffer_t *bitbuf
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "key",
-    "state",
-    NULL,
+        "model",
+        "id",
+        "key",
+        "state",
+        NULL,
 };
 
 r_device brennenstuhl_rcs_2044 = {
-    .name          = "Brennenstuhl RCS 2044",
-    .modulation    = OOK_PULSE_PWM,
-    .short_width   = 320,
-    .long_width    = 968,
-    .gap_limit     = 1500,
-    .reset_limit   = 4000,
-    .decode_fn     = &brennenstuhl_rcs_2044_callback,
-    .disabled      = 1,
-    .fields        = output_fields,
+        .name        = "Brennenstuhl RCS 2044",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 320,
+        .long_width  = 968,
+        .gap_limit   = 1500,
+        .reset_limit = 4000,
+        .decode_fn   = &brennenstuhl_rcs_2044_callback,
+        .disabled    = 1,
+        .fields      = output_fields,
 };

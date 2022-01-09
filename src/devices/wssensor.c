@@ -115,6 +115,5 @@ r_device wssensor = {
         .gap_limit   = 2400,
         .reset_limit = 4400,
         .decode_fn   = &wssensor_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -172,6 +172,5 @@ r_device X10_RF = {
         .gap_limit   = 2200, // Gap after sync is 4.5ms (1125)
         .reset_limit = 6000, // Gap seen between messages is ~40ms so let's get them individually
         .decode_fn   = &x10_rf_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -230,6 +230,5 @@ r_device bresser_6in1 = {
         .long_width  = 124,
         .reset_limit = 25000,
         .decode_fn   = &bresser_6in1_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

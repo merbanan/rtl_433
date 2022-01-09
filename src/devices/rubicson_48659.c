@@ -198,6 +198,5 @@ r_device rubicson_48659 = {
         .gap_limit   = 2000,
         .reset_limit = 4000,
         .decode_fn   = &rubicson_48659_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

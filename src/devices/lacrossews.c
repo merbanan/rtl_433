@@ -228,6 +228,5 @@ r_device lacrossews = {
         .long_width  = 1464,
         .reset_limit = 8000,
         .decode_fn   = &lacrossews_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

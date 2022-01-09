@@ -108,7 +108,6 @@ r_device klimalogg = {
         .long_width  = 0,
         .gap_limit   = 0,
         .reset_limit = 1000,
-        .tolerance   = 0,
         .decode_fn   = &klimalogg_decode,
         .disabled    = 1,
         .fields      = output_fields,

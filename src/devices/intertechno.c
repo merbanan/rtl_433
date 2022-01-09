@@ -68,23 +68,23 @@ static int intertechno_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "type",
-    "id",
-    "slave",
-    "master",
-    "command",
-    NULL,
+        "model",
+        "type",
+        "id",
+        "slave",
+        "master",
+        "command",
+        NULL,
 };
 
 r_device intertechno = {
-    .name           = "Intertechno 433",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 330,
-    .long_width     = 1400,
-    .gap_limit      = 1700,
-    .reset_limit    = 10000,
-    .decode_fn      = &intertechno_callback,
-    .disabled       = 1,
-    .fields         = output_fields,
+        .name        = "Intertechno 433",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 330,
+        .long_width  = 1400,
+        .gap_limit   = 1700,
+        .reset_limit = 10000,
+        .decode_fn   = &intertechno_callback,
+        .disabled    = 1,
+        .fields      = output_fields,
 };

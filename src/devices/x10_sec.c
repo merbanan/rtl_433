@@ -212,6 +212,5 @@ r_device x10_sec = {
         .gap_limit   = 2200, // Gap after sync is 4.5ms (1125)
         .reset_limit = 6000,
         .decode_fn   = &x10_sec_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -112,6 +112,5 @@ r_device tfa_marbella = {
         .long_width  = 105,
         .reset_limit = 2000,
         .decode_fn   = &tfa_marbella_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -108,6 +108,5 @@ r_device maverick_et73 = {
         .gap_limit   = 2200,
         .reset_limit = 4400, // 4050 us nominal packet gap
         .decode_fn   = &maverick_et73_sensor_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

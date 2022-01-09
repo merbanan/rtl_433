@@ -164,6 +164,5 @@ r_device philips_aj3650 = {
 //        .gap_limit   = 8000,
         .reset_limit = 30000,
         .decode_fn   = &philips_aj3650_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -96,6 +96,5 @@ r_device abmt = {
         .gap_limit   = 2000,
         .reset_limit = 5000,
         .decode_fn   = &abmt_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

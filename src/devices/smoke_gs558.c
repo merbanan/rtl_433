@@ -118,22 +118,21 @@ static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "unit",
-    "learn",
-    "code",
-    NULL,
+        "model",
+        "id",
+        "unit",
+        "learn",
+        "code",
+        NULL,
 };
 
 r_device smoke_gs558 = {
-    .name           = "Wireless Smoke and Heat Detector GS 558",
-    .modulation     = OOK_PULSE_PWM,
-    .short_width    = 436, // Threshold between short and long pulse [us]
-    .long_width     = 1202, // Maximum gap size before new row of bits [us]
-    .gap_limit      = 1299 * 1.5f, // Maximum gap size before new row of bits [us]
-    .reset_limit    = 11764 * 1.2f, // Maximum gap size before End Of Message [us]
-    .decode_fn      = &smoke_gs558_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Wireless Smoke and Heat Detector GS 558",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 436,          // Threshold between short and long pulse [us]
+        .long_width  = 1202,         // Maximum gap size before new row of bits [us]
+        .gap_limit   = 1299 * 1.5f,  // Maximum gap size before new row of bits [us]
+        .reset_limit = 11764 * 1.2f, // Maximum gap size before End Of Message [us]
+        .decode_fn   = &smoke_gs558_callback,
+        .fields      = output_fields,
 };

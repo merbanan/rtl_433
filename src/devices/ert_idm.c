@@ -650,7 +650,6 @@ r_device ert_idm = {
         // .gap_limit   = 2500,
         // .reset_limit = 4000,
         .decode_fn = &ert_idm_decode,
-        .disabled  = 0,
         .fields    = output_fields,
 };
 
@@ -664,6 +663,5 @@ r_device ert_netidm = {
         // .gap_limit   = 2500,
         // .reset_limit = 4000,
         .decode_fn = &ert_netidm_decode,
-        .disabled  = 0,
         .fields    = output_fields,
 };

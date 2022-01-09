@@ -124,6 +124,5 @@ r_device ecowitt = {
         .reset_limit = 2000,          // 31 ms packet distance (too far apart)
         .sync_width  = 0,
         .decode_fn   = &ecowitt_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

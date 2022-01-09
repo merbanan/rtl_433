@@ -105,23 +105,22 @@ static int tpms_toyota_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "type",
-    "id",
-    "status",
-    "pressure_PSI",
-    "temperature_C",
-    "mic",
-    NULL,
+        "model",
+        "type",
+        "id",
+        "status",
+        "pressure_PSI",
+        "temperature_C",
+        "mic",
+        NULL,
 };
 
 r_device tpms_toyota = {
-    .name           = "Toyota TPMS",
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = 52, // 12-13 samples @250k
-    .long_width     = 52, // FSK
-    .reset_limit    = 150, // Maximum gap size before End Of Message [us].
-    .decode_fn      = &tpms_toyota_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Toyota TPMS",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 52,  // 12-13 samples @250k
+        .long_width  = 52,  // FSK
+        .reset_limit = 150, // Maximum gap size before End Of Message [us].
+        .decode_fn   = &tpms_toyota_callback,
+        .fields      = output_fields,
 };

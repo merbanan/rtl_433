@@ -55,19 +55,18 @@ static int blyss_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    NULL
+        "model",
+        "id",
+        NULL,
 };
 
 r_device blyss = {
-    .name           = "Blyss DC5-UK-WH",
-    .modulation     = OOK_PULSE_PWM,
-    .short_width    = 500,
-    .long_width     = 1500,
-    .gap_limit      = 2500,
-    .reset_limit    = 8000,
-    .decode_fn      = &blyss_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Blyss DC5-UK-WH",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 500,
+        .long_width  = 1500,
+        .gap_limit   = 2500,
+        .reset_limit = 8000,
+        .decode_fn   = &blyss_callback,
+        .fields      = output_fields,
 };

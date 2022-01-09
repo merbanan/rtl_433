@@ -136,19 +136,19 @@ static int dish_remote_6_3_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "button",
-    NULL
+        "model",
+        "button",
+        NULL,
 };
 
 r_device dish_remote_6_3 = {
-    .name          = "Dish remote 6.3",
-    .modulation    = OOK_PULSE_PPM,
-    .short_width   = 1692,
-    .long_width    = 2812,
-    .gap_limit     = 4500,
-    .reset_limit   = 9000,
-    .decode_fn     = &dish_remote_6_3_callback,
-    .disabled      = 1,
-    .fields        = output_fields,
+        .name        = "Dish remote 6.3",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 1692,
+        .long_width  = 2812,
+        .gap_limit   = 4500,
+        .reset_limit = 9000,
+        .decode_fn   = &dish_remote_6_3_callback,
+        .disabled    = 1,
+        .fields      = output_fields,
 };

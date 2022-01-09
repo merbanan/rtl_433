@@ -390,6 +390,5 @@ r_device ambientweather_wh31e = {
         .reset_limit = 1500,
         .gap_limit   = 1800,
         .decode_fn   = &ambientweather_whx_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

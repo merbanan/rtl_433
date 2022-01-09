@@ -93,27 +93,26 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *elv_em1000_output_fields[] = {
-    "model",
-    "id",
-    "seq",
-    "total",
-    "current",
-    "peak",
-    NULL,
+        "model",
+        "id",
+        "seq",
+        "total",
+        "current",
+        "peak",
+        NULL,
 };
 
 r_device elv_em1000 = {
-    .name           = "ELV EM 1000",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 500,  // guessed, no samples available
-    .long_width     = 1000, // guessed, no samples available
-    .gap_limit      = 7250,
-    .reset_limit    = 30000,
-    .decode_fn      = &em1000_callback,
-    .disabled       = 1,
-    .fields         = elv_em1000_output_fields,
+        .name        = "ELV EM 1000",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 500,  // guessed, no samples available
+        .long_width  = 1000, // guessed, no samples available
+        .gap_limit   = 7250,
+        .reset_limit = 30000,
+        .decode_fn   = &em1000_callback,
+        .disabled    = 1,
+        .fields      = elv_em1000_output_fields,
 };
-
 
 // based on http://www.dc3yc.privat.t-online.de/protocol.htm
 static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)

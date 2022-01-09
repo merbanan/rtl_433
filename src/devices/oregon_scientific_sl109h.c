@@ -127,6 +127,5 @@ r_device oregon_scientific_sl109h = {
         .gap_limit   = 5000,
         .reset_limit = 10000, // packet gap is 8900
         .decode_fn   = &oregon_scientific_sl109h_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

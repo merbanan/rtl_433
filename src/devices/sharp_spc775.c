@@ -107,6 +107,5 @@ r_device sharp_spc775 = {
         .gap_limit   = 2900,
         .reset_limit = 10000,
         .decode_fn   = &sharp_spc775_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

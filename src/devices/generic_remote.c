@@ -88,6 +88,5 @@ r_device generic_remote = {
         .sync_width  = 0,   // No sync bit used
         .tolerance   = 200, // us
         .decode_fn   = &generic_remote_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

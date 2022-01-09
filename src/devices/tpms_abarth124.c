@@ -129,6 +129,5 @@ r_device tpms_abarth124 = {
         .long_width  = 52,  // FSK
         .reset_limit = 150, // Maximum gap size before End Of Message [us].
         .decode_fn   = &tpms_abarth124_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -132,8 +132,6 @@ r_device markisol = {
         .sync_width     = 5628,
         .gap_limit      = 2000,
         .reset_limit    = 2000,
-        .tolerance      = 0,
         .decode_fn      = &markisol_decode,
-        .disabled       = 0,
         .fields         = output_fields,
 };

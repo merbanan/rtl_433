@@ -122,6 +122,5 @@ r_device tfa_303196 = {
         .tolerance   = 60,
         .reset_limit = 22000,
         .decode_fn   = &tfa_303196_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

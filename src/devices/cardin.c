@@ -139,6 +139,5 @@ r_device cardin = {
         .gap_limit   = 1600,
         .reset_limit = 32000,
         .decode_fn   = &cardin_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -153,6 +153,5 @@ r_device auriol_aft77b2 = {
         .gap_limit   = 1104,
         .reset_limit = 2275,
         .decode_fn   = &auriol_aft77_b2_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

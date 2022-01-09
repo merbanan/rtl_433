@@ -115,6 +115,5 @@ r_device wt1024 = {
         .gap_limit   = 4000,
         .sync_width  = 10000,
         .decode_fn   = &wt1024_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -137,6 +137,5 @@ r_device tpms_jansite_solar = {
         .long_width  = 51,
         .reset_limit = 5000, // Large enough to merge the 3 duplicate messages
         .decode_fn   = &tpms_jansite_solar_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

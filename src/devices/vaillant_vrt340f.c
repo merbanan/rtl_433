@@ -158,6 +158,5 @@ r_device vaillant_vrt340f = {
         .reset_limit = 4000,
         .tolerance   = 120, // us
         .decode_fn   = &vaillant_vrt340_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

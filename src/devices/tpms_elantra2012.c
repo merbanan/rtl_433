@@ -155,6 +155,5 @@ r_device tpms_elantra2012 = {
         .long_width  = 49,  // FSK
         .reset_limit = 150, // Maximum gap size before End Of Message [us].
         .decode_fn   = &tpms_elantra2012_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };
