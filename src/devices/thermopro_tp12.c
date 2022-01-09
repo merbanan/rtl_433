@@ -82,8 +82,6 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
     // or long-press its power button, it pairs with the first device ID it hears.
     device = bytes[0];
 
-
-
     temp1_raw = ((bytes[2] & 0xf0) << 4) | bytes[1];
     temp2_raw = ((bytes[2] & 0x0f) << 8) | bytes[3];
 

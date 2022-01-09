@@ -72,7 +72,7 @@ Frame structure:
 
 static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t b[4],p[4];
+    uint8_t b[4], p[4];
     data_t *data;
 
     // 33 bit, repeated multiple times (technically it is repeated 8 times, look for 5 identical versions)
@@ -97,7 +97,7 @@ static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* Parity check over 7 nibbles (must be ODD) */
     memcpy(p, b, 4);
-    p[3]=p[3]&0xF0;
+    p[3] = p[3] & 0xF0;
 
     if (parity_bytes(p, 4)) {
         if (decoder->verbose > 1) {

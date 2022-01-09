@@ -94,7 +94,6 @@ Notes:
 
 */
 
-
 #include "decoder.h"
 
 #define DSC_CT_MSGLEN        5
@@ -116,7 +115,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int result = 0;
 
     for (int row = 0; row < bitbuffer->num_rows; row++) {
-        if (decoder->verbose > 1 && bitbuffer->bits_per_row[row] > 0 ) {
+        if (decoder->verbose > 1 && bitbuffer->bits_per_row[row] > 0) {
             fprintf(stderr, "%s: row %d bit count %d\n", __func__,
                     row, bitbuffer->bits_per_row[row]);
         }
@@ -210,7 +209,6 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         sprintf(status_str, "%02x", status);
         sprintf(esn_str, "%06x", esn);
-
 
         /* clang-format off */
         data = data_make(

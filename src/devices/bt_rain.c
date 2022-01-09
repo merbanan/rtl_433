@@ -51,15 +51,15 @@ static int bt_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (b[0] == 0xff && b[1] == 0xff && b[2] == 0xff && b[3] == 0xff)
         return DECODE_FAIL_SANITY; // prevent false positive checksum
 
-    id       = b[0];
-    battery  = b[1] >> 7;
-    channel  = ((b[1] & 0x30) >> 4) + 1; // either this or the rain top bits could be wrong
-    button = (b[1] & 0x08) >> 3;
+    id      = b[0];
+    battery = b[1] >> 7;
+    channel = ((b[1] & 0x30) >> 4) + 1; // either this or the rain top bits could be wrong
+    button  = (b[1] & 0x08) >> 3;
 
     temp_raw = (int16_t)(((b[1] & 0x07) << 13) | (b[2] << 5)); // uses sign extend
-    temp_c = (temp_raw >> 5) * 0.1f;
+    temp_c   = (temp_raw >> 5) * 0.1f;
 
-    rain = ((b[1] & 0x07) << 4) | b[3]; // either b[1] or the channel above bould be wrong
+    rain     = ((b[1] & 0x07) << 4) | b[3]; // either b[1] or the channel above bould be wrong
     int rest = rain % 25;
     if (rest % 2)
         rain += ((rest / 2) * 2048);

@@ -51,10 +51,10 @@ static int tpms_toyota_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
         return 0;
     }
 
-    id = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
-    status = (b[4] & 0x80) | (b[6] & 0x7f); // status bit and 0 filler
+    id        = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
+    status    = (b[4] & 0x80) | (b[6] & 0x7f); // status bit and 0 filler
     pressure1 = (b[4] & 0x7f) << 1 | b[5] >> 7;
-    temp = (b[5] & 0x7f) << 1 | b[6] >> 7;
+    temp      = (b[5] & 0x7f) << 1 | b[6] >> 7;
     pressure2 = b[7] ^ 0xff;
 
     if (pressure1 != pressure2) {

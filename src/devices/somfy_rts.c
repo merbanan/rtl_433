@@ -141,7 +141,7 @@ static int somfy_rts_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // descramble
     for (int i = 6; i > 0; i--)
-        b[i] = b[i] ^ b[i-1];
+        b[i] = b[i] ^ b[i - 1];
 
     // calculate and verify checksum
     chksum_calc = xor_bytes(b, 7);

@@ -155,7 +155,8 @@ struct blueline_stateful_context {
     unsigned searching_for_new_id;
 };
 
-static uint8_t rev_crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t remainder) {
+static uint8_t rev_crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t remainder)
+{
     unsigned byte, bit;
 
     // Run a CRC backwards to find out what the init value would have been.
@@ -165,7 +166,7 @@ static uint8_t rev_crc8(uint8_t const message[], unsigned nBytes, uint8_t polyno
     // This logic only works assuming the polynomial has the lowest bit set,
     // Which should be true for most CRC polynomials, but let's be safe...
     if ((polynomial & 0x01) == 0) {
-        fprintf(stderr,"Cannot run reverse CRC-8 with this polynomial!\n");
+        fprintf(stderr, "Cannot run reverse CRC-8 with this polynomial!\n");
         return 0xFF;
     }
     polynomial = (polynomial >> 1) | 0x80;
@@ -176,10 +177,10 @@ static uint8_t rev_crc8(uint8_t const message[], unsigned nBytes, uint8_t polyno
         while (bit--) {
             if (remainder & 0x01) {
                 remainder = (remainder >> 1) ^ polynomial;
-            } else {
+            }
+            else {
                 remainder = remainder >> 1;
             }
-
         }
         remainder ^= message[byte];
     }
@@ -417,7 +418,7 @@ static r_device *blueline_create(char *arg)
         free(r_dev);
         return NULL; // NOTE: returns NULL on alloc failure.
     }
-    memset(context,0,sizeof(*context));
+    memset(context, 0, sizeof(*context));
     r_dev->decode_ctx = context;
 
     if (arg != NULL) {

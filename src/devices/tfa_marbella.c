@@ -40,7 +40,6 @@ L - lsfr, byte reflected reverse galois with 0x31 key and generator
 
 #include "decoder.h"
 
-
 static int tfa_marbella_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
@@ -48,7 +47,7 @@ static int tfa_marbella_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned int serialnr, counter;
     unsigned bitpos = 0;
     uint8_t msg[11], ic;
-    char serialnr_str[6*2 + 1];
+    char serialnr_str[6 * 2 + 1];
 
     uint8_t const preamble_pattern[] = {0xaa, 0x2d, 0xd4};
 

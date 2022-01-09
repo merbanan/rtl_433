@@ -105,7 +105,7 @@ static int companion_wtr001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Shift these 7 bits around into the right order
     // bin2dec(bits 12,7,6,11,10,9,8)
-    uint8_t temp_whole_raw = reverse8(b[1]&0xf0) | reverse8(b[0]&0x03)>>2 | (b[1]&0x08)<<3;
+    uint8_t temp_whole_raw = reverse8(b[1] & 0xf0) | reverse8(b[0] & 0x03) >> 2 | (b[1] & 0x08) << 3;
 
     if (temp_whole_raw < 11) {
         // Value is too low (outside published specs)

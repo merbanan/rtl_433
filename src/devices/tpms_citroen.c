@@ -48,7 +48,7 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 88);
 
     // fprintf(stderr, "%s : bits %d\n", __func__, packet_bits.bits_per_row[0]);
-    if ( packet_bits.bits_per_row[0] < 80) {
+    if (packet_bits.bits_per_row[0] < 80) {
         return DECODE_FAIL_SANITY; // sanity check failed
     }
 
@@ -58,7 +58,7 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
         return DECODE_ABORT_EARLY; // sanity check failed
     }
 
-    crc = b[1]^b[2]^b[3]^b[4]^b[5]^b[6]^b[7]^b[8]^b[9];
+    crc = b[1] ^ b[2] ^ b[3] ^ b[4] ^ b[5] ^ b[6] ^ b[7] ^ b[8] ^ b[9];
     if (crc != 0) {
         return DECODE_FAIL_MIC; // bad checksum
     }
@@ -67,10 +67,10 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     sprintf(state_str, "%02x", state);
     id = (unsigned)b[1] << 24 | b[2] << 16 | b[3] << 8 | b[4];
     sprintf(id_str, "%08x", id);
-    flags = b[5]>>4;
-    repeat = b[5]&0x0f;
-    pressure = b[6];
-    temperature = b[7];
+    flags         = b[5] >> 4;
+    repeat        = b[5] & 0x0f;
+    pressure      = b[6];
+    temperature   = b[7];
     maybe_battery = b[8];
 
     /* clang-format off */

@@ -133,8 +133,8 @@ static void render_getters(data_t *data, uint8_t *bits, struct flex_params *para
                     NULL);
             } else {
                 data_append(data,
-                    getter->name, "", DATA_INT, val,
-                    NULL);
+                        getter->name, "", DATA_INT, val,
+                        NULL);
             }
         }
     }

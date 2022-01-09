@@ -77,7 +77,7 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     lrc = xor_bytes(msg, 5);
     if (((lrc >> 4) ^ (lrc & 0xf)) != 0)
-       return DECODE_FAIL_MIC;
+        return DECODE_FAIL_MIC;
 
     // debug
     if (decoder->verbose > 1) {

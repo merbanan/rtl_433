@@ -32,19 +32,19 @@ static int akhan_rke_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     b = bitbuffer->bb[0];
 
-    //invert bits, short pulse is 0, long pulse is 1
+    // invert bits, short pulse is 0, long pulse is 1
     b[0] = ~b[0];
     b[1] = ~b[1];
     b[2] = ~b[2];
 
-    id = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
+    id  = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
     cmd = b[2] & 0x0F;
     switch (cmd) {
-        case 0x1: cmd_str = "0x1 (Lock)"; break;
-        case 0x2: cmd_str = "0x2 (Unlock)"; break;
-        case 0x4: cmd_str = "0x4 (Mute)"; break;
-        case 0x8: cmd_str = "0x8 (Alarm)"; break;
-        default:  cmd_str = NULL; break;
+    case 0x1: cmd_str = "0x1 (Lock)"; break;
+    case 0x2: cmd_str = "0x2 (Unlock)"; break;
+    case 0x4: cmd_str = "0x4 (Mute)"; break;
+    case 0x8: cmd_str = "0x8 (Alarm)"; break;
+    default: cmd_str = NULL; break;
     }
 
     if (!cmd_str)

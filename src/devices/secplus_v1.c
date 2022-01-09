@@ -309,7 +309,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         we now have values for rolling & fixed
         next we extract status info stored in the value for 'fixed'
     */
-    int switch_id  = fixed % 3;
+    int switch_id = fixed % 3;
     int id;
     int id0        = (fixed / 3) % 3;
     int id1        = (int)(fixed / 9) % 3;
@@ -323,7 +323,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (id1 == 0) {
         //  pad_id = (fixed // 3**3) % (3**7)     27  3^72187
         pad_id = (fixed / 27) % 2187;
-        id = pad_id;
+        id     = pad_id;
         // pin = (fixed // 3**10) % (3**9)  3^10= 59049 3^9=19683
         pin = (fixed / 59049) % 19683;
 
@@ -348,7 +348,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     else {
         remote_id = (int)fixed / 27;
-        id = remote_id;
+        id        = remote_id;
         if (switch_id == 1)
             button = "left";
         else if (switch_id == 0)

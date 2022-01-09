@@ -164,12 +164,12 @@ static int ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Require two identical rows.
     int row = bitbuffer_find_repeated_row(bitbuffer, 2, 90);
     if (row < 0)
-      return DECODE_ABORT_EARLY;
+        return DECODE_ABORT_EARLY;
 
     // The row must start with 0xcc5f (0x33a0 inverted).
     uint8_t *b = bitbuffer->bb[row];
     if (b[0] != 0xcc || b[1] != 0x5f)
-      return DECODE_ABORT_EARLY;
+        return DECODE_ABORT_EARLY;
 
     bitbuffer_invert(bitbuffer);
 

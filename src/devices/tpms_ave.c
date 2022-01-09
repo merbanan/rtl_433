@@ -72,20 +72,20 @@ static int tpms_ave_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned r
 
     switch (mode) {
     case 0:
-        ratio = 2.352f;
+        ratio  = 2.352f;
         offset = 47.0f;
         break;
     case 1:
     default:
-        ratio = 2.352f;
+        ratio  = 2.352f;
         offset = 0.0f;
         break;
     case 2:
-        ratio = 5.491f;
+        ratio  = 5.491f;
         offset = 18.2f;
         break;
     case 3:
-        ratio = 5.491f;
+        ratio  = 5.491f;
         offset = 0.0f;
         break;
     }
@@ -123,8 +123,8 @@ static int tpms_ave_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int row;
     unsigned bitpos;
-    int ret         = 0;
-    int events      = 0;
+    int ret    = 0;
+    int events = 0;
 
     for (row = 0; row < bitbuffer->num_rows; ++row) {
         bitpos = 0;

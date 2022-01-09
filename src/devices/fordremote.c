@@ -46,9 +46,9 @@ static int fordremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             bitbuffer_print(bitbuffer);
         }
 
-        bytes = bitbuffer->bb[i];
-        device_id = (bytes[0]<<16) | (bytes[1]<<8) | bytes[2];
-        code = bytes[7];
+        bytes     = bitbuffer->bb[i];
+        device_id = (bytes[0] << 16) | (bytes[1] << 8) | bytes[2];
+        code      = bytes[7];
 
         /* clang-format off */
         data = data_make(

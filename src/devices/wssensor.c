@@ -72,7 +72,7 @@ static int wssensor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (decoder->verbose) {
         fprintf(stderr, "Hyundai WS SENZOR received raw data:\n");
         bitbuffer_print(bitbuffer);
-        fprintf(stderr, "Sensor ID = %01d = 0x%02x\n",  sensor_id, sensor_id);
+        fprintf(stderr, "Sensor ID = %01d = 0x%02x\n", sensor_id, sensor_id);
         fprintf(stderr, "Bitstream HEX = ");
         bitrow_print(b, 24);
         fprintf(stderr, "Battery OK = %0d\n", battery_status);

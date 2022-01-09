@@ -28,7 +28,7 @@ long-long (0 0 by the demod) not used (1 per protocol).
 static int waveman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    uint8_t *b = bitbuffer->bb[0];
+    uint8_t *b    = bitbuffer->bb[0];
     uint8_t nb[3] = {0}; // maps a pair of bits to two states, 1 0 -> 1 and 1 1 -> 0
     char id_str[2];
     int i;
@@ -37,7 +37,7 @@ static int waveman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* Reject codes of wrong length */
     if (25 != bitbuffer->bits_per_row[0])
-      return DECODE_ABORT_LENGTH;
+        return DECODE_ABORT_LENGTH;
 
     /*
      * Catch the case triggering false positive for other transmitters.

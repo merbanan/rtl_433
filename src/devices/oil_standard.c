@@ -109,7 +109,7 @@ static int oil_standard_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // End of frame is the last half-bit repeated additional 4 times
 
     unsigned bitpos = 0;
-    int events = 0;
+    int events      = 0;
 
     // Find a preamble with enough bits after it that it could be a complete packet
     while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern0, 16)) + 78 <=

@@ -75,7 +75,7 @@ static int yale_hsa_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (!ok) {
             for (; row < bitbuffer->num_rows; ++row) {
                 uint8_t *b = bitbuffer->bb[row];
-                int eom = (b[0] & 0x08);
+                int eom    = (b[0] & 0x08);
                 if (eom)
                     break; // end-of-message
             }
@@ -87,7 +87,7 @@ static int yale_hsa_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             continue; // bad checksum
 
         // Get the data
-        int id = (msg[0] << 8) | (msg[1]);
+        int id    = (msg[0] << 8) | (msg[1]);
         int stype = (msg[2]);
         int state = (msg[3]);
         int event = (msg[4]);

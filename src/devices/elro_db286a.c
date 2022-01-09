@@ -22,14 +22,13 @@ packet gap is 7016 us
 Example code: 37f62a6c80
 */
 
-
 #include "decoder.h"
 
 static int elro_db286a_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t *b;
-    char id_str[4*2+1];
+    char id_str[4 * 2 + 1];
 
     // 33 bits expected, 5 minimum packet repetitions (14 expected)
     int row = bitbuffer_find_repeated_row(bitbuffer, 5, 33);
@@ -50,7 +49,6 @@ static int elro_db286a_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_output_data(decoder, data);
 
     return 1;
-
 }
 
 static char *output_fields[] = {

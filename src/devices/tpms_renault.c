@@ -54,7 +54,7 @@ static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     flags = b[0] >> 2;
     sprintf(flags_str, "%02x", flags);
 
-    id = b[5]<<16 | b[4]<<8 | b[3]; // little-endian
+    id = b[5] << 16 | b[4] << 8 | b[3]; // little-endian
     sprintf(id_str, "%06x", id);
 
     pressure_raw = (b[0] & 0x03) << 8 | b[1];

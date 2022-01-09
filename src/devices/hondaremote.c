@@ -23,7 +23,7 @@ static char const *command_code[] = {"boot", "unlock" , "lock",};
 static char const *get_command_codes(const uint8_t *bytes)
 {
     unsigned char command = bytes[46] - 0xAA;
-    if (command < (sizeof(command_code)/sizeof(command_code[0]))) {
+    if (command < (sizeof(command_code) / sizeof(command_code[0]))) {
         return command_code[command];
     } else {
         return "unknown";
@@ -41,7 +41,7 @@ static int hondaremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         b = bitbuffer->bb[row];
         // Validate package
         if (((bitbuffer->bits_per_row[row] < 385) || (bitbuffer->bits_per_row[row] > 394)) ||
-                ((b[0] != 0xFF ) || (b[38] != 0xFF)))
+                ((b[0] != 0xFF) || (b[38] != 0xFF)))
             continue; // DECODE_ABORT_LENGTH
 
         code = get_command_codes(b);

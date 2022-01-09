@@ -194,7 +194,7 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (events)
-      return events;
+        return events;
 
     return result;
 }

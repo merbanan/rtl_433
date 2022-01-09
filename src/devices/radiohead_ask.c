@@ -159,11 +159,11 @@ static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     data_len = msg_len - RH_ASK_HEADER_LEN - 3;
     if (data_len <= 0)
-      return DECODE_FAIL_SANITY;
+        return DECODE_FAIL_SANITY;
 
-    header_to = rh_payload[1];
-    header_from = rh_payload[2];
-    header_id = rh_payload[3];
+    header_to    = rh_payload[1];
+    header_from  = rh_payload[2];
+    header_id    = rh_payload[3];
     header_flags = rh_payload[4];
 
     // Format data
@@ -201,12 +201,12 @@ static int sensible_living_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return msg_len; // pass error code on
     }
 
-    house_id = rh_payload[1];
-    module_id = (rh_payload[2] << 8) | rh_payload[3];
-    sensor_type = rh_payload[4];
-    sensor_count = rh_payload[5];
-    alarms = rh_payload[6];
-    sensor_value = (rh_payload[7] << 8) | rh_payload[8];
+    house_id        = rh_payload[1];
+    module_id       = (rh_payload[2] << 8) | rh_payload[3];
+    sensor_type     = rh_payload[4];
+    sensor_count    = rh_payload[5];
+    alarms          = rh_payload[6];
+    sensor_value    = (rh_payload[7] << 8) | rh_payload[8];
     battery_voltage = (rh_payload[9] << 8) | rh_payload[10];
 
     /* clang-format off */

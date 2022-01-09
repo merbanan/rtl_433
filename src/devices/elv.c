@@ -7,7 +7,6 @@
     (at your option) any later version.
 */
 
-
 #include "decoder.h"
 
 static uint16_t AD_POP(uint8_t *bb, uint8_t bits, uint8_t bit)
@@ -177,7 +176,7 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp     = ((dec[1] & 8) ? -1.0f : 1.0f) * (dec[4] * 10 + dec[3] + dec[2] * 0.1f);
     float humidity = dec[7] * 10 + dec[6] + dec[5] * 0.1f;
     int pressure   = 0;
-    if (dec[0]==4) {
+    if (dec[0] == 4) {
         pressure = 200 + dec[10] * 100 + dec[9] * 10 + dec[8];
     }
 

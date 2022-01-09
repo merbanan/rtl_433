@@ -212,7 +212,7 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         event_str = "Open";
     }
     else {
-       event_str = "Unknown";
+        event_str = "Unknown";
     }
 
     /* clang-format off */

@@ -80,12 +80,12 @@ static int cmr113_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             return DECODE_ABORT_LENGTH;
     }
 
-    if (b.bits_per_row[0] < 2*COMPARE_BITS + 2)
+    if (b.bits_per_row[0] < 2 * COMPARE_BITS + 2)
         return DECODE_ABORT_LENGTH;
 
     // Compare the repeated section to ensure data integrity
     bitbuffer_extract_bytes(&b, 0, 0, b1, COMPARE_BITS);
-    bitbuffer_extract_bytes(&b, 0, COMPARE_BITS+2, b2, COMPARE_BITS);
+    bitbuffer_extract_bytes(&b, 0, COMPARE_BITS + 2, b2, COMPARE_BITS);
     if (memcmp(b1, b2, COMPARE_BYTES) != 0)
         return DECODE_FAIL_MIC;
 

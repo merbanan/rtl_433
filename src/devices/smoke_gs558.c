@@ -83,7 +83,7 @@ static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (r < 0)
         return DECODE_ABORT_EARLY;
 
-    if (bitbuffer->bits_per_row[r] > 4*8)
+    if (bitbuffer->bits_per_row[r] > 4 * 8)
         return DECODE_ABORT_LENGTH;
 
     b = bitbuffer->bb[r];
@@ -99,7 +99,7 @@ static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     id = ((b[2] & 0x0f) << 11) | (b[1] << 3) | (b[0] >> 5); // 15 bits
 
     if (id == 0 || id == 0x7fff)
-         return DECODE_FAIL_SANITY; // reject min/max to reduce false positives
+        return DECODE_FAIL_SANITY; // reject min/max to reduce false positives
 
     sprintf(code_str, "%02x%02x%02x", b[2], b[1], b[0]);
 

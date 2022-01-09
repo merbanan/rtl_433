@@ -78,7 +78,8 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bit
         key = "D";
     else if (control_key == 0x01)
         key = "E"; /* (does not exist on the remote, but can be set and is accepted by receiver) */
-    else return 0;
+    else
+        return 0;
     /* None of the keys has been pressed and we still received a message.
      * Skip it. It happens sometimes as the last code repetition
      */

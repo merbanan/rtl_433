@@ -466,7 +466,6 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (decoder->verbose > 1)
         bitrow_printf(&b[13], 6 * 8, "%s TamperCounters_str   %s\t", __func__, TamperCounters_str);
 
-
     //  should this be included ?
     p = Unknown_field_1_str;
     strncpy(p, "0x", sizeof(Unknown_field_1_str));
@@ -549,7 +548,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     */
 
-    char *meter_type =  get_meter_type_name(ERTType);
+    char *meter_type = get_meter_type_name(ERTType);
 
     // fprintf(stderr, "meter_type = %s\n", meter_type);
 

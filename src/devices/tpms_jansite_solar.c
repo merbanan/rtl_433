@@ -62,13 +62,13 @@ static int tpms_jansite_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer, 
     b = packet_bits.bb[0];
 
     /* Check for sync */
-    if ((b[0]<<8 | b[1]) != 0xdd33) {
+    if ((b[0] << 8 | b[1]) != 0xdd33) {
         return DECODE_FAIL_SANITY;
     }
 
     /* Check crc */
     uint16_t crc_calc = crc16(&b[2], 7, 0x8005, 0x0000);
-    if ( ((b[9]<<8) | b[10]) != crc_calc) {
+    if (((b[9] << 8) | b[10]) != crc_calc) {
         fprintf(stderr, "CRC mismatch %04x vs %02x %02x\n", crc_calc, b[9], b[10]);
         return DECODE_FAIL_MIC;
     }

@@ -65,7 +65,7 @@ Sequence# 0,1,3,4,5 & 7
 
 static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const preamble_pattern[] = { 0xd2, 0xaa, 0x2d, 0xd4 };
+    uint8_t const preamble_pattern[] = {0xd2, 0xaa, 0x2d, 0xd4};
 
     data_t *data;
     uint8_t b[11];
@@ -85,13 +85,13 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     } else if (bitbuffer->bits_per_row[0] > 290) {
         if (decoder->verbose) {
-           fprintf(stderr, "%s: Packet too long: %d bits\n", __func__, bitbuffer->bits_per_row[0]);
-           bitbuffer_debug(bitbuffer);
+            fprintf(stderr, "%s: Packet too long: %d bits\n", __func__, bitbuffer->bits_per_row[0]);
+            bitbuffer_debug(bitbuffer);
         }
         return DECODE_ABORT_LENGTH;
     } else {
         if (decoder->verbose) {
-           fprintf(stderr, "%s: packet length: %d\n", __func__, bitbuffer->bits_per_row[0]);
+            fprintf(stderr, "%s: packet length: %d\n", __func__, bitbuffer->bits_per_row[0]);
         }
         model_num = (bitbuffer->bits_per_row[0] < 280) ? 3 : 2;
     }
@@ -115,7 +115,7 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     chk2 = crc8(b, 8, 0x31, 0xac);
     if (chk3 != 0 && chk2 != 0) {
         if (decoder->verbose) {
-           fprintf(stderr, "%s: CRC failed!\n", __func__);
+            fprintf(stderr, "%s: CRC failed!\n", __func__);
         }
         return DECODE_FAIL_MIC;
     }
@@ -124,17 +124,17 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         bitbuffer_debug(bitbuffer);
     }
 
-    id        = (b[0] << 16) | (b[1] << 8) | b[2];
-    flags     = (b[3] & 0xf1); // masks off seq bits
-    seq       = (b[3] & 0x0e) >> 1;
-    raw_temp  = b[4] << 4 | ((b[5] & 0xf0) >> 4);
-    humidity  = ((b[5] & 0x0f) << 8) | b[6];
+    id       = (b[0] << 16) | (b[1] << 8) | b[2];
+    flags    = (b[3] & 0xf1); // masks off seq bits
+    seq      = (b[3] & 0x0e) >> 1;
+    raw_temp = b[4] << 4 | ((b[5] & 0xf0) >> 4);
+    humidity = ((b[5] & 0x0f) << 8) | b[6];
 
     // base and/or scale adjustments
     temp_c = (raw_temp - 400) * 0.1f;
 
     if (humidity < 0 || humidity > 100 || temp_c < -50 || temp_c > 70)
-      return DECODE_FAIL_SANITY;
+        return DECODE_FAIL_SANITY;
 
     /* clang-format off */
     data = data_make(
