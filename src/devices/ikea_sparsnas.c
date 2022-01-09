@@ -224,13 +224,14 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if ((!ikea_sparsnas_sensor_id) || (rcv_sensor_id != ikea_sparsnas_sensor_id)) {
 
-        data_t *data;
-        data = data_make(
-            "model",         "Model",               DATA_STRING, "Ikea-Sparsnas",
-            "id",            "Sensor ID",           DATA_INT, ikea_sparsnas_sensor_id,
-            "mic",           "Integrity",           DATA_STRING,    "CRC",
-            NULL
-        );
+        /* clang-format off */
+        data_t *data = data_make(
+                "model",         "Model",               DATA_STRING, "Ikea-Sparsnas",
+                "id",            "Sensor ID",           DATA_INT, ikea_sparsnas_sensor_id,
+                "mic",           "Integrity",           DATA_STRING,    "CRC",
+                NULL);
+        /* clang-format on */
+
         decoder_output_data(decoder, data);
         return 1;
     }

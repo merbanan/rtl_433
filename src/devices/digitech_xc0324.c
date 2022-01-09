@@ -114,6 +114,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     // Separate production output (decoder->verbose == 0)
     // from (simulated) deciphering stage output (decoder->verbose > 0)
     if (!decoder->verbose) { // production output
+        /* clang-format off */
         *data = data_make(
                 "model",            "Device Type",      DATA_STRING, "Digitech-XC0324",
                 "id",               "ID",               DATA_STRING, id,
@@ -121,6 +122,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
                 "flags",            "Constant ?",       DATA_INT,    flags,
                 "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
                 NULL);
+        /* clang-format on */
     }
 
     // Output (simulated) message level deciphering information..

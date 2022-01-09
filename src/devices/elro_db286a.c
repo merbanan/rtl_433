@@ -26,28 +26,26 @@ Example code: 37f62a6c80
 
 static int elro_db286a_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
-    uint8_t *b;
-    char id_str[4 * 2 + 1];
-
     // 33 bits expected, 5 minimum packet repetitions (14 expected)
     int row = bitbuffer_find_repeated_row(bitbuffer, 5, 33);
 
     if (row < 0 || bitbuffer->bits_per_row[row] != 33)
         return DECODE_ABORT_LENGTH;
 
-    b = bitbuffer->bb[row];
+    uint8_t *b = bitbuffer->bb[row];
 
     // 32 bits, trailing bit is dropped
+    char id_str[4 * 2 + 1];
     sprintf(id_str, "%02x%02x%02x%02x", b[0], b[1], b[2], b[3]);
 
-    data = data_make(
+    /* clang-format off */
+    data_t *data = data_make(
             "model",    "",        DATA_STRING, "Elro-DB286A",
             "id",       "ID",      DATA_STRING, id_str,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
-
     return 1;
 }
 

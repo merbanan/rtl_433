@@ -82,6 +82,7 @@ static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 //"battery_ok",   "Battery",       DATA_INT,    !battery_low, //TODO is there some low battery indicator ?
                 NULL);
         /* clang-format on */
+
         decoder_output_data(decoder, data);
         return 1;
     }
@@ -100,6 +101,7 @@ static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                "power0",        "Counter",       DATA_FORMAT, "%d", DATA_INT, c_impulse,
                NULL);
         /* clang-format on */
+
         decoder_output_data(decoder, data);
         return 1;
     }

@@ -50,11 +50,13 @@ static int akhan_rke_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (!cmd_str)
         return DECODE_FAIL_SANITY;
 
+    /* clang-format off */
     data = data_make(
             "model",    "",             DATA_STRING, "Akhan-100F14",
             "id",       "ID (20bit)",   DATA_FORMAT, "0x%x", DATA_INT, id,
             "data",     "Data (4bit)",  DATA_STRING, cmd_str,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;

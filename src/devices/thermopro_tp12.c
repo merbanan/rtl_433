@@ -88,6 +88,7 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
     temp1_c = (temp1_raw - 200) * 0.1f;
     temp2_c = (temp2_raw - 200) * 0.1f;
 
+    /* clang-format off */
     data = data_make(
             "model",            "",            DATA_STRING, "Thermopro-TP12",
             "id",               "Id",          DATA_INT,    device,
@@ -95,6 +96,8 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
             "temperature_2_C",  "Temperature 2 (Barbecue)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp2_c,
             "mic",              "Integrity",   DATA_STRING, "CRC",
             NULL);
+    /* clang-format on */
+
     decoder_output_data(decoder, data);
     return 1;
 }

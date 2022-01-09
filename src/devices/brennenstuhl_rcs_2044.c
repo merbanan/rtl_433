@@ -90,12 +90,15 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bit
     if (on_off != 0x02 && on_off != 0x01)
         return 0; /* Pressing simultaneously ON and OFF key is not useful either */
 
+    /* clang-format off */
     data = data_make(
             "model",    "Model",    DATA_STRING, "Brennenstuhl-RCS2044",
             "id",       "id",       DATA_INT, system_code,
             "key",      "key",      DATA_STRING, key,
             "state",    "state",    DATA_STRING, (on_off == 0x02 ? "ON" : "OFF"),
             NULL);
+    /* clang-format on */
+
     decoder_output_data(decoder, data);
     return 1;
 }

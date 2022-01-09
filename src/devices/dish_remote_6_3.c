@@ -125,13 +125,14 @@ static int dish_remote_6_3_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     button = b[0] >> 2;
     button_string = button_map[button];
 
+    /* clang-format off */
     data = data_make(
-            "model", "", DATA_STRING, "Dish-RC63",
-            "button", "", DATA_STRING, button_string,
+            "model",    "",     DATA_STRING, "Dish-RC63",
+            "button",   "",     DATA_STRING, button_string,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
-
     return 1;
 }
 

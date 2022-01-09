@@ -90,6 +90,7 @@ static int tfa_twin_plus_303049_callback(r_device *decoder, bitbuffer_t *bitbuff
 
     float tempC = (negative_sign ? -( (1<<9) - temp ) : temp ) * 0.1F;
 
+    /* clang-format off */
     data = data_make(
             "model",         "",            DATA_STRING, "TFA-TwinPlus",
             "id",            "Id",          DATA_INT,    sensor_id,
@@ -99,8 +100,9 @@ static int tfa_twin_plus_303049_callback(r_device *decoder, bitbuffer_t *bitbuff
             "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
             NULL);
-    decoder_output_data(decoder, data);
+    /* clang-format on */
 
+    decoder_output_data(decoder, data);
     return 1;
 }
 
