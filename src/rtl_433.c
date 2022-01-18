@@ -2000,7 +2000,7 @@ int main(int argc, char **argv) {
 
     time(&cfg->hop_start_time);
 
-    // add dummy socket to receive broadcasts
+    // add dummy socket to receive timer broadcasts
     struct mg_add_sock_opts opts = {.user_data = cfg};
     struct mg_connection *nc = mg_add_sock_opt(get_mgr(cfg), INVALID_SOCKET, timer_handler, opts);
     // Send us MG_EV_TIMER event after 2.5 seconds
