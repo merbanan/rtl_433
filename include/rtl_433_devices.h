@@ -218,6 +218,7 @@
     DECL(tpms_ave) \
     DECL(simplisafe_gen3) \
     DECL(yale_hsa) \
+    DECL(lucky_transducer) \
 
     /* Add new decoders here. */
 

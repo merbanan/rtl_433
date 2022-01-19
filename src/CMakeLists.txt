@@ -139,6 +139,7 @@ add_library(r_433 STATIC
     devices/lacrosse_ws7000.c
     devices/lacrossews.c
     devices/lightwave_rf.c
+    devices/lucky_transducer.c
     devices/m_bus.c
     devices/markisol.c
     devices/marlec_solar.c
