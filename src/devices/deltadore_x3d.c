@@ -59,7 +59,7 @@ Payload standard message 0x01:
    - 0x0008        status?
    - 0x0009        write register
 - Register No   {16}
-- Command resp  {8}  0x01 successfull
+- Command resp  {8}  0x01 successful
 - Unknown       {8}  0x00
 - 1st Value     {8}
 - 2nd Value     {8}
