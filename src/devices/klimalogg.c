@@ -25,7 +25,7 @@ Data layout:
 -  II(14:0): 15 bit ID of sensor (printed on the back and displayed after powerup)
 -  II(15) is either 1 or 0 (fixed, depends on the sensor)
 -  s(3:0): Learning sequence 0...f, after learning fixed 8
--  TTT: Temperatur in BCD in .1degC steps, offset +40degC (-> -40...+60)
+-  TTT: Temperature in BCD in .1degC steps, offset +40degC (-> -40...+60)
 -  HH(6:0): rel. Humidity in % (binary coded, no BCD!)
 -  BB(7): Low battery if =1
 -  BB(6:4): 110 or 111 (for 3199)
@@ -76,7 +76,7 @@ static int klimalogg_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "",                 DATA_STRING, "Klimalogg Pro",
+            "model",            "",                 DATA_STRING, "Klimalogg-Pro",
             "id",               "Id",               DATA_FORMAT, "%04x", DATA_INT, id,
             "battery_ok",       "Battery",          DATA_INT,    !battery_low,
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",      DATA_DOUBLE, temperature,
@@ -108,7 +108,6 @@ r_device klimalogg = {
         .long_width  = 0,
         .gap_limit   = 0,
         .reset_limit = 1000,
-        .tolerance   = 0,
         .decode_fn   = &klimalogg_decode,
         .disabled    = 1,
         .fields      = output_fields,

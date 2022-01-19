@@ -25,6 +25,7 @@ add_library(r_433 STATIC
     output_file.c
     output_influx.c
     output_mqtt.c
+    output_trigger.c
     output_udp.c
     pulse_analyzer.c
     pulse_demod.c
@@ -179,6 +180,7 @@ add_library(r_433 STATIC
     devices/sharp_spc775.c
     devices/silvercrest.c
     devices/simplisafe.c
+    devices/simplisafe_gen3.c
     devices/smoke_gs558.c
     devices/solight_te44.c
     devices/somfy_iohc.c
@@ -220,6 +222,7 @@ add_library(r_433 STATIC
     devices/wt450.c
     devices/x10_rf.c
     devices/x10_sec.c
+    devices/yale_hsa.c
 )
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")

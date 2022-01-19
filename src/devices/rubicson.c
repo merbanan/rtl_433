@@ -37,12 +37,12 @@ int rubicson_crc_check(uint8_t *b);
 int rubicson_crc_check(uint8_t *b)
 {
     uint8_t tmp[5];
-    tmp[0] = b[0];            // Byte 0 is nibble 0 and 1
-    tmp[1] = b[1];            // Byte 1 is nibble 2 and 3
-    tmp[2] = b[2];            // Byte 2 is nibble 4 and 5
-    tmp[3] = b[3]&0xf0;       // Byte 3 is nibble 6 and 0-padding
-    tmp[4] = (b[3]&0x0f)<<4 | // CRC is nibble 7 and 8
-             (b[4]&0xf0)>>4;
+    tmp[0] = b[0];                // Byte 0 is nibble 0 and 1
+    tmp[1] = b[1];                // Byte 1 is nibble 2 and 3
+    tmp[2] = b[2];                // Byte 2 is nibble 4 and 5
+    tmp[3] = b[3] & 0xf0;         // Byte 3 is nibble 6 and 0-padding
+    tmp[4] = (b[3] & 0x0f) << 4 | // CRC is nibble 7 and 8
+             (b[4] & 0xf0) >> 4;
 
     return crc8(tmp, 5, 0x31, 0x6c) == 0;
 }

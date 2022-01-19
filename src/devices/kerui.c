@@ -21,7 +21,7 @@ also tested with:
 - Mini Pir P831
 
 Note: simple 24 bit fixed ID protocol (x1527 style) and should be handled by the flex decoder.
-There is a leading sync bit with a wide gap which runs into the preceeding packet, it's ignored as 25th data bit.
+There is a leading sync bit with a wide gap which runs into the preceding packet, it's ignored as 25th data bit.
 
 There are slight timing differences between the older sensors and new ones like Water leak sensor WD51 and Mini Pir P831.
 Long: 860-1016 us, short: 304-560 us, older sync: 480 us, newer sync: 340 us,
@@ -46,7 +46,7 @@ static int kerui_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     b = bitbuffer->bb[r];
 
     // No need to decode/extract values for simple test
-    if ( !b[0] && !b[1] && !b[2] ) {
+    if (!b[0] && !b[1] && !b[2]) {
         if (decoder->verbose > 1) {
             fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
         }
@@ -58,16 +58,16 @@ static int kerui_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     b[1] = ~b[1];
     b[2] = ~b[2];
 
-    id = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
+    id  = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
     cmd = b[2] & 0x0F;
     switch (cmd) {
-        case 0xa: cmd_str = "motion"; break;
-        case 0xe: cmd_str = "open"; break;
-        case 0x7: cmd_str = "close"; break;
-        case 0xb: cmd_str = "tamper"; break;
-        case 0x5: cmd_str = "water"; break;
-        case 0xf: cmd_str = "battery"; break;
-        default:  cmd_str = NULL; break;
+    case 0xa: cmd_str = "motion"; break;
+    case 0xe: cmd_str = "open"; break;
+    case 0x7: cmd_str = "close"; break;
+    case 0xb: cmd_str = "tamper"; break;
+    case 0x5: cmd_str = "water"; break;
+    case 0xf: cmd_str = "battery"; break;
+    default: cmd_str = NULL; break;
     }
 
     if (!cmd_str)

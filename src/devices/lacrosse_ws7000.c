@@ -100,7 +100,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",            "",                 DATA_STRING, "LaCrosse-WS7000-27/28",
+                "model",            "",                 DATA_STRING, "LaCrosse-WS700027",
                 "id",               "",                 DATA_INT,    id,
                 "channel",          "",                 DATA_INT,    addr,
                 "temperature_C",    "Temperature",      DATA_DOUBLE, temperature,
@@ -119,7 +119,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",            "",                 DATA_STRING, "LaCrosse-WS7000-22/25",
+                "model",            "",                 DATA_STRING, "LaCrosse-WS700022",
                 "id",               "",                 DATA_INT,    id,
                 "channel",          "",                 DATA_INT,    addr,
                 "temperature_C",    "Temperature",      DATA_DOUBLE, temperature,
@@ -137,7 +137,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",            "",                 DATA_STRING, "LaCrosse-WS7000-16",
+                "model",            "",                 DATA_STRING, "LaCrosse-WS700016",
                 "id",               "",                 DATA_INT,    id,
                 "channel",          "",                 DATA_INT,    addr,
                 "rain_mm",          "Rain counter",     DATA_DOUBLE, rain * 0.3,
@@ -156,7 +156,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",            "",                 DATA_STRING, "LaCrosse-WS7000-15",
+                "model",            "",                 DATA_STRING, "LaCrosse-WS700015",
                 "id",               "",                 DATA_INT,    id,
                 "channel",          "",                 DATA_INT,    addr,
                 "wind_avg_km_h",    "Wind speed",       DATA_DOUBLE, speed,
@@ -178,7 +178,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",            "",                 DATA_STRING, "LaCrosse-WS7000-20",
+                "model",            "",                 DATA_STRING, "LaCrosse-WS700020",
                 "id",               "",                 DATA_INT,    id,
                 "channel",          "",                 DATA_INT,    addr,
                 "temperature_C",    "Temperature",      DATA_DOUBLE, temperature,
@@ -201,7 +201,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",            "",                 DATA_STRING, "LaCrosse-WS2500-19",
+                "model",            "",                 DATA_STRING, "LaCrosse-WS250019",
                 "id",               "",                 DATA_INT,    id,
                 "channel",          "",                 DATA_INT,    addr,
                 "light_lux",        "Brightness",       DATA_INT,    brightness,
@@ -241,6 +241,5 @@ r_device lacrosse_ws7000 = {
         .long_width  = 800,
         .reset_limit = 1100,
         .decode_fn   = &lacrosse_ws7000_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

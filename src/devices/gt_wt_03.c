@@ -168,6 +168,5 @@ r_device gt_wt_03 = {
         .gap_limit   = 1000,
         .reset_limit = 61000,
         .decode_fn   = &gt_wt_03_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -134,6 +134,5 @@ r_device gt_wt_02 = {
         .gap_limit   = 8000, // 10ms (old) / 9ms (new) sync gap
         .reset_limit = 12000,
         .decode_fn   = &gt_wt_02_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

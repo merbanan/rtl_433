@@ -75,7 +75,7 @@ static int wg_pb12v1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Nibble 5,6,7 contains 12 bits of temperature
     // Temperature, scaled by 10, offset by -40 C.
     temp_raw = ((b[1] & 0x0F) << 8) | b[2];
-    temp_c = ((float)temp_raw * 0.1) - 40;
+    temp_c   = ((float)temp_raw * 0.1) - 40;
 
     /* clang-format off */
     data = data_make(
@@ -104,6 +104,5 @@ r_device wg_pb12v1 = {
         .long_width  = 1476, // Maximum pulse period (long pulse + fixed gap)
         .reset_limit = 2500, // We just want 1 package
         .decode_fn   = &wg_pb12v1_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

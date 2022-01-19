@@ -77,6 +77,5 @@ r_device generic_motion = {
         .gap_limit   = 1200,
         .reset_limit = 2724 * 1.5,
         .decode_fn   = &generic_motion_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

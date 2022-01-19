@@ -55,7 +55,6 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
-
     // Sometimes pulses and gaps are mixed up. If this happens, invert
     // all bytes to get correct interpretation.
     if (bytes[0] & 0xf0) {
@@ -65,13 +64,12 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     int zero_count = 0;
-    for (int i=0; i<8; i++) {
+    for (int i = 0; i < 8; i++) {
         if (bytes[i] == 0)
             zero_count++;
     }
     if (zero_count++ > 5)
-        return DECODE_FAIL_SANITY;  // too many Null bytes
-
+        return DECODE_FAIL_SANITY; // too many Null bytes
 
     unsigned checksum = add_bytes(bytes, 7);
 
@@ -127,6 +125,5 @@ r_device efergy_e2_classic = {
         .gap_limit   = 200,
         .reset_limit = 400,
         .decode_fn   = &efergy_e2_classic_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

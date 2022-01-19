@@ -1148,94 +1148,89 @@ static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 // NOTE: we'd need to add "value_types_tab X unit_names X n" fields
 static char *output_fields[] = {
-    "model",
-    "mode",
-    "id",
-    "version",
-    "type",
-    "type_string",
-    "CI",
-    "AC",
-    "ST",
-    "CW",
-    "sn",
-    "knx_ctrl",
-    "src",
-    "dst",
-    "l_npci",
-    "tpci",
-    "apci",
-    "crc",
-    "M",
-    "C",
-    "data_length",
-    "data",
-    "mic",
-    "temperature_C",
-    "average_temperature_1h_C",
-    "average_temperature_24h_C",
-    "humidity",
-    "average_humidity_1h",
-    "average_humidity_24h",
-    "minimum_temperature_1h_C",
-    "maximum_temperature_1h_C",
-    "minimum_temperature_24h_C",
-    "maximum_temperature_24h_C",
-    "minimum_humidity_1h",
-    "maximum_humidity_1h",
-    "minimum_humidity_24h",
-    "maximum_humidity_24h",
-    "switch",
-    "counter_0",
-    "counter_1",
-    NULL,
+        "model",
+        "mode",
+        "id",
+        "version",
+        "type",
+        "type_string",
+        "CI",
+        "AC",
+        "ST",
+        "CW",
+        "sn",
+        "knx_ctrl",
+        "src",
+        "dst",
+        "l_npci",
+        "tpci",
+        "apci",
+        "crc",
+        "M",
+        "C",
+        "data_length",
+        "data",
+        "mic",
+        "temperature_C",
+        "average_temperature_1h_C",
+        "average_temperature_24h_C",
+        "humidity",
+        "average_humidity_1h",
+        "average_humidity_24h",
+        "minimum_temperature_1h_C",
+        "maximum_temperature_1h_C",
+        "minimum_temperature_24h_C",
+        "maximum_temperature_24h_C",
+        "minimum_humidity_1h",
+        "maximum_humidity_1h",
+        "minimum_humidity_24h",
+        "maximum_humidity_24h",
+        "switch",
+        "counter_0",
+        "counter_1",
+        NULL,
 };
 
 // Mode C1, C2 (Meter TX), T1, T2 (Meter TX),
 // Frequency 868.95 MHz, Bitrate 100 kbps, Modulation NRZ FSK
 r_device m_bus_mode_c_t = {
-    .name           = "Wireless M-Bus, Mode C&T, 100kbps (-f 868950000 -s 1200000)",     // Minimum samplerate = 1.2 MHz (12 samples of 100kb/s)
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = 10,   // Bit rate: 100 kb/s
-    .long_width     = 10,   // NRZ encoding (bit width = pulse width)
-    .reset_limit    = 500,  //
-    .decode_fn      = &m_bus_mode_c_t_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Wireless M-Bus, Mode C&T, 100kbps (-f 868950000 -s 1200000)", // Minimum samplerate = 1.2 MHz (12 samples of 100kb/s)
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 10,  // Bit rate: 100 kb/s
+        .long_width  = 10,  // NRZ encoding (bit width = pulse width)
+        .reset_limit = 500, //
+        .decode_fn   = &m_bus_mode_c_t_callback,
+        .fields      = output_fields,
 };
-
 
 // Mode S1, S1-m, S2, T2 (Meter RX),    (Meter RX not so interesting)
 // Frequency 868.3 MHz, Bitrate 32.768 kbps, Modulation Manchester FSK
 r_device m_bus_mode_s = {
-    .name           = "Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)",   // Minimum samplerate = 1 MHz (15 samples of 32kb/s manchester coded)
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = (1000.0/32.768),   // ~31 us per bit
-    .long_width     = (1000.0/32.768),
-    .reset_limit    = ((1000.0/32.768)*9), // 9 bit periods
-    .decode_fn      = &m_bus_mode_s_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)", // Minimum samplerate = 1 MHz (15 samples of 32kb/s manchester coded)
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = (1000.0 / 32.768), // ~31 us per bit
+        .long_width  = (1000.0 / 32.768),
+        .reset_limit = ((1000.0 / 32.768) * 9), // 9 bit periods
+        .decode_fn   = &m_bus_mode_s_callback,
+        .fields      = output_fields,
 };
-
 
 // Mode C2 (Meter RX)
 // Frequency 869.525 MHz, Bitrate 50 kbps, Modulation Manchester
 //      Note: Not so interesting, as it is only Meter RX
-
 
 // Mode R2
 // Frequency 868.33 MHz, Bitrate 4.8 kbps, Modulation Manchester FSK
 //      Preamble {0x55, 0x54, 0x76, 0x96} (Format A) (B not supported)
 // Untested stub!!! (Need samples)
 r_device m_bus_mode_r = {
-    .name           = "Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)",
-    .modulation     = FSK_PULSE_MANCHESTER_ZEROBIT,
-    .short_width    = (1000.0f / 4.8f / 2),   // ~208 us per bit -> clock half period ~104 us
-    .long_width     = 0,    // Unused
-    .reset_limit    = (1000.0f / 4.8f * 1.5f), // 3 clock half periods
-    .decode_fn      = &m_bus_mode_r_callback,
-    .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
+        .name        = "Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)",
+        .modulation  = FSK_PULSE_MANCHESTER_ZEROBIT,
+        .short_width = (1000.0f / 4.8f / 2),    // ~208 us per bit -> clock half period ~104 us
+        .long_width  = 0,                       // Unused
+        .reset_limit = (1000.0f / 4.8f * 1.5f), // 3 clock half periods
+        .decode_fn   = &m_bus_mode_r_callback,
+        .disabled    = 1, // Disable per default, as it runs on non-standard frequency
 };
 
 // Mode N
@@ -1247,18 +1242,17 @@ r_device m_bus_mode_r = {
 // Bitrate 19.2 kbps, Modulation 4 GFSK (9600 BAUD)
 //      Note: Not currently possible with rtl_433
 
-
 // Mode F2
 // Frequency 433.82 MHz, Bitrate 2.4 kbps, Modulation NRZ FSK
 //      Preamble {0x55, 0xF6, 0x8D} (Format A)
 //      Preamble {0x55, 0xF6, 0x72} (Format B)
 // Untested stub!!! (Need samples)
 r_device m_bus_mode_f = {
-    .name           = "Wireless M-Bus, Mode F, 2.4kbps",
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = 1000.0f / 2.4f,   // ~417 us
-    .long_width     = 1000.0f / 2.4f,   // NRZ encoding (bit width = pulse width)
-    .reset_limit    = 5000,         // ??
-    .decode_fn      = &m_bus_mode_f_callback,
-    .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
+        .name        = "Wireless M-Bus, Mode F, 2.4kbps",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 1000.0f / 2.4f, // ~417 us
+        .long_width  = 1000.0f / 2.4f, // NRZ encoding (bit width = pulse width)
+        .reset_limit = 5000,           // ??
+        .decode_fn   = &m_bus_mode_f_callback,
+        .disabled    = 1, // Disable per default, as it runs on non-standard frequency
 };

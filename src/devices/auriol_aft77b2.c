@@ -54,36 +54,36 @@ Bitbuffer example from rtl_433 -a:
 
 #define LEN 8
 
-static uint8_t lsrc( uint8_t frame[], int len )
+static uint8_t lsrc(uint8_t frame[], int len)
 {
-   uint8_t result = 0 ;
-   uint8_t key    = KEY ;
+    uint8_t result = 0;
+    uint8_t key    = KEY;
 
-   for (int i = 0; i < len; i++) {
-      uint8_t byte = frame[i] ;
+    for (int i = 0; i < len; i++) {
+        uint8_t byte = frame[i];
 
-      for (uint8_t mask = 0x80; mask > 0; mask >>= 1) {
-         if ((byte & mask) != 0)
-            result ^= key ;
+        for (uint8_t mask = 0x80; mask > 0; mask >>= 1) {
+            if ((byte & mask) != 0)
+                result ^= key;
 
-         if ((key & 1) != 0)
-            key = (key >> 1) ^ GEN ;
-         else
-            key = (key >> 1) ;
-      }
-   }
+            if ((key & 1) != 0)
+                key = (key >> 1) ^ GEN;
+            else
+                key = (key >> 1);
+        }
+    }
 
-   return result ;
+    return result;
 }
 
-static int search_row( bitbuffer_t *bitbuffer )
+static int search_row(bitbuffer_t *bitbuffer)
 {
-   for (int row = 0; row < bitbuffer->num_rows; row++) {
-      if (bitbuffer->bits_per_row[row] == 68)
-         return row ;
-   }
+    for (int row = 0; row < bitbuffer->num_rows; row++) {
+        if (bitbuffer->bits_per_row[row] == 68)
+            return row;
+    }
 
-   return -1 ;
+    return -1;
 }
 
 static int auriol_aft77_b2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -91,38 +91,38 @@ static int auriol_aft77_b2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
 
     // Search a suitable row in the bit buffer
-    int row = search_row( bitbuffer );
+    int row = search_row(bitbuffer);
 
     // Check if found
     if (row == -1)
-       return DECODE_ABORT_EARLY;
+        return DECODE_ABORT_EARLY;
 
     uint8_t *ptr = bitbuffer->bb[row];
 
     // Check the prefix
     if (*ptr != 0xA5)
-       return DECODE_ABORT_EARLY;
+        return DECODE_ABORT_EARLY;
 
     uint8_t frame[LEN];
 
     // Drop the prefix and align the bytes
     for (int i = 0; i < LEN; i++)
-        frame[i] = (ptr[i] << 4) | (ptr[i+1] >> 4);
+        frame[i] = (ptr[i] << 4) | (ptr[i + 1] >> 4);
 
     // Check the sum
-    if ((uint8_t)add_bytes(frame,6) != frame[6])
-       return DECODE_FAIL_MIC;
+    if ((uint8_t)add_bytes(frame, 6) != frame[6])
+        return DECODE_FAIL_MIC;
 
     // Check the lsrc
-    if (lsrc(frame,6) != frame[7])
-       return DECODE_FAIL_MIC;
+    if (lsrc(frame, 6) != frame[7])
+        return DECODE_FAIL_MIC;
 
-    int id       = frame[1];
+    int id = frame[1];
 
     int temp_raw = (ptr[4] >> 4) * 100 + (ptr[4] & 0x0F) * 10 + (ptr[5] >> 4);
 
     if ((ptr[3] & 0x08) != 0)
-       temp_raw = -temp_raw;
+        temp_raw = -temp_raw;
 
     /* clang-format off */
     data = data_make(
@@ -153,6 +153,5 @@ r_device auriol_aft77b2 = {
         .gap_limit   = 1104,
         .reset_limit = 2275,
         .decode_fn   = &auriol_aft77_b2_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

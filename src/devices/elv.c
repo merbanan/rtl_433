@@ -7,7 +7,6 @@
     (at your option) any later version.
 */
 
-
 #include "decoder.h"
 
 static uint16_t AD_POP(uint8_t *bb, uint8_t bits, uint8_t bit)
@@ -93,27 +92,26 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *elv_em1000_output_fields[] = {
-    "model",
-    "id",
-    "seq",
-    "total",
-    "current",
-    "peak",
-    NULL,
+        "model",
+        "id",
+        "seq",
+        "total",
+        "current",
+        "peak",
+        NULL,
 };
 
 r_device elv_em1000 = {
-    .name           = "ELV EM 1000",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 500,  // guessed, no samples available
-    .long_width     = 1000, // guessed, no samples available
-    .gap_limit      = 7250,
-    .reset_limit    = 30000,
-    .decode_fn      = &em1000_callback,
-    .disabled       = 1,
-    .fields         = elv_em1000_output_fields,
+        .name        = "ELV EM 1000",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 500,  // guessed, no samples available
+        .long_width  = 1000, // guessed, no samples available
+        .gap_limit   = 7250,
+        .reset_limit = 30000,
+        .decode_fn   = &em1000_callback,
+        .disabled    = 1,
+        .fields      = elv_em1000_output_fields,
 };
-
 
 // based on http://www.dc3yc.privat.t-online.de/protocol.htm
 static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -178,7 +176,7 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp     = ((dec[1] & 8) ? -1.0f : 1.0f) * (dec[4] * 10 + dec[3] + dec[2] * 0.1f);
     float humidity = dec[7] * 10 + dec[6] + dec[5] * 0.1f;
     int pressure   = 0;
-    if (dec[0]==4) {
+    if (dec[0] == 4) {
         pressure = 200 + dec[10] * 100 + dec[9] * 10 + dec[8];
     }
 

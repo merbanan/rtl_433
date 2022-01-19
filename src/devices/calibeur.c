@@ -134,8 +134,6 @@ r_device calibeur_RF104 = {
         .long_width  = 2240, // Long pulse 2240µs
         .reset_limit = 3200, // Longest gap (2960-760µs)
         .sync_width  = 1560, // Startbit 1560µs
-        .tolerance   = 0,    // raw mode
         .decode_fn   = &calibeur_rf104_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

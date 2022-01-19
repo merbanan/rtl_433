@@ -85,17 +85,17 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     device = bytes[0] << 12 | bytes[1] << 4 | (bytes[2]&0xF);
     tmp = (bytes[3]&0x30) >> 4;
     switch (tmp) {
-        case 0x1: class = "PIR-Motion"; break;
-        case 0x2: class = "Doorbell"; break;
-        default:  class = "Unknown"; break;
+    case 0x1: class = "PIR-Motion"; break;
+    case 0x2: class = "Doorbell"; break;
+    default: class = "Unknown"; break;
     }
-    tmp = bytes[4]&0x3;
+    tmp = bytes[4] & 0x3;
     switch (tmp) {
-        case 0x0: alert = "Normal"; break;
-        case 0x1:
-        case 0x2: alert = "High"; break;
-        case 0x3: alert = "Full"; break;
-        default:  alert = "Unknown"; break;
+    case 0x0: alert = "Normal"; break;
+    case 0x1:
+    case 0x2: alert = "High"; break;
+    case 0x3: alert = "Full"; break;
+    default: alert = "Unknown"; break;
     }
     secret_knock = (bytes[5]&0x10) >> 4;
     relay = (bytes[5]&0x8) >> 3;
@@ -139,7 +139,6 @@ r_device honeywell_wdb = {
         .reset_limit = 5000,
         .sync_width  = 500,
         .decode_fn   = &honeywell_wdb_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };
 
@@ -152,6 +151,5 @@ r_device honeywell_wdb_fsk = {
         .reset_limit = 560,
         .sync_width  = 500,
         .decode_fn   = &honeywell_wdb_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

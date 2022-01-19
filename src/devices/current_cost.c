@@ -82,26 +82,28 @@ static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 //"battery_ok",   "Battery",       DATA_INT,    !battery_low, //TODO is there some low battery indicator ?
                 NULL);
         /* clang-format on */
+
         decoder_output_data(decoder, data);
         return 1;
     }
     // Counter (b[0] = 0100xxxx) bits 5 and 4 are "unknown", but always 0 to date.
     else if ((b[0] & 0xf0) == 64) {
-       uint16_t device_id = (b[0] & 0x0f) << 8 | b[1];
-       // b[2] is "Apparently unused"
-       uint16_t sensor_type = b[3]; //Sensor type. Valid values are: 2-Electric, 3-Gas, 4-Water
-       uint32_t c_impulse = (unsigned)b[4] << 24 | b[5] <<16 | b[6] <<8 | b[7];
-       /* clang-format off */
-       data = data_make(
+        uint16_t device_id = (b[0] & 0x0f) << 8 | b[1];
+        // b[2] is "Apparently unused"
+        uint16_t sensor_type = b[3]; // Sensor type. Valid values are: 2-Electric, 3-Gas, 4-Water
+        uint32_t c_impulse   = (unsigned)b[4] << 24 | b[5] << 16 | b[6] << 8 | b[7];
+        /* clang-format off */
+        data = data_make(
                "model",         "",              DATA_STRING, is_envir ? "CurrentCost-EnviRCounter" : "CurrentCost-Counter", //TODO: it may have different CC Model ? any ref ?
                "subtype",       "Sensor Id",     DATA_FORMAT, "%d", DATA_INT, sensor_type, //Could "friendly name" this?
                "id",            "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
                //"counter",       "Counter",       DATA_FORMAT, "%d", DATA_INT, c_impulse,
                "power0",        "Counter",       DATA_FORMAT, "%d", DATA_INT, c_impulse,
                NULL);
-       /* clang-format on */
-       decoder_output_data(decoder, data);
-       return 1;
+        /* clang-format on */
+
+        decoder_output_data(decoder, data);
+        return 1;
     }
 
     return 0;
@@ -125,6 +127,5 @@ r_device current_cost = {
         .long_width  = 250, // NRZ
         .reset_limit = 8000,
         .decode_fn   = &current_cost_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

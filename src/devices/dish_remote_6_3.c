@@ -125,30 +125,31 @@ static int dish_remote_6_3_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     button = b[0] >> 2;
     button_string = button_map[button];
 
+    /* clang-format off */
     data = data_make(
-            "model", "", DATA_STRING, "Dish-RC63",
-            "button", "", DATA_STRING, button_string,
+            "model",    "",     DATA_STRING, "Dish-RC63",
+            "button",   "",     DATA_STRING, button_string,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
-
     return 1;
 }
 
 static char *output_fields[] = {
-    "model",
-    "button",
-    NULL
+        "model",
+        "button",
+        NULL,
 };
 
 r_device dish_remote_6_3 = {
-    .name          = "Dish remote 6.3",
-    .modulation    = OOK_PULSE_PPM,
-    .short_width   = 1692,
-    .long_width    = 2812,
-    .gap_limit     = 4500,
-    .reset_limit   = 9000,
-    .decode_fn     = &dish_remote_6_3_callback,
-    .disabled      = 1,
-    .fields        = output_fields,
+        .name        = "Dish remote 6.3",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 1692,
+        .long_width  = 2812,
+        .gap_limit   = 4500,
+        .reset_limit = 9000,
+        .decode_fn   = &dish_remote_6_3_callback,
+        .disabled    = 1,
+        .fields      = output_fields,
 };

@@ -253,7 +253,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         memcpy(cached_result, result_2, 21);
         if (decoder->verbose)
             fprintf(stderr, "%s: caching part 2\n", __func__);
-        return -2; // found only 2st part
+        return -2; // found only 2nd part
     }
     else if (status == 3) {
         // fprintf(stderr, "%s: got both\n", __func__);
@@ -309,7 +309,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         we now have values for rolling & fixed
         next we extract status info stored in the value for 'fixed'
     */
-    int switch_id  = fixed % 3;
+    int switch_id = fixed % 3;
     int id;
     int id0        = (fixed / 3) % 3;
     int id1        = (int)(fixed / 9) % 3;
@@ -323,7 +323,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (id1 == 0) {
         //  pad_id = (fixed // 3**3) % (3**7)     27  3^72187
         pad_id = (fixed / 27) % 2187;
-        id = pad_id;
+        id     = pad_id;
         // pin = (fixed // 3**10) % (3**9)  3^10= 59049 3^9=19683
         pin = (fixed / 59049) % 19683;
 
@@ -348,7 +348,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     else {
         remote_id = (int)fixed / 27;
-        id = remote_id;
+        id        = remote_id;
         if (switch_id == 1)
             button = "left";
         else if (switch_id == 0)
@@ -371,7 +371,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // fprintf(stderr,  "# Security+:  rolling=2320615320  fixed=1846948897  (id1=2 id0=0 switch=1 remote_id=68405514 button=left)\n");
     /* clang-format off */
     data_t *data = data_make(
-            "model",        "",             DATA_STRING, "Secplus_v1",
+            "model",        "",             DATA_STRING, "Secplus-v1",
             "id",           "",             DATA_INT,    id,
             "id0",          "ID_0",         DATA_INT,    id0,
             "id1",          "ID_1",         DATA_INT,    id1,
@@ -416,9 +416,7 @@ r_device secplus_v1 = {
         .long_width  = 500,
         .tolerance   = 20,
         .gap_limit   = 15000,
-
         .reset_limit = 80000,
         .decode_fn   = &secplus_v1_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

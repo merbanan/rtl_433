@@ -214,7 +214,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [128]  DirecTV RC66RX Remote Control
     [129]* Eurochron temperature and humidity sensor
     [130]  IKEA Sparsnas Energy Meter Monitor
-    [131]  Microchip HCS200 KeeLoq Hopping Encoder based remotes
+    [131]  Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes
     [132]  TFA Dostmann 30.3196 T/H outdoor sensor
     [133]  Rubicson 48659 Thermometer
     [134]  Holman Industries iWeather WS5029 weather station (newer PCM)
@@ -275,7 +275,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [189]  Somfy io-homecontrol
     [190]  Ambient Weather WH31L (FineOffset WH57) Lightning-Strike sensor
     [191]  Markisol, E-Motion, BOFU, Rollerhouse, BF-30x, BF-415 curtain remote
-    [192]  Govee Water Leak Dectector H5054, Door Contact Sensor B5023
+    [192]  Govee Water Leak Detector H5054, Door Contact Sensor B5023
     [193]  Clipsal CMR113 Cent-a-meter power meter
     [194]  Inkbird ITH-20R temperature humidity sensor
     [195]  RainPoint soil temperature and moisture sensor
@@ -285,13 +285,15 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [199]  Linear Megacode Garage/Gate Remotes
     [200]* Auriol 4-LD5661 temperature/rain sensor
     [201]  Unbranded SolarTPMS for trucks
-    [202]  Funkbus / Instafunk (Berker, Jira, Jung)
+    [202]  Funkbus / Instafunk (Berker, Gira, Jung)
     [203]  Porsche Boxster/Cayman TPMS
     [204]  Jasco/GE Choice Alert Security Devices
     [205]  Telldus weather station FT0385R sensors
     [206]  LaCrosse TX34-IT rain gauge
     [207]  SmartFire Proflame 2 remote control
     [208]  AVE TPMS
+    [209]  SimpliSafe Gen 3 Home Security System
+    [210]  Yale HSA (Home Security Alarm), YES-Alarmkit
 
 * Disabled by default, use -R n or -G
 
@@ -380,7 +382,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"
-	MQTT options are: user=foo, pass=bar, retain[=0|1], qos=N, <format>[=topic]
+	MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
 	Supported MQTT formats: (default is all)
 	  events: posts JSON event data
 	  states: posts JSON state data

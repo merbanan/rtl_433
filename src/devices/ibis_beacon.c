@@ -96,6 +96,5 @@ r_device ibis_beacon = {
         .long_width  = 0,   // Not used
         .reset_limit = 100, // Maximum gap size before End Of Message [us].
         .decode_fn   = &ibis_beacon_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

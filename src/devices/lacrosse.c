@@ -194,7 +194,7 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (events)
-      return events;
+        return events;
 
     return result;
 }
@@ -216,8 +216,6 @@ r_device lacrossetx = {
         .gap_limit   = 3000, // max gap is 1000 us
         .reset_limit = 8000, // actually: packet gap is 29000 us
         .sync_width  = 0,    // not used
-        .tolerance   = 0,    // raw mode
         .decode_fn   = &lacrossetx_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

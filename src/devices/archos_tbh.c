@@ -30,7 +30,7 @@ To get raw data:
 
 The application data is obfuscated by doing data[n] xor data[n-1] xor info[n%16].
 
-Payload foramt:
+Payload format:
 - Device id         {32}
 - Frame type        {8}
 - Frame Data        {x}
@@ -244,6 +244,5 @@ r_device archos_tbh = {
         .long_width  = 212,
         .reset_limit = 3000,
         .decode_fn   = &archos_tbh_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

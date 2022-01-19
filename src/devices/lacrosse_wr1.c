@@ -52,7 +52,7 @@ LTV-WR1
 
 static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const preamble_pattern[] = { 0xd2, 0xaa, 0x2d, 0xd4 };
+    uint8_t const preamble_pattern[] = {0xd2, 0xaa, 0x2d, 0xd4};
 
     data_t *data;
     uint8_t b[11];
@@ -74,7 +74,7 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     } else {
         if (decoder->verbose) {
-           fprintf(stderr, "%s: packet length: %d\n", __func__, bitbuffer->bits_per_row[0]);
+            fprintf(stderr, "%s: packet length: %d\n", __func__, bitbuffer->bits_per_row[0]);
         }
     }
 
@@ -94,7 +94,7 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     chk = crc8(b, 11, 0x31, 0x00);
     if (chk) {
         if (decoder->verbose) {
-           fprintf(stderr, "%s: CRC failed!\n", __func__);
+            fprintf(stderr, "%s: CRC failed!\n", __func__);
         }
         return DECODE_FAIL_MIC;
     }
@@ -114,7 +114,7 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // base and/or scale adjustments
     speed_kmh = raw_wind * 0.1f;
     if (speed_kmh < 0 || speed_kmh > 200 || direction < 0 || direction > 360)
-      return DECODE_FAIL_SANITY;
+        return DECODE_FAIL_SANITY;
 
     //rain_mm   = 0.0;  // dummy until we know what raw_rain1 and raw_rain2 mean
 

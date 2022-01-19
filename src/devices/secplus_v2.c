@@ -76,7 +76,6 @@ static int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t 
     unsigned int start_pos = 2; //
     uint8_t buffy[10];
 
-
     uint8_t part_id = (bits->bb[0][0] >> 6);
 
     if (verbose) {
@@ -224,7 +223,7 @@ static int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t 
                 roll_array[4], roll_array[5], roll_array[6], roll_array[7], roll_array[8]);
     }
 
-    // SANITY check trinary valuse, 00/01/10 are valid,  11 is not
+    // SANITY check trinary values, 00/01/10 are valid,  11 is not
     for (int i = 0; i < 9; i++) {
         if (roll_array[i] == 3) {
             fprintf(stderr, "roll_array val  FAIL\n");
@@ -302,11 +301,10 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             _decode_v2_half(&bits, rolling_1, &fixed_1, decoder->verbose);
         }
 
-        // break if we've received both halfs
+        // break if we've received both halves
         if (fixed_1.bits_per_row[0] > 1 && fixed_2.bits_per_row[0] > 1) {
             break;
         }
-
     }
 
     // Do we have what we need ??
@@ -344,14 +342,13 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Max value = 2^28 (268435456)
-    if ( rolling_temp >= 0x10000000 ) {
+    if (rolling_temp >= 0x10000000) {
         return DECODE_FAIL_SANITY;
     }
 
     // value is 28 bits thus need to shift over 4 bit
     rolling_total = reverse32(rolling_temp);
     rolling_total = rolling_total >> 4;
-
 
     // Assemble "fixed" data part
     uint64_t fixed_total = 0;
@@ -415,7 +412,6 @@ r_device secplus_v2 = {
         .tolerance   = 50,
         .gap_limit   = 1500,
         .reset_limit = 9000,
-        .decode_fn = &secplus_v2_callback,
-        .disabled  = 0,
-        .fields    = output_fields,
+        .decode_fn   = &secplus_v2_callback,
+        .fields      = output_fields,
 };

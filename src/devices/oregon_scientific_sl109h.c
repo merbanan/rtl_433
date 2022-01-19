@@ -42,7 +42,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
 
         // No need to decode/extract values for simple test
         // check id channel temperature humidity value not zero
-        if ( !msg[0] && !msg[1] && !msg[2] && !msg[3] ) {
+        if (!msg[0] && !msg[1] && !msg[2] && !msg[3]) {
             if (decoder->verbose > 1) {
                 fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
             }
@@ -74,7 +74,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
         humidity = 10 * (b[0] & 0x0f) + (b[1] >> 4);
 
         temp_raw = (int16_t)((b[1] & 0x0f) << 12) | (b[2] << 4); // uses sign-extend
-        temp_c = (temp_raw >> 4) * 0.1f;
+        temp_c   = (temp_raw >> 4) * 0.1f;
 
         // reduce false positives by checking specified sensor range, this isn't great...
         if (temp_c < -20 || temp_c > 60) {
@@ -127,6 +127,5 @@ r_device oregon_scientific_sl109h = {
         .gap_limit   = 5000,
         .reset_limit = 10000, // packet gap is 8900
         .decode_fn   = &oregon_scientific_sl109h_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

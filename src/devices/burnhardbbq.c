@@ -74,26 +74,26 @@ static int burnhardbbq_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         sprintf(timer_str, "%02x:%02x", b[3], b[4] & 0x7f);
 
         char *meat;
-        switch(b[5] >> 4) {
-            case 0: meat = "free"; break;
-            case 1: meat = "beef"; break;
-            case 2: meat = "veal"; break;
-            case 3: meat = "pork"; break;
-            case 4: meat = "chicken"; break;
-            case 5: meat = "lamb"; break;
-            case 6: meat = "fish"; break;
-            case 7: meat = "ham"; break;
-            default: meat = "";
+        switch (b[5] >> 4) {
+        case 0: meat = "free"; break;
+        case 1: meat = "beef"; break;
+        case 2: meat = "veal"; break;
+        case 3: meat = "pork"; break;
+        case 4: meat = "chicken"; break;
+        case 5: meat = "lamb"; break;
+        case 6: meat = "fish"; break;
+        case 7: meat = "ham"; break;
+        default: meat = "";
         }
 
         char *taste;
-        switch(b[5] & 0x0f) {
-            case 0: taste = "rare"; break;
-            case 1: taste = "medium rare"; break;
-            case 2: taste = "medium"; break;
-            case 3: taste = "medium well"; break;
-            case 4: taste = "well done"; break;
-            default: taste = "";
+        switch (b[5] & 0x0f) {
+        case 0: taste = "rare"; break;
+        case 1: taste = "medium rare"; break;
+        case 2: taste = "medium"; break;
+        case 3: taste = "medium well"; break;
+        case 4: taste = "well done"; break;
+        default: taste = "";
         }
 
         /* clang-format off */
@@ -142,6 +142,5 @@ r_device burnhardbbq = {
         .sync_width  = 840,
         .reset_limit = 848,
         .decode_fn   = &burnhardbbq_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

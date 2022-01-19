@@ -111,6 +111,5 @@ r_device esic_emt7110 = {
         .long_width  = 104,
         .reset_limit = 10000,
         .decode_fn   = &esic_emt7110_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -78,10 +78,10 @@ static int missil_ml0757_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY; // Tail bits not 1111
 
     // Read fields from sensor data
-    id       = b[0];
-    flags    = b[1];
-    f12bit   = (int16_t)((b[2] << 4) | (b[3] >> 4)) & 0xFFF;
-    f8bit    = (((b[3] & 0x0F) << 4) | (b[4] >> 4)) & 0xFF;
+    id     = b[0];
+    flags  = b[1];
+    f12bit = (int16_t)((b[2] << 4) | (b[3] >> 4)) & 0xFFF;
+    f8bit  = (((b[3] & 0x0F) << 4) | (b[4] >> 4)) & 0xFF;
 
     // Parse flags
     flag_bat = flags & MISSIL_ML0757_FLAG_BAT;
@@ -98,10 +98,10 @@ static int missil_ml0757_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Parse wind speed
     switch (f8bit) {
-        case 0x00: wind_kph = 0.0f; break;
-        case 0x80: wind_kph = 1.4f; break;
-        case 0xC0: wind_kph = 2.8f; break;
-        default:   wind_kph = (f8bit + 2) * 1.4f; break;
+    case 0x00: wind_kph = 0.0f; break;
+    case 0x80: wind_kph = 1.4f; break;
+    case 0xC0: wind_kph = 2.8f; break;
+    default: wind_kph = (f8bit + 2) * 1.4f; break;
     }
 
     if (flag_rwp) { // Rainwall and wind

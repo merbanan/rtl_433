@@ -38,8 +38,8 @@ static int auriol_4ld5661_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             continue;
         }
 
-        uint8_t *b = bitbuffer->bb[i];
-        int id = b[0];
+        uint8_t *b  = bitbuffer->bb[i];
+        int id      = b[0];
         int batt_ok = b[1] >> 7;
 
         if (b[3] != 0xf0 || (b[1] & 0x70) != 0) {
@@ -51,7 +51,7 @@ static int auriol_4ld5661_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         float temp_c = (temp_raw >> 4) * 0.1F;
 
         int rain_raw = (b[4] << 12) | (b[5] << 4) | b[6] >> 4;
-        float rain = rain_raw * 0.3F;
+        float rain   = rain_raw * 0.3F;
 
         /* clang-format off */
         data_t *data = data_make(
