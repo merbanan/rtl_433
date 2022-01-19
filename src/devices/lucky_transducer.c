@@ -55,7 +55,7 @@ static int validate_checksum(r_device *decoder, uint8_t *b, int from, int to, in
     return !chk;
 }
 
-static int vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int lucky_transducer_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t *b = bitbuffer->bb[0];
 
