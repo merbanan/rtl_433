@@ -40,7 +40,7 @@ Known Data:
 - Unknown      {8}  Influenced by header len
    - 0x00        on header len 0x0c
    - 0x08        on header len 0x0f
-     - unknown      {8} 0x00
+     - unknown      {8} 0x00  possible temp sign, if positive or negative
      - temperature {16} little-endian multiplied by 100 -> 2050 = 20.5 °C
 - Msg Id      {32}
 - Retry Cnt    {8} used for msg retry ? and direction
@@ -49,6 +49,24 @@ Known Data:
 - Act No.      {8} target actor number
 payload data
 - CRC16       {16}
+
+Payload standard message 0x01:
+- Unknown        {8}  always 0x00
+- Response       {8}  0x00 from Thermostat, 0x01 answer from actor
+- Unknown       {16}  0x0001 or 0x0000
+- Command?      {16}
+   - 0x0001        read register
+   - 0x0008        status?
+   - 0x0009        write register
+- Register No   {16}
+- Command resp  {8}  0x01 successfull
+- Unknown       {8}  0x00
+- 1st Value     {8}
+- 2nd Value     {8}
+  
+  Register 0x1631, 1st Value is thermal switch temperature in 0.5 °C steps.
+
+Maybe all values are little-endian so register commands and so on are flipped.
 
 The length including payload is whitened using CCITT whitening enabled in SX1211 chipset.
 The payload contains some garbage at the end. The documentation of the SX1211 assume to
