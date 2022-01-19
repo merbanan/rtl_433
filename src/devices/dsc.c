@@ -94,7 +94,6 @@ Notes:
 
 */
 
-
 #include "decoder.h"
 
 #define DSC_CT_MSGLEN        5
@@ -116,7 +115,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int result = 0;
 
     for (int row = 0; row < bitbuffer->num_rows; row++) {
-        if (decoder->verbose > 1 && bitbuffer->bits_per_row[row] > 0 ) {
+        if (decoder->verbose > 1 && bitbuffer->bits_per_row[row] > 0) {
             fprintf(stderr, "%s: row %d bit count %d\n", __func__,
                     row, bitbuffer->bits_per_row[row]);
         }
@@ -211,7 +210,6 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         sprintf(status_str, "%02x", status);
         sprintf(esn_str, "%06x", esn);
 
-
         /* clang-format off */
         data = data_make(
                 "model",        "",             DATA_STRING, "DSC-Security",
@@ -270,7 +268,6 @@ r_device dsc_security = {
         .long_width  = 500,  // Bit period, 500 µs
         .reset_limit = 5000, // Max gap,
         .decode_fn   = &dsc_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };
 
@@ -281,6 +278,5 @@ r_device dsc_security_ws4945 = {
         .long_width  = 1072, // Bit period, 1072 µs
         .reset_limit = 6000, // Max gap,
         .decode_fn   = &dsc_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

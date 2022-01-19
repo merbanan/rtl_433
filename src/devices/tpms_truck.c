@@ -63,7 +63,7 @@ static int tpms_truck_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned
 
     int chk = xor_bytes(b, 9);
     if (chk != 0) {
-        return 0; //DECODE_FAIL_MIC;
+        return 0; // DECODE_FAIL_MIC;
     }
 
     int state       = packet_bits.bb[0][0] >> 4; // fixed 0xa? could be sync

@@ -47,7 +47,8 @@ Payload looks like this:
 
 #include "decoder.h"
 
-static int infactory_crc_check(uint8_t *b) {
+static int infactory_crc_check(uint8_t *b)
+{
     uint8_t msg_crc, crc, msg[5];
     memcpy(msg, b, 5);
     msg_crc = msg[1] >> 4;
@@ -67,7 +68,7 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b = bitbuffer->bb[0];
 
     /* Check that the last 4 bits of message are not 0 (channel number 1 - 3) */
-    if (!(b[4]&0x0F))
+    if (!(b[4] & 0x0F))
         return DECODE_ABORT_EARLY;
 
     if (!infactory_crc_check(b))
@@ -132,12 +133,11 @@ NB: pulse_demod_ppm does not use .gap_limit if .tolerance is set.
 r_device infactory = {
         .name        = "inFactory, nor-tec, FreeTec NC-3982-913 temperature humidity sensor",
         .modulation  = OOK_PULSE_PPM,
-        .sync_width  = 500,   // Sync pulse width (recognized, but not used)
-        .short_width = 2000,  // Width of a '0' gap
-        .long_width  = 4000,  // Width of a '1' gap
-        .reset_limit = 5000,  // Maximum gap size before End Of Message [us]
-        .tolerance   = 750,   // Width interval 0=[1250..2750] 1=[3250..4750], should be quite robust
+        .sync_width  = 500,  // Sync pulse width (recognized, but not used)
+        .short_width = 2000, // Width of a '0' gap
+        .long_width  = 4000, // Width of a '1' gap
+        .reset_limit = 5000, // Maximum gap size before End Of Message [us]
+        .tolerance   = 750,  // Width interval 0=[1250..2750] 1=[3250..4750], should be quite robust
         .decode_fn   = &infactory_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

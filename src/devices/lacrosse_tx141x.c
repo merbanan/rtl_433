@@ -106,7 +106,7 @@ Addition of TX141W and TX145wsdth:
 
 - type 1 has temp+hum (temp is offset 500 and scale 10)
 - type 2 has wind speed (km/h scale 10) and direction (degrees)
-- checksum is CRC-8 poly 0x31 init 0x00 over preceeding 7 bytes
+- checksum is CRC-8 poly 0x31 init 0x00 over preceding 7 bytes
 
 */
 

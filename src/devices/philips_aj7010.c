@@ -149,6 +149,5 @@ r_device philips_aj7010 = {
         .sync_width  = 1000,
         .reset_limit = 30000,
         .decode_fn   = &philips_aj7010_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

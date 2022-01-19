@@ -233,6 +233,5 @@ r_device norgo = {
         .sync_width  = 0,
         .tolerance   = 120,
         .decode_fn   = &norgo_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

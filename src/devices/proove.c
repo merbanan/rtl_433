@@ -113,6 +113,5 @@ r_device proove = {
         .gap_limit   = 1500,
         .reset_limit = 2800,
         .decode_fn   = &proove_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

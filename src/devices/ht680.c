@@ -98,6 +98,5 @@ r_device ht680 = {
         .gap_limit   = 1200,
         .reset_limit = 14000,
         .decode_fn   = &ht680_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

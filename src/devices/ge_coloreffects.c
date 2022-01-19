@@ -97,13 +97,13 @@ static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
     uint8_t command = b[1];
 
     char cmd[7];
-    switch(command) {
-        case 0x5a:  snprintf(cmd, sizeof(cmd), "change");  break;
-        case 0xaa:  snprintf(cmd, sizeof(cmd), "on");      break;
-        case 0x55:  snprintf(cmd, sizeof(cmd), "off");     break;
-        default:
-            snprintf(cmd, sizeof(cmd), "0x%x", command);
-            break;
+    switch (command) {
+    case 0x5a: snprintf(cmd, sizeof(cmd), "change"); break;
+    case 0xaa: snprintf(cmd, sizeof(cmd), "on"); break;
+    case 0x55: snprintf(cmd, sizeof(cmd), "off"); break;
+    default:
+        snprintf(cmd, sizeof(cmd), "0x%x", command);
+        break;
     }
 
     // Format data
@@ -117,7 +117,6 @@ static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
 
     decoder_output_data(decoder, data);
     return 1;
-
 }
 
 /**

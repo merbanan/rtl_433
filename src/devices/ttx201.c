@@ -226,6 +226,5 @@ r_device ttx201 = {
         .reset_limit = 1700,
         .tolerance   = 250,
         .decode_fn   = &ttx201_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

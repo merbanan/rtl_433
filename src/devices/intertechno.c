@@ -44,13 +44,13 @@ static int intertechno_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         fprintf(stderr, "rid            = %x\n", b[6]);
         fprintf(stderr, "rid            = %x\n", b[7]);
         fprintf(stderr, "ADDR Slave     = %i\n", b[7] & 0x0f);
-        fprintf(stderr, "ADDR Master    = %i\n",( b[7] & 0xf0) >> 4);
-        fprintf(stderr, "command        = %i\n",( b[6] & 0x07));
+        fprintf(stderr, "ADDR Master    = %i\n", (b[7] & 0xf0) >> 4);
+        fprintf(stderr, "command        = %i\n", (b[6] & 0x07));
     }
 
     sprintf(id_str, "%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4]);
-    slave = b[7] & 0x0f;
-    master = (b[7] & 0xf0) >> 4;
+    slave   = b[7] & 0x0f;
+    master  = (b[7] & 0xf0) >> 4;
     command = b[6] & 0x07;
 
     /* clang-format off */
@@ -68,23 +68,23 @@ static int intertechno_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "type",
-    "id",
-    "slave",
-    "master",
-    "command",
-    NULL,
+        "model",
+        "type",
+        "id",
+        "slave",
+        "master",
+        "command",
+        NULL,
 };
 
 r_device intertechno = {
-    .name           = "Intertechno 433",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 330,
-    .long_width     = 1400,
-    .gap_limit      = 1700,
-    .reset_limit    = 10000,
-    .decode_fn      = &intertechno_callback,
-    .disabled       = 1,
-    .fields         = output_fields,
+        .name        = "Intertechno 433",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 330,
+        .long_width  = 1400,
+        .gap_limit   = 1700,
+        .reset_limit = 10000,
+        .decode_fn   = &intertechno_callback,
+        .disabled    = 1,
+        .fields      = output_fields,
 };

@@ -224,13 +224,14 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if ((!ikea_sparsnas_sensor_id) || (rcv_sensor_id != ikea_sparsnas_sensor_id)) {
 
-        data_t *data;
-        data = data_make(
-            "model",         "Model",               DATA_STRING, "Ikea-Sparsnas",
-            "id",            "Sensor ID",           DATA_INT, ikea_sparsnas_sensor_id,
-            "mic",           "Integrity",           DATA_STRING,    "CRC",
-            NULL
-        );
+        /* clang-format off */
+        data_t *data = data_make(
+                "model",         "Model",               DATA_STRING, "Ikea-Sparsnas",
+                "id",            "Sensor ID",           DATA_INT, ikea_sparsnas_sensor_id,
+                "mic",           "Integrity",           DATA_STRING,    "CRC",
+                NULL);
+        /* clang-format on */
+
         decoder_output_data(decoder, data);
         return 1;
     }
@@ -285,27 +286,26 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "sequence",
-    "battery_ok",
-    "pulses_per_kwh",
-    "cumulative_kWh",
-    "effect",
-    "pulses",
-    "mode",
-    "mic",
-    NULL,
+        "model",
+        "id",
+        "sequence",
+        "battery_ok",
+        "pulses_per_kwh",
+        "cumulative_kWh",
+        "effect",
+        "pulses",
+        "mode",
+        "mic",
+        NULL,
 };
 
 r_device ikea_sparsnas = {
-    .name          = "IKEA Sparsnas Energy Meter Monitor",
-    .modulation    = FSK_PULSE_PCM,
-    .short_width   = 27,
-    .long_width    = 27,
-    .gap_limit     = 1000,
-    .reset_limit   = 3000,
-    .decode_fn     = &ikea_sparsnas_decode,
-    .disabled      = 0,
-    .fields        = output_fields,
+        .name        = "IKEA Sparsnas Energy Meter Monitor",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 27,
+        .long_width  = 27,
+        .gap_limit   = 1000,
+        .reset_limit = 3000,
+        .decode_fn   = &ikea_sparsnas_decode,
+        .fields      = output_fields,
 };

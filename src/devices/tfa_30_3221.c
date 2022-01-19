@@ -53,7 +53,7 @@ static int tfa_303221_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_invert(bitbuffer);
     b = bitbuffer->bb[row];
 
-    device      = b[0];
+    device = b[0];
 
     // Sanity Check
     if (device == 0)

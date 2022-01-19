@@ -115,6 +115,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClInclude Include="..\include\output_file.h" />
     <ClInclude Include="..\include\output_influx.h" />
     <ClInclude Include="..\include\output_mqtt.h" />
+    <ClInclude Include="..\include\output_trigger.h" />
     <ClInclude Include="..\include\output_udp.h" />
     <ClInclude Include="..\include\pulse_analyzer.h" />
     <ClInclude Include="..\include\pulse_demod.h" />
@@ -155,6 +156,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\output_file.c" />
     <ClCompile Include="..\src\output_influx.c" />
     <ClCompile Include="..\src\output_mqtt.c" />
+    <ClCompile Include="..\src\output_trigger.c" />
     <ClCompile Include="..\src\output_udp.c" />
     <ClCompile Include="..\src\pulse_analyzer.c" />
     <ClCompile Include="..\src\pulse_demod.c" />
@@ -309,6 +311,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\sharp_spc775.c" />
     <ClCompile Include="..\src\devices\silvercrest.c" />
     <ClCompile Include="..\src\devices\simplisafe.c" />
+    <ClCompile Include="..\src\devices\simplisafe_gen3.c" />
     <ClCompile Include="..\src\devices\smoke_gs558.c" />
     <ClCompile Include="..\src\devices\solight_te44.c" />
     <ClCompile Include="..\src\devices\somfy_iohc.c" />
@@ -350,6 +353,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\wt450.c" />
     <ClCompile Include="..\src\devices\x10_rf.c" />
     <ClCompile Include="..\src\devices\x10_sec.c" />
+    <ClCompile Include="..\src\devices\yale_hsa.c" />
     <ClCompile Include="..\src\getopt\getopt.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

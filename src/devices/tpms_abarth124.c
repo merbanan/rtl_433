@@ -48,7 +48,6 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
     int status;
     int checksum;
 
-
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 72);
 
     // make sure we decoded the expected number of bits
@@ -62,7 +61,7 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
     // check checksum (checksum8 xor)
     checksum = xor_bytes(b, 9);
     if (checksum != 0) {
-        return 0; //DECODE_FAIL_MIC;
+        return 0; // DECODE_FAIL_MIC;
     }
 
     sprintf(flags, "%02x", b[4]);
@@ -74,7 +73,7 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, "Abarth 124 Spider",
+            "model",            "",             DATA_STRING, "Abarth-124Spider",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,
             "flags",            "",             DATA_STRING, flags,
@@ -129,6 +128,5 @@ r_device tpms_abarth124 = {
         .long_width  = 52,  // FSK
         .reset_limit = 150, // Maximum gap size before End Of Message [us].
         .decode_fn   = &tpms_abarth124_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

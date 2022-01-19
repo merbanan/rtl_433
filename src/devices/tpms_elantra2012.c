@@ -82,9 +82,9 @@ static int tpms_elantra2012_decode(r_device *decoder, bitbuffer_t *bitbuffer, un
     pressure_kpa  = b[0] + 60;
     temperature_c = b[1] - 50;
 
-    storage = (b[6] & 0x04) >> 2;
+    storage     = (b[6] & 0x04) >> 2;
     battery_low = (b[6] & 0x02) >> 1;
-    triggered = (b[6] & 0x01) >> 0;
+    triggered   = (b[6] & 0x01) >> 0;
 
     /* clang-format off */
     data = data_make(
@@ -155,6 +155,5 @@ r_device tpms_elantra2012 = {
         .long_width  = 49,  // FSK
         .reset_limit = 150, // Maximum gap size before End Of Message [us].
         .decode_fn   = &tpms_elantra2012_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

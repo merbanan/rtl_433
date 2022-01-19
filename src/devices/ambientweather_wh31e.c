@@ -252,7 +252,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 continue; // DECODE_FAIL_MIC
             }
 
-            id         = b[1];
+            id          = b[1];
             int unknown = b[2];
             int year    = ((b[3] & 0xF0) >> 4) * 10 + (b[3] & 0x0F) + 2000;
             int month   = ((b[4] & 0x10) >> 4) * 10 + (b[4] & 0x0F);
@@ -390,6 +390,5 @@ r_device ambientweather_wh31e = {
         .reset_limit = 1500,
         .gap_limit   = 1800,
         .decode_fn   = &ambientweather_whx_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

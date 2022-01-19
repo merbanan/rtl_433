@@ -42,7 +42,7 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
     }
 
-    if ( (bitbuffer->bits_per_row[0] - sync_index) < 128) {
+    if ((bitbuffer->bits_per_row[0] - sync_index) < 128) {
         return DECODE_ABORT_LENGTH;
     }
 
@@ -122,27 +122,27 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char *meter_type;
 
     switch (b[3] & 0x0f) {
-        case 4:
-        case 5:
-        case 7:
-        case 8:
-            meter_type = "Electric";
-            break;
-        case 0:
-        case 1:
-        case 2:
-        case 9:
-        case 12:
-            meter_type = "Gas";
-            break;
-        case 3:
-        case 11:
-        case 13:
-            meter_type = "Water";
-            break;
-        default:
-            meter_type = "unknown";
-            break;
+    case 4:
+    case 5:
+    case 7:
+    case 8:
+        meter_type = "Electric";
+        break;
+    case 0:
+    case 1:
+    case 2:
+    case 9:
+    case 12:
+        meter_type = "Gas";
+        break;
+    case 3:
+    case 11:
+    case 13:
+        meter_type = "Water";
+        break;
+    default:
+        meter_type = "unknown";
+        break;
     }
 
     // fprintf(stderr, "meter_type = %s\n", meter_type);
@@ -156,7 +156,7 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",                 DATA_STRING, "SCM+", // TODO: bad name for e.g. MQTT
+            "model",            "",                 DATA_STRING, "SCMplus",
             "id",               "",                 DATA_INT,    endpoint_id,
             "ProtocolID",       "Protocol_ID",      DATA_STRING, protocol_id_str, // TODO: this should be int
             "EndpointType",     "Endpoint_Type",    DATA_STRING, endpoint_type_str, // TODO: this should be int
@@ -198,6 +198,5 @@ r_device scmplus = {
         .gap_limit   = 0,
         .reset_limit = 64,
         .decode_fn   = &scmplus_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

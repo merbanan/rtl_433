@@ -9,6 +9,7 @@ I/Q stands for "In-phase / Quadrature", the raw data format used by SDR receiver
 A sample consists of an I and Q value, each commonly of 8, 12, or 16-bit. This is called "interleaved" in audio or video data.
 
 The data can be processed similar to a two-channel audio signal, although at a much higher sample rate.
+
 ::: tip
 Common sample rates with RTL-SDR receivers are 250 kHz and 1024 kHz, also 1 MHz (1000 kHz).
 :::
@@ -17,7 +18,7 @@ The nature of an I/Q sample allows to use a bandwidth equal to the sample rate
 (with a purely real signal the Nyquist–Shannon sampling theorem would only allow half the bandwidth).
 
 Generally the data formats are header- (and thus metadata-)less,
-the used center frequency and sample rate must be transfered separately or encoded in the filename.
+the used center frequency and sample rate must be transferred separately or encoded in the filename.
 
 Formats differ in sample-(bit-)width and (bit-)number format,
 used bit-widths are 4, 8, 12, 16, 32, and 64, bit-formats are unsigned integer, signed integer, and float:
@@ -66,6 +67,7 @@ There are also formats for demodulated but "raw" amplitude or frequency,
 e.g. `.am.s16`, `.fm.s16` similar to the above formats but with only one "channel".
 
 The SigRok `.sr` format is a Zip and combines multiple files for easy viewing with SigRok Pulseview.
+
 ::: tip
 Install SigRok Pulseview and write a SigRok file. The overwrite option (uppercase `-W`) will automatically open Pulseview.
 :::

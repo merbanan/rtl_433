@@ -84,26 +84,26 @@ static int cavius_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     char *text = "Unknown";
     switch (message) {
-        case cavius_alarm:
-            text = "Fire alarm";
-            break;
-        case cavius_mute:
-            text = "Alarm muted";
-            break;
-        case cavius_pairing:
-            text = "Pairing";
-            break;
-        case cavius_test:
-            text = "Test alarm";
-            break;
-        case cavius_warning:
-            text = "Warning/Water detected";
-            break;
-        case cavius_battlow:
-            text = "Battery low";
-            break;
-        default:
-            break;
+    case cavius_alarm:
+        text = "Fire alarm";
+        break;
+    case cavius_mute:
+        text = "Alarm muted";
+        break;
+    case cavius_pairing:
+        text = "Pairing";
+        break;
+    case cavius_test:
+        text = "Test alarm";
+        break;
+    case cavius_warning:
+        text = "Warning/Water detected";
+        break;
+    case cavius_battlow:
+        text = "Battery low";
+        break;
+    default:
+        break;
     }
 
     /* clang-format off */

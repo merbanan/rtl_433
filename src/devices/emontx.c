@@ -160,6 +160,5 @@ r_device emontx = {
         .long_width  = 2000000.0f / (49230 + 49261),
         .reset_limit = 1200, // 600 zeros...
         .decode_fn   = &emontx_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

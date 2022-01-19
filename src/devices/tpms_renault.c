@@ -54,7 +54,7 @@ static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     flags = b[0] >> 2;
     sprintf(flags_str, "%02x", flags);
 
-    id = b[5]<<16 | b[4]<<8 | b[3]; // little-endian
+    id = b[5] << 16 | b[4] << 8 | b[3]; // little-endian
     sprintf(id_str, "%06x", id);
 
     pressure_raw = (b[0] & 0x03) << 8 | b[1];
@@ -109,23 +109,22 @@ static int tpms_renault_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "type",
-    "id",
-    "flags",
-    "pressure_kPa",
-    "temperature_C",
-    "mic",
-    NULL,
+        "model",
+        "type",
+        "id",
+        "flags",
+        "pressure_kPa",
+        "temperature_C",
+        "mic",
+        NULL,
 };
 
 r_device tpms_renault = {
-    .name           = "Renault TPMS",
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = 52, // 12-13 samples @250k
-    .long_width     = 52, // FSK
-    .reset_limit    = 150, // Maximum gap size before End Of Message [us].
-    .decode_fn      = &tpms_renault_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Renault TPMS",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 52,  // 12-13 samples @250k
+        .long_width  = 52,  // FSK
+        .reset_limit = 150, // Maximum gap size before End Of Message [us].
+        .decode_fn   = &tpms_renault_callback,
+        .fields      = output_fields,
 };

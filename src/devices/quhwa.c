@@ -58,21 +58,20 @@ static int quhwa_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    NULL,
+        "model",
+        "id",
+        NULL,
 };
 
 r_device quhwa = {
-    .name          = "Quhwa",
-    .modulation    = OOK_PULSE_PWM,
-    .short_width   = 360,  // Pulse: Short 360µs, Long 1070µs
-    .long_width    = 1070, // Gaps: Short 360µs, Long 1070µs
-    .reset_limit   = 6600, // Intermessage Gap 6500µs
-    .gap_limit     = 1200, // Long Gap 1120µs
-    .sync_width    = 0,    // No sync bit used
-    .tolerance     = 80,   // us
-    .decode_fn     = &quhwa_callback,
-    .disabled      = 0,
-    .fields        = output_fields,
+        .name        = "Quhwa",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 360,  // Pulse: Short 360µs, Long 1070µs
+        .long_width  = 1070, // Gaps: Short 360µs, Long 1070µs
+        .reset_limit = 6600, // Intermessage Gap 6500µs
+        .gap_limit   = 1200, // Long Gap 1120µs
+        .sync_width  = 0,    // No sync bit used
+        .tolerance   = 80,   // us
+        .decode_fn   = &quhwa_callback,
+        .fields      = output_fields,
 };

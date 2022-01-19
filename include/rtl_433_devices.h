@@ -216,6 +216,8 @@
     DECL(lacrosse_tx34) \
     DECL(proflame2) \
     DECL(tpms_ave) \
+    DECL(simplisafe_gen3) \
+    DECL(yale_hsa) \
     DECL(deltadore_x3d) \
 
     /* Add new decoders here. */

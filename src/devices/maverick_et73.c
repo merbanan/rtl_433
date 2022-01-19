@@ -69,11 +69,11 @@ static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuff
     device = bytes[0];
 
     if (decoder->verbose) {
-        fprintf(stderr,"maverick_et73_raw_data:");
+        fprintf(stderr, "maverick_et73_raw_data:");
         bitrow_print(bytes, 48);
     }
 
-    temp1_raw = (bytes[1] << 4) | ((bytes[2] & 0xf0) );
+    temp1_raw = (bytes[1] << 4) | ((bytes[2] & 0xf0));
     temp2_raw = ((bytes[2] & 0x0f) << 8) | bytes[3];
 
     temp1_c = temp1_raw * 0.1f;
@@ -108,6 +108,5 @@ r_device maverick_et73 = {
         .gap_limit   = 2200,
         .reset_limit = 4400, // 4050 us nominal packet gap
         .decode_fn   = &maverick_et73_sensor_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

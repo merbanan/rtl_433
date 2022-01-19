@@ -231,7 +231,7 @@ int atoi_time(char const *str, char const *error_hint)
                 break;
             }
             // intentional fallthrough
-#if defined(__GNUC__) || defined(__clang__)
+#if defined __has_attribute
 #if __has_attribute(fallthrough)
             __attribute__((fallthrough));
 #endif

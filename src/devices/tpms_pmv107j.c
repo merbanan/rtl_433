@@ -40,7 +40,7 @@ static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     int crc;
 
     start_pos = bitbuffer_differential_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 70); // 67 bits expected
-    if (start_pos - bitpos < 67*2) {
+    if (start_pos - bitpos < 67 * 2) {
         return 0;
     }
     if (decoder->verbose > 1)
@@ -59,15 +59,15 @@ static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
         return 0;
     }
 
-    id = b[0] << 26| b[1] << 18 | b[2] << 10 | b[3] << 2 | b[4] >> 6; // realigned bits 6 - 34
-    status = b[4] & 0x3f; // status bits and 0 filler
-    battery_low = (b[4] & 0x20) >> 5;
-    counter = (b[4] & 0x18) >> 3;
-    failed = b[4] & 0x01;
-    pressure1 = b[5];
-    pressure2 = b[6] ^ 0xff;
-    temp = b[7];
-    pressure_kpa = (pressure1 - 40.0) * 2.48;
+    id            = b[0] << 26 | b[1] << 18 | b[2] << 10 | b[3] << 2 | b[4] >> 6; // realigned bits 6 - 34
+    status        = b[4] & 0x3f;                                                  // status bits and 0 filler
+    battery_low   = (b[4] & 0x20) >> 5;
+    counter       = (b[4] & 0x18) >> 3;
+    failed        = b[4] & 0x01;
+    pressure1     = b[5];
+    pressure2     = b[6] ^ 0xff;
+    temp          = b[7];
+    pressure_kpa  = (pressure1 - 40.0) * 2.48;
     temperature_c = temp - 40.0;
 
     if (pressure1 != pressure2) {
@@ -108,7 +108,7 @@ static int tpms_pmv107j_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int events      = 0;
 
     // Find a preamble with enough bits after it that it could be a complete packet
-    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 6)) + 67*2 <=
+    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 6)) + 67 * 2 <=
             bitbuffer->bits_per_row[0]) {
         ret = tpms_pmv107j_decode(decoder, bitbuffer, 0, bitpos + 6);
         if (ret > 0)
@@ -120,26 +120,25 @@ static int tpms_pmv107j_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "type",
-    "id",
-    "status",
-    "battery_ok",
-    "counter",
-    "failed",
-    "pressure_kPa",
-    "temperature_C",
-    "mic",
-    NULL,
+        "model",
+        "type",
+        "id",
+        "status",
+        "battery_ok",
+        "counter",
+        "failed",
+        "pressure_kPa",
+        "temperature_C",
+        "mic",
+        NULL,
 };
 
 r_device tpms_pmv107j = {
-    .name           = "PMV-107J (Toyota) TPMS",
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = 100, // 25 samples @250k
-    .long_width     = 100, // FSK
-    .reset_limit    = 250, // Maximum gap size before End Of Message [us].
-    .decode_fn      = &tpms_pmv107j_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "PMV-107J (Toyota) TPMS",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 100, // 25 samples @250k
+        .long_width  = 100, // FSK
+        .reset_limit = 250, // Maximum gap size before End Of Message [us].
+        .decode_fn   = &tpms_pmv107j_callback,
+        .fields      = output_fields,
 };

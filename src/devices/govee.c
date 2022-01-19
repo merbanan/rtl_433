@@ -212,7 +212,7 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         event_str = "Open";
     }
     else {
-       event_str = "Unknown";
+        event_str = "Unknown";
     }
 
     /* clang-format off */
@@ -245,7 +245,7 @@ static char *output_fields[] = {
 };
 
 r_device govee = {
-        .name        = "Govee Water Leak Dectector H5054, Door Contact Sensor B5023",
+        .name        = "Govee Water Leak Detector H5054, Door Contact Sensor B5023",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 440,  // Threshold between short and long pulse [us]
         .long_width  = 940,  // Maximum gap size before new row of bits [us]

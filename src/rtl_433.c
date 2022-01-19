@@ -83,6 +83,16 @@
 #endif
 #endif
 
+// STDERR_FILENO is not defined in at least MSVC
+#ifndef STDERR_FILENO
+#define STDERR_FILENO 2
+#endif
+
+#ifdef _WIN32
+#include <windows.h>
+#define usleep(us) Sleep((us) / 1000)
+#endif
+
 typedef struct timeval delay_timer_t;
 
 static void delay_timer_init(delay_timer_t *delay_timer)
@@ -163,7 +173,7 @@ static void usage(int exit_code)
             "  [-w <filename> | help] Save data stream to output file (a '-' dumps samples to stdout)\n"
             "  [-W <filename> | help] Save data stream to output file, overwrite existing file\n"
             "\t\t= Data output options =\n"
-            "  [-F kv | json | csv | mqtt | influx | syslog | null | help] Produce decoded output in given format.\n"
+            "  [-F kv | json | csv | mqtt | influx | syslog | trigger | null | help] Produce decoded output in given format.\n"
             "       Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "       Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
             "  [-M time[:<options>] | protocol | level | noise[:secs] | stats | bits | help] Add various meta data to each output.\n"
@@ -239,12 +249,12 @@ static void help_output(void)
 {
     term_help_printf(
             "\t\t= Output format option =\n"
-            "  [-F kv|json|csv|mqtt|influx|syslog|null] Produce decoded output in given format.\n"
+            "  [-F kv|json|csv|mqtt|influx|syslog|trigger|null] Produce decoded output in given format.\n"
             "\tWithout this option the default is KV output. Use \"-F null\" to remove the default.\n"
             "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\tSpecify MQTT server with e.g. -F mqtt://localhost:1883\n"
             "\tAdd MQTT options with e.g. -F \"mqtt://host:1883,opt=arg\"\n"
-            "\tMQTT options are: user=foo, pass=bar, retain[=0|1], qos=N, <format>[=topic]\n"
+            "\tMQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]\n"
             "\tSupported MQTT formats: (default is all)\n"
             "\t  events: posts JSON event data\n"
             "\t  states: posts JSON state data\n"
@@ -1042,7 +1052,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         else if (!strcasecmp(arg, "oldmodel"))
             fprintf(stderr, "oldmodel option (-M) is deprecated.\n");
         else if (!strncasecmp(arg, "stats", 5)) {
-            // there also should be options to set wether to flush on report
+            // there also should be options to set whether to flush on report
             char *p = arg_param(arg);
             cfg->report_stats = atoiv(p, 1);
             cfg->stats_interval = atoiv(arg_param(p), 600); // atoi_time_default()
@@ -1127,6 +1137,9 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         }
         else if (strncmp(optarg, "http", 4) == 0) {
             add_http_output(cfg, arg_param(optarg));
+        }
+        else if (strncmp(arg, "trigger", 7) == 0) {
+            add_trigger_output(cfg, arg_param(arg));
         }
         else if (strncmp(arg, "null", 4) == 0) {
             add_null_output(cfg, arg_param(arg));
@@ -1232,23 +1245,27 @@ static r_cfg_t g_cfg;
 #define SIGINFO 29
 #endif
 
+// NOTE: printf is not async safe per signal-safety(7)
+// writes a static string, without the terminating zero, to stderr, ignores return value
+#define write_err(s) (void)!write(STDERR_FILENO, (s), sizeof(s) - 1)
+
 #ifdef _WIN32
 BOOL WINAPI
 console_handler(int signum)
 {
     if (CTRL_C_EVENT == signum) {
-        fprintf(stderr, "Signal caught, exiting!\n");
+        write_err("Signal caught, exiting!\n");
         g_cfg.exit_async = 1;
         sdr_stop(g_cfg.dev);
         return TRUE;
     }
     else if (CTRL_BREAK_EVENT == signum) {
-        fprintf(stderr, "CTRL-BREAK detected, hopping to next frequency (-f). Use CTRL-C to quit.\n");
+        write_err("CTRL-BREAK detected, hopping to next frequency (-f). Use CTRL-C to quit.\n");
         g_cfg.hop_now = 1;
         return TRUE;
     }
     else if (signum == SIGALRM) {
-        fprintf(stderr, "Async read stalled, exiting!\n");
+        write_err("Async read stalled, exiting!\n");
         g_cfg.exit_code = 3;
         g_cfg.exit_async = 1;
         sdr_stop(g_cfg.dev);
@@ -1279,11 +1296,11 @@ static void sighandler(int signum)
         return;
     }
     else if (signum == SIGALRM) {
-        fprintf(stderr, "Async read stalled, exiting!\n");
+        write_err("Async read stalled, exiting!\n");
         g_cfg.exit_code = 3;
     }
     else {
-        fprintf(stderr, "Signal caught, exiting!\n");
+        write_err("Signal caught, exiting!\n");
     }
     g_cfg.exit_async = 1;
     sdr_stop(g_cfg.dev);

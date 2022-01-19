@@ -135,15 +135,15 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // Wind sensor
         int skip = -1;
         // Untested code written according to the specification, may not decode correctly
-        if ((b[1]&0xe) == 0x8 && b[2] == 0) {
+        if ((b[1] & 0xe) == 0x8 && b[2] == 0) {
             skip = 0;
         }
-        else if ((b[1]&0xe) == 0xe) {
+        else if ((b[1] & 0xe) == 0xe) {
             skip = 4;
-        } //According to supplied data!
+        } // According to supplied data!
         if (skip >= 0) {
-            double speed = reverse8(bb[1 + skip][3]);
-            double gust = reverse8(bb[5 + skip][3]);
+            double speed  = reverse8(bb[1 + skip][3]);
+            double gust   = reverse8(bb[5 + skip][3]);
             int direction = (reverse8(bb[5 + skip][2]) << 1) | (bb[5 + skip][1] & 0x1);
 
             /* clang-format off */

@@ -31,7 +31,7 @@ Aligning at [..] (insert 2 bits) we get:
 
 static int ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t* msg;
+    uint8_t *msg;
     float temperature;
     data_t *data;
 
@@ -45,14 +45,14 @@ static int ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t a = bitrow_get_byte(msg, i * 8);
         uint8_t b = bitrow_get_byte(msg, i * 8 + 46);
         uint8_t c = bitrow_get_byte(msg, i * 8 + 46 * 2);
-        msg[i] = reverse8((a & b) | (b & c) | (a & c));
+        msg[i]    = reverse8((a & b) | (b & c) | (a & c));
     }
 
     if (msg[0] != 0xf4)
         return DECODE_FAIL_SANITY;
 
     int temp_raw = ((msg[4] & 0x7) << 8) | msg[3];
-    temperature = (temp_raw * 0.05f) - 40.0f;
+    temperature  = (temp_raw * 0.05f) - 40.0f;
 
     /* clang-format off */
     data = data_make(
@@ -79,6 +79,5 @@ r_device ft004b = {
         .gap_limit   = 4000,
         .reset_limit = 4000,
         .decode_fn   = &ft004b_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

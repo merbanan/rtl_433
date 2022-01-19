@@ -22,19 +22,19 @@ static int oil_watchman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t const preamble_pattern[] = {0xe0};
 
     // End of frame is 00xxxxxx or 11xxxxxx depending on final data bit
-    uint8_t const postamble_pattern[2] = { 0x00, 0xc0 };
+    uint8_t const postamble_pattern[2] = {0x00, 0xc0};
 
     uint8_t *b;
     uint32_t unit_id;
-    uint16_t depth = 0;
+    uint16_t depth             = 0;
     uint16_t binding_countdown = 0;
     uint8_t flags;
     uint8_t maybetemp;
     double temperature;
     data_t *data;
-    unsigned bitpos = 0;
+    unsigned bitpos      = 0;
     bitbuffer_t databits = {0};
-    int events = 0;
+    int events           = 0;
 
     // Find a preamble with enough bits after it that it could be a complete packet
     while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 6)) + 136 <=
@@ -67,7 +67,7 @@ static int oil_watchman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         // Not entirely sure what this is but it might be inversely
         // proportional to temperature.
-        maybetemp = b[5] >> 2;
+        maybetemp   = b[5] >> 2;
         temperature = (double)(145.0 - 5.0 * maybetemp) / 3.0;
         if (flags & 1)
             // When binding, the countdown counts up from 0x51 to 0x5a
@@ -111,12 +111,11 @@ static char *output_fields[] = {
 };
 
 r_device oil_watchman = {
-        .name           = "Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor",
-        .modulation     = FSK_PULSE_PCM,
-        .short_width    = 1000,
-        .long_width     = 1000, // NRZ
-        .reset_limit    = 4000,
-        .decode_fn      = &oil_watchman_callback,
-        .disabled       = 0,
-        .fields         = output_fields,
+        .name        = "Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 1000,
+        .long_width  = 1000, // NRZ
+        .reset_limit = 4000,
+        .decode_fn   = &oil_watchman_callback,
+        .fields      = output_fields,
 };

@@ -53,7 +53,7 @@ static int tpms_porsche_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     // Checksum is CRC-16 poly 0x1021 init 0xffff over 8 bytes
     int checksum = crc16(b, 10, 0x1021, 0xffff);
     if (checksum != 0) {
-        return 0; //DECODE_FAIL_MIC;
+        return 0; // DECODE_FAIL_MIC;
     }
 
     int id          = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];

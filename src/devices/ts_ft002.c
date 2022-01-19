@@ -123,6 +123,5 @@ r_device ts_ft002 = {
         .gap_limit   = 1200,
         .reset_limit = 2000,
         .decode_fn   = &ts_ft002_decoder,
-        .disabled    = 0,
         .fields      = output_fields,
 };

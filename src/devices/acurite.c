@@ -188,8 +188,8 @@ static int acurite_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     for (uint16_t brow = 0; brow < bitbuffer->num_rows; ++brow) {
         if (bitbuffer->bits_per_row[brow] != 40) {
-           result = DECODE_ABORT_LENGTH;
-           continue; // DECODE_ABORT_LENGTH
+            result = DECODE_ABORT_LENGTH;
+            continue; // DECODE_ABORT_LENGTH
         }
 
         bb = bitbuffer->bb[brow];
@@ -366,7 +366,7 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     int browlen = (bitbuffer->bits_per_row[row] + 7) / 8;
     uint8_t *bb = bitbuffer->bb[row];
 
-    char const *channel_str = acurite_getChannel(bb[0]);  // same as TXR
+    char const *channel_str = acurite_getChannel(bb[0]); // same as TXR
 
     // Tower sensor ID is the last 14 bits of byte 0 and 1
     // CCII IIII | IIII IIII
@@ -534,7 +534,6 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
     }
     *rawp = '\0';
 
-
     // The sensor sends the same data three times, each of these have
     // an indicator of which one of the three it is. This means the
     // checksum and first byte will be different for each one.
@@ -562,7 +561,7 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
     /* clang-format on */
 
     if (message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM ||
-        message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM_LTNG) {
+            message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM_LTNG) {
         // Wind speed, temperature and humidity
 
         // range -40 to 160 F
@@ -581,7 +580,7 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
     }
 
     if (message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN ||
-        message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN_LTNG) {
+            message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN_LTNG) {
         // Wind speed, wind direction, and rain fall
         wind_dir = ((bb[4] & 0x1f) << 5) | ((bb[5] & 0x7c) >> 2);
 
@@ -598,9 +597,9 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
     }
 
     if (message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX ||
-        message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX_LTNG) {
+            message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX_LTNG) {
         // Wind speed, UV Index, Light Intensity, Lightning?
-        int uv = (bb[4] & 0x0f);
+        int uv  = (bb[4] & 0x0f);
         int lux = ((bb[5] & 0x7f) << 7) | (bb[6] & 0x7F);
 
         /* clang-format off */
@@ -612,11 +611,11 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
     }
 
     if ((message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM_LTNG ||
-         message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN_LTNG ||
-         message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX_LTNG)) {
+                message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN_LTNG ||
+                message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX_LTNG)) {
 
         // @todo decode strike_distance to miles or KM.
-        int strike_count = ((bb[7] & 0x7f) << 2) | ((bb[8] & 0x60) >> 5);
+        int strike_count    = ((bb[7] & 0x7f) << 2) | ((bb[8] & 0x60) >> 5);
         int strike_distance = bb[8] & 0x1f;
 
         /* clang-format off */
@@ -627,7 +626,6 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
         /* clang-format on */
     }
 
-
     data = data_append(data,
             "exception",        "data_exception",   DATA_INT,    exception,    // @todo convert to bool
             "raw_msg",          "raw_message",      DATA_STRING, raw_str,
@@ -635,7 +633,7 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
     decoder_output_data(decoder, data);
 
-    return 1;  // one valid message decoded
+    return 1; // one valid message decoded
 }
 
 /**
@@ -704,7 +702,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             for (int i = 0; i < browlen; i++) {
                 fprintf(stderr, "%d", parity8(bb[i]));
             }
-            fprintf(stderr,"\n");
+            fprintf(stderr, "\n");
         }
 
         // acurite sensors with a common format appear to have a message type
@@ -929,8 +927,8 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             }
             else {
                 if (decoder->verbose > 1) {
-                fprintf(stderr, "%s: Acurite 5n1 sensor 0x%04X Ch %s, Status %02X, Unknown message type 0x%02x\n",
-                    __func__, sensor_id, channel_str, bb[3], message_type);
+                    fprintf(stderr, "%s: Acurite 5n1 sensor 0x%04X Ch %s, Status %02X, Unknown message type 0x%02x\n",
+                            __func__, sensor_id, channel_str, bb[3], message_type);
                 }
             }
         }
@@ -1048,7 +1046,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         if (crcc != crc) {
             if (decoder->verbose > 1)
-                bitrow_printf(br, browlen * 8,  "%s: bad CRC: %02x -", __func__, crc8le(br, 4, 0x07, 0));
+                bitrow_printf(br, browlen * 8, "%s: bad CRC: %02x -", __func__, crc8le(br, 4, 0x07, 0));
             // HACK: rct 2018-04-22
             // the message is often missing the last 1 bit either due to a
             // problem with the device or demodulator
@@ -1126,11 +1124,11 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Processing the temperature:
     // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
     // upper 4 bits of nibble 1 are reserved for other usages (e.g. battery status)
-    sensor_id = b[0];
+    sensor_id  = b[0];
     battery_ok = (b[1] & 0x80) >> 7;
-    temp_raw  = (int16_t)((b[1] << 12) | (b[2] << 4));
-    temp_raw  = temp_raw >> 4;
-    temp_c    = temp_raw * 0.1f;
+    temp_raw   = (int16_t)((b[1] << 12) | (b[2] << 4));
+    temp_raw   = temp_raw >> 4;
+    temp_c     = temp_raw * 0.1f;
 
     /* clang-format off */
     data = data_make(
@@ -1151,7 +1149,7 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     uint8_t *b;
     int row;
-    int sensor_id; // the sensor ID - basically a random number that gets reset whenever the battery is removed
+    int sensor_id;  // the sensor ID - basically a random number that gets reset whenever the battery is removed
     int battery_ok; // the battery status: 1 is good, 0 is low
     int channel;
     int humidity;
@@ -1207,7 +1205,7 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     else
         humidity = -1;
 
-     /* clang-format off */
+    /* clang-format off */
      data = data_make(
             "model",            "",             DATA_STRING, "Acurite-590TX",
             "id",               "",             DATA_INT,    sensor_id,
@@ -1496,7 +1494,7 @@ r_device acurite_00275rm = {
 
 r_device acurite_590tx = {
         .name        = "Acurite 590TX Temperature with optional Humidity",
-        .modulation  = OOK_PULSE_PPM, //OOK_PULSE_PWM,
+        .modulation  = OOK_PULSE_PPM, // OOK_PULSE_PWM,
         .short_width = 500,           // short pulse is 232 us
         .long_width  = 1500,          // long pulse is 420 us
         .gap_limit   = 1484,          // long gap is 384 us, sync gap is 592 us

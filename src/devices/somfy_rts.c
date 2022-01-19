@@ -141,7 +141,7 @@ static int somfy_rts_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // descramble
     for (int i = 6; i > 0; i--)
-        b[i] = b[i] ^ b[i-1];
+        b[i] = b[i] ^ b[i - 1];
 
     // calculate and verify checksum
     chksum_calc = xor_bytes(b, 7);
@@ -205,6 +205,5 @@ r_device somfy_rts = {
         .reset_limit    = 10000, // larger than gap between start pulse and first frame (6644 us = 11 x nominal bit width) to put start pulse and first frame in two rows, but smaller than inter-frame space of 30415 us
         .tolerance      = 20,
         .decode_fn      = &somfy_rts_decode,
-        .disabled       = 0,
         .fields         = output_fields,
 };

@@ -47,7 +47,7 @@ static int proflame2_mc(bitbuffer_t *bitbuffer, unsigned row, unsigned start, ui
 {
     uint8_t *b   = bitbuffer->bb[row];
     unsigned pos = start;
-    for (int f = 0; ; ++f) {
+    for (int f = 0;; ++f) {
         if (bitbuffer->bits_per_row[row] - pos < 26)
             return f;
         // expect sync and start bit of "1110"

@@ -121,25 +121,24 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "battery_ok",
-    "temperature_C",
-    "humidity",
-    "wind_avg_km_h",
-    "wind_max_km_h",
-    "rain_mm",
-    "mic",
-    NULL,
+        "model",
+        "id",
+        "battery_ok",
+        "temperature_C",
+        "humidity",
+        "wind_avg_km_h",
+        "wind_max_km_h",
+        "rain_mm",
+        "mic",
+        NULL,
 };
 
 r_device fineoffset_wh1050 = {
-    .name           = "Fine Offset WH1050 Weather Station",
-    .modulation     = OOK_PULSE_PWM,
-    .short_width    = 544,
-    .long_width     = 1524,
-    .reset_limit    = 10520,
-    .decode_fn      = &fineoffset_wh1050_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Fine Offset WH1050 Weather Station",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 544,
+        .long_width  = 1524,
+        .reset_limit = 10520,
+        .decode_fn   = &fineoffset_wh1050_callback,
+        .fields      = output_fields,
 };

@@ -237,6 +237,8 @@ def process_source(path, name):
                 if not fName:
                     err(f"::error file={name},line={i + 1}::No func")
                 for model in models:
+                    if not re.match(r'^[A-Za-z][0-9A-Za-z"]+(-[0-9A-Za-z"]+)?$', model):
+                        log(f"::error file={name},line={i + 1}::Bad model name \"{model}\"")
                     if model in links and links[model]["func"] != fName:
                         log(f"::notice file={name},line={i + 1}::Reused model")
                     elif model in links:

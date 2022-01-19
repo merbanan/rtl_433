@@ -36,7 +36,7 @@ Data documentation:
 - 0xFF     - Size always "0x8"
 - 0xFFFFFF - ID, I assume that differs per installation, but is static then
 - 0xF      - Unknown (is static 0x2) - Not sure if it is also the HomeID
-- 0xF      - Channel: 1-15 single channels (one shutter is registert to one channel), 0 means all
+- 0xF      - Channel: 1-15 single channels (one shutter is registered to one channel), 0 means all
 - 0xFF     - Command ID    (0x0a = stop, 0x1a = up,0x8a = down, 0xea = Request)
 - 0xFF     - Command Value (in status from shutter this is the percent value. 0% for open 100% for close)
 
@@ -315,6 +315,5 @@ r_device rojaflex = {
         .reset_limit = 102400,
         .sync_width  = 0,
         .decode_fn   = &rojaflex_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

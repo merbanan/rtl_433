@@ -33,6 +33,7 @@
 #include "output_udp.h"
 #include "output_mqtt.h"
 #include "output_influx.h"
+#include "output_trigger.h"
 #include "write_sigrok.h"
 #include "mongoose.h"
 #include "compat_time.h"
@@ -985,6 +986,11 @@ void add_http_output(r_cfg_t *cfg, char *param)
     fprintf(stderr, "HTTP server at %s port %s\n", host, port);
 
     list_push(&cfg->output_handler, data_output_http_create(get_mgr(cfg), host, port, cfg));
+}
+
+void add_trigger_output(r_cfg_t *cfg, char *param)
+{
+    list_push(&cfg->output_handler, data_output_trigger_create(fopen_output(param)));
 }
 
 void add_null_output(r_cfg_t *cfg, char *param)
