@@ -17,7 +17,7 @@
 
  Transmissions consist of the start bit followed by bursts of 20 bits.
  These packets ar repeated up to 11 times.
- 
+
  As written, the PPM code always interpets a narrow gap as a 1 and a
  long gap as a 0, however the actual data over the air is inverted,
  i.e. a short gap is a 0 and a long gap is a 1. In addition, the data
@@ -26,7 +26,7 @@
  an additional nibble at bit offsets 16-19, so the data is expressed a 3
  complete bytes.
 
- The examples below are _after_ inversion and reflection (MSB's are on 
+ The examples below are _after_ inversion and reflection (MSB's are on
  the left).
 
  Packet layout
@@ -37,27 +37,27 @@
  CHANNEL is determined by the bit switches in the battery compartment. All
  switches in the 'off' position result in a channel of 15, implying that the
  switches pull the address lines down when in the on position.
- 
+
  COMMAND is one of the following:
 
- CMD_STOP	 0x01
-	value: (0xc0, unused).
+ CMD_STOP        0x01
+        value: (0xc0, unused).
 
- CMD_FAN_SPEED	 0x02
-	value: 0x01-0x07. On my remote, the speeds are shown as 8 - value.
+ CMD_FAN_SPEED   0x02
+        value: 0x01-0x07. On my remote, the speeds are shown as 8 - value.
 
- CMD_LIGHT_INT	 0x04
-	value: 0x00-0xc3. The value is the intensity percentage.
-		0x00 id off, 0xc3 is 99% (full).
+ CMD_LIGHT_INT   0x04
+        value: 0x00-0xc3. The value is the intensity percentage.
+               0x00 id off, 0xc3 is 99% (full).
 
  CMD_LIGHT_DELAY 0x05
-	value: 0x00 is 'off', 0x01 is on.
+        value: 0x00 is 'off', 0x01 is on.
 
- CMD_FAN_DIR	 0x06
-	value: 0x07 is one way, 0x83 is the other.
+ CMD_FAN_DIR     0x06
+        value: 0x07 is one way, 0x83 is the other.
 
  The CHECKSUM is calculated by adding the nibbles of the first two bytes
- and ANDing the result with 0x0f. 
+ and ANDing the result with 0x0f.
 
  */
 
@@ -150,7 +150,7 @@ static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
          */
         uint8_t command = bytes[CMD_CHAN_BYTE] >> 4;
         uint8_t channel = ~bytes[CMD_CHAN_BYTE] & 0x0f;
-	uint32_t value = bytes[VALUE_BYTE];
+        uint32_t value = bytes[VALUE_BYTE];
         char value_string[64] = {0};
 
         switch(command) {
