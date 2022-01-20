@@ -218,7 +218,7 @@ static char *output_fields[] = {
 };
 
 r_device regency_fan = {
-    .name        = "Regency Fan Remote (-f 303.75M to 303.96M)",
+    .name        = "Regency Ceiling Fan Remote (-f 303.75M to 303.96M)",
     .modulation  = OOK_PULSE_PWM,
     .short_width = 580,
     .long_width  = 976,
