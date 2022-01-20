@@ -225,6 +225,6 @@ r_device regency_fan = {
     .gap_limit   = 8000,
     .reset_limit = 14000,
     .decode_fn   = &regency_fan_decode,
-    .disabled    = 1, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
+    .disabled    = 0, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
     .fields      = output_fields,
 };
