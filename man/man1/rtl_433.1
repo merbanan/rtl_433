@@ -127,7 +127,7 @@ Save data stream to output file (a '\-' dumps samples to stdout)
 Save data stream to output file, overwrite existing file
 .SS "Data output options"
 .TP
-[ \fB\-F\fI kv | json | csv | mqtt | influx | syslog | null | help\fP ]
+[ \fB\-F\fI kv | json | csv | mqtt | influx | syslog | trigger | null | help\fP ]
 Produce decoded output in given format.
        Append output to file with :<filename> (e.g. \-F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. \-F syslog:127.0.0.1:1514
@@ -315,7 +315,7 @@ countonly : suppress detailed row output
 E.g. \-X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repeats>=3"
 .SS "Output format option"
 .TP
-[ \fB\-F\fI kv|json|csv|mqtt|influx|syslog|null\fP ]
+[ \fB\-F\fI kv|json|csv|mqtt|influx|syslog|trigger|null\fP ]
 Produce decoded output in given format.
 .RS
 Without this option the default is KV output. Use "\-F null" to remove the default.
