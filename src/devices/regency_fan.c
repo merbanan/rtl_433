@@ -40,20 +40,20 @@
 
  COMMAND is one of the following:
 
- CMD_STOP        0x01
+ 1        0x01
         value: (0xc0, unused).
 
- CMD_FAN_SPEED   0x02
+ 2   0x02
         value: 0x01-0x07. On my remote, the speeds are shown as 8 - value.
 
- CMD_LIGHT_INT   0x04
+ 4   0x04
         value: 0x00-0xc3. The value is the intensity percentage.
                0x00 is off, 0xc3 is 99% (full).
 
- CMD_LIGHT_DELAY 0x05
+ 5 0x05
         value: 0x00 is 'off', 0x01 is on.
 
- CMD_FAN_DIR     0x06
+ 6     0x06
         value: 0x07 is one way, 0x83 is the other.
 
  The CHECKSUM is calculated by adding the nibbles of the first two bytes
@@ -62,20 +62,6 @@
  */
 
 #include "decoder.h"
-
-#define NUM_BITS        21
-#define NUM_BYTES       3
-#define BYTE_START      1
-
-#define CMD_CHAN_BYTE   0
-#define VALUE_BYTE      1
-#define SUM_BYTE        2
-
-#define CMD_STOP        1
-#define CMD_FAN_SPEED   2
-#define CMD_LIGHT_INT   4
-#define CMD_LIGHT_DELAY 5
-#define CMD_FAN_DIR     6
 
 static char *command_names[] = {
     /* 0  */ "invalid",
@@ -110,23 +96,23 @@ static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     for (row = 0; row < bitbuffer->num_rows; row++) {
         num_bits = bitbuffer->bits_per_row[row];
 
-        if (num_bits != NUM_BITS) {
+        if (num_bits != 21) { // Max number of bits is 21
             if (debug_output > 1) {
-                fprintf(stderr, "Expected %d bits, got %d.\n", NUM_BITS, num_bits);
+                fprintf(stderr, "Expected %d bits, got %d.\n", 21, num_bits); // Max number of bits is 21
             }
 
             continue;
         }
 
-        uint8_t bytes[NUM_BYTES];
-        bitbuffer_extract_bytes(bitbuffer, row, BYTE_START, bytes, NUM_BITS);
-        reflect_bytes(bytes, NUM_BYTES);
+        uint8_t bytes[3]; // Max number of bytes is 3
+        bitbuffer_extract_bytes(bitbuffer, row, 1, bytes, 21); // Valid byte offset is 1, Max number of bits is 21
+        reflect_bytes(bytes, 3); // Max number of bytes is 3
 
         // Calculate nibble sum and compare
         int checksum = add_nibbles(bytes, 2) & 0x0f;
-        if (checksum != bytes[SUM_BYTE]) {
+        if (checksum != bytes[2]) { // Sum is in byte 2
             if (debug_output > 1) {
-                fprintf(stderr, "Checksum failure: expected %0x, got %0x\n", bytes[SUM_BYTE], checksum);
+                fprintf(stderr, "Checksum failure: expected %0x, got %0x\n", bytes[2], checksum); // Sum is in byte 2
             }
 
             continue;
@@ -135,29 +121,29 @@ static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         /*
          * Now that message "envelope" has been validated, start parsing data.
          */
-        int command = bytes[CMD_CHAN_BYTE] >> 4;
-        int channel = ~bytes[CMD_CHAN_BYTE] & 0x0f;
-        uint32_t value = bytes[VALUE_BYTE];
+        int command = bytes[0] >> 4; // Command and Channel are in byte 0
+        int channel = ~bytes[0] & 0x0f; // Command and Channel are in byte 0
+        int value = bytes[1]; // Value is ib byte 1
         char value_string[64] = {0};
 
         switch(command) {
-            case CMD_STOP:
+            case 1: // 1 is the command to STOP
                 sprintf(value_string, "stop");
                 break;
 
-            case CMD_FAN_SPEED:
+            case 2: // 2 is the command to change fan speed
                 sprintf(value_string, "speed %d", value);
                 break;
 
-            case CMD_LIGHT_INT:
+            case 4: // 4 is the command to change the light intensity
                 sprintf(value_string, "%d %%", value);
                 break;
 
-            case CMD_LIGHT_DELAY:
+            case 5: // 5 is the command to set the light delay
                 sprintf(value_string, "%s", value == 0 ? "off" : "on");
                 break;
 
-            case CMD_FAN_DIR:
+            case 6: // 6 is the command to change fan direction
                 sprintf(value_string, "%s", value == 0x07 ? "clockwise" : "counter-clockwise");
                 break;
 
@@ -169,7 +155,7 @@ static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 break;
         }
 
-        return_code = 1;
+        return_code++;
 
 /* clang-format off */
 
