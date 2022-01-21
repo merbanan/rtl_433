@@ -634,6 +634,9 @@
     <ClCompile Include="..\src\devices\rainpoint.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\regency_fan.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\rftech.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
