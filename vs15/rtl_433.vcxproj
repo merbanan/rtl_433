@@ -299,6 +299,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\quhwa.c" />
     <ClCompile Include="..\src\devices\radiohead_ask.c" />
     <ClCompile Include="..\src\devices\rainpoint.c" />
+    <ClCompile Include="..\src\devices\regency_fan.c" />
     <ClCompile Include="..\src\devices\rftech.c" />
     <ClCompile Include="..\src\devices\rojaflex.c" />
     <ClCompile Include="..\src\devices\rubicson.c" />
