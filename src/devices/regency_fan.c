@@ -1,5 +1,5 @@
 /** @file
-    Decoder for Regency fan remotes
+    Decoder for Regency fan remotes.
 
     Copyright (C) 2020-2022 David E. Tiller
 
@@ -10,7 +10,7 @@
  */
 
 /**
- The device uses OOK_PULSE_PPM encoding.
+ Regency fans use OOK_PULSE_PPM encoding.
  The packet starts with 576 uS start pulse.
  - 0 is defined as a 375 uS gap followed by a 970 uS pulse.
  - 1 is defined as a 880 uS gap followed by a 450 uS pulse.
@@ -29,10 +29,10 @@
  The examples below are _after_ inversion and reflection (MSB's are on
  the left).
 
- Packet layout
- Bit number
- 0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23
-  CHANNEL  |  COMMAND  |            VALUE       | 0  0  0  0| 4 bit checksum
+     Packet layout
+     Bit number
+     0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23
+      CHANNEL  |  COMMAND  |            VALUE       | 0  0  0  0| 4 bit checksum
 
  CHANNEL is determined by the bit switches in the battery compartment. All
  switches in the 'off' position result in a channel of 15, implying that the
@@ -48,7 +48,7 @@
 
  CMD_LIGHT_INT   0x04
         value: 0x00-0xc3. The value is the intensity percentage.
-               0x00 id off, 0xc3 is 99% (full).
+               0x00 is off, 0xc3 is 99% (full).
 
  CMD_LIGHT_DELAY 0x05
         value: 0x00 is 'off', 0x01 is on.
@@ -61,7 +61,6 @@
 
  */
 
-#include <stdlib.h>
 #include "decoder.h"
 
 #define NUM_BITS        21
@@ -101,27 +100,15 @@ static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
 
     data_t *data = NULL;
-    int index = 0; // a row index
+    int row = 0; // a row index
     int num_bits = 0;
     int debug_output = decoder->verbose;
     int return_code = 0;
 
-    if (debug_output > 1) {
-        bitbuffer_printf(bitbuffer, "%s: ", __func__);
-    }
-
-    if (bitbuffer->num_rows < 1) {
-        if (debug_output > 1) {
-            fprintf(stderr, "No rows.\n");
-        }
-
-        return 0;
-    }
-
     bitbuffer_invert(bitbuffer);
 
-    for (index = 0; index < bitbuffer->num_rows; index++) {
-        num_bits = bitbuffer->bits_per_row[index];
+    for (row = 0; row < bitbuffer->num_rows; row++) {
+        num_bits = bitbuffer->bits_per_row[row];
 
         if (num_bits != NUM_BITS) {
             if (debug_output > 1) {
@@ -132,7 +119,7 @@ static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         uint8_t bytes[NUM_BYTES];
-        bitbuffer_extract_bytes(bitbuffer, index, BYTE_START, bytes, NUM_BITS);
+        bitbuffer_extract_bytes(bitbuffer, row, BYTE_START, bytes, NUM_BITS);
         reflect_bytes(bytes, NUM_BYTES);
 
         // Calculate nibble sum and compare
@@ -148,8 +135,8 @@ static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         /*
          * Now that message "envelope" has been validated, start parsing data.
          */
-        uint8_t command = bytes[CMD_CHAN_BYTE] >> 4;
-        uint8_t channel = ~bytes[CMD_CHAN_BYTE] & 0x0f;
+        int command = bytes[CMD_CHAN_BYTE] >> 4;
+        int channel = ~bytes[CMD_CHAN_BYTE] & 0x0f;
         uint32_t value = bytes[VALUE_BYTE];
         char value_string[64] = {0};
 
@@ -184,19 +171,21 @@ static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         return_code = 1;
 
+/* clang-format off */
+
         data = data_make(
-        "model",            "",     DATA_STRING,    "Regency-compatible Remote",
-        "type",             "",     DATA_STRING,    "Ceiling Fan",
-        "channel",          "",     DATA_INT,       channel,
-        "command",          "",     DATA_STRING,    command_names[command],
-        "value",            "",     DATA_STRING,    value_string,
-        "mic",              "",     DATA_STRING,    "nibble_sum",
-        NULL);
+            "model",            "",     DATA_STRING,    "Regency-Remote",
+            "channel",          "",     DATA_INT,       channel,
+            "command",          "",     DATA_STRING,    command_names[command],
+            "value",            "",     DATA_STRING,    value_string,
+            "mic",              "",     DATA_STRING,    "nibble_sum",
+            NULL);
+
+/* clang-format on */
 
         decoder_output_data(decoder, data);
     }
 
-    // Return 1 if message successfully decoded
     return return_code;
 }
 
@@ -208,13 +197,13 @@ static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
  *
  */
 static char *output_fields[] = {
-    "model",
-    "type",
-    "channel",
-    "command",
-    "value",
-    "mic",
-    NULL,
+        "model",
+        "type",
+        "channel",
+        "command",
+        "value",
+        "mic",
+        NULL,
 };
 
 r_device regency_fan = {
@@ -225,6 +214,5 @@ r_device regency_fan = {
     .gap_limit   = 8000,
     .reset_limit = 14000,
     .decode_fn   = &regency_fan_decode,
-    .disabled    = 0, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
     .fields      = output_fields,
 };
