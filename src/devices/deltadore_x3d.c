@@ -63,10 +63,49 @@ Payload standard message 0x01:
 - Unknown       {8}  0x00
 - 1st Value     {8}
 - 2nd Value     {8}
-  
-  Register 0x1631, 1st Value is thermal switch temperature in 0.5 °C steps.
 
-Maybe all values are little-endian so register commands and so on are flipped.
+Register address:
+- register area  {8}  11, 15, 16, 18, 19, 1a
+- register no.   {8}
+
+  - 11-51: Unknown
+  - 15-21: Unknown
+  - 16-11: Unknown
+
+  - 16-31: 
+    - Set current Target Temp  {8}
+    - Enabled Modes?           {8}
+      Could be a Bitmask or enum:
+      00 = manual
+      02 = Freeze mode
+      07 = Auto mode
+      08 = Holiday/Party mode
+
+  - 16-41: on off state?
+    - 3907 = on, 3807 = off
+
+  - 16-61: {16} 
+    - Party on time in minutes
+    - Holiday time in minutes starting from current time.
+      (Days - 1) * 1440 + Current Time in Minutes
+
+  - 16-81: 
+    - Freeze Temp {8}
+    - unknown     {8}
+
+  - 16-91:
+    - Night Temp  {8}
+    - Day Temp    {8}
+
+  - 18-01: Unknown
+
+  - 19-10 (RO): {16} On time lsb in seconds 
+  - 19-90 (RO): {16} On time msb
+    used to calculate energy consumption
+
+  - 1a-04: Unknown
+
+  The switch temperature is calculated in 0.5 °C steps.
 
 The length including payload is whitened using CCITT whitening enabled in SX1211 chipset.
 The payload contains some garbage at the end. The documentation of the SX1211 assume to
