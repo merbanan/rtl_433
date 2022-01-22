@@ -173,7 +173,8 @@ mappings = {
             "name": "Battery",
             "unit_of_measurement": "%",
             "value_template": "{{ float(value) * 99 + 1 }}",
-            "state_class": "measurement"
+            "state_class": "measurement",
+            "entity_category": "diagnostic"
         }
     },
 
@@ -290,7 +291,7 @@ mappings = {
             "state_class": "measurement"
         }
     },
-  
+
     "wind_max_km_h": {
         "device_type": "sensor",
         "object_suffix": "GS",
@@ -386,7 +387,8 @@ mappings = {
             "device_class": "safety",
             "force_update": "true",
             "payload_on": "1",
-            "payload_off": "0"
+            "payload_off": "0",
+            "entity_category": "diagnostic"
         }
     },
 
@@ -397,7 +399,8 @@ mappings = {
             "device_class": "safety",
             "force_update": "true",
             "payload_on": "1",
-            "payload_off": "0"
+            "payload_off": "0",
+            "entity_category": "diagnostic"
         }
     },
 
@@ -408,7 +411,8 @@ mappings = {
             "device_class": "signal_strength",
             "unit_of_measurement": "dB",
             "value_template": "{{ value|float|round(2) }}",
-            "state_class": "measurement"
+            "state_class": "measurement",
+            "entity_category": "diagnostic"
         }
     },
 
@@ -419,7 +423,8 @@ mappings = {
             "device_class": "signal_strength",
             "unit_of_measurement": "dB",
             "value_template": "{{ value|float|round(2) }}",
-            "state_class": "measurement"
+            "state_class": "measurement",
+            "entity_category": "diagnostic"
         }
     },
 
@@ -430,7 +435,8 @@ mappings = {
             "device_class": "signal_strength",
             "unit_of_measurement": "dB",
             "value_template": "{{ value|float|round(2) }}",
-            "state_class": "measurement"
+            "state_class": "measurement",
+            "entity_category": "diagnostic"
         }
     },
 
@@ -463,7 +469,8 @@ mappings = {
         "config": {
             "name": "Outside Luminancee",
             "unit_of_measurement": "lux",
-            "value_template": "{{ value|int }}"
+            "value_template": "{{ value|int }}",
+            "state_class": "measurement"
         }
     },
     "light_lux": {
@@ -483,7 +490,8 @@ mappings = {
         "config": {
             "name": "UV Index",
             "unit_of_measurement": "UV Index",
-            "value_template": "{{ value|int }}"
+            "value_template": "{{ value|int }}",
+            "state_class": "measurement"
         }
     },
     "uvi": {
