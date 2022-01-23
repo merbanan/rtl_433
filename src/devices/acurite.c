@@ -752,7 +752,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             battery_low = (bb[2] & 0x40) == 0;
 
             if (message_type == ACURITE_MSGTYPE_LEAK_DETECTOR) {
-                int is_dry = (bb[3] & 0x10) >> 4;
+                int is_wet = (bb[3] & 0x10) >> 4;
 
                 /* clang-format off */
                 data = data_make(
@@ -760,7 +760,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         "id",                   "",             DATA_INT,    sensor_id,
                         "channel",              NULL,           DATA_STRING, channel_str,
                         "battery_ok",           "Battery",      DATA_INT,    !battery_low,
-                        "leak_detected",        "Leak",         DATA_INT,    !is_dry,
+                        "leak_detected",        "Leak",         DATA_INT,    is_wet,
                         "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                         NULL);
                 /* clang-format on */
