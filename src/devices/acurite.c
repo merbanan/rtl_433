@@ -36,7 +36,8 @@ Acurite weather stations and temperature / humidity sensors.
 #define ACURITE_ATLAS_BITLEN      80
 
 // ** Acurite known message types
-//#define ACURITE_MSGTYPE_TOWER_SENSOR                    0x04
+#define ACURITE_MSGTYPE_LEAK_DETECTOR                   0x01
+#define ACURITE_MSGTYPE_TOWER_SENSOR                    0x04
 #define ACURITE_MSGTYPE_515_REFRIGERATOR                0x08
 #define ACURITE_MSGTYPE_515_FREEZER                     0x09
 #define ACURITE_MSGTYPE_6045M                           0x2f
@@ -713,9 +714,9 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // M = Message type
         message_type = bb[2] & 0x3f;
 
-        // tower sensor messages are 7 bytes.
-        // TODO: - see if there is a type in the message that
-        // can be used instead of length to determine type
+        // Multiple AcuRite sensors use the same basic message format,
+        // with a shared header and integrity scheme. message type is packed
+        // as the last 3 bits of the 3rd byte (bb[2]).
         if (browlen == ACURITE_TXR_BITLEN / 8) {
             // Verify parity bits
             // Bytes 2, 3, 4, and 5 should all have a parity bit in their MSB
@@ -747,52 +748,74 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             // CCII IIII | IIII IIII
             sensor_id = ((bb[0] & 0x3f) << 8) | bb[1];
 
-            //sensor_status = bb[2]; // TODO:, uses parity? & 0x07f
-
-            // Humidity is stored in byte 3
-            // The value is directly encoded as %rH
-            // The possible values here are 0-128, but real values are only 1-99 %rH
-            // pIII IIII
-            humidity = (bb[3] & 0x7f); 
-            if (humidity < 1 || humidity > 99)
-            {
-                if(decoder->verbose) {
-                    fprintf(stderr, "%s: Acurite TXR sensor 0x%04X Ch %s : Impossible humidity: %d %%rH\n",
-                            __func__, sensor_id, channel_str, humidity);
-                }
-                continue;
-            }
-
-            // temperature encoding used by "tower" sensors 592txr
-            // 14 bits available after removing both parity bits.
-            // 11 bits needed for specified range -40 C to 70 C (-40 F - 158 F)
-            // Possible ranges are -100 C to 1538.4 C, but most of that range
-            // is not possible on Earth.
-            int temp_raw = ((bb[4] & 0x7F) << 7) | (bb[5] & 0x7F);
-            tempc = temp_raw * 0.1 - 100;
-            if (tempc < -40 || tempc > 70) {
-                if(decoder->verbose) {
-                    fprintf(stderr, "%s: Acurite TXR sensor 0x%04X Ch %s : Impossible temperature: %0.2f C\n",
-                            __func__, sensor_id, channel_str, tempc);
-                }
-                continue;
-            }
-
             // Battery status is the 7th bit 0x40. 1 = normal, 0 = low
             battery_low = (bb[2] & 0x40) == 0;
 
+            if (message_type == ACURITE_MSGTYPE_LEAK_DETECTOR) {
+                int is_dry = (bb[3] & 0x10) >> 4;
 
-            /* clang-format off */
-            data = data_make(
-                    "model",                "",             DATA_STRING, "Acurite-Tower",
-                    "id",                   "",             DATA_INT,    sensor_id,
-                    "channel",              NULL,           DATA_STRING, channel_str,
-                    "battery_ok",           "Battery",      DATA_INT,    !battery_low,
-                    "temperature_C",        "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
-                    "humidity",             "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,    humidity,
-                    "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
-                    NULL);
-            /* clang-format on */
+                /* clang-format off */
+                data = data_make(
+                        "model",                "",             DATA_STRING, "Acurite-Leak",
+                        "id",                   "",             DATA_INT,    sensor_id,
+                        "channel",              NULL,           DATA_STRING, channel_str,
+                        "battery_ok",           "Battery",      DATA_INT,    !battery_low,
+                        "leak_detected",        "Leak",         DATA_INT,    !is_dry,
+                        "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
+                        NULL);
+                /* clang-format on */
+
+            }
+            else if (message_type == ACURITE_MSGTYPE_TOWER_SENSOR)
+            {
+
+                // Humidity is stored in byte 3
+                // The value is directly encoded as %rH
+                // The possible values here are 0-128, but real values are only 1-99 %rH
+                // pIII IIII
+                humidity = (bb[3] & 0x7f); 
+                if (humidity < 1 || humidity > 99)
+                {
+                    if(decoder->verbose) {
+                        fprintf(stderr, "%s: Acurite TXR sensor 0x%04X Ch %s : Impossible humidity: %d %%rH\n",
+                                __func__, sensor_id, channel_str, humidity);
+                    }
+                    continue;
+                }
+
+                // temperature encoding used by "tower" sensors 592txr
+                // 14 bits available after removing both parity bits.
+                // 11 bits needed for specified range -40 C to 70 C (-40 F - 158 F)
+                // Possible ranges are -100 C to 1538.4 C, but most of that range
+                // is not possible on Earth.
+                int temp_raw = ((bb[4] & 0x7F) << 7) | (bb[5] & 0x7F);
+                tempc = temp_raw * 0.1 - 100;
+                if (tempc < -40 || tempc > 70) {
+                    if(decoder->verbose) {
+                        fprintf(stderr, "%s: Acurite TXR sensor 0x%04X Ch %s : Impossible temperature: %0.2f C\n",
+                                __func__, sensor_id, channel_str, tempc);
+                    }
+                    continue;
+                }
+
+
+
+                /* clang-format off */
+                data = data_make(
+                        "model",                "",             DATA_STRING, "Acurite-Tower",
+                        "id",                   "",             DATA_INT,    sensor_id,
+                        "channel",              NULL,           DATA_STRING, channel_str,
+                        "battery_ok",           "Battery",      DATA_INT,    !battery_low,
+                        "temperature_C",        "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
+                        "humidity",             "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,    humidity,
+                        "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
+                        NULL);
+                /* clang-format on */
+            }
+            else {
+                // Unknown message type
+                continue;
+            }
 
             decoder_output_data(decoder, data);
             valid++;
