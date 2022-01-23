@@ -738,7 +738,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             // Channel is the first two bits of the 0th byte
             // but only 3 of the 4 possible values are valid
             char const *channel_str = acurite_getChannel(bb[0]);
-            if (strcmp(channel_str, "E") == 0) {
+            if (*channel_str == 'E') {
                 if (decoder->verbose)
                     fprintf(stderr, "%s: Acurite TXR sensor : bad channel Ch %s\n", __func__, channel_str);
                 continue;
