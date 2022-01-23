@@ -18,7 +18,7 @@ WT0124 Pool Thermometer decoder.
 
 - 5 = constant 5
 - R = random power on id
-- T = 12 bits of temperature with 0x900 bias and scaled by 10
+- T = 12 bits of temperature with 0x990 bias and scaled by 10
 - U = unk, maybe battery indicator (display is missing one though)
 - C = channel
 - F = constant F
