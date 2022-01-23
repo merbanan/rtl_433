@@ -748,7 +748,20 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             sensor_id = ((bb[0] & 0x3f) << 8) | bb[1];
 
             //sensor_status = bb[2]; // TODO:, uses parity? & 0x07f
-            humidity = (bb[3] & 0x7f); // 1-99 %rH
+
+            // Humidity is stored in byte 3
+            // The value is directly encoded as %rH
+            // The possible values here are 0-128, but real values are only 1-99 %rH
+            // pIII IIII
+            humidity = (bb[3] & 0x7f); 
+            if (humidity < 1 || humidity > 99)
+            {
+                if(decoder->verbose) {
+                    fprintf(stderr, "%s: Acurite TXR sensor 0x%04X Ch %s : Impossible humidity: %d %%rH\n",
+                            __func__, sensor_id, channel_str, humidity);
+                }
+                continue;
+            }
 
             // temperature encoding used by "tower" sensors 592txr
             // 14 bits available after removing both parity bits.
