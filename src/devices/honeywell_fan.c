@@ -40,14 +40,14 @@ there's no such command/value distinction. It looks very suspicious that the fan
 speed commands all share command 000 and the speed value (bit-reversed) appears in the
 value area.
 
-Button  Fixed Other Bits       Function
-ONE     16CD  1 0 0 0 0 1 !d d  Low speed fan
-TWO     16CD  0 1 0 0 0 1 !d d  Medium speed fan
-THREE   16CD  1 1 0 0 0 1 !d d  High speed fan
-OFF-M   16CD  0 0 0 1 0 1 !d d  Fan off (momentary press)
-OFF-C   16CD  0 0 1 0 1 1 !d d  Light off delay (continuous press)
-STAR-M  16CD  1 1 0 1 0 1 !d d  Light on/off (momentary press)
-STAR-C  16CD  0 1 1 1 0 1 !d d  Light dim/brighten (continuous press)
+    Button  Fixed Other Bits       Function
+    ONE     16CD  1 0 0 0 0 1 !d d  Low speed fan
+    TWO     16CD  0 1 0 0 0 1 !d d  Medium speed fan
+    THREE   16CD  1 1 0 0 0 1 !d d  High speed fan
+    OFF-M   16CD  0 0 0 1 0 1 !d d  Fan off (momentary press)
+    OFF-C   16CD  0 0 1 0 1 1 !d d  Light off delay (continuous press)
+    STAR-M  16CD  1 1 0 1 0 1 !d d  Light on/off (momentary press)
+    STAR-C  16CD  0 1 1 1 0 1 !d d  Light dim/brighten (continuous press)
 
 The 'd' bit indicates whether the D/CFL button in the battery compartment
 is set to 'D' (1 bit) or 'CFL' (0 bit). This switch inhibits the dim
@@ -57,7 +57,8 @@ Since the COMMAND/VALUE paradigm is not verified and only seems to apply to the 
 buttons, we'll decode using the full 3rd byte right-shifted by 3 bits to omit the fixed '1'
 and 'Dim' bits.
 
-byte[2] >> 3:
+    byte[2] >> 3:
+    -------------
     0x10: Low fan speed
     0x08: Medium fan speed
     0x18: High fan speed
