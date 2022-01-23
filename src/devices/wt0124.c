@@ -50,7 +50,7 @@ static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* Validate checksum */
-    if ((b[0] ^ b[1] ^ b[2] ^ b[3]) != b[4])
+    if (xor_bytes(b, 4) != b[4])
         return DECODE_FAIL_MIC;
 
     /* Get rid */
@@ -60,7 +60,7 @@ static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     temp_c = ((((b[1] & 0xF) << 8) | b[2]) - 0x990) * 0.1f;
 
     /* Get channel */
-    channel = ((b[3] >> 4) & 0x3);
+    channel = (b[3] >> 4) & 0x3;
 
     /* unk */
     value = b[5];
