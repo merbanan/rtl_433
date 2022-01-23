@@ -717,20 +717,42 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // TODO: - see if there is a type in the message that
         // can be used instead of length to determine type
         if (browlen == ACURITE_TXR_BITLEN / 8) {
+            // TODO: Verify parity bits
+
+            // Verify checksum, add with carry
+            int chk = add_bytes(bb, 6);
+            if ((chk & 0xff) != bb[6]) {
+                if (decoder->verbose)
+                    bitrow_printf(bb, 7 * 8, "%s: bad checksum: ", __func__);
+                continue; // return DECODE_FAIL_MIC;
+            }
+
             char const *channel_str = acurite_getChannel(bb[0]);
             // Tower sensor ID is the last 14 bits of byte 0 and 1
             // CCII IIII | IIII IIII
             sensor_id = ((bb[0] & 0x3f) << 8) | bb[1];
+
             //sensor_status = bb[2]; // TODO:, uses parity? & 0x07f
             humidity = (bb[3] & 0x7f); // 1-99 %rH
+
             // temperature encoding used by "tower" sensors 592txr
             // 14 bits available after removing both parity bits.
             // 11 bits needed for specified range -40 C to 70 C (-40 F - 158 F)
-            // range -100 C to 1538.4 C
+            // Possible ranges are -100 C to 1538.4 C, but most of that range
+            // is not possible on Earth.
             int temp_raw = ((bb[4] & 0x7F) << 7) | (bb[5] & 0x7F);
             tempc = temp_raw * 0.1 - 100;
+            if (tempc < -40 || tempc > 70) {
+                if(decoder->verbose) {
+                    fprintf(stderr, "%s: Acurite TXR sensor 0x%04X Ch %s -- Impossible temperature: %0.2f C\n",
+                            __func__, sensor_id, channel_str, tempc);
+                }
+                continue;
+            }
+
             // Battery status is the 7th bit 0x40. 1 = normal, 0 = low
             battery_low = (bb[2] & 0x40) == 0;
+
 
             /* clang-format off */
             data = data_make(
