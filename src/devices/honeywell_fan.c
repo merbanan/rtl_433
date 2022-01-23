@@ -15,10 +15,11 @@
 Decoder for Honeywell fan remotes.
 
 This fan is made by Intertek (model 4003229) but is sold by Honeywell
-as a 'Harbor Breeze Salermo'.
+as a model 'Salermo', number 10285. This fan may be sold under different
+makes and models, YMMV.
 
 Honeywell fans use OOK_PULSE_PPM encoding.
-The packet starts with 576 uS start pulse.
+The packet starts with a 300 uS start pulse.
 - 0 is defined as a 300 uS gap followed by a 900 uS pulse.
 - 1 is defined as a 900 uS gap followed by a 300 uS pulse.
 
@@ -133,14 +134,14 @@ static int honeywell_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             break;
         }
 
-        // clang-format off
+        /* clang-format off */
         data_t *data = data_make(
                 "model",            "",     DATA_STRING,    "Honeywell-Remote",
                 "command",          "",     DATA_STRING,    command_string,
                 "dimmable",         "",     DATA_INT   ,    dimmable,
                 "mic",              "",     DATA_STRING,    "FIXED_BITS",
                 NULL);
-        // clang-format on
+        /* clang-format on */
 
         decoder_output_data(decoder, data);
         return_code++;
@@ -158,7 +159,7 @@ static char *output_fields[] = {
 };
 // OOK_PULSE_PPM,s=300,l=900,r=1300 works to get one row
 r_device honeywell_fan = {
-        .name        = "Honeywell Ceiling Fan Remote (-f 303.75M to 303.96M)",
+        .name        = "Honeywell Ceiling Fan Remote (-f 314.92M)",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 300,
         .long_width  = 900,
