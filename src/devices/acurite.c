@@ -738,10 +738,10 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             // Channel is the first two bits of the 0th byte
             // but only 3 of the 4 possible values are valid
             char const *channel_str = acurite_getChannel(bb[0]);
-            if(strcmp(channel_str, "E") == 0) {
-                if(decoder->verbose)
+            if (strcmp(channel_str, "E") == 0) {
+                if (decoder->verbose)
                     fprintf(stderr, "%s: Acurite TXR sensor : bad channel Ch %s\n", __func__, channel_str);
-                continue; 
+                continue;
             }
 
             // Tower sensor ID is the last 14 bits of byte 0 and 1
@@ -764,19 +764,16 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                         NULL);
                 /* clang-format on */
-
             }
-            else if (message_type == ACURITE_MSGTYPE_TOWER_SENSOR)
-            {
+            else if (message_type == ACURITE_MSGTYPE_TOWER_SENSOR) {
 
                 // Humidity is stored in byte 3
                 // The value is directly encoded as %rH
                 // The possible values here are 0-128, but real values are only 1-99 %rH
                 // pIII IIII
-                humidity = (bb[3] & 0x7f); 
-                if (humidity < 1 || humidity > 99)
-                {
-                    if(decoder->verbose) {
+                humidity = (bb[3] & 0x7f);
+                if (humidity < 1 || humidity > 99) {
+                    if (decoder->verbose) {
                         fprintf(stderr, "%s: Acurite TXR sensor 0x%04X Ch %s : Impossible humidity: %d %%rH\n",
                                 __func__, sensor_id, channel_str, humidity);
                     }
@@ -789,16 +786,14 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 // Possible ranges are -100 C to 1538.4 C, but most of that range
                 // is not possible on Earth.
                 int temp_raw = ((bb[4] & 0x7F) << 7) | (bb[5] & 0x7F);
-                tempc = temp_raw * 0.1 - 100;
+                tempc        = temp_raw * 0.1 - 100;
                 if (tempc < -40 || tempc > 70) {
-                    if(decoder->verbose) {
+                    if (decoder->verbose) {
                         fprintf(stderr, "%s: Acurite TXR sensor 0x%04X Ch %s : Impossible temperature: %0.2f C\n",
                                 __func__, sensor_id, channel_str, tempc);
                     }
                     continue;
                 }
-
-
 
                 /* clang-format off */
                 data = data_make(
