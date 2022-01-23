@@ -734,7 +734,15 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 continue; // return DECODE_FAIL_MIC;
             }
 
+            // Channel is the first two bits of the 0th byte
+            // but only 3 of the 4 possible values are valid
             char const *channel_str = acurite_getChannel(bb[0]);
+            if(strcmp(channel_str, "E") == 0) {
+                if(decoder->verbose)
+                    fprintf(stderr, "%s: Acurite TXR sensor : bad channel Ch %s\n", __func__, channel_str);
+                continue; 
+            }
+
             // Tower sensor ID is the last 14 bits of byte 0 and 1
             // CCII IIII | IIII IIII
             sensor_id = ((bb[0] & 0x3f) << 8) | bb[1];
@@ -751,7 +759,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             tempc = temp_raw * 0.1 - 100;
             if (tempc < -40 || tempc > 70) {
                 if(decoder->verbose) {
-                    fprintf(stderr, "%s: Acurite TXR sensor 0x%04X Ch %s -- Impossible temperature: %0.2f C\n",
+                    fprintf(stderr, "%s: Acurite TXR sensor 0x%04X Ch %s : Impossible temperature: %0.2f C\n",
                             __func__, sensor_id, channel_str, tempc);
                 }
                 continue;
