@@ -717,7 +717,14 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // TODO: - see if there is a type in the message that
         // can be used instead of length to determine type
         if (browlen == ACURITE_TXR_BITLEN / 8) {
-            // TODO: Verify parity bits
+            // Verify parity bits
+            // Bytes 2, 3, 4, and 5 should all have a parity bit in their MSB
+            int parity = parity_bytes(&bb[2], 4);
+            if (parity) {
+                if (decoder->verbose)
+                    bitrow_printf(bb, 7 * 8, "%s: bad parity: ", __func__);
+                continue; // return DECODE_FAIL_MIC;
+            }
 
             // Verify checksum, add with carry
             int chk = add_bytes(bb, 6);
