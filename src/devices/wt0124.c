@@ -18,7 +18,7 @@ WT0124 Pool Thermometer decoder.
 
 - 5 = constant 5
 - R = random power on id
-- T = 12 bits of temperature with 0x900 bias and scaled by 10
+- T = 12 bits of temperature with 0x990 bias and scaled by 10
 - U = unk, maybe battery indicator (display is missing one though)
 - C = channel
 - F = constant F
@@ -50,7 +50,7 @@ static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* Validate xor checksum */
-    if ((b[0] ^ b[1] ^ b[2] ^ b[3]) != b[4])
+    if (xor_bytes(b, 4) != b[4])
         return DECODE_FAIL_MIC;
 
     /* Validate sum checksum */
@@ -70,7 +70,7 @@ static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     temp_c = ((((b[1] & 0xF) << 8) | b[2]) - 0x990) * 0.1f;
 
     /* Get channel */
-    channel = ((b[3] >> 4) & 0x3);
+    channel = (b[3] >> 4) & 0x3;
 
     if (decoder->verbose) {
         fprintf(stderr, "wt1024_callback:");
