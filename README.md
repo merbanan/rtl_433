@@ -295,6 +295,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [209]  SimpliSafe Gen 3 Home Security System
     [210]  Yale HSA (Home Security Alarm), YES-Alarmkit
     [211]  Regency Ceiling Fan Remote (-f 303.75M to 303.96M)
+    [212]  Honeywell Ceiling Fan Remote (-f 314.92M)
 
 * Disabled by default, use -R n or -G
 
