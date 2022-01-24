@@ -140,7 +140,7 @@ static int honeywell_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",            "",     DATA_STRING,    "Honeywell-Remote",
                 "command",          "",     DATA_STRING,    command_string,
                 "dimmable",         "",     DATA_INT   ,    dimmable,
-                "mic",              "",     DATA_STRING,    "FIXED_BITS",
+                "mic",              "",     DATA_STRING,    "PARITY",
                 NULL);
         /* clang-format on */
 
