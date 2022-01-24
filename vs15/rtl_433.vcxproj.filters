@@ -460,6 +460,9 @@
     <ClCompile Include="..\src\devices\hcs200.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\heatilator.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\hideki.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -473,6 +476,9 @@
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\honeywell_cm921.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\honeywell_fan.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\honeywell_wdb.c">

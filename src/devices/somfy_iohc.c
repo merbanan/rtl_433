@@ -100,11 +100,12 @@ static int somfy_iohc_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->num_rows != 1)
         return DECODE_ABORT_EARLY;
 
-    int offset = bitbuffer_search(bitbuffer, 0, 0, preamble_pattern, 24) + 24;
-    if (offset >= bitbuffer->bits_per_row[0] - 19 * 10)
+    unsigned offset = bitbuffer_search(bitbuffer, 0, 0, preamble_pattern, 24) + 24;
+    if (offset + 19 * 10 >= bitbuffer->bits_per_row[0])
         return DECODE_ABORT_EARLY;
 
-    int num_bits = bitbuffer->bits_per_row[0] - offset;
+    unsigned num_bits = bitbuffer->bits_per_row[0] - offset;
+    num_bits = MIN(num_bits, sizeof (b) * 8);
 
     int len = extract_bytes_uart(bitbuffer->bb[0], offset, num_bits, b);
     if (len < 19)
@@ -120,7 +121,7 @@ static int somfy_iohc_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // calculate and verify checksum
     if (crc16lsb(b, len, 0x8408, 0x0000) != 0) // unreflected poly 0x1021
         return DECODE_FAIL_MIC;
-    bitrow_printf(b, len * 8, "%s: offset %d, num_bits %d, len %d, msg_len %d\n", __func__, offset, num_bits, len, msg_len);
+    bitrow_printf(b, len * 8, "%s: offset %u, num_bits %u, len %d, msg_len %d\n", __func__, offset, num_bits, len, msg_len);
 
     int msg_type = (b[0]);
     int dst_id   = ((unsigned)b[4] << 24) | (b[3] << 16) | (b[2] << 8) | (b[1]); // assume Little-Endian

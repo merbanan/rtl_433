@@ -241,11 +241,13 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\gt_wt_02.c" />
     <ClCompile Include="..\src\devices\gt_wt_03.c" />
     <ClCompile Include="..\src\devices\hcs200.c" />
+    <ClCompile Include="..\src\devices\heatilator.c" />
     <ClCompile Include="..\src\devices\hideki.c" />
     <ClCompile Include="..\src\devices\holman_ws5029.c" />
     <ClCompile Include="..\src\devices\hondaremote.c" />
     <ClCompile Include="..\src\devices\honeywell.c" />
     <ClCompile Include="..\src\devices\honeywell_cm921.c" />
+    <ClCompile Include="..\src\devices\honeywell_fan.c" />
     <ClCompile Include="..\src\devices\honeywell_wdb.c" />
     <ClCompile Include="..\src\devices\ht680.c" />
     <ClCompile Include="..\src\devices\ibis_beacon.c" />
