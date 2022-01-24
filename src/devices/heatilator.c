@@ -128,4 +128,5 @@ r_device heatilator_log = {
         .reset_limit = 1800,
         .decode_fn   = &heatilator_log_decode,
         .fields      = output_fields,
+        .disabled    = 1,
 };
