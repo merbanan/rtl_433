@@ -727,14 +727,6 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 continue; // return DECODE_FAIL_MIC;
             }
 
-            // Verify checksum, add with carry
-            int chk = add_bytes(bb, 6);
-            if ((chk & 0xff) != bb[6]) {
-                if (decoder->verbose)
-                    bitrow_printf(bb, 7 * 8, "%s: bad checksum: ", __func__);
-                continue; // return DECODE_FAIL_MIC;
-            }
-
             // Channel is the first two bits of the 0th byte
             // but only 3 of the 4 possible values are valid
             char const *channel_str = acurite_getChannel(bb[0]);
