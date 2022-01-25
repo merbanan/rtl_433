@@ -1424,7 +1424,7 @@ static char *acurite_txr_output_fields[] = {
         "channel",
         "sequence_num",
         "battery_ok",
-        "battery_ok",
+        "leak_detected",
         "temperature_C",
         "temperature_F",
         "humidity",
