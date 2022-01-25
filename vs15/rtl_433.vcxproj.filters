@@ -460,9 +460,6 @@
     <ClCompile Include="..\src\devices\hcs200.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\devices\heatilator.c">
-      <Filter>Source Files\devices</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\devices\hideki.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
