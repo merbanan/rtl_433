@@ -45,8 +45,7 @@ Layout appears to be:
 
 static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-  /*[hdt] add -1 mask for integers to make 12-bit negative into a negative full int */
-  int temp1_raw, temp2_raw, row, m1mask = -1 ^ 0xfff;
+  int temp1_raw, temp2_raw, row;
     float temp1_c, temp2_c;
     uint8_t *bytes;
     unsigned int device;
@@ -73,13 +72,14 @@ static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuff
         fprintf(stderr, "maverick_et73_raw_data:");
         bitrow_print(bytes, 48);
     }
-    /*[hdt] corrected by shifting byte2 by 4 bits*/
-    temp1_raw = (bytes[1] << 4) | ((bytes[2] & 0xf0)>>4);
-    temp2_raw = ((bytes[2] & 0x0f) << 8) | bytes[3];
 
-    /*[hdt] corrected to recognize negative temperatures */
-    temp1_c = ((temp1_raw & 0x800) == 0) ? (temp1_raw * 0.1f) : ( m1mask | temp1_raw) * 0.1f;
-    temp2_c = ((temp2_raw & 0x800) == 0) ? (temp2_raw * 0.1f) : ( m1mask | temp2_raw) * 0.1f;
+    /* Repack the nibbles to form a 12-bit field representing the temperatures, 
+       then sign-extend the 12-bit field to a 16-bit integer for float conversion */
+    temp1_raw = ( (int16_t)( bytes[1]<<8 | ( bytes[2] & 0xf0 ) ) )>>4; 
+    temp1_c = temp1_raw * 0.1f;
+    temp2_raw = ( (int16_t)( ( bytes[2] & 0x0f) << 12) | bytes[3]<<4)>>4;
+    temp2_c = temp2_raw * 0.1f;
+
     /* clang-format off */
     data = data_make(
             "model",            "",                 DATA_STRING, "Maverick-ET73",
