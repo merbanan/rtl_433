@@ -80,7 +80,6 @@ static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuff
     /*[hdt] corrected to recognize negative temperatures */
     temp1_c = ((temp1_raw & 0x800) == 0) ? (temp1_raw * 0.1f) : ( m1mask | temp1_raw) * 0.1f;
     temp2_c = ((temp2_raw & 0x800) == 0) ? (temp2_raw * 0.1f) : ( m1mask | temp2_raw) * 0.1f;
-    
     /* clang-format off */
     data = data_make(
             "model",            "",                 DATA_STRING, "Maverick-ET73",
