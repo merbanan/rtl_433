@@ -698,14 +698,6 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             continue; // DECODE_FAIL_MIC
         }
 
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: Parity: ", __func__);
-            for (int i = 0; i < browlen; i++) {
-                fprintf(stderr, "%d", parity8(bb[i]));
-            }
-            fprintf(stderr, "\n");
-        }
-
         // acurite sensors with a common format appear to have a message type
         // in the lower 6 bits of the 3rd byte.
         // Format: PBMMMMMM
