@@ -852,8 +852,6 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             // value if they successfully decoded a message.
             if (decoded > 0) {
                 valid++;
-            } else {
-                continue;
             }
         }
 
