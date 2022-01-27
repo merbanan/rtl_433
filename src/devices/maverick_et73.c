@@ -73,12 +73,12 @@ static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuff
         bitrow_print(bytes, 48);
     }
 
-    /* Repack the nibbles to form a 12-bit field representing the temperatures, 
-       then sign-extend the 12-bit field to a 16-bit integer for float conversion */
-    temp1_raw = ( (int16_t)( bytes[1]<<8 | ( bytes[2] & 0xf0 ) ) )>>4; 
-    temp1_c = temp1_raw * 0.1f;
-    temp2_raw = ( (int16_t)( ( bytes[2] & 0x0f) << 12) | bytes[3]<<4)>>4;
-    temp2_c = temp2_raw * 0.1f;
+    // Repack the nibbles to form a 12-bit field representing the 2's-complement temperatures,
+    //   then right shift by 4 to sign-extend the 12-bit field to a 16-bit integer for float conversion
+    temp1_raw = (int16_t)( bytes[1]<<8 | ( bytes[2] & 0xf0 ) );
+    temp1_c = (temp1_raw>>4) * 0.1f;
+    temp2_raw = (int16_t)( ( (bytes[2] & 0x0f) << 12) | bytes[3]<<4 );
+    temp2_c = (temp2_raw>>4) * 0.1f;
 
     /* clang-format off */
     data = data_make(
