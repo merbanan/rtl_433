@@ -637,10 +637,7 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
     return 1; // one valid message decoded
 }
 
-int acurite_tower_sensor_decode(r_device*, uint8_t*);
-int acurite_leak_detector_decode(r_device*, uint8_t*);
-
-int acurite_tower_sensor_decode(r_device* decoder, uint8_t* bb)
+static int acurite_tower_sensor_decode(r_device* decoder, uint8_t* bb)
 {
     // checksum in the last byte has been validated in the calling function
 
@@ -718,7 +715,7 @@ int acurite_tower_sensor_decode(r_device* decoder, uint8_t* bb)
     return 1;
 }
 
-int acurite_leak_detector_decode(r_device* decoder, uint8_t* bb)
+static int acurite_leak_detector_decode(r_device* decoder, uint8_t* bb)
 {
     // checksum in the last byte has been validated in the calling function
 
