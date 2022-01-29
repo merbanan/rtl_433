@@ -45,9 +45,6 @@
 
 #include "decoder.h"
 
-#define MINIM_DEVICE_NAME "GEO minim+ energy monitor"
-#define UINT8_BITS 8
-
 /**
 GEO minim+ current sensor.
 
@@ -70,21 +67,21 @@ Data format string:
     VA: Big endian power x10VA, bit14 = 5VA
     UP: Big endian uptime x9 seconds
 */
-static int geo_minim_sensor_decode( r_device * const decoder, const char *id,
-    const uint8_t buf[], unsigned len, data_t ** const data)
+static int geo_minim_sensor_decode(r_device * const decoder, const char *id,
+        const uint8_t buf[], unsigned len, data_t ** const data)
 {
     unsigned n, secs,mins, hours, va, flags4;
     char up[32];
 
-    if ( len != 11)
+    if (len != 11)
     {
-        decoder_output_bitrowf( decoder, buf, UINT8_BITS * len,
+        decoder_output_bitrowf(decoder, buf, 8 * len,
             "geo_minim: Incorrect length. Expected 11 got %u bytes", len);
         return DECODE_ABORT_LENGTH;
     }
 
     /* Uptime in ~9 second intervals */
-    n = 9 * (buf[8] + (buf[7] << UINT8_BITS) + (buf[6] << 16));
+    n = 9 * (buf[8] + (buf[7] << 8) + (buf[6] << 16));
 
     /* Convert to days,hours,minutes,seconds */
     secs = n % 60;
@@ -93,14 +90,14 @@ static int geo_minim_sensor_decode( r_device * const decoder, const char *id,
     n /= 60;
     hours = n % 24;
     n /= 24;
-    snprintf( up, sizeof up, "%u days %02u:%02u:%02u", n, hours, mins, secs);
+    snprintf(up, sizeof(up), "%u days %02u:%02u:%02u", n, hours, mins, secs);
 
     /* Bytes 4 & 5 appear to be the instantaneous VA x10.
-     * When scaled by the 'Fine Tune' setting (0.88) set on the display unit
-     * it matches the Watts value in display messages.
+     * When scaled by the 'Fine Tune' setting (power factor [0.88]) set on the
+     * display unit it matches the Watts value in display messages.
      */
-    va = 10 * (buf[5] + ((buf[4] & 0x0f) << UINT8_BITS));
-    if ( buf[4] & 0x40)
+    va = 10 * (buf[5] + ((buf[4] & 0x0f) << 8));
+    if (buf[4] & 0x40)
         va += 5;
 
     /* TODO: what are the flag bits in buf[4] (0x30)?
@@ -110,7 +107,7 @@ static int geo_minim_sensor_decode( r_device * const decoder, const char *id,
 
     /* clang-format off */
     *data = data_make(
-        "model",            "Device",           DATA_STRING, MINIM_DEVICE_NAME ": Sensor",
+        "model",            "Device",           DATA_STRING, "GEO minim+ CT sensor",
         "id",               "ID",               DATA_STRING, id,
         "mic",              "Integrity",        DATA_STRING, "CRC",
         "va",               "VA",               DATA_INT, va,
@@ -146,12 +143,13 @@ Data format string:
     WH: Watt-hours in last 15 minutes, little endian
     MIN,HRS,DAYs since 1/1/2007, little endian
 */
-static int geo_minim_display_decode( r_device * const decoder, const char *id,
-    const uint8_t buf[], unsigned len, data_t ** const data)
+static int geo_minim_display_decode(r_device * const decoder, const char *id,
+        const uint8_t buf[], unsigned len, data_t ** const data)
 {
     static const uint8_t zeroes[8] = { 0 };
     static const uint8_t aaes[5] = { 0xaa, 0xaa, 0xaa, 0xaa, 0xaa };
-    static const uint8_t trailer[12] = { 0xaa, 0xff, 0xff, 0, 0, 0, 0, 0xaa, 0xff, 0xaa, 0xaa, 0 };
+    static const uint8_t trailer[12] = {
+            0xaa, 0xff, 0xff, 0, 0, 0, 0, 0xaa, 0xff, 0xaa, 0xaa, 0 };
     unsigned watts, wh, flags5, flags15;
 #define GEO_ZERO_WH 0
 //#define GEO_ZERO_WH ~0U
@@ -160,51 +158,56 @@ static int geo_minim_display_decode( r_device * const decoder, const char *id,
     struct tm t = {0};
     char now[20];
 
-    if ( len != 48)
+    if (len != 48)
     {
-        decoder_output_bitrowf( decoder, buf, UINT8_BITS * len,
-            "geo_minim: Incorrect length. Expected 48, got %u bytes", len);
+        decoder_output_bitrowf(decoder, buf, 8 * len,
+                "geo_minim: Incorrect length. Expected 48, got %u bytes", len);
         return DECODE_ABORT_LENGTH;
     }
 
     /* Report unexpected values */
-    if ( memcmp( zeroes, buf + 6, sizeof zeroes))
+    if (memcmp(zeroes, buf + 6, sizeof(zeroes)))
     {
-        decoder_output_bitrowf( decoder, buf + 6, UINT8_BITS * sizeof zeroes, "geo_minim: Nonzero @6");
+        decoder_output_bitrowf(decoder, buf + 6, 8 * sizeof(zeroes),
+                "geo_minim: Nonzero @6");
 //        return DECODE_FAIL_SANITY;
     }
 
-    if ( memcmp( zeroes, buf + 16, sizeof zeroes))
+    if (memcmp(zeroes, buf + 16, sizeof(zeroes)))
     {
-        decoder_output_bitrowf( decoder, buf + 16, UINT8_BITS * sizeof zeroes, "geo_minim: Nonzero @16");
+        decoder_output_bitrowf(decoder, buf + 16, 8 * sizeof(zeroes),
+                "geo_minim: Nonzero @16");
 //        return DECODE_FAIL_SANITY;
     }
 
-    if ( memcmp( aaes, buf + 24, sizeof aaes))
+    if (memcmp(aaes, buf + 24, sizeof(aaes)))
     {
-        decoder_output_bitrowf( decoder, buf + 24, UINT8_BITS * sizeof  aaes, "geo_minim: Not 0xaa @24");
+        decoder_output_bitrowf(decoder, buf + 24, 8 * sizeof(aaes),
+                "geo_minim: Not 0xaa @24");
 //        return DECODE_FAIL_SANITY;
     }
 
-    if ( buf[29] != 0x00)
+    if (buf[29] != 0x00)
     {
-        decoder_output_messagef( decoder, "geo_minim: Expected 0x00 but got %#x @29", buf[29]);
+        decoder_output_messagef(decoder,
+                "geo_minim: Expected 0x00 but got %#x @29", buf[29]);
 //        return DECODE_FAIL_SANITY;
     }
 
-    if ( memcmp( trailer, buf + 34, sizeof trailer))
+    if (memcmp(trailer, buf + 34, sizeof(trailer)))
     {
-        decoder_output_bitrowf( decoder, buf + 34, UINT8_BITS * sizeof trailer, "geo_minim: Bad trailer @34");
+        decoder_output_bitrowf(decoder, buf + 34, 8 * sizeof(trailer),
+                "geo_minim: Bad trailer @34");
 //        return DECODE_FAIL_SANITY;
     }
 
     /* Instantaneous power: 300W => 60: 1 = 5W */
-    watts = 5 * (buf[4] + ((buf[5] & 0x7f) << UINT8_BITS));
+    watts = 5 * (buf[4] + ((buf[5] & 0x7f) << 8));
     /* TODO: what is bit7? */
     flags5 = buf[5] & ~0x7f;
 
     /* Energy: 480W => 8/min: 1 = 0.06kWm = 0.001kWh */
-    wh = buf[14] + ((buf[15] & 0x7) << UINT8_BITS);
+    wh = buf[14] + ((buf[15] & 0x7) << 8);
     /* TODO: what are bits 3..7 ? 0x40 normally, Battery OK, Fault? */
     flags15 = buf[15] & ~0x7;
 
@@ -215,7 +218,7 @@ static int geo_minim_display_decode( r_device * const decoder, const char *id,
 #endif
 
     /* detect watt-hour rollover - every 15 minutes */
-    if ( wh < s_last)
+    if (wh < s_last)
         s_watt_hours += s_last; /* rollover */
     s_last = wh;
 
@@ -224,19 +227,19 @@ static int geo_minim_display_decode( r_device * const decoder, const char *id,
     t.tm_min = buf[33] & 0x3f;
     t.tm_hour = buf[32] & 0x1f;
     /* Day 0 = 1/1/2007 */
-    t.tm_mday = 1 + buf[30] + (buf[31] << UINT8_BITS);
+    t.tm_mday = 1 + buf[30] + (buf[31] << 8);
     t.tm_mon = 1 - 1;
     t.tm_year = 2007 - 1900;
     t.tm_isdst = -1;
-    mktime( &t);
+    mktime(&t);
 
-    setlocale( LC_TIME, "");
-    strftime( now, sizeof now, "%H:%M %x", &t);
+    setlocale(LC_TIME, "");
+    strftime(now, sizeof(now), "%H:%M %x", &t);
 
     /* Create the data structure, ready for the decoder_output_data function. */
     /* clang-format off */
     *data = data_make(
-        "model",            "Device",           DATA_STRING, MINIM_DEVICE_NAME ": Display",
+        "model",            "Device",           DATA_STRING, "GEO minim+ display",
         "id",               "ID",               DATA_STRING, id,
         "mic",              "Integrity",        DATA_STRING, "CRC",
         "watts",            "Watts",            DATA_FORMAT, "%u", DATA_INT, watts,
@@ -252,7 +255,7 @@ static int geo_minim_display_decode( r_device * const decoder, const char *id,
     return 1; /* Message successfully decoded */
 }
 
-static int decode_minim_message( r_device * const decoder, bitbuffer_t *bb,
+static int decode_minim_message(r_device * const decoder, bitbuffer_t *bb,
         unsigned row, unsigned bitpos, data_t ** const data)
 {
     uint8_t buf[128];
@@ -260,76 +263,82 @@ static int decode_minim_message( r_device * const decoder, bitbuffer_t *bb,
 
     /* Extract frame header */
     unsigned const hdr_len = 4;
-    unsigned const hdr_bits = hdr_len * UINT8_BITS;
-    if( bitpos + hdr_bits >= bits)
+    unsigned const hdr_bits = hdr_len * 8;
+    if (bitpos + hdr_bits >= bits)
         return DECODE_ABORT_LENGTH;
 
     bits -= bitpos;
-    bitbuffer_extract_bytes( bb, row, bitpos, buf, hdr_bits);
+    bitbuffer_extract_bytes(bb, row, bitpos, buf, hdr_bits);
 
     /* Determine frame type. Assume:
      * buf[0] = message type
      * buf[1], buf[2] = session ID from pairing
      * buf[3] = data byte length
      */
-    static const uint8_t header1[] = { 0xea, /* 0x01, 0x35, 0x2a */ }; /* Display */
-    static const uint8_t header2[] = { 0x3f, /* 0x06, 0x29, 0x05 */ }; /* Sensor */
+    static const uint8_t header1[] = {
+            0xea, /* 0x01, 0x35, 0x2a */ }; /* Display */
+    static const uint8_t header2[] = {
+            0x3f, /* 0x06, 0x29, 0x05 */ }; /* CT sensor */
     enum EType { kType1, kType2 } type;
-    if ( !memcmp( header1, buf, sizeof header1))
+    if (!memcmp(header1, buf, sizeof(header1)))
     {
         type = kType1;
     }
-    else if ( !memcmp( header2, buf, sizeof header2))
+    else if (!memcmp(header2, buf, sizeof(header2)))
     {
         type = kType2;
     }
     else
     {
-        decoder_output_messagef( decoder,
-            "geo_minim: Unknown header %02x%02x%02x%02x", buf[0], buf[1], buf[2], buf[3]);
+        decoder_output_messagef(decoder,
+                "geo_minim: Unknown header %02x%02x%02x%02x",
+                buf[0], buf[1], buf[2], buf[3]);
         return DECODE_ABORT_EARLY;
     }
 
-    unsigned bytes = bits / UINT8_BITS;
-    if ( bytes > sizeof buf)
+    unsigned bytes = bits / 8;
+    if (bytes > sizeof(buf))
     {
-        decoder_output_bitbufferf( decoder, bb, "geo_minim: Too big - %u bits", bits);
+        decoder_output_bitbufferf(decoder, bb,
+                "geo_minim: Too big - %u bits", bits);
 //        return DECODE_ABORT_LENGTH;
-        bytes = sizeof buf;
+        bytes = sizeof(buf);
     }
 
     /* Check offset to crc16 using data_len @ header[3] */
     unsigned crc_len = hdr_len + buf[3];
-    if ( crc_len + 2 > bytes)
+    if (crc_len + 2 > bytes)
     {
-        decoder_output_messagef( decoder, "geo_minim: Truncated - got %u of %u bytes",
-            bytes, crc_len + 2);
+        decoder_output_messagef(decoder,
+                "geo_minim: Truncated - got %u of %u bytes", bytes, crc_len +2);
         return DECODE_FAIL_SANITY;
     }
 
     /* Extract byte-aligned data */
-    bitbuffer_extract_bytes( bb, row, bitpos + hdr_bits, buf + hdr_bits / UINT8_BITS, bytes * UINT8_BITS);
+    bitbuffer_extract_bytes(
+            bb, row, bitpos + hdr_bits, buf + hdr_bits / 8, bytes * 8);
 
     /* Message Integrity Check */
-    unsigned crc = crc16( buf, crc_len, 0x8005, 0);
-    unsigned crc_rcvd = (buf[ crc_len] << UINT8_BITS) | buf[ crc_len +1];
-    if ( crc != crc_rcvd)
+    unsigned crc = crc16(buf, crc_len, 0x8005, 0);
+    unsigned crc_rcvd = (buf[ crc_len] << 8) | buf[ crc_len +1];
+    if (crc != crc_rcvd)
     {
-        decoder_output_bitrowf( decoder, buf, (crc_len + 2) * UINT8_BITS,
-            "geo_minim: Bad CRC. Expected %04X got %04X", crc, crc_rcvd);
+        decoder_output_bitrowf(decoder, buf, (crc_len + 2) * 8,
+                "geo_minim: Bad CRC. Expected %04X got %04X", crc, crc_rcvd);
         return DECODE_FAIL_MIC;
     }
 
     char id[12];
-    snprintf( id, sizeof id, "%02X%02X%02X%02X", buf[0], buf[1], buf[2], buf[3]);
+    snprintf(id, sizeof(id),
+            "%02X%02X%02X%02X", buf[0], buf[1], buf[2], buf[3]);
 
-    switch ( type)
+    switch (type)
     {
     case kType1:
-        return geo_minim_display_decode( decoder, id, buf, bytes, data);
+        return geo_minim_display_decode(decoder, id, buf, bytes, data);
 
     case kType2:
-        return geo_minim_sensor_decode( decoder, id, buf, bytes, data);
+        return geo_minim_sensor_decode(decoder, id, buf, bytes, data);
     }
 
     return DECODE_FAIL_SANITY;
@@ -346,43 +355,44 @@ static char *output_fields[] = {
     NULL
 };
 
-static int minim_callback( r_device *decoder, bitbuffer_t *bb)
+static int minim_callback(r_device *decoder, bitbuffer_t *bb)
 {
     static const uint8_t pre[] = { 0x55, 0x55 };
-    const unsigned prelen = UINT8_BITS * sizeof pre;
+    const unsigned prelen = 8 * sizeof(pre);
     static const uint8_t syn[] = { 0x7b, 0xb9 };
-    const unsigned synlen = UINT8_BITS * sizeof syn;
+    const unsigned synlen = 8 * sizeof(syn);
     data_t *data = NULL;
     int n;
 
-    if( bb->num_rows != 1)
+    if (bb->num_rows != 1)
         return DECODE_ABORT_LENGTH;
 
-    if( bb->bits_per_row[ 0] <= prelen )
+    if (bb->bits_per_row[ 0] <= prelen)
         return DECODE_ABORT_LENGTH;
 
-    if( (n = bitbuffer_search( bb, 0, 0, pre, prelen)) >= bb->bits_per_row[ 0])
+    if ((n = bitbuffer_search(bb, 0, 0, pre, prelen)) >= bb->bits_per_row[ 0])
         return DECODE_ABORT_EARLY;
 
-    if( bb->bits_per_row[ 0] <= n + prelen + synlen )
+    if (bb->bits_per_row[ 0] <= n + prelen + synlen)
         return DECODE_ABORT_LENGTH;
 
-    if( (n = bitbuffer_search( bb, 0, n + prelen, syn, synlen)) >= bb->bits_per_row[ 0])
+    if ((n = bitbuffer_search(bb, 0, n + prelen, syn, synlen))
+            >= bb->bits_per_row[ 0])
     {
-        if( decoder->verbose >= 1)
-            decoder_output_bitbufferf( decoder, bb, "geo_minim:vv No sync");
+        if (decoder->verbose >= 1)
+            decoder_output_bitbufferf(decoder, bb, "geo_minim:vv No sync");
         return DECODE_ABORT_EARLY;
     }
 
-    if( (n = decode_minim_message( decoder, bb, 0, n + synlen, &data)) <= 0)
+    if ((n = decode_minim_message(decoder, bb, 0, n + synlen, &data)) <= 0)
         return n;
 
-    decoder_output_data( decoder, data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
 r_device geo_minim = {
-    .name           = MINIM_DEVICE_NAME,
+    .name           = "GEO minim+ energy monitor",
     .modulation     = FSK_PULSE_PCM,
     .short_width    = 24,
     .long_width     = 24,
