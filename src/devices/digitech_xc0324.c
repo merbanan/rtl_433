@@ -33,8 +33,7 @@ A 48 bit message consists of:
     transmitted in least significant bit first order
     in tenths of degree Celsius
     offset from -40.0 degrees C (minimum temp spec of the device)
-- byte 4: constant (in all my data) 0x80
-    _maybe_ a battery status ???
+- byte 4: Humidity in Percentage on newer units.
 - byte 5: a check byte (the XOR of bytes 0-4 inclusive)
     each bit is effectively a parity bit for correspondingly positioned bit
     in the real message
@@ -75,7 +74,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     uint8_t b[XC0324_MESSAGE_BYTELEN];
     char id[4] = {0};
     double temperature;
-    uint8_t flags;
+    uint8_t humidity;
     uint8_t chksum; // == 0x00 for a good message
 
     // Extract the message
@@ -106,10 +105,10 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     int temp = ((uint16_t)(reverse8(b[3]) & 0x0f) << 8) | reverse8(b[2]);
     temperature   = (temp - 400) * 0.1f;
 
-    //Unknown byte, constant as 0x80 in all my data
-    // ??maybe battery status??
-    flags = b[4];
-
+    // Decode humiddity (b[4]), LSB first order!
+    // Whole Number Integers in Percentage
+    humidity   = (uint16_t)(reverse8(b[4]));
+    
     // Create the data structure, ready for the decoder_output_data function.
     // Separate production output (decoder->verbose == 0)
     // from (simulated) deciphering stage output (decoder->verbose > 0)
@@ -119,7 +118,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
                 "model",            "Device Type",      DATA_STRING, "Digitech-XC0324",
                 "id",               "ID",               DATA_STRING, id,
                 "temperature_C",    "Temperature C",    DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
-                "flags",            "Constant ?",       DATA_INT,    flags,
+                "humidity",         "Humidity %",       DATA_INT,    humidity,
                 "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
@@ -210,7 +209,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "temperature_C",
-        "flags",
+        "humidity",
         "mic",
         "message_num",
         NULL,
