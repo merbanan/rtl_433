@@ -67,11 +67,12 @@ Data format string:
     VA: Big endian power x10VA, bit14 = 5VA
     UP: Big endian uptime x9 seconds
 */
-static int geo_minim_sensor_decode(r_device * const decoder, const char *id,
-        const uint8_t buf[], unsigned len, data_t ** const data)
+static int geo_minim_ct_sensor_decode(r_device * const decoder,
+        const uint8_t buf[], unsigned len)
 {
     unsigned n, secs,mins, hours, va, flags4;
     char up[32];
+    char id[12];
 
     if (len != 11)
     {
@@ -79,6 +80,9 @@ static int geo_minim_sensor_decode(r_device * const decoder, const char *id,
             "geo_minim: Incorrect length. Expected 11 got %u bytes", len);
         return DECODE_ABORT_LENGTH;
     }
+
+    snprintf(id, sizeof(id),
+            "%02X%02X%02X%02X", buf[0], buf[1], buf[2], buf[3]);
 
     /* Uptime in ~9 second intervals */
     n = 9 * (buf[8] + (buf[7] << 8) + (buf[6] << 16));
@@ -90,7 +94,7 @@ static int geo_minim_sensor_decode(r_device * const decoder, const char *id,
     n /= 60;
     hours = n % 24;
     n /= 24;
-    snprintf(up, sizeof(up), "%u days %02u:%02u:%02u", n, hours, mins, secs);
+    snprintf(up, sizeof(up), "%uday %02u:%02u:%02u", n, hours, mins, secs);
 
     /* Bytes 4 & 5 appear to be the instantaneous VA x10.
      * When scaled by the 'Fine Tune' setting (power factor [0.88]) set on the
@@ -106,15 +110,17 @@ static int geo_minim_sensor_decode(r_device * const decoder, const char *id,
     flags4 = buf[4] & ~0x4f;
 
     /* clang-format off */
-    *data = data_make(
-        "model",            "Device",           DATA_STRING, "GEO minim+ CT sensor",
-        "id",               "ID",               DATA_STRING, id,
-        "mic",              "Integrity",        DATA_STRING, "CRC",
-        "va",               "VA",               DATA_INT, va,
-        "flags4",           "Flags",            DATA_COND, flags4 != 0x30, DATA_FORMAT, "%#x", DATA_INT, flags4,
-        "uptime",           "Uptime",           DATA_STRING, up,
-        NULL);
+    data_t *data = data_make(
+            "model",    "Device",       DATA_STRING, "GEO minim+ CT sensor",
+            "id",       "ID",           DATA_STRING, id,
+            "va",       "VA",           DATA_INT, va,
+            "flags4",   "Flags",        DATA_COND, flags4 != 0x30, DATA_FORMAT, "%#x", DATA_INT, flags4,
+            "uptime",   "Uptime",       DATA_STRING, up,
+            "mic",      "Integrity",    DATA_STRING, "CRC",
+            NULL);
     /* clang-format on */
+
+    decoder_output_data(decoder, data);
 
     return 1; /* Message successfully decoded */
 }
@@ -143,20 +149,24 @@ Data format string:
     WH: Watt-hours in last 15 minutes, little endian
     MIN,HRS,DAYs since 1/1/2007, little endian
 */
-static int geo_minim_display_decode(r_device * const decoder, const char *id,
-        const uint8_t buf[], unsigned len, data_t ** const data)
+static int geo_minim_display_decode(r_device * const decoder,
+        const uint8_t buf[], unsigned len)
 {
-    static const uint8_t zeroes[8] = { 0 };
-    static const uint8_t aaes[5] = { 0xaa, 0xaa, 0xaa, 0xaa, 0xaa };
-    static const uint8_t trailer[12] = {
+    uint8_t const zeroes[8] = { 0 };
+    uint8_t const aaes[5] = { 0xaa, 0xaa, 0xaa, 0xaa, 0xaa };
+    uint8_t const trailer[12] = {
             0xaa, 0xff, 0xff, 0, 0, 0, 0, 0xaa, 0xff, 0xaa, 0xaa, 0 };
     unsigned watts, wh, flags5, flags15;
-#define GEO_ZERO_WH 0
-//#define GEO_ZERO_WH ~0U
+
+//#define GEO_ZERO_WH 0     /* Accumulate watt-hour measurements */
+//#define GEO_ZERO_WH ~0U   /* Take 1st wh reading as zero reference */
+#ifdef GEO_ZERO_WH
     static unsigned s_watt_hours = GEO_ZERO_WH;
     static unsigned s_last;
+#endif
     struct tm t = {0};
     char now[20];
+    char id[12];
 
     if (len != 48)
     {
@@ -201,6 +211,9 @@ static int geo_minim_display_decode(r_device * const decoder, const char *id,
 //        return DECODE_FAIL_SANITY;
     }
 
+    snprintf(id, sizeof(id),
+            "%02X%02X%02X%02X", buf[0], buf[1], buf[2], buf[3]);
+
     /* Instantaneous power: 300W => 60: 1 = 5W */
     watts = 5 * (buf[4] + ((buf[5] & 0x7f) << 8));
     /* TODO: what is bit7? */
@@ -217,10 +230,13 @@ static int geo_minim_display_decode(r_device * const decoder, const char *id,
         s_watt_hours = -wh;
 #endif
 
+#ifdef GEO_ZERO_WH
     /* detect watt-hour rollover - every 15 minutes */
     if (wh < s_last)
         s_watt_hours += s_last; /* rollover */
     s_last = wh;
+    wh += s_watt_hours;
+#endif
 
     /* Date/time @30..33 */
     t.tm_sec = 0;
@@ -238,25 +254,27 @@ static int geo_minim_display_decode(r_device * const decoder, const char *id,
 
     /* Create the data structure, ready for the decoder_output_data function. */
     /* clang-format off */
-    *data = data_make(
-        "model",            "Device",           DATA_STRING, "GEO minim+ display",
-        "id",               "ID",               DATA_STRING, id,
-        "mic",              "Integrity",        DATA_STRING, "CRC",
-        "watts",            "Watts",            DATA_FORMAT, "%u", DATA_INT, watts,
-        "kwh",              "kWh",              DATA_FORMAT, "%.3f", DATA_DOUBLE, (s_watt_hours + wh) * 0.001,
-        "time",             "Time",             DATA_STRING, now,
-        "flags5" ,          "Flags5",           DATA_COND, flags5 != 0,
-                                                    DATA_FORMAT, "%#x", DATA_INT, flags5,
-        "flags15",          "Flags15",          DATA_COND, flags15 != 0x40,
-                                                    DATA_FORMAT, "%#x", DATA_INT, flags15,
-        NULL);
+    data_t *data = data_make(
+            "model",    "Device",       DATA_STRING, "GEO minim+ display",
+            "id",       "ID",           DATA_STRING, id,
+            "watts",    "Watts",        DATA_FORMAT, "%u", DATA_INT, watts,
+            "kwh",      "kWh",          DATA_FORMAT, "%.3f", DATA_DOUBLE, wh * 0.001,
+            "time",     "Time",         DATA_STRING, now,
+            "flags5",   "Flags5",       DATA_COND, flags5 != 0,
+                                                DATA_FORMAT, "%#x", DATA_INT, flags5,
+            "flags15",  "Flags15",      DATA_COND, flags15 != 0x40,
+                                                DATA_FORMAT, "%#x", DATA_INT, flags15,
+            "mic",      "Integrity",    DATA_STRING, "CRC",
+            NULL);
     /* clang-format on */
+
+    decoder_output_data(decoder, data);
 
     return 1; /* Message successfully decoded */
 }
 
 static int decode_minim_message(r_device * const decoder, bitbuffer_t *bb,
-        unsigned row, unsigned bitpos, data_t ** const data)
+        unsigned row, unsigned bitpos)
 {
     uint8_t buf[128];
     unsigned bits = bb->bits_per_row[ row];
@@ -275,18 +293,18 @@ static int decode_minim_message(r_device * const decoder, bitbuffer_t *bb,
      * buf[1], buf[2] = session ID from pairing
      * buf[3] = data byte length
      */
-    static const uint8_t header1[] = {
+    uint8_t const header1[] = {
             0xea, /* 0x01, 0x35, 0x2a */ }; /* Display */
-    static const uint8_t header2[] = {
+    uint8_t const header2[] = {
             0x3f, /* 0x06, 0x29, 0x05 */ }; /* CT sensor */
-    enum EType { kType1, kType2 } type;
+    enum EType { kTypeDisplay, kTypeCT } type;
     if (!memcmp(header1, buf, sizeof(header1)))
     {
-        type = kType1;
+        type = kTypeDisplay;
     }
     else if (!memcmp(header2, buf, sizeof(header2)))
     {
-        type = kType2;
+        type = kTypeCT;
     }
     else
     {
@@ -328,17 +346,13 @@ static int decode_minim_message(r_device * const decoder, bitbuffer_t *bb,
         return DECODE_FAIL_MIC;
     }
 
-    char id[12];
-    snprintf(id, sizeof(id),
-            "%02X%02X%02X%02X", buf[0], buf[1], buf[2], buf[3]);
-
     switch (type)
     {
-    case kType1:
-        return geo_minim_display_decode(decoder, id, buf, bytes, data);
+    case kTypeDisplay:
+        return geo_minim_display_decode(decoder, buf, bytes);
 
-    case kType2:
-        return geo_minim_sensor_decode(decoder, id, buf, bytes, data);
+    case kTypeCT:
+        return geo_minim_ct_sensor_decode(decoder, buf, bytes);
     }
 
     return DECODE_FAIL_SANITY;
@@ -346,22 +360,21 @@ static int decode_minim_message(r_device * const decoder, bitbuffer_t *bb,
 
 /* List of fields to appear in the `-F csv` output */
 static char *output_fields[] = {
-    "model",
-    "id",
-    "mic",
-    "watts",
-    "kwh",
-    "time",
-    NULL
+        "model",
+        "id",
+        "mic",
+        "watts",
+        "kwh",
+        "time",
+        NULL
 };
 
 static int minim_callback(r_device *decoder, bitbuffer_t *bb)
 {
-    static const uint8_t pre[] = { 0x55, 0x55 };
+    uint8_t const pre[] = { 0x55, 0x55 };
     const unsigned prelen = 8 * sizeof(pre);
-    static const uint8_t syn[] = { 0x7b, 0xb9 };
+    uint8_t const syn[] = { 0x7b, 0xb9 };
     const unsigned synlen = 8 * sizeof(syn);
-    data_t *data = NULL;
     int n;
 
     if (bb->num_rows != 1)
@@ -384,20 +397,19 @@ static int minim_callback(r_device *decoder, bitbuffer_t *bb)
         return DECODE_ABORT_EARLY;
     }
 
-    if ((n = decode_minim_message(decoder, bb, 0, n + synlen, &data)) <= 0)
+    if ((n = decode_minim_message(decoder, bb, 0, n + synlen)) <= 0)
         return n;
 
-    decoder_output_data(decoder, data);
     return 1;
 }
 
 r_device geo_minim = {
-    .name           = "GEO minim+ energy monitor",
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = 24,
-    .long_width     = 24,
-    .reset_limit    = 3000,
-    .decode_fn      = &minim_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name           = "GEO minim+ energy monitor",
+        .modulation     = FSK_PULSE_PCM,
+        .short_width    = 24,
+        .long_width     = 24,
+        .reset_limit    = 3000,
+        .decode_fn      = &minim_callback,
+        .disabled       = 0,
+        .fields         = output_fields,
 };
