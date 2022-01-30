@@ -147,7 +147,7 @@ static void usage(int exit_code)
             "       e.g. -t \"antenna=A,bandwidth=4.5M,rfnotch_ctrl=false\"\n"
             "  [-f <frequency>] Receive frequency(s) (default: %i Hz)\n"
             "  [-H <seconds>] Hop interval for polling of multiple frequencies (default: %i seconds)\n"
-            "  [-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
+            "  [-p <ppm_error>] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
             "  [-s <sample rate>] Set sample rate (default: %i Hz)\n"
             "\t\t= Demodulator options =\n"
             "  [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)\n"
