@@ -34,6 +34,7 @@
 #include "output_mqtt.h"
 #include "output_influx.h"
 #include "output_trigger.h"
+#include "output_rtltcp.h"
 #include "write_sigrok.h"
 #include "mongoose.h"
 #include "compat_time.h"
@@ -222,6 +223,8 @@ void r_free_cfg(r_cfg_t *cfg)
     free(cfg->demod);
 
     free(cfg->devices);
+
+    list_free_elems(&cfg->raw_handler, (list_elem_free_fn)raw_output_free);
 
     list_free_elems(&cfg->output_handler, (list_elem_free_fn)data_output_free);
 
@@ -997,6 +1000,16 @@ void add_null_output(r_cfg_t *cfg, char *param)
 {
     UNUSED(param);
     list_push(&cfg->output_handler, NULL);
+}
+
+void add_rtltcp_output(r_cfg_t *cfg, char *param)
+{
+    char *host = "localhost";
+    char *port = "1234";
+    hostport_param(param, &host, &port);
+    fprintf(stderr, "rtl_tcp server at %s port %s\n", host, port);
+
+    list_push(&cfg->raw_handler, raw_output_rtltcp_create(host, port, cfg));
 }
 
 void add_sr_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
