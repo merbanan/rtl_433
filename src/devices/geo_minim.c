@@ -40,7 +40,6 @@
  *         -X'n=minim+,m=FSK_PCM,s=24,l=24,r=3000,preamble=0x7bb9'
 */
 
-#include <locale.h>
 #include <time.h>
 
 #include "decoder.h"
@@ -165,7 +164,7 @@ static int geo_minim_display_decode(r_device * const decoder,
     static unsigned s_last;
 #endif
     struct tm t = {0};
-    char now[20];
+    char now[64];
     char id[12];
 
     if (len != 48)
@@ -247,10 +246,10 @@ static int geo_minim_display_decode(r_device * const decoder,
     t.tm_mon = 1 - 1;
     t.tm_year = 2007 - 1900;
     t.tm_isdst = -1;
+    /* Normalise the date */
     mktime(&t);
-
-    setlocale(LC_TIME, "");
-    strftime(now, sizeof(now), "%H:%M %x", &t);
+    snprintf(now, sizeof(now), "%04d-%02d-%02d %02d:%02d",
+            1900 + t.tm_year, 1 + t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min);
 
     /* Create the data structure, ready for the decoder_output_data function. */
     /* clang-format off */
