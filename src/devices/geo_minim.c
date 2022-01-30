@@ -314,12 +314,13 @@ static int decode_minim_message(r_device * const decoder, bitbuffer_t *bb,
     }
 
     unsigned bytes = bits / 8;
-    if (bytes > sizeof(buf))
+    unsigned maxlen = sizeof(buf);
+    if (bytes > maxlen)
     {
-        decoder_output_bitbufferf(decoder, bb,
-                "geo_minim: Too big - %u bits", bits);
+        decoder_output_messagef(decoder,
+                "geo_minim: Too big: %u > %u max bytes", bits / 8, maxlen);
 //        return DECODE_ABORT_LENGTH;
-        bytes = sizeof(buf);
+        bytes = maxlen;
     }
 
     /* Check offset to crc16 using data_len @ header[3] */
@@ -333,7 +334,7 @@ static int decode_minim_message(r_device * const decoder, bitbuffer_t *bb,
 
     /* Extract byte-aligned data */
     bitbuffer_extract_bytes(
-            bb, row, bitpos + hdr_bits, buf + hdr_bits / 8, bytes * 8);
+            bb, row, bitpos + hdr_bits, buf + hdr_len, (bytes - hdr_len) * 8);
 
     /* Message Integrity Check */
     unsigned crc = crc16(buf, crc_len, 0x8005, 0);
