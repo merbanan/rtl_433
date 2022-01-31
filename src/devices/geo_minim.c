@@ -83,8 +83,8 @@ static int geo_minim_ct_sensor_decode(r_device * const decoder,
     snprintf(id, sizeof(id),
             "%02X%02X%02X%02X", buf[0], buf[1], buf[2], buf[3]);
 
-    /* Uptime in ~9 second intervals */
-    n = 9 * (buf[8] + (buf[7] << 8) + (buf[6] << 16));
+    /* Uptime in ~8 second intervals */
+    n = 8 * (buf[8] + (buf[7] << 8) + (buf[6] << 16));
 
     /* Convert to days,hours,minutes,seconds */
     secs = n % 60;
