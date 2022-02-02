@@ -89,6 +89,14 @@ static data_meta_type_t dmt[DATA_COUNT] = {
       .array_elementwise_import = NULL,
       .array_element_release    = (array_element_release_fn) data_array_free ,
       .value_release            = (value_release_fn) data_array_free },
+
+   //  DATA_BYTE
+    { .array_element_size       = sizeof(uint8_t),
+      .array_is_boxed           = false,
+      .array_elementwise_import = NULL,
+      .array_element_release    = NULL,
+      .value_release            = NULL },
+
 };
 
 static bool import_values(void *dst, void *src, int num_values, data_type_t type)
@@ -205,6 +213,9 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
         case DATA_ARRAY:
             value_release = (value_release_fn)data_array_free; // appease CSA checker
             value.v_ptr = va_arg(ap, data_array_t *);
+            break;
+	case DATA_BYTE:
+            value.v_byte = (uint8_t) (va_arg(ap, int) & 0xFF);
             break;
         default:
             fprintf(stderr, "vdata_make() bad data type (%d)\n", type);
@@ -392,6 +403,9 @@ void print_value(data_output_t *output, data_type_t type, data_value_t value, ch
     case DATA_STRING:
         output->print_string(output, value.v_ptr, format);
         break;
+    case DATA_BYTE:
+	output->print_byte(output, value.v_byte, format);
+	break;
     case DATA_ARRAY:
         output->print_array(output, value.v_ptr, format);
         break;
@@ -536,6 +550,13 @@ static void format_jsons_int(data_output_t *output, int data, char const *format
     abuf_printf(&jsons->msg, "%d", data);
 }
 
+static void format_jsons_byte(data_output_t *output, uint8_t data, char const *format)
+{
+    UNUSED(format);
+    data_print_jsons_t *jsons = (data_print_jsons_t *)output;
+    abuf_printf(&jsons->msg, "%02X", data);
+}
+
 size_t data_print_jsons(data_t *data, char *dst, size_t len)
 {
     data_print_jsons_t jsons = {
@@ -545,6 +566,7 @@ size_t data_print_jsons(data_t *data, char *dst, size_t len)
                     .print_string = format_jsons_string,
                     .print_double = format_jsons_double,
                     .print_int    = format_jsons_int,
+		    .print_byte   = format_jsons_byte,
             },
     };
 

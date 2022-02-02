@@ -392,6 +392,14 @@ static void print_influx_int(data_output_t *output, int data, char const *format
     mbuf_snprintf(buf, "%d", data);
 }
 
+static void print_influx_byte(data_output_t *output, uint8_t data, char const *format)
+{
+    UNUSED(format);
+    influx_client_t *influx = (influx_client_t *)output;
+    struct mbuf *buf = &influx->databufs[influx->databufidxfill];
+    mbuf_snprintf(buf, "%02X", data);
+}
+
 static void data_output_influx_free(data_output_t *output)
 {
     influx_client_t *influx = (influx_client_t *)output;
@@ -470,6 +478,7 @@ struct data_output *data_output_influx_create(struct mg_mgr *mgr, char *opts)
     influx->output.print_string = print_influx_string;
     influx->output.print_double = print_influx_double;
     influx->output.print_int    = print_influx_int;
+    influx->output.print_byte   = print_influx_byte;
     influx->output.output_free  = data_output_influx_free;
 
     fprintf(stderr, "Publishing data to InfluxDB (%s)\n", url);

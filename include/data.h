@@ -22,6 +22,7 @@
 #define INCLUDE_DATA_H_
 
 #include <stddef.h>
+#include <stdint.h>
 
 typedef enum {
     DATA_DATA,   /**< pointer to data is stored */
@@ -29,6 +30,7 @@ typedef enum {
     DATA_DOUBLE, /**< pointer to a double is stored */
     DATA_STRING, /**< pointer to a string is stored */
     DATA_ARRAY,  /**< pointer to an array of values is stored */
+    DATA_BYTE,   /**< pointer to a uint8_t is stored */
     DATA_COUNT,  /**< invalid */
     DATA_FORMAT, /**< indicates the following value is formatted */
     DATA_COND,   /**< add data only if condition is true, skip otherwise */
@@ -43,6 +45,7 @@ typedef struct data_array {
 typedef union data_value {
     int         v_int;
     double      v_dbl;
+    uint8_t     v_byte;
     void        *v_ptr;
 } data_value_t;
 
@@ -129,6 +132,7 @@ typedef struct data_output {
     void (*print_string)(struct data_output *output, const char *data, char const *format);
     void (*print_double)(struct data_output *output, double data, char const *format);
     void (*print_int)(struct data_output *output, int data, char const *format);
+    void (*print_byte)(struct data_output *output, uint8_t data, char const *format);
     void (*output_start)(struct data_output *output, char const *const *fields, int num_fields);
     void (*output_flush)(struct data_output *output);
     void (*output_free)(struct data_output *output);

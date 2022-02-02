@@ -110,6 +110,14 @@ static void print_json_int(data_output_t *output, int data, char const *format)
     fprintf(json->file, "%d", data);
 }
 
+static void print_json_byte(data_output_t *output, uint8_t data, char const *format)
+{
+    UNUSED(format);
+    data_output_json_t *json = (data_output_json_t *)output;
+
+    fprintf(json->file, "%02X", data);
+}
+
 static void print_json_flush(data_output_t *output)
 {
     data_output_json_t *json = (data_output_json_t *)output;
@@ -141,6 +149,7 @@ struct data_output *data_output_json_create(FILE *file)
     json->output.print_string = print_json_string;
     json->output.print_double = print_json_double;
     json->output.print_int    = print_json_int;
+    json->output.print_byte   = print_json_byte;
     json->output.output_flush = print_json_flush;
     json->output.output_free  = data_output_json_free;
     json->file                = file;
@@ -298,6 +307,13 @@ static void print_kv_int(data_output_t *output, int data, char const *format)
     kv->column += fprintf(kv->file, format ? format : "%d", data);
 }
 
+static void print_kv_byte(data_output_t *output, uint8_t data, char const *format)
+{
+    data_output_kv_t *kv = (data_output_kv_t *)output;
+
+    kv->column += fprintf(kv->file, format ? format : "%02X", data);
+}
+
 static void print_kv_string(data_output_t *output, const char *data, char const *format)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
@@ -340,6 +356,7 @@ struct data_output *data_output_kv_create(FILE *file)
     kv->output.print_string = print_kv_string;
     kv->output.print_double = print_kv_double;
     kv->output.print_int    = print_kv_int;
+    kv->output.print_byte   = print_kv_byte;
     kv->output.output_flush = print_kv_flush;
     kv->output.output_free  = data_output_kv_free;
     kv->file                = file;
@@ -524,6 +541,14 @@ static void print_csv_int(data_output_t *output, int data, char const *format)
     fprintf(csv->file, "%d", data);
 }
 
+static void print_csv_byte(data_output_t *output, uint8_t data, char const *format)
+{
+    UNUSED(format);
+    data_output_csv_t *csv = (data_output_csv_t *)output;
+
+    fprintf(csv->file, "%02X", data);
+}
+
 static void print_csv_flush(data_output_t *output)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
@@ -555,6 +580,7 @@ struct data_output *data_output_csv_create(FILE *file)
     csv->output.print_string = print_csv_string;
     csv->output.print_double = print_csv_double;
     csv->output.print_int    = print_csv_int;
+    csv->output.print_byte   = print_csv_byte;
     csv->output.output_start = data_output_csv_start;
     csv->output.output_flush = print_csv_flush;
     csv->output.output_free  = data_output_csv_free;

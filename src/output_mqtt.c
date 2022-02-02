@@ -428,6 +428,13 @@ static void print_mqtt_int(data_output_t *output, int data, char const *format)
     print_mqtt_string(output, str, format);
 }
 
+static void print_mqtt_byte(data_output_t *output, uint8_t data, char const *format)
+{
+    char str[20];
+    snprintf(str, 20, "%02X", data);
+    print_mqtt_string(output, str, format);
+}
+
 static void data_output_mqtt_free(data_output_t *output)
 {
     data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
@@ -578,6 +585,7 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
     mqtt->output.print_string = print_mqtt_string;
     mqtt->output.print_double = print_mqtt_double;
     mqtt->output.print_int    = print_mqtt_int;
+    mqtt->output.print_byte   = print_mqtt_byte;
     mqtt->output.output_free  = data_output_mqtt_free;
 
     mqtt->mqc = mqtt_client_init(mgr, &tls_opts, host, port, user, pass, client_id, retain, qos);
