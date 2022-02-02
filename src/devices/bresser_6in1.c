@@ -64,7 +64,10 @@ Moisture is transmitted in the humidity field as index 1-16: 0, 7, 13, 20, 27, 3
 {150} 5c e4 18 80 02 c3 18 fb ba fc 26 98 11 84 81 ff f0 16 00 [Temp 11.8 C  Hum 81%]
 {148} d0 bd 18 80 02 c3 18 f9 ad fa 26 48 ff ff ff fe 02 ff f0
 
-    DIGEST:8h8h ID?8h8h8h8h FLAGS:4h BATT:1b CH:3d WSPEED:~8h~4h ~4h~8h WDIR:12h ?4h TEMP8h.4h ?4h HUM8h UV?~12h ?4h CHKSUM:8h
+Wind and Temperature/Humidity or Rain:
+
+    DIGEST:8h8h ID:8h8h8h8h FLAGS:4h BATT:1b CH:3d WSPEED:~8h~4h ~4h~8h WDIR:12h ?4h TEMP:8h.4h ?4h HUM:8h UV?~12h ?4h CHKSUM:8h
+    DIGEST:8h8h ID:8h8h8h8h FLAGS:4h BATT:1b CH:3d WSPEED:~8h~4h ~4h~8h WDIR:12h ?4h RAINFLAG:8h RAIN:8h8h UV:8h8h CHKSUM:8h
 
 Digest is LFSR-16 gen 0x8810 key 0x5412, excluding the add-checksum and trailer.
 Checksum is 8-bit add (with carry) to 0xff.
@@ -140,8 +143,8 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int batt     = (msg[6] >> 3) & 1;
     int chan     = (msg[6] & 0x7);
 
-    int temp_ok = msg[12] != 0xff;
-    // temperature, humidity, only if msg[12] != 0xff
+    // temperature, humidity, shared with rain counter, only if valid BCD digits
+    int temp_ok  = msg[12] <= 0x99 && (msg[13] & 0xf0) <= 0x90;
     int temp_raw = (msg[12] >> 4) * 100 + (msg[12] & 0x0f) * 10 + (msg[13] >> 4);
     float temp_c = temp_raw * 0.1f;
     if (temp_raw > 600)
@@ -149,11 +152,11 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int humidity    = (msg[14] >> 4) * 10 + (msg[14] & 0x0f);
 
-    // apparently ff01 if not available
-    //int uv_ok = (msg[16] & 0x0f) == 0;
+    // apparently ff0(1) if not available
     int uv_ok  = msg[15] <= 0x99 && (msg[16] & 0xf0) <= 0x90;
     int uv_raw = ((msg[15] & 0xf0) >> 4) * 100 + (msg[15] & 0x0f) * 10 + ((msg[16] & 0xf0) >> 4);
     float uv   = uv_raw * 0.1f;
+    int flags  = (msg[16] & 0x0f); // looks like some flags, not sure
 
     //int unk_ok  = (msg[16] & 0xf0) == 0xf0;
     //int unk_raw = ((msg[15] & 0xf0) >> 4) * 10 + (msg[15] & 0x0f);
@@ -170,11 +173,14 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float wind_avg  = wavg_raw * 0.1f;
     int wind_dir    = ((msg[10] & 0xf0) >> 4) * 100 + (msg[10] & 0x0f) * 10 + ((msg[11] & 0xf0) >> 4);
 
-    // rain, only if msg[12] == 0xff
-    // invert 2 bytes rain counter
+    // rain counter, inverted 3 bytes BCD, shared with temp/hum, only if valid digits
+    msg[12] ^= 0xff;
     msg[13] ^= 0xff;
     msg[14] ^= 0xff;
-    int rain_raw  = (msg[13] >> 4) * 1000 + (msg[13] & 0x0f) * 100 + (msg[14] >> 4) * 10 + (msg[14] & 0x0f);
+    int rain_ok   = msg[12] <= 0x99 && msg[13] <= 0x99 && msg[14] <= 0x99;
+    int rain_raw  = (msg[12] >> 4) * 100000 + (msg[12] & 0x0f) * 10000
+            + (msg[13] >> 4) * 1000 + (msg[13] & 0x0f) * 100
+            + (msg[14] >> 4) * 10 + (msg[14] & 0x0f);
     float rain_mm = rain_raw * 0.1f;
 
     int moisture = -1;
@@ -194,9 +200,10 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "wind_max_m_s",     "Wind Gust",    DATA_COND, wind_ok, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_gust,
             "wind_avg_m_s",     "Wind Speed",   DATA_COND, wind_ok, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_avg,
             "wind_dir_deg",     "Direction",    DATA_COND, wind_ok, DATA_INT,    wind_dir,
-            "rain_mm",          "Rain",         DATA_COND, !temp_ok, DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
+            "rain_mm",          "Rain",         DATA_COND, rain_ok, DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
             //"unknown",          "Unknown",      DATA_COND, unk_ok, DATA_INT,    unk_raw,
             "uv",               "UV",           DATA_COND, uv_ok, DATA_FORMAT, "%.1f", DATA_DOUBLE,    uv,
+            "flags",            "Flags",        DATA_INT,    flags,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -219,6 +226,7 @@ static char *output_fields[] = {
         "wind_dir_deg",
         "rain_mm",
         "uv",
+        "flags",
         "mic",
         NULL,
 };

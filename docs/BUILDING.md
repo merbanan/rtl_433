@@ -123,7 +123,7 @@ taken and adapted from here: https://www.onetransistor.eu/2017/03/compile-librtl
 ```
 SET(CMAKE_THREAD_LIBS_INIT "-lpthread")
 SET(CMAKE_HAVE_THREADS_LIBRARY 1)
-SET(THREADS_FOUND TRUE)
+SET(Threads_FOUND TRUE)
 ```
 
 * go into the cmake/modules folder and open FindLibUSB.cmake with a text editor

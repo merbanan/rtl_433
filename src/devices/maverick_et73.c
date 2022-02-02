@@ -45,7 +45,7 @@ Layout appears to be:
 
 static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int temp1_raw, temp2_raw, row;
+  int temp1_raw, temp2_raw, row;
     float temp1_c, temp2_c;
     uint8_t *bytes;
     unsigned int device;
@@ -73,11 +73,12 @@ static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuff
         bitrow_print(bytes, 48);
     }
 
-    temp1_raw = (bytes[1] << 4) | ((bytes[2] & 0xf0));
-    temp2_raw = ((bytes[2] & 0x0f) << 8) | bytes[3];
-
-    temp1_c = temp1_raw * 0.1f;
-    temp2_c = temp2_raw * 0.1f;
+    // Repack the nibbles to form a 12-bit field representing the 2's-complement temperatures,
+    //   then right shift by 4 to sign-extend the 12-bit field to a 16-bit integer for float conversion
+    temp1_raw = (int16_t)( bytes[1]<<8 | ( bytes[2] & 0xf0 ) );
+    temp1_c = (temp1_raw>>4) * 0.1f;
+    temp2_raw = (int16_t)( ( (bytes[2] & 0x0f) << 12) | bytes[3]<<4 );
+    temp2_c = (temp2_raw>>4) * 0.1f;
 
     /* clang-format off */
     data = data_make(

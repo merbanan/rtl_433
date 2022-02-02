@@ -219,6 +219,7 @@
     DECL(simplisafe_gen3) \
     DECL(yale_hsa) \
     DECL(regency_fan) \
+    DECL(tpms_renault_0435r) \
     DECL(deltadore_x3d) \
 
     /* Add new decoders here. */
