@@ -74,7 +74,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     uint8_t b[XC0324_MESSAGE_BYTELEN];
     char id[4] = {0};
     double temperature;
-    uint8_t humidity;
+    int humidity;
     uint8_t chksum; // == 0x00 for a good message
 
     // Extract the message
@@ -107,7 +107,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
 
     // Decode humiddity (b[4]), LSB first order!
     // Whole Number Integers in Percentage
-    humidity   = (uint16_t)(reverse8(b[4]));
+    humidity = reverse8(b[4]);
     
     // Create the data structure, ready for the decoder_output_data function.
     // Separate production output (decoder->verbose == 0)
@@ -118,7 +118,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
                 "model",            "Device Type",      DATA_STRING, "Digitech-XC0324",
                 "id",               "ID",               DATA_STRING, id,
                 "temperature_C",    "Temperature C",    DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
-                "humidity",         "Humidity %",       DATA_INT,    humidity,
+                "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
