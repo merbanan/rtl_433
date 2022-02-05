@@ -108,7 +108,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     // Decode humiddity (b[4]), LSB first order!
     // Whole Number Integers in Percentage
     humidity = reverse8(b[4]);
-    
+
     // Create the data structure, ready for the decoder_output_data function.
     // Separate production output (decoder->verbose == 0)
     // from (simulated) deciphering stage output (decoder->verbose > 0)
