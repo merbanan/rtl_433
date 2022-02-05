@@ -75,7 +75,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-w <filename> | help] Save data stream to output file (a '-' dumps samples to stdout)
   [-W <filename> | help] Save data stream to output file, overwrite existing file
 		= Data output options =
-  [-F kv | json | csv | mqtt | influx | syslog | null | help] Produce decoded output in given format.
+  [-F kv | json | csv | mqtt | influx | syslog | trigger | null | help] Produce decoded output in given format.
        Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
   [-M time[:<options>] | protocol | level | noise[:secs] | stats | bits | help] Add various meta data to each output.
@@ -285,7 +285,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [199]  Linear Megacode Garage/Gate Remotes
     [200]* Auriol 4-LD5661 temperature/rain sensor
     [201]  Unbranded SolarTPMS for trucks
-    [202]  Funkbus / Instafunk (Berker, Jira, Jung)
+    [202]  Funkbus / Instafunk (Berker, Gira, Jung)
     [203]  Porsche Boxster/Cayman TPMS
     [204]  Jasco/GE Choice Alert Security Devices
     [205]  Telldus weather station FT0385R sensors
@@ -294,6 +294,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [208]  AVE TPMS
     [209]  SimpliSafe Gen 3 Home Security System
     [210]  Yale HSA (Home Security Alarm), YES-Alarmkit
+    [211]  Regency Ceiling Fan Remote (-f 303.75M to 303.96M)
+    [212]  Renault 0435R TPMS
 
 * Disabled by default, use -R n or -G
 
@@ -377,12 +379,12 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 
 
 		= Output format option =
-  [-F kv|json|csv|mqtt|influx|syslog|null] Produce decoded output in given format.
+  [-F kv|json|csv|mqtt|influx|syslog|trigger|null] Produce decoded output in given format.
 	Without this option the default is KV output. Use "-F null" to remove the default.
 	Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"
-	MQTT options are: user=foo, pass=bar, retain[=0|1], qos=N, <format>[=topic]
+	MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
 	Supported MQTT formats: (default is all)
 	  events: posts JSON event data
 	  states: posts JSON state data

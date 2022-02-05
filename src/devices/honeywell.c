@@ -147,6 +147,5 @@ r_device honeywell = {
         .long_width  = 0,
         .reset_limit = 292,
         .decode_fn   = &honeywell_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -42,8 +42,8 @@ https://github.com/jonoxer/CentAReceiver
 
 */
 
-#define COMPARE_BITS 83
-#define COMPARE_BYTES (COMPARE_BITS/8)
+#define COMPARE_BITS  83
+#define COMPARE_BYTES ((COMPARE_BITS + 7) / 8)
 
 static int cmr113_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -80,12 +80,12 @@ static int cmr113_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             return DECODE_ABORT_LENGTH;
     }
 
-    if (b.bits_per_row[0] < 2*COMPARE_BITS + 2)
+    if (b.bits_per_row[0] < 2 * COMPARE_BITS + 2)
         return DECODE_ABORT_LENGTH;
 
     // Compare the repeated section to ensure data integrity
     bitbuffer_extract_bytes(&b, 0, 0, b1, COMPARE_BITS);
-    bitbuffer_extract_bytes(&b, 0, COMPARE_BITS+2, b2, COMPARE_BITS);
+    bitbuffer_extract_bytes(&b, 0, COMPARE_BITS + 2, b2, COMPARE_BITS);
     if (memcmp(b1, b2, COMPARE_BYTES) != 0)
         return DECODE_FAIL_MIC;
 
@@ -127,6 +127,5 @@ r_device cmr113 = {
         .reset_limit = 2069,
         .tolerance   = 200,
         .decode_fn   = &cmr113_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

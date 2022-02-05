@@ -61,13 +61,13 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     sprintf(code_str, "%06x", code);
 
     /* range seems to have different formulas */
-    psibits = (((b[6]&0x20)<<3) | b[4]);
+    psibits = (((b[6] & 0x20) << 3) | b[4]);
     if (psibits < 90)
-        pressure_psi  = 0.3 + psibits * 0.25f; // BdyCM + FORScan
+        pressure_psi = 0.3 + psibits * 0.25f; // BdyCM + FORScan
     else
-        pressure_psi  = 6.8 + psibits * 0.2122727273;
+        pressure_psi = 6.8 + psibits * 0.2122727273;
     temperature_c = b[5] - 56; // approximate
-    if (b[6] & 0x40) // temperature scale mode?
+    if (b[6] & 0x40)           // temperature scale mode?
         temperature_c = (b[5] ^ 0x80) - 56;
 
     /* clang-format off */
@@ -134,6 +134,5 @@ r_device tpms_ford = {
         .long_width  = 52,  // FSK
         .reset_limit = 150, // Maximum gap size before End Of Message [us].
         .decode_fn   = &tpms_ford_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

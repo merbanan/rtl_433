@@ -241,6 +241,5 @@ r_device lacrosse_ws7000 = {
         .long_width  = 800,
         .reset_limit = 1100,
         .decode_fn   = &lacrosse_ws7000_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

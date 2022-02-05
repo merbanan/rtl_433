@@ -52,7 +52,7 @@ typedef struct {
 #ifdef _DEBUG
 static data_t *add_hex_string(data_t *data, const char *name, const uint8_t *buf, size_t buf_sz)
 {
-    if (buf && buf_sz > 0)  {
+    if (buf && buf_sz > 0) {
         char tstr[256];
         bitrow_snprint(buf, buf_sz * 8, tstr, sizeof (tstr));
         data = data_append(data, name, "", DATA_STRING, tstr, NULL);
@@ -67,21 +67,21 @@ typedef struct {
 } dev_map_entry_t;
 
 static const dev_map_entry_t device_map[] = {
-    { .t =  1, .s = "CTL" }, // Controller
-    { .t =  2, .s = "UFH" }, // Underfloor heating (HCC80, HCE80)
-    { .t =  3, .s = " 30" }, // HCW82??
-    { .t =  4, .s = "TRV" }, // Thermostatic radiator valve (HR80, HR91, HR92)
-    { .t =  7, .s = "DHW" }, // DHW sensor (CS92)
-    { .t = 10, .s = "OTB" }, // OpenTherm bridge (R8810)
-    { .t = 12, .s = "THm" }, // Thermostat with setpoint schedule control (DTS92E, CME921)
-    { .t = 13, .s = "BDR" }, // Wireless relay box (BDR91) (HC60NG too?)
-    { .t = 17, .s = " 17" }, // Dunno - Outside weather sensor?
-    { .t = 18, .s = "HGI" }, // Honeywell Gateway Interface (HGI80, HGS80)
-    { .t = 22, .s = "THM" }, // Thermostat with setpoint schedule control (DTS92E)
-    { .t = 30, .s = "GWY" }, // Gateway (e.g. RFG100?)
-    { .t = 32, .s = "VNT" }, // (HCE80) Ventilation (Nuaire VMS-23HB33, VMN-23LMH23)
-    { .t = 34, .s = "STA" }, // Thermostat (T87RF)
-    { .t = 63, .s = "NUL" }, // No device
+        {.t = 1, .s = "CTL"},  // Controller
+        {.t = 2, .s = "UFH"},  // Underfloor heating (HCC80, HCE80)
+        {.t = 3, .s = " 30"},  // HCW82??
+        {.t = 4, .s = "TRV"},  // Thermostatic radiator valve (HR80, HR91, HR92)
+        {.t = 7, .s = "DHW"},  // DHW sensor (CS92)
+        {.t = 10, .s = "OTB"}, // OpenTherm bridge (R8810)
+        {.t = 12, .s = "THm"}, // Thermostat with setpoint schedule control (DTS92E, CME921)
+        {.t = 13, .s = "BDR"}, // Wireless relay box (BDR91) (HC60NG too?)
+        {.t = 17, .s = " 17"}, // Dunno - Outside weather sensor?
+        {.t = 18, .s = "HGI"}, // Honeywell Gateway Interface (HGI80, HGS80)
+        {.t = 22, .s = "THM"}, // Thermostat with setpoint schedule control (DTS92E)
+        {.t = 30, .s = "GWY"}, // Gateway (e.g. RFG100?)
+        {.t = 32, .s = "VNT"}, // (HCE80) Ventilation (Nuaire VMS-23HB33, VMN-23LMH23)
+        {.t = 34, .s = "STA"}, // Thermostat (T87RF)
+        {.t = 63, .s = "NUL"}, // No device
 };
 
 static void decode_device_id(const uint8_t device_id[3], char *buf, size_t buf_sz)
@@ -102,7 +102,8 @@ static data_t *decode_device_ids(const message_t *msg, data_t *data, int style)
     char ds[64] = {0}; // up to 4 ids of at most 10+1 chars
 
     for (unsigned i = 0; i < msg->num_device_ids; i++) {
-        if (i != 0) strcat(ds, " ");
+        if (i != 0)
+            strcat(ds, " ");
 
         char buf[16] = {0};
         if (style == 0)

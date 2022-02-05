@@ -76,8 +76,8 @@ static int tfa_303196_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (b[0] != 0xa8)
         return DECODE_FAIL_SANITY;
 
-    uint16_t digest   = (b[4] << 8) | (b[5]);
-    int chk           = lfsr_digest16(b, 4, 0x8810, 0x22d0) ^ digest;
+    uint16_t digest = (b[4] << 8) | (b[5]);
+    int chk         = lfsr_digest16(b, 4, 0x8810, 0x22d0) ^ digest;
 
     //bitrow_printf(b, 48, "TFA-303196 (%08x  %04x  %04x): ", chk_data, digest, session);
 
@@ -122,6 +122,5 @@ r_device tfa_303196 = {
         .tolerance   = 60,
         .reset_limit = 22000,
         .decode_fn   = &tfa_303196_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

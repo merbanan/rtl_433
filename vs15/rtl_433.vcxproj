@@ -99,6 +99,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClInclude Include="..\include\bitbuffer.h" />
     <ClInclude Include="..\include\compat_alarm.h" />
     <ClInclude Include="..\include\compat_paths.h" />
+    <ClInclude Include="..\include\compat_pthread.h" />
     <ClInclude Include="..\include\compat_time.h" />
     <ClInclude Include="..\include\confparse.h" />
     <ClInclude Include="..\include\data.h" />
@@ -115,6 +116,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClInclude Include="..\include\output_file.h" />
     <ClInclude Include="..\include\output_influx.h" />
     <ClInclude Include="..\include\output_mqtt.h" />
+    <ClInclude Include="..\include\output_rtltcp.h" />
     <ClInclude Include="..\include\output_trigger.h" />
     <ClInclude Include="..\include\output_udp.h" />
     <ClInclude Include="..\include\pulse_analyzer.h" />
@@ -125,6 +127,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClInclude Include="..\include\r_device.h" />
     <ClInclude Include="..\include\r_private.h" />
     <ClInclude Include="..\include\r_util.h" />
+    <ClInclude Include="..\include\raw_output.h" />
     <ClInclude Include="..\include\rfraw.h" />
     <ClInclude Include="..\include\rtl_433.h" />
     <ClInclude Include="..\include\rtl_433_devices.h" />
@@ -156,6 +159,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\output_file.c" />
     <ClCompile Include="..\src\output_influx.c" />
     <ClCompile Include="..\src\output_mqtt.c" />
+    <ClCompile Include="..\src\output_rtltcp.c" />
     <ClCompile Include="..\src\output_trigger.c" />
     <ClCompile Include="..\src\output_udp.c" />
     <ClCompile Include="..\src\pulse_analyzer.c" />
@@ -164,6 +168,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\pulse_detect_fsk.c" />
     <ClCompile Include="..\src\r_api.c" />
     <ClCompile Include="..\src\r_util.c" />
+    <ClCompile Include="..\src\raw_output.c" />
     <ClCompile Include="..\src\rfraw.c" />
     <ClCompile Include="..\src\rtl_433.c" />
     <ClCompile Include="..\src\samp_grab.c" />
@@ -299,6 +304,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\quhwa.c" />
     <ClCompile Include="..\src\devices\radiohead_ask.c" />
     <ClCompile Include="..\src\devices\rainpoint.c" />
+    <ClCompile Include="..\src\devices\regency_fan.c" />
     <ClCompile Include="..\src\devices\rftech.c" />
     <ClCompile Include="..\src\devices\rojaflex.c" />
     <ClCompile Include="..\src\devices\rubicson.c" />
@@ -339,6 +345,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\tpms_pmv107j.c" />
     <ClCompile Include="..\src\devices\tpms_porsche.c" />
     <ClCompile Include="..\src\devices\tpms_renault.c" />
+    <ClCompile Include="..\src\devices\tpms_renault_0435r.c" />
     <ClCompile Include="..\src\devices\tpms_toyota.c" />
     <ClCompile Include="..\src\devices\tpms_truck.c" />
     <ClCompile Include="..\src\devices\ts_ft002.c" />

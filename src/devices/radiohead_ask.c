@@ -159,11 +159,11 @@ static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     data_len = msg_len - RH_ASK_HEADER_LEN - 3;
     if (data_len <= 0)
-      return DECODE_FAIL_SANITY;
+        return DECODE_FAIL_SANITY;
 
-    header_to = rh_payload[1];
-    header_from = rh_payload[2];
-    header_id = rh_payload[3];
+    header_to    = rh_payload[1];
+    header_from  = rh_payload[2];
+    header_id    = rh_payload[3];
     header_flags = rh_payload[4];
 
     // Format data
@@ -201,12 +201,12 @@ static int sensible_living_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return msg_len; // pass error code on
     }
 
-    house_id = rh_payload[1];
-    module_id = (rh_payload[2] << 8) | rh_payload[3];
-    sensor_type = rh_payload[4];
-    sensor_count = rh_payload[5];
-    alarms = rh_payload[6];
-    sensor_value = (rh_payload[7] << 8) | rh_payload[8];
+    house_id        = rh_payload[1];
+    module_id       = (rh_payload[2] << 8) | rh_payload[3];
+    sensor_type     = rh_payload[4];
+    sensor_count    = rh_payload[5];
+    alarms          = rh_payload[6];
+    sensor_value    = (rh_payload[7] << 8) | rh_payload[8];
     battery_voltage = (rh_payload[9] << 8) | rh_payload[10];
 
     /* clang-format off */
@@ -228,46 +228,46 @@ static int sensible_living_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *radiohead_ask_output_fields[] = {
-    "model",
-    "len",
-    "to",
-    "from",
-    "id",
-    "flags",
-    "payload",
-    "mic",
-    NULL,
+        "model",
+        "len",
+        "to",
+        "from",
+        "id",
+        "flags",
+        "payload",
+        "mic",
+        NULL,
 };
 
 static char *sensible_living_output_fields[] = {
-    "model",
-    "house_id",
-    "module_id",
-    "sensor_type",
-    "sensor_count",
-    "alarms",
-    "sensor_value",
-    "battery_mV",
-    "mic",
-    NULL,
+        "model",
+        "house_id",
+        "module_id",
+        "sensor_type",
+        "sensor_count",
+        "alarms",
+        "sensor_value",
+        "battery_mV",
+        "mic",
+        NULL,
 };
 
 r_device radiohead_ask = {
-    .name           = "Radiohead ASK",
-    .modulation     = OOK_PULSE_PCM_RZ,
-    .short_width    = 500,
-    .long_width     = 500,
-    .reset_limit    = 5*500,
-    .decode_fn      = &radiohead_ask_callback,
-    .fields         = radiohead_ask_output_fields,
+        .name        = "Radiohead ASK",
+        .modulation  = OOK_PULSE_PCM_RZ,
+        .short_width = 500,
+        .long_width  = 500,
+        .reset_limit = 5 * 500,
+        .decode_fn   = &radiohead_ask_callback,
+        .fields      = radiohead_ask_output_fields,
 };
 
 r_device sensible_living = {
-    .name           = "Sensible Living Mini-Plant Moisture Sensor",
-    .modulation     = OOK_PULSE_PCM_RZ,
-    .short_width    = 1000,
-    .long_width     = 1000,
-    .reset_limit    = 5*1000,
-    .decode_fn      = &sensible_living_callback,
-    .fields         = sensible_living_output_fields,
+        .name        = "Sensible Living Mini-Plant Moisture Sensor",
+        .modulation  = OOK_PULSE_PCM_RZ,
+        .short_width = 1000,
+        .long_width  = 1000,
+        .reset_limit = 5 * 1000,
+        .decode_fn   = &sensible_living_callback,
+        .fields      = sensible_living_output_fields,
 };

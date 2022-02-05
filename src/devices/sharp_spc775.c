@@ -39,7 +39,7 @@ static int sharp_spc775_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     data_t *data;
     uint8_t b[6];
-    int length_match = 0;
+    int length_match   = 0;
     int preamble_match = 0;
 
     // Invert data for processing
@@ -61,11 +61,11 @@ static int sharp_spc775_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (!preamble_match)
         return DECODE_FAIL_SANITY;
 
-    int id          = b[1];                                                // changes on each power cycle
-    int battery_low = (b[2] & 0x80);                                       // High bit is low battery indicator
-    int temp_raw    = (int16_t)(((b[2] & 0x0f) << 12) | (b[3] << 4));      // uses sign-extend
-    float temp_c    = (temp_raw >> 4) * 0.1f;                              // Convert sign extended int to float
-    int humidity    = b[4];                                                // Simple 0-100 RH
+    int id          = b[1];                                           // changes on each power cycle
+    int battery_low = (b[2] & 0x80);                                  // High bit is low battery indicator
+    int temp_raw    = (int16_t)(((b[2] & 0x0f) << 12) | (b[3] << 4)); // uses sign-extend
+    float temp_c    = (temp_raw >> 4) * 0.1f;                         // Convert sign extended int to float
+    int humidity    = b[4];                                           // Simple 0-100 RH
     int chk_digest  = b[5];
 
     uint8_t chk_calc = xor_bytes(b, 5);
@@ -107,6 +107,5 @@ r_device sharp_spc775 = {
         .gap_limit   = 2900,
         .reset_limit = 10000,
         .decode_fn   = &sharp_spc775_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

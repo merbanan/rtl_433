@@ -114,18 +114,18 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         bDeviceCode = 0;                 // No device for special events
 
         switch (b[2]) {
-            case 0x98:
-                event_str = "DIM";
-                break;
-            case 0x88:
-                event_str = "BRI";
-                break;
-            case 0x90:
-                event_str = "ALL LTS ON";
-                break;
-            case 0x80:
-                event_str = "ALL OFF";
-                break;
+        case 0x98:
+            event_str = "DIM";
+            break;
+        case 0x88:
+            event_str = "BRI";
+            break;
+        case 0x90:
+            event_str = "ALL LTS ON";
+            break;
+        case 0x80:
+            event_str = "ALL OFF";
+            break;
         }
     }
     else {
@@ -172,6 +172,5 @@ r_device X10_RF = {
         .gap_limit   = 2200, // Gap after sync is 4.5ms (1125)
         .reset_limit = 6000, // Gap seen between messages is ~40ms so let's get them individually
         .decode_fn   = &x10_rf_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -315,6 +315,5 @@ r_device rojaflex = {
         .reset_limit = 102400,
         .sync_width  = 0,
         .decode_fn   = &rojaflex_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -181,7 +181,8 @@ mappings = {
             "name": "Battery",
             "unit_of_measurement": "%",
             "value_template": "{{ float(value) * 99 + 1 }}",
-            "state_class": "measurement"
+            "state_class": "measurement",
+            "entity_category": "diagnostic"
         }
     },
 
@@ -248,7 +249,6 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "WS",
         "config": {
-            "device_class": "weather",
             "name": "Wind Speed",
             "unit_of_measurement": "km/h",
             "value_template": "{{ value|float }}",
@@ -260,7 +260,6 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "WS",
         "config": {
-            "device_class": "weather",
             "name": "Wind Speed",
             "unit_of_measurement": "mi/h",
             "value_template": "{{ value|float }}",
@@ -300,7 +299,7 @@ mappings = {
             "state_class": "measurement"
         }
     },
-  
+
     "wind_max_km_h": {
         "device_type": "sensor",
         "object_suffix": "GS",
@@ -396,7 +395,8 @@ mappings = {
             "device_class": "safety",
             "force_update": "true",
             "payload_on": "1",
-            "payload_off": "0"
+            "payload_off": "0",
+            "entity_category": "diagnostic"
         }
     },
 
@@ -407,7 +407,8 @@ mappings = {
             "device_class": "safety",
             "force_update": "true",
             "payload_on": "1",
-            "payload_off": "0"
+            "payload_off": "0",
+            "entity_category": "diagnostic"
         }
     },
 
@@ -418,7 +419,8 @@ mappings = {
             "device_class": "signal_strength",
             "unit_of_measurement": "dB",
             "value_template": "{{ value|float|round(2) }}",
-            "state_class": "measurement"
+            "state_class": "measurement",
+            "entity_category": "diagnostic"
         }
     },
 
@@ -429,7 +431,8 @@ mappings = {
             "device_class": "signal_strength",
             "unit_of_measurement": "dB",
             "value_template": "{{ value|float|round(2) }}",
-            "state_class": "measurement"
+            "state_class": "measurement",
+            "entity_category": "diagnostic"
         }
     },
 
@@ -440,7 +443,8 @@ mappings = {
             "device_class": "signal_strength",
             "unit_of_measurement": "dB",
             "value_template": "{{ value|float|round(2) }}",
-            "state_class": "measurement"
+            "state_class": "measurement",
+            "entity_category": "diagnostic"
         }
     },
 
@@ -471,7 +475,16 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "lux",
         "config": {
-            "device_class": "weather",
+            "name": "Outside Luminancee",
+            "unit_of_measurement": "lux",
+            "value_template": "{{ value|int }}",
+            "state_class": "measurement"
+        }
+    },
+    "light_lux": {
+        "device_type": "sensor",
+        "object_suffix": "lux",
+        "config": {
             "name": "Outside Luminancee",
             "unit_of_measurement": "lux",
             "value_template": "{{ value|int }}",
@@ -483,7 +496,16 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "uv",
         "config": {
-            "device_class": "weather",
+            "name": "UV Index",
+            "unit_of_measurement": "UV Index",
+            "value_template": "{{ value|int }}",
+            "state_class": "measurement"
+        }
+    },
+    "uvi": {
+        "device_type": "sensor",
+        "object_suffix": "uvi",
+        "config": {
             "name": "UV Index",
             "unit_of_measurement": "UV Index",
             "value_template": "{{ value|int }}",
@@ -522,6 +544,7 @@ mappings = {
             "state_class": "total_increasing"
         }
     },
+
     "channel": {
         "device_type": "device_automation",
         "object_suffix": "CH",
@@ -575,7 +598,8 @@ mappings = {
            "type": "button_short_release",
            "subtype": "button_1",
         }
-    }
+    },
+
 }
 
 

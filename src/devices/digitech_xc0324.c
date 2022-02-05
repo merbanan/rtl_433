@@ -114,6 +114,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     // Separate production output (decoder->verbose == 0)
     // from (simulated) deciphering stage output (decoder->verbose > 0)
     if (!decoder->verbose) { // production output
+        /* clang-format off */
         *data = data_make(
                 "model",            "Device Type",      DATA_STRING, "Digitech-XC0324",
                 "id",               "ID",               DATA_STRING, id,
@@ -121,6 +122,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
                 "flags",            "Constant ?",       DATA_INT,    flags,
                 "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
                 NULL);
+        /* clang-format on */
     }
 
     // Output (simulated) message level deciphering information..
@@ -138,17 +140,6 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     }
     return 1; // Message successfully decoded
 }
-
-// List of fields to appear in the `-F csv` output
-static char *output_fields[] = {
-    "model",
-    "id",
-    "temperature_C",
-    "flags",
-    "mic",
-    "message_num",
-    NULL,
-};
 
 /**
 Digitech XC-0324 device.
@@ -215,13 +206,23 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events > 0 ? events : ret;
 }
 
+static char *output_fields[] = {
+        "model",
+        "id",
+        "temperature_C",
+        "flags",
+        "mic",
+        "message_num",
+        NULL,
+};
+
 r_device digitech_xc0324 = {
-    .name           = "Digitech XC-0324 temperature sensor",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 520, // = 130 * 4
-    .long_width     = 1000, // = 250 * 4
-    .reset_limit    = 3000,
-    .decode_fn      = &xc0324_callback,
-    .disabled       = 1, // stop debug output from spamming unsuspecting users
-    .fields         = output_fields,
+        .name        = "Digitech XC-0324 temperature sensor",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 520,  // = 130 * 4
+        .long_width  = 1000, // = 250 * 4
+        .reset_limit = 3000,
+        .decode_fn   = &xc0324_callback,
+        .disabled    = 1, // stop debug output from spamming unsuspecting users
+        .fields      = output_fields,
 };

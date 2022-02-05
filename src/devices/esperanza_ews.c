@@ -96,6 +96,7 @@ static int esperanza_ews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_f  = (temp_raw - 900) * 0.1f;
     int humidity  = ((b[3] & 0x0f) << 4) | ((b[3] & 0xf0) >> 4);
 
+    /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, "Esperanza-EWS",
             "id",               "ID",           DATA_INT, device_id,
@@ -105,30 +106,30 @@ static int esperanza_ews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "channel",
-    "battery_ok",
-    "temperature_F",
-    "humidity",
-    "mic",
-    NULL
+        "model",
+        "id",
+        "channel",
+        "battery_ok",
+        "temperature_F",
+        "humidity",
+        "mic",
+        NULL,
 };
 
 r_device esperanza_ews = {
-    .name           = "Esperanza EWS",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 2000,
-    .long_width     = 4000,
-    .gap_limit      = 4400,
-    .reset_limit    = 9400,
-    .decode_fn      = &esperanza_ews_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Esperanza EWS",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 2000,
+        .long_width  = 4000,
+        .gap_limit   = 4400,
+        .reset_limit = 9400,
+        .decode_fn   = &esperanza_ews_callback,
+        .fields      = output_fields,
 };

@@ -51,10 +51,10 @@ static int tpms_toyota_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
         return 0;
     }
 
-    id = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
-    status = (b[4] & 0x80) | (b[6] & 0x7f); // status bit and 0 filler
+    id        = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
+    status    = (b[4] & 0x80) | (b[6] & 0x7f); // status bit and 0 filler
     pressure1 = (b[4] & 0x7f) << 1 | b[5] >> 7;
-    temp = (b[5] & 0x7f) << 1 | b[6] >> 7;
+    temp      = (b[5] & 0x7f) << 1 | b[6] >> 7;
     pressure2 = b[7] ^ 0xff;
 
     if (pressure1 != pressure2) {
@@ -105,23 +105,22 @@ static int tpms_toyota_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "type",
-    "id",
-    "status",
-    "pressure_PSI",
-    "temperature_C",
-    "mic",
-    NULL,
+        "model",
+        "type",
+        "id",
+        "status",
+        "pressure_PSI",
+        "temperature_C",
+        "mic",
+        NULL,
 };
 
 r_device tpms_toyota = {
-    .name           = "Toyota TPMS",
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = 52, // 12-13 samples @250k
-    .long_width     = 52, // FSK
-    .reset_limit    = 150, // Maximum gap size before End Of Message [us].
-    .decode_fn      = &tpms_toyota_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Toyota TPMS",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 52,  // 12-13 samples @250k
+        .long_width  = 52,  // FSK
+        .reset_limit = 150, // Maximum gap size before End Of Message [us].
+        .decode_fn   = &tpms_toyota_callback,
+        .fields      = output_fields,
 };

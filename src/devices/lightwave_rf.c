@@ -24,22 +24,24 @@ static int lightwave_rf_nibble_from_byte(uint8_t in)
 {
     int nibble = -1; // Default error
     switch (in) {
-        case 0xF6: nibble = 0x0; break;
-        case 0xEE: nibble = 0x1; break;
-        case 0xED: nibble = 0x2; break;
-        case 0xEB: nibble = 0x3; break;
-        case 0xDE: nibble = 0x4; break;
-        case 0xDD: nibble = 0x5; break;
-        case 0xDB: nibble = 0x6; break;
-        case 0xBE: nibble = 0x7; break;
-        case 0xBD: nibble = 0x8; break;
-        case 0xBB: nibble = 0x9; break;
-        case 0xB7: nibble = 0xA; break;
-        case 0x7E: nibble = 0xB; break;
-        case 0x7D: nibble = 0xC; break;
-        case 0x7B: nibble = 0xD; break;
-        case 0x77: nibble = 0xE; break;
-        case 0x6F: nibble = 0xF; break;
+    case 0xF6: nibble = 0x0; break;
+    case 0xEE: nibble = 0x1; break;
+    case 0xED: nibble = 0x2; break;
+    case 0xEB: nibble = 0x3; break;
+    case 0xDE: nibble = 0x4; break;
+    case 0xDD: nibble = 0x5; break;
+    case 0xDB: nibble = 0x6; break;
+    case 0xBE: nibble = 0x7; break;
+    case 0xBD: nibble = 0x8; break;
+    case 0xBB: nibble = 0x9; break;
+    case 0xB7: nibble = 0xA; break;
+    case 0x7E: nibble = 0xB; break;
+    case 0x7D: nibble = 0xC; break;
+    case 0x7B: nibble = 0xD; break;
+    case 0x77: nibble = 0xE; break;
+    case 0x6F:
+        nibble = 0xF;
+        break;
         // default: // Just return error
     }
     return nibble;
@@ -63,7 +65,7 @@ static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Expand all "0" to "10" (bit stuffing)
     // row_in = 0, row_out = 1
     bitbuffer_add_row(bitbuffer);
-    for (unsigned n=0; n < bitbuffer->bits_per_row[0]; ++n) {
+    for (unsigned n = 0; n < bitbuffer->bits_per_row[0]; ++n) {
         if (bitrow_get_bit(bb[0], n)) {
             bitbuffer_add_bit(bitbuffer, 1);
         } else {
@@ -109,8 +111,8 @@ static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             }
             return DECODE_FAIL_SANITY; // Decode error
         }
-        for (unsigned m=0; m<4; ++m) { // Add nibble one bit at a time...
-            bitbuffer_add_bit(bitbuffer, (nibble & (8 >> m)) >> (3-m));
+        for (unsigned m = 0; m < 4; ++m) { // Add nibble one bit at a time...
+            bitbuffer_add_bit(bitbuffer, (nibble & (8 >> m)) >> (3 - m));
         }
     }
 

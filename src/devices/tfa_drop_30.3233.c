@@ -205,6 +205,5 @@ r_device tfa_drop_303233 = {
         .reset_limit = 2500,
         .sync_width  = 750,
         .decode_fn   = &tfa_drop_303233_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

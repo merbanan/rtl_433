@@ -244,6 +244,5 @@ r_device archos_tbh = {
         .long_width  = 212,
         .reset_limit = 3000,
         .decode_fn   = &archos_tbh_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

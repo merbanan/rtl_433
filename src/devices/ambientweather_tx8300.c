@@ -54,7 +54,7 @@ static uint8_t tx8300_chk(uint8_t *b)
         x += (b[i] & 0xF) + ((b[i] & 0xF0) >> 4);
         y += (b[i] & 0x5) + ((b[i] & 0x50) >> 4);
     }
-    uint8_t c0  = (~(x & 0xF)) & 0xF;
+    uint8_t c0 = (~(x & 0xF)) & 0xF;
     uint8_t c1 = (~(y & 0xF)) & 0xF;
     return c0 << 4 | c1;
 }
@@ -139,6 +139,5 @@ r_device ambientweather_tx8300 = {
         .gap_limit   = 6500,
         .reset_limit = 8000,
         .decode_fn   = &ambientweather_tx8300_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

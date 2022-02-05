@@ -83,7 +83,7 @@ Between -17C and 0C, 'n' is 60.  Below -17C, 'n' is 360.
 
 static int lacrosse_breezepro_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const preamble_pattern[] = { 0xd2, 0xaa, 0x2d, 0xd4 };
+    uint8_t const preamble_pattern[] = {0xd2, 0xaa, 0x2d, 0xd4};
 
     data_t *data;
     uint8_t b[11];
@@ -115,7 +115,7 @@ static int lacrosse_breezepro_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     chk = crc8(b, 11, 0x31, 0x00);
     if (chk) {
         if (decoder->verbose) {
-           fprintf(stderr, "%s: CRC failed!\n", __func__);
+            fprintf(stderr, "%s: CRC failed!\n", __func__);
         }
         return DECODE_FAIL_MIC;
     }

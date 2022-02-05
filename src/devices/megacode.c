@@ -98,6 +98,5 @@ r_device megacode = {
         .gap_limit   = 9000,
         .reset_limit = 20000,
         .decode_fn   = &megacode_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

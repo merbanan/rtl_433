@@ -64,5 +64,5 @@ jobs:
       # excludes include/mongoose.h src/mongoose.c include/jsmn.h src/jsmn.c
       # exit code 1 if there is output
       run: |
-        clang -Iinclude --analyze -Xanalyzer -analyzer-output=text -Xanalyzer -analyzer-disable-checker=deadcode.DeadStores include/[a-ikln-z]*.h src/[a-ikln-z]*.c src/devices/*.c 2>&1 | tee analyzer.out
+        clang -Iinclude -DTHREADS --analyze -Xanalyzer -analyzer-output=text -Xanalyzer -analyzer-disable-checker=deadcode.DeadStores include/[a-ikln-z]*.h src/[a-ikln-z]*.c src/devices/*.c 2>&1 | tee analyzer.out
         [ ! -s analyzer.out ]

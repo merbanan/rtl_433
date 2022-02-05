@@ -31,7 +31,7 @@ static uint8_t decrypt_esa(uint8_t *b)
     crc += byte;
     b[pos++] ^= 0xff;
 
-    crc -= (b[pos] << 8) | b[pos+1];
+    crc -= (b[pos] << 8) | b[pos + 1];
     return crc;
 }
 
@@ -63,6 +63,7 @@ static int esa_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     energy_total_val   = 1.0 * impulses_total / impulse_constant;
     energy_impulse_val = 1.0 * impulses_val / impulse_constant;
 
+    /* clang-format off */
     data = data_make(
             "model",            "Model",            DATA_STRING, "ESA-x000",
             "id",               "Id",               DATA_INT, deviceid,
@@ -75,6 +76,8 @@ static int esa_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "is_retry",         "Is Retry",         DATA_INT, is_retry,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
+    /* clang-format on */
+
     decoder_output_data(decoder, data);
     return 1;
 }

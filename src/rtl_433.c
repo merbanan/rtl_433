@@ -40,6 +40,7 @@
 #include "pulse_demod.h"
 #include "rfraw.h"
 #include "data.h"
+#include "raw_output.h"
 #include "r_util.h"
 #include "optparse.h"
 #include "abuf.h"
@@ -147,7 +148,7 @@ static void usage(int exit_code)
             "       e.g. -t \"antenna=A,bandwidth=4.5M,rfnotch_ctrl=false\"\n"
             "  [-f <frequency>] Receive frequency(s) (default: %i Hz)\n"
             "  [-H <seconds>] Hop interval for polling of multiple frequencies (default: %i seconds)\n"
-            "  [-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
+            "  [-p <ppm_error>] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
             "  [-s <sample rate>] Set sample rate (default: %i Hz)\n"
             "\t\t= Demodulator options =\n"
             "  [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)\n"
@@ -254,7 +255,7 @@ static void help_output(void)
             "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\tSpecify MQTT server with e.g. -F mqtt://localhost:1883\n"
             "\tAdd MQTT options with e.g. -F \"mqtt://host:1883,opt=arg\"\n"
-            "\tMQTT options are: user=foo, pass=bar, retain[=0|1], qos=N, <format>[=topic]\n"
+            "\tMQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]\n"
             "\tSupported MQTT formats: (default is all)\n"
             "\t  events: posts JSON event data\n"
             "\t  states: posts JSON state data\n"
@@ -364,6 +365,12 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     struct dm_state *demod = cfg->demod;
     char time_str[LOCAL_TIME_BUFLEN];
     unsigned long n_samples;
+
+    // do this here and not in sdr_handler so realtime replay can use rtl_tcp output
+    for (void **iter = cfg->raw_handler.elems; iter && *iter; ++iter) {
+        raw_output_t *output = *iter;
+        raw_output_frame(output, iq_buf, len);
+    }
 
     if ((cfg->bytes_to_read > 0) && (cfg->bytes_to_read <= len)) {
         len = cfg->bytes_to_read;
@@ -1143,6 +1150,9 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         }
         else if (strncmp(arg, "null", 4) == 0) {
             add_null_output(cfg, arg_param(arg));
+        }
+        else if (strncmp(arg, "rtl_tcp", 7) == 0) {
+            add_rtltcp_output(cfg, arg_param(arg));
         }
         else {
             fprintf(stderr, "Invalid output format %s\n", arg);

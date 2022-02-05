@@ -45,7 +45,7 @@ static int tfa_pool_thermometer_decode(r_device *decoder, bitbuffer_t *bitbuffer
     b = bitbuffer->bb[row];
 
     checksum_rx = ((b[0] & 0xF0) >> 4);
-    checksum = ((b[0] & 0x0F) +
+    checksum    = ((b[0] & 0x0F) +
                 (b[1] >> 4) +
                 (b[1] & 0x0F) +
                 (b[2] >> 4) +
@@ -77,7 +77,6 @@ static int tfa_pool_thermometer_decode(r_device *decoder, bitbuffer_t *bitbuffer
 
     decoder_output_data(decoder, data);
     return 1;
-
 }
 
 static char *output_fields[] = {
@@ -98,6 +97,5 @@ r_device tfa_pool_thermometer = {
         .gap_limit   = 7800,
         .reset_limit = 10000,
         .decode_fn   = &tfa_pool_thermometer_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

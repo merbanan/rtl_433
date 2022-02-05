@@ -892,6 +892,5 @@ r_device oregon_scientific = {
         .long_width  = 0,   // not used
         .reset_limit = 2400,
         .decode_fn   = &oregon_scientific_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

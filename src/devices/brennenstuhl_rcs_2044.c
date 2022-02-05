@@ -78,7 +78,8 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bit
         key = "D";
     else if (control_key == 0x01)
         key = "E"; /* (does not exist on the remote, but can be set and is accepted by receiver) */
-    else return 0;
+    else
+        return 0;
     /* None of the keys has been pressed and we still received a message.
      * Skip it. It happens sometimes as the last code repetition
      */
@@ -89,12 +90,15 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bit
     if (on_off != 0x02 && on_off != 0x01)
         return 0; /* Pressing simultaneously ON and OFF key is not useful either */
 
+    /* clang-format off */
     data = data_make(
             "model",    "Model",    DATA_STRING, "Brennenstuhl-RCS2044",
             "id",       "id",       DATA_INT, system_code,
             "key",      "key",      DATA_STRING, key,
             "state",    "state",    DATA_STRING, (on_off == 0x02 ? "ON" : "OFF"),
             NULL);
+    /* clang-format on */
+
     decoder_output_data(decoder, data);
     return 1;
 }
@@ -109,21 +113,21 @@ static int brennenstuhl_rcs_2044_callback(r_device *decoder, bitbuffer_t *bitbuf
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "key",
-    "state",
-    NULL,
+        "model",
+        "id",
+        "key",
+        "state",
+        NULL,
 };
 
 r_device brennenstuhl_rcs_2044 = {
-    .name          = "Brennenstuhl RCS 2044",
-    .modulation    = OOK_PULSE_PWM,
-    .short_width   = 320,
-    .long_width    = 968,
-    .gap_limit     = 1500,
-    .reset_limit   = 4000,
-    .decode_fn     = &brennenstuhl_rcs_2044_callback,
-    .disabled      = 1,
-    .fields        = output_fields,
+        .name        = "Brennenstuhl RCS 2044",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 320,
+        .long_width  = 968,
+        .gap_limit   = 1500,
+        .reset_limit = 4000,
+        .decode_fn   = &brennenstuhl_rcs_2044_callback,
+        .disabled    = 1,
+        .fields      = output_fields,
 };

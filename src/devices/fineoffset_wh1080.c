@@ -359,7 +359,6 @@ r_device fineoffset_wh1080 = {
         .long_width  = 1524, // Maximum pulse period (long pulse + fixed gap)
         .reset_limit = 2800, // We just want 1 package
         .decode_fn   = &fineoffset_wh1080_callback_ook,
-        .disabled    = 0,
         .fields      = output_fields,
 };
 
@@ -370,6 +369,5 @@ r_device fineoffset_wh1080_fsk = {
         .long_width  = 58,
         .reset_limit = 5800,
         .decode_fn   = &fineoffset_wh1080_callback_fsk,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -116,6 +116,5 @@ r_device steelmate = {
         .long_width  = 0,
         .reset_limit = 27 * 4,
         .decode_fn   = &steelmate_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

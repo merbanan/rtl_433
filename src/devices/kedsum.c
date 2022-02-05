@@ -94,25 +94,24 @@ static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "channel",
-    "battery_ok",
-    "flags",
-    "temperature_F",
-    "humidity",
-    "mic",
-    NULL,
+        "model",
+        "id",
+        "channel",
+        "battery_ok",
+        "flags",
+        "temperature_F",
+        "humidity",
+        "mic",
+        NULL,
 };
 
 r_device kedsum = {
-    .name           = "Kedsum Temperature & Humidity Sensor, Pearl NC-7415",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 2000,
-    .long_width     = 4000,
-    .gap_limit      = 4400,
-    .reset_limit    = 9400,
-    .decode_fn      = &kedsum_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Kedsum Temperature & Humidity Sensor, Pearl NC-7415",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 2000,
+        .long_width  = 4000,
+        .gap_limit   = 4400,
+        .reset_limit = 9400,
+        .decode_fn   = &kedsum_callback,
+        .fields      = output_fields,
 };

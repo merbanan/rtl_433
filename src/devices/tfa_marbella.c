@@ -40,7 +40,6 @@ L - lsfr, byte reflected reverse galois with 0x31 key and generator
 
 #include "decoder.h"
 
-
 static int tfa_marbella_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
@@ -48,7 +47,7 @@ static int tfa_marbella_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned int serialnr, counter;
     unsigned bitpos = 0;
     uint8_t msg[11], ic;
-    char serialnr_str[6*2 + 1];
+    char serialnr_str[6 * 2 + 1];
 
     uint8_t const preamble_pattern[] = {0xaa, 0x2d, 0xd4};
 
@@ -79,23 +78,20 @@ static int tfa_marbella_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     serialnr          = (unsigned)msg[3] << 16 | msg[4] << 8 | msg[5];
     sprintf(serialnr_str, "%06x", serialnr);
 
+    /* clang-format off */
     data = data_make(
-            "model", "",                    DATA_STRING, "TFA-Marbella",
-            "id",    "",                    DATA_STRING, serialnr_str,
-            "counter",            "",       DATA_INT, counter,
-            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "mic",        "Integrity",      DATA_STRING, "CRC",
+            "model",            "",             DATA_STRING, "TFA-Marbella",
+            "id",               "",             DATA_STRING, serialnr_str,
+            "counter",          "",             DATA_INT,    counter,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+            "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
-
-    // Return 1 if message successfully decoded
     return 1;
 }
 
-/*
- * List of fields used for csv output
- */
 static char *output_fields[] = {
         "model",
         "id",
@@ -112,6 +108,5 @@ r_device tfa_marbella = {
         .long_width  = 105,
         .reset_limit = 2000,
         .decode_fn   = &tfa_marbella_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };
