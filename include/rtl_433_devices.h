@@ -220,6 +220,7 @@
     DECL(yale_hsa) \
     DECL(regency_fan) \
     DECL(tpms_renault_0435r) \
+    DECL(fineoffset_ws80) \
 
     /* Add new decoders here. */
 

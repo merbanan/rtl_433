@@ -49,7 +49,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
        e.g. -t "antenna=A,bandwidth=4.5M,rfnotch_ctrl=false"
   [-f <frequency>] Receive frequency(s) (default: 433920000 Hz)
   [-H <seconds>] Hop interval for polling of multiple frequencies (default: 600 seconds)
-  [-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)
+  [-p <ppm_error>] Correct rtl-sdr tuner frequency offset error (default: 0)
   [-s <sample rate>] Set sample rate (default: 250000 Hz)
 		= Demodulator options =
   [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)
@@ -296,6 +296,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [210]  Yale HSA (Home Security Alarm), YES-Alarmkit
     [211]  Regency Ceiling Fan Remote (-f 303.75M to 303.96M)
     [212]  Renault 0435R TPMS
+    [213]  Fine Offset Electronics WS80 weather station
 
 * Disabled by default, use -R n or -G
 

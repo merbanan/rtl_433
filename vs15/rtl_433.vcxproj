@@ -232,6 +232,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\fineoffset_wh1050.c" />
     <ClCompile Include="..\src\devices\fineoffset_wh1080.c" />
     <ClCompile Include="..\src\devices\fineoffset_wh31l.c" />
+    <ClCompile Include="..\src\devices\fineoffset_ws80.c" />
     <ClCompile Include="..\src\devices\flex.c" />
     <ClCompile Include="..\src\devices\fordremote.c" />
     <ClCompile Include="..\src\devices\fs20.c" />
