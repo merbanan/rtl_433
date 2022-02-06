@@ -22,25 +22,24 @@ Preamble is aaaa aaaa aaaa, sync word is 2dd4.
 Packet layout:
 
      0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
-    YY II II II LL LL BB FF TT HH WW BB GG VV UU UU AA XX
+    YY II II II LL LL BB FF TT HH WW DD GG VV UU UU AA XX
     80 0a 00 3b 00 00 88 8a 59 38 18 6d 1c 00 ff ff d8 df
 
 - Y = fixed sensor type 0x80
 - I = device ID, might be less than 24 bit?
 - L = light value, unit of 10 Lux (or 0.078925 W/m2)
-- B = battery voltage, unit of 20 mV
-- F = bit field D7.0 = temp.8; D7.1 = temp.9; D7.5 = bearing.8
+- B = battery voltage, unit of 20 mV, we assume a range of 3.0V to 1.4V
+- F = flags and MSBs, 0x03: temp MSB, 0x10: wind MSB, 0x20: bearing MSB, 0x40: gust MSB
+      0x80 or 0x08: maybe battery good? seems to be always 0x88
 - T = temperature, lowest 8 bits of temperature, offset 40, scale 10
 - H = humidity
 - W = wind speed, lowest 8 bits of wind speed, m/s, scale 10
-- B = wind bearing, lowest 8 bits of wind bearing), degrees
+- D = wind bearing, lowest 8 bits of wind bearing, range 0-359 deg, 0x1ff if invalid
 - G = wind gust, lowest 8 bits of wind gust, m/s, scale 10
 - V = uv index, scale 10
 - U = unknown, might be rain option
 - A = checksum
 - X = CRC
-
-Note: We don't know where wind.8 and gust.8 are should be bits of byte 8
 
 */
 
@@ -84,28 +83,29 @@ static int fineoffset_ws80_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float light_lux = light_raw * 10;        // Lux
     //float light_wm2 = light_raw * 0.078925f; // W/m2
     int battery_mv  = (b[6] * 20);            // mV
+    int battery_lvl = battery_mv < 1400 ? 0 : (battery_mv - 1400) / 16; // 1.4V-3.0V is 0-100
     int flags       = b[7]; // to find the wind msb
     int temp_raw    = ((b[7] & 0x03) << 8) | (b[8]);
     float temp_c    = (temp_raw - 400) * 0.1f;
-    int humidity    = b[9];
-    int wind_avg    = b[10]; // lowest 8 bits of wind speed
+    int humidity    = (b[9]);
+    int wind_avg    = ((b[7] & 0x10) << 4) | (b[10]);
     int wind_dir    = ((b[7] & 0x20) << 3) | (b[11]);
-    int wind_max    = b[12]; // lowest 8 bits of wind gust
-    int uv_index    = b[13];
+    int wind_max    = ((b[7] & 0x40) << 2) | (b[12]);
+    int uv_index    = (b[13]);
     int unknown     = (b[14] << 8) | (b[15]);
 
     /* clang-format off */
     data_t *data = data_make(
             "model",            "",                 DATA_STRING, "Fineoffset-WS80",
             "id",               "ID",               DATA_FORMAT, "%06x", DATA_INT,    id,
-            "battery_ok",       "Battery",          DATA_DOUBLE, battery_mv / 3000.0f,
+            "battery_ok",       "Battery",          DATA_DOUBLE, battery_lvl * 0.01f,
             "battery_mV",       "Battery Voltage",  DATA_FORMAT, "%d mV", DATA_INT,    battery_mv,
-            "temperature_C",    "Temperature",      DATA_COND, temp_raw != 0x3ff, DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",         DATA_COND, humidity != 0xff, DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "wind_dir_deg",     "Wind direction",   DATA_COND, wind_dir != 0x1ff, DATA_INT, wind_dir,
-            "wind_avg_m_s",     "Wind speed",       DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_avg * 0.1f,
-            "wind_max_m_s",     "Gust speed",       DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_max * 0.1f,
-            "uvi",              "UVI",              DATA_COND, uv_index != 0xff, DATA_FORMAT, "%.1f", DATA_DOUBLE, uv_index * 0.1f,
+            "temperature_C",    "Temperature",      DATA_COND, temp_raw != 0x3ff,   DATA_FORMAT, "%.1f C",   DATA_DOUBLE, temp_c,
+            "humidity",         "Humidity",         DATA_COND, humidity != 0xff,    DATA_FORMAT, "%u %%",    DATA_INT, humidity,
+            "wind_dir_deg",     "Wind direction",   DATA_COND, wind_dir != 0x1ff,   DATA_INT, wind_dir,
+            "wind_avg_m_s",     "Wind speed",       DATA_COND, wind_avg != 0x1ff,   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_avg * 0.1f,
+            "wind_max_m_s",     "Gust speed",       DATA_COND, wind_max != 0x1ff,   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_max * 0.1f,
+            "uvi",              "UVI",              DATA_COND, uv_index != 0xff,    DATA_FORMAT, "%.1f",     DATA_DOUBLE, uv_index * 0.1f,
             "light_lux",        "Light",            DATA_COND, light_raw != 0xffff, DATA_FORMAT, "%.1f lux", DATA_DOUBLE, (double)light_lux,
             "flags",            "Flags",            DATA_FORMAT, "%02x", DATA_INT, flags,
             "unknown",          "Unknown",          DATA_COND, unknown != 0x3fff, DATA_INT, unknown,
