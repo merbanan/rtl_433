@@ -221,6 +221,7 @@
     DECL(regency_fan) \
     DECL(tpms_renault_0435r) \
     DECL(fineoffset_ws80) \
+    DECL(tpms_tyreguard400) \
 
     /* Add new decoders here. */
 
