@@ -433,6 +433,9 @@
     <ClCompile Include="..\src\devices\fineoffset_wh31l.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\fineoffset_ws80.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\flex.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
