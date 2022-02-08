@@ -214,7 +214,7 @@ static char *output_fields[] = {
 
 r_device tpms_tyreguard400 = {
         .name        = "TyreGuard 400 TPMS",
-        .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT ,
+        .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 100,
         .long_width  = 100,
         .gap_limit   = 0,
