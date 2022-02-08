@@ -41,10 +41,10 @@
     NOTA : In the datasheet, it is said that the sensor can report low batterie. During my tests/reseach i'm not able to see this behavior. I have fuzzed all bits nothing was reported to the reader.
 
     Flex decoder :
-    #-X "n=TMPS,m=OOK_MC_ZEROBIT,s=100,l=100,r=500,preamble=fd5fd5f"
+    #-X "n=TPMS,m=OOK_MC_ZEROBIT,s=100,l=100,r=500,preamble=fd5fd5f"
 
     decoder {
-        name        = TMPS-TYREGUARD400,
+        name        = TPMS-TYREGUARD400,
         modulation  = OOK_MC_ZEROBIT,
         short       = 100,
         long        = 100,
@@ -55,12 +55,9 @@
         get         = pression:@57:{8},
         get         = temp:@65:{8},
         get         = flags:@73:{8},
-        get         = add256psi:@76:{1}:[1: yes 0:no],
-        get         = add512psi:@75:{1}:[1: yes 0:no],
-        get         = add1024psi:@74:{1}:[1: yes 0:no],
+        get         = add_psi:@74:{3}:[0:no 1:256 2:512 3:768 4:1024 5:1280 6:1536 7:1792],
         get         = AckLeaking:@77:{1}:[1: yes 0:no],
-        get         = Leaking_detected:@79:{1}:[1: yes 0:no],
-        get         = Leaking_detected:@80:{1}:[1: yes 0:no],
+        get         = Leaking_detected:@79:{2}:[0:no 1: yes 2: yes],
         get         = CRC:@81:{8},
     }
 
