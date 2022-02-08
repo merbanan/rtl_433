@@ -57,7 +57,7 @@
         get         = flags:@73:{8},
         get         = add_psi:@74:{3}:[0:no 1:256 2:512 3:768 4:1024 5:1280 6:1536 7:1792],
         get         = AckLeaking:@77:{1}:[1: yes 0:no],
-        get         = Leaking_detected:@79:{2}:[0:no 1: yes 2: yes],
+        get         = Leaking_detected:@79:{2}:[0:no 1:yes 2:yes],
         get         = CRC:@81:{8},
     }
 
