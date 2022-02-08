@@ -10,56 +10,57 @@
 */
 /**
 
-Type            : TPMS
-Freq            : 434.1 MHz
-Modulation      : ASK -> OOK_MC_ZEROBIT (Manchester Code with fixed leading zero bit)
-Sambol duration : 100us (same for l or 0)
-Length          : 22 bytes long
+    -Type            : TPMS
+    -Freq            : 434.1 MHz
+    -Modulation      : ASK -> OOK_MC_ZEROBIT (Manchester Code with fixed leading zero bit)
+    -Sambol duration : 100us (same for l or 0)
+    -Length          : 22 bytes long
 
-bytes : 1    2    3    4    5    6    7    8   9   10  11  12  13  14  15  16  17   18   19   20   21  22
-coded : S/P  S/P  S/P  S/P  S/P  S/P  S/P  ID  ID  ID  ID  ID  ID  ID  Pr  Pr  Temp Temp Flg  Flg  CRC CRC
-S/P   : preamble/sync "0xfd5fd5f" << always fixed
-ID    : 6 bytes long start with 0x6b????? ex 0x6b20d21
-Pr    : Last 2 bytes of pressure in psi ex : 0xe8 means XX232 psi (for XX see flags bytes)
-Temp  : Temperature in °C offset by +40 ex : 0x2f means (47-40)=+7°C
-Flg   : Flags bytes => should be read in binary format :
-    Bit 73 : Unknown ; maybe the 20th MSB pressure bit? The sensor is not capable to reach this so high pressure
-    Bit 74 : add 1024 psi (19th MSB pressure bit)
-    Bit 75 : add  512 psi (18th MSB pressure bit)
-    Bit 76 : add  256 psi (17th MSB pressure bit)
-    Bit 77 : Acknoldge pressure leaking 1=Ack 0=No_ack (nothing to report)
-    Bit 78 : Unknown
-    Bit 79 : Leaking pressure detected 1=Leak 0=No leak (nothing to report) 
-    Bit 80 : Leaking pressure detected 1=Leak 0=No leak (nothing to report)
-CRC   : CRC poly 0x31 start value 0xdd final 0x00 from 1st bit 80th bits
+    -bytes : 1    2    3    4    5    6    7    8   9   10  11  12  13  14  15  16  17   18   19   20   21  22
+    -coded : S/P  S/P  S/P  S/P  S/P  S/P  S/P  ID  ID  ID  ID  ID  ID  ID  Pr  Pr  Temp Temp Flg  Flg  CRC CRC
+    
+    -S/P   : preamble/sync "0xfd5fd5f" << always fixed
+    -ID    : 6 bytes long start with 0x6b????? ex 0x6b20d21
+    -Pr    : Last 2 bytes of pressure in psi ex : 0xe8 means XX232 psi (for XX see flags bytes)
+    -Temp  : Temperature in °C offset by +40 ex : 0x2f means (47-40)=+7°C
+    -Flg   : Flags bytes => should be read in binary format :
+        Bit 73 : Unknown ; maybe the 20th MSB pressure bit? The sensor is not capable to reach this so high pressure
+        Bit 74 : add 1024 psi (19th MSB pressure bit)
+        Bit 75 : add  512 psi (18th MSB pressure bit)
+        Bit 76 : add  256 psi (17th MSB pressure bit)
+        Bit 77 : Acknoldge pressure leaking 1=Ack 0=No_ack (nothing to report)
+        Bit 78 : Unknown
+        Bit 79 : Leaking pressure detected 1=Leak 0=No leak (nothing to report) 
+        Bit 80 : Leaking pressure detected 1=Leak 0=No leak (nothing to report)
+    -CRC   : CRC poly 0x31 start value 0xdd final 0x00 from 1st bit 80th bits
 
-To peer a new sensor to the unit, bit 79 and 80 has to be both to 1.
+    To peer a new sensor to the unit, bit 79 and 80 has to be both to 1.
 
-NOTA : In the datasheet, it is said that the sensor can report low batterie. During my tests/reseach i'm not able to see this behavior. I have fuzzed all bits nothing was reported to the reader.
+    NOTA : In the datasheet, it is said that the sensor can report low batterie. During my tests/reseach i'm not able to see this behavior. I have fuzzed all bits nothing was reported to the reader.
 
-Flex decoder :
-#-X "n=TMPS,m=OOK_MC_ZEROBIT,s=100,l=100,r=500,preamble=fd5fd5f"
+    Flex decoder :
+    #-X "n=TMPS,m=OOK_MC_ZEROBIT,s=100,l=100,r=500,preamble=fd5fd5f"
 
-decoder {
-    name        = TMPS-TYREGUARD400,
-    modulation  = OOK_MC_ZEROBIT,
-    short       = 100,
-    long        = 100,
-    gap         = 0,
-    reset       = 500,
-    preamble    = fd5fd5f,
-    get         = id:@0:{28},
-    get         = pression:@57:{8},
-    get         = temp:@65:{8},
-    get         = flags:@73:{8},
-    get         = add256psi:@76:{1}:[1: yes 0:no],
-    get         = add512psi:@75:{1}:[1: yes 0:no],
-    get         = add1024psi:@74:{1}:[1: yes 0:no],
-    get         = AckLeaking:@77:{1}:[1: yes 0:no],
-    get         = Leaking_detected:@79:{1}:[1: yes 0:no],
-    get         = Leaking_detected:@80:{1}:[1: yes 0:no],
-    get         = CRC:@81:{8},
-}
+    decoder {
+        name        = TMPS-TYREGUARD400,
+        modulation  = OOK_MC_ZEROBIT,
+        short       = 100,
+        long        = 100,
+        gap         = 0,
+        reset       = 500,
+        preamble    = fd5fd5f,
+        get         = id:@0:{28},
+        get         = pression:@57:{8},
+        get         = temp:@65:{8},
+        get         = flags:@73:{8},
+        get         = add256psi:@76:{1}:[1: yes 0:no],
+        get         = add512psi:@75:{1}:[1: yes 0:no],
+        get         = add1024psi:@74:{1}:[1: yes 0:no],
+        get         = AckLeaking:@77:{1}:[1: yes 0:no],
+        get         = Leaking_detected:@79:{1}:[1: yes 0:no],
+        get         = Leaking_detected:@80:{1}:[1: yes 0:no],
+        get         = CRC:@81:{8},
+    }
 
 */
 
@@ -75,7 +76,8 @@ static int tpms_tyreguard400_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
     int pressure_kpa, temp_c, ack_leaking, leaking, peering_request;
     //int bat_low;
     //int add256, add512, add1024;
-    uint8_t flags, crc, PacketCRC;
+    uint8_t flags;
+    //uint8_t crc, PacketCRC;
 
     uint8_t b[TPMS_TYREGUARD400_MESSAGE_BYTELEN];
 
@@ -87,14 +89,15 @@ static int tpms_tyreguard400_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
                     "TYREGUARD400Decoder:vvv in b[] %03d", row);
     }
 
-    PacketCRC = b[10];
+    //PacketCRC = b[10];
 
     //CRC poly 0x31 start value 0xdd final 0x00 from 1st bit to 80bits
-    crc = crc8(&b[0], 10, 0x31, 0xdd);
-    if (crc != PacketCRC) {
+    //crc = crc8(&b[0], 10, 0x31, 0xdd);
+    //if (crc != PacketCRC) {
+    if (crc8(b, 11, 0x31, 0xdd) != 0) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: CRC8_calc=%u\n", __func__, crc);
-            fprintf(stderr, "%s: CRC8_pack=%u\n", __func__, PacketCRC);
+            fprintf(stderr, "%s: CRC8_calc=%u\n", __func__, crc8(&b[0], 10, 0x31, 0xdd));
+            fprintf(stderr, "%s: CRC8_packet=%u\n", __func__, b[10]);
         }
         return DECODE_FAIL_MIC;
     }
@@ -120,7 +123,7 @@ static int tpms_tyreguard400_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
 
     //id = (b[4] << 8)
     pressure_kpa = b[7] | ((flags & 0x10)<<4) | ((flags & 0x20)<<4) | ((flags & 0x40)<<4) ;
-    temp_c = (int) b[8] - 40;
+    temp_c = b[8] - 40;
 
     /* clang-format off */
     data_t *data = data_make(
