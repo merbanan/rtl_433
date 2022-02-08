@@ -34,6 +34,16 @@ r_device *create_device(r_device *dev_template);
 /// Output data.
 void decoder_output_data(r_device *decoder, data_t *data);
 
+/// Output a log message.
+void decoder_log(r_device *decoder, int level, char const *func, char const *msg);
+
+/// Output a formatted log message.
+void decoder_logf(r_device *decoder, int level, char const *func, _Printf_format_string_ const char *format, ...)
+#if defined(__GNUC__) || defined(__clang__)
+        __attribute__((format(printf, 4, 5)))
+#endif
+        ;
+
 // be terse, a maximum msg length of 60 characters is supported on the decoder_output_ functions
 // e.g. "FoobarCorp-XY3000: unexpected type code %02x"
 
