@@ -210,8 +210,8 @@ void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_s
         } else if (low_pass >= 1.0f) {
             low_pass = 1e6f / low_pass / samp_rate;
         }
-        fprintf(stderr, "%s: low pass filter for %u Hz at cutoff %.0f Hz, %.1f us\n",
-                __func__, samp_rate, samp_rate * low_pass, 1e6 / (samp_rate * low_pass));
+        fprintf(stderr, "%s: low pass filter for %u Hz at cutoff %.0f Hz, %.1f us\n", __func__,
+                samp_rate, samp_rate * low_pass, 1e6 / (samp_rate * low_pass));
         double ita  = 1.0 / tan(M_PI_2 * low_pass);
         double gain = 1.0 / (1.0 + ita) / 2; // prescaled by div 2
         state->alp_16[0] = FIX(1.0);
@@ -303,8 +303,8 @@ void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long 
         } else if (low_pass >= 1.0f) {
             low_pass = 1e6f / low_pass / samp_rate;
         }
-        fprintf(stderr, "%s: low pass filter for %u Hz at cutoff %.0f Hz, %.1f us\n",
-                __func__, samp_rate, samp_rate * low_pass, 1e6 / (samp_rate * low_pass));
+        fprintf(stderr, "%s: low pass filter for %u Hz at cutoff %.0f Hz, %.1f us\n", __func__,
+                samp_rate, samp_rate * low_pass, 1e6 / (samp_rate * low_pass));
         double ita  = 1.0 / tan(M_PI_2 * low_pass);
         double gain = 1.0 / (1.0 + ita);
         state->alp_32[0] = FIX32(1.0);

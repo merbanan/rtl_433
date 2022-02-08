@@ -215,8 +215,8 @@ static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (r_crc != c_crc) {
         // Enable with -vv (verbose decoders)
         if (decoder->verbose) {
-            fprintf(stderr, "%s: bad CRC: calculated %02x, received %02x\n",
-                    __func__, c_crc, r_crc);
+            fprintf(stderr, "%s: bad CRC: calculated %02x, received %02x\n", __func__,
+                    c_crc, r_crc);
         }
 
         // reject row

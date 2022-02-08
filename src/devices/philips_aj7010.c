@@ -51,8 +51,8 @@ static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Correct number of rows?
     if (bitbuffer->num_rows != 1) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: wrong number of rows (%d)\n",
-                    __func__, bitbuffer->num_rows);
+            fprintf(stderr, "%s: wrong number of rows (%d)\n", __func__,
+                    bitbuffer->num_rows);
         }
         return DECODE_ABORT_LENGTH;
     }
@@ -60,8 +60,8 @@ static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Correct bit length?
     if (bitbuffer->bits_per_row[0] != 40) {
         if (decoder->verbose && bitbuffer->bits_per_row[0] != 0) {
-            fprintf(stderr, "%s: wrong number of bits (%d)\n",
-                    __func__, bitbuffer->bits_per_row[0]);
+            fprintf(stderr, "%s: wrong number of bits (%d)\n", __func__,
+                    bitbuffer->bits_per_row[0]);
         }
         return DECODE_ABORT_LENGTH;
     }

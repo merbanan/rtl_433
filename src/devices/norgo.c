@@ -132,8 +132,8 @@ static int norgo_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             && bitbuffer->bits_per_row[0] != 55
             && bitbuffer->bits_per_row[0] != 71) {
         if (decoder->verbose)
-            fprintf(stderr, "%s: wrong size of bit per row %d\n",
-                    __func__, bitbuffer->bits_per_row[0]);
+            fprintf(stderr, "%s: wrong size of bit per row %d\n", __func__,
+                    bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH;
     }
 
@@ -146,8 +146,8 @@ static int norgo_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int xor = xor_bytes(b + 1, (bitbuffer->bits_per_row[0] - 15) / 8);
     if (xor != 0xff) { // before invert 0 is ff
         if (decoder->verbose)
-            bitrow_printf(b, bitbuffer->bits_per_row[0], "%s: XOR fail (%02x): ",
-                    __func__, xor);
+            bitrow_printf(b, bitbuffer->bits_per_row[0], "%s: XOR fail (%02x): ", __func__,
+                    xor);
         return DECODE_FAIL_MIC;
     }
 
@@ -161,8 +161,8 @@ static int norgo_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         checksum = b[6];
         if (calc_chk != checksum) {
             if (decoder->verbose)
-                bitbuffer_printf(bitbuffer, "%s: wrong checksum %02X vs. %02X: ",
-                        __func__, calc_chk, checksum);
+                bitbuffer_printf(bitbuffer, "%s: wrong checksum %02X vs. %02X: ", __func__,
+                        calc_chk, checksum);
             return DECODE_FAIL_MIC;
         }
 
@@ -185,8 +185,8 @@ static int norgo_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         checksum = b[8];
         if (calc_chk != checksum) {
             if (decoder->verbose)
-                bitbuffer_printf(bitbuffer, "%s: wrong checksum %02X vs. %02X: ",
-                        __func__, checksum, calc_chk);
+                bitbuffer_printf(bitbuffer, "%s: wrong checksum %02X vs. %02X: ", __func__,
+                        checksum, calc_chk);
             return DECODE_FAIL_MIC;
         }
         impulses = (b[2] >> 4) | (b[3] << 4) | (b[4] << 12) | (b[5] << 20) | (((uint64_t)b[6] & 0x3F) << 28);

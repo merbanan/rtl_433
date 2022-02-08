@@ -184,14 +184,14 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
 
     if (decoder->verbose) {
         uint8_t buffy[4];
-        fprintf(stderr, "%s\tstart_pos %u row_length %hu =  %u\n",
-                __func__, start_pos, bits->bits_per_row[row], (bits->bits_per_row[row] - start_pos));
-        fprintf(stderr, "%s\t%s\t%-5s\t%s\t%s\t%s\n",
-                __func__, "pkt_i", "pkt_d", "next", "length", "count");
+        fprintf(stderr, "%s\tstart_pos %u row_length %hu =  %u\n", __func__,
+                start_pos, bits->bits_per_row[row], (bits->bits_per_row[row] - start_pos));
+        fprintf(stderr, "%s\t%s\t%-5s\t%s\t%s\t%s\n", __func__,
+                "pkt_i", "pkt_d", "next", "length", "count");
 
         bitbuffer_extract_bytes(bits, row, start_pos - 2, buffy, 30);
-        bitrow_printf(buffy, 30, "%s\t%2d\t%02X\t%03u\t%u\t%2d\t",
-                __func__, pkt_i, pkt_d, next_pos, (next_pos - start_pos), 0);
+        bitrow_printf(buffy, 30, "%s\t%2d\t%02X\t%03u\t%u\t%2d\t", __func__,
+                pkt_i, pkt_d, next_pos, (next_pos - start_pos), 0);
     }
 
     /*   Is this overkill ??
@@ -203,8 +203,8 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
      }
      if ((bits->bits_per_row[row] - start_pos)  < l) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s\trow to short for %s packet type\n",
-                __func__, (extended ? "extended" : "regular"));
+            fprintf(stderr, "%s\trow to short for %s packet type\n", __func__,
+                    (extended ? "extended" : "regular"));
         }
         return DECODE_ABORT_LENGTH;     // row to short for packet type
      }
@@ -243,8 +243,8 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
             uint8_t buffy[4];
             bitbuffer_extract_bytes(bits, row, start_pos - 2, buffy, 30);
             // bitrow_printf(buffy, 30, "%s\t%2d  %02X  %3u\t%d\t%d\t",
-            bitrow_printf(buffy, 30, "%s\t%2d\t%02X\t%03u\t%u\t%2d\t",
-                    __func__, pkt_i, pkt_d, next_pos, (next_pos - start_pos), j);
+            bitrow_printf(buffy, 30, "%s\t%2d\t%02X\t%03u\t%u\t%2d\t", __func__,
+                    pkt_i, pkt_d, next_pos, (next_pos - start_pos), j);
             // parse_insteon_pkt: curr packet (3f) { 1} d6 : 1
         }
 
@@ -433,8 +433,8 @@ static int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
              }
 
             if (decoder->verbose > 1)
-                 fprintf(stderr, "%s: bitbuffer_search at row / search_index : %d, %u %u (%d)\n",
-                     __func__, row, search_index, bit_index, bitbuffer->bits_per_row[row]);
+                fprintf(stderr, "%s: bitbuffer_search at row / search_index : %d, %u %u (%d)\n", __func__,
+                        row, search_index, bit_index, bitbuffer->bits_per_row[row]);
 
             search_index = bitbuffer_search(bitbuffer, row, search_index, insteon_preamble, INSTEON_PREAMBLE_LEN);
 
@@ -446,8 +446,8 @@ static int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             }
 
             if (decoder->verbose)
-                fprintf(stderr, "%s: parse_insteon_pkt at: row / search_index : %hu, %u (%hu)\n",
-                        __func__, row, search_index, bitbuffer->bits_per_row[row]);
+                fprintf(stderr, "%s: parse_insteon_pkt at: row / search_index : %hu, %u (%hu)\n", __func__,
+                        row, search_index, bitbuffer->bits_per_row[row]);
 
             ret = parse_insteon_pkt(decoder, bitbuffer, row, search_index);
 

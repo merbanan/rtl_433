@@ -69,8 +69,8 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* Correct number of rows? */
     if (bitbuffer->num_rows != 1) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: wrong number of rows (%d)\n",
-                    __func__, bitbuffer->num_rows);
+            fprintf(stderr, "%s: wrong number of rows (%d)\n", __func__,
+                    bitbuffer->num_rows);
         }
         return DECODE_ABORT_EARLY;
     }
@@ -78,8 +78,8 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* Correct bit length? */
     if (bitbuffer->bits_per_row[0] != PHILIPS_BITLEN) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: wrong number of bits (%d)\n",
-                    __func__, bitbuffer->bits_per_row[0]);
+            fprintf(stderr, "%s: wrong number of bits (%d)\n", __func__,
+                    bitbuffer->bits_per_row[0]);
         }
         return DECODE_ABORT_LENGTH;
     }
@@ -113,8 +113,8 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     c_crc = crc4(packet, PHILIPS_PACKETLEN, 0x9, 1); /* Including the CRC nibble */
     if (0 != c_crc) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: CRC failed, calculated %x\n",
-                    __func__, c_crc);
+            fprintf(stderr, "%s: CRC failed, calculated %x\n", __func__,
+                    c_crc);
         }
         return DECODE_FAIL_MIC;
     }

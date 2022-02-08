@@ -675,8 +675,8 @@ static int acurite_tower_sensor_decode(r_device* decoder, uint8_t* bb)
     int humidity = (bb[3] & 0x7f);
     if (humidity < 0 || humidity > 100) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: Acurite TXR sensor 0x%04X Ch %s : Impossible humidity: %d %%rH\n",
-                __func__, sensor_id, channel_str, humidity);
+            fprintf(stderr, "%s: Acurite TXR sensor 0x%04X Ch %s : Impossible humidity: %d %%rH\n", __func__,
+                    sensor_id, channel_str, humidity);
         }
         return DECODE_FAIL_SANITY;
     }
@@ -691,8 +691,8 @@ static int acurite_tower_sensor_decode(r_device* decoder, uint8_t* bb)
     float tempc = temp_raw * 0.1 - 100;
     if (tempc < -40 || tempc > 70) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: Acurite TXR sensor 0x%04X Ch %s : Impossible temperature: %0.2f C\n",
-                __func__, sensor_id, channel_str, tempc);
+            fprintf(stderr, "%s: Acurite TXR sensor 0x%04X Ch %s : Impossible temperature: %0.2f C\n", __func__,
+                    sensor_id, channel_str, tempc);
         }
         return DECODE_FAIL_SANITY;
     }
@@ -865,8 +865,8 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             if (message_type != ACURITE_MSGTYPE_515_REFRIGERATOR
                     && message_type != ACURITE_MSGTYPE_515_FREEZER) {
                 if (decoder->verbose > 1) {
-                    fprintf(stderr, "%s: Acurite 515 sensor 0x%04X Ch %s, Unknown message type 0x%02x\n",
-                            __func__, sensor_id, channel_str, message_type);
+                    fprintf(stderr, "%s: Acurite 515 sensor 0x%04X Ch %s, Unknown message type 0x%02x\n", __func__,
+                            sensor_id, channel_str, message_type);
                 }
                 continue; // DECODE_FAIL_MIC
             }
@@ -1031,8 +1031,8 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             }
             else {
                 if (decoder->verbose > 1) {
-                    fprintf(stderr, "%s: Acurite 5n1 sensor 0x%04X Ch %s, Status %02X, Unknown message type 0x%02x\n",
-                            __func__, sensor_id, channel_str, bb[3], message_type);
+                    fprintf(stderr, "%s: Acurite 5n1 sensor 0x%04X Ch %s, Status %02X, Unknown message type 0x%02x\n", __func__,
+                            sensor_id, channel_str, bb[3], message_type);
                 }
             }
         }
