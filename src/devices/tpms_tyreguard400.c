@@ -10,29 +10,31 @@
 */
 /**
 
-    -Type            : TPMS
-    -Freq            : 434.1 MHz
-    -Modulation      : ASK -> OOK_MC_ZEROBIT (Manchester Code with fixed leading zero bit)
-    -Sambol duration : 100us (same for l or 0)
-    -Length          : 22 bytes long
+    - Type            : TPMS
+    - Freq            : 434.1 MHz
+    - Modulation      : ASK -> OOK_MC_ZEROBIT (Manchester Code with fixed leading zero bit)
+    - Sambol duration : 100us (same for l or 0)
+    - Length          : 22 bytes long
 
-    -bytes : 1    2    3    4    5    6    7    8   9   10  11  12  13  14  15  16  17   18   19   20   21  22
-    -coded : S/P  S/P  S/P  S/P  S/P  S/P  S/P  ID  ID  ID  ID  ID  ID  ID  Pr  Pr  Temp Temp Flg  Flg  CRC CRC
-    
-    -S/P   : preamble/sync "0xfd5fd5f" << always fixed
-    -ID    : 6 bytes long start with 0x6b????? ex 0x6b20d21
-    -Pr    : Last 2 bytes of pressure in psi ex : 0xe8 means XX232 psi (for XX see flags bytes)
-    -Temp  : Temperature in °C offset by +40 ex : 0x2f means (47-40)=+7°C
-    -Flg   : Flags bytes => should be read in binary format :
+    Packet layout:
+
+    bytes : 1    2    3    4    5    6    7    8   9   10  11  12  13  14  15  16  17   18   19   20   21  22
+    coded : S/P  S/P  S/P  S/P  S/P  S/P  S/P  ID  ID  ID  ID  ID  ID  ID  Pr  Pr  Temp Temp Flg  Flg  CRC CRC
+
+    - S/P   : preamble/sync "0xfd5fd5f" << always fixed
+    - ID    : 6 bytes long start with 0x6b????? ex 0x6b20d21
+    - Pr    : Last 2 bytes of pressure in psi ex : 0xe8 means XX232 psi (for XX see flags bytes)
+    - Temp  : Temperature in °C offset by +40 ex : 0x2f means (47-40)=+7°C
+    - Flg   : Flags bytes => should be read in binary format :
         Bit 73 : Unknown ; maybe the 20th MSB pressure bit? The sensor is not capable to reach this so high pressure
         Bit 74 : add 1024 psi (19th MSB pressure bit)
         Bit 75 : add  512 psi (18th MSB pressure bit)
         Bit 76 : add  256 psi (17th MSB pressure bit)
         Bit 77 : Acknoldge pressure leaking 1=Ack 0=No_ack (nothing to report)
         Bit 78 : Unknown
-        Bit 79 : Leaking pressure detected 1=Leak 0=No leak (nothing to report) 
+        Bit 79 : Leaking pressure detected 1=Leak 0=No leak (nothing to report)
         Bit 80 : Leaking pressure detected 1=Leak 0=No leak (nothing to report)
-    -CRC   : CRC poly 0x31 start value 0xdd final 0x00 from 1st bit 80th bits
+    - CRC   : CRC poly 0x31 start value 0xdd final 0x00 from 1st bit 80th bits
 
     To peer a new sensor to the unit, bit 79 and 80 has to be both to 1.
 
@@ -122,7 +124,7 @@ static int tpms_tyreguard400_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
     sprintf(flags_str, "%02x", flags);
 
     //id = (b[4] << 8)
-    pressure_kpa = b[7] | ((flags & 0x10)<<4) | ((flags & 0x20)<<4) | ((flags & 0x40)<<4) ;
+    pressure_kpa = b[7] | ((flags & 0x70) << 4);
     temp_c = b[8] - 40;
 
     /* clang-format off */
