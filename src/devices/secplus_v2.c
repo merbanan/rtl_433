@@ -81,7 +81,7 @@ static int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t 
     if (verbose) {
         fprintf(stderr, "%s: bits_per_row = %d\n", __func__, bits->bits_per_row[0]);
 
-        bitrow_debugf(bits->bb[0], bits->bits_per_row[0], "%s : ", __func__);
+        bitrow_debugf(bits->bb[0], bits->bits_per_row[0], "%s: ", __func__);
     }
 
     bitbuffer_extract_bytes(bits, 0, start_pos, buffy, 2);
@@ -209,7 +209,7 @@ static int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t 
         roll_array[k++] = (x >> i) & 0x03;
     }
 
-    // bitrow_printf(buffy, 8, "%s ; buffy bits ", __func__);
+    // bitrow_printf(buffy, 8, "%s: buffy bits ", __func__);
 
     // assemble binary bits into trinary
     x = p2;
@@ -218,7 +218,7 @@ static int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t 
     }
 
     if (verbose) {
-        fprintf(stderr, "%s : roll_array : (%d) %d %d %d %d %d %d %d %d %d\n", __func__, part_id,
+        fprintf(stderr, "%s: roll_array : (%d) %d %d %d %d %d %d %d %d %d\n", __func__, part_id,
                 roll_array[0], roll_array[1], roll_array[2], roll_array[3],
                 roll_array[4], roll_array[5], roll_array[6], roll_array[7], roll_array[8]);
     }

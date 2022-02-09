@@ -184,13 +184,13 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
 
     if (decoder->verbose) {
         uint8_t buffy[4];
-        fprintf(stderr, "%s\tstart_pos %u row_length %hu =  %u\n", __func__,
+        fprintf(stderr, "%s: start_pos %u row_length %hu =  %u\n", __func__,
                 start_pos, bits->bits_per_row[row], (bits->bits_per_row[row] - start_pos));
-        fprintf(stderr, "%s\t%s\t%-5s\t%s\t%s\t%s\n", __func__,
+        fprintf(stderr, "%s: %s\t%-5s\t%s\t%s\t%s\n", __func__,
                 "pkt_i", "pkt_d", "next", "length", "count");
 
         bitbuffer_extract_bytes(bits, row, start_pos - 2, buffy, 30);
-        bitrow_printf(buffy, 30, "%s\t%2d\t%02X\t%03u\t%u\t%2d\t", __func__,
+        bitrow_printf(buffy, 30, "%s: %2d\t%02X\t%03u\t%u\t%2d\t", __func__,
                 pkt_i, pkt_d, next_pos, (next_pos - start_pos), 0);
     }
 
@@ -203,7 +203,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
      }
      if ((bits->bits_per_row[row] - start_pos)  < l) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s\trow to short for %s packet type\n", __func__,
+            fprintf(stderr, "%s: row to short for %s packet type\n", __func__,
                     (extended ? "extended" : "regular"));
         }
         return DECODE_ABORT_LENGTH;     // row to short for packet type
@@ -242,8 +242,8 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
         if (decoder->verbose) {
             uint8_t buffy[4];
             bitbuffer_extract_bytes(bits, row, start_pos - 2, buffy, 30);
-            // bitrow_printf(buffy, 30, "%s\t%2d  %02X  %3u\t%d\t%d\t",
-            bitrow_printf(buffy, 30, "%s\t%2d\t%02X\t%03u\t%u\t%2d\t", __func__,
+            // bitrow_printf(buffy, 30, "%s: %2d  %02X  %3u\t%d\t%d\t",
+            bitrow_printf(buffy, 30, "%s: %2d\t%02X\t%03u\t%u\t%2d\t", __func__,
                     pkt_i, pkt_d, next_pos, (next_pos - start_pos), j);
             // parse_insteon_pkt: curr packet (3f) { 1} d6 : 1
         }
@@ -342,7 +342,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
             "NAK of Group Cleanup Direct Message"};   // 111
 
     char *pkt_type_str = messsage_text[pkt_type];
-    // bitrow_printf(results, 8, "%s\tFlag", __func__);
+    // bitrow_printf(results, 8, "%s: Flag", __func__);
     //fprintf(stderr, "%s: pkt_type: %02X \n", __func__, pkt_type);
 
     if (decoder->verbose > 1) {

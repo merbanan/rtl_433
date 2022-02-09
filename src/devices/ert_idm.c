@@ -145,7 +145,7 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // bitbuffer_debug(bitbuffer);
     bitbuffer_extract_bytes(bitbuffer, 0, sync_index, b, IDM_PACKET_BITLEN);
     if (decoder->verbose) {
-        bitrow_printf(b, IDM_PACKET_BITLEN, "%s bitrow_printf", __func__);
+        bitrow_printf(b, IDM_PACKET_BITLEN, "%s: ", __func__);
     }
 
     // uint32_t t_16; // temp vars
@@ -206,7 +206,7 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         p += sprintf(p, "%02X", b[13 + j]);
     }
     if (decoder->verbose > 1)
-        bitrow_printf(&b[13], 6 * 8, "%s TamperCounters_str   %s\t", __func__, TamperCounters_str);
+        bitrow_printf(&b[13], 6 * 8, "%s: TamperCounters_str   %s\t", __func__, TamperCounters_str);
 
     AsynchronousCounters = (b[19] << 8 | b[20]);
     // snprintf(AsynchronousCounters_str, sizeof(AsynchronousCounters_str), "0x%04X", AsynchronousCounters);
@@ -218,15 +218,15 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         p += sprintf(p, "%02X", b[21 + j]);
     }
     if (decoder->verbose > 1)
-        bitrow_printf(&b[21], 6 * 8, "%s PowerOutageFlags_str %s\t", __func__, PowerOutageFlags_str);
+        bitrow_printf(&b[21], 6 * 8, "%s: PowerOutageFlags_str %s\t", __func__, PowerOutageFlags_str);
 
     LastConsumptionCount = ((uint32_t)b[27] << 24) | (b[28] << 16) | (b[29] << 8) | (b[30]);
     if (decoder->verbose)
-        bitrow_printf(&b[27], 32, "%s LastConsumptionCount %d\t", __func__, LastConsumptionCount);
+        bitrow_printf(&b[27], 32, "%s: LastConsumptionCount %d\t", __func__, LastConsumptionCount);
 
     // DifferentialConsumptionIntervals : 47 intervals of 9-bit unsigned integers
     if (decoder->verbose > 1)
-        bitrow_printf(&b[31], 423, "%s DifferentialConsumptionIntervals", __func__);
+        bitrow_printf(&b[31], 423, "%s: DifferentialConsumptionIntervals", __func__);
     unsigned pos = sync_index + (31 * 8);
     for (int j = 0; j < 47; j++) {
         uint8_t buffy[4] = {0};
@@ -236,7 +236,7 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         pos += 9;
     }
     if (decoder->verbose > 1) {
-        fprintf(stderr, "%s DifferentialConsumptionIntervals:\n\t", __func__);
+        fprintf(stderr, "%s: DifferentialConsumptionIntervals:\n\t", __func__);
         for (int j = 0; j < 47; j++) {
             fprintf(stderr, "%d ", DifferentialConsumptionIntervals[j]);
         }
@@ -404,7 +404,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_extract_bytes(bitbuffer, 0, sync_index, b, IDM_PACKET_BITLEN);
     if (decoder->verbose)
-        bitrow_printf(b, IDM_PACKET_BITLEN, "%s bitrow_printf", __func__);
+        bitrow_printf(b, IDM_PACKET_BITLEN, "%s: ", __func__);
 
     // uint32_t t_16; // temp vars
     // uint32_t t_32;
@@ -464,7 +464,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         p += sprintf(p, "%02X", b[13 + j]);
     }
     if (decoder->verbose > 1)
-        bitrow_printf(&b[13], 6 * 8, "%s TamperCounters_str   %s\t", __func__, TamperCounters_str);
+        bitrow_printf(&b[13], 6 * 8, "%s: TamperCounters_str   %s\t", __func__, TamperCounters_str);
 
     //  should this be included ?
     p = Unknown_field_1_str;
@@ -474,7 +474,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         p += sprintf(p, "%02X", b[19 + j]);
     }
     if (decoder->verbose) {
-        bitrow_printf(&b[19], 7 * 8, "%s Unknown_field_1 %s\t", __func__, Unknown_field_1_str);
+        bitrow_printf(&b[19], 7 * 8, "%s: Unknown_field_1 %s\t", __func__, Unknown_field_1_str);
         bitrow_debug(&b[19], 7 * 8);
     }
 
@@ -489,17 +489,17 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         p += sprintf(p, "%02X", b[29 + j]);
     }
     if (decoder->verbose)
-        bitrow_printf(&b[29], 3 * 8, "%s Unknown_field_1 %s\t", __func__, Unknown_field_2_str);
+        bitrow_printf(&b[29], 3 * 8, "%s: Unknown_field_1 %s\t", __func__, Unknown_field_2_str);
 
     LastConsumptionCount = ((uint32_t)b[32] << 24) | (b[33] << 16) | (b[34] << 8) | (b[35]);
 
     if (decoder->verbose)
-        bitrow_printf(&b[32], 32, "%s LastConsumptionCount %d\t", __func__, LastConsumptionCount);
+        bitrow_printf(&b[32], 32, "%s: LastConsumptionCount %d\t", __func__, LastConsumptionCount);
 
     // DifferentialConsumptionIntervals[] = 27 intervals of 14-bit unsigned integers.
     unsigned pos = sync_index + (36 * 8);
     if (decoder->verbose)
-        bitrow_printf(&b[36], 48 * 8, "%s DifferentialConsumptionIntervals", __func__);
+        bitrow_printf(&b[36], 48 * 8, "%s: DifferentialConsumptionIntervals", __func__);
     for (int j = 0; j < 27; j++) {
         uint8_t buffy[4] = {0};
 
@@ -509,7 +509,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         pos += 14;
     }
     if (decoder->verbose) {
-        fprintf(stderr, "%s DifferentialConsumptionIntervals:\n\t", __func__);
+        fprintf(stderr, "%s: DifferentialConsumptionIntervals:\n\t", __func__);
         for (int j = 0; j < 27; j++) {
             fprintf(stderr, "%d ", DifferentialConsumptionIntervals[j]);
         }

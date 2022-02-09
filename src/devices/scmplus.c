@@ -69,7 +69,7 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (decoder->verbose) { // print bytes with aligned offset
-        bitrow_printf(b, 16 * 8, "%s bitrow_printf", __func__);
+        bitrow_printf(b, 16 * 8, "%s: ", __func__);
     }
 
     // uint8_t protocol_id;
