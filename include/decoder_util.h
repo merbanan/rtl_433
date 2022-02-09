@@ -44,6 +44,26 @@ void decoder_logf(r_device *decoder, int level, char const *func, _Printf_format
 #endif
         ;
 
+/// Output a log message with the content of the bitbuffer.
+void decoder_log_bitbuffer(r_device *decoder, int level, char const *func, const bitbuffer_t *bitbuffer, char const *msg);
+
+/// Output a formatted log message with the content of the bitbuffer.
+void decoder_logf_bitbuffer(r_device *decoder, int level, char const *func, const bitbuffer_t *bitbuffer, _Printf_format_string_ const char *format, ...)
+#if defined(__GNUC__) || defined(__clang__)
+        __attribute__((format(printf, 5, 6)))
+#endif
+        ;
+
+/// Output a log message with the content of a bit row (byte buffer).
+void decoder_log_bitrow(r_device *decoder, int level, char const *func, uint8_t const *bitrow, unsigned bit_len, char const *msg);
+
+/// Output a formatted log message with the content of a bit row (byte buffer).
+void decoder_logf_bitrow(r_device *decoder, int level, char const *func, uint8_t const *bitrow, unsigned bit_len, _Printf_format_string_ const char *format, ...)
+#if defined(__GNUC__) || defined(__clang__)
+        __attribute__((format(printf, 6, 7)))
+#endif
+        ;
+
 // be terse, a maximum msg length of 60 characters is supported on the decoder_output_ functions
 // e.g. "FoobarCorp-XY3000: unexpected type code %02x"
 
