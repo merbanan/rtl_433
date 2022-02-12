@@ -111,11 +111,11 @@ static int ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row
         if (decoder->verbose > 1) {
             if (row == 0) {
                 if (bits < MSG_PREAMBLE_BITS) {
-                    decoder_logf(decoder, 0, __func__, "Short preamble: %d bits (expected %d)",
+                    decoder_logf(decoder, 2, __func__, "Short preamble: %d bits (expected %d)",
                             bits, MSG_PREAMBLE_BITS);
                 }
             } else if (row != (unsigned)bitbuffer->num_rows - 1 && bits == 1) {
-                decoder_logf(decoder, 0, __func__, "Wrong packet #%u length: %d bits (expected %d)",
+                decoder_logf(decoder, 2, __func__, "Wrong packet #%u length: %d bits (expected %d)",
                         row, bits, MSG_PACKET_BITS);
             }
         }
@@ -152,15 +152,13 @@ static int ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row
     }
 
     if (postmark != MSG_PACKET_POSTMARK) {
-        if (decoder->verbose > 1)
-            decoder_logf(decoder, 0, __func__, "Packet #%u wrong postmark 0x%02x (expected 0x%02x).",
+        decoder_logf(decoder, 2, __func__, "Packet #%u wrong postmark 0x%02x (expected 0x%02x).",
                     row, postmark, MSG_PACKET_POSTMARK);
         return DECODE_FAIL_SANITY;
     }
 
     if (checksum != checksum_calculated) {
-        if (decoder->verbose > 1)
-            decoder_logf(decoder, 0, __func__, "Packet #%u checksum error.", row);
+        decoder_logf(decoder, 2, __func__, "Packet #%u checksum error.", row);
         return DECODE_FAIL_MIC;
     }
 

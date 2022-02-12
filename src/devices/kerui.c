@@ -47,9 +47,7 @@ static int kerui_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // No need to decode/extract values for simple test
     if (!b[0] && !b[1] && !b[2]) {
-        if (decoder->verbose > 1) {
-            decoder_log(decoder, 0, __func__, "DECODE_FAIL_SANITY data all 0x00");
-        }
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00");
         return DECODE_FAIL_SANITY;
     }
 

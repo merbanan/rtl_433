@@ -109,11 +109,9 @@ static int lacrossetx_detect(r_device *decoder, uint8_t *pRow, uint8_t *msg_nybb
         if (checksum == msg_nybbles[10] && (parity % 2 == 0)) {
             return 1;
         } else {
-            if (decoder->verbose > 1) {
-                decoder_logf(decoder, 0, __func__,
-                        "LaCrosse TX Checksum/Parity error: Comp. %d != Recv. %d, Parity %d\n",
-                        checksum, msg_nybbles[10], parity);
-            }
+            decoder_logf(decoder, 2, __func__,
+                    "LaCrosse TX Checksum/Parity error: Comp. %d != Recv. %d, Parity %d",
+                    checksum, msg_nybbles[10], parity);
             return DECODE_FAIL_MIC;
         }
     }
@@ -149,11 +147,9 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // message integrity.
         if (msg_nybbles[5] != msg_nybbles[8]
                 || msg_nybbles[6] != msg_nybbles[9]) {
-            if (decoder->verbose) {
-                decoder_logf(decoder, 0, __func__,
-                        "LaCrosse TX Sensor %02x, type: %d: message value mismatch int(%3.1f) != %d?\n",
-                        sensor_id, msg_type, msg_value, msg_value_int);
-            }
+            decoder_logf(decoder, 1, __func__,
+                    "Sensor %02x, type: %d: message value mismatch int(%3.1f) != %d?\n",
+                    sensor_id, msg_type, msg_value, msg_value_int);
             result = DECODE_FAIL_SANITY;
             continue; // DECODE_FAIL_SANITY
         }
@@ -185,11 +181,9 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
         else  {
             // TODO: this should be reported/counted as exception, not considered debug
-            if (decoder->verbose) {
-                decoder_logf(decoder, 0, __func__,
-                        "LaCrosse Sensor %02x: Unknown Reading type %d, % 3.1f (%d)\n",
-                        sensor_id, msg_type, msg_value, msg_value_int);
-            }
+            decoder_logf(decoder, 1, __func__,
+                    "Sensor %02x: Unknown Reading type %d, % 3.1f (%d)\n",
+                    sensor_id, msg_type, msg_value, msg_value_int);
         }
     }
 

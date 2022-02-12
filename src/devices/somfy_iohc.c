@@ -121,7 +121,7 @@ static int somfy_iohc_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // calculate and verify checksum
     if (crc16lsb(b, len, 0x8408, 0x0000) != 0) // unreflected poly 0x1021
         return DECODE_FAIL_MIC;
-    decoder_logf_bitrow(decoder, 0, __func__, b, len * 8, "offset %u, num_bits %u, len %d, msg_len %d", offset, num_bits, len, msg_len);
+    decoder_logf_bitrow(decoder, 2, __func__, b, len * 8, "offset %u, num_bits %u, len %d, msg_len %d", offset, num_bits, len, msg_len);
 
     int msg_type = (b[0]);
     int dst_id   = ((unsigned)b[4] << 24) | (b[3] << 16) | (b[2] << 8) | (b[1]); // assume Little-Endian

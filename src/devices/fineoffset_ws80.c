@@ -56,9 +56,7 @@ static int fineoffset_ws80_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Find a data package and extract data buffer
     unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, 24) + 24;
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) { // Did not find a big enough package
-        if (decoder->verbose > 1) {
-            decoder_logf_bitbuffer(decoder, 0, __func__, bitbuffer, "short package at %u", bit_offset);
-        }
+        decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "short package at %u", bit_offset);
         return DECODE_ABORT_LENGTH;
     }
 
@@ -72,9 +70,7 @@ static int fineoffset_ws80_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t crc = crc8(b, 17, 0x31, 0x00);
     uint8_t chk = add_bytes(b, 17);
     if (crc != 0 || chk != b[17]) {
-        if (decoder->verbose) {
-            decoder_logf(decoder, 0, __func__, "Checksum error: %02x %02x", crc, chk);
-        }
+        decoder_logf(decoder, 1, __func__, "Checksum error: %02x %02x", crc, chk);
         return DECODE_FAIL_MIC;
     }
 

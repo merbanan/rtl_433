@@ -97,33 +97,25 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t b[20];
 
     if (bitbuffer->num_rows > 1) {
-        decoder_logf(decoder, 0, __func__, "Too many rows: %d", bitbuffer->num_rows);
+        decoder_logf(decoder, 1, __func__, "Too many rows: %d", bitbuffer->num_rows);
         return DECODE_FAIL_SANITY;
     }
     int msg_len = bitbuffer->bits_per_row[0];
     if (msg_len < 200) { // allows shorter preamble for LTV-R3
-        if (decoder->verbose) {
-            decoder_logf(decoder, 0, __func__, "Packet too short: %d bits", msg_len);
-        }
+        decoder_logf(decoder, 1, __func__, "Packet too short: %d bits", msg_len);
         return DECODE_ABORT_LENGTH;
     } else if (msg_len > 272) {
-        if (decoder->verbose) {
-            decoder_logf(decoder, 0, __func__, "Packet too long: %d bits", msg_len);
-        }
+        decoder_logf(decoder, 1, __func__, "Packet too long: %d bits", msg_len);
         return DECODE_ABORT_LENGTH;
     } else {
-        if (decoder->verbose) {
-           decoder_logf(decoder, 0, __func__, "packet length: %d", msg_len);
-        }
+        decoder_logf(decoder, 1, __func__, "packet length: %d", msg_len);
     }
 
     int offset = bitbuffer_search(bitbuffer, 0, 0,
             preamble_pattern, sizeof(preamble_pattern) * 8);
 
     if (offset >= msg_len) {
-        if (decoder->verbose) {
-            decoder_log(decoder, 0, __func__, "Sync word not found");
-        }
+        decoder_log(decoder, 1, __func__, "Sync word not found");
         return DECODE_ABORT_EARLY;
     }
 
@@ -143,16 +135,12 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     else {
         chk = crc8(b, 8, 0x31, 0x00);
         if (b[10] != 0 || chk != 0) { // make sure this really is a LTV-R1 and not just a CRC collision
-            if (decoder->verbose) {
-                decoder_log(decoder, 0, __func__, "CRC failed!");
-            }
+            decoder_log(decoder, 1, __func__, "CRC failed!");
             return DECODE_FAIL_MIC;
         }
     }
 
-    if (decoder->verbose) {
-        decoder_log_bitrow(decoder, 0, __func__, b, bitbuffer->bits_per_row[0] - offset, "");
-    }
+    decoder_log_bitrow(decoder, 1, __func__, b, bitbuffer->bits_per_row[0] - offset, "");
 
     int id        = (b[0] << 16) | (b[1] << 8) | b[2];
     int flags     = (b[3] & 0x31); // masks off knonw bits

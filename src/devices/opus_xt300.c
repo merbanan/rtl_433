@@ -50,9 +50,7 @@ static int opus_xt300_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         b = bitbuffer->bb[row];
 
         if (!b[0] && !b[1] && !b[2] && !b[3]) {
-            if (decoder->verbose > 1) {
-                decoder_log(decoder, 0, __func__, "DECODE_FAIL_SANITY data all 0x00");
-            }
+            decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00");
             fail_code = DECODE_FAIL_SANITY;
             continue;
         }

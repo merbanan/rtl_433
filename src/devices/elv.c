@@ -131,8 +131,7 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     dec[0] = AD_POP (bb[0], 4, bit); bit+=4;
     stopbit= AD_POP (bb[0], 1, bit); bit+=1;
     if (!stopbit) {
-        if (decoder->verbose)
-            decoder_log(decoder, 0, __func__, "!stopbit");
+        decoder_log(decoder, 1, __func__, "!stopbit");
         return DECODE_ABORT_EARLY;
     }
     check_calculated ^= dec[0];
@@ -143,21 +142,17 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         dec[i] = AD_POP (bb[0], 4, bit); bit+=4;
         stopbit= AD_POP (bb[0], 1, bit); bit+=1;
         if (!stopbit) {
-            if (decoder->verbose)
-                decoder_logf(decoder, 0, __func__, "!stopbit %i", bit);
+            decoder_logf(decoder, 1, __func__, "!stopbit %i", bit);
             return DECODE_ABORT_EARLY;
         }
         check_calculated ^= dec[i];
         sum_calculated   += dec[i];
         nibbles++;
     }
-    if (decoder->verbose) {
-        decoder_log_bitrow(decoder, 0, __func__, dec, nibbles * 8, "");
-    }
+    decoder_log_bitrow(decoder, 1, __func__, dec, nibbles * 8, "");
 
     if (check_calculated) {
-        if (decoder->verbose)
-            decoder_logf(decoder, 0, __func__, "check_calculated (%d) != 0", check_calculated);
+        decoder_logf(decoder, 1, __func__, "check_calculated (%d) != 0", check_calculated);
         return DECODE_FAIL_MIC;
     }
 
@@ -166,8 +161,7 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     sum_calculated+=5;
     sum_calculated&=0xF;
     if (sum_received != sum_calculated) {
-        if (decoder->verbose)
-            decoder_logf(decoder, 0, __func__, "sum_received (%d) != sum_calculated (%d)", sum_received, sum_calculated);
+        decoder_logf(decoder, 1, __func__, "sum_received (%d) != sum_calculated (%d)", sum_received, sum_calculated);
         return DECODE_FAIL_MIC;
     }
 

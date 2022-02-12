@@ -118,9 +118,7 @@ static int schrader_EG53MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // No need to decode/extract values for simple test
     // check serial flags pressure temperature value not zero
     if ( !b[1] && !b[2] && !b[4] && !b[5] && !b[7] && !b[8] ) {
-        if (decoder->verbose > 1) {
-            decoder_log(decoder, 0, __func__, "DECODE_FAIL_SANITY data all 0x00");
-        }
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00");
         return DECODE_FAIL_SANITY;
     }
 
@@ -214,9 +212,7 @@ static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     ret = bitbuffer_manchester_decode(bitbuffer, 0, NUM_BITS_PREAMBLE,
                                       &decoded, NUM_BITS_DATA);
     if (ret != NUM_BITS_TOTAL) {
-        if (decoder->verbose > 1) {
-            decoder_log(decoder, 0, __func__, "invalid Manchester data");
-        }
+        decoder_log(decoder, 2, __func__, "invalid Manchester data");
         return DECODE_FAIL_MIC;
     }
     bitbuffer_invert(&decoded);
@@ -230,9 +226,7 @@ static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* reject all-zero data */
     if (!flags && !serial_id && !pressure) {
-        if (decoder->verbose > 1) {
-            decoder_log(decoder, 0, __func__, "DECODE_FAIL_SANITY data all 0x00");
-        }
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00");
         return DECODE_FAIL_SANITY;
     }
 

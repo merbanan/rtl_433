@@ -76,9 +76,7 @@ static int m_bus_crc_valid(r_device *decoder, const uint8_t *bytes, unsigned crc
     uint16_t crc_calc = ~crc16(bytes, crc_offset, CRC_POLY, 0);
     uint16_t crc_read = (((uint16_t)bytes[crc_offset] << 8) | bytes[crc_offset+1]);
     if (crc_calc != crc_read) {
-        if (decoder->verbose) {
-            decoder_logf(decoder, 0, __func__, "M-Bus: CRC error: Calculated 0x%0X, Read: 0x%0X", (unsigned)crc_calc, (unsigned)crc_read);
-        }
+        decoder_logf(decoder, 1, __func__, "M-Bus: CRC error: Calculated 0x%0X, Read: 0x%0X", (unsigned)crc_calc, (unsigned)crc_read);
         return 0;
     }
     return 1;
@@ -799,10 +797,8 @@ static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bu
     // Check length of package is sufficient
     unsigned num_data_blocks = (block1->L-9+15)/16;      // Data blocks are 16 bytes long + 2 CRC bytes (not counted in L)
     if ((block1->L < 9) || ((block1->L-9)+num_data_blocks*2 > in->length-BLOCK1A_SIZE)) {   // add CRC bytes for each data block
-        if (decoder->verbose) {
-            decoder_logf(decoder, 0, __func__, "M-Bus: Package (%u) too short for packet Length: %u", in->length, block1->L);
-            decoder_logf(decoder, 0, __func__, "M-Bus: %u > %u", (block1->L-9)+num_data_blocks*2, in->length-BLOCK1A_SIZE);
-        }
+        decoder_logf(decoder, 1, __func__, "M-Bus: Package (%u) too short for packet Length: %u", in->length, block1->L);
+        decoder_logf(decoder, 1, __func__, "M-Bus: %u > %u", (block1->L-9)+num_data_blocks*2, in->length-BLOCK1A_SIZE);
         return 0;
     }
 
@@ -840,7 +836,7 @@ static int m_bus_decode_format_b(r_device *decoder, const m_bus_data_t *in, m_bu
 
     // Check length of package is sufficient
     if ((block1->L < 12) || (block1->L+1 > (int)in->length)) {   // L includes all bytes except itself
-        if (decoder->verbose) { decoder_logf(decoder, 0, __func__, "M-Bus: Package too short for Length: %u", block1->L); }
+        decoder_logf(decoder, 1, __func__, "M-Bus: Package too short for Length: %u", block1->L);
         return 0;
     }
 
@@ -963,7 +959,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
     }
 
-    if (decoder->verbose) { decoder_logf_bitbuffer(decoder, 0, __func__, bitbuffer, "PREAMBLE_T: found at: %u", bit_offset); }
+    decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "PREAMBLE_T: found at: %u", bit_offset);
     bit_offset += sizeof(PREAMBLE_T)*8;     // skip preamble
 
     uint8_t next_byte = bitrow_get_byte(bitbuffer->bb[0], bit_offset);
@@ -975,7 +971,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         bit_offset += 8;
         // Format A
         if (next_byte == 0xCD) {
-            if (decoder->verbose) { decoder_log(decoder, 0, __func__, "M-Bus: Mode C, Format A"); }
+            decoder_log(decoder, 1, __func__, "M-Bus: Mode C, Format A");
             // Extract data
             data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
             bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
@@ -984,7 +980,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         } // Format A
         // Format B
         else if (next_byte == 0x3D) {
-            if (decoder->verbose) { decoder_log(decoder, 0, __func__, "M-Bus: Mode C, Format B"); }
+            decoder_log(decoder, 1, __func__, "M-Bus: Mode C, Format B");
             // Extract data
             data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
             bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
@@ -993,7 +989,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }   // Format B
         // Unknown Format
         else {
-            if (decoder->verbose) { decoder_logf_bitbuffer(decoder, 0, __func__, bitbuffer, "M-Bus: Mode C, Unknown format: 0x%X", next_byte); }
+            decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "M-Bus: Mode C, Unknown format: 0x%X", next_byte);
             return 0;
         }
     }   // Mode C
@@ -1001,15 +997,15 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     else {
         mode = "T";
         bit_offset -= 8; // Rewind offset to start of telegram
-        if (decoder->verbose) { decoder_log(decoder, 0, __func__, "M-Bus: Mode T"); }
-        if (decoder->verbose) { decoder_log(decoder, 0, __func__, "Experimental - Not tested"); }
+        decoder_log(decoder, 1, __func__, "M-Bus: Mode T");
+        decoder_log(decoder, 1, __func__, "Experimental - Not tested");
         // Extract data
 
         data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/12;    // Each byte is encoded into 12 bits
 
-        if (decoder->verbose) { decoder_logf(decoder, 0, __func__, "MBus telegram length: %u", data_in.length); }
+        decoder_logf(decoder, 1, __func__, "MBus telegram length: %u", data_in.length);
         if (m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, data_in.data, data_in.length) < 0) {
-            if (decoder->verbose) { decoder_log(decoder, 0, __func__, "M-Bus: Decoding error"); }
+            decoder_log(decoder, 1, __func__, "M-Bus: Decoding error");
             return 0;
         }
         // Decode
@@ -1044,8 +1040,8 @@ static int m_bus_mode_r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     bit_offset += sizeof(PREAMBLE_RA)*8;     // skip preamble
 
-    if (decoder->verbose) { decoder_log(decoder, 0, __func__, "M-Bus: Mode R, Format A"); }
-    if (decoder->verbose) { decoder_log(decoder, 0, __func__, "Experimental - Not tested"); }
+    decoder_log(decoder, 1, __func__, "M-Bus: Mode R, Format A");
+    decoder_log(decoder, 1, __func__, "Experimental - Not tested");
     // Extract data
     data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
@@ -1088,19 +1084,19 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bit_offset += 8;
     // Format A
     if (next_byte == 0x8D) {
-        if (decoder->verbose) { decoder_log(decoder, 0, __func__, "M-Bus: Mode F, Format A"); }
-        if (decoder->verbose) { decoder_log(decoder, 0, __func__, "Not implemented"); }
+        decoder_log(decoder, 1, __func__, "M-Bus: Mode F, Format A");
+        decoder_log(decoder, 1, __func__, "Not implemented");
         return 1;
     } // Format A
     // Format B
     else if (next_byte == 0x72) {
-        if (decoder->verbose) { decoder_log(decoder, 0, __func__, "M-Bus: Mode F, Format B"); }
-        if (decoder->verbose) { decoder_log(decoder, 0, __func__, "Not implemented"); }
+        decoder_log(decoder, 1, __func__, "M-Bus: Mode F, Format B");
+        decoder_log(decoder, 1, __func__, "Not implemented");
         return 1;
     }   // Format B
     // Unknown Format
     else {
-        if (decoder->verbose) { decoder_logf_bitbuffer(decoder, 0, __func__, bitbuffer, "M-Bus: Mode F, Unknown format: 0x%X", next_byte); }
+        decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "M-Bus: Mode F, Unknown format: 0x%X", next_byte);
         return 0;
     }
 

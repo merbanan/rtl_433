@@ -114,9 +114,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
 
     if (!alecto_checksum(bb[1]) || !alecto_checksum(bb[5])) {
-        if (decoder->verbose) {
-            decoder_log(decoder, 0, __func__, "AlectoV1 Checksum/Parity error");
-        }
+        decoder_log(decoder, 1, __func__, "AlectoV1 Checksum/Parity error");
         return DECODE_FAIL_MIC;
     }
 

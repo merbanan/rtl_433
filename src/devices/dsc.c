@@ -115,8 +115,8 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int result = 0;
 
     for (int row = 0; row < bitbuffer->num_rows; row++) {
-        if (decoder->verbose > 1 && bitbuffer->bits_per_row[row] > 0) {
-            decoder_logf(decoder, 0, __func__, "row %d bit count %d",
+        if (bitbuffer->bits_per_row[row] > 0) {
+            decoder_logf(decoder, 2, __func__, "row %d bit count %d",
                     row, bitbuffer->bits_per_row[row]);
         }
 
@@ -129,8 +129,8 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // will need to be changed as there may be more zero bit padding
         if (bitbuffer->bits_per_row[row] < 48 ||
             bitbuffer->bits_per_row[row] > 70) {  // should be 48 at most
-            if (decoder->verbose > 1 && bitbuffer->bits_per_row[row] > 0) {
-                decoder_logf(decoder, 0, __func__, "row %d invalid bit count %d",
+            if (bitbuffer->bits_per_row[row] > 0) {
+                decoder_logf(decoder, 2, __func__, "row %d invalid bit count %d",
                         row, bitbuffer->bits_per_row[row]);
             }
             result = DECODE_ABORT_EARLY;
@@ -144,9 +144,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
               (b[2] & 0x04) &&    // every 8 data bits
               (b[3] & 0x02) &&
               (b[4] & 0x01))) {
-            if (decoder->verbose > 1) {
-                decoder_log_bitrow(decoder, 0, __func__, b, 40, "Invalid start/sync bits ");
-            }
+            decoder_log_bitrow(decoder, 2, __func__, b, 40, "Invalid start/sync bits ");
             result = DECODE_ABORT_EARLY;
             continue; // DECODE_ABORT_EARLY
         }
@@ -163,9 +161,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             continue; // DECODE_FAIL_SANITY
         }
 
-        if (decoder->verbose) {
-            decoder_log_bitrow(decoder, 0, __func__, bytes, 40, "Contact Raw Data");
-        }
+        decoder_log_bitrow(decoder, 1, __func__, bytes, 40, "Contact Raw Data");
 
         status = bytes[0];
         //subtype = bytes[1] >> 4;  // @todo needed for detecting keyfob
@@ -173,8 +169,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         crc = bytes[4];
 
         if (crc8le(bytes, DSC_CT_MSGLEN, 0xf5, 0x3d) != 0) {
-            if (decoder->verbose)
-                decoder_logf(decoder, 0, __func__, "Contact bad CRC: %06X, Status: %02X, CRC: %02X",
+            decoder_logf(decoder, 1, __func__, "Contact bad CRC: %06X, Status: %02X, CRC: %02X",
                         esn, status, crc);
             result = DECODE_FAIL_MIC;
             continue; // DECODE_FAIL_MIC

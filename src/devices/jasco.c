@@ -25,8 +25,8 @@ static int jasco_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (bitbuffer->bits_per_row[0] < 80
             || bitbuffer->bits_per_row[0] > 87) {
-        if (decoder->verbose > 1 && bitbuffer->bits_per_row[0] > 0) {
-            decoder_logf(decoder, 0, __func__, "invalid bit count %d", bitbuffer->bits_per_row[0]);
+        if (bitbuffer->bits_per_row[0] > 0) {
+            decoder_logf(decoder, 2, __func__, "invalid bit count %d", bitbuffer->bits_per_row[0]);
         }
         return DECODE_ABORT_EARLY;
     }

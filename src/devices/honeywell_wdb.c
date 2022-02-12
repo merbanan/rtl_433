@@ -68,17 +68,12 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // No need to decode/extract values for simple test
     if ((!bytes[0] && !bytes[2] && !bytes[4] && !bytes[5])
        || (bytes[0] == 0xff && bytes[2] == 0xff && bytes[4] == 0xff && bytes[5] == 0xff)) {
-        if (decoder->verbose > 1) {
-            decoder_log(decoder, 0, __func__, "DECODE_FAIL_SANITY data all 0x00 or 0xFF");
-        }
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00 or 0xFF");
         return DECODE_FAIL_SANITY;
     }
 
     if (parity) { // ODD parity detected
-        if (decoder->verbose > 1) {
-            decoder_log_bitbuffer(decoder, 0, __func__, bitbuffer, "");
-            decoder_logf(decoder, 0, __func__, "honeywell_wdb: Parity check on row %d failed (%d)", row, parity);
-        }
+        decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "Parity check on row %d failed (%d)", row, parity);
         return DECODE_FAIL_MIC;
     }
 

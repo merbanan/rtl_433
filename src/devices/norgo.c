@@ -131,22 +131,19 @@ static int norgo_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             && bitbuffer->bits_per_row[0] != 72
             && bitbuffer->bits_per_row[0] != 55
             && bitbuffer->bits_per_row[0] != 71) {
-        if (decoder->verbose)
-            decoder_logf(decoder, 0, __func__, "wrong size of bit per row %d",
+        decoder_logf(decoder, 1, __func__, "wrong size of bit per row %d",
                     bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH;
     }
 
     if (b[0] != (uint8_t)~0xFA) {
-        if (decoder->verbose)
-            decoder_log_bitbuffer(decoder, 0, __func__, bitbuffer, "wrong preamble");
+        decoder_log_bitbuffer(decoder, 1, __func__, bitbuffer, "wrong preamble");
         return DECODE_ABORT_EARLY;
     }
 
     int xor = xor_bytes(b + 1, (bitbuffer->bits_per_row[0] - 15) / 8);
     if (xor != 0xff) { // before invert 0 is ff
-        if (decoder->verbose)
-            decoder_logf_bitrow(decoder, 0, __func__, b, bitbuffer->bits_per_row[0], "XOR fail (%02x)",
+        decoder_logf_bitrow(decoder, 1, __func__, b, bitbuffer->bits_per_row[0], "XOR fail (%02x)",
                     xor);
         return DECODE_FAIL_MIC;
     }
@@ -160,8 +157,7 @@ static int norgo_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         calc_chk = calc_checksum(b, 5 * 8);
         checksum = b[6];
         if (calc_chk != checksum) {
-            if (decoder->verbose)
-                decoder_logf_bitbuffer(decoder, 0, __func__, bitbuffer, "wrong checksum %02X vs. %02X",
+            decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "wrong checksum %02X vs. %02X",
                         calc_chk, checksum);
             return DECODE_FAIL_MIC;
         }
@@ -184,8 +180,7 @@ static int norgo_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         calc_chk = calc_checksum(b, 7 * 8);
         checksum = b[8];
         if (calc_chk != checksum) {
-            if (decoder->verbose)
-                decoder_logf_bitbuffer(decoder, 0, __func__, bitbuffer, "wrong checksum %02X vs. %02X",
+            decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "wrong checksum %02X vs. %02X",
                         checksum, calc_chk);
             return DECODE_FAIL_MIC;
         }

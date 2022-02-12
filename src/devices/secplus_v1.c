@@ -20,9 +20,8 @@ Security+ 1.0  is described in [US patent application US6980655B2](https://paten
 #include "decoder.h"
 #include "compat_time.h"
 
-/** @fn int _decode_v1_half(uint8_t *bits, uint8_t *result)
-
-data comes in two bursts/packets, each bursts/packet is then separately passed to _decode_v1_half
+/**
+Data comes in two bursts/packets, each bursts/packet is then separately passed to secplus_v1_decode_v1_half.
 
 Decodes transmitted binary into trinary data
 
@@ -47,7 +46,7 @@ The patterns `1 1 1 1` or `0 0 0 0` should never happen
 note: due to implementation this needs 44 bytes output in worst case of invalid data.
 */
 
-static int _decode_v1_half(uint8_t *bits, uint8_t *result, int verbose)
+static int secplus_v1_decode_v1_half(r_device *decoder, uint8_t *bits, uint8_t *result)
 {
     uint8_t *r;
     int x = 0;
@@ -79,8 +78,7 @@ static int _decode_v1_half(uint8_t *bits, uint8_t *result, int verbose)
                     // fprintf(stderr, "\nbin 2 = {%ld} %s\n", strlen(binstr), binstr);
                 }
                 else { // x > 3
-                    if (verbose)
-                        fprintf(stderr, "Error x == %d\n", x);
+                    decoder_logf(decoder, 1, __func__, "Error x == %d\n", x);
                     return -1; // DECODE_FAIL_SANITY
                 }
                 x = 0;
@@ -94,16 +92,15 @@ static int _decode_v1_half(uint8_t *bits, uint8_t *result, int verbose)
 static const uint8_t preamble_1[1] = {0x02};
 static const uint8_t preamble_2[1] = {0x07};
 
-/** @fn static int find_next(bitbuffer_t *bitbuffer, int cur_index)
+/**
+Find index of next bursts/packets in bitbuffer.
 
-    find index of next bursts/packets in bitbuffer
+The transmissions do not have a magic number or preamble.
 
-    The transmissions do not have a magic number or preamble.
-
-    They all start with a '0' or a '2'  represented at 0001. and 0111.
-    since all nibbles start with 0 we can look for bytes
-    000 + 0001 + 0 and 000 + 0111 + 0 for the start of a transmission
-    (or just the 0001 and 0111 at the start of a bitbuffer)
+They all start with a '0' or a '2'  represented at 0001. and 0111.
+since all nibbles start with 0 we can look for bytes
+000 + 0001 + 0 and 000 + 0111 + 0 for the start of a transmission
+(or just the 0001 and 0111 at the start of a bitbuffer)
 */
 
 static int find_next(bitbuffer_t *bitbuffer, int cur_index)
@@ -147,9 +144,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
-    if (decoder->verbose) {
-        decoder_logf(decoder, 0, __func__, "%s : num rows = %u len %u", __func__, bitbuffer->num_rows, bitbuffer->bits_per_row[0]);
-    }
+    decoder_logf(decoder, 1, __func__, "num rows = %u len %u", bitbuffer->num_rows, bitbuffer->bits_per_row[0]);
 
     search_index = 0;
     while (search_index < bitbuffer->bits_per_row[0] && status == 0) {
@@ -159,8 +154,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         search_index = find_next(bitbuffer, search_index);
 
-        if (decoder->verbose > 1)
-            decoder_logf(decoder, 0, __func__, "find_next return : bits_per_row - search_index = %d", bitbuffer->bits_per_row[0] - search_index);
+        decoder_logf(decoder, 2, __func__, "find_next return : bits_per_row - search_index = %d", bitbuffer->bits_per_row[0] - search_index);
 
         // nothing found
         if (search_index == -1 || (search_index + 84) > bitbuffer->bits_per_row[0]) {
@@ -169,7 +163,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         bitbuffer_extract_bytes(bitbuffer, 0, search_index, buffi, 84);
 
-        dr = _decode_v1_half(buffi, buffy, decoder->verbose);
+        dr = secplus_v1_decode_v1_half(decoder, buffi, buffy);
 
         if (dr < 0 || dr == 1) {
             // decoder_log(decoder, 0, __func__, "decode error");
@@ -195,8 +189,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     } // while
 
-    if (decoder->verbose > 1)
-        decoder_logf(decoder, 0, __func__, "exited  loop status = %02X", status);
+    decoder_logf(decoder, 2, __func__, "exited  loop status = %02X", status);
 
     // if we have both parts, move on and report data
     // if have only one part cache it for later.
@@ -213,8 +206,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         gettimeofday(&cur_tv, NULL);
         timeval_subtract(&res_tv, &cur_tv, &cached_tv);
 
-        if (decoder->verbose > 1)
-            decoder_logf(decoder, 0, __func__, "%s res    %12ld %8ld", __func__, res_tv.tv_sec, (long)res_tv.tv_usec);
+        decoder_logf(decoder, 2, __func__, "res %12ld %8ld", res_tv.tv_sec, (long)res_tv.tv_usec);
 
         // is the data not expired
         if (res_tv.tv_sec == 0 && res_tv.tv_usec < CACHE_MAX_AGE) {
@@ -223,15 +215,13 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             if (status == 2 && cached_result[0] == 0) {
                 memcpy(result_1, cached_result, 21);
                 status = 3;
-                if (decoder->verbose)
-                    decoder_log(decoder, 0, __func__, "Load cache  part 1");
+                decoder_log(decoder, 1, __func__, "Load cache  part 1");
             }
             // if we have part 1 AND part 2 cached
             else if (status == 1 && cached_result[0] == 2) {
                 memcpy(result_2, cached_result, 21);
                 status = 3;
-                if (decoder->verbose)
-                    decoder_log(decoder, 0, __func__, "Load cache  part 2");
+                decoder_log(decoder, 1, __func__, "Load cache  part 2");
             }
         }
 
@@ -244,15 +234,13 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (status == 1) {
         gettimeofday(&cached_tv, NULL);
         memcpy(cached_result, result_1, 21);
-        if (decoder->verbose)
-            decoder_log(decoder, 0, __func__, "caching part 1");
+        decoder_log(decoder, 1, __func__, "caching part 1");
         return -2; // found only 1st part
     }
     else if (status == 2) {
         gettimeofday(&cached_tv, NULL);
         memcpy(cached_result, result_2, 21);
-        if (decoder->verbose)
-            decoder_log(decoder, 0, __func__, "caching part 2");
+        decoder_log(decoder, 1, __func__, "caching part 2");
         return -2; // found only 2nd part
     }
     else if (status == 3) {
@@ -343,8 +331,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         else if (pin_suffix == 2)
             strcat(pin_s, "*");
 
-        // if (decoder->verbose)
-        //     decoder_logf(decoder, 0, __func__, "pad_id=%d pin=%d pin_s=%s", pad_id, pin, pin_s);
+        // decoder_logf(decoder, 1, __func__, "pad_id=%d pin=%d pin_s=%s", pad_id, pin, pin_s);
     }
     else {
         remote_id = (int)fixed / 27;
@@ -356,8 +343,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         else if (switch_id == 2)
             button = "right";
 
-        // if (decoder->verbose)
-        //     decoder_logf(decoder, 0, __func__, "remote_id=%d button=%s", remote_id, button);
+        // decoder_logf(decoder, 1, __func__, "remote_id=%d button=%s", remote_id, button);
     }
 
     // preformat unsigned int

@@ -95,8 +95,7 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->num_rows != 1
             || bitbuffer->bits_per_row[0] < 160
             || bitbuffer->bits_per_row[0] > 440) {
-        if (decoder->verbose > 1)
-            decoder_logf(decoder, 0, __func__, "bit_per_row %u out of range", bitbuffer->bits_per_row[0]);
+        decoder_logf(decoder, 2, __func__, "bit_per_row %u out of range", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_EARLY; // Unrecognized data
     }
 
@@ -110,31 +109,26 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     unsigned len = bitbuffer->bits_per_row[0] - start_pos;
     if (len < sizeof(msg) * 8) {
-        if (decoder->verbose > 1)
-            decoder_logf(decoder, 0, __func__, "%u too short", len);
+        decoder_logf(decoder, 2, __func__, "%u too short", len);
         return DECODE_ABORT_LENGTH; // message too short
     }
 
     bitbuffer_extract_bytes(bitbuffer, 0, start_pos, msg, sizeof(msg) * 8);
 
-    if (decoder->verbose > 1) {
-        decoder_log_bitrow(decoder, 0, __func__, msg, sizeof(msg) * 8, "");
-    }
+    decoder_log_bitrow(decoder, 2, __func__, msg, sizeof(msg) * 8, "");
 
     // LFSR-16 digest, generator 0x8810 init 0x5412
     int chkdgst = (msg[0] << 8) | msg[1];
     int digest  = lfsr_digest16(&msg[2], 15, 0x8810, 0x5412);
     if (chkdgst != digest) {
-        if (decoder->verbose > 1)
-            decoder_logf(decoder, 0, __func__, "Digest check failed %04x vs %04x", chkdgst, digest);
+        decoder_logf(decoder, 2, __func__, "Digest check failed %04x vs %04x", chkdgst, digest);
         return DECODE_FAIL_MIC;
     }
     // Checksum, add with carry
     int chksum = msg[17];
     int sum    = add_bytes(&msg[2], 16); // msg[2] to msg[17]
     if ((sum & 0xff) != 0xff) {
-        if (decoder->verbose > 1)
-            decoder_logf(decoder, 0, __func__, "Checksum failed %04x vs %04x", chksum, sum);
+        decoder_logf(decoder, 2, __func__, "Checksum failed %04x vs %04x", chksum, sum);
         return DECODE_FAIL_MIC;
     }
 

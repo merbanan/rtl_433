@@ -43,7 +43,7 @@ Layout appears to be:
 
 #include "decoder.h"
 
-static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int maverick_et73_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
   int temp1_raw, temp2_raw, row;
     float temp1_c, temp2_c;
@@ -68,10 +68,7 @@ static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuff
 
     device = bytes[0];
 
-    if (decoder->verbose) {
-        decoder_log(decoder, 0, __func__, "maverick_et73_raw_data:");
-        decoder_log_bitrow(decoder, 0, __func__, bytes, 48, "");
-    }
+    decoder_log_bitrow(decoder, 1, __func__, bytes, 48, "");
 
     // Repack the nibbles to form a 12-bit field representing the 2's-complement temperatures,
     //   then right shift by 4 to sign-extend the 12-bit field to a 16-bit integer for float conversion
@@ -108,6 +105,6 @@ r_device maverick_et73 = {
         .long_width  = 2050,
         .gap_limit   = 2200,
         .reset_limit = 4400, // 4050 us nominal packet gap
-        .decode_fn   = &maverick_et73_sensor_callback,
+        .decode_fn   = &maverick_et73_decode,
         .fields      = output_fields,
 };

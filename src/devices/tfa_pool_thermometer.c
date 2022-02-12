@@ -53,8 +53,7 @@ static int tfa_pool_thermometer_decode(r_device *decoder, bitbuffer_t *bitbuffer
                 (b[3] >> 4) - 1);
 
     if (checksum_rx != (checksum & 0x0F)) {
-        if (decoder->verbose > 1)
-            decoder_logf_bitrow(decoder, 0, __func__, b, bitbuffer->bits_per_row[row], "checksum fail (%02x)", checksum);
+        decoder_logf_bitrow(decoder, 2, __func__, b, bitbuffer->bits_per_row[row], "checksum fail (%02x)", checksum);
         return DECODE_FAIL_MIC;
     }
 

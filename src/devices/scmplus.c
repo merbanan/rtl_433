@@ -46,10 +46,7 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
-    if (decoder->verbose) {
-        decoder_logf(decoder, 0, __func__, "row len=%hu", bitbuffer->bits_per_row[0]);
-        decoder_logf(decoder, 0, __func__, "sync_index=%u", sync_index);
-    }
+    decoder_logf(decoder, 1, __func__, "row len=%hu sync_index=%u", bitbuffer->bits_per_row[0], sync_index);
 
     // bitbuffer_debug(bitbuffer);
     bitbuffer_extract_bytes(bitbuffer, 0, sync_index, b, 16 * 8);
@@ -68,9 +65,7 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    if (decoder->verbose) { // print bytes with aligned offset
-        decoder_log_bitrow(decoder, 0, __func__, b, 16 * 8, "");
-    }
+    decoder_log_bitrow(decoder, 1, __func__, b, 16 * 8, "aligned");
 
     // uint8_t protocol_id;
     uint32_t endpoint_id;

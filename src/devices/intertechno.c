@@ -32,22 +32,6 @@ static int intertechno_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bb[0][0] != 0 || (bb[1][0] != 0x56 && bb[1][0] != 0x69))
         return DECODE_ABORT_EARLY;
 
-    if (decoder->verbose > 1) {
-        decoder_log(decoder, 0, __func__, "Switch event:");
-        decoder_log(decoder, 0, __func__, "protocol       = Intertechno");
-        decoder_logf(decoder, 0, __func__, "rid            = %x", b[0]);
-        decoder_logf(decoder, 0, __func__, "rid            = %x", b[1]);
-        decoder_logf(decoder, 0, __func__, "rid            = %x", b[2]);
-        decoder_logf(decoder, 0, __func__, "rid            = %x", b[3]);
-        decoder_logf(decoder, 0, __func__, "rid            = %x", b[4]);
-        decoder_logf(decoder, 0, __func__, "rid            = %x", b[5]);
-        decoder_logf(decoder, 0, __func__, "rid            = %x", b[6]);
-        decoder_logf(decoder, 0, __func__, "rid            = %x", b[7]);
-        decoder_logf(decoder, 0, __func__, "ADDR Slave     = %i", b[7] & 0x0f);
-        decoder_logf(decoder, 0, __func__, "ADDR Master    = %i", (b[7] & 0xf0) >> 4);
-        decoder_logf(decoder, 0, __func__, "command        = %i", (b[6] & 0x07));
-    }
-
     sprintf(id_str, "%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4]);
     slave   = b[7] & 0x0f;
     master  = (b[7] & 0xf0) >> 4;

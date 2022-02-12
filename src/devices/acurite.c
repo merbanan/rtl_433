@@ -146,10 +146,8 @@ static int acurite_rain_896_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     total_rain = ((b[1] & 0xf) << 8) | b[2];
     total_rain *= 0.5; // Sensor reports number of bucket tips.  Each bucket tip is .5mm
 
-    if (decoder->verbose > 1) {
-        decoder_logf(decoder, 0, __func__, "Total Rain is %2.1fmm", total_rain);
-        decoder_log_bitrow(decoder, 0, __func__, b, bitbuffer->bits_per_row[0], "Raw Message ");
-    }
+    decoder_logf(decoder, 2, __func__, "Total Rain is %2.1fmm", total_rain);
+    decoder_log_bitrow(decoder, 2, __func__, b, bitbuffer->bits_per_row[0], "Raw Message ");
 
     /* clang-format off */
     data = data_make(
@@ -637,7 +635,7 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
     return 1; // one valid message decoded
 }
 
-static int acurite_tower_sensor_decode(r_device* decoder, uint8_t* bb)
+static int acurite_tower_decode(r_device* decoder, uint8_t* bb)
 {
     // checksum in the last byte has been validated in the calling function
 
@@ -645,8 +643,7 @@ static int acurite_tower_sensor_decode(r_device* decoder, uint8_t* bb)
     // Bytes 2, 3, 4, and 5 should all have a parity bit in their MSB
     int parity = parity_bytes(&bb[2], 4);
     if (parity) {
-        if (decoder->verbose)
-            decoder_log_bitrow(decoder, 0, __func__, bb, 7 * 8, "bad parity");
+        decoder_log_bitrow(decoder, 1, __func__, bb, 7 * 8, "bad parity");
         return DECODE_FAIL_MIC;
     }
 
@@ -654,8 +651,7 @@ static int acurite_tower_sensor_decode(r_device* decoder, uint8_t* bb)
     // but only 3 of the 4 possible values are valid
     char const* channel_str = acurite_getChannel(bb[0]);
     if (*channel_str == 'E') {
-        if (decoder->verbose)
-            decoder_logf(decoder, 0, __func__, "Acurite TXR sensor : bad channel Ch %s", channel_str);
+        decoder_logf(decoder, 1, __func__, "bad channel Ch %s", channel_str);
         return DECODE_FAIL_SANITY;
     }
 
@@ -674,10 +670,8 @@ static int acurite_tower_sensor_decode(r_device* decoder, uint8_t* bb)
     // pIII IIII
     int humidity = (bb[3] & 0x7f);
     if (humidity < 0 || humidity > 100) {
-        if (decoder->verbose) {
-            decoder_logf(decoder, 0, __func__, "Acurite TXR sensor 0x%04X Ch %s : Impossible humidity: %d %%rH",
-                    sensor_id, channel_str, humidity);
-        }
+        decoder_logf(decoder, 1, __func__, "0x%04X Ch %s : Impossible humidity: %d %%rH",
+                sensor_id, channel_str, humidity);
         return DECODE_FAIL_SANITY;
     }
 
@@ -690,10 +684,8 @@ static int acurite_tower_sensor_decode(r_device* decoder, uint8_t* bb)
     int temp_raw = ((bb[4] & 0x7F) << 7) | (bb[5] & 0x7F);
     float tempc = temp_raw * 0.1 - 100;
     if (tempc < -40 || tempc > 70) {
-        if (decoder->verbose) {
-            decoder_logf(decoder, 0, __func__, "Acurite TXR sensor 0x%04X Ch %s : Impossible temperature: %0.2f C",
-                    sensor_id, channel_str, tempc);
-        }
+        decoder_logf(decoder, 1, __func__, "0x%04X Ch %s : Impossible temperature: %0.2f C",
+                sensor_id, channel_str, tempc);
         return DECODE_FAIL_SANITY;
     }
 
@@ -723,8 +715,7 @@ static int acurite_leak_detector_decode(r_device* decoder, uint8_t* bb)
     // Bytes 2, 3, 4, and 5 should all have a parity bit in their MSB
     int parity = parity_bytes(&bb[2], 4);
     if (parity) {
-        if (decoder->verbose)
-            decoder_log_bitrow(decoder, 0, __func__, bb, 7 * 8, "bad parity");
+        decoder_log_bitrow(decoder, 1, __func__, bb, 7 * 8, "bad parity");
         return DECODE_FAIL_MIC;
     }
 
@@ -732,8 +723,7 @@ static int acurite_leak_detector_decode(r_device* decoder, uint8_t* bb)
     // but only 3 of the 4 possible values are valid
     char const* channel_str = acurite_getChannel(bb[0]);
     if (*channel_str == 'E') {
-        if (decoder->verbose)
-            decoder_logf(decoder, 0, __func__, "Acurite TXR sensor : bad channel Ch %s", channel_str);
+        decoder_logf(decoder, 1, __func__, "Acurite TXR sensor : bad channel Ch %s", channel_str);
         return DECODE_FAIL_SANITY;
     }
 
@@ -798,16 +788,15 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         browlen = (bitbuffer->bits_per_row[brow] + 7)/8;
         bb = bitbuffer->bb[brow];
 
-        if (decoder->verbose > 1)
-            decoder_logf(decoder, 0, __func__, "row %u bits %u, bytes %d", brow, bitbuffer->bits_per_row[brow], browlen);
+        decoder_logf(decoder, 2, __func__, "row %u bits %u, bytes %d", brow, bitbuffer->bits_per_row[brow], browlen);
 
         if ((bitbuffer->bits_per_row[brow] < ACURITE_TXR_BITLEN ||
                 bitbuffer->bits_per_row[brow] > ACURITE_5N1_BITLEN + 1)
                 && bitbuffer->bits_per_row[brow] != ACURITE_6045_BITLEN
                 && bitbuffer->bits_per_row[brow] != ACURITE_ATLAS_BITLEN
                 && bitbuffer->bits_per_row[brow] != ACURITE_515_BITLEN) {
-            if (decoder->verbose > 1 && bitbuffer->bits_per_row[brow] > 16)
-                decoder_log(decoder, 0, __func__, "skipping wrong len");
+            if (bitbuffer->bits_per_row[brow] > 16)
+                decoder_log(decoder, 2, __func__, "skipping wrong len");
             continue; // DECODE_ABORT_LENGTH
         }
 
@@ -820,8 +809,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // also disregard a row of all zeros
         int sum = add_bytes(bb, browlen - 1);
         if (sum == 0 || (sum & 0xff) != bb[browlen - 1]) {
-            if (decoder->verbose)
-                decoder_log_bitrow(decoder, 0, __func__, bb, bitbuffer->bits_per_row[brow], "bad checksum");
+            decoder_log_bitrow(decoder, 1, __func__, bb, bitbuffer->bits_per_row[brow], "bad checksum");
             continue; // DECODE_FAIL_MIC
         }
 
@@ -842,7 +830,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             if (message_type == ACURITE_MSGTYPE_LEAK_DETECTOR) {
                 decoded = acurite_leak_detector_decode(decoder, bb);
             } else if (message_type == ACURITE_MSGTYPE_TOWER_SENSOR) {
-                decoded = acurite_tower_sensor_decode(decoder, bb);
+                decoded = acurite_tower_decode(decoder, bb);
             }
 
             // The decoder attempts for this size message will return a positive
@@ -864,10 +852,8 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             // Sensor type (refrigerator, freezer) is determined by the message_type.
             if (message_type != ACURITE_MSGTYPE_515_REFRIGERATOR
                     && message_type != ACURITE_MSGTYPE_515_FREEZER) {
-                if (decoder->verbose > 1) {
-                    decoder_logf(decoder, 0, __func__, "Acurite 515 sensor 0x%04X Ch %s, Unknown message type 0x%02x",
-                            sensor_id, channel_str, message_type);
-                }
+                decoder_logf(decoder, 2, __func__, "Acurite 515 sensor 0x%04X Ch %s, Unknown message type 0x%02x",
+                        sensor_id, channel_str, message_type);
                 continue; // DECODE_FAIL_MIC
             }
 
@@ -898,8 +884,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                  message_type == ACURITE_MSGTYPE_5N1_WINDSPEED_TEMP_HUMIDITY ||
                  message_type == ACURITE_MSGTYPE_3N1_WINDSPEED_TEMP_HUMIDITY ||
                  message_type == ACURITE_MSGTYPE_RAINFALL) {
-            if (decoder->verbose)
-                decoder_log_bitrow(decoder, 0, __func__, bb, bitbuffer->bits_per_row[brow], "Acurite 5n1 raw msg");
+            decoder_log_bitrow(decoder, 1, __func__, bb, bitbuffer->bits_per_row[brow], "Acurite 5n1 raw msg");
             char const *channel_str = acurite_getChannel(bb[0]);
 
             // 5-n-1 sensor ID is the last 12 bits of byte 0 & 1
@@ -1030,10 +1015,8 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 valid++;
             }
             else {
-                if (decoder->verbose > 1) {
-                    decoder_logf(decoder, 0, __func__, "Acurite 5n1 sensor 0x%04X Ch %s, Status %02X, Unknown message type 0x%02x",
-                            sensor_id, channel_str, bb[3], message_type);
-                }
+                decoder_logf(decoder, 2, __func__, "Acurite 5n1 sensor 0x%04X Ch %s, Status %02X, Unknown message type 0x%02x",
+                        sensor_id, channel_str, bb[3], message_type);
             }
         }
 
@@ -1107,13 +1090,12 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     for (uint16_t brow = 0; brow < bitbuffer->num_rows; ++brow) {
 
-        if (decoder->verbose > 1)
-            decoder_logf(decoder, 0, __func__, "row %u bits %u, bytes %d", brow, bitbuffer->bits_per_row[brow], browlen);
+        decoder_logf(decoder, 2, __func__, "row %u bits %u, bytes %d", brow, bitbuffer->bits_per_row[brow], browlen);
 
         if (bitbuffer->bits_per_row[brow] < 39 ||
             bitbuffer->bits_per_row[brow] > 43 ) {
-            if (decoder->verbose > 1 && bitbuffer->bits_per_row[brow] > 16)
-                decoder_logf(decoder, 0, __func__,"%s: skipping wrong len", __func__);
+            if (bitbuffer->bits_per_row[brow] > 16)
+                decoder_log(decoder, 2, __func__,"skipping wrong len");
             result = DECODE_ABORT_LENGTH;
             continue; // DECODE_ABORT_LENGTH
         }
@@ -1131,8 +1113,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         for (int i = 0; i < browlen; i++)
             br[i] = reverse8(bb[i]);
 
-        if (decoder->verbose)
-            decoder_log_bitrow(decoder, 0, __func__, br, browlen * 8, "reversed");
+        decoder_log_bitrow(decoder, 1, __func__, br, browlen * 8, "reversed");
 
         tempf = br[0];
         sensor_id = (br[1] << 8) + br[2];
@@ -1149,15 +1130,13 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         crcc = crc8le(br, 4, 0x07, 0);
 
         if (crcc != crc) {
-            if (decoder->verbose > 1)
-                decoder_logf_bitrow(decoder, 0, __func__, br, browlen * 8, "bad CRC: %02x -", crc8le(br, 4, 0x07, 0));
+            decoder_logf_bitrow(decoder, 2, __func__, br, browlen * 8, "bad CRC: %02x -", crc8le(br, 4, 0x07, 0));
             // HACK: rct 2018-04-22
             // the message is often missing the last 1 bit either due to a
             // problem with the device or demodulator
             // Add 1 (0x80 because message is LSB) and retry CRC.
             if (crcc == (crc | 0x80)) {
-                if (decoder->verbose > 1)
-                    decoder_logf(decoder, 0, __func__, "CRC fix %02x - %02x", crc, crcc);
+                decoder_logf(decoder, 2, __func__, "CRC fix %02x - %02x", crc, crcc);
             }
             else {
                 continue; // DECODE_FAIL_MIC
@@ -1168,8 +1147,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             tempf = (tempf & 0x7f) * -1;
         }
 
-        if (decoder->verbose)
-            decoder_logf(decoder, 0, __func__, "sensor 0x%04x - %d%c: %d F", sensor_id, sensor_num, sensor_type, tempf);
+        decoder_logf(decoder, 1, __func__, "sensor 0x%04x - %d%c: %d F", sensor_id, sensor_num, sensor_type, tempf);
 
         /* clang-format off */
         data = data_make(
@@ -1285,9 +1263,7 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     parity = (parity >> 1) ^ (parity & 0x1); // fold to 1 bit
 
     if (!parity) {
-        if (decoder->verbose) {
-            decoder_log(decoder, 0, __func__, "parity check failed");
-        }
+        decoder_log(decoder, 1, __func__, "parity check failed");
         return DECODE_FAIL_MIC;
     }
 
@@ -1363,8 +1339,7 @@ static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         // Check CRC
         if (crc16lsb(b, 11, 0x00b2, 0x00d0) != 0) {
-            if (decoder->verbose)
-                decoder_log_bitrow(decoder, 0, __func__, b, 11 * 8, "sensor bad CRC");
+            decoder_log_bitrow(decoder, 1, __func__, b, 11 * 8, "sensor bad CRC");
             result = DECODE_FAIL_MIC;
             continue; // return DECODE_FAIL_MIC;
         }

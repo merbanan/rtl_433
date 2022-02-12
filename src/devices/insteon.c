@@ -183,14 +183,14 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
     }
 
     if (decoder->verbose) {
-        uint8_t buffy[4];
-        decoder_logf(decoder, 0, __func__, "start_pos %u row_length %hu =  %u",
+        decoder_logf(decoder, 1, __func__, "start_pos %u row_length %hu =  %u",
                 start_pos, bits->bits_per_row[row], (bits->bits_per_row[row] - start_pos));
-        decoder_logf(decoder, 0, __func__, "%s %-5s %s %s %s",
+        decoder_logf(decoder, 1, __func__, "%s %-5s %s %s %s",
                 "pkt_i", "pkt_d", "next", "length", "count");
 
+        uint8_t buffy[4];
         bitbuffer_extract_bytes(bits, row, start_pos - 2, buffy, 30);
-        decoder_logf_bitrow(decoder, 0, __func__, buffy, 30, "%2d %02X %03u %u %2d",
+        decoder_logf_bitrow(decoder, 1, __func__, buffy, 30, "%2d %02X %03u %u %2d",
                 pkt_i, pkt_d, next_pos, (next_pos - start_pos), 0);
     }
 
@@ -202,10 +202,8 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
          l = 278;
      }
      if ((bits->bits_per_row[row] - start_pos)  < l) {
-        if (decoder->verbose) {
-            decoder_logf(decoder, 0, __func__, "row to short for %s packet type",
-                    (extended ? "extended" : "regular"));
-        }
+        decoder_logf(decoder, 1, __func__, "row to short for %s packet type",
+                (extended ? "extended" : "regular"));
         return DECODE_ABORT_LENGTH;     // row to short for packet type
      }
      */
@@ -226,8 +224,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
 
         y = (next_pos - start_pos);
         if (y != 26) {
-            if (decoder->verbose)
-                decoder_logf(decoder, 0, __func__, "stop %u != 26", y);
+            decoder_logf(decoder, 1, __func__, "stop %u != 26", y);
             break;
         }
 
@@ -242,8 +239,8 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
         if (decoder->verbose) {
             uint8_t buffy[4];
             bitbuffer_extract_bytes(bits, row, start_pos - 2, buffy, 30);
-            // decoder_logf_bitrow(decoder, 0, __func__, buffy, 30, "%s: %2d  %02X  %3u %d %d",
-            decoder_logf_bitrow(decoder, 0, __func__, buffy, 30, "%2d %02X %03u %u %2d",
+            // decoder_logf_bitrow(decoder, 1, __func__, buffy, 30, "%s: %2d  %02X  %3u %d %d",
+            decoder_logf_bitrow(decoder, 1, __func__, buffy, 30, "%2d %02X %03u %u %2d",
                     pkt_i, pkt_d, next_pos, (next_pos - start_pos), j);
             // parse_insteon_pkt: curr packet (3f) { 1} d6 : 1
         }
@@ -258,14 +255,13 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
 
     // if (decoder->verbose > 1) {
     //     for (int j=0; j < results_len; j++) {
-    //          decoder_logf(decoder, 0, __func__, "%d:%02X", j,  results[j]);
+    //          fprintf(stderr, "%d:%02X ", j, results[j]);
     //     }
-    //     puts("\n");
+    //     fprintf(stderr, "\n");
     // }
 
     if (results_len < min_pkt_len) {
-        if (decoder->verbose > 1)
-            decoder_logf(decoder, 0, __func__, "fail: short packet %d < 9", results_len);
+        decoder_logf(decoder, 2, __func__, "fail: short packet %d < 9", results_len);
         return 0;
     }
 
@@ -278,8 +274,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
     }
 
     if (results[min_pkt_len - 1] != crc_val) {
-        if (decoder->verbose > 1)
-            decoder_logf(decoder, 0, __func__, "fail: bad CRC %02X != %02X %s", results[min_pkt_len], crc_val,
+        decoder_logf(decoder, 2, __func__, "fail: bad CRC %02X != %02X %s", results[min_pkt_len], crc_val,
                     (extended ? "extended" : ""));
         return DECODE_FAIL_MIC;
     }
@@ -345,9 +340,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
     // decoder_log_bitrow(decoder, 0, __func__, results, 8, "Flag");
     //decoder_logf(decoder, 0, __func__, "pkt_type: %02X", pkt_type);
 
-    if (decoder->verbose > 1) {
-        decoder_logf_bitrow(decoder, 0, __func__, results, min_pkt_len * 8, "type %s", pkt_type_str);
-    }
+    decoder_logf_bitrow(decoder, 2, __func__, results, min_pkt_len * 8, "type %s", pkt_type_str);
 
     // Format data
     /*
@@ -397,13 +390,9 @@ static int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int fail_value         = 0;
     // unsigned int pkt_cnt   = 0;
 
-    // if (decoder->verbose > 2)
-    //    bitbuffer_debug(bitbuffer);
+    // decoder_logf(decoder, 2, __func__, "row complete row / bit_index : %d, %d", row, bit_index);
 
-    // if (decoder->verbose > 1) decoder_logf(decoder, 0, __func__, "row complete row / bit_index : %d, %d", row, bit_index);
-
-    if (decoder->verbose > 1)
-        decoder_logf(decoder, 0, __func__, "new buffer %hu rows", bitbuffer->num_rows);
+    decoder_logf(decoder, 2, __func__, "new buffer %hu rows", bitbuffer->num_rows);
 
     bitbuffer_invert(bitbuffer);
 
@@ -415,43 +404,39 @@ static int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // Validate message and reject it as fast as possible : check for preamble
 
         if (bitbuffer->bits_per_row[row] < INSTEON_BITLEN_MIN) {
-            // if (decoder->verbose )
-            //      decoder_logf(decoder, 0, __func__, "short row row=%hu len=%hu", row, bitbuffer->bits_per_row[row]);
+            // decoder_logf(decoder, 1, __func__, "short row row=%hu len=%hu", row, bitbuffer->bits_per_row[row]);
             fail_value = DECODE_ABORT_LENGTH;
             continue;
         }
-        // if (decoder->verbose)
-        //      decoder_logf(decoder, 0, __func__, "New row=%d len=%d",  row, bitbuffer->bits_per_row[row]);
+        // decoder_logf(decoder, 1, __func__, "New row=%d len=%d",  row, bitbuffer->bits_per_row[row]);
 
         while (1) {
             unsigned search_index = bit_index;
             int ret;
 
             if ((bitbuffer->bits_per_row[row] - bit_index) < INSTEON_BITLEN_MIN) {
-                 // decoder_log(decoder, 0, __func__, "short remainder");
+                 // decoder_log(decoder, 2, __func__, "short remainder");
                  break;
              }
 
-            if (decoder->verbose > 1)
-                decoder_logf(decoder, 0, __func__, "bitbuffer_search at row / search_index : %d, %u %u (%d)",
+            decoder_logf(decoder, 2, __func__, "bitbuffer_search at row / search_index : %d, %u %u (%d)",
                         row, search_index, bit_index, bitbuffer->bits_per_row[row]);
 
             search_index = bitbuffer_search(bitbuffer, row, search_index, insteon_preamble, INSTEON_PREAMBLE_LEN);
 
             if (search_index >= bitbuffer->bits_per_row[row]) {
-                if (decoder->verbose > 1 && bit_index == 0)
-                    decoder_logf(decoder, 0, __func__, "insteon_preamble not found %u %u %d",
+                if (bit_index == 0)
+                    decoder_logf(decoder, 2, __func__, "insteon_preamble not found %u %u %d",
                         search_index, bit_index, bitbuffer->bits_per_row[row]);
                 break;
             }
 
-            if (decoder->verbose)
-                decoder_logf(decoder, 0, __func__, "parse_insteon_pkt at: row / search_index : %hu, %u (%hu)",
+            decoder_logf(decoder, 1, __func__, "parse_insteon_pkt at: row / search_index : %hu, %u (%hu)",
                         row, search_index, bitbuffer->bits_per_row[row]);
 
             ret = parse_insteon_pkt(decoder, bitbuffer, row, search_index);
 
-            // if (decoder->verbose) tf(stderr, "%s: parse_insteon_pkt ret value %d\n", __func__,  ret_value);
+            // decoder_logf(decoder, 1, __func__, "parse_insteon_pkt ret value %d\n", ret_value);
             if (ret > 0) { // preamble good, decode good
                 ret_value += ret;
                 bit_index = search_index + INSTEON_BITLEN_MIN; // move a full packet length

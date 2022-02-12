@@ -125,7 +125,7 @@ static data_t *decode_device_ids(const message_t *msg, data_t *data, int style)
                            return data_append(data, "unknown", "", DATA_FORMAT, "%04x", DATA_INT, msg->command, NULL); \
                       } while (0)
 
-static data_t *interpret_message(const message_t *msg, data_t *data, int verbose)
+static data_t *honeywell_cm921_interpret_message(r_device *decoder, const message_t *msg, data_t *data)
 {
     // Sources of inspiration:
     // https://github.com/Evsdd/The-Evohome-Protocol/wiki
@@ -150,8 +150,7 @@ static data_t *interpret_message(const message_t *msg, data_t *data, int verbose
                     case 0xCB: data = data_append(data, "min_flow_temp", "", DATA_INT, value, NULL); break;
                     case 0xCC: /* Unknown, always 0x01? */ break;
                     default:
-                        if (verbose)
-                            fprintf(stderr, "Unknown parameter to 0x1030: %x02d=%04d\n", *p, value);
+                        decoder_logf(decoder, 1, __func__, "Unknown parameter to 0x1030: %x02d=%04d\n", *p, value);
                 }
             }
             break;
@@ -324,14 +323,12 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->num_rows != 1 || bitbuffer->bits_per_row[row] < 60)
         return DECODE_ABORT_LENGTH;
 
-    if (decoder->verbose)
-        decoder_log_bitrow(decoder, 0, __func__, bitbuffer->bb[row], bitbuffer->bits_per_row[row], "");
+    decoder_log_bitrow(decoder, 1, __func__, bitbuffer->bb[row], bitbuffer->bits_per_row[row], "");
 
     int preamble_start = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, preamble_bit_length);
     int start = preamble_start + preamble_bit_length;
     int len = bitbuffer->bits_per_row[row] - start;
-    if (decoder->verbose)
-        decoder_logf(decoder, 0, __func__, "preamble_start=%d start=%d len=%d", preamble_start, start, len);
+    decoder_logf(decoder, 1, __func__, "preamble_start=%d start=%d len=%d", preamble_start, start, len);
     if (len < 8)
         return DECODE_ABORT_LENGTH;
     int end = start + len;
@@ -392,7 +389,7 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             NULL);
     /* clang-format on */
 
-    data = interpret_message(&message, data, decoder->verbose);
+    data = honeywell_cm921_interpret_message(decoder, &message, data);
 
 #ifdef _DEBUG
     data = add_hex_string(data, "Packet", packet.bb[row], packet.bits_per_row[row] / 8);
