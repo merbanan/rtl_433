@@ -79,7 +79,7 @@ static int tfa_303196_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint16_t digest = (b[4] << 8) | (b[5]);
     int chk         = lfsr_digest16(b, 4, 0x8810, 0x22d0) ^ digest;
 
-    //bitrow_printf(b, 48, "TFA-303196 (%08x  %04x  %04x): ", chk_data, digest, session);
+    //decoder_logf_bitrow(decoder, 0, __func__, b, 48, "TFA-303196 (%08x  %04x  %04x)", chk_data, digest, session);
 
     int channel     = (b[1] >> 4) + 1;
     int temp_raw    = ((b[1] & 0x0F) << 8) | b[2];

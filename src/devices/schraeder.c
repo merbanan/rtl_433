@@ -119,7 +119,7 @@ static int schrader_EG53MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // check serial flags pressure temperature value not zero
     if ( !b[1] && !b[2] && !b[4] && !b[5] && !b[7] && !b[8] ) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
+            decoder_log(decoder, 0, __func__, "DECODE_FAIL_SANITY data all 0x00");
         }
         return DECODE_FAIL_SANITY;
     }
@@ -215,7 +215,7 @@ static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                                       &decoded, NUM_BITS_DATA);
     if (ret != NUM_BITS_TOTAL) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: invalid Manchester data\n", __func__);
+            decoder_log(decoder, 0, __func__, "invalid Manchester data");
         }
         return DECODE_FAIL_MIC;
     }
@@ -231,7 +231,7 @@ static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* reject all-zero data */
     if (!flags && !serial_id && !pressure) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
+            decoder_log(decoder, 0, __func__, "DECODE_FAIL_SANITY data all 0x00");
         }
         return DECODE_FAIL_SANITY;
     }

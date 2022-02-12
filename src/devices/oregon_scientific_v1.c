@@ -56,7 +56,7 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
         if ( bitbuffer->bb[row][0] == 0xFF && bitbuffer->bb[row][1] == 0xFF
             && bitbuffer->bb[row][2] == 0xFF && bitbuffer->bb[row][3] == 0xFF )  {
             if (decoder->verbose > 1) {
-                fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0xff\n", __func__);
+                decoder_log(decoder, 0, __func__, "DECODE_FAIL_SANITY data all 0xff");
             }
             continue; //  DECODE_FAIL_SANITY
         }

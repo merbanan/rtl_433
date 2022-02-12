@@ -47,7 +47,7 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
 
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 88);
 
-    // fprintf(stderr, "%s : bits %d\n", __func__, packet_bits.bits_per_row[0]);
+    // decoder_logf(decoder, 0, __func__, "%s : bits %d", __func__, packet_bits.bits_per_row[0]);
     if (packet_bits.bits_per_row[0] < 80) {
         return DECODE_FAIL_SANITY; // sanity check failed
     }

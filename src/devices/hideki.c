@@ -96,7 +96,7 @@ static int hideki_ts04_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             uint8_t parity = (b[offset / 8 + 1] >> (7 - offset % 8)) & 1;
             if (parity != parity8(packet[i])) {
                 if (decoder->verbose)
-                    fprintf(stderr, "%s: Parity error at %d\n", __func__, i);
+                    decoder_logf(decoder, 0, __func__, "Parity error at %d", i);
                 ret = DECODE_FAIL_MIC;
                 unstuff_error = i;
                 break;
@@ -110,7 +110,7 @@ static int hideki_ts04_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int chk = xor_bytes(packet, unstuffed_len - 1);
         if (chk) {
             if (decoder->verbose)
-                fprintf(stderr, "%s: XOR error\n", __func__);
+                decoder_log(decoder, 0, __func__, "XOR error");
             ret = DECODE_FAIL_MIC;
             continue;
         }
@@ -118,7 +118,7 @@ static int hideki_ts04_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // CRC-8 poly=0x07 init=0x00
         if (crc8(packet, unstuffed_len, 0x07, 0x00)) {
             if (decoder->verbose)
-                fprintf(stderr, "%s: CRC error\n", __func__);
+                decoder_log(decoder, 0, __func__, "CRC error");
             ret = DECODE_FAIL_MIC;
             continue;
         }
@@ -136,7 +136,7 @@ static int hideki_ts04_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         if (pkt_len + 2 != unstuffed_len) {
             if (decoder->verbose)
-                fprintf(stderr, "%s: LEN error\n", __func__);
+                decoder_log(decoder, 0, __func__, "LEN error");
             ret = DECODE_ABORT_LENGTH;
             continue;
         }

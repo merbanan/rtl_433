@@ -69,8 +69,8 @@ static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuff
     device = bytes[0];
 
     if (decoder->verbose) {
-        fprintf(stderr, "maverick_et73_raw_data:");
-        bitrow_print(bytes, 48);
+        decoder_log(decoder, 0, __func__, "maverick_et73_raw_data:");
+        decoder_log_bitrow(decoder, 0, __func__, bytes, 48, "");
     }
 
     // Repack the nibbles to form a 12-bit field representing the 2's-complement temperatures,

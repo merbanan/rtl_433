@@ -298,7 +298,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if ((bit_len < ROW_BITLEN_MIN) || (bit_len > ROW_BITLEN_MAX)) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: incorrect number of bits in bitbuffer: %d (expected between %d and %d).\n", __func__, bit_len, ROW_BITLEN_MIN, ROW_BITLEN_MAX);
+            decoder_logf(decoder, 0, __func__, "incorrect number of bits in bitbuffer: %d (expected between %d and %d).", bit_len, ROW_BITLEN_MIN, ROW_BITLEN_MAX);
         }
         return DECODE_FAIL_SANITY;
     }
@@ -308,13 +308,13 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Decode the message symbols
     dtv_bit_len = bitrow_dpwm_decode(bitrow, bit_len, 0, dtv_buf, &row_sync_pos, &row_sync_len);
     if (decoder->verbose > 1) {
-        bitrow_printf(dtv_buf, dtv_bit_len, "%s: SYNC at pos:%u for %u symbols. DPWM Decoded Message: ", __func__, row_sync_pos, row_sync_len);
+        decoder_logf_bitrow(decoder, 0, __func__, dtv_buf, dtv_bit_len, "SYNC at pos:%u for %u symbols. DPWM Decoded Message", row_sync_pos, row_sync_len);
     }
 
     // Make sure we have exactly 40 bits (DTV_BITLEN_MAX)
     if (dtv_bit_len != DTV_BITLEN_MAX) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: Incorrect number of decoded bits: %u (should be %d).\n", __func__, dtv_bit_len, DTV_BITLEN_MAX);
+            decoder_logf(decoder, 0, __func__, "Incorrect number of decoded bits: %u (should be %d).", dtv_bit_len, DTV_BITLEN_MAX);
         }
         return DECODE_ABORT_LENGTH;
     }
@@ -322,7 +322,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // First byte should be 0x10 (model number?)
     if (dtv_buf[0] != 0x10) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: Incorrect Model ID number: 0x%02X (should be 0x10).\n", __func__, dtv_buf[0]);
+            decoder_logf(decoder, 0, __func__, "Incorrect Model ID number: 0x%02X (should be 0x10).", dtv_buf[0]);
         }
         return DECODE_FAIL_SANITY;
     }
@@ -336,7 +336,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     checksum_2 = dtv_buf[4] & 0x0F;
     if (checksum_1 != checksum_2) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: Checksum failed: 0x%01X should match 0x%01X\n", __func__, checksum_1, checksum_2);
+            decoder_logf(decoder, 0, __func__, "Checksum failed: 0x%01X should match 0x%01X", checksum_1, checksum_2);
         }
         return DECODE_FAIL_MIC;
     }
@@ -346,7 +346,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     dtv_device_id = dtv_buf[1] << 12 | dtv_buf[2] << 4 | dtv_buf[3] >> 4;
     if (dtv_device_id > 999999) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: Bad Device ID: %u (should be between 000000 and 999999).\n", __func__, dtv_device_id);
+            decoder_logf(decoder, 0, __func__, "Bad Device ID: %u (should be between 000000 and 999999).", dtv_device_id);
         }
         return DECODE_FAIL_SANITY;
     }

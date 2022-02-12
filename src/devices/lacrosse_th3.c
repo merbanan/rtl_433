@@ -80,18 +80,18 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // to identify which of the two models actually sent the data.
     if (bitbuffer->bits_per_row[0] < 156) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: Packet too short: %d bits\n", __func__, bitbuffer->bits_per_row[0]);
+            decoder_logf(decoder, 0, __func__, "Packet too short: %d bits", bitbuffer->bits_per_row[0]);
         }
         return DECODE_ABORT_LENGTH;
     } else if (bitbuffer->bits_per_row[0] > 290) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: Packet too long: %d bits\n", __func__, bitbuffer->bits_per_row[0]);
+            decoder_logf(decoder, 0, __func__, "Packet too long: %d bits", bitbuffer->bits_per_row[0]);
             bitbuffer_debug(bitbuffer);
         }
         return DECODE_ABORT_LENGTH;
     } else {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: packet length: %d\n", __func__, bitbuffer->bits_per_row[0]);
+            decoder_logf(decoder, 0, __func__, "packet length: %d", bitbuffer->bits_per_row[0]);
         }
         model_num = (bitbuffer->bits_per_row[0] < 280) ? 3 : 2;
     }
@@ -101,7 +101,7 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (offset >= bitbuffer->bits_per_row[0]) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: Sync word not found\n", __func__);
+            decoder_log(decoder, 0, __func__, "Sync word not found");
         }
         return DECODE_ABORT_EARLY;
     }
@@ -115,7 +115,7 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     chk2 = crc8(b, 8, 0x31, 0xac);
     if (chk3 != 0 && chk2 != 0) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: CRC failed!\n", __func__);
+            decoder_log(decoder, 0, __func__, "CRC failed!");
         }
         return DECODE_FAIL_MIC;
     }

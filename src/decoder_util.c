@@ -29,44 +29,6 @@ r_device *create_device(r_device *dev_template)
     return r_dev;
 }
 
-// variadic print functions
-
-void bitbuffer_printf(const bitbuffer_t *bitbuffer, _Printf_format_string_ char const *restrict format, ...)
-{
-    va_list ap;
-    va_start(ap, format);
-    vfprintf(stderr, format, ap);
-    va_end(ap);
-    bitbuffer_print(bitbuffer);
-}
-
-void bitbuffer_debugf(const bitbuffer_t *bitbuffer, _Printf_format_string_ char const *restrict format, ...)
-{
-    va_list ap;
-    va_start(ap, format);
-    vfprintf(stderr, format, ap);
-    va_end(ap);
-    bitbuffer_debug(bitbuffer);
-}
-
-void bitrow_printf(uint8_t const *bitrow, unsigned bit_len, _Printf_format_string_ char const *restrict format, ...)
-{
-    va_list ap;
-    va_start(ap, format);
-    vfprintf(stderr, format, ap);
-    va_end(ap);
-    bitrow_print(bitrow, bit_len);
-}
-
-void bitrow_debugf(uint8_t const *bitrow, unsigned bit_len, _Printf_format_string_ char const *restrict format, ...)
-{
-    va_list ap;
-    va_start(ap, format);
-    vfprintf(stderr, format, ap);
-    va_end(ap);
-    bitrow_debug(bitrow, bit_len);
-}
-
 // variadic output functions
 
 void decoder_log(r_device *decoder, int level, char const *func, char const *msg)
@@ -95,7 +57,7 @@ void decoder_log_bitbuffer(r_device *decoder, int level, char const *func, const
 {
     // TODO: pass to interested outputs
     if (decoder->verbose >= level) {
-        fprintf(stderr, "%s: %s", func, msg);
+        fprintf(stderr, "%s: %s: ", func, msg);
         bitbuffer_print(bitbuffer);
     }
 }
@@ -109,6 +71,7 @@ void decoder_logf_bitbuffer(r_device *decoder, int level, char const *func, cons
         va_start(ap, format);
         vfprintf(stderr, format, ap);
         va_end(ap);
+        fprintf(stderr, ": ");
         bitbuffer_print(bitbuffer);
     }
 }
@@ -117,7 +80,7 @@ void decoder_log_bitrow(r_device *decoder, int level, char const *func, uint8_t 
 {
     // TODO: pass to interested outputs
     if (decoder->verbose >= level) {
-        fprintf(stderr, "%s: %s", func, msg);
+        fprintf(stderr, "%s: %s: ", func, msg);
         bitrow_print(bitrow, bit_len);
     }
 }
@@ -131,6 +94,7 @@ void decoder_logf_bitrow(r_device *decoder, int level, char const *func, uint8_t
         va_start(ap, format);
         vfprintf(stderr, format, ap);
         va_end(ap);
+        fprintf(stderr, ": ");
         bitrow_print(bitrow, bit_len);
     }
 }

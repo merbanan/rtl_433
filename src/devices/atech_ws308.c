@@ -88,7 +88,7 @@ static int atech_ws308_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint8_t b[4]; // 28 bit
     int len = pwm_decode(bitbuffer->bb[1], bitbuffer->bits_per_row[1], b, 32);
-    //bitrow_print(b, len);
+    //decoder_log_bitrow(decoder, 0, __func__, b, len, "");
     if (len < 28)
         return DECODE_ABORT_LENGTH;
 

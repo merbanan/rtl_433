@@ -113,7 +113,7 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     type = b[0] >> 4;
     if (type != 4) {
         if (decoder->verbose)
-            fprintf(stderr, "%s: Unknown type: (%d) %d\n", __func__, model_num, type);
+            decoder_logf(decoder, 0, __func__, "Unknown type: (%d) %d", model_num, type);
         return DECODE_FAIL_SANITY;
     }
 
@@ -211,8 +211,8 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) { // Did not find a big enough package
         if (decoder->verbose) {
-            fprintf(stderr, "Fineoffset_WH24: short package. Header index: %u\n", bit_offset);
-            bitbuffer_print(bitbuffer);
+            decoder_logf(decoder, 0, __func__, "Fineoffset_WH24: short package. Header index: %u", bit_offset);
+            decoder_log_bitbuffer(decoder, 0, __func__, bitbuffer, "");
         }
         return DECODE_ABORT_LENGTH;
     }
@@ -232,7 +232,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         for (unsigned n = 0; n < sizeof(b); n++) {
             sprintf(raw_str + n * 3, "%02x ", b[n]);
         }
-        fprintf(stderr, "Fineoffset_WH24: Raw: %s @ bit_offset [%u]\n", raw_str, bit_offset);
+        decoder_logf(decoder, 0, __func__, "Fineoffset_WH24: Raw: %s @ bit_offset [%u]", raw_str, bit_offset);
     }
 
     if (b[0] != 0x24) // Check for family code 0x24
@@ -246,7 +246,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     if (crc != b[15] || checksum != b[16]) {
         if (decoder->verbose) {
-            fprintf(stderr, "Fineoffset_WH24: Checksum error: %02x %02x\n", crc, checksum);
+            decoder_logf(decoder, 0, __func__, "Fineoffset_WH24: Checksum error: %02x %02x", crc, checksum);
         }
         return DECODE_FAIL_MIC;
     }
@@ -405,7 +405,7 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
         if (decoder->verbose)
-            bitbuffer_printf(bitbuffer, "%s: short package. Row length: %u. Header index: %u\n", __func__, bitbuffer->bits_per_row[0], bit_offset);
+            decoder_logf_bitbuffer(decoder, 0, __func__, bitbuffer, "short package. Row length: %u. Header index: %u", bitbuffer->bits_per_row[0], bit_offset);
         return DECODE_ABORT_LENGTH;
     }
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
@@ -418,7 +418,7 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     if (crc != b[6] || checksum != b[7]) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: Checksum error: %02x %02x\n", __func__, crc, checksum);
+            decoder_logf(decoder, 0, __func__, "Checksum error: %02x %02x", crc, checksum);
         }
         return DECODE_FAIL_MIC;
     }
@@ -502,7 +502,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bit_offset = bitbuffer_search(bitbuffer, 0, 100, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
         if (decoder->verbose)
-            bitbuffer_printf(bitbuffer, "%s: short package. Header index: %u\n", __func__, bit_offset);
+            decoder_logf_bitbuffer(decoder, 0, __func__, bitbuffer, "short package. Header index: %u", bit_offset);
         return DECODE_ABORT_LENGTH;
     }
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
@@ -515,7 +515,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     else if (msg_type != 0xe0) {
         if (decoder->verbose)
-            fprintf(stderr, "%s: Msg type unknown: %2x\n", __func__, b[0]);
+            decoder_logf(decoder, 0, __func__, "Msg type unknown: %2x", b[0]);
         if (b[0] == 0x41) {
             return fineoffset_WH0290_callback(decoder, bitbuffer); // abort and try WH0290
         }
@@ -526,7 +526,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int sum = (add_bytes(b, 6) & 0xff) - b[6];
     if (sum) {
         if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "%s: Checksum error: ", __func__);
+            decoder_log_bitrow(decoder, 0, __func__, b, sizeof (b) * 8, "Checksum error");
         return DECODE_FAIL_MIC;
     }
 
@@ -535,7 +535,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bitsum = ((bitsum & 0x0f) << 4) | (bitsum >> 4); // Swap nibbles
     if (type == 25 && bitsum != b[7]) { // only check for WH25
         if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "%s: Bitsum error: ", __func__);
+            decoder_log_bitrow(decoder, 0, __func__, b, sizeof (b) * 8, "Bitsum error");
         return DECODE_FAIL_MIC;
     }
 
@@ -621,7 +621,7 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
         if (decoder->verbose)
-            bitbuffer_printf(bitbuffer, "%s: short package. Header index: %u\n", __func__, bit_offset);
+            decoder_logf_bitbuffer(decoder, 0, __func__, bitbuffer, "short package. Header index: %u", bit_offset);
         return DECODE_ABORT_LENGTH;
     }
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
@@ -629,21 +629,21 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Verify family code
     if (b[0] != 0x51) {
         if (decoder->verbose)
-            fprintf(stderr, "%s: Msg family unknown: %2x\n", __func__, b[0]);
+            decoder_logf(decoder, 0, __func__, "Msg family unknown: %2x", b[0]);
         return DECODE_ABORT_EARLY;
     }
 
     // Verify checksum
     if ((add_bytes(b, 13) & 0xff) != b[13]) {
         if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "%s: Checksum error: ", __func__);
+            decoder_log_bitrow(decoder, 0, __func__, b, sizeof (b) * 8, "Checksum error");
         return DECODE_FAIL_MIC;
     }
 
     // Verify crc
     if (crc8(b, 12, 0x31, 0) != b[12]) {
         if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "%s: Bitsum error: ", __func__);
+            decoder_log_bitrow(decoder, 0, __func__, b, sizeof (b) * 8, "Bitsum error");
         return DECODE_FAIL_MIC;
     }
 
@@ -716,7 +716,7 @@ static int alecto_ws1200v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int crc = crc8(b, 7, 0x31, 0);
     if (crc) {
         if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v1.0: CRC error ");
+            decoder_log_bitrow(decoder, 0, __func__, b, sizeof (b) * 8, "Alecto WS-1200 v1.0: CRC error ");
         return DECODE_FAIL_MIC;
     }
 
@@ -788,14 +788,14 @@ static int alecto_ws1200v2_dcf_callback(r_device *decoder, bitbuffer_t *bitbuffe
     int crc = crc8(b, 10, 0x31, 0);
     if (crc) {
         //if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0 DCF77: CRC error ");
+            decoder_log_bitrow(decoder, 0, __func__, b, sizeof (b) * 8, "Alecto WS-1200 v2.0 DCF77: CRC error ");
         return DECODE_FAIL_MIC;
     }
     // Verify checksum
     int sum = add_bytes(b, 10) - b[10];
     if (sum & 0xff) {
         if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0 DCF77: Checksum error ");
+            decoder_log_bitrow(decoder, 0, __func__, b, sizeof (b) * 8, "Alecto WS-1200 v2.0 DCF77: Checksum error ");
         return DECODE_FAIL_MIC;
     }
 
@@ -871,14 +871,14 @@ static int alecto_ws1200v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int crc = crc8(b, 7, 0x31, 0);
     if (crc) {
         if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0: CRC error ");
+            decoder_log_bitrow(decoder, 0, __func__, b, sizeof (b) * 8, "Alecto WS-1200 v2.0: CRC error ");
         return DECODE_FAIL_MIC;
     }
     // Verify checksum
     int sum = add_bytes(b, 7) - b[7];
     if (sum & 0xff) {
         if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0: Checksum error ");
+            decoder_log_bitrow(decoder, 0, __func__, b, sizeof (b) * 8, "Alecto WS-1200 v2.0: Checksum error ");
         return DECODE_FAIL_MIC;
     }
 
@@ -952,7 +952,7 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (crc || sum) {
         if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "Fineoffset_WH0530: Checksum error: ");
+            decoder_log_bitrow(decoder, 0, __func__, b, sizeof (b) * 8, "Fineoffset_WH0530: Checksum error");
         return DECODE_FAIL_MIC;
     }
 

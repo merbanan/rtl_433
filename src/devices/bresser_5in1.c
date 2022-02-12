@@ -72,7 +72,7 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             || bitbuffer->bits_per_row[0] < 248
             || bitbuffer->bits_per_row[0] > 440) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: bit_per_row %u out of range\n", __func__, bitbuffer->bits_per_row[0]);
+            decoder_logf(decoder, 0, __func__, "bit_per_row %u out of range", bitbuffer->bits_per_row[0]);
         }
         return DECODE_ABORT_EARLY; // Unrecognized data
     }
@@ -87,7 +87,7 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     len = bitbuffer->bits_per_row[0] - start_pos;
     if (((len + 7) / 8) < sizeof (msg)) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: %u too short\n", __func__, len);
+            decoder_logf(decoder, 0, __func__, "%u too short", len);
         }
         return DECODE_ABORT_LENGTH; // message too short
     }
@@ -100,7 +100,7 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     for (unsigned col = 0; col < sizeof (msg) / 2; ++col) {
         if ((msg[col] ^ msg[col + 13]) != 0xff) {
             if (decoder->verbose > 1) {
-                fprintf(stderr, "%s: Parity wrong at %u\n", __func__, col);
+                decoder_logf(decoder, 0, __func__, "Parity wrong at %u", col);
             }
             return DECODE_FAIL_MIC; // message isn't correct
         }

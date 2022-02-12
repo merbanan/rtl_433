@@ -116,7 +116,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     for (int row = 0; row < bitbuffer->num_rows; row++) {
         if (decoder->verbose > 1 && bitbuffer->bits_per_row[row] > 0) {
-            fprintf(stderr, "%s: row %d bit count %d\n", __func__,
+            decoder_logf(decoder, 0, __func__, "row %d bit count %d",
                     row, bitbuffer->bits_per_row[row]);
         }
 
@@ -130,7 +130,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (bitbuffer->bits_per_row[row] < 48 ||
             bitbuffer->bits_per_row[row] > 70) {  // should be 48 at most
             if (decoder->verbose > 1 && bitbuffer->bits_per_row[row] > 0) {
-                fprintf(stderr, "%s: row %d invalid bit count %d\n", __func__,
+                decoder_logf(decoder, 0, __func__, "row %d invalid bit count %d",
                         row, bitbuffer->bits_per_row[row]);
             }
             result = DECODE_ABORT_EARLY;
@@ -145,7 +145,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
               (b[3] & 0x02) &&
               (b[4] & 0x01))) {
             if (decoder->verbose > 1) {
-                bitrow_printf(b, 40, "%s: Invalid start/sync bits ", __func__);
+                decoder_log_bitrow(decoder, 0, __func__, b, 40, "Invalid start/sync bits ");
             }
             result = DECODE_ABORT_EARLY;
             continue; // DECODE_ABORT_EARLY
@@ -164,7 +164,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         if (decoder->verbose) {
-            bitrow_printf(bytes, 40, "%s: Contact Raw Data: ", __func__);
+            decoder_log_bitrow(decoder, 0, __func__, bytes, 40, "Contact Raw Data");
         }
 
         status = bytes[0];
@@ -174,7 +174,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         if (crc8le(bytes, DSC_CT_MSGLEN, 0xf5, 0x3d) != 0) {
             if (decoder->verbose)
-                fprintf(stderr, "%s: Contact bad CRC: %06X, Status: %02X, CRC: %02X\n", __func__,
+                decoder_logf(decoder, 0, __func__, "Contact bad CRC: %06X, Status: %02X, CRC: %02X",
                         esn, status, crc);
             result = DECODE_FAIL_MIC;
             continue; // DECODE_FAIL_MIC

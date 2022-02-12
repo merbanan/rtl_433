@@ -91,7 +91,7 @@ static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
      * 2. Delete this block when your decoder is working
      */
     //    if (decoder->verbose > 1) {
-    //        bitbuffer_printf(bitbuffer, "%s: ", __func__);
+    //        decoder_log_bitbuffer(decoder, 0, __func__, bitbuffer, "");
     //    }
 
     /*
@@ -189,7 +189,7 @@ static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (!parity) {
         // Enable with -vv (verbose decoders)
         if (decoder->verbose) {
-            fprintf(stderr, "%s: parity check failed\n", __func__);
+            decoder_log(decoder, 0, __func__, "parity check failed");
         }
         return 0;
     }
@@ -200,7 +200,7 @@ static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (((b[0] + b[1] + b[2] + b[3] - b[4]) & 0xFF) != 0) {
         // Enable with -vv (verbose decoders)
         if (decoder->verbose) {
-            fprintf(stderr, "%s: checksum error\n", __func__);
+            decoder_log(decoder, 0, __func__, "checksum error");
         }
         return 0;
     }
@@ -215,7 +215,7 @@ static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (r_crc != c_crc) {
         // Enable with -vv (verbose decoders)
         if (decoder->verbose) {
-            fprintf(stderr, "%s: bad CRC: calculated %02x, received %02x\n", __func__,
+            decoder_logf(decoder, 0, __func__, "bad CRC: calculated %02x, received %02x",
                     c_crc, r_crc);
         }
 

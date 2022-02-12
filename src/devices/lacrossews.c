@@ -78,10 +78,10 @@ static int lacrossews_detect(r_device *decoder, uint8_t *pRow, uint8_t *msg_nybb
 
     if (!checksum_ok) {
         if (decoder->verbose > 1) {
-            fprintf(stderr,
+            decoder_logf(decoder, 0, __func__,
                     "LaCrosse Packet Validation Failed error: Checksum Comp. %d != Recv. %d, Parity %d\n",
                     checksum, msg_nybbles[12], parity);
-            bitrow_print(msg_nybbles, LACROSSE_WS_BITLEN);
+            decoder_log_bitrow(decoder, 0, __func__, msg_nybbles, LACROSSE_WS_BITLEN, "");
         }
         return DECODE_FAIL_MIC;
     }
@@ -138,7 +138,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         case 1: // Humidity
             if (msg_nybbles[7] == 0xA && msg_nybbles[8] == 0xA) {
                 if (decoder->verbose)
-                    fprintf(stderr, "LaCrosse WS %02X-%02X: Humidity Error\n",
+                    decoder_logf(decoder, 0, __func__, "LaCrosse WS %02X-%02X: Humidity Error",
                             ws_id, sensor_id);
                 break;
             }
@@ -177,7 +177,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             wind_spd = (msg_nybbles[7] * 16 + msg_nybbles[8]) * 0.1f;
             if (msg_nybbles[7] == 0xF && msg_nybbles[8] == 0xE) {
                 if (decoder->verbose) {
-                    fprintf(stderr, "LaCrosse WS %02X-%02X: %s Not Connected\n",
+                    decoder_logf(decoder, 0, __func__, "LaCrosse WS %02X-%02X: %s Not Connected",
                             ws_id, sensor_id, msg_type == 3 ? "Wind" : "Gust");
                 }
                 break;
@@ -198,7 +198,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         default:
             if (decoder->verbose) {
-                fprintf(stderr,
+                decoder_logf(decoder, 0, __func__,
                         "LaCrosse WS %02X-%02X: Unknown data type %d, bcd %d bin %d\n",
                         ws_id, sensor_id, msg_type, msg_value_bcd, msg_value_bin);
             }

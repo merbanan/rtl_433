@@ -54,14 +54,14 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Validate length
     if (bitbuffer->bits_per_row[1] != 32) { // Don't waste time on a wrong length package
         if (decoder->verbose && bitbuffer->bits_per_row[1] != 0)
-            fprintf(stderr, "X10-RF: DECODE_ABORT_LENGTH, Received message length=%i\n", bitbuffer->bits_per_row[1]);
+            decoder_logf(decoder, 0, __func__, "X10-RF: DECODE_ABORT_LENGTH, Received message length=%i", bitbuffer->bits_per_row[1]);
         return DECODE_ABORT_LENGTH;
     }
 
     // Validate complement values
     if ((b[0] ^ b[1]) != 0xff || (b[2] ^ b[3]) != 0xff) {
         if (decoder->verbose)
-            fprintf(stderr, "X10-RF: DECODE_FAIL_SANITY, b0=%02x b1=%02x b2=%02x b3=%02x\n", b[0], b[1], b[2], b[3]);
+            decoder_logf(decoder, 0, __func__, "X10-RF: DECODE_FAIL_SANITY, b0=%02x b1=%02x b2=%02x b3=%02x", b[0], b[1], b[2], b[3]);
         return DECODE_FAIL_SANITY;
     }
 
@@ -71,7 +71,7 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         if (bTest != arrbKnownConstBitValue[bIdx]) {  // If resulting bits are incorrectly set
             if (decoder->verbose)
-                fprintf(stderr, "X10-RF: DECODE_FAIL_SANITY, b0=%02x b1=%02x b2=%02x b3=%02x\n", b[0], b[1], b[2], b[3]);
+                decoder_logf(decoder, 0, __func__, "X10-RF: DECODE_FAIL_SANITY, b0=%02x b1=%02x b2=%02x b3=%02x", b[0], b[1], b[2], b[3]);
             return DECODE_FAIL_SANITY;
         }
     }
@@ -134,8 +134,8 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // debug output
     if (decoder->verbose) {
-        fprintf(stderr, "X10-RF: id=%s%i event_str=%s\n", housecode, bDeviceCode, event_str);
-        bitbuffer_print(bitbuffer);
+        decoder_logf(decoder, 0, __func__, "X10-RF: id=%s%i event_str=%s", housecode, bDeviceCode, event_str);
+        decoder_log_bitbuffer(decoder, 0, __func__, bitbuffer, "");
     }
 
     /* clang-format off */

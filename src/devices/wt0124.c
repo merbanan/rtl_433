@@ -73,8 +73,8 @@ static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     channel = (b[3] >> 4) & 0x3;
 
     if (decoder->verbose) {
-        fprintf(stderr, "wt1024_callback:");
-        bitbuffer_print(bitbuffer);
+        decoder_log(decoder, 0, __func__, "wt1024_callback:");
+        decoder_log_bitbuffer(decoder, 0, __func__, bitbuffer, "");
     }
 
     /* clang-format off */

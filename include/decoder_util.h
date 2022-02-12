@@ -110,34 +110,4 @@ void decoder_output_bitrowf(r_device *decoder, uint8_t const *bitrow, unsigned b
 #endif
         ;
 
-/// Print the content of the bitbuffer.
-void bitbuffer_printf(const bitbuffer_t *bitbuffer, _Printf_format_string_ char const *restrict format, ...)
-#if defined(__GNUC__) || defined(__clang__)
-        __attribute__((format(printf, 2, 3)))
-#endif
-        ;
-
-/// Debug print the content of the bitbuffer.
-/// For quick and easy debugging, not for regular usage.
-void bitbuffer_debugf(const bitbuffer_t *bitbuffer, _Printf_format_string_ char const *restrict format, ...)
-#if defined(__GNUC__) || defined(__clang__)
-        __attribute__((format(printf, 2, 3)))
-#endif
-        ;
-
-/// Print the content of a bit row (byte buffer).
-void bitrow_printf(uint8_t const *bitrow, unsigned bit_len, _Printf_format_string_ char const *restrict format, ...)
-#if defined(__GNUC__) || defined(__clang__)
-        __attribute__((format(printf, 3, 4)))
-#endif
-        ;
-
-/// Debug print the content of a bit row (byte buffer).
-/// For quick and easy debugging, not for regular usage.
-void bitrow_debugf(uint8_t const *bitrow, unsigned bit_len, _Printf_format_string_ char const *restrict format, ...)
-#if defined(__GNUC__) || defined(__clang__)
-        __attribute__((format(printf, 3, 4)))
-#endif
-        ;
-
 #endif /* INCLUDE_DECODER_UTIL_H_ */

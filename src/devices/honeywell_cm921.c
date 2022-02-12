@@ -325,13 +325,13 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
 
     if (decoder->verbose)
-        bitrow_printf(bitbuffer->bb[row], bitbuffer->bits_per_row[row], "%s: ", __func__);
+        decoder_log_bitrow(decoder, 0, __func__, bitbuffer->bb[row], bitbuffer->bits_per_row[row], "");
 
     int preamble_start = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, preamble_bit_length);
     int start = preamble_start + preamble_bit_length;
     int len = bitbuffer->bits_per_row[row] - start;
     if (decoder->verbose)
-        fprintf(stderr, "preamble_start=%d start=%d len=%d\n", preamble_start, start, len);
+        decoder_logf(decoder, 0, __func__, "preamble_start=%d start=%d len=%d", preamble_start, start, len);
     if (len < 8)
         return DECODE_ABORT_LENGTH;
     int end = start + len;

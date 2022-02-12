@@ -164,7 +164,7 @@ static int somfy_rts_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (decoder->verbose > 1) {
-        fprintf(stderr, "%s: seed=0x%02x, chksum=0x%x\n", __func__, seed, chksum);
+        decoder_logf(decoder, 0, __func__, "seed=0x%02x, chksum=0x%x", seed, chksum);
     }
 
     /* clang-format off */

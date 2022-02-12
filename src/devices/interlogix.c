@@ -129,7 +129,7 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned int bit_offset = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, (sizeof preamble_pattern) * 8);
     if (bit_offset == bitbuffer->bits_per_row[row]) {
         if (decoder->verbose > 1)
-            fprintf(stderr, "%s: Preamble not found, bit_offset: %u\n", __func__, bit_offset);
+            decoder_logf(decoder, 0, __func__, "Preamble not found, bit_offset: %u", bit_offset);
         return DECODE_FAIL_SANITY;
     }
 
@@ -160,7 +160,7 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (parity_error) {
         if (decoder->verbose)
-            fprintf(stderr, "%s: Parity check failed (%d %d)\n", __func__, parity >> 1, parity & 1);
+            decoder_logf(decoder, 0, __func__, "Parity check failed (%d %d)", parity >> 1, parity & 1);
         return DECODE_FAIL_MIC;
     }
 

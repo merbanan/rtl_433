@@ -80,8 +80,7 @@ static int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t 
 
     if (verbose) {
         fprintf(stderr, "%s: bits_per_row = %d\n", __func__, bits->bits_per_row[0]);
-
-        bitrow_debugf(bits->bb[0], bits->bits_per_row[0], "%s: ", __func__);
+        bitrow_print(bits->bb[0], bits->bits_per_row[0]);
     }
 
     bitbuffer_extract_bytes(bits, 0, start_pos, buffy, 2);
@@ -209,7 +208,7 @@ static int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t 
         roll_array[k++] = (x >> i) & 0x03;
     }
 
-    // bitrow_printf(buffy, 8, "%s: buffy bits ", __func__);
+    // bitrow_print(buffy, 8);
 
     // assemble binary bits into trinary
     x = p2;
@@ -278,9 +277,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         if (decoder->verbose) {
-            (void)fprintf(stderr, "%s: manchester_decode %d len = %u\n", __func__,
-                    0, bits.bits_per_row[0]);
-            bitrow_debugf(bits.bb[0], bits.bits_per_row[0], "%s: manchester_decoded %d", __func__, 0);
+            decoder_log_bitrow(decoder, 0, __func__, bits.bb[0], bits.bits_per_row[0], "manchester decoded");
         }
 
         // valid = 0X00XXXX
@@ -292,12 +289,12 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // 2nd bit indicates with half of the data
         if (bits.bb[0][0] & 0xC0) {
             if (decoder->verbose)
-                (void)fprintf(stderr, "%s: Set 2\n", __func__);
+                decoder_log(decoder, 0, __func__, "Set 2");
             _decode_v2_half(&bits, rolling_2, &fixed_2, decoder->verbose);
         }
         else {
             if (decoder->verbose)
-                (void)fprintf(stderr, "%s: Set 1\n", __func__);
+                decoder_log(decoder, 0, __func__, "Set 1");
             _decode_v2_half(&bits, rolling_1, &fixed_1, decoder->verbose);
         }
 

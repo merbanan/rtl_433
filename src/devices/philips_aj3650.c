@@ -69,7 +69,7 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* Correct number of rows? */
     if (bitbuffer->num_rows != 1) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: wrong number of rows (%d)\n", __func__,
+            decoder_logf(decoder, 0, __func__, "wrong number of rows (%d)",
                     bitbuffer->num_rows);
         }
         return DECODE_ABORT_EARLY;
@@ -78,7 +78,7 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* Correct bit length? */
     if (bitbuffer->bits_per_row[0] != PHILIPS_BITLEN) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: wrong number of bits (%d)\n", __func__,
+            decoder_logf(decoder, 0, __func__, "wrong number of bits (%d)",
                     bitbuffer->bits_per_row[0]);
         }
         return DECODE_ABORT_LENGTH;
@@ -89,7 +89,7 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* Correct start sequence? */
     if ((bb[0] >> 4) != PHILIPS_STARTNIBBLE) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: wrong start nibble\n", __func__);
+            decoder_log(decoder, 0, __func__, "wrong start nibble");
         }
         return DECODE_ABORT_EARLY;
     }
@@ -105,15 +105,15 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* If debug enabled, print the combined majority-wins packet */
     if (decoder->verbose > 1) {
-        fprintf(stderr, "%s: combined packet = ", __func__);
-        bitrow_print(packet, PHILIPS_PACKETLEN * 8);
+        decoder_log(decoder, 0, __func__, "combined packet = ");
+        decoder_log_bitrow(decoder, 0, __func__, packet, PHILIPS_PACKETLEN * 8, "");
     }
 
     /* Correct CRC? */
     c_crc = crc4(packet, PHILIPS_PACKETLEN, 0x9, 1); /* Including the CRC nibble */
     if (0 != c_crc) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: CRC failed, calculated %x\n", __func__,
+            decoder_logf(decoder, 0, __func__, "CRC failed, calculated %x",
                     c_crc);
         }
         return DECODE_FAIL_MIC;

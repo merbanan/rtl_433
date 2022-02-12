@@ -162,13 +162,13 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (decoder->verbose) {
-        fprintf(stderr, "Original Bytes: %02x%02x%02x%02x%02x%02x\n", b[0], b[1], b[2], b[3], b[4], b[5]);
+        decoder_logf(decoder, 0, __func__, "Original Bytes: %02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5]);
     }
 
     uint8_t parity = (b[5] >> 1 & 0x0F); // Shift 101PPPP1 -> 0101PPPP, then and with 0x0F so we're left with 000PPPP
 
     if (decoder->verbose) {
-        fprintf(stderr, "Parity: %02x\n", parity);
+        decoder_logf(decoder, 0, __func__, "Parity: %02x", parity);
     }
 
     int chk = xor_bytes(b, 5);
@@ -178,7 +178,7 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // 	 https://github.com/triq-org/revdgst
     if (chk != parity) {
         if (decoder->verbose) {
-            fprintf(stderr, "Parity did NOT match.");
+            decoder_log(decoder, 0, __func__, "Parity did NOT match.");
         }
         return DECODE_FAIL_MIC;
     }

@@ -53,7 +53,7 @@ static int tpms_ave_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned r
         return DECODE_ABORT_LENGTH; // too short to be a whole packet
     }
     if (decoder->verbose) {
-        bitbuffer_print(&packet_bits);
+        decoder_log_bitbuffer(decoder, 0, __func__, &packet_bits, "");
     }
 
     b = packet_bits.bb[row];

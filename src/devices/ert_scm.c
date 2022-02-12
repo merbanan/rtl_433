@@ -63,7 +63,7 @@ static int ert_scm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // check id tamper type crc  value not all zero'ed
     if (!b[0] && !b[1] && !b[2] && !b[3]) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
+            decoder_log(decoder, 0, __func__, "DECODE_FAIL_SANITY data all 0x00");
         }
         return DECODE_FAIL_SANITY;
     }

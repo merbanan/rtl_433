@@ -38,7 +38,7 @@ static int ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
 
     if (expected != calculated) {
         if (decoder->verbose) {
-            bitrow_printf(b, 48, "%s: Checksum error, expected: %02x calculated: %02x\n", __func__, expected, calculated);
+            decoder_logf_bitrow(decoder, 0, __func__, b, 48, "Checksum error, expected: %02x calculated: %02x", expected, calculated);
         }
         return DECODE_FAIL_MIC;
     }

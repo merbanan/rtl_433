@@ -69,8 +69,8 @@ static int tfa_marbella_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (decoder->verbose) {
-        fprintf(stderr, "tfa_marbella_callback:");
-        bitbuffer_print(bitbuffer);
+        decoder_log(decoder, 0, __func__, "tfa_marbella_callback:");
+        decoder_log_bitbuffer(decoder, 0, __func__, bitbuffer, "");
     }
 
     temp_c = (((msg[7] << 4) | (msg[8]>>4)) -400) / 10.0;

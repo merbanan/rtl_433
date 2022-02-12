@@ -96,7 +96,7 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             || bitbuffer->bits_per_row[0] < 160
             || bitbuffer->bits_per_row[0] > 440) {
         if (decoder->verbose > 1)
-            fprintf(stderr, "%s: bit_per_row %u out of range\n", __func__, bitbuffer->bits_per_row[0]);
+            decoder_logf(decoder, 0, __func__, "bit_per_row %u out of range", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_EARLY; // Unrecognized data
     }
 
@@ -111,14 +111,14 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned len = bitbuffer->bits_per_row[0] - start_pos;
     if (len < sizeof(msg) * 8) {
         if (decoder->verbose > 1)
-            fprintf(stderr, "%s: %u too short\n", __func__, len);
+            decoder_logf(decoder, 0, __func__, "%u too short", len);
         return DECODE_ABORT_LENGTH; // message too short
     }
 
     bitbuffer_extract_bytes(bitbuffer, 0, start_pos, msg, sizeof(msg) * 8);
 
     if (decoder->verbose > 1) {
-        bitrow_printf(msg, sizeof(msg) * 8, "%s: ", __func__);
+        decoder_log_bitrow(decoder, 0, __func__, msg, sizeof(msg) * 8, "");
     }
 
     // LFSR-16 digest, generator 0x8810 init 0x5412
@@ -126,7 +126,7 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int digest  = lfsr_digest16(&msg[2], 15, 0x8810, 0x5412);
     if (chkdgst != digest) {
         if (decoder->verbose > 1)
-            fprintf(stderr, "%s: Digest check failed %04x vs %04x\n", __func__, chkdgst, digest);
+            decoder_logf(decoder, 0, __func__, "Digest check failed %04x vs %04x", chkdgst, digest);
         return DECODE_FAIL_MIC;
     }
     // Checksum, add with carry
@@ -134,7 +134,7 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int sum    = add_bytes(&msg[2], 16); // msg[2] to msg[17]
     if ((sum & 0xff) != 0xff) {
         if (decoder->verbose > 1)
-            fprintf(stderr, "%s: Checksum failed %04x vs %04x\n", __func__, chksum, sum);
+            decoder_logf(decoder, 0, __func__, "Checksum failed %04x vs %04x", chksum, sum);
         return DECODE_FAIL_MIC;
     }
 

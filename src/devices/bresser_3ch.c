@@ -59,7 +59,7 @@ static int bresser_3ch_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (((b[0] + b[1] + b[2] + b[3] - b[4]) & 0xFF) != 0) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: checksum error\n", __func__);
+            decoder_log(decoder, 0, __func__, "checksum error");
         }
         return DECODE_FAIL_MIC;
     }
@@ -78,7 +78,7 @@ static int bresser_3ch_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if ((channel == 0) || (humidity > 100) || (temp_f < -20.0) || (temp_f > 160.0)) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: data error\n", __func__);
+            decoder_log(decoder, 0, __func__, "data error");
         }
         return DECODE_FAIL_SANITY;
     }

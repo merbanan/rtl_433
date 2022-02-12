@@ -148,7 +148,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (decoder->verbose) {
-        (void)fprintf(stderr, "%s : num rows = %u len %u\n", __func__, bitbuffer->num_rows, bitbuffer->bits_per_row[0]);
+        decoder_logf(decoder, 0, __func__, "%s : num rows = %u len %u", __func__, bitbuffer->num_rows, bitbuffer->bits_per_row[0]);
     }
 
     search_index = 0;
@@ -160,7 +160,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         search_index = find_next(bitbuffer, search_index);
 
         if (decoder->verbose > 1)
-            fprintf(stderr, "%s: find_next return : bits_per_row - search_index = %d\n", __func__, bitbuffer->bits_per_row[0] - search_index);
+            decoder_logf(decoder, 0, __func__, "find_next return : bits_per_row - search_index = %d", bitbuffer->bits_per_row[0] - search_index);
 
         // nothing found
         if (search_index == -1 || (search_index + 84) > bitbuffer->bits_per_row[0]) {
@@ -172,18 +172,18 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         dr = _decode_v1_half(buffi, buffy, decoder->verbose);
 
         if (dr < 0 || dr == 1) {
-            // fprintf(stderr, "decode error\n");
+            // decoder_log(decoder, 0, __func__, "decode error");
             search_index += 4;
             continue;
         }
         else if (dr == 0) {
-            // fprintf(stderr, "decode result_1\n");
+            // decoder_log(decoder, 0, __func__, "decode result_1");
             memcpy(result_1, buffy, 22);
             status ^= 0x001;
             search_index += 88;
         }
         else if (dr == 2) {
-            // fprintf(stderr, "decode result_2\n");
+            // decoder_log(decoder, 0, __func__, "decode result_2");
             memcpy(result_2, buffy, 22);
             status ^= 0x002;
             search_index += 88;
@@ -196,7 +196,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     } // while
 
     if (decoder->verbose > 1)
-        (void)fprintf(stderr, "%s: exited  loop status = %02X\n", __func__, status);
+        decoder_logf(decoder, 0, __func__, "exited  loop status = %02X", status);
 
     // if we have both parts, move on and report data
     // if have only one part cache it for later.
@@ -214,7 +214,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         timeval_subtract(&res_tv, &cur_tv, &cached_tv);
 
         if (decoder->verbose > 1)
-            fprintf(stderr, "%s res    %12ld %8ld\n", __func__, res_tv.tv_sec, (long)res_tv.tv_usec);
+            decoder_logf(decoder, 0, __func__, "%s res    %12ld %8ld", __func__, res_tv.tv_sec, (long)res_tv.tv_usec);
 
         // is the data not expired
         if (res_tv.tv_sec == 0 && res_tv.tv_usec < CACHE_MAX_AGE) {
@@ -224,14 +224,14 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 memcpy(result_1, cached_result, 21);
                 status = 3;
                 if (decoder->verbose)
-                    fprintf(stderr, "%s: Load cache  part 1\n", __func__);
+                    decoder_log(decoder, 0, __func__, "Load cache  part 1");
             }
             // if we have part 1 AND part 2 cached
             else if (status == 1 && cached_result[0] == 2) {
                 memcpy(result_2, cached_result, 21);
                 status = 3;
                 if (decoder->verbose)
-                    fprintf(stderr, "%s: Load cache  part 2\n", __func__);
+                    decoder_log(decoder, 0, __func__, "Load cache  part 2");
             }
         }
 
@@ -245,18 +245,18 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         gettimeofday(&cached_tv, NULL);
         memcpy(cached_result, result_1, 21);
         if (decoder->verbose)
-            fprintf(stderr, "%s: caching part 1\n", __func__);
+            decoder_log(decoder, 0, __func__, "caching part 1");
         return -2; // found only 1st part
     }
     else if (status == 2) {
         gettimeofday(&cached_tv, NULL);
         memcpy(cached_result, result_2, 21);
         if (decoder->verbose)
-            fprintf(stderr, "%s: caching part 2\n", __func__);
+            decoder_log(decoder, 0, __func__, "caching part 2");
         return -2; // found only 2nd part
     }
     else if (status == 3) {
-        // fprintf(stderr, "%s: got both\n", __func__);
+        // decoder_log(decoder, 0, __func__, "got both");
     }
     else {
         return -1; // should never get here
@@ -344,7 +344,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             strcat(pin_s, "*");
 
         // if (decoder->verbose)
-        //     fprintf(stderr, "pad_id=%d\tpin=%d\tpin_s=%s\n", pad_id, pin, pin_s);
+        //     decoder_logf(decoder, 0, __func__, "pad_id=%d pin=%d pin_s=%s", pad_id, pin, pin_s);
     }
     else {
         remote_id = (int)fixed / 27;
@@ -357,7 +357,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             button = "right";
 
         // if (decoder->verbose)
-        //     fprintf(stderr, "remote_id=%d\tbutton=%s\n", remote_id, button);
+        //     decoder_logf(decoder, 0, __func__, "remote_id=%d button=%s", remote_id, button);
     }
 
     // preformat unsigned int
@@ -368,7 +368,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     char fixed_str[16]; // should be 10 chars max
     snprintf(fixed_str, sizeof(fixed_str), "%u", fixed);
 
-    // fprintf(stderr,  "# Security+:  rolling=2320615320  fixed=1846948897  (id1=2 id0=0 switch=1 remote_id=68405514 button=left)\n");
+    // decoder_logf(decoder, 0, __func__,  "# Security+:  rolling=2320615320  fixed=1846948897  (id1=2 id0=0 switch=1 remote_id=68405514 button=left)");
     /* clang-format off */
     data_t *data = data_make(
             "model",        "",             DATA_STRING, "Secplus-v1",

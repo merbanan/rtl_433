@@ -234,7 +234,7 @@ static uint16_t guess_blueline_id(r_device *decoder, const uint8_t *current_row)
     }
 
     if (decoder->verbose) {
-        fprintf(stderr, "Attempting Blueline autodetect: best_hits=%u num_at_best_hits=%u\n", best_hits, num_at_best_hits);
+        decoder_logf(decoder, 0, __func__, "Attempting Blueline autodetect: best_hits=%u num_at_best_hits=%u", best_hits, num_at_best_hits);
     }
     return ((best_hits >= BLUELINE_ID_GUESS_THRESHOLD) && (num_at_best_hits == 1)) ? best_id : 0;
 }
@@ -287,7 +287,7 @@ static int blueline_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 uint16_t id_guess = guess_blueline_id(decoder, current_row);
                 if (id_guess != 0) {
                     if (decoder->verbose) {
-                        fprintf(stderr,"Switching to auto-detected Blueline ID %u\n", id_guess);
+                        decoder_logf(decoder, 0, __func__,"Switching to auto-detected Blueline ID %u", id_guess);
                     }
                     context->current_sensor_id = id_guess;
                     context->searching_for_new_id = 0;
@@ -312,7 +312,7 @@ static int blueline_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             payloads_decoded++;
             if (context->searching_for_new_id) {
                 if (decoder->verbose) {
-                    fprintf(stderr,"Switching to received Blueline ID %u\n", received_sensor_id);
+                    decoder_logf(decoder, 0, __func__,"Switching to received Blueline ID %u", received_sensor_id);
                 }
                 context->current_sensor_id = received_sensor_id;
                 context->searching_for_new_id = 0;

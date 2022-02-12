@@ -106,14 +106,14 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (r < 0) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: Couldn't find preamble\n", __func__);
+            decoder_log(decoder, 0, __func__, "Couldn't find preamble");
         }
         return DECODE_FAIL_SANITY;
     }
 
     if (crc8(b, 37, 0x31, 0xc0)) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: CRC8 fail\n", __func__);
+            decoder_log(decoder, 0, __func__, "CRC8 fail");
         }
         return DECODE_FAIL_MIC;
     }
@@ -160,36 +160,36 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp2_f = (temp2_raw - 400) * 0.1f;
 
     if (decoder->verbose > 1) {
-        fprintf(stderr, "header = %02x %d\n", header, header);
-        fprintf(stderr, "serial = %02x %d\n", serial, serial);
-        fprintf(stderr, "flags = %02x %d\n", flags, flags);
-        fprintf(stderr, "unk16 = %02x %d\n", unk16, unk16);
-        fprintf(stderr, "batt_low  = %01x %d\n", batt_low, batt_low);
-        fprintf(stderr, "wind = %02x %d\n", wind, wind);
-        fprintf(stderr, "gust = %02x %d\n", gust, gust);
-        fprintf(stderr, "wind_dir = %02x %d\n", wind_dir, wind_dir);
-        fprintf(stderr, "wind2 = %04x %d\n", wind2, wind2);
-        fprintf(stderr, "wind2_dir = %04x %d\n", wind2_dir, wind2_dir);
-        fprintf(stderr, "wind3 = %04x %d\n", wind3, wind3);
-        fprintf(stderr, "wind3_dir = %04x %d\n", wind3_dir, wind3_dir);
-        fprintf(stderr, "rain_rate = %04x %f mm\n", rain_rate, rain_rate * 0.1);
-        fprintf(stderr, "rain_1h = %04x %f mm\n", rain_1h, rain_1h * 0.1);
-        fprintf(stderr, "rain_24h = %04x %f mm\n", rain_24h, rain_24h * 0.1);
-        fprintf(stderr, "rain_week = %04x %f mm\n", rain_week, rain_week * 0.1);
-        fprintf(stderr, "rain_mon = %04x %f mm\n", rain_mon, rain_mon * 0.1);
-        fprintf(stderr, "rain_tot = %04x %f mm\n", rain_tot, rain_tot * 0.1);
-        fprintf(stderr, "rain_tot2 = %04x %d\n", rain_tot2, rain_tot2);
-        fprintf(stderr, "temp_raw = %04x %d\n", temp_raw, temp_raw);
-        fprintf(stderr, "humidity = %04x %d %%\n", humidity, humidity);
-        fprintf(stderr, "temp_indoor = %04x %d\n", temp2_raw, temp2_raw);
-        fprintf(stderr, "humidity_indoor = %04x %d %%\n", humidity2, humidity2);
-        fprintf(stderr, "pressure_abs = %04x %f\n", pressure, pressure * 0.1);
-        fprintf(stderr, "pressure_rel = %04x %f\n", pressure2, pressure2 * 0.1);
-        fprintf(stderr, "light_lux = %02x %d\n", light_lux, light_lux);
-        fprintf(stderr, "uv = %02x %d\n", uv, uv);
-        fprintf(stderr, "crc = %02x %d\n", crc, crc);
-        fprintf(stderr, "temp_f = %f F (%f C)\n", temp_f, (temp_f - 32) / 1.8);
-        fprintf(stderr, "temp2_f = %f F (%f C)\n", temp2_f, (temp2_f - 32) / 1.8);
+        decoder_logf(decoder, 0, __func__, "header = %02x %d", header, header);
+        decoder_logf(decoder, 0, __func__, "serial = %02x %d", serial, serial);
+        decoder_logf(decoder, 0, __func__, "flags = %02x %d", flags, flags);
+        decoder_logf(decoder, 0, __func__, "unk16 = %02x %d", unk16, unk16);
+        decoder_logf(decoder, 0, __func__, "batt_low  = %01x %d", batt_low, batt_low);
+        decoder_logf(decoder, 0, __func__, "wind = %02x %d", wind, wind);
+        decoder_logf(decoder, 0, __func__, "gust = %02x %d", gust, gust);
+        decoder_logf(decoder, 0, __func__, "wind_dir = %02x %d", wind_dir, wind_dir);
+        decoder_logf(decoder, 0, __func__, "wind2 = %04x %d", wind2, wind2);
+        decoder_logf(decoder, 0, __func__, "wind2_dir = %04x %d", wind2_dir, wind2_dir);
+        decoder_logf(decoder, 0, __func__, "wind3 = %04x %d", wind3, wind3);
+        decoder_logf(decoder, 0, __func__, "wind3_dir = %04x %d", wind3_dir, wind3_dir);
+        decoder_logf(decoder, 0, __func__, "rain_rate = %04x %f mm", rain_rate, rain_rate * 0.1);
+        decoder_logf(decoder, 0, __func__, "rain_1h = %04x %f mm", rain_1h, rain_1h * 0.1);
+        decoder_logf(decoder, 0, __func__, "rain_24h = %04x %f mm", rain_24h, rain_24h * 0.1);
+        decoder_logf(decoder, 0, __func__, "rain_week = %04x %f mm", rain_week, rain_week * 0.1);
+        decoder_logf(decoder, 0, __func__, "rain_mon = %04x %f mm", rain_mon, rain_mon * 0.1);
+        decoder_logf(decoder, 0, __func__, "rain_tot = %04x %f mm", rain_tot, rain_tot * 0.1);
+        decoder_logf(decoder, 0, __func__, "rain_tot2 = %04x %d", rain_tot2, rain_tot2);
+        decoder_logf(decoder, 0, __func__, "temp_raw = %04x %d", temp_raw, temp_raw);
+        decoder_logf(decoder, 0, __func__, "humidity = %04x %d %%", humidity, humidity);
+        decoder_logf(decoder, 0, __func__, "temp_indoor = %04x %d", temp2_raw, temp2_raw);
+        decoder_logf(decoder, 0, __func__, "humidity_indoor = %04x %d %%", humidity2, humidity2);
+        decoder_logf(decoder, 0, __func__, "pressure_abs = %04x %f", pressure, pressure * 0.1);
+        decoder_logf(decoder, 0, __func__, "pressure_rel = %04x %f", pressure2, pressure2 * 0.1);
+        decoder_logf(decoder, 0, __func__, "light_lux = %02x %d", light_lux, light_lux);
+        decoder_logf(decoder, 0, __func__, "uv = %02x %d", uv, uv);
+        decoder_logf(decoder, 0, __func__, "crc = %02x %d", crc, crc);
+        decoder_logf(decoder, 0, __func__, "temp_f = %f F (%f C)", temp_f, (temp_f - 32) / 1.8);
+        decoder_logf(decoder, 0, __func__, "temp2_f = %f F (%f C)", temp2_f, (temp2_f - 32) / 1.8);
     }
 
     /* clang-format off */

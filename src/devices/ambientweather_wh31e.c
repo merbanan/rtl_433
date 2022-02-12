@@ -192,7 +192,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (start_pos == bitbuffer->bits_per_row[row])
             continue; // DECODE_ABORT_EARLY
         if (decoder->verbose)
-            fprintf(stderr, "%s: WH31E/WH31B/WH40 detected, buffer is %u bits length\n", __func__, bitbuffer->bits_per_row[row]);
+            decoder_logf(decoder, 0, __func__, "WH31E/WH31B/WH40 detected, buffer is %u bits length", bitbuffer->bits_per_row[row]);
 
         // remove preamble, keep whole payload
         bitbuffer_extract_bytes(bitbuffer, row, start_pos + 24, b, 18 * 8);
@@ -202,13 +202,13 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             uint8_t c_crc = crc8(b, 6, 0x31, 0x00);
             if (c_crc) {
                 if (decoder->verbose)
-                    fprintf(stderr, "%s: WH31E/WH31B (%d) bad CRC\n", __func__, msg_type);
+                    decoder_logf(decoder, 0, __func__, "WH31E/WH31B (%d) bad CRC", msg_type);
                 continue; // DECODE_FAIL_MIC
             }
             uint8_t c_sum = add_bytes(b, 6) - b[6];
             if (c_sum) {
                 if (decoder->verbose)
-                    fprintf(stderr, "%s: WH31E/WH31B (%d) bad SUM\n", __func__, msg_type);
+                    decoder_logf(decoder, 0, __func__, "WH31E/WH31B (%d) bad SUM", msg_type);
                 continue; // DECODE_FAIL_MIC
             }
 
@@ -242,13 +242,13 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             uint8_t c_crc = crc8(b, 10, 0x31, 0x00);
             if (c_crc) {
                 if (decoder->verbose)
-                    fprintf(stderr, "%s: WH31E RCC bad CRC\n", __func__);
+                    decoder_log(decoder, 0, __func__, "WH31E RCC bad CRC");
                 continue; // DECODE_FAIL_MIC
             }
             uint8_t c_sum = add_bytes(b, 10) - b[10];
             if (c_sum) {
                 if (decoder->verbose)
-                    fprintf(stderr, "%s: WH31E RCC bad SUM\n", __func__);
+                    decoder_log(decoder, 0, __func__, "WH31E RCC bad SUM");
                 continue; // DECODE_FAIL_MIC
             }
 
@@ -283,13 +283,13 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             uint8_t c_crc = crc8(b, 8, 0x31, 0x00);
             if (c_crc) {
                 if (decoder->verbose)
-                    fprintf(stderr, "%s: WH40 bad CRC\n", __func__);
+                    decoder_log(decoder, 0, __func__, "WH40 bad CRC");
                 continue; // DECODE_FAIL_MIC
             }
             uint8_t c_sum = add_bytes(b, 8) - b[8];
             if (c_sum) {
                 if (decoder->verbose)
-                    fprintf(stderr, "%s: WH40 bad SUM\n", __func__);
+                    decoder_log(decoder, 0, __func__, "WH40 bad SUM");
                 continue; // DECODE_FAIL_MIC
             }
 
@@ -319,13 +319,13 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             uint8_t c_crc = crc8(b, 15, 0x31, 0x00);
             if (c_crc) {
                 if (decoder->verbose)
-                    fprintf(stderr, "%s: WH68 bad CRC\n", __func__);
+                    decoder_log(decoder, 0, __func__, "WH68 bad CRC");
                 continue; // DECODE_FAIL_MIC
             }
             uint8_t c_sum = add_bytes(b, 15) - b[15];
             if (c_sum) {
                 if (decoder->verbose)
-                    fprintf(stderr, "%s: WH68 bad SUM\n", __func__);
+                    decoder_log(decoder, 0, __func__, "WH68 bad SUM");
                 continue; // DECODE_FAIL_MIC
             }
 
@@ -358,7 +358,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         else {
             if (decoder->verbose)
-                fprintf(stderr, "%s: unknown message type %02x (expected 0x30/0x40/0x68)\n", __func__, msg_type);
+                decoder_logf(decoder, 0, __func__, "unknown message type %02x (expected 0x30/0x40/0x68)", msg_type);
         }
     }
     return events;

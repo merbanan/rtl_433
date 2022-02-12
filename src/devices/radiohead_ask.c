@@ -75,7 +75,7 @@ static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint
     pos = bitbuffer_search(bitbuffer, row, 0, init_pattern, init_pattern_len);
     if (pos == len) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: preamble not found\n", __func__);
+            decoder_log(decoder, 0, __func__, "preamble not found");
         }
         return DECODE_ABORT_EARLY;
     }
@@ -93,14 +93,14 @@ static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint
         uint8_t hi_nibble = symbol_6to4(rxBits[0]);
         if (hi_nibble > 0xF) {
             if (decoder->verbose) {
-                fprintf(stderr, "%s: Error on 6to4 decoding high nibble: %X\n", __func__, rxBits[0]);
+                decoder_logf(decoder, 0, __func__, "Error on 6to4 decoding high nibble: %X", rxBits[0]);
             }
             return DECODE_FAIL_SANITY;
         }
         uint8_t lo_nibble = symbol_6to4(rxBits[1]);
         if (lo_nibble > 0xF) {
             if (decoder->verbose) {
-                fprintf(stderr, "%s: Error on 6to4 decoding low nibble: %X\n", __func__, rxBits[1]);
+                decoder_logf(decoder, 0, __func__, "Error on 6to4 decoding low nibble: %X", rxBits[1]);
             }
             return DECODE_FAIL_SANITY;
         }
@@ -119,14 +119,14 @@ static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint
     // Prevent buffer underflow when calculating CRC
     if (msg_len < 2) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: message too short to contain crc\n", __func__);
+            decoder_log(decoder, 0, __func__, "message too short to contain crc");
         }
         return DECODE_ABORT_LENGTH;
     }
     // Sanity check on excessive msg len
     if (msg_len > RH_ASK_MAX_MESSAGE_LEN) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: message too long: %d\n", __func__, msg_len);
+            decoder_logf(decoder, 0, __func__, "message too long: %d", msg_len);
         }
         return DECODE_ABORT_LENGTH;
     }
@@ -136,7 +136,7 @@ static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint
     crc_recompute = ~crc16lsb(payload, msg_len - 2, 0x8408, 0xFFFF);
     if (crc_recompute != crc) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: CRC error: %04X != %04X\n", __func__, crc_recompute, crc);
+            decoder_logf(decoder, 0, __func__, "CRC error: %04X != %04X", crc_recompute, crc);
         }
         return DECODE_FAIL_MIC;
     }

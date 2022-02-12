@@ -64,17 +64,17 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (bitbuffer->bits_per_row[0] < 120) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: Packet too short: %d bits\n", __func__, bitbuffer->bits_per_row[0]);
+            decoder_logf(decoder, 0, __func__, "Packet too short: %d bits", bitbuffer->bits_per_row[0]);
         }
         return DECODE_ABORT_LENGTH;
     } else if (bitbuffer->bits_per_row[0] > 156) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: Packet too long: %d bits\n", __func__, bitbuffer->bits_per_row[0]);
+            decoder_logf(decoder, 0, __func__, "Packet too long: %d bits", bitbuffer->bits_per_row[0]);
         }
         return DECODE_ABORT_LENGTH;
     } else {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: packet length: %d\n", __func__, bitbuffer->bits_per_row[0]);
+            decoder_logf(decoder, 0, __func__, "packet length: %d", bitbuffer->bits_per_row[0]);
         }
     }
 
@@ -83,7 +83,7 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (offset >= bitbuffer->bits_per_row[0]) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: Sync word not found\n", __func__);
+            decoder_log(decoder, 0, __func__, "Sync word not found");
         }
         return DECODE_ABORT_EARLY;
     }
@@ -94,7 +94,7 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     chk = crc8(b, 11, 0x31, 0x00);
     if (chk) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: CRC failed!\n", __func__);
+            decoder_log(decoder, 0, __func__, "CRC failed!");
         }
         return DECODE_FAIL_MIC;
     }
