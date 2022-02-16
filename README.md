@@ -296,6 +296,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [211]  Regency Ceiling Fan Remote (-f 303.75M to 303.96M)
     [212]  Renault 0435R TPMS
     [213]  Fine Offset Electronics WS80 weather station
+    [214]  EMOS 6016 DCF77, Temp, Hum, Windspeed, Winddir sensor
 
 * Disabled by default, use -R n or -G
 

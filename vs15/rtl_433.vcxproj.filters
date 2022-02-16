@@ -400,6 +400,9 @@
     <ClCompile Include="..\src\devices\emontx.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\emos6016.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\enocean_erp1.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

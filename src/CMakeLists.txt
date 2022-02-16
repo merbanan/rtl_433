@@ -86,6 +86,7 @@ add_library(r_433 STATIC
     devices/elro_db286a.c
     devices/elv.c
     devices/emontx.c
+    devices/emos6016.c
     devices/enocean_erp1.c
     devices/ert_idm.c
     devices/ert_scm.c
