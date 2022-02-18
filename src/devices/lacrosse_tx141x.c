@@ -219,9 +219,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             /* clang-format on */
         }
         else {
-            if (decoder->verbose) {
-                fprintf(stderr, "%s: unknown subtype: %d\n", __func__, type);
-            }
+            decoder_logf(decoder, 1, __func__, "unknown subtype: %d", type);
             return DECODE_FAIL_OTHER;
         }
 
@@ -248,9 +246,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (0 == id || (device == LACROSSE_TX141TH && (0 == humidity || humidity > 100)) || temp_c < -40.0 || temp_c > 140.0) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: data error, id: %i, humidity:%i, temp:%f\n", __func__, id, humidity, temp_c);
-        }
+        decoder_logf(decoder, 1, __func__, "data error, id: %i, humidity:%i, temp:%f", id, humidity, temp_c);
         return DECODE_FAIL_SANITY;
     }
 

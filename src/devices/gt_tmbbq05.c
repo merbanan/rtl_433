@@ -89,9 +89,7 @@ static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // reject if Checksum Id and temperature are all zero
     // No need to decode/extract values for simple test
     if (!b[0] && !b[1] && !b[2] && !b[3]) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all zero\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all zero");
         return DECODE_FAIL_SANITY;
     }
 
@@ -100,17 +98,13 @@ static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     p[3] = p[3] & 0xF0;
 
     if (parity_bytes(p, 4)) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "gt_tmbbq05_decode: parity check failed (should be ODD)\n");
-        }
+        decoder_log(decoder, 2, __func__, "gt_tmbbq05_decode: parity check failed (should be ODD)");
         return DECODE_FAIL_MIC;
     }
 
     int sum = add_nibbles(b, 3) + (b[3] >> 4);
     if ((sum & 0xf) != (b[3] & 0xf)) {
-        if (decoder->verbose > 1) {
-            bitrow_printf(b, 32, "%s: Bad checksum (%x) ", __func__, sum);
-        }
+        decoder_logf_bitrow(decoder, 2, __func__, b, 32, "Bad checksum (%x)", sum);
         return DECODE_FAIL_MIC;
     }
 

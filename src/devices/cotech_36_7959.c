@@ -74,16 +74,12 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (r < 0) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: Couldn't find preamble\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "Couldn't find preamble");
         return DECODE_FAIL_SANITY;
     }
 
     if (crc8(b, 14, 0x31, 0xc0)) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: CRC8 fail\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "CRC8 fail");
         return DECODE_FAIL_MIC;
     }
 

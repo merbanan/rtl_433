@@ -180,8 +180,7 @@ static int ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     } else if (b[2] == 0x44) {
         return ss_keypad_commands(decoder, bitbuffer, row);
     } else {
-        if (decoder->verbose)
-            fprintf(stderr, "Unknown Message Type: %02x\n", b[2]);
+        decoder_logf(decoder, 1, __func__, "Unknown Message Type: %02x", b[2]);
         return DECODE_ABORT_EARLY;
     }
 }

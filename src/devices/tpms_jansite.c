@@ -45,7 +45,7 @@ static int tpms_jansite_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
 
     if (packet_bits.bits_per_row[0] < 56) {
         return DECODE_FAIL_SANITY;
-        // fprintf(stderr, "%s packet_bits.bits_per_row = %d\n", __func__, packet_bits.bits_per_row[0]);
+        // decoder_logf(decoder, 3, __func__, "packet_bits.bits_per_row = %d", packet_bits.bits_per_row[0]);
     }
     b = packet_bits.bb[0];
 

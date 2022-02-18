@@ -61,8 +61,7 @@ static int lacrosse_tx34_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         unsigned start_pos = bitbuffer_search(bitbuffer, row, 0, preamble, 20) + 20;
         if (start_pos + LACROSSE_TX34_PAYLOAD_BITS > bitbuffer->bits_per_row[row])
             continue; // preamble not found
-        if (decoder->verbose > 1)
-            fprintf(stderr, "%s: LaCrosse IT frame detected\n", __func__);
+        decoder_log(decoder, 2, __func__, "LaCrosse IT frame detected");
         // get payload
         uint8_t b[5];
         bitbuffer_extract_bytes(bitbuffer, row, start_pos, b, LACROSSE_TX34_PAYLOAD_BITS);
@@ -71,8 +70,7 @@ static int lacrosse_tx34_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         int c_crc = crc8(b, 4, 0x31, 0x00);
         if (r_crc != c_crc) {
             // bad CRC: reject IT frame
-            if (decoder->verbose)
-                fprintf(stderr, "%s: LaCrosse IT frame bad CRC: calculated %02x, received %02x\n", __func__, c_crc, r_crc);
+            decoder_logf(decoder, 1, __func__, "LaCrosse IT frame bad CRC: calculated %02x, received %02x", c_crc, r_crc);
             continue;
         }
 

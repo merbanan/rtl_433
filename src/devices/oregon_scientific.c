@@ -188,10 +188,8 @@ static int validate_os_checksum(r_device *decoder, unsigned char *msg, int check
         return 0;
     }
     else {
-        if (decoder->verbose) {
-            fprintf(stderr, "Checksum error in Oregon Scientific message.    Expected: %02x    Calculated: %02x\n", checksum, sum_of_nibbles);
-            bitrow_printf(msg, ((checksum_nibble_idx + 4) >> 1) * 8, "Message: ");
-        }
+        decoder_logf(decoder, 1, __func__, "Checksum error in Oregon Scientific message.    Expected: %02x    Calculated: %02x", checksum, sum_of_nibbles);
+        decoder_log_bitrow(decoder, 1, __func__, msg, ((checksum_nibble_idx + 4) >> 1) * 8, "Message");
         return 1;
     }
 }
@@ -203,9 +201,7 @@ static int validate_os_v2_message(r_device *decoder, unsigned char *msg, int bit
     if (bits_expected == msg_bits) {
         return validate_os_checksum(decoder, msg, nibbles_in_checksum);
     }
-    if (decoder->verbose) {
-        bitrow_printf(msg, msg_bits, "Bit validation error on Oregon Scientific message. Expected %d bits, Message: ", bits_expected);
-    }
+    decoder_logf_bitrow(decoder, 1, __func__, msg, msg_bits, "Bit validation error on Oregon Scientific message. Expected %d bits, Message", bits_expected);
     return 1;
 }
 
@@ -218,8 +214,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
     if (((b[1] != 0x55) || (b[2] != 0x55))
             && ((b[1] != 0xAA) || (b[2] != 0xAA))) {
         if (b[3] != 0) {
-            if (decoder->verbose)
-                bitrow_printf(b, bitbuffer->bits_per_row[0], "Badly formatted OS v2.1 message: ");
+            decoder_log_bitrow(decoder, 1, __func__, b, bitbuffer->bits_per_row[0], "Badly formatted OS v2.1 message");
         }
         return DECODE_ABORT_EARLY;
     }
@@ -235,9 +230,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         unsigned int pattern  = (unsigned int)(0x55990000 >> pattern_index);
         unsigned int pattern2 = (unsigned int)(0xaa990000 >> pattern_index);
 
-        if (decoder->verbose) {
-            fprintf(stderr, "OS v2.1 sync byte search - test_val=%08x pattern=%08x    mask=%08x\n", sync_test_val, pattern, mask);
-        }
+        decoder_logf(decoder, 1, __func__, "OS v2.1 sync byte search - test_val=%08x pattern=%08x    mask=%08x", sync_test_val, pattern, mask);
 
         if (((sync_test_val & mask) != pattern)
                 && ((sync_test_val & mask) != pattern2))
@@ -245,23 +238,19 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
 
         // Found sync byte - start working on decoding the stream data.
         // pattern_index indicates    where sync nibble starts, so now we can find the start of the payload
-        if (decoder->verbose) {
-            fprintf(stderr, "OS v2.1 Sync test val %08x found, starting decode at bit %d\n", sync_test_val, pattern_index);
-        }
+        decoder_logf(decoder, 1, __func__, "OS v2.1 Sync test val %08x found, starting decode at bit %d", sync_test_val, pattern_index);
 
-        //bitrow_printf(b, bitbuffer->bits_per_row[0], "Raw OSv2 bits: ");
+        //decoder_log_bitrow(decoder, 0, __func__, b, bitbuffer->bits_per_row[0], "Raw OSv2 bits");
         bitbuffer_manchester_decode(bitbuffer, 0, pattern_index + 40, &databits, 173);
         reflect_nibbles(databits.bb[0], (databits.bits_per_row[0]+7)/8);
-        //bitbuffer_printf(&databits, "MC OSv2 bits (from %d+40): ", pattern_index);
+        //decoder_logf_bitbuffer(decoder, 0, __func__, &databits, "MC OSv2 bits (from %d+40)", pattern_index);
 
         break;
     }
     int msg_bits = databits.bits_per_row[0];
 
     int sensor_id = (msg[0] << 8) | msg[1];
-    if (decoder->verbose) {
-      fprintf(stderr,"Found sensor_id (%08x)\n",sensor_id);
-    }
+    decoder_logf(decoder, 1, __func__,"Found sensor_id (%08x)",sensor_id);
     if ((sensor_id == ID_THGR122N) || (sensor_id == ID_THGR968)) {
         if (validate_os_v2_message(decoder, msg, 76, msg_bits, 15) != 0)
             return 0;
@@ -313,8 +302,8 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         //else if (forecast == 0xc) forecast_str = "Sunny";
         float temp_c = get_os_temperature(msg);
         float pressure = ((msg[7] & 0x0f) | (msg[8] & 0xf0)) + 856;
-        // fprintf(stderr,"Weather Sensor BHTR968    Indoor        Temp: %3.1fC    %3.1fF     Humidity: %d%%", temp_c, ((temp_c*9)/5)+32, get_os_humidity(msg));
-        // fprintf(stderr, " (%s) Pressure: %dmbar (%s)\n", comfort_str, ((msg[7] & 0x0f) | (msg[8] & 0xf0))+856, forecast_str);
+        // decoder_logf(decoder, 0, __func__,"Weather Sensor BHTR968    Indoor        Temp: %3.1fC    %3.1fF     Humidity: %d%%", temp_c, ((temp_c*9)/5)+32, get_os_humidity(msg));
+        // decoder_logf(decoder, 0, __func__, " (%s) Pressure: %dmbar (%s)", comfort_str, ((msg[7] & 0x0f) | (msg[8] & 0xf0))+856, forecast_str);
         /* clang-format off */
         data = data_make(
                 "model",            "",                             DATA_STRING, "Oregon-BHTR968",
@@ -555,14 +544,10 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         return 1;
     }
     else if (msg_bits > 16) {
-        if (decoder->verbose) {
-            bitrow_printf(msg, msg_bits, "Unrecognized Oregon Scientific v2.1 message (device ID %4x): ", sensor_id);
-        }
+        decoder_logf_bitrow(decoder, 1, __func__, msg, msg_bits, "Unrecognized Oregon Scientific v2.1 message (device ID %4x)", sensor_id);
     }
     else {
-        if (decoder->verbose) {
-            bitrow_printf(b, bitbuffer->bits_per_row[0], "Possible Oregon Scientific v2.1 message, but sync nibble wasn't found. Raw: ");
-        }
+        decoder_log_bitrow(decoder, 1, __func__, b, bitbuffer->bits_per_row[0], "Possible Oregon Scientific v2.1 message, but sync nibble wasn't found. Raw");
     }
 
     return 0;
@@ -580,8 +565,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     if ((((b[0]&0xf) != 0x0f) || (b[1] != 0xff) || ((b[2]&0xc0) != 0xc0))
             && (((b[0]&0xf) != 0x00) || (b[1] != 0x00) || ((b[2]&0xc0) != 0x00))) {
         if (b[3] != 0) {
-            if (decoder->verbose)
-                bitrow_printf(b, bitbuffer->bits_per_row[0], "Unrecognized Msg in OS v3: ");
+            decoder_log_bitrow(decoder, 1, __func__, b, bitbuffer->bits_per_row[0], "Unrecognized Msg in OS v3");
         }
         return DECODE_ABORT_EARLY;
     }
@@ -830,17 +814,13 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         }
     }
     else if ((msg[0] != 0) && (msg[1] != 0)) { // sync nibble was found and some data is present...
-        if (decoder->verbose) {
-            fprintf(stderr, "Message received from unrecognized Oregon Scientific v3 sensor.\n");
-            bitrow_printf(msg, msg_len, "Message: ");
-            bitrow_printf(b, bitbuffer->bits_per_row[0], "Raw: ");
-        }
+        decoder_log(decoder, 1, __func__, "Message received from unrecognized Oregon Scientific v3 sensor.");
+        decoder_log_bitrow(decoder, 1, __func__, msg, msg_len, "Message");
+        decoder_log_bitrow(decoder, 1, __func__, b, bitbuffer->bits_per_row[0], "Raw");
     }
     else if (b[3] != 0 ) {
-        if (decoder->verbose) {
-            fprintf(stderr, "Possible Oregon Scientific v3 message, but sync nibble wasn't found\n");
-            bitrow_printf(b, bitbuffer->bits_per_row[0], "Raw Data: ");
-        }
+        decoder_log(decoder, 1, __func__, "Possible Oregon Scientific v3 message, but sync nibble wasn't found");
+        decoder_log_bitrow(decoder, 1, __func__, b, bitbuffer->bits_per_row[0], "Raw Data");
     }
     return DECODE_FAIL_SANITY;
 }

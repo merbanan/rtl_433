@@ -67,29 +67,25 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int id   = (type << 4) | addr;
 
     if (type > 5) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "LaCrosse-WS7000: unhandled sensor type (%d)\n", type);
+        decoder_logf(decoder, 2, __func__, "LaCrosse-WS7000: unhandled sensor type (%d)", type);
         return DECODE_ABORT_EARLY;
     }
 
     unsigned data_len = data_size[type];
     if (len < data_len) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "LaCrosse-WS7000: short data (%u of %u)\n", len, data_len);
+        decoder_logf(decoder, 2, __func__, "LaCrosse-WS7000: short data (%u of %u)", len, data_len);
         return DECODE_ABORT_LENGTH;
     }
 
     // check xor sum
     if (xor_bytes(b, len - 1)) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "LaCrosse-WS7000: checksum error (xor)\n");
+        decoder_log(decoder, 2, __func__, "LaCrosse-WS7000: checksum error (xor)");
         return DECODE_FAIL_MIC;
     }
 
     // check add sum (all nibbles + 5)
     if (((add_bytes(b, len - 1) + 5) & 0xf) != b[len - 1]) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "LaCrosse-WS7000: checksum error (add)\n");
+        decoder_log(decoder, 2, __func__, "LaCrosse-WS7000: checksum error (add)");
         return DECODE_FAIL_MIC;
     }
 

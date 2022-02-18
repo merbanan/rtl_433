@@ -44,7 +44,7 @@ static int tpms_porsche_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
 
     // make sure we decoded the expected number of bits
     if (packet_bits.bits_per_row[0] < 80) {
-        // fprintf(stderr, "bitpos=%u start_pos=%u = %u\n", bitpos, start_pos, (start_pos - bitpos));
+        // decoder_logf(decoder, 0, __func__, "bitpos=%u start_pos=%u = %u", bitpos, start_pos, (start_pos - bitpos));
         return 0; // DECODE_FAIL_SANITY;
     }
 

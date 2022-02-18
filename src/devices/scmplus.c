@@ -46,10 +46,7 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
-    if (decoder->verbose) {
-        fprintf(stderr, "%s: row len=%hu\n", __func__, bitbuffer->bits_per_row[0]);
-        fprintf(stderr, "%s: sync_index=%u\n", __func__, sync_index);
-    }
+    decoder_logf(decoder, 1, __func__, "row len=%hu sync_index=%u", bitbuffer->bits_per_row[0], sync_index);
 
     // bitbuffer_debug(bitbuffer);
     bitbuffer_extract_bytes(bitbuffer, 0, sync_index, b, 16 * 8);
@@ -63,14 +60,12 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     pkt_checksum = (b[14] << 8 | b[15]);
 
     crc = crc16(&b[2], 12, 0x1021, 0x0971);
-    // fprintf(stderr, "CRC = %d %04X == %d %04X\n", pkt_checksum,pkt_checksum,  crc, crc);
+    // decoder_logf(decoder, 0, __func__, "CRC = %d %04X == %d %04X", pkt_checksum,pkt_checksum,  crc, crc);
     if (crc != pkt_checksum) {
         return DECODE_FAIL_MIC;
     }
 
-    if (decoder->verbose) { // print bytes with aligned offset
-        bitrow_printf(b, 16 * 8, "%s bitrow_printf", __func__);
-    }
+    decoder_log_bitrow(decoder, 1, __func__, b, 16 * 8, "aligned");
 
     // uint8_t protocol_id;
     uint32_t endpoint_id;
@@ -108,9 +103,9 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /*
     if (decoder->verbose && 0) {
         fprintf(stderr, "protocol_id = %d %02X\n", protocol_id,protocol_id);
-        bitrow_printf(&b[3], 8, "%s\t%2d\t%02X\t", "endpoint_type   ", endpoint_type, endpoint_type);
-        bitrow_printf(&b[4], 32, "%s\t%2d\t%02X\t", "endpoint_id    ", endpoint_id, endpoint_id);
-        bitrow_printf(&b[8], 32, "%s\t%2d\t%02X\t", "consumption_data", consumption_data, consumption_data);
+        fprintf(stderr, "endpoint_type   \t%2d\t%02X\t%02x", endpoint_type, endpoint_type, b[3]);
+        fprintf(stderr, "endpoint_id    \t%2d\t%02X\t%02x %02x %02x %02x", endpoint_id, endpoint_id, b[4], b[5], b[6], b[7]);
+        fprintf(stderr, "consumption_data\t%2d\t%02X\t%02x %02x %02x %02x", consumption_data, consumption_data, b[8], b[9], b[10], b[11]);
         // fprintf(stderr, "consumption_data = %d %08X\n", consumption_data,consumption_data);
         fprintf(stderr, "physical_tamper = %d %04X\n", physical_tamper,physical_tamper);
         fprintf(stderr, "pkt_checksum = %d %04X\n", pkt_checksum,pkt_checksum);
@@ -145,7 +140,7 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         break;
     }
 
-    // fprintf(stderr, "meter_type = %s\n", meter_type);
+    // decoder_logf(decoder, 0, __func__, "meter_type = %s", meter_type);
 
     /*
         Field key names and format set to  match rtlamr field names

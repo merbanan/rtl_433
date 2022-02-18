@@ -68,10 +68,7 @@ static int tfa_marbella_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    if (decoder->verbose) {
-        fprintf(stderr, "tfa_marbella_callback:");
-        bitbuffer_print(bitbuffer);
-    }
+    decoder_log_bitbuffer(decoder, 1, __func__, bitbuffer, "");
 
     temp_c = (((msg[7] << 4) | (msg[8]>>4)) -400) / 10.0;
     counter = (msg[6]&0xF) >> 1;

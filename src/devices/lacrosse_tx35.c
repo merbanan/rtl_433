@@ -95,8 +95,7 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
         // no preamble detected, move to the next row
         if (start_pos >= bitbuffer->bits_per_row[row])
             continue; // DECODE_ABORT_EARLY
-        if (decoder->verbose)
-            fprintf(stderr, "%s: LaCrosse TX29/35 detected, buffer is %d bits length, device is TX%d\n", __func__, bitbuffer->bits_per_row[row], device29or35);
+        decoder_logf(decoder, 1, __func__, "LaCrosse TX29/35 detected, buffer is %d bits length, device is TX%d", bitbuffer->bits_per_row[row], device29or35);
         // remove preamble and keep only five octets
         uint8_t b[5];
         bitbuffer_extract_bytes(bitbuffer, row, start_pos + 20, b, 40);
@@ -105,8 +104,7 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
         int r_crc = b[4];
         int c_crc = crc8(b, 4, 0x31, 0x00);
         if (r_crc != c_crc) {
-            if (decoder->verbose)
-                fprintf(stderr, "%s: LaCrosse TX29/35 bad CRC: calculated %02x, received %02x\n", __func__, c_crc, r_crc);
+            decoder_logf(decoder, 1, __func__, "LaCrosse TX29/35 bad CRC: calculated %02x, received %02x", c_crc, r_crc);
             // reject row
             continue; // DECODE_FAIL_MIC
         }

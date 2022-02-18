@@ -42,8 +42,7 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b = bitbuffer->bb[0];
     // Reject codes with an incorrect preamble (expected 0xfff)
     if (b[0] != 0xff || (b[1] & 0xf0) != 0xf0) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "%s: Preamble not found\n", __func__);
+        decoder_log(decoder, 2, __func__, "Preamble not found");
         return DECODE_ABORT_EARLY;
     }
 
@@ -53,9 +52,7 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // No need to decode/extract values for simple test
     if (b[1] == 0xff && b[2] == 0xff && b[3] == 0xff && b[4] == 0xff
             && b[5] == 0xff && b[6] == 0xff && b[7] == 0xff) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0xff\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0xff");
         return DECODE_FAIL_SANITY;
     }
 

@@ -48,8 +48,7 @@ static int markisol_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t cksum = 0;
     int got_proper_row_length = 0;
     for (int i = 0; i < bitbuffer->num_rows; i++) {
-        if (decoder->verbose > 0)
-            fprintf(stderr, "%s: bits_per_row[%d] = %d\n", __func__, i, bitbuffer->bits_per_row[i]);
+        decoder_logf(decoder, 1, __func__, "bits_per_row[%d] = %d", i, bitbuffer->bits_per_row[i]);
         if (bitbuffer->bits_per_row[i] == 41 || bitbuffer->bits_per_row[i] == 42) {
             uint8_t *b = bitbuffer->bb[i];
             for (int j = 0; j < 5; ++j) {
@@ -65,8 +64,7 @@ static int markisol_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (!got_proper_row_length)
         return DECODE_ABORT_EARLY;
 
-    if (decoder->verbose > 0)
-        fprintf(stderr, "%s: %02x %02x %02x %02x %02x cksum=%02x\n", __func__, buf[0], buf[1], buf[2], buf[3], buf[4], cksum);
+    decoder_logf(decoder, 1, __func__, "%02x %02x %02x %02x %02x cksum=%02x", buf[0], buf[1], buf[2], buf[3], buf[4], cksum);
 
     if (cksum != 1)
         return DECODE_FAIL_MIC;

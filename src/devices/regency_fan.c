@@ -95,9 +95,7 @@ static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int num_bits = bitbuffer->bits_per_row[row];
 
         if (num_bits != 21) { // Max number of bits is 21
-            if (decoder->verbose > 1) {
-                fprintf(stderr, "%s: Expected %d bits, got %d.\n", __func__, 21, num_bits); // Max number of bits is 21
-            }
+            decoder_logf(decoder, 2, __func__, "Expected %d bits, got %d.", 21, num_bits);
             continue;
         }
 
@@ -108,9 +106,7 @@ static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // Calculate nibble sum and compare
         int checksum = add_nibbles(bytes, 2) & 0x0f;
         if (checksum != bytes[2]) { // Sum is in byte 2
-            if (decoder->verbose > 1) {
-                fprintf(stderr, "%s: Checksum failure: expected %0x, got %0x\n", __func__, bytes[2], checksum); // Sum is in byte 2
-            }
+            decoder_logf(decoder, 2, __func__, "Checksum failure: expected %0x, got %0x", bytes[2], checksum);
             continue;
         }
 
@@ -143,11 +139,8 @@ static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             break;
 
         default:
-            if (decoder->verbose > 1) {
-                fprintf(stderr, "%s: Unknown command: %d\n", __func__, command);
-                continue;
-            }
-            break;
+            decoder_logf(decoder, 2, __func__, "Unknown command: %d", command);
+            continue;
         }
 
         /* clang-format off */

@@ -50,18 +50,14 @@ static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Correct number of rows?
     if (bitbuffer->num_rows != 1) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: wrong number of rows (%d)\n",
-                    __func__, bitbuffer->num_rows);
-        }
+        decoder_logf(decoder, 1, __func__, "wrong number of rows (%d)", bitbuffer->num_rows);
         return DECODE_ABORT_LENGTH;
     }
 
     // Correct bit length?
     if (bitbuffer->bits_per_row[0] != 40) {
-        if (decoder->verbose && bitbuffer->bits_per_row[0] != 0) {
-            fprintf(stderr, "%s: wrong number of bits (%d)\n",
-                    __func__, bitbuffer->bits_per_row[0]);
+        if (bitbuffer->bits_per_row[0] != 0) {
+            decoder_logf(decoder, 1, __func__, "wrong number of bits (%d)", bitbuffer->bits_per_row[0]);
         }
         return DECODE_ABORT_LENGTH;
     }
@@ -70,25 +66,19 @@ static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // No need to decode/extract values for simple test
     if (!b[0] && !b[2] && !b[3] && !b[4]) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0xff\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0xff");
         return DECODE_FAIL_SANITY;
     }
 
     // Correct start sequence?
     if (b[0] != 0x00) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: wrong start nibble\n", __func__);
-        }
+        decoder_log(decoder, 1, __func__, "wrong start nibble");
         return DECODE_FAIL_SANITY;
     }
 
     // Correct checksum?
     if (xor_bytes(b, 5) && xor_bytes(b, 3) ^ b[4]) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: bad checksum\n", __func__);
-        }
+        decoder_log(decoder, 1, __func__, "bad checksum");
         return DECODE_FAIL_MIC;
     }
 
@@ -108,16 +98,12 @@ static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         channel = 0;
         break;
     }
-    if (decoder->verbose) {
-        fprintf(stderr, "channel decoded is %d\n", channel);
-    }
+    decoder_logf(decoder, 1, __func__, "channel decoded is %d", channel);
 
     // Temperature
     temp_raw = ((b[3] & 0x3f) << 8) | b[2];
     temp_c   = (temp_raw / 353.0) - 9.2; // TODO: this is very likely wrong
-    if (decoder->verbose) {
-        fprintf(stderr, "\ntemperature: raw: %d\t%08X\tconverted: %.2f\n", temp_raw, temp_raw, temp_c);
-    }
+    decoder_logf(decoder, 1, __func__, "temperature: raw: %d %08X converted: %.2f", temp_raw, temp_raw, temp_c);
 
     /* clang-format off */
     data = data_make(

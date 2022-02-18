@@ -53,15 +53,14 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Row [0] is sync pulse
     // Validate length
     if (bitbuffer->bits_per_row[1] != 32) { // Don't waste time on a wrong length package
-        if (decoder->verbose && bitbuffer->bits_per_row[1] != 0)
-            fprintf(stderr, "X10-RF: DECODE_ABORT_LENGTH, Received message length=%i\n", bitbuffer->bits_per_row[1]);
+        if (bitbuffer->bits_per_row[1] != 0)
+            decoder_logf(decoder, 1, __func__, "DECODE_ABORT_LENGTH, Received message length=%i", bitbuffer->bits_per_row[1]);
         return DECODE_ABORT_LENGTH;
     }
 
     // Validate complement values
     if ((b[0] ^ b[1]) != 0xff || (b[2] ^ b[3]) != 0xff) {
-        if (decoder->verbose)
-            fprintf(stderr, "X10-RF: DECODE_FAIL_SANITY, b0=%02x b1=%02x b2=%02x b3=%02x\n", b[0], b[1], b[2], b[3]);
+        decoder_logf(decoder, 1, __func__, "DECODE_FAIL_SANITY, b0=%02x b1=%02x b2=%02x b3=%02x", b[0], b[1], b[2], b[3]);
         return DECODE_FAIL_SANITY;
     }
 
@@ -70,8 +69,7 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t bTest = arrbKnownConstBitMask[bIdx] & b[bIdx];  // Mask the appropriate bits
 
         if (bTest != arrbKnownConstBitValue[bIdx]) {  // If resulting bits are incorrectly set
-            if (decoder->verbose)
-                fprintf(stderr, "X10-RF: DECODE_FAIL_SANITY, b0=%02x b1=%02x b2=%02x b3=%02x\n", b[0], b[1], b[2], b[3]);
+            decoder_logf(decoder, 1, __func__, "DECODE_FAIL_SANITY, b0=%02x b1=%02x b2=%02x b3=%02x", b[0], b[1], b[2], b[3]);
             return DECODE_FAIL_SANITY;
         }
     }
@@ -133,10 +131,7 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // debug output
-    if (decoder->verbose) {
-        fprintf(stderr, "X10-RF: id=%s%i event_str=%s\n", housecode, bDeviceCode, event_str);
-        bitbuffer_print(bitbuffer);
-    }
+    decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "id=%s%i event_str=%s", housecode, bDeviceCode, event_str);
 
     /* clang-format off */
     data = data_make(

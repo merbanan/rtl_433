@@ -63,9 +63,7 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if ( (bitbuffer->num_rows != 1)
          || (bitbuffer->bits_per_row[0] < 187)
           /*|| (bitbuffer->bits_per_row[0] > 14563)*/ ) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s bit_per_row %u out of range\n", __func__, bitbuffer->bits_per_row[0]);
-        }
+        decoder_logf(decoder, 2, __func__, "bit_per_row %u out of range", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH; // Unrecognized data
     }
 
@@ -79,15 +77,10 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     start_pos += sizeof (preamble_pattern) * 8;
     unsigned len = bitbuffer->bits_per_row[0] - start_pos;
 
-    if (decoder->verbose > 1) {
-        fprintf(stderr, "%s start_pos=%u\n", __func__, start_pos);
-        fprintf(stderr, "%s len=%u\n", __func__, len);
-    }
+    decoder_logf(decoder, 2, __func__, "start_pos=%u len=%u", start_pos, len);
 
     if (((len + 7) / 8) < sizeof (msg)) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s %u too short\n", __func__, len);
-        }
+        decoder_logf(decoder, 1, __func__, "%u too short", len);
         return DECODE_ABORT_LENGTH; // Message too short
     }
     // truncate any excessive bits
@@ -99,14 +92,10 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint16_t crc_calculated = crc16lsb(msg, 16, INKBIRD_ITH20R_CRC_POLY, INKBIRD_ITH20R_CRC_INIT);
     uint16_t crc_received = msg[17] << 8 | msg[16];
 
-    if (decoder->verbose > 1) {
-        fprintf(stderr, "%s CRC 0x%04X = 0x%04X\n", __func__, crc_calculated, crc_received);
-    }
+    decoder_logf(decoder, 2, __func__, "CRC 0x%04X = 0x%04X", crc_calculated, crc_received);
 
     if (crc_received != crc_calculated) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s CRC check failed (0x%04X != 0x%04X)\n", __func__, crc_calculated, crc_received);
-        }
+        decoder_logf(decoder, 1, __func__, "CRC check failed (0x%04X != 0x%04X)", crc_calculated, crc_received);
         return DECODE_FAIL_MIC;
     }
 
@@ -120,11 +109,7 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float humidity = (float)(msg[15] << 8 | msg[14]) / 10.0;
     uint8_t word18 = msg[18];
 
-    if (decoder->verbose) {
-        fprintf(stderr, "%s dword0-3= 0x%08X\n", __func__, subtype);
-        fprintf(stderr, "%s word5-6= 0x%04X\n", __func__, word56);
-        fprintf(stderr, "%s byte18= 0x%02X\n", __func__, word18);
-    }
+    decoder_logf(decoder, 1, __func__, "dword0-3= 0x%08X word5-6= 0x%04X byte18= 0x%02X", subtype, word56, word18);
 
     /* clang-format off */
     data = data_make(

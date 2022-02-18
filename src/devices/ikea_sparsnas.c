@@ -139,7 +139,7 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if ((bitbuffer->bits_per_row[0] < IKEA_SPARSNAS_MESSAGE_BITLEN) || (bitbuffer->bits_per_row[0] > IKEA_SPARSNAS_MESSAGE_BITLEN_MAX)) {
         if (decoder->verbose > 1) {
             decoder_output_bitbufferf(decoder, bitbuffer, "%s: ", __func__);
-            fprintf(stderr, "%s: Too short or too long packet received. Expected %d, received %d\n", __func__, IKEA_SPARSNAS_MESSAGE_BITLEN, bitbuffer->bits_per_row[0]);
+            decoder_logf(decoder, 2, __func__, "Too short or too long packet received. Expected %d, received %d", IKEA_SPARSNAS_MESSAGE_BITLEN, bitbuffer->bits_per_row[0]);
         }
         return DECODE_ABORT_LENGTH;
     }
@@ -150,7 +150,7 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if ((bitbuffer->bits_per_row[0] == bitpos) || (bitpos + IKEA_SPARSNAS_MESSAGE_BITLEN > bitbuffer->bits_per_row[0])) {
         if (decoder->verbose > 1) {
             decoder_output_bitbufferf(decoder, bitbuffer, "%s: ", __func__);
-            fprintf(stderr, "%s: malformed package, preamble not found. (Expected 0xAAAAD201)\n", __func__);
+            decoder_log(decoder, 2, __func__, "malformed package, preamble not found. (Expected 0xAAAAD201)");
         }
         return DECODE_ABORT_EARLY;
     }
@@ -168,25 +168,20 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint16_t crc_received = buffer[18] << 8 | buffer[19];
 
     if (crc_received != crc_calculated) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: CRC check failed (0x%X != 0x%X)\n", __func__, crc_calculated, crc_received);
-        }
+        decoder_logf(decoder, 2, __func__, "CRC check failed (0x%X != 0x%X)", crc_calculated, crc_received);
         return DECODE_FAIL_MIC;
     }
 
     //Decryption
     if (!ikea_sparsnas_sensor_id) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: No sensor ID configured. Brute forcing encryption.\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "No sensor ID configured. Brute forcing encryption.");
         ikea_sparsnas_sensor_id = ikea_sparsnas_brute_force_encryption(buffer);
-        if (decoder->verbose > 1) {
-            if (ikea_sparsnas_sensor_id) {
-                fprintf(stderr, "%s: Found valid sensor ID %06u. If reported values does not make sense, this might be incorrect.\n", __func__, ikea_sparsnas_sensor_id);
-            } else {
-                fprintf(stderr, "%s: No valid sensor ID found.\n", __func__);
-            }
+        if (ikea_sparsnas_sensor_id) {
+            decoder_logf(decoder, 2, __func__, "Found valid sensor ID %06u. If reported values does not make sense, this might be incorrect.", ikea_sparsnas_sensor_id);
+        } else {
+            decoder_log(decoder, 2, __func__, "No valid sensor ID found.");
         }
+
     }
 
     uint8_t decrypted[18];
@@ -210,16 +205,14 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint32_t rcv_sensor_id = (unsigned)decrypted[5] << 24 | decrypted[6] << 16 | decrypted[7] << 8 | decrypted[8];
 
     if (decoder->verbose > 1) {
-        fprintf(stderr, "%s: CRC OK (%X == %X)\n", __func__, crc_calculated, crc_received);
-        fprintf(stderr, "%s: Encryption key: 0x%X%X%X%X%X\n", __func__, key[0], key[1], key[2], key[3], key[4]);
+        decoder_logf(decoder, 2, __func__, "CRC OK (%X == %X)", crc_calculated, crc_received);
+        decoder_logf(decoder, 2, __func__, "Encryption key: 0x%X%X%X%X%X", key[0], key[1], key[2], key[3], key[4]);
         decoder_output_bitrowf(decoder, decrypted, 18 * 8, "Decrypted");
-        fprintf(stderr, "%s: Received sensor id: %06u\n", __func__, rcv_sensor_id);
+        decoder_logf(decoder, 2, __func__, "Received sensor id: %06u", rcv_sensor_id);
     }
 
     if (rcv_sensor_id != ikea_sparsnas_sensor_id) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: Malformed package, or wrong sensor id. Received sensor id (%06u) not the same as sender (%d)\n", __func__, rcv_sensor_id, ikea_sparsnas_sensor_id);
-        }
+        decoder_logf(decoder, 2, __func__, "Malformed package, or wrong sensor id. Received sensor id (%06u) not the same as sender (%d)", rcv_sensor_id, ikea_sparsnas_sensor_id);
     }
 
     if ((!ikea_sparsnas_sensor_id) || (rcv_sensor_id != ikea_sparsnas_sensor_id)) {
@@ -238,16 +231,12 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (decrypted[0] != 0x11) {
         decoder_output_bitrowf(decoder, decrypted + 5, 13 * 8,  "Message malformed");
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: Message malformed (byte0=%X expected %X)\n", __func__, decrypted[0], 0x11);
-        }
+        decoder_logf(decoder, 2, __func__, "Message malformed (byte0=%X expected %X)", decrypted[0], 0x11);
         return DECODE_FAIL_SANITY;
     }
     if (decrypted[3] != 0x07) {
         decoder_output_bitrowf(decoder, decrypted + 5, 13 * 8,  "Message malformed");
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: Message malformed (byte3=%X expected %X)\n", __func__, decrypted[0], 0x07);
-        }
+        decoder_logf(decoder, 2, __func__, "Message malformed (byte3=%X expected %X)", decrypted[0], 0x07);
         return DECODE_FAIL_SANITY;
     }
 

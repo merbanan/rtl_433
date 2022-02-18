@@ -95,8 +95,7 @@ static int fineoffset_wh31l_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // No preamble detected
     if (start_pos == bitbuffer->bits_per_row[row])
         return DECODE_ABORT_EARLY;
-    if (decoder->verbose)
-        fprintf(stderr, "%s: WH31L detected, buffer is %d bits length\n", __func__, bitbuffer->bits_per_row[row]);
+    decoder_logf(decoder, 1, __func__, "WH31L detected, buffer is %d bits length", bitbuffer->bits_per_row[row]);
 
     // Remove preamble and sync word, keep whole payload
     uint8_t b[9];
@@ -110,14 +109,12 @@ static int fineoffset_wh31l_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Validate checksums
     uint8_t c_crc = crc8(b, 8, 0x31, 0x00);
     if (c_crc) {
-        if (decoder->verbose)
-            fprintf(stderr, "%s: bad CRC\n", __func__);
+        decoder_log(decoder, 1, __func__, "bad CRC");
         return DECODE_FAIL_MIC;
     }
     uint8_t c_sum = add_bytes(b, 8) - b[8];
     if (c_sum) {
-        if (decoder->verbose)
-            fprintf(stderr, "%s: bad SUM\n", __func__);
+        decoder_log(decoder, 1, __func__, "bad SUM");
         return DECODE_FAIL_MIC;
     }
 

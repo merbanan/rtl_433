@@ -105,92 +105,55 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (r < 0) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: Couldn't find preamble\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "Couldn't find preamble");
         return DECODE_FAIL_SANITY;
     }
 
     if (crc8(b, 37, 0x31, 0xc0)) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: CRC8 fail\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "CRC8 fail");
         return DECODE_FAIL_MIC;
     }
 
     // Extract data from buffer
-    int header    = (b[0] & 0xf0) >> 4;                           // [0:4]
-    int serial    = ((b[0] & 0x0f) << 4) | ((b[1] & 0xf0) >> 4);  // [8:8]
-    int flags     = (b[1] & 0x0f);                                // [12:4]
-    int unk16     = (b[1] & 0x80) >> 7;                           // [16:1]
-    int deg3_msb  = (b[2] & 0x40) >> 6;                           // [17:1]
-    int wind3_msb = (b[2] & 0x20) >> 5;                           // [18:1]
-    int deg2_msb  = (b[2] & 0x10) >> 4;                           // [19:1]
-    int wind2_msb = (b[2] & 0x08) >> 3;                           // [20:1]
+    //int header    = (b[0] & 0xf0) >> 4;                           // [0:4]
+    //int serial    = ((b[0] & 0x0f) << 4) | ((b[1] & 0xf0) >> 4);  // [8:8]
+    //int flags     = (b[1] & 0x0f);                                // [12:4]
+    //int unk16     = (b[1] & 0x80) >> 7;                           // [16:1]
+    //int deg3_msb  = (b[2] & 0x40) >> 6;                           // [17:1]
+    //int wind3_msb = (b[2] & 0x20) >> 5;                           // [18:1]
+    //int deg2_msb  = (b[2] & 0x10) >> 4;                           // [19:1]
+    //int wind2_msb = (b[2] & 0x08) >> 3;                           // [20:1]
     int deg_msb   = (b[2] & 0x04) >> 2;                           // [21:1]
     int gust_msb  = (b[2] & 0x02) >> 1;                           // [22:1]
     int wind_msb  = (b[2] & 0x01);                                // [23:1]
     int wind      = (wind_msb << 8) | b[3];                       // [24:8]
     int gust      = (gust_msb << 8) | b[4];                       // [32:8]
     int wind_dir  = (deg_msb << 8) | b[5];                        // [40:8]
-    int wind2     = (wind2_msb << 8) | b[6];                      // [48:8]
-    int wind2_dir = (deg2_msb << 8) | b[7];                       // [56:8]
-    int wind3     = (wind3_msb << 8) | b[8];                      // [64:8]
-    int wind3_dir = (deg3_msb << 8) | b[9];                       // [72:8]
-    int rain_rate = ((b[10]) << 8) | (b[11]);                     // [80:12]
-    int rain_1h   = ((b[12]) << 8) | (b[13]);                     // [96:12]
-    int rain_24h  = ((b[14]) << 8) | (b[15]);                     // [112:12]
-    int rain_week = ((b[16]) << 8) | (b[17]);                     // [128:12]
-    int rain_mon  = ((b[18]) << 8) | (b[19]);                     // [144:12]
+    //int wind2     = (wind2_msb << 8) | b[6];                      // [48:8]
+    //int wind2_dir = (deg2_msb << 8) | b[7];                       // [56:8]
+    //int wind3     = (wind3_msb << 8) | b[8];                      // [64:8]
+    //int wind3_dir = (deg3_msb << 8) | b[9];                       // [72:8]
+    //int rain_rate = ((b[10]) << 8) | (b[11]);                     // [80:12]
+    //int rain_1h   = ((b[12]) << 8) | (b[13]);                     // [96:12]
+    //int rain_24h  = ((b[14]) << 8) | (b[15]);                     // [112:12]
+    //int rain_week = ((b[16]) << 8) | (b[17]);                     // [128:12]
+    //int rain_mon  = ((b[18]) << 8) | (b[19]);                     // [144:12]
     int rain_tot  = ((b[20]) << 8) | (b[21]);                     // [160:16]
-    int rain_tot2 = ((b[22]) << 8) | (b[23]);                     // [176:16]
+    //int rain_tot2 = ((b[22]) << 8) | (b[23]);                     // [176:16]
     int temp2_msb  = (b[24] & 0xf0) >> 4;                         // [192:4]
     int temp_raw  = ((b[24] & 0x0f) << 8) | (b[25]);              // [196:12]
     int humidity  = (b[26]);                                      // [208:8]
     int temp2_raw = (temp2_msb << 8) | (b[27]);                   // [216:8]
     int humidity2 = (b[28]);                                      // [224:8]
     int pressure  = ((b[29]) << 8) | (b[30]);                     // [232:16]
-    int pressure2 = ((b[31]) << 8) | (b[32]);                     // [248:16]
-    int light_lux = ((b[33]) << 8) | (b[34]);                     // [264:16]
-    int uv        = (b[35]);                                      // [280:8]
-    int crc       = (b[36]);                                      // [288:8]
+    //int pressure2 = ((b[31]) << 8) | (b[32]);                     // [248:16]
+    //int light_lux = ((b[33]) << 8) | (b[34]);                     // [264:16]
+    //int uv        = (b[35]);                                      // [280:8]
+    //int crc       = (b[36]);                                      // [288:8]
 
-    int batt_low  = (flags & 0x04) >> 3;
+    //int batt_low  = (flags & 0x04) >> 3;
     float temp_f = (temp_raw - 400) * 0.1f;
     float temp2_f = (temp2_raw - 400) * 0.1f;
-
-    if (decoder->verbose > 1) {
-        fprintf(stderr, "header = %02x %d\n", header, header);
-        fprintf(stderr, "serial = %02x %d\n", serial, serial);
-        fprintf(stderr, "flags = %02x %d\n", flags, flags);
-        fprintf(stderr, "unk16 = %02x %d\n", unk16, unk16);
-        fprintf(stderr, "batt_low  = %01x %d\n", batt_low, batt_low);
-        fprintf(stderr, "wind = %02x %d\n", wind, wind);
-        fprintf(stderr, "gust = %02x %d\n", gust, gust);
-        fprintf(stderr, "wind_dir = %02x %d\n", wind_dir, wind_dir);
-        fprintf(stderr, "wind2 = %04x %d\n", wind2, wind2);
-        fprintf(stderr, "wind2_dir = %04x %d\n", wind2_dir, wind2_dir);
-        fprintf(stderr, "wind3 = %04x %d\n", wind3, wind3);
-        fprintf(stderr, "wind3_dir = %04x %d\n", wind3_dir, wind3_dir);
-        fprintf(stderr, "rain_rate = %04x %f mm\n", rain_rate, rain_rate * 0.1);
-        fprintf(stderr, "rain_1h = %04x %f mm\n", rain_1h, rain_1h * 0.1);
-        fprintf(stderr, "rain_24h = %04x %f mm\n", rain_24h, rain_24h * 0.1);
-        fprintf(stderr, "rain_week = %04x %f mm\n", rain_week, rain_week * 0.1);
-        fprintf(stderr, "rain_mon = %04x %f mm\n", rain_mon, rain_mon * 0.1);
-        fprintf(stderr, "rain_tot = %04x %f mm\n", rain_tot, rain_tot * 0.1);
-        fprintf(stderr, "rain_tot2 = %04x %d\n", rain_tot2, rain_tot2);
-        fprintf(stderr, "temp_raw = %04x %d\n", temp_raw, temp_raw);
-        fprintf(stderr, "humidity = %04x %d %%\n", humidity, humidity);
-        fprintf(stderr, "temp_indoor = %04x %d\n", temp2_raw, temp2_raw);
-        fprintf(stderr, "humidity_indoor = %04x %d %%\n", humidity2, humidity2);
-        fprintf(stderr, "pressure_abs = %04x %f\n", pressure, pressure * 0.1);
-        fprintf(stderr, "pressure_rel = %04x %f\n", pressure2, pressure2 * 0.1);
-        fprintf(stderr, "light_lux = %02x %d\n", light_lux, light_lux);
-        fprintf(stderr, "uv = %02x %d\n", uv, uv);
-        fprintf(stderr, "crc = %02x %d\n", crc, crc);
-        fprintf(stderr, "temp_f = %f F (%f C)\n", temp_f, (temp_f - 32) / 1.8);
-        fprintf(stderr, "temp2_f = %f F (%f C)\n", temp2_f, (temp2_f - 32) / 1.8);
-    }
 
     /* clang-format off */
     if (temp_raw != 0x7fb) {

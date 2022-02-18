@@ -58,8 +58,7 @@ static int tpms_toyota_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
     pressure2 = b[7] ^ 0xff;
 
     if (pressure1 != pressure2) {
-        if (decoder->verbose)
-            fprintf(stderr, "Toyota TPMS pressure check error: %02x vs %02x\n", pressure1, pressure2);
+        decoder_logf(decoder, 1, __func__, "Toyota TPMS pressure check error: %02x vs %02x", pressure1, pressure2);
         return 0;
     }
 

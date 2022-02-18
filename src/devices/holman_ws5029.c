@@ -84,10 +84,10 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     for (uint8_t firstbyte = 0; firstbyte < 21; firstbyte++) {
         for (uint8_t poly=0; poly<255; poly++) {
             if (crc8(&b[firstbyte], 21-firstbyte, poly, 0x00) == b[21]) {
-                fprintf(stderr, "CORRECT CRC8 with offset %u poly 0x%x\n", firstbyte, poly);
+                decoder_logf(decoder, 3, __func__, "CORRECT CRC8 with offset %u poly 0x%x", firstbyte, poly);
             }
             if (crc8le(&b[firstbyte], 21-firstbyte, poly, 0x00) == b[21]) {
-                fprintf(stderr, "CORRECT CRC8LE with offset %u poly 0x%x\n", firstbyte, poly);
+                decoder_logf(decoder, 3, __func__, "CORRECT CRC8LE with offset %u poly 0x%x", firstbyte, poly);
             }
         }
     }

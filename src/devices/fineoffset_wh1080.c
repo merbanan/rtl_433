@@ -139,8 +139,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
     if (type == TYPE_FSK) {
         int bit_offset = bitbuffer_search(bitbuffer, 0, 0, fsk_preamble, sizeof(fsk_preamble) * 8) + sizeof(fsk_preamble) * 8;
         if (bit_offset + sizeof(bbuf) * 8 > bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
-            if (decoder->verbose)
-                bitbuffer_printf(bitbuffer, "%s: short package. Header index: %u\n", __func__, bit_offset);
+            decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "short package. Header index: %u", bit_offset);
             return DECODE_ABORT_LENGTH;
         }
         bitbuffer_extract_bytes(bitbuffer, 0, bit_offset-8, bbuf, sizeof(bbuf) * 8);
@@ -178,9 +177,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
         return DECODE_ABORT_LENGTH;
     }
 
-    if (decoder->verbose) {
-        bitrow_printf(br, sens_msg * 8, "Fine Offset WH1080 data ");
-    }
+    decoder_log_bitrow(decoder, 1, __func__, br, sens_msg * 8, "Fine Offset WH1080 data ");
 
     if (br[0] != 0xff) {
         return DECODE_FAIL_SANITY; // preamble missing
