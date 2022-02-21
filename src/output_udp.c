@@ -231,3 +231,127 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
 
     return &syslog->output;
 }
+
+/* statsd UDP printer */
+
+typedef struct {
+    struct data_output output;
+    datagram_client_t client;
+    char hostname[_POSIX_HOST_NAME_MAX + 1];
+} data_output_statsd_t;
+
+static void emit_statsd(data_output_statsd_t *statsd, char const *metric_key_base, char const *metric_key, double metric_value) {
+    // TODO: buffering/batching?
+
+    char message[1024];
+    size_t len = snprintf(&message[0], sizeof(message), "%s.%s:%f|g", metric_key_base, metric_key, metric_value);
+    if (len <= 0)
+        // TODO: error reporting/handling
+        return;
+
+    fprintf(stderr, "emit: %s\n", message);
+    datagram_client_send(&statsd->client, message, len);
+}
+
+static void print_statsd_data(data_output_t *output, data_t *data, char const *format)
+{
+    UNUSED(format);
+    data_output_statsd_t *statsd = (data_output_statsd_t*)output;
+
+    data_t *data_model = NULL;
+    data_t *data_id = NULL;
+
+    // first pass grabs the info to build our key
+    for (data_t *d = data; d; d = d->next) {
+        if (!strcmp(d->key, "model"))
+            data_model = d;
+        else if (!strcmp(d->key, "id"))
+            data_id = d;
+    }
+
+    if (!data_model || !data_id) {
+        // Not enough information to build our key, skip it
+        return;
+    }
+
+    // max statsd key length
+    char metric_key[250];
+    // if not type, assuming no subtype
+    size_t len = snprintf(&metric_key[0], sizeof(metric_key), "rtl_433.%s.%d", (char*)data_model->value.v_ptr, data_id->value.v_int);
+    if (len <= 0)
+        // TODO: error reporting/handling?
+        return;
+
+    // second pass emits metrics
+    for (data_t *d = data; d; d = d->next) {
+        switch (d->type) {
+            case DATA_COUNT:
+            case DATA_INT:
+                if (strcmp(d->key, "id"))
+                    emit_statsd(statsd, metric_key, (char const*)d->key, (double)d->value.v_int);
+                break;
+            case DATA_DOUBLE:
+                emit_statsd(statsd, metric_key, (char const*)d->key, d->value.v_dbl);
+                break;
+            case DATA_STRING:
+                // TODO: channel?
+            case DATA_ARRAY:
+            case DATA_COND:
+            case DATA_DATA:
+            case DATA_FORMAT:
+                break;
+        }
+    }
+}
+
+static void data_output_statsd_free(data_output_t *output)
+{
+    data_output_statsd_t *statsd = (data_output_statsd_t *)output;
+
+    if (!statsd)
+        return;
+
+    datagram_client_close(&statsd->client);
+
+    free(statsd);
+}
+
+struct data_output *data_output_statsd_create(const char *host, const char *port)
+{
+    data_output_statsd_t *statsd = calloc(1, sizeof(data_output_statsd_t));
+    if (!statsd) {
+        WARN_CALLOC("data_output_statsd_create()");
+        return NULL; // NOTE: returns NULL on alloc failure.
+    }
+#ifdef _WIN32
+    WSADATA wsa;
+
+    if (WSAStartup(MAKEWORD(2,2),&wsa) != 0) {
+        perror("WSAStartup()");
+        free(statsd);
+        return NULL;
+    }
+#endif
+
+    statsd->output.print_data   = print_statsd_data;
+    statsd->output.output_free  = data_output_statsd_free;
+
+    fprintf(stderr, "Publishing data to statsd (%s:%s)\n", host, port);
+
+    #ifdef ESP32
+    const char* adapter_hostname = NULL;
+    tcpip_adapter_get_hostname(TCPIP_ADAPTER_IF_STA, &adapter_hostname);
+    if (adapter_hostname) {
+        memcpy(statsd->hostname, adapter_hostname, _POSIX_HOST_NAME_MAX);
+    }
+    else {
+        statsd->hostname[0] = '\0';
+    }
+    #else
+    gethostname(statsd->hostname, _POSIX_HOST_NAME_MAX + 1);
+    #endif
+    statsd->hostname[_POSIX_HOST_NAME_MAX] = '\0';
+    datagram_client_open(&statsd->client, host, port);
+
+    return &statsd->output;
+}

@@ -77,6 +77,8 @@ void add_mqtt_output(struct r_cfg *cfg, char *param);
 
 void add_influx_output(struct r_cfg *cfg, char *param);
 
+void add_statsd_output(struct r_cfg *cfg, char *param);
+
 void add_syslog_output(struct r_cfg *cfg, char *param);
 
 void add_http_output(struct r_cfg *cfg, char *param);

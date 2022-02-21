@@ -971,6 +971,16 @@ void add_influx_output(r_cfg_t *cfg, char *param)
     list_push(&cfg->output_handler, data_output_influx_create(get_mgr(cfg), param));
 }
 
+void add_statsd_output(r_cfg_t *cfg, char *param)
+{
+    char *host = "localhost";
+    char *port = "5128";
+    hostport_param(param, &host, &port);
+    fprintf(stderr, "statsd UDP datagrams to %s port %s\n", host, port);
+
+    list_push(&cfg->output_handler, data_output_statsd_create(host, port));
+}
+
 void add_syslog_output(r_cfg_t *cfg, char *param)
 {
     char *host = "localhost";
