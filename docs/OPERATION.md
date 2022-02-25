@@ -153,26 +153,22 @@ Note that the suffix is metric, the 1024000 Hz sample rate common with RTL-SDR h
 
 ## Decoders
 
-Decoders can be selected with the `-R`, `-G`, and `-X` option:
+Decoders can be selected with the `-R` and `-X` option:
 
 ```
   [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)
        Specify a negative number to disable a device decoding protocol (can be used multiple times)
-  [-G] Enable blacklisted device decoding protocols, for testing only.
   [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)
 ```
 
-By default all non-blacklisted decoders are enabled.
+By default all decoders with proper validity checking are enabled.
 
 You can disable selected decoders with any number of `-R -<number>` options.
 E.g. use `rtl_433 -R -8 -19` to disable the LaCrosse and Nexus decoders.
 
 Some decoders have little validity checking and may share very common signal characteristics.
 This will result in lots of false-positive decodes.
-These decoders are black-listed and you need to explicitly enable them with `-R <number>`.
-
-You can also use `-G` to enable all the blacklisted decoders.
-This is for testing only and strongly discouraged for continuous operation.
+These decoders are not enabled by default and you need to explicitly enable them with `-R <number>`.
 
 You can enable only selected decoders with any number of `-R <number>` options.
 Note that this will override the default and not select any decoder by default.

@@ -54,7 +54,6 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
 		= Demodulator options =
   [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)
        Specify a negative number to disable a device decoding protocol (can be used multiple times)
-  [-G] Enable blacklisted device decoding protocols, for testing only.
   [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)
   [-Y auto | classic | minmax] FSK pulse detector mode.
   [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto).
