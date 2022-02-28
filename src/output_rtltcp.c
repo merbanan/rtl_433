@@ -298,7 +298,7 @@ static THREAD_RETURN THREAD_CALL accept_thread(void *arg)
         char host[INET6_ADDRSTRLEN] = {0};
         char port[NI_MAXSERV]       = {0};
 
-        int err = getnameinfo((struct sockaddr *)&srv->addr, srv->addr_len,
+        int err = getnameinfo((struct sockaddr *)&addr, addr_len,
                 host, sizeof(host), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV);
         if (err != 0) {
             fprintf(stderr, "failed to convert address to string (code=%d)\n", err);

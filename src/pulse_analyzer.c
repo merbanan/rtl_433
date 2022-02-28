@@ -204,6 +204,11 @@ static void hexstr_print(hexstr_t *h, FILE *out)
 /// Analyze the statistics of a pulse data structure and print result
 void pulse_analyzer(pulse_data_t *data, int package_type)
 {
+    if (data->num_pulses == 0) {
+        fprintf(stderr, "No pulses detected.\n");
+        return;
+    }
+
     double to_ms = 1e3 / data->sample_rate;
     double to_us = 1e6 / data->sample_rate;
     // Generate pulse period data
