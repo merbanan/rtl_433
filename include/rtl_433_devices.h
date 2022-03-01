@@ -221,6 +221,7 @@
     DECL(regency_fan) \
     DECL(tpms_renault_0435r) \
     DECL(fineoffset_ws80) \
+    DECL(emos6016) \
 
     /* Add new decoders here. */
 
