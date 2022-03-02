@@ -129,6 +129,17 @@ if(FORCE_COLORED_BUILD)
 endif()
 
 ########################################################################
+# Enable IPv6 support
+########################################################################
+option(ENABLE_IPV6 "Enable IPv6 support" TRUE)
+if(ENABLE_IPV6)
+    message(STATUS "IPv6 support enabled.")
+    ADD_DEFINITIONS(-DMG_ENABLE_IPV6=1)
+else()
+    message(STATUS "IPv6 support disabled.")
+endif()
+
+########################################################################
 # Find Threads support build dependencies
 ########################################################################
 set(ENABLE_THREADS AUTO CACHE STRING "Enable Threads support")
