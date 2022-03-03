@@ -280,6 +280,9 @@
     <ClCompile Include="..\src\devices\alecto.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\altronics_x7064.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\ambient_weather.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

@@ -222,6 +222,7 @@
     DECL(tpms_renault_0435r) \
     DECL(fineoffset_ws80) \
     DECL(emos_e6016) \
+    DECL(altronics_7064) \
 
     /* Add new decoders here. */
 

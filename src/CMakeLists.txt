@@ -46,6 +46,7 @@ add_library(r_433 STATIC
     devices/acurite_01185m.c
     devices/akhan_100F14.c
     devices/alecto.c
+    devices/altronics_x7064.c
     devices/ambient_weather.c
     devices/ambientweather_tx8300.c
     devices/ambientweather_wh31e.c
