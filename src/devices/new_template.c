@@ -274,7 +274,7 @@ static char *output_fields[] = {
  *
  * The function used to turn the received signal into bits.
  * See:
- * - pulse_demod.h for descriptions
+ * - pulse_slicer.h for descriptions
  * - r_device.h for the list of defined names
  *
  * This device is disabled and hidden, it can not be enabled.

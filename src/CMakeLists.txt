@@ -29,9 +29,9 @@ add_library(r_433 STATIC
     output_trigger.c
     output_udp.c
     pulse_analyzer.c
-    pulse_demod.c
     pulse_detect.c
     pulse_detect_fsk.c
+    pulse_slicer.c
     r_api.c
     r_util.c
     raw_output.c

@@ -127,7 +127,7 @@ Breakdown:
 - syncPost after dataPtr has a '0' pulse length of ca. 16000us
 
 This analysis is the reason for the new r_device definitions below.
-NB: pulse_demod_ppm does not use .gap_limit if .tolerance is set.
+NB: pulse_slicer_ppm does not use .gap_limit if .tolerance is set.
 */
 
 r_device infactory = {

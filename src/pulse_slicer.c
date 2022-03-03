@@ -11,7 +11,7 @@
     (at your option) any later version.
 */
 
-#include "pulse_demod.h"
+#include "pulse_slicer.h"
 #include "bitbuffer.h"
 #include "util.h"
 #include <stdio.h>
@@ -52,7 +52,7 @@ static int account_event(r_device *device, bitbuffer_t *bits, char const *demod_
     return ret;
 }
 
-int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
+int pulse_slicer_pcm(const pulse_data_t *pulses, r_device *device)
 {
     float samples_per_us = pulses->sample_rate / 1.0e6;
     int s_short = device->short_width * samples_per_us;
@@ -246,7 +246,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
     return events;
 }
 
-int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device)
+int pulse_slicer_ppm(const pulse_data_t *pulses, r_device *device)
 {
     float samples_per_us = pulses->sample_rate / 1.0e6;
 
@@ -325,7 +325,7 @@ int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device)
     return events;
 }
 
-int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device)
+int pulse_slicer_pwm(const pulse_data_t *pulses, r_device *device)
 {
     float samples_per_us = pulses->sample_rate / 1.0e6;
 
@@ -438,7 +438,7 @@ int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device)
     return events;
 }
 
-int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
+int pulse_slicer_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
 {
     float samples_per_us = pulses->sample_rate / 1.0e6;
 
@@ -517,7 +517,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
     return events;
 }
 
-static inline int pulse_demod_get_symbol(const pulse_data_t *pulses, unsigned int n)
+static inline int pulse_slicer_get_symbol(const pulse_data_t *pulses, unsigned int n)
 {
     if (n % 2 == 0)
         return pulses->pulse[n / 2];
@@ -525,7 +525,7 @@ static inline int pulse_demod_get_symbol(const pulse_data_t *pulses, unsigned in
         return pulses->gap[n / 2];
 }
 
-int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device)
+int pulse_slicer_dmc(const pulse_data_t *pulses, r_device *device)
 {
     float samples_per_us = pulses->sample_rate / 1.0e6;
 
@@ -551,12 +551,12 @@ int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device)
     int events = 0;
 
     for (unsigned int n = 0; n < pulses->num_pulses * 2; ++n) {
-        int symbol = pulse_demod_get_symbol(pulses, n);
+        int symbol = pulse_slicer_get_symbol(pulses, n);
 
         if (abs(symbol - s_short) < s_tolerance) {
             // Short - 1
             bitbuffer_add_bit(&bits, 1);
-            symbol = pulse_demod_get_symbol(pulses, ++n);
+            symbol = pulse_slicer_get_symbol(pulses, ++n);
             if (abs(symbol - s_short) > s_tolerance) {
                 if (symbol >= s_reset - s_tolerance) {
                     // Don't expect another short gap at end of message
@@ -565,7 +565,7 @@ int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device)
                 else if (bits.num_rows > 0 && bits.bits_per_row[bits.num_rows - 1] > 0) {
                     bitbuffer_add_row(&bits);
 /*
-                    fprintf(stderr, "Detected error during pulse_demod_dmc(): %s\n",
+                    fprintf(stderr, "Detected error during pulse_slicer_dmc(): %s\n",
                             device->name);
 */
                 }
@@ -585,7 +585,7 @@ int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device)
     return events;
 }
 
-int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device)
+int pulse_slicer_piwm_raw(const pulse_data_t *pulses, r_device *device)
 {
     float samples_per_us = pulses->sample_rate / 1.0e6;
 
@@ -616,7 +616,7 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device)
     int events = 0;
 
     for (unsigned int n = 0; n < pulses->num_pulses * 2; ++n) {
-        int symbol = pulse_demod_get_symbol(pulses, n);
+        int symbol = pulse_slicer_get_symbol(pulses, n);
         w = symbol * f_short + 0.5;
         if (symbol > s_long) {
             bitbuffer_add_row(&bits);
@@ -631,7 +631,7 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device)
                 && bits.bits_per_row[bits.num_rows - 1] > 0) {
             bitbuffer_add_row(&bits);
 /*
-            fprintf(stderr, "Detected error during pulse_demod_piwm_raw(): %s\n",
+            fprintf(stderr, "Detected error during pulse_slicer_piwm_raw(): %s\n",
                     device->name);
 */
         }
@@ -647,7 +647,7 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device)
     return events;
 }
 
-int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device)
+int pulse_slicer_piwm_dc(const pulse_data_t *pulses, r_device *device)
 {
     float samples_per_us = pulses->sample_rate / 1.0e6;
 
@@ -673,7 +673,7 @@ int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device)
     int events = 0;
 
     for (unsigned int n = 0; n < pulses->num_pulses * 2; ++n) {
-        int symbol = pulse_demod_get_symbol(pulses, n);
+        int symbol = pulse_slicer_get_symbol(pulses, n);
         if (abs(symbol - s_short) < s_tolerance) {
             // Short - 1
             bitbuffer_add_bit(&bits, 1);
@@ -687,7 +687,7 @@ int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device)
                 && bits.bits_per_row[bits.num_rows - 1] > 0) {
             bitbuffer_add_row(&bits);
 /*
-            fprintf(stderr, "Detected error during pulse_demod_piwm_dc(): %s\n",
+            fprintf(stderr, "Detected error during pulse_slicer_piwm_dc(): %s\n",
                     device->name);
 */
         }
@@ -703,7 +703,7 @@ int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device)
     return events;
 }
 
-int pulse_demod_nrzs(const pulse_data_t *pulses, r_device *device)
+int pulse_slicer_nrzs(const pulse_data_t *pulses, r_device *device)
 {
     float samples_per_us = pulses->sample_rate / 1.0e6;
 
@@ -763,7 +763,7 @@ int pulse_demod_nrzs(const pulse_data_t *pulses, r_device *device)
  * bit is discarded.
  */
 
-int pulse_demod_osv1(const pulse_data_t *pulses, r_device *device)
+int pulse_slicer_osv1(const pulse_data_t *pulses, r_device *device)
 {
     float samples_per_us = pulses->sample_rate / 1.0e6;
 
@@ -854,7 +854,7 @@ int pulse_demod_osv1(const pulse_data_t *pulses, r_device *device)
     return events;
 }
 
-int pulse_demod_string(const char *code, r_device *device)
+int pulse_slicer_string(const char *code, r_device *device)
 {
     int events = 0;
     bitbuffer_t bits = {0};

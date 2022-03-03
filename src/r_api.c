@@ -22,7 +22,7 @@
 #include "r_private.h"
 #include "rtl_433_devices.h"
 #include "r_device.h"
-#include "pulse_demod.h"
+#include "pulse_slicer.h"
 #include "pulse_detect_fsk.h"
 #include "sdr.h"
 #include "data.h"
@@ -490,31 +490,31 @@ int run_ook_demods(list_t *r_devs, pulse_data_t *pulse_data)
 
             switch (r_dev->modulation) {
             case OOK_PULSE_PCM_RZ:
-                p_events += pulse_demod_pcm(pulse_data, r_dev);
+                p_events += pulse_slicer_pcm(pulse_data, r_dev);
                 break;
             case OOK_PULSE_PPM:
-                p_events += pulse_demod_ppm(pulse_data, r_dev);
+                p_events += pulse_slicer_ppm(pulse_data, r_dev);
                 break;
             case OOK_PULSE_PWM:
-                p_events += pulse_demod_pwm(pulse_data, r_dev);
+                p_events += pulse_slicer_pwm(pulse_data, r_dev);
                 break;
             case OOK_PULSE_MANCHESTER_ZEROBIT:
-                p_events += pulse_demod_manchester_zerobit(pulse_data, r_dev);
+                p_events += pulse_slicer_manchester_zerobit(pulse_data, r_dev);
                 break;
             case OOK_PULSE_PIWM_RAW:
-                p_events += pulse_demod_piwm_raw(pulse_data, r_dev);
+                p_events += pulse_slicer_piwm_raw(pulse_data, r_dev);
                 break;
             case OOK_PULSE_PIWM_DC:
-                p_events += pulse_demod_piwm_dc(pulse_data, r_dev);
+                p_events += pulse_slicer_piwm_dc(pulse_data, r_dev);
                 break;
             case OOK_PULSE_DMC:
-                p_events += pulse_demod_dmc(pulse_data, r_dev);
+                p_events += pulse_slicer_dmc(pulse_data, r_dev);
                 break;
             case OOK_PULSE_PWM_OSV1:
-                p_events += pulse_demod_osv1(pulse_data, r_dev);
+                p_events += pulse_slicer_osv1(pulse_data, r_dev);
                 break;
             case OOK_PULSE_NRZS:
-                p_events += pulse_demod_nrzs(pulse_data, r_dev);
+                p_events += pulse_slicer_nrzs(pulse_data, r_dev);
                 break;
             // FSK decoders
             case FSK_PULSE_PCM:
@@ -561,13 +561,13 @@ int run_fsk_demods(list_t *r_devs, pulse_data_t *fsk_pulse_data)
             case OOK_PULSE_NRZS:
                 break;
             case FSK_PULSE_PCM:
-                p_events += pulse_demod_pcm(fsk_pulse_data, r_dev);
+                p_events += pulse_slicer_pcm(fsk_pulse_data, r_dev);
                 break;
             case FSK_PULSE_PWM:
-                p_events += pulse_demod_pwm(fsk_pulse_data, r_dev);
+                p_events += pulse_slicer_pwm(fsk_pulse_data, r_dev);
                 break;
             case FSK_PULSE_MANCHESTER_ZEROBIT:
-                p_events += pulse_demod_manchester_zerobit(fsk_pulse_data, r_dev);
+                p_events += pulse_slicer_manchester_zerobit(fsk_pulse_data, r_dev);
                 break;
             default:
                 fprintf(stderr, "Unknown modulation %u in protocol!\n", r_dev->modulation);
