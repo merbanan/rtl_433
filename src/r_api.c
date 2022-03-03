@@ -489,7 +489,8 @@ int run_ook_demods(list_t *r_devs, pulse_data_t *pulse_data)
                 continue;
 
             switch (r_dev->modulation) {
-            case OOK_PULSE_PCM_RZ:
+            case OOK_PULSE_PCM:
+            // case OOK_PULSE_RZ:
                 p_events += pulse_slicer_pcm(pulse_data, r_dev);
                 break;
             case OOK_PULSE_PPM:
@@ -550,7 +551,8 @@ int run_fsk_demods(list_t *r_devs, pulse_data_t *fsk_pulse_data)
 
             switch (r_dev->modulation) {
             // OOK decoders
-            case OOK_PULSE_PCM_RZ:
+            case OOK_PULSE_PCM:
+            // case OOK_PULSE_RZ:
             case OOK_PULSE_PPM:
             case OOK_PULSE_PWM:
             case OOK_PULSE_MANCHESTER_ZEROBIT:

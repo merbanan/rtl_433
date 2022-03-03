@@ -79,7 +79,7 @@ static char *output_fields[] = {
 
 r_device jasco = {
         .name        = "Jasco/GE Choice Alert Security Devices",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 250,
         .long_width  = 250,
         .reset_limit = 1800, // Maximum gap size before End Of Message

@@ -320,8 +320,8 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
             && (abs(hist_gaps.bins[0].mean   -   hist_pulses.bins[0].mean) <= hist_pulses.bins[0].mean/8)    // Gaps are multiples of shortest pulse
             && (abs(hist_gaps.bins[1].mean   - 2*hist_pulses.bins[0].mean) <= hist_pulses.bins[0].mean/8)
             && (abs(hist_gaps.bins[2].mean   - 3*hist_pulses.bins[0].mean) <= hist_pulses.bins[0].mean/8)) {
-        fprintf(stderr, "Pulse Code Modulation (Not Return to Zero)\n");
-        device.modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PCM : OOK_PULSE_PCM_RZ;
+        fprintf(stderr, "Non Return to Zero coding (Pulse Code)\n");
+        device.modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PCM : OOK_PULSE_PCM;
         device.short_width = to_us * hist_pulses.bins[0].mean;        // Shortest pulse is bit width
         device.long_width  = to_us * hist_pulses.bins[0].mean;        // Bit period equal to pulse length (NRZ)
         device.reset_limit = to_us * hist_pulses.bins[0].mean * 1024; // No limit to run of zeros...
