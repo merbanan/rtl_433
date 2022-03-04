@@ -27,8 +27,8 @@ Data Layout:
     AA AC II IB AT TA AT HH AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA SS
 
 - C: (4 bit) channel
-- I: (12 bit) ID, maybe longer
-- B: (4 bit) battery indication, might be ID still
+- I: (12 bit) ID
+- B: (4 bit) BP01: battery low, pairing button, 0, 1
 - T: (12 bit) temperature in F, offset 900, scale 10
 - H: (8 bit) humidity
 - A: (4 bit) fixed values of 0xA
@@ -42,11 +42,11 @@ Raw data:
 
 Format string:
 
-    12h CH:4h ID:12h BAT:4h TEMP:4x4h4h4x4x4h HUM:8d 184h CHKSUM:8h 8x
+    12h CH:4h ID:12h FLAGS:4b TEMP:4x4h4h4x4x4h HUM:8d 184h CHKSUM:8h 8x
 
 Decoded example:
 
-    aaa CH:1 ID:6e9 BAT:5 TEMP:6b5 HUM:059 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa CHKSUM:d4 000
+    aaa CH:1 ID:6e9 FLAGS:0101 TEMP:6b5 HUM:059 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa CHKSUM:d4 000
 
 */
 
@@ -85,7 +85,8 @@ static int altronics_7064_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         int channel     = (b[1] & 0xf);
         int id          = (b[2] << 4) | (b[3] >> 4);
-        int battery_low = (b[3] & 0x04);
+        int battery_low = (b[3] & 0x08);
+        int pairing     = (b[3] & 0x04);
         int temp_raw    = ((b[4] & 0x0f) << 8) | (b[5] & 0xf0) | (b[6] & 0x0f); // weird format
         float temp_f    = (temp_raw - 900) * 0.1f;
         int humidity    = b[7];
@@ -98,6 +99,7 @@ static int altronics_7064_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "battery_ok",       "Battery_OK",       DATA_INT,    !battery_low,
                 "temperature_F",    "Temperature_F",    DATA_FORMAT, "%.1f", DATA_DOUBLE, temp_f,
                 "humidity",         "Humidity",         DATA_FORMAT, "%u", DATA_INT, humidity,
+                "pairing",          "Pairing?",         DATA_COND,   pairing,   DATA_INT,    !!pairing,
                 "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
@@ -115,6 +117,7 @@ static char *output_fields[] = {
         "battery_ok",
         "temperature_F",
         "humidity",
+        "pairing",
         "mic",
         NULL,
 };
