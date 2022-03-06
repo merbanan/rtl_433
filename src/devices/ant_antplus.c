@@ -73,8 +73,6 @@ https://reveng.sourceforge.io/ to reverse engineer the CRC algorithm used
 */
 
 #include "decoder.h"
-#include "util.h"
-#include "stdbool.h"
 
 static int ant_antplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -82,9 +80,7 @@ static int ant_antplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t b[17]; // aligned packet data for both preambles/offsets
     unsigned bit_offset;
     char payload[8 * 3 + 1]; // payload is 8 hex pairs for ANT and ANT+
-    bool antplus_flag = false;
-
-    data_t *data;
+    int antplus_flag = 0;
 
     // validate buffer: ANT messages are shorter than 150us, i.e. ~140 bits at 1Mbps
     if (bitbuffer->bits_per_row[0] < 137 || bitbuffer->bits_per_row[0] > 160) {
@@ -104,11 +100,10 @@ static int ant_antplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8); // assume preamble is aa
 
     // calculate CRC for both alternatives, starting with aa (used by all ANT+ devices)
-    uint16_t crc = crc16(b, 15, 0x1021, 0xffff);
-    if (((b[15] << 8) | b[16]) != crc) {                                         // no, preamble is not aa
+    // if the two crc bytes b[15] and b[16] are included in the crc calculation, a valid packet returns 0
+    if (crc16(b, 17, 0x1021, 0xffff) != 0) {  // no, preamble is not aa
         bitbuffer_extract_bytes(bitbuffer, 0, bit_offset + 1, b, sizeof(b) * 8); // shift one bit right for 55 preamble
-        crc = crc16(b, 15, 0x1021, 0xffff);
-        if (((b[15] << 8) | b[16]) != crc) // nope, not premable = 55 either, invalid packet, abort
+        if (crc16(b, 17, 0x1021, 0xffff) != 0)  // nope, not preamble = 55 either, invalid packet, abort
             return DECODE_FAIL_MIC;
     }
 
@@ -121,19 +116,19 @@ static int ant_antplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // display ANT or ANT+ depending on the network key used
     if (0xc5a6 == net_key)
-        antplus_flag = true;
+        antplus_flag = 1;
 
     /* clang-format off */
-	data = data_make(
-			"model",       "",               DATA_COND,   antplus_flag == true,  DATA_STRING, "ANT+",
-			"model",       "",               DATA_COND,   antplus_flag == false, DATA_STRING, "ANT",
-			"net_key",     "Net key",        DATA_FORMAT, "0x%04x", DATA_INT, net_key,
-			"device_num",  "Device #",       DATA_FORMAT, "0x%04x", DATA_INT, id,
-			"device_type", "Device type",    DATA_INT,    device_type,
-			"tx_type",     "TX type",        DATA_INT,    tx_type,
-			"payload",     "Payload",        DATA_STRING, payload,
-			"CRC",         "CRC",            DATA_FORMAT, "0x%04x", DATA_INT, crc,
-			NULL);
+    data_t *data = data_make(
+        "net_type",    "Network",        DATA_COND,   antplus_flag == 1,  DATA_STRING, "ANT+",
+        "net_type",    "Network",        DATA_COND,   antplus_flag == 0,  DATA_STRING, "ANT",
+        "net_key",     "Net key",        DATA_FORMAT, "0x%04x", DATA_INT, net_key,
+        "id",          "Device #",       DATA_FORMAT, "0x%04x", DATA_INT, id,
+        "device_type", "Device type",    DATA_INT,    device_type,
+        "tx_type",     "TX type",        DATA_INT,    tx_type,
+        "payload",     "Payload",        DATA_STRING, payload,
+        "mic",         "Integrity",      DATA_STRING, "CHECKSUM",
+        NULL);
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -141,13 +136,13 @@ static int ant_antplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-        "model",
+        "net_type",
         "net_key",
-        "device_num",
+        "id",
         "device_type",
         "tx_type",
         "payload",
-        "CRC",
+        "mic",
         NULL,
 };
 
