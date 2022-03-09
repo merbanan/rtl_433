@@ -91,6 +91,10 @@ void bitrow_debug(uint8_t const *bitrow, unsigned bit_len);
 int bitrow_snprint(uint8_t const *bitrow, unsigned bit_len, char *str, unsigned size);
 
 /// Parse a string into a bitbuffer.
+///
+/// The (optionally "0x" prefixed) hex code is processed into a bitbuffer_t.
+/// Each row is optionally prefixed with a length enclosed in braces "{}" or
+/// separated with a slash "/" character. Whitespace is ignored.
 void bitbuffer_parse(bitbuffer_t *bits, const char *code);
 
 /// Search the specified row of the bitbuffer, starting from bit 'start', for

@@ -427,7 +427,12 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code)
                 bitbuffer_add_row(bits);
             }
 
+            char const *p = c;
             width = strtol(c + 1, (char **)&c, 0);
+            while (*c == ' ' || *c == '\t' || *c == '\r' || *c == '\n')
+                c++;
+            if (*c != '}')
+                fprintf(stderr, "Bad length indication: %.10s\n", p);
             if (width > BITBUF_MAX_ROW_BITS)
                 width = BITBUF_MAX_ROW_BITS;
             if (!*c)
