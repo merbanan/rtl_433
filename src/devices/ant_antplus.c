@@ -11,7 +11,7 @@
 /**
 ANT and ANT+ decoder.
 
-ANT and ANT+ comunication standards are defined by a division of Garmin
+ANT and ANT+ communication standards are defined by a division of Garmin
 https://www.thisisant.com/ and used widely for low power devices.
 The ANT radio transmits for less than 150 µs per message, allowing a single
 channel to be divided into hundreds of time slots and avoiding collisions.
@@ -32,7 +32,10 @@ use of a downconverter for rtl_sdr. The ISM band is very noisy, so it's
 recommended to get the device very close, use only a ~30mm wire antenna and
 use mid-low gains. Finally, since the protocol encodes at 1Mbps, sampling
 rate should be -s 4M or higher. It can work with a sampling rate as low as
-2Msps, but unreliably. The following works well with PlutoSDR:
+2Msps, but unreliably. To avoid excessive warnings when running with default
+250k sampling rate, the decoder is disabled by default.
+
+The following works well with PlutoSDR:
 
 rtl_433 -d driver=plutosdr,uri=ip:192.168.2.1 -g 20 -f 2457.025M -s 4M
 
@@ -40,16 +43,16 @@ Without knowing the 8 byte key, existing ANT chips do not allow sniffing
 of the data packets. Hence the need for this decoder. At the moment it's
 not possible to recover the ANT key from the 16 bit on-air network key.
 
-This decoder only captures and displays the low level packets, identifying the
+This decoder only captures and displays the low-level packets, identifying the
 2 byte network key plus all other device characteristics and 8 byte ANT payload.
 It identifies ANT+ packets using the unique network key used (0xa6c5)
 Refer to ANT+ documentation for ech specific device to parse the content of
 the pages sent as 8 byte ANT+ payload.
 
-The ANT protocol is using an uncommon strategy for the premable: either 0x55 or
+The ANT protocol is using an uncommon strategy for the preamble: either 0x55 or
 0xaa, depending on the value of the first bit of the following byte (0 and 1
 respectively). The nRF24L01, on which the ANT protocol is based, uses the same
-premable strategy. In order to determine if the packet is using 0x55 or 0xaa,
+preamble strategy. In order to determine if the packet is using 0x55 or 0xaa,
 both packets are extracted and the only valid one is determined by matching
 the packet CRC with a calculated CRC value for both alternative packets.
 
@@ -83,7 +86,7 @@ static int ant_antplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int antplus_flag = 0;
 
     // validate buffer: ANT messages are shorter than 150us, i.e. ~140 bits at 1Mbps
-    if (bitbuffer->bits_per_row[0] < 137 || bitbuffer->bits_per_row[0] > 160) {
+    if (bitbuffer->bits_per_row[0] < 120 || bitbuffer->bits_per_row[0] > 200) {
         return DECODE_ABORT_LENGTH;
     }
 
@@ -101,9 +104,9 @@ static int ant_antplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // calculate CRC for both alternatives, starting with aa (used by all ANT+ devices)
     // if the two crc bytes b[15] and b[16] are included in the crc calculation, a valid packet returns 0
-    if (crc16(b, 17, 0x1021, 0xffff) != 0) {  // no, preamble is not aa
+    if (crc16(b, 17, 0x1021, 0xffff) != 0) { // no, preamble is not aa
         bitbuffer_extract_bytes(bitbuffer, 0, bit_offset + 1, b, sizeof(b) * 8); // shift one bit right for 55 preamble
-        if (crc16(b, 17, 0x1021, 0xffff) != 0)  // nope, not preamble = 55 either, invalid packet, abort
+        if (crc16(b, 17, 0x1021, 0xffff) != 0) // nope, not preamble = 55 either, invalid packet, abort
             return DECODE_FAIL_MIC;
     }
 
@@ -114,20 +117,21 @@ static int ant_antplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // display ANT and ANT+ payload in the same format used by ANT tools
     sprintf(payload, "%02x %02x %02x %02x %02x %02x %02x %02x", b[7], b[8], b[9], b[10], b[11], b[12], b[13], b[14]);
 
-    // display ANT or ANT+ depending on the network key used
+    // display ANT or ANT+ depending on the network key used.
     if (0xc5a6 == net_key)
         antplus_flag = 1;
 
     /* clang-format off */
     data_t *data = data_make(
-        "net_type",    "Network",        DATA_COND,   antplus_flag == 1,  DATA_STRING, "ANT+",
-        "net_type",    "Network",        DATA_COND,   antplus_flag == 0,  DATA_STRING, "ANT",
-        "net_key",     "Net key",        DATA_FORMAT, "0x%04x", DATA_INT, net_key,
+        "model",       "",               DATA_STRING, "Garmin-ANT",
+        "network",     "Network",        DATA_COND,   antplus_flag == 1,  DATA_STRING, "ANT+",
+        "network",     "Network",        DATA_COND,   antplus_flag == 0,  DATA_STRING, "ANT",
+        "channel",     "Net key",        DATA_FORMAT, "0x%04x", DATA_INT, net_key,
         "id",          "Device #",       DATA_FORMAT, "0x%04x", DATA_INT, id,
         "device_type", "Device type",    DATA_INT,    device_type,
         "tx_type",     "TX type",        DATA_INT,    tx_type,
         "payload",     "Payload",        DATA_STRING, payload,
-        "mic",         "Integrity",      DATA_STRING, "CHECKSUM",
+        "mic",         "Integrity",      DATA_STRING, "CRC",
         NULL);
     /* clang-format on */
 
@@ -136,8 +140,9 @@ static int ant_antplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-        "net_type",
-        "net_key",
+        "model",
+        "network",
+        "channel",
         "id",
         "device_type",
         "tx_type",
@@ -151,9 +156,10 @@ r_device ant_antplus = {
         .modulation  = FSK_PULSE_PCM,
         .short_width = 1,
         .long_width  = 1,
-        .sync_width  = 10,
+        .sync_width  = 8,
         .gap_limit   = 500,
         .reset_limit = 500,
         .decode_fn   = &ant_antplus_decode,
         .fields      = output_fields,
+        .disabled    = 1, // disabled by default, because of higher than default sampling requirements (s = 4M)
 };
