@@ -253,7 +253,7 @@ if(MSVC)
     target_sources(rtl_433 PRIVATE getopt/getopt.c)
 endif()
 
-add_library(data data.c abuf.c term_ctl.c)
+add_library(data data.c abuf.c)
 target_link_libraries(data ${NET_LIBRARIES})
 
 target_link_libraries(rtl_433
