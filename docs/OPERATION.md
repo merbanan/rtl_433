@@ -494,7 +494,7 @@ Without any `-F` option the default is KV output. Use `-F null` to remove that d
 ### Meta information
 
 ```
-  [-M time[:<options>]|protocol|level|stats|bits]
+  [-M time[:<options>]|protocol|level|noise[:<secs>]|stats|bits]
     Add various metadata to every output line.
 ```
 - Use `time` to add current date and time meta data (preset for live inputs).
@@ -503,11 +503,14 @@ Without any `-F` option the default is KV output. Use `-F null` to remove that d
 - Use `time:iso` to show the time with ISO-8601 format (`YYYY-MM-DD"T"hh:mm:ss`).
 - Use `time:off` to remove time meta data.
 - Use `time:usec` to add microseconds to date time meta data.
+- Use `time:tz` to output time with timezone offset.
 - Use `time:utc` to output time in UTC.
   (this may also be accomplished by invocation with TZ environment variable set).
   `usec` and `utc` can be combined with other options, eg. `time:unix:utc:usec`.
+- Use `replay[:N]` to replay file inputs at (N-times) realtime.
 - Use `protocol` / `noprotocol` to output the decoder protocol number meta data.
 - Use `level` to add Modulation, Frequency, RSSI, SNR, and Noise meta data.
+- Use `noise[:secs]` to report estimated noise level at intervals (default: 10 seconds).
 - Use `stats[:[<level>][:<interval>]]` to report statistics (default: 600 seconds).
   level 0: no report, 1: report successful devices, 2: report active devices, 3: report all
 - Use `bits` to add bit representation to code outputs (for debug).
