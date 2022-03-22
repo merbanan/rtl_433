@@ -146,9 +146,9 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int humidity    = (msg[14] >> 4) * 10 + (msg[14] & 0x0f);
 
-    // apparently ff0(1) if not available
-    int uv_ok  = msg[15] <= 0x99 && (msg[16] & 0xf0) <= 0x90;
-    int uv_raw = ((msg[15] & 0xf0) >> 4) * 100 + (msg[15] & 0x0f) * 10 + ((msg[16] & 0xf0) >> 4);
+    // apparently ff01 if not available, ???0 if valid
+    int uv_ok  = (msg[16] & 0x0f) == 0;
+    int uv_raw = ((~msg[15] & 0xf0) >> 4) * 100 + (~msg[15] & 0x0f) * 10 + ((~msg[16] & 0xf0) >> 4);
     float uv   = uv_raw * 0.1f;
     int flags  = (msg[16] & 0x0f); // looks like some flags, not sure
 
