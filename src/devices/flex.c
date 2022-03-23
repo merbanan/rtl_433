@@ -13,6 +13,7 @@
 #include "optparse.h"
 #include "fatal.h"
 #include <stdlib.h>
+#include "tinyexpr.h"
 
 static inline int bit(const uint8_t *bytes, unsigned bit)
 {
@@ -72,6 +73,7 @@ struct flex_get {
     const char *name;
     struct flex_map map[GETTER_MAP_SLOTS];
     const char *format;
+    const char *expression;
 };
 
 #define GETTER_SLOTS 8
@@ -118,23 +120,65 @@ static void render_getters(data_t *data, uint8_t *bits, struct flex_params *para
         else
             val = extract_number(bits, getter->bit_offset, getter->bit_count);
         int m;
-        for (m = 0; getter->map[m].val; m++) {
-            if (getter->map[m].key == val) {
-                data_append(data,
-                        getter->name, "", DATA_STRING, getter->map[m].val,
-                        NULL);
-                break;
-            }
-        }
-        if (!getter->map[m].val) {
-            if (getter->format) {
-                data_append(data,
-                    getter->name, "", DATA_FORMAT, getter->format, DATA_INT, val,
-                    NULL);
+
+        if(getter->expression) {
+            fprintf(stderr, "expr: %s\n", getter->expression);
+            double value = val;
+            double r;
+            te_variable vars[] = {{"value", &value}};
+
+            /* This will compile the expression and check for errors. */
+            int err;
+            te_expr *n = te_compile(getter->expression, vars, 1, &err);
+
+            if (n) {
+                r = te_eval(n);
+                printf("Result:\n\t%f\n", r);
+                te_free(n);
             } else {
-                data_append(data,
-                        getter->name, "", DATA_INT, val,
-                        NULL);
+                /* Show the user where the error is at. */
+                printf("\t%*s^\nError near here", err-1, "");
+            }
+
+
+            for (m = 0; getter->map[m].val; m++) {
+                if (getter->map[m].key == val) {
+                    data_append(data,
+                            getter->name, "", DATA_STRING, getter->map[m].val,
+                            NULL);
+                    break;
+                }
+            }
+            if (!getter->map[m].val) {
+                if (getter->format) {
+                    data_append(data,
+                            getter->name, "", DATA_FORMAT, getter->format, DATA_DOUBLE, r,
+                            NULL);
+                } else {
+                    data_append(data,
+                            getter->name, "", DATA_DOUBLE, r,
+                            NULL);
+                }
+            }
+        } else {
+            for (m = 0; getter->map[m].val; m++) {
+                if (getter->map[m].key == val) {
+                    data_append(data,
+                            getter->name, "", DATA_STRING, getter->map[m].val,
+                            NULL);
+                    break;
+                }
+            }
+            if (!getter->map[m].val) {
+                if (getter->format) {
+                    data_append(data,
+                            getter->name, "", DATA_FORMAT, getter->format, DATA_INT, val,
+                            NULL);
+                } else {
+                    data_append(data,
+                            getter->name, "", DATA_INT, val,
+                            NULL);
+                }
             }
         }
     }
@@ -474,6 +518,36 @@ static const char *parse_map(const char *arg, struct flex_get *getter)
     }
     return c;
 }
+static const char *parse_expr(const char *arg, struct flex_get *getter) {
+    char* ptr = strrchr(arg, ')');
+    long pos = ptr - arg;
+    pos++; // include ending parentheses
+
+    char subbuff[pos+1];
+    memcpy( subbuff, &arg[0], pos );
+    subbuff[pos] = '\0';
+
+    fprintf(stderr, "expr: %s\n", subbuff);
+
+    const char *expression = subbuff;
+
+    double value;
+    te_variable vars[] = {{"value", &value}};
+
+    /* This will compile the expression and check for errors. */
+    int err;
+    te_expr *n = te_compile(expression, vars, 2, &err);
+
+    if (n) {
+        getter->expression = strdup(expression);
+        te_free(n);
+    } else {
+        /* Show the user where the error is at. */
+        printf("\t%*s^\nError near here", err-1, "");
+    }
+
+    return ptr++;
+}
 
 static void parse_getter(const char *arg, struct flex_get *getter)
 {
@@ -482,6 +556,9 @@ static void parse_getter(const char *arg, struct flex_get *getter)
         if (*arg == '[') {
             arg = parse_map(arg, getter);
             continue;
+        }
+        if (*arg == '(') {
+            arg = parse_expr(arg, getter);
         }
         char *p = strchr(arg, ':');
         if (p)
