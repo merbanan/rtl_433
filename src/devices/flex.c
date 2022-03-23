@@ -528,7 +528,7 @@ static const char *parse_expr(const char *arg, struct flex_get *getter) {
     subbuff[pos] = '\0';
 
     fprintf(stderr, "expr: %s\n", subbuff);
-
+    printf("Evaluating:\n\t%s\n", subbuff);
     const char *expression = subbuff;
 
     double value;
