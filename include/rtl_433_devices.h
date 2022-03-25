@@ -229,6 +229,7 @@
     DECL(fineoffset_wh45) \
     DECL(maverick_xr30) \
     DECL(fineoffset_wn34) \
+    DECL(rubicson_pool_48942) \
 
     /* Add new decoders here. */
 

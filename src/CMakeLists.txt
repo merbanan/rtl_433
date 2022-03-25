@@ -182,6 +182,7 @@ add_library(r_433 STATIC
     devices/rojaflex.c
     devices/rubicson.c
     devices/rubicson_48659.c
+    devices/rubicson_pool_48942.c
     devices/s3318p.c
     devices/schraeder.c
     devices/scmplus.c
