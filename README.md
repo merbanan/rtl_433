@@ -298,6 +298,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [213]  Fine Offset Electronics WS80 weather station
     [214]  EMOS E6016 weatherstation with DCF77
     [215]  Altronics X7064 temperature and humidity sensor
+    [216]* ANT and ANT+ devices
 
 * Disabled by default, use -R n or -G
 
@@ -340,7 +341,8 @@ where:
 <name> can be any descriptive name tag you need in the output
 <modulation> is one of:
 	OOK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit
-	OOK_PCM :         Pulse Code Modulation (RZ or NRZ)
+	OOK_PCM :         Non Return to Zero coding (Pulse Code)
+	OOK_RZ :          Return to Zero coding (Pulse Code)
 	OOK_PPM :         Pulse Position Modulation
 	OOK_PWM :         Pulse Width Modulation
 	OOK_DMC :         Differential Manchester Code
@@ -352,7 +354,7 @@ where:
 	FSK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit
 <short>, <long>, <sync> are nominal modulation timings in us,
 <reset>, <gap>, <tolerance> are maximum modulation timings in us:
-PCM     short: Nominal width of pulse [us]
+PCM/RZ  short: Nominal width of pulse [us]
          long: Nominal width of bit period [us]
 PPM     short: Nominal width of '0' gap [us]
          long: Nominal width of '1' gap [us]

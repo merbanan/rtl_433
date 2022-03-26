@@ -185,6 +185,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\ambient_weather.c" />
     <ClCompile Include="..\src\devices\ambientweather_tx8300.c" />
     <ClCompile Include="..\src\devices\ambientweather_wh31e.c" />
+    <ClCompile Include="..\src\devices\ant_antplus.c" />
     <ClCompile Include="..\src\devices\archos_tbh.c" />
     <ClCompile Include="..\src\devices\atech_ws308.c" />
     <ClCompile Include="..\src\devices\auriol_4ld5661.c" />

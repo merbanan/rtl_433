@@ -292,6 +292,9 @@
     <ClCompile Include="..\src\devices\ambientweather_wh31e.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\ant_antplus.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\archos_tbh.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

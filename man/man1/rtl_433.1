@@ -232,7 +232,10 @@ where:
 OOK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit
 .RE
 .RS
-OOK_PCM :         Pulse Code Modulation (RZ or NRZ)
+OOK_PCM :         Non Return to Zero coding (Pulse Code)
+.RE
+.RS
+OOK_RZ :          Return to Zero coding (Pulse Code)
 .RE
 .RS
 OOK_PPM :         Pulse Position Modulation
@@ -263,7 +266,7 @@ FSK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit
 .RE
 <short>, <long>, <sync> are nominal modulation timings in us,
 <reset>, <gap>, <tolerance> are maximum modulation timings in us:
-PCM     short: Nominal width of pulse [us]
+PCM/RZ  short: Nominal width of pulse [us]
          long: Nominal width of bit period [us]
 PPM     short: Nominal width of '0' gap [us]
          long: Nominal width of '1' gap [us]
