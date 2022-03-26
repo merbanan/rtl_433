@@ -1,7 +1,7 @@
 /** @file
-    Pulse demodulation functions.
+    Pulse slicer functions.
 
-    Binary demodulators (PWM/PPM/Manchester/...) using a pulse data structure as input
+    Binary slicers (PWM/PPM/Manchester/...) using a pulse data structure as input
 
     Copyright (C) 2015 Tommy Vestermark
 
@@ -11,8 +11,8 @@
     (at your option) any later version.
 */
 
-#ifndef INCLUDE_PULSE_DEMOD_H_
-#define INCLUDE_PULSE_DEMOD_H_
+#ifndef INCLUDE_PULSE_SLICER_H_
+#define INCLUDE_PULSE_SLICER_H_
 
 #include "pulse_detect.h"
 #include "r_device.h"
@@ -35,7 +35,7 @@
 /// - reset_limit: Maximum gap size before End Of Message [us].
 /// - tolerance:   Maximum deviation from nominal widths (optional, default 25%) [us]
 /// @return number of events processed
-int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device);
+int pulse_slicer_pcm(const pulse_data_t *pulses, r_device *device);
 
 /// Demodulate a Pulse Position Modulation signal.
 ///
@@ -53,7 +53,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device);
 /// - gap_limit:   Maximum gap size before new row of bits [us]
 /// - tolerance:   Maximum deviation from nominal widths (optional, raw if 0) [us]
 /// @return number of events processed
-int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device);
+int pulse_slicer_ppm(const pulse_data_t *pulses, r_device *device);
 
 /// Demodulate a Pulse Width Modulation signal.
 ///
@@ -72,7 +72,7 @@ int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device);
 /// - sync_width:  Nominal width of sync pulse (optional) [us]
 /// - tolerance:   Maximum deviation from nominal widths (optional, raw if 0) [us]
 /// @return number of events processed
-int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device);
+int pulse_slicer_pwm(const pulse_data_t *pulses, r_device *device);
 
 /// Demodulate a Manchester encoded signal with a hardcoded zerobit in front.
 ///
@@ -90,7 +90,7 @@ int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device);
 /// - long_width:  Not used
 /// - reset_limit: Maximum gap size before End Of Message [us].
 /// @return number of events processed
-int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device);
+int pulse_slicer_manchester_zerobit(const pulse_data_t *pulses, r_device *device);
 
 /// Demodulate a Differential Manchester Coded signal.
 ///
@@ -113,7 +113,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
 /// - reset_limit: Maximum gap size before End Of Message [us].
 /// - tolerance:   Maximum deviation from nominal widths [us]
 /// @return number of events processed
-int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device);
+int pulse_slicer_dmc(const pulse_data_t *pulses, r_device *device);
 
 /// Demodulate a raw Pulse Interval and Width Modulation signal.
 ///
@@ -127,7 +127,7 @@ int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device);
 /// - reset_limit: Maximum gap size before End Of Message [us].
 /// - tolerance:   Maximum deviation from nominal widths [us]
 /// @return number of events processed
-int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device);
+int pulse_slicer_piwm_raw(const pulse_data_t *pulses, r_device *device);
 
 /// Demodulate a differential Pulse Interval and Width Modulation signal.
 ///
@@ -141,11 +141,11 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device);
 /// - reset_limit: Maximum gap size before End Of Message [us].
 /// - tolerance:   Maximum deviation from nominal widths [us]
 /// @return number of events processed
-int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device);
+int pulse_slicer_piwm_dc(const pulse_data_t *pulses, r_device *device);
 
-int pulse_demod_nrzs(const pulse_data_t *pulses, r_device *device);
+int pulse_slicer_nrzs(const pulse_data_t *pulses, r_device *device);
 
-int pulse_demod_osv1(const pulse_data_t *pulses, r_device *device);
+int pulse_slicer_osv1(const pulse_data_t *pulses, r_device *device);
 
 /// Simulate demodulation using a given signal code string.
 ///
@@ -156,6 +156,6 @@ int pulse_demod_osv1(const pulse_data_t *pulses, r_device *device);
 /// @param code The pulse sequence to demodulate in text format
 /// @param device Device params are disregarded.
 /// @return number of events processed
-int pulse_demod_string(const char *code, r_device *device);
+int pulse_slicer_string(const char *code, r_device *device);
 
-#endif /* INCLUDE_PULSE_DEMOD_H_ */
+#endif /* INCLUDE_PULSE_SLICER_H_ */

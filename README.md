@@ -297,6 +297,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [212]  Renault 0435R TPMS
     [213]  Fine Offset Electronics WS80 weather station
     [214]  EMOS E6016 weatherstation with DCF77
+    [215]  Altronics X7064 temperature and humidity sensor
 
 * Disabled by default, use -R n or -G
 

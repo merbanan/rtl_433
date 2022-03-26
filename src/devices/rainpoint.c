@@ -133,7 +133,7 @@ static char *output_fields[] = {
 
 r_device rainpoint = {
         .name        = "RainPoint soil temperature and moisture sensor",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 500,
         .long_width  = 500,
         .reset_limit = 1500,

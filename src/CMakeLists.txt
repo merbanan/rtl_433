@@ -29,9 +29,9 @@ add_library(r_433 STATIC
     output_trigger.c
     output_udp.c
     pulse_analyzer.c
-    pulse_demod.c
     pulse_detect.c
     pulse_detect_fsk.c
+    pulse_slicer.c
     r_api.c
     r_util.c
     raw_output.c
@@ -46,6 +46,7 @@ add_library(r_433 STATIC
     devices/acurite_01185m.c
     devices/akhan_100F14.c
     devices/alecto.c
+    devices/altronics_x7064.c
     devices/ambient_weather.c
     devices/ambientweather_tx8300.c
     devices/ambientweather_wh31e.c
@@ -253,7 +254,7 @@ if(MSVC)
     target_sources(rtl_433 PRIVATE getopt/getopt.c)
 endif()
 
-add_library(data data.c abuf.c term_ctl.c)
+add_library(data data.c abuf.c)
 target_link_libraries(data ${NET_LIBRARIES})
 
 target_link_libraries(rtl_433

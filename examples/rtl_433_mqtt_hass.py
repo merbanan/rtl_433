@@ -77,12 +77,6 @@ MQTT Explorer also makes it easy to publish an empty config topic to delete an
 entity from Home Assistant.
 
 
-Known Issues:
-
-Currently there is no white or black lists, so any device that rtl_433 receives
-including transients, false positives, will create a bunch of entities in
-Home Assistant.
-
 As of 2020-10, Home Assistant MQTT auto discovery doesn't currently support
 supplying "friendly name", and "area" key, so some configuration must be
 done in Home Assistant.
@@ -537,6 +531,16 @@ mappings = {
         }
     },
 
+    "consumption_data": {
+        "device_type": "sensor",
+        "object_suffix": "consumption",
+        "config": {
+            "name": "SCM Consumption Value",
+            "value_template": "{{ value|int }}",
+            "state_class": "total_increasing",
+        }
+    },
+
 }
 
 
@@ -648,6 +652,11 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
         logging.warning("No suitable identifier found for model: ", model)
         return
 
+    if args.ids and data.get("id") not in args.ids:
+        # not in the safe list
+        logging.debug("Device (%s) is not in the desired list of device ids: [%s]" % (data["id"], ids))
+        return
+
     # detect known attributes
     for key in data.keys():
         if key in mappings:
@@ -727,6 +736,8 @@ if __name__ == "__main__":
                         dest="discovery_interval",
                         default=600,
                         help="Interval to republish config topics in seconds (default: %(default)d)")
+    parser.add_argument("-I", "--ids", type=int, nargs="+",
+                        help="ID's of devices that will be discovered (omit for all)")
     args = parser.parse_args()
 
     if args.debug and args.quiet:
@@ -748,5 +759,11 @@ if __name__ == "__main__":
 
     if not args.user or not args.password:
         logging.warning("User or password is not set. Check credentials if subscriptions do not return messages.")
+
+    if args.ids:
+        ids = ', '.join(str(id) for id in args.ids)
+        logging.info("Only discovering devices with ids: [%s]" % ids)
+    else:
+        logging.info("Discovering all devices")
 
     run()

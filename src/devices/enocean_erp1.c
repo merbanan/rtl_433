@@ -99,7 +99,7 @@ static char *output_fields[] = {
 
 r_device enocean_erp1 = {
         .name        = "EnOcean ERP1",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 8,
         .long_width  = 8,
         .sync_width  = 0,

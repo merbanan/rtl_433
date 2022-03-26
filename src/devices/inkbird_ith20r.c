@@ -143,7 +143,6 @@ static char *output_fields[] = {
 r_device inkbird_ith20r = {
         .name        = "Inkbird ITH-20R temperature humidity sensor",
         .modulation  = FSK_PULSE_PCM,
-        .sync_width  = 0,    // No sync bit used
         .short_width = 100,  // Width of a '0' gap
         .long_width  = 100,  // Width of a '1' gap
         .reset_limit = 4000, // Maximum gap size before End Of Message [us]

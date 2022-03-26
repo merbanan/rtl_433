@@ -11,7 +11,6 @@
 
 #include "pulse_detect.h"
 #include "rfraw.h"
-#include "pulse_demod.h"
 #include "pulse_detect_fsk.h"
 #include "baseband.h"
 #include "util.h"

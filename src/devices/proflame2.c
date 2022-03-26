@@ -154,7 +154,7 @@ static char *output_fields[] = {
 
 r_device proflame2 = {
         .name        = "SmartFire Proflame 2 remote control",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 417, // 2400 baud
         .long_width  = 417,
         .gap_limit   = 1000, // 12 low amplitudes are 5000 us

@@ -170,8 +170,8 @@ Data layout:
 
 NOTE: there is NO CRC and NO temperature data transmitted
 
-We use OOK_PULSE_PCM_RZ with .short_pulse = .long_pulse to get the bitstream
-above. Then we use bitbuffer_manchester_decode() which will alert us to any
+We use OOK_PULSE_PCM to get the bitstream above.
+Then we use bitbuffer_manchester_decode() which will alert us to any
 bit sequence which is not a valid Manchester transition. This enables a sanity
 check on the Manchester pulses which is important for detecting possible
 corruption since there is no CRC.
@@ -299,7 +299,7 @@ r_device schrader_EG53MA4 = {
 
 r_device schrader_SMD3MA4 = {
         .name        = "Schrader TPMS SMD3MA4 (Subaru)",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 120,
         .long_width  = 120,
         .reset_limit = 480,

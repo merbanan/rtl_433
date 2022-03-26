@@ -119,8 +119,8 @@ r_device maverick_et73x = {
         .short_width = 230,
         .long_width  = 0, //not used
         .reset_limit = 4000,
-        //.reset_limit = 6000, // if pulse_demod_manchester_zerobit implements gap_limit
-        //.gap_limit   = 1000, // if pulse_demod_manchester_zerobit implements gap_limit
+        //.reset_limit = 6000, // if pulse_slicer_manchester_zerobit implements gap_limit
+        //.gap_limit   = 1000, // if pulse_slicer_manchester_zerobit implements gap_limit
         .decode_fn   = &maverick_et73x_callback,
         .fields      = output_fields,
 };

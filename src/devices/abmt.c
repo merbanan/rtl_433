@@ -90,7 +90,7 @@ static char *output_fields[] = {
 
 r_device abmt = {
         .name        = "Amazon Basics Meat Thermometer",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 550,
         .long_width  = 550,
         .gap_limit   = 2000,

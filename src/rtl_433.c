@@ -37,7 +37,7 @@
 #include "pulse_analyzer.h"
 #include "pulse_detect.h"
 #include "pulse_detect_fsk.h"
-#include "pulse_demod.h"
+#include "pulse_slicer.h"
 #include "rfraw.h"
 #include "data.h"
 #include "raw_output.h"
@@ -1548,7 +1548,7 @@ int main(int argc, char **argv) {
                         r += run_fsk_demods(&single_dev, &pulse_data);
                     list_free_elems(&single_dev, NULL);
                 } else
-                r += pulse_demod_string(e, r_dev);
+                r += pulse_slicer_string(e, r_dev);
                 continue;
             }
             // otherwise test all decoders
@@ -1564,7 +1564,7 @@ int main(int argc, char **argv) {
                 r_device *r_dev = *iter;
                 if (cfg->verbosity)
                     fprintf(stderr, "Verifying test data with device %s.\n", r_dev->name);
-                r += pulse_demod_string(line, r_dev);
+                r += pulse_slicer_string(line, r_dev);
             }
         }
 
@@ -1590,7 +1590,7 @@ int main(int argc, char **argv) {
             r_device *r_dev = *iter;
             if (cfg->verbosity)
                 fprintf(stderr, "Verifying test data with device %s.\n", r_dev->name);
-            r += pulse_demod_string(cfg->test_data, r_dev);
+            r += pulse_slicer_string(cfg->test_data, r_dev);
         }
         r_free_cfg(cfg);
         exit(!r);

@@ -242,7 +242,7 @@ static char *sensible_living_output_fields[] = {
 
 r_device radiohead_ask = {
         .name        = "Radiohead ASK",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 500,
         .long_width  = 500,
         .reset_limit = 5 * 500,
@@ -252,7 +252,7 @@ r_device radiohead_ask = {
 
 r_device sensible_living = {
         .name        = "Sensible Living Mini-Plant Moisture Sensor",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 1000,
         .long_width  = 1000,
         .reset_limit = 5 * 1000,

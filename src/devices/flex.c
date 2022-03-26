@@ -343,7 +343,8 @@ static void help()
             "<name> can be any descriptive name tag you need in the output\n"
             "<modulation> is one of:\n"
             "\tOOK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit\n"
-            "\tOOK_PCM :         Pulse Code Modulation (RZ or NRZ)\n"
+            "\tOOK_PCM :         Non Return to Zero coding (Pulse Code)\n"
+            "\tOOK_RZ :          Return to Zero coding (Pulse Code)\n"
             "\tOOK_PPM :         Pulse Position Modulation\n"
             "\tOOK_PWM :         Pulse Width Modulation\n"
             "\tOOK_DMC :         Differential Manchester Code\n"
@@ -355,7 +356,7 @@ static void help()
             "\tFSK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit\n"
             "<short>, <long>, <sync> are nominal modulation timings in us,\n"
             "<reset>, <gap>, <tolerance> are maximum modulation timings in us:\n"
-            "PCM     short: Nominal width of pulse [us]\n"
+            "PCM/RZ  short: Nominal width of pulse [us]\n"
             "         long: Nominal width of bit period [us]\n"
             "PPM     short: Nominal width of '0' gap [us]\n"
             "         long: Nominal width of '1' gap [us]\n"
@@ -386,7 +387,9 @@ static unsigned parse_modulation(char const *str)
     if (!strcasecmp(str, "OOK_MC_ZEROBIT"))
         return OOK_PULSE_MANCHESTER_ZEROBIT;
     else if (!strcasecmp(str, "OOK_PCM"))
-        return OOK_PULSE_PCM_RZ;
+        return OOK_PULSE_PCM;
+    else if (!strcasecmp(str, "OOK_RZ"))
+        return OOK_PULSE_RZ;
     else if (!strcasecmp(str, "OOK_PPM"))
         return OOK_PULSE_PPM;
     else if (!strcasecmp(str, "OOK_PWM"))
