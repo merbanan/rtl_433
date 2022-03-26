@@ -223,6 +223,7 @@
     DECL(fineoffset_ws80) \
     DECL(emos_e6016) \
     DECL(altronics_7064) \
+    DECL(ant_antplus) \
 
     /* Add new decoders here. */
 
