@@ -95,8 +95,9 @@ struct sdr_dev {
 
     int running;
     int polling;
-    void *buffer;
-    size_t buffer_size;
+    uint8_t *buffer; ///< sdr data buffer current and past frames
+    size_t buffer_size; ///< sdr data buffer overall size (num * len)
+    size_t buffer_pos; ///< sdr data buffer next write position
 
     int sample_size;
     int sample_signed;
@@ -284,20 +285,25 @@ static int rtltcp_close(SOCKET sock)
 
 static int rtltcp_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len)
 {
-    UNUSED(buf_num);
-    if (dev->buffer_size != buf_len) {
+    size_t buffer_size = buf_num * buf_len;
+    if (dev->buffer_size != buffer_size) {
         free(dev->buffer);
-        dev->buffer = malloc(buf_len);
+        dev->buffer = malloc(buffer_size);
         if (!dev->buffer) {
             WARN_MALLOC("rtltcp_read_loop()");
             return -1; // NOTE: returns error on alloc failure.
         }
-        dev->buffer_size = buf_len;
+        dev->buffer_size = buffer_size;
+        dev->buffer_pos = 0;
     }
-    uint8_t *buffer = dev->buffer;
 
     dev->running = 1;
     do {
+        if (dev->buffer_pos + buf_len > buffer_size)
+            dev->buffer_pos = 0;
+        uint8_t *buffer = &dev->buffer[dev->buffer_pos];
+        dev->buffer_pos += buf_len;
+
         unsigned n_read = 0;
         int r;
 
@@ -493,18 +499,38 @@ static int rtlsdr_find_tuner_gain(sdr_dev_t *dev, int centigain, int verbose)
 static void rtlsdr_read_cb(unsigned char *iq_buf, uint32_t len, void *ctx)
 {
     sdr_dev_t *dev = ctx;
+
+    if (dev->buffer_pos + len > dev->buffer_size)
+        dev->buffer_pos = 0;
+    uint8_t *buffer = &dev->buffer[dev->buffer_pos];
+    dev->buffer_pos += len;
+
+    // NOTE: we need to copy the buffer, it might go away on cancel_async
+    memcpy(buffer, iq_buf, len);
+
     sdr_event_t ev = {
             .ev  = SDR_EV_DATA,
-            .buf = iq_buf,
+            .buf = buffer,
             .len = len,
     };
     if (len > 0) // prevent a crash in callback
         dev->rtlsdr_cb(&ev, dev->rtlsdr_cb_ctx);
-    // NOTE: we actually need to copy the buffer to prevent it going away on cancel_async
 }
 
 static int rtlsdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len)
 {
+    size_t buffer_size = buf_num * buf_len;
+    if (dev->buffer_size != buffer_size) {
+        free(dev->buffer);
+        dev->buffer = malloc(buffer_size);
+        if (!dev->buffer) {
+            WARN_MALLOC("rtlsdr_read_loop()");
+            return -1; // NOTE: returns error on alloc failure.
+        }
+        dev->buffer_size = buffer_size;
+        dev->buffer_pos = 0;
+    }
+
     int r = 0;
 
     dev->rtlsdr_cb = cb;
@@ -923,22 +949,27 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, char const *dev_query, int verbos
 
 static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len)
 {
-    UNUSED(buf_num);
-    if (dev->buffer_size != buf_len) {
+    size_t buffer_size = buf_num * buf_len;
+    if (dev->buffer_size != buffer_size) {
         free(dev->buffer);
-        dev->buffer = malloc(buf_len);
+        dev->buffer = malloc(buffer_size);
         if (!dev->buffer) {
-            WARN_CALLOC("soapysdr_read_loop()");
+            WARN_MALLOC("soapysdr_read_loop()");
             return -1; // NOTE: returns error on alloc failure.
         }
-        dev->buffer_size = buf_len;
+        dev->buffer_size = buffer_size;
+        dev->buffer_pos = 0;
     }
-    int16_t *buffer = dev->buffer;
 
     size_t buf_elems = buf_len / dev->sample_size;
 
     dev->running = 1;
     do {
+        if (dev->buffer_pos + buf_len > buffer_size)
+            dev->buffer_pos = 0;
+        int16_t *buffer = (void *)&dev->buffer[dev->buffer_pos];
+        dev->buffer_pos += buf_len;
+
         void *buffs[]    = {buffer};
         int flags        = 0;
         long long timeNs = 0;
@@ -1566,6 +1597,11 @@ int sdr_start(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, ui
 {
     if (!dev)
         return -1;
+
+    if (buf_num == 0)
+        buf_num = SDR_DEFAULT_BUF_NUMBER;
+    if (buf_len == 0)
+        buf_len = SDR_DEFAULT_BUF_LENGTH;
 
     if (dev->rtl_tcp)
         return rtltcp_read_loop(dev, cb, ctx, buf_num, buf_len);

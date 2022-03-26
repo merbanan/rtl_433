@@ -86,28 +86,25 @@ typedef SSIZE_T ssize_t;
 
 // Only available if Threads are enabled.
 // Currently serves a maximum of 1 client connection.
-// A data backing of max_clients+1 slots is needed to write a data slot
-// when each client is blocking a different data slot.
-// Should use a global ring buffer or shared memory for sendfile() someday.
+// The data backing from the SDR is assumed to be persistent, which is the case
+// since we never restart the SDR with different parameters or close it while active.
+// Should use shared memory for sendfile() someday.
 
 #ifdef THREADS
 
-#define DATA_SLOTS 2
 typedef struct rtltcp_server {
     struct sockaddr_storage addr;
     socklen_t addr_len;
     SOCKET sock;
     int client_count; ///< number of connected clients
 
-    int data_recent;            ///< the data slot with most recent data, -1 otherwise
-    int data_inuse[DATA_SLOTS]; ///< data slot is in use, 0 otherwise
-    void *data_buf[DATA_SLOTS]; ///< data slot memory of data_size bytes, NULL otherwise
-    int data_size[DATA_SLOTS];  ///< data slot data_buf size, 0 otherwise
-    int data_len[DATA_SLOTS];   ///< data slot valid bytes in data_buf, 0 otherwise
+    uint8_t const *data_buf; ///< data buffer with most recent data, NULL otherwise
+    uint32_t data_len;       ///< data buffer length in bytes, 0 otherwise
+    unsigned data_cnt;       ///< data buffer update counter
 
     pthread_t thread;
-    pthread_mutex_t lock; ///< lock for data slots
-    pthread_cond_t cond;  ///< wait for data slots
+    pthread_mutex_t lock; ///< lock for data buffer
+    pthread_cond_t cond;  ///< wait for data buffer
     r_cfg_t *cfg;
     struct raw_output *output;
 } rtltcp_server_t;
@@ -225,42 +222,16 @@ static int parse_command(r_cfg_t *cfg, uint8_t const *buf, int len)
 }
 
 // event handler to broadcast to all our sockets
-static void rtltcp_broadcast_send(rtltcp_server_t *srv, uint8_t const *data, int len)
+static void rtltcp_broadcast_send(rtltcp_server_t *srv, uint8_t const *data, uint32_t len)
 {
     // fprintf(stderr, "%s: %d byte frame\n", __func__, len);
     pthread_mutex_lock(&srv->lock);
-    if (srv->client_count <= 0) {
-        pthread_mutex_unlock(&srv->lock);
-        return; // no clients, do nothing
-    }
 
-    // find a free slot
-    int slot = 0;
-    for (; slot < DATA_SLOTS; ++slot) {
-        if (srv->data_inuse[slot] == 0) {
-            break;
-        }
-    }
-    if (slot >= DATA_SLOTS) {
-        fprintf(stderr, "%s: all data slots in use!\n", __func__);
-        return; // this should never happen
-    }
+    // update the data buffer reference
+    srv->data_buf = data;
+    srv->data_len = len;
+    srv->data_cnt += 1;
 
-    // (re-)allocate slot buffer if needed
-    if (srv->data_buf[slot] == NULL || srv->data_size[slot] < len) {
-        //fprintf(stderr, "%s: allocating buffer of %d bytes for rtl_tcp\n", __func__, len);
-        free(srv->data_buf[slot]);
-        srv->data_buf[slot] = malloc(len);
-        if (!srv->data_buf[slot]) {
-            FATAL_MALLOC("rtltcp_broadcast_send()");
-        }
-        srv->data_size[slot] = len;
-    }
-
-    // transfer data to the buffer slot
-    memcpy(srv->data_buf[slot], data, len);
-    srv->data_len[slot] = len;
-    srv->data_recent = slot;
     pthread_mutex_unlock(&srv->lock);
     pthread_cond_signal(&srv->cond);
     // perhaps broadcast if we want to support multiple clients
@@ -308,8 +279,8 @@ static THREAD_RETURN THREAD_CALL accept_thread(void *arg)
 
         pthread_mutex_lock(&srv->lock);
         srv->client_count += 1;
+        unsigned prev_cnt = srv->data_cnt + 9; // data sent in previous loop, random value to get the current buffer
         pthread_mutex_unlock(&srv->lock);
-        int slot = -1; // data sent in previous loop
 
         send_header(sock);
 
@@ -356,24 +327,19 @@ static THREAD_RETURN THREAD_CALL accept_thread(void *arg)
             }
 
             pthread_mutex_lock(&srv->lock);
-            if (srv->data_recent < 0 || srv->data_recent == slot)
+            while (srv->data_cnt == prev_cnt || srv->data_buf == NULL)
                 pthread_cond_wait(&srv->cond, &srv->lock);
             // Maybe timeout to check recv()
             // pthread_cond_timedwait(&srv->cond, &srv->lock, const struct timespec *abstime);
 
-            // Get data and mark as in use
-            slot = srv->data_recent;
-            srv->data_inuse[slot] += 1;
-            void const *data = srv->data_buf[slot];
-            int data_len     = srv->data_len[slot];
+            // Get data buffer reference
+            void const *data = srv->data_buf;
+            int data_len     = srv->data_len;
+            prev_cnt         = srv->data_cnt;
+
             pthread_mutex_unlock(&srv->lock);
 
             send_all(sock, data, data_len, MSG_NOSIGNAL); // ignore SIGPIPE
-
-            // Mark data as done
-            pthread_mutex_lock(&srv->lock);
-            srv->data_inuse[slot] -= 1;
-            pthread_mutex_unlock(&srv->lock);
         }
 
         pthread_mutex_lock(&srv->lock);
@@ -429,8 +395,6 @@ static int rtltcp_server_start(rtltcp_server_t *srv, char const *host, char cons
     srv->cfg     = cfg;
     srv->output  = output;
 
-    srv->data_recent = -1;
-
     char address[INET6_ADDRSTRLEN] = {0};
     char portstr[NI_MAXSERV] = {0};
 
@@ -478,11 +442,6 @@ static int rtltcp_server_stop(rtltcp_server_t *srv)
     pthread_cond_destroy(&srv->cond);
 
     srv->client_count = 0;
-    for (int slot = 0; slot < DATA_SLOTS; ++slot) {
-        free(srv->data_buf[slot]);
-        srv->data_buf[slot] = NULL;
-        srv->data_inuse[slot] = 0;
-    }
 
     // close server socket
     int ret = 0;
