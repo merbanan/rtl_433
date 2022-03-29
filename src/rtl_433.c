@@ -201,7 +201,7 @@ static void help_protocols(r_device *devices, unsigned num_devices, int exit_cod
             if (devices[i].disabled <= 2) // if not hidden
                 fprintf(stderr, "    [%02u]%c %s\n", i + 1, disabledc, devices[i].name);
         }
-        fprintf(stderr, "\n* Disabled by default, use -R n or -G\n");
+        fprintf(stderr, "\n* Disabled by default, use -R n or a conf file to enable\n");
     }
     exit(exit_code);
 }
