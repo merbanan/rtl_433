@@ -704,7 +704,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     // choose hop_index as frequency_index, if there are too few hop_times use the last one
     int hop_index = cfg->hop_times > cfg->frequency_index ? cfg->frequency_index : cfg->hop_times - 1;
     if (cfg->hop_times > 0 && cfg->frequencies > 1
-            && difftime(rawtime, cfg->hop_start_time) > cfg->hop_time[hop_index]) {
+            && difftime(rawtime, cfg->hop_start_time) >= cfg->hop_time[hop_index]) {
         alarm(0); // cancel the watchdog timer
         cfg->hop_now = 1;
     }
