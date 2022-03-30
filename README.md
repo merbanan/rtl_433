@@ -299,6 +299,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [214]  EMOS E6016 weatherstation with DCF77
     [215]  Altronics X7064 temperature and humidity sensor
     [216]* ANT and ANT+ devices
+    [217]  EMOS E6016 rain gauge
 
 * Disabled by default, use -R n or a conf file to enable
 

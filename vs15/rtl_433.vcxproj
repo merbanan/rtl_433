@@ -224,6 +224,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\elv.c" />
     <ClCompile Include="..\src\devices\emontx.c" />
     <ClCompile Include="..\src\devices\emos_e6016.c" />
+    <ClCompile Include="..\src\devices\emos_e6016_rain.c" />
     <ClCompile Include="..\src\devices\enocean_erp1.c" />
     <ClCompile Include="..\src\devices\ert_idm.c" />
     <ClCompile Include="..\src\devices\ert_scm.c" />
