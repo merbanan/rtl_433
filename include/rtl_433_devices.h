@@ -224,6 +224,7 @@
     DECL(emos_e6016) \
     DECL(altronics_7064) \
     DECL(ant_antplus) \
+    DECL(emos_e6016_rain) \
 
     /* Add new decoders here. */
 
