@@ -2,7 +2,7 @@
     EMOS E6016 Rain Gauge.
     Copyright (C) 2022 Christian W. Zuckschwerdt <christian@zuckschwerdt.org> 
     Copyright (C) 2022 Dirk Utke-Woehlke <kardinal26@mail.de>
-	Copyright (C) 2022 Stefan Tomko <stefan.tomko@gmail.com> 
+    Copyright (C) 2022 Stefan Tomko <stefan.tomko@gmail.com> 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
