@@ -257,7 +257,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [172]  Bresser Weather Center 6-in-1, 7-in-1 indoor, new 5-in-1, 3-in-1 wind gauge, Froggit WH6000, Ventus C8488A
     [173]  Bresser Weather Center 7-in-1
     [174]  EcoDHOME Smart Socket and MCEE Solar monitor
-    [175]  LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1 Wind Sensor
+    [175]  LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1/W2 Wind Sensor
     [176]  BlueLine Innovations Power Cost Monitor
     [177]  Burnhard BBQ thermometer
     [178]  Security+ (Keyfob)
