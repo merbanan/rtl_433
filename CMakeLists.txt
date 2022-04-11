@@ -242,6 +242,20 @@ else()
     message(STATUS "SoapySDR device input disabled.")
 endif()
 
+
+########################################################################
+# Configure RTSA
+########################################################################
+set(ENABLE_RTSA AUTO CACHE STRING "Enable Aaronia RTSA HTTP interface support")
+set_property(CACHE ENABLE_RTSA PROPERTY STRINGS ON OFF)
+if(ENABLE_RTSA) # ON
+
+    message(STATUS "Compiling with Aaronia RTSA HTTP support.")
+    ADD_DEFINITIONS(-DRTSA)
+else()
+    message(STATUS "Aaronia RTSA HTTP input disabled.")
+endif()
+
 ########################################################################
 # Setup optional Profiling with GPerfTools
 ########################################################################

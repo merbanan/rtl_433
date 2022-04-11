@@ -91,6 +91,11 @@ struct sdr_dev {
     void *rtlsdr_cb_ctx;
 #endif
 
+#ifdef RTSA
+    SOCKET rtsa_http;
+    double rtsa_filter_width;
+#endif
+
     char *dev_info;
 
     int running;
@@ -371,6 +376,364 @@ static int rtltcp_command(sdr_dev_t *dev, char cmd, int param)
 
     return sizeof(command) == send(dev->rtl_tcp, (const char*) &command, sizeof(command), 0) ? 0 : -1;
 }
+
+#ifdef RTSA
+
+static int rtsa_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
+{
+    UNUSED(verbose);
+    char *host = "localhost";
+    char *port = "54664";
+    char hostport[280]; // 253 chars DNS name plus extra chars
+
+    char *param = arg_param(dev_query); // strip scheme
+    hostport[0] = '\0';
+    if (param)
+        strncpy(hostport, param, sizeof(hostport) - 1);
+    hostport[sizeof(hostport) - 1] = '\0';
+    hostport_param(hostport, &host, &port);
+
+    fprintf(stderr, "rtsa_http input from %s port %s\n", host, port);
+
+#ifdef _WIN32
+    WSADATA wsa;
+
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+        perror("WSAStartup()");
+        return -1;
+    }
+#endif
+
+    struct addrinfo hints, *res, *res0;
+    int ret;
+    SOCKET sock;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family   = PF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = 0;
+    hints.ai_flags    = AI_ADDRCONFIG;
+
+    ret = getaddrinfo(host, port, &hints, &res0);
+    if (ret) {
+        fprintf(stderr, "%s\n", gai_strerror(ret));
+        return -1;
+    }
+    sock = INVALID_SOCKET;
+    for (res = res0; res; res = res->ai_next) {
+        sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+        if (sock >= 0) {
+            ret = connect(sock, res->ai_addr, res->ai_addrlen);
+            if (ret == -1) {
+                perror("connect");
+                sock = INVALID_SOCKET;
+            }
+            else
+                break; // success
+        }
+    }
+    freeaddrinfo(res0);
+    if (sock == INVALID_SOCKET) {
+        perror("socket");
+        return -1;
+    }
+
+    const char *req = "GET /stream?format=int16 HTTP/1.1\n\n";
+    send(sock, req, strlen(req), 0);
+
+    unsigned int newlines = 0;
+
+    do {
+        unsigned char ch;
+
+        int r = recv(sock, &ch, 1, MSG_WAITALL);
+        if (r <= 0)
+        {
+            perror("recv");
+            return -1;
+        }
+
+        if(ch == '\n')
+        {
+            newlines++;
+        }
+        else if(ch == '\r')
+        {
+        }
+        else
+        {
+            newlines = 0;
+        }
+    } while (newlines < 2);
+
+
+    fprintf(stderr, "rtsa_http connected to %s:%s\n", host, port);
+
+    sdr_dev_t *dev = calloc(1, sizeof(sdr_dev_t));
+    if (!dev) {
+        WARN_CALLOC("rtsa_open()");
+        return -1; // NOTE: returns error on alloc failure.
+    }
+
+    dev->rtsa_http = sock;
+    dev->sample_size = sizeof(int16_t) * 2;
+    dev->sample_signed = 1;
+
+    *out_dev = dev;
+    return 0;
+}
+
+static int rtsa_close(SOCKET sock)
+{
+    int ret = shutdown(sock, SHUT_RDWR);
+    if (ret == -1) {
+        perror("shutdown");
+        return -1;
+    }
+
+    ret = closesocket(sock);
+    if (ret == -1) {
+        perror("close");
+        return -1;
+    }
+
+    return 0;
+}
+
+/* a simple float parser for the invariant format in the JSON string */
+static double rtsa_atod_invariant(const char* str)
+{
+    double result = 0;
+    int pos = 0;
+
+    while (str[pos] >= '0' && str[pos] <= '9') {
+        result *= 10;
+        result += str[pos] - '0';
+        pos++;
+    }
+    if (str[pos] == '.') {
+        pos++;
+        double multiplier = 0.1;
+        while (str[pos] >= '0' && str[pos] <= '9') {
+            result += (str[pos] - '0') * multiplier;
+            multiplier /= 10;
+            pos++;
+        }
+    }
+    return result;
+}
+
+/* search and parse a specific field in the JSON string as double */
+static double rtsa_parse_field(const char *json, const char *field)
+{
+    double ret = 0;
+    char *match_buffer = malloc(strlen(field));
+
+    sprintf(match_buffer, "\"%s\":", field);
+    uint32_t match_length = strlen(match_buffer);
+
+    if(strlen(json) < match_length)
+    {
+        free(match_buffer);
+        printf("JSON too short\n");
+        return 0;
+    }
+
+    uint32_t max_pos = strlen(json) - match_length;
+
+    for(uint32_t pos = 0; pos < max_pos; pos++)
+    {
+        if(!strncmp(&json[pos], match_buffer, match_length))
+        {
+            const char *value_str = &json[pos + strlen(match_buffer)];
+            ret = rtsa_atod_invariant(value_str);
+            break;
+        }
+    }
+
+    free(match_buffer);
+
+    return ret;
+}
+
+/* for a given filter width, determine decimation and underlying sampling rate */
+static uint32_t rtsa_match_width(uint32_t width, uint32_t max_width, uint32_t rate)
+{
+    for(int decim = 0; decim < 11; decim++) {
+        if(width == (max_width >> decim)) {
+            //printf("rtsa: new rate: %d, decim: %d\n", rate, (1<<decim));
+            return rate >> decim;
+        }
+    }
+
+    return 0;
+}
+
+static sdr_event_flags_t rtsa_parse(sdr_dev_t *dev, const char *json)
+{
+    sdr_event_flags_t ret = 0;
+    double start_freq = rtsa_parse_field(json, "startFrequency");
+    double end_freq = rtsa_parse_field(json, "endFrequency");
+    double width = end_freq - start_freq;
+    double center = start_freq + width / 2;
+
+    /* old and new center frequency doesn't match */
+    if(dev->center_frequency != (uint32_t)center) {
+        dev->center_frequency = (uint32_t)center;
+        ret |= SDR_EV_FREQ;
+    }
+
+    /* filter width has changed, thus we have a new sampling rate */
+    if(dev->rtsa_filter_width != width) {
+        dev->rtsa_filter_width = width;
+
+        /* determine decimation and sampling rate from filter width (until it is present in the JSON info in an upcoming version) */
+        uint32_t rate = rtsa_match_width(width, 153000000, 184319943);
+        if(!rate) {
+            rate = rtsa_match_width(width, 204000000, 245759924);
+        }
+
+        if(rate) {
+            dev->sample_rate = rate;
+            ret |= SDR_EV_RATE;
+        }
+    }
+    
+    return ret;
+}
+
+static int rtsa_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len)
+{
+    /* buffer sizes are determined by RTSA's HTTP interface chunk size */
+    UNUSED(buf_num);
+    UNUSED(buf_len);
+
+    /* reserve a buffer for receiving the HTTP chunks */
+    uint8_t *http_buf = malloc(1);
+    uint32_t http_buf_length = 1;
+
+    dev->running = 1;
+    do {
+        char length_chars[16];
+        uint32_t length_char_num = 0;
+        uint8_t ch;
+
+        /* initialize length string */
+        length_chars[0] = 0;
+
+        do
+        {
+            /* receive the HTTP chunk length in hex */
+            int ret = recv(dev->rtsa_http, &ch, 1, MSG_WAITALL);
+            
+            if (ret == 0 || length_char_num >= sizeof(length_chars)) {
+                perror("rtsa_http");
+                dev->running = 0;
+                break;
+            }
+
+            /* skip the first CR/LFs and stop at the second newline */
+            if(ch == '\n') {
+                if(length_char_num > 2) {
+                    break;
+                }
+            }
+            else if(ch == '\r') {
+            }
+            else {
+                /* all characters inbetween are captured */
+                length_chars[length_char_num++] = ch;
+                length_chars[length_char_num] = 0;
+            }
+        } while(dev->running);
+
+        if(!dev->running) {
+            break;
+        }
+
+        /* parse the chunk size */
+        uint32_t http_block_length = strtoul((const char*)length_chars, NULL, 16);
+
+        /* make sure the HTTP chunk buffer is big enough */
+        if(http_buf_length < http_block_length) {
+            http_buf = realloc(http_buf, http_block_length);
+            http_buf_length = http_block_length;
+        }
+
+        /* receive the whole chunk, mixed JSON and binary data */
+        int r = recv(dev->rtsa_http, http_buf, http_block_length, MSG_WAITALL);
+        if (r <= 0) {
+            fprintf(stderr, "failed to read\n");
+            break;
+        }
+
+        /* determine JSON length by separator char 0x1E */
+        uint32_t json_len = 0;
+
+        while(http_buf[json_len] != 0x1E && json_len < http_block_length) {
+            json_len++;
+        }
+
+        if(http_buf[json_len] != 0x1E) {
+            fprintf(stderr, "failed to detect JSON\n");
+            dev->running = 0;
+            return 0;
+        }
+
+        http_buf[json_len++] = 0;
+
+        /* parse JSON */
+        sdr_event_flags_t flags = rtsa_parse(dev, (const char*)http_buf);
+
+        /* some fields were updated, signal this */
+        if(flags) {
+            sdr_event_t ev = {
+                .ev               = flags,
+                .sample_rate      = dev->sample_rate,
+                .center_frequency = dev->center_frequency
+            };
+            if (cb) {
+                cb(&ev, ctx);
+            }
+        }
+
+        /* process binary buffer */
+        uint32_t http_payload = http_block_length - json_len;
+
+        /* only realloc if the buffer is too small */
+        if(dev->buffer_size < http_payload) {
+            dev->buffer_size = http_payload;
+            dev->buffer = realloc(dev->buffer, dev->buffer_size);
+        }
+
+        /* make sure we have it an an aligned buffer */
+        memcpy(dev->buffer, &http_buf[json_len], http_payload);
+
+        /* and pass it to callback */
+        sdr_event_t ev = {
+                .ev  = SDR_EV_DATA,
+                .buf = dev->buffer,
+                .len = http_payload,
+        };
+        dev->polling = 1;
+        if (ev.len > 0)
+            cb(&ev, ctx);
+        dev->polling = 0;
+        
+        if(!dev->running) {
+            break;
+        }
+
+        apply_changes(dev, cb, ctx);
+
+    } while (dev->running);
+
+    free(http_buf);
+
+    return 0;
+}
+
+#endif
 
 /* RTL-SDR helpers */
 
@@ -1037,6 +1400,9 @@ int sdr_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
     if (dev_query && !strncmp(dev_query, "rtl_tcp", 7))
         return rtltcp_open(out_dev, dev_query, verbose);
 
+    if (dev_query && !strncmp(dev_query, "rtsa_http", 12))
+        return rtsa_open(out_dev, dev_query, verbose);
+
 #if !defined(RTLSDR) && !defined(SOAPYSDR)
     if (verbose)
         fprintf(stderr, "No input drivers (RTL-SDR or SoapySDR) compiled in.\n");
@@ -1084,6 +1450,11 @@ int sdr_close(sdr_dev_t *dev)
 #ifdef RTLSDR
     if (dev->rtlsdr_dev)
         ret = rtlsdr_close(dev->rtlsdr_dev);
+#endif
+
+#ifdef RTSA
+    if (dev->rtsa_http)
+        ret = rtsa_close(dev->rtsa_http);
 #endif
 
     free(dev->dev_info);
@@ -1396,6 +1767,13 @@ int sdr_set_sample_rate(sdr_dev_t *dev, uint32_t rate, int verbose)
         r = rtlsdr_set_sample_rate(dev->rtlsdr_dev, rate);
 #endif
 
+#ifdef RTSA
+    if (dev->rtsa_http) {
+        fprintf(stderr, "Setting sample rate not supported. Please set the sample rate in RTSA-Suite instead.\n");
+        r = 0;
+    }
+#endif
+
     if (verbose) {
         if (r < 0)
             fprintf(stderr, "WARNING: Failed to set sample rate.\n");
@@ -1421,6 +1799,11 @@ uint32_t sdr_get_sample_rate(sdr_dev_t *dev)
 #ifdef RTLSDR
     if (dev->rtlsdr_dev)
         return rtlsdr_get_sample_rate(dev->rtlsdr_dev);
+#endif
+
+#ifdef RTSA
+    if (dev->rtsa_http)
+        return dev->sample_rate;
 #endif
 
     return 0;
@@ -1616,6 +1999,11 @@ int sdr_start(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, ui
         return rtlsdr_read_loop(dev, cb, ctx, buf_num, buf_len);
 #endif
 
+#ifdef RTSA
+    if (dev->rtsa_http)
+        return rtsa_read_loop(dev, cb, ctx, buf_num, buf_len);
+#endif
+
     return -1;
 }
 
@@ -1640,6 +2028,13 @@ int sdr_stop(sdr_dev_t *dev)
     if (dev->rtlsdr_dev) {
         dev->running = 0;
         return rtlsdr_cancel_async(dev->rtlsdr_dev);
+    }
+#endif
+
+#ifdef RTSA
+    if (dev->rtsa_http) {
+        dev->running = 0;
+        return 0;
     }
 #endif
 
