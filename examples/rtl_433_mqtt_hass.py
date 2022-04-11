@@ -685,6 +685,10 @@ def rtl_433_bridge():
 
     if args.user is not None:
         mqttc.username_pw_set(args.user, args.password)
+
+    if args.ca_cert is not None:
+        mqttc.tls_set(ca_certs=args.ca_cert)
+
     mqttc.on_connect = mqtt_connect
     mqttc.on_disconnect = mqtt_disconnect
     mqttc.on_message = mqtt_message
@@ -721,6 +725,7 @@ if __name__ == "__main__":
                         help="MQTT hostname to connect to (default: %(default)s)")
     parser.add_argument("-p", "--port", type=int, default=1883,
                         help="MQTT port (default: %(default)s)")
+    parser.add_argument("-c", "--ca_cert", type=str, help="MQTT TLS CA certificate path")
     parser.add_argument("-r", "--retain", action="store_true")
     parser.add_argument("-f", "--force_update", action="store_true",
                         help="Append 'force_update = true' to all configs.")
