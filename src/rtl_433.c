@@ -142,7 +142,7 @@ static void usage(int exit_code)
             "       -v : verbose, -vv : verbose decoders, -vvv : debug decoders, -vvvv : trace decoding).\n"
             "  [-c <path>] Read config options from a file\n"
             "\t\t= Tuner options =\n"
-            "  [-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query> | rtl_tcp | help]\n"
+            "  [-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query> | rtl_tcp | rtsa_http | help]\n"
             "  [-g <gain> | help] (default: auto)\n"
             "  [-t <settings>] apply a list of keyword=value settings for SoapySDR devices\n"
             "       e.g. -t \"antenna=A,bandwidth=4.5M,rfnotch_ctrl=false\"\n"
@@ -228,7 +228,9 @@ static void help_device(void)
             "  [-d driver=rtlsdr] Open e.g. specific SoapySDR device\n"
             "\tTo set gain for SoapySDR use -g ELEM=val,ELEM=val,... e.g. -g LNA=20,TIA=8,PGA=2 (for LimeSDR).\n"
             "  [-d rtl_tcp[:[//]host[:port]] (default: localhost:1234)\n"
-            "\tSpecify host/port to connect to with e.g. -d rtl_tcp:127.0.0.1:1234\n");
+            "\tSpecify host/port to connect to with e.g. -d rtl_tcp:127.0.0.1:1234\n"
+            "  [-d rtsa_http[:[//]host[:port]] (default: localhost:54664)\n"
+            "\tSpecify host/port of Aaronia RTSA Suite's HTTP server to connect to with e.g. -d rtsa_http:127.0.0.1:54664\n");
     exit(0);
 }
 
