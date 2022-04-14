@@ -527,7 +527,7 @@ static double rtsa_atod_invariant(const char* str)
 static double rtsa_parse_field(const char *json, const char *field)
 {
     double ret = 0;
-    char *match_buffer = malloc(strlen(field));
+    char *match_buffer = malloc(strlen(field)+4);
 
     sprintf(match_buffer, "\"%s\":", field);
     uint32_t match_length = strlen(match_buffer);
