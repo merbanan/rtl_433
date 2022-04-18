@@ -159,6 +159,19 @@ mappings = {
         }
     },
 
+    "battery": {
+        "device_type": "sensor",
+        "object_suffix": "B",
+        "config": {
+            "device_class": "battery",
+            "name": "Battery",
+            "unit_of_measurement": "%",
+            "value_template": "{{ float(value) * 99 + 1 }}",
+            "state_class": "measurement",
+            "entity_category": "diagnostic"
+        }
+    },
+
     "battery_ok": {
         "device_type": "sensor",
         "object_suffix": "B",
