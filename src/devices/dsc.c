@@ -31,6 +31,7 @@ General Packet Description
 - The last byte is a CRC with nothing after it, no stop/sync bit, so
   if there was a CRC byte of 0, the packet would wind up being short
   by 4 mS and up to 8 bits (48 bits total).
+- Note the WS4945 doubles length of those timings.
 
 There are 48 bits in the packet including the leading 4 sync 1 bits.
 This makes the packet 48 x 500 uS bits long plus the 2.5 mS preamble
