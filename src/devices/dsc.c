@@ -271,7 +271,7 @@ r_device dsc_security_ws4945 = {
         .modulation  = OOK_PULSE_RZ,
         .short_width = 536,  // Pulse length, 536 µs
         .long_width  = 1072, // Bit period, 1072 µs
-        .reset_limit = 6000, // Max gap,
+        .reset_limit = 7000, // Max gap,
         .decode_fn   = &dsc_callback,
         .fields      = output_fields,
 };
