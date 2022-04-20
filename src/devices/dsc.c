@@ -92,10 +92,10 @@ Notes:
 - The two-way devices wireless keypad and use an entirely different
   modulation. They are supposed to be encrypted. A sampling rate
   greater than 250 khz (1 mhz?) looks to be necessary.
-- Tested on EV-DW4927 door/glass break sensor, WS4975 door sensor, 
+- Tested on EV-DW4927 door/glass break sensor, WS4975 door sensor,
   WS4945 door sensor and WS4904P motion sensors.
-- The EV-DW4927 combined door / glass break sensor sends out two 
-  separate signals. Glass break uses the original ESN as written on 
+- The EV-DW4927 combined door / glass break sensor sends out two
+  separate signals. Glass break uses the original ESN as written on
   the case and door sensor uses ESN with last digit +1.
 
 */
@@ -273,7 +273,7 @@ r_device dsc_security = {
 };
 
 r_device dsc_security_ws4945 = {
-        // Used for EV-DW4927, WS4975 and WS4945. 
+        // Used for EV-DW4927, WS4975 and WS4945.
         .name        = "DSC Security Contact (WS4945)",
         .modulation  = OOK_PULSE_RZ,
         .short_width = 536,  // Pulse length, 536 µs
