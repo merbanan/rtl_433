@@ -225,6 +225,7 @@
     DECL(altronics_7064) \
     DECL(ant_antplus) \
     DECL(emos_e6016_rain) \
+    DECL(hcs200_fsk) \
 
     /* Add new decoders here. */
 
