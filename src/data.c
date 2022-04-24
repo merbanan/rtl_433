@@ -418,7 +418,7 @@ typedef struct {
     abuf_t msg;
 } data_print_jsons_t;
 
-R_API_CALLCONV static void format_jsons_array(data_output_t *output, data_array_t *array, char const *format)
+static void R_API_CALLCONV format_jsons_array(data_output_t *output, data_array_t *array, char const *format)
 {
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
 
@@ -431,7 +431,7 @@ R_API_CALLCONV static void format_jsons_array(data_output_t *output, data_array_
     abuf_cat(&jsons->msg, "]");
 }
 
-R_API_CALLCONV static void format_jsons_object(data_output_t *output, data_t *data, char const *format)
+static void R_API_CALLCONV format_jsons_object(data_output_t *output, data_t *data, char const *format)
 {
     UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
@@ -450,7 +450,7 @@ R_API_CALLCONV static void format_jsons_object(data_output_t *output, data_t *da
     abuf_cat(&jsons->msg, "}");
 }
 
-R_API_CALLCONV static void format_jsons_string(data_output_t *output, const char *str, char const *format)
+static void R_API_CALLCONV format_jsons_string(data_output_t *output, const char *str, char const *format)
 {
     UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
@@ -510,7 +510,7 @@ R_API_CALLCONV static void format_jsons_string(data_output_t *output, const char
     jsons->msg.left = size;
 }
 
-R_API_CALLCONV static void format_jsons_double(data_output_t *output, double data, char const *format)
+static void R_API_CALLCONV format_jsons_double(data_output_t *output, double data, char const *format)
 {
     UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
@@ -529,7 +529,7 @@ R_API_CALLCONV static void format_jsons_double(data_output_t *output, double dat
     }
 }
 
-R_API_CALLCONV static void format_jsons_int(data_output_t *output, int data, char const *format)
+static void R_API_CALLCONV format_jsons_int(data_output_t *output, int data, char const *format)
 {
     UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;

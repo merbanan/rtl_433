@@ -149,7 +149,7 @@ typedef struct {
     char hostname[_POSIX_HOST_NAME_MAX + 1];
 } data_output_syslog_t;
 
-R_API_CALLCONV static void print_syslog_data(data_output_t *output, data_t *data, char const *format)
+static void R_API_CALLCONV print_syslog_data(data_output_t *output, data_t *data, char const *format)
 {
     UNUSED(format);
     data_output_syslog_t *syslog = (data_output_syslog_t *)output;
@@ -181,7 +181,7 @@ R_API_CALLCONV static void print_syslog_data(data_output_t *output, data_t *data
     datagram_client_send(&syslog->client, message, abuf_len);
 }
 
-R_API_CALLCONV static void data_output_syslog_free(data_output_t *output)
+static void R_API_CALLCONV data_output_syslog_free(data_output_t *output)
 {
     data_output_syslog_t *syslog = (data_output_syslog_t *)output;
 

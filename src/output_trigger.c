@@ -25,7 +25,7 @@ typedef struct {
     FILE *file;
 } data_output_trigger_t;
 
-R_API_CALLCONV static void print_trigger_data(data_output_t *output, data_t *data, char const *format)
+static void R_API_CALLCONV print_trigger_data(data_output_t *output, data_t *data, char const *format)
 {
     UNUSED(data);
     UNUSED(format);
@@ -35,7 +35,7 @@ R_API_CALLCONV static void print_trigger_data(data_output_t *output, data_t *dat
     fflush(trigger->file);
 }
 
-R_API_CALLCONV static void data_output_trigger_free(data_output_t *output)
+static void R_API_CALLCONV data_output_trigger_free(data_output_t *output)
 {
     if (!output)
         return;

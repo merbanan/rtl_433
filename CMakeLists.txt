@@ -104,6 +104,10 @@ if(MSVC)
     ADD_DEFINITIONS(-D_CRT_NONSTDC_NO_DEPRECATE)
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
     ADD_DEFINITIONS(-DNOMINMAX)
+    # don't warn on type truncation
+    add_compile_options("/wd4244")
+    add_compile_options("/wd4267")
+    add_compile_options("/wd4305")
 endif()
 
 # Fix printf %zu
