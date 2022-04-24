@@ -11,7 +11,6 @@ module.exports = {
     sidebar: [
       ['/', 'Overview'],
       'BUILDING',
-      'VS15',
       'CHANGELOG',
       'CONTRIBUTING',
       'PRIMER',

@@ -200,14 +200,4 @@ SET(Threads_FOUND TRUE)
 * you need to place it in the same folder as librtlsdr.dll and libusb-1.0.dll (you should have seen both of them by now)
 * good luck!
 
-### Visual Studio 2017 supplied project/solution
-
-* Open the `rtl_433.sln` from the `vs15` folder -or-
-
-```
-cd rtl_433
-cd vs15
-MSBuild.exe rtl_433.sln
-```
-
 If your system is missing or you find these steps are outdated please PR an update or open an issue.

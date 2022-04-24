@@ -7,8 +7,8 @@ on:
 
 env:
   # from https://downloads.myriadrf.org/builds/PothosSDR/
-  pothos-ver: 2021.05.01-vc16
-  pothos-exe: PothosSDR-2021.05.01-vc16-x64.exe
+  pothos-ver: 2021.07.25-vc16
+  pothos-exe: PothosSDR-2021.07.25-vc16-x64.exe
 
 jobs:
   downloads_job:
@@ -99,7 +99,7 @@ jobs:
         os: [windows-2016, windows-2019]
         platform: [x64, Win32]
         # from https://downloads.myriadrf.org/builds/PothosSDR/
-        #pothos-ver: [2021.05.01-vc16]
+        #pothos-ver: [2021.07.25-vc16]
         include:
           - os: windows-2016
             generator: Visual Studio 15 2017
@@ -192,54 +192,6 @@ jobs:
         asset_path: ${{ runner.workspace }}/rtl_433-win-msvc-x64.zip
         asset_name: rtl_433-win-msvc-x64-${{ needs.release_job.outputs.release_version }}.zip
         asset_content_type: application/zip
-
-  build_vsc_job:
-    needs: downloads_job
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-2016]
-        platform: [x64]
-        include:
-          - os: windows-2016
-            generator: Visual Studio 15 2017
-    runs-on: ${{ matrix.os }}
-    name: ${{ matrix.generator }} ${{ matrix.platform }} VS (MSBuild) on ${{ matrix.os }}
-    steps:
-    - run: choco install openssl
-      if: matrix.platform == 'x64'
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
-      id: downloads
-      if: matrix.platform == 'x64'
-      with:
-        path: ${{ runner.workspace }}/${{ env.pothos-exe }}
-        key: download-${{ env.pothos-ver }}
-    - name: Run Downloads
-      if: matrix.platform == 'x64' && steps.downloads.outputs.cache-hit != 'true'
-      shell: bash
-      working-directory: ${{ runner.workspace }}
-      run: curl -L -O https://downloads.myriadrf.org/builds/PothosSDR/${{ env.pothos-exe }}
-    - name: Install Deps
-      if: matrix.platform == 'x64'
-      shell: bash
-      working-directory: ${{ runner.workspace }}
-      run: |
-        mkdir -p pothos
-        7z x -opothos -y ${{ env.pothos-exe }}
-        mkdir -p libusb/include
-        cp -a pothos/include libusb
-        mkdir -p libusb/MS64/dll
-        cp pothos/lib/libusb-1.0.lib libusb/MS64/dll
-        cp pothos/bin/libusb-1.0.dll libusb/MS64/dll
-        mkdir -p rtl-sdr/x64
-        cp -a pothos/include/* rtl-sdr
-        cp pothos/lib/rtlsdr.lib rtl-sdr/x64
-        cp pothos/bin/rtlsdr.dll rtl-sdr/x64
-    - uses: microsoft/setup-msbuild@v1.0.2
-    - name: MSBuild
-      working-directory: vs15
-      run: msbuild rtl_433.sln /property:Configuration=Release /property:Platform=${{ matrix.platform }}
 
   build_linux_job:
     strategy:
