@@ -119,26 +119,15 @@ Afterwards, messages are sent every 45s.
 
 static int tfa_drop_303233_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
-    int row_index;
-    uint8_t *row_data;
-
-    uint32_t sensor_id;
-    uint16_t rain_counter;
-    float rain_mm;
-    uint8_t battery_low;
-    uint8_t observed_checksum;
-    uint8_t computed_checksum;
-
     bitbuffer_invert(bitbuffer);
 
-    row_index = bitbuffer_find_repeated_row(bitbuffer, TFA_DROP_MINREPEATS,
+    int row_index = bitbuffer_find_repeated_row(bitbuffer, TFA_DROP_MINREPEATS,
             TFA_DROP_BITLEN);
     if (row_index < 0 || bitbuffer->bits_per_row[row_index] > TFA_DROP_BITLEN + 16) {
         return DECODE_ABORT_LENGTH;
     }
 
-    row_data = bitbuffer->bb[row_index];
+    uint8_t *row_data = bitbuffer->bb[row_index];
 
     /*
      * Reject rows that don't start with the correct start byte.
@@ -150,8 +139,8 @@ static int tfa_drop_303233_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /*
      * Validate checksum
      */
-    observed_checksum = row_data[7];
-    computed_checksum = lfsr_digest8_reflect(row_data, 7, 0x31, 0xf4);
+    uint8_t observed_checksum = row_data[7];
+    uint8_t computed_checksum = lfsr_digest8_reflect(row_data, 7, 0x31, 0xf4);
     if (observed_checksum != computed_checksum) {
         return DECODE_FAIL_MIC;
     }
@@ -163,17 +152,17 @@ static int tfa_drop_303233_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /*
      * Mask first nibble in row_data[0] it is a constant message prefix.
      */
-    sensor_id = (row_data[0] & 0x0f) << 16 | row_data[1] << 8 | row_data[2];
+    int sensor_id = (row_data[0] & 0x0f) << 16 | row_data[1] << 8 | row_data[2];
 
-    rain_counter = row_data[6] << 8 | row_data[4];
-    rain_counter = rain_counter + 10;
+    uint16_t rain_counter = row_data[6] << 8 | row_data[4];
+    rain_counter = rain_counter + 10; // wrapping intentional
 
-    rain_mm = rain_counter * 0.254;
+    float rain_mm = rain_counter * 0.254f;
 
-    battery_low = (row_data[3] & 0x80) >> 7;
+    int battery_low = (row_data[3] & 0x80) >> 7;
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",      "",           DATA_STRING, "TFA-Drop",
             "id",         "",           DATA_FORMAT, "%5x", DATA_INT,  sensor_id,
             "battery_ok", "Battery",    DATA_INT,    !battery_low,

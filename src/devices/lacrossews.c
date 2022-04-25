@@ -116,9 +116,9 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         case 0: // Temperature
             if (ws_id == 0x6)
-                temp_c = (msg_value_bcd - 400.0) * 0.1f;
+                temp_c = (msg_value_bcd - 400) * 0.1f;
             else
-                temp_c = (msg_value_bcd - 300.0) * 0.1f;
+                temp_c = (msg_value_bcd - 300) * 0.1f;
 
             /* clang-format off */
             data = data_make(
@@ -152,7 +152,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             break;
 
         case 2: // Rain
-            rain_mm = 0.5180 * msg_value_bin;
+            rain_mm = 0.5180f * msg_value_bin;
 
             /* clang-format off */
             data = data_make(
@@ -169,7 +169,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         case 3: // Wind
 
         case 7: // Gust
-            wind_dir = msg_nybbles[9] * 22.5;
+            wind_dir = msg_nybbles[9] * 22.5f;
             wind_spd = (msg_nybbles[7] * 16 + msg_nybbles[8]) * 0.1f;
             if (msg_nybbles[7] == 0xF && msg_nybbles[8] == 0xE) {
                 decoder_logf(decoder, 1, __func__, "WS %02X-%02X: %s Not Connected",

@@ -241,9 +241,9 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
     double lux = light * 0.1;
     float wm;
     if (preamble == SPB)
-        wm = (light * 0.00079);
+        wm = (light / 1265.8f);
     else //EPB
-        wm = (light / 6830.0);
+        wm = (light / 6830.0f);
 
     // GETTING TIME DATA
     int signal_type       = ((br[2] & 0x0F) == 10);
