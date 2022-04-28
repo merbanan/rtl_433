@@ -477,16 +477,7 @@ mappings = {
             "state_class": "measurement"
         }
     },
-    "light_klx": {
-        "device_type": "sensor",
-        "object_suffix": "lux",
-        "config": {
-            "name": "Outside Luminance",
-            "unit_of_measurement": "lux",
-            "value_template": "{{ value|int }}",
-            "state_class": "measurement"
-        }
-    },
+
     "uv": {
         "device_type": "sensor",
         "object_suffix": "uv",
