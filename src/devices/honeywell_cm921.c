@@ -16,7 +16,7 @@ Honeywell CM921 Thermostat (subset of Evohome).
 
 #include "decoder.h"
 
-// #define _DEBUG
+#define _DEBUG
 
 static int decode_10to8(uint8_t const *b, int pos, int end, uint8_t *out)
 {
@@ -41,6 +41,7 @@ typedef struct {
     uint8_t header;
     uint8_t num_device_ids;
     uint8_t device_id[4][3];
+    uint8_t seq; 
     uint16_t command;
     uint8_t payload_length;
     uint8_t payload[256];
@@ -69,7 +70,7 @@ typedef struct {
 static const dev_map_entry_t device_map[] = {
         {.t = 1, .s = "CTL"},  // Controller
         {.t = 2, .s = "UFH"},  // Underfloor heating (HCC80, HCE80)
-        {.t = 3, .s = " 30"},  // HCW82??
+        {.t = 3, .s = "Thm"},  // HCW82
         {.t = 4, .s = "TRV"},  // Thermostatic radiator valve (HR80, HR91, HR92)
         {.t = 7, .s = "DHW"},  // DHW sensor (CS92)
         {.t = 10, .s = "OTB"}, // OpenTherm bridge (R8810)
@@ -122,7 +123,7 @@ static data_t *decode_device_ids(const message_t *msg, data_t *data, int style)
 
 #define UNKNOWN_IF(C) do { \
                         if (C) \
-                           return data_append(data, "unknown", "", DATA_FORMAT, "%04x", DATA_INT, msg->command, NULL); \
+                           return data_append(data, "unknown", "", DATA_FORMAT, "%04x", DATA_INT, msg->command); \
                       } while (0)
 
 static data_t *honeywell_cm921_interpret_message(r_device *decoder, const message_t *msg, data_t *data)
@@ -132,7 +133,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
     // https://www.domoticaforum.eu/viewtopic.php?f=7&t=5806&start=30
     // (specifically https://www.domoticaforum.eu/download/file.php?id=1396)
 
-    data = decode_device_ids(msg, data, 1);
+    data = decode_device_ids(msg, data, 0);  // XXX IAP
 
     data_t *r = data;
     switch (msg->command) {
@@ -234,8 +235,8 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
           size_t num_zones = msg->payload_length/3;
           for (size_t i=0; i < num_zones; i++) {
             char name[256];
-            snprintf(name, sizeof(name), "temperature (zone %u)", msg->payload[3*i]);
-            int16_t temp = msg->payload[3*i+1] << 8 | msg->payload[3*i+1];
+            snprintf(name, sizeof(name), "temp (zone %u)", msg->payload[3*i]);
+            int16_t temp = msg->payload[3*i+1] << 8 | msg->payload[3*i+2];
             data = data_append(data, name, "", DATA_DOUBLE, temp/100.0, NULL);
           }
           break;
@@ -252,7 +253,9 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
             break;
         }
         default: /* Unknown command */
-            UNKNOWN_IF(1);
+//printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX %04x\n",msg->command);
+            return data_append(data, "unknown", "", DATA_FORMAT, "%04X", DATA_INT, 0xDEAD); 
+            //UNKNOWN_IF(1);
     }
     return r;
 }
@@ -289,6 +292,7 @@ static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
 
     msg->num_device_ids = msg->header == 0x14 ? 1 :
                           msg->header == 0x18 ? 2 :
+                          msg->header == 0x1a ? 2 :
                           msg->header == 0x1c ? 2 :
                           msg->header == 0x10 ? 2 :
                           msg->header == 0x3c ? 2 :
@@ -297,6 +301,11 @@ static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
     for (unsigned i = 0; i < msg->num_device_ids; i++)
         for (unsigned j = 0; j < 3; j++)
             msg->device_id[i][j] = next(bb, &ipos, num_bytes);
+
+    if ( msg->header == 0x1a )
+         msg->seq = next(bb, &ipos, num_bytes);
+    else
+         msg->seq = 0;
 
     msg->command = (next(bb, &ipos, num_bytes) << 8) | next(bb, &ipos, num_bytes);
     msg->payload_length = next(bb, &ipos, num_bytes);
@@ -390,14 +399,32 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int pr = parse_msg(&packet, 0, &message);
 
+#ifndef _DEBUG // XXX
     if (pr <= 0)
         return pr;
+#endif //XXX
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",    "",             DATA_STRING, "Honeywell-CM921",
+data_t *data;
+if (pr <= 0)
+{
+    data = data_make(
+//XXX            "model",    "",             DATA_STRING, "Honeywell-CM921",
+            "mic",      "Integrity",    DATA_STRING, "CSUM_FAIL",
+            NULL);
+    data = add_hex_string(data, "Packet", packet.bb[row], packet.bits_per_row[row] / 8);
+    data = add_hex_string(data, "CRC", &message.crc, 1);
+    data = data_append(data, "# man errors", "", DATA_INT, man_errors, NULL);
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+else
+{
+    data = data_make(
             "mic",      "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
+}
     /* clang-format on */
 
     data = honeywell_cm921_interpret_message(decoder, &message, data);
@@ -405,6 +432,7 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 #ifdef _DEBUG
     data = add_hex_string(data, "Packet", packet.bb[row], packet.bits_per_row[row] / 8);
     data = add_hex_string(data, "Header", &message.header, 1);
+    data = add_hex_string(data, "Seq", &message.seq, 1);
     uint8_t cmd[2] = {message.command >> 8, message.command & 0x00FF};
     data = add_hex_string(data, "Command", cmd, 2);
     data = add_hex_string(data, "Payload", message.payload, message.payload_length);
@@ -424,10 +452,12 @@ static char *output_fields[] = {
 #ifdef _DEBUG
         "Packet",
         "Header",
+        "Flags",
         "Command",
         "Payload",
         "Unparsed",
         "CRC",
+        "Seq",
         "# man errors",
 #endif
         "unknown",
@@ -455,6 +485,7 @@ static char *output_fields[] = {
         "actuator_run_time",
         "min_flow_temp",
         "mic",
+        "temp (zone 1)",
         NULL,
 };
 
