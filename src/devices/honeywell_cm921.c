@@ -132,6 +132,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
     // https://github.com/Evsdd/The-Evohome-Protocol/wiki
     // https://www.domoticaforum.eu/viewtopic.php?f=7&t=5806&start=30
     // (specifically https://www.domoticaforum.eu/download/file.php?id=1396)
+    // https://github.com/zxdavb/ramses_protocol
 
     data = decode_device_ids(msg, data, 0);  // XXX IAP
 
@@ -199,10 +200,19 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
             break;
         }
         case 0x2309: {
-            UNKNOWN_IF(msg->payload_length != 3);
-            data = data_append(data, "zone", "", DATA_INT, msg->payload[0], NULL);
-            // Observation: CM921 reports a very high setpoint during binding (0x7eff); packet: 143255c1230903017efff7
-            data = data_append(data, "setpoint", "", DATA_DOUBLE, ((msg->payload[1] << 8) | msg->payload[2]) / 100.0, NULL);
+            UNKNOWN_IF(msg->payload_length % 3 != 0);
+            if (msg->payload_length == 3) { // for single zone use this message for backward compatibility
+                data = data_append(data, "zone", "", DATA_INT, msg->payload[0], NULL);
+                // Observation: CM921 reports a very high setpoint during binding (0x7eff); packet: 143255c1230903017efff7
+                data = data_append(data, "setpoint", "", DATA_DOUBLE, ((msg->payload[1] << 8) | msg->payload[2]) / 100.0, NULL);
+            }
+            else
+                for (size_t i=0; i < msg->payload_length; i+=3) {
+                    char name[256];
+                    snprintf(name, sizeof(name), "setpoint (zone %u)", msg->payload[i]);
+                    int16_t temp = msg->payload[i+1] << 8 | msg->payload[i+2];
+                    data = data_append(data, name, "", DATA_DOUBLE, temp/100.0, NULL);
+            }
             break;
         }
         case 0x1100: {
@@ -250,6 +260,55 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
             // example packet Heat Demand: 18 28ad9a 884dd3 3150 0200c6 88
             data = data_append(data, "zone", "", DATA_INT, msg->payload[0], NULL);
             data = data_append(data, "heat_demand", "", DATA_INT, msg->payload[1], NULL);
+            break;
+        }
+        case 0x1f09: {
+            // example "Packet" : "18045ef5045ef51f0903ff077693", "Header" : "18", "Seq" : "00", "Command" : "1f09", "Payload" : "ff0776",
+            // IAP no idea of the function, appears to contain a temp
+            UNKNOWN_IF(msg->payload_length != 3);
+            data = data_append(data, "zone", "", DATA_INT, msg->payload[0], NULL);
+            // Observation: CM921 reports a very high setpoint during binding (0x7eff); packet: 143255c1230903017efff7
+            data = data_append(data, "setpoint", "", DATA_DOUBLE, ((msg->payload[1] << 8) | msg->payload[2]) / 100.0, NULL);
+            break;
+        }
+        case 0x0002: {
+            // Sent by a thermostat in resposne to a change in the aux wired input
+            // "Packet" : "1a0da2520da2520300020403010105d1", "Header" : "1a", "Seq" : "03", "Command" : "0002", "Payload" : "03010105"
+            // byte[2] of payload indicates whether aux input is logic 1 or 0
+            // byte[0] is always 3 (remaining length?) 
+            // byte[1] counts between 01 and 02 (seq always remians 0)
+            // byte[3] is always 5
+            UNKNOWN_IF(msg->payload_length != 4);
+            data = data_append(data, "aux_input", "", DATA_INT, msg->payload[2], NULL);
+            break;
+        }
+        case 0x2d49: {
+            // Sent by CTL. 3 byte payload. Purpose unknown.
+            // "Packet" : "18045ef5045ef52d490300b4000d", "Header" : "18", "Seq" : "00", "Command" : "2d49", "Payload" : "00b400"
+            UNKNOWN_IF(msg->payload_length != 3);
+            break;
+        }
+        case 0x2389: {
+            // Sent by CTL. 3 byte payload. Purpose unknown.
+            // "Packet" : "1a0da2520da252b723890302ffe697", "Header" : "1a", "Seq" : "b7", "Command" : "2389", "Payload" : "02ffe6"
+            UNKNOWN_IF(msg->payload_length != 3);
+            break;
+        }
+        case 0x000a: {
+            UNKNOWN_IF(msg->payload_length % 6 != 0);
+            for (size_t i=0; i < msg->payload_length; i+=6) {
+                char name[256];
+                int16_t temp;
+                snprintf(name, sizeof(name), "flags (zone %u)", msg->payload[i]);
+                temp = msg->payload[6*i+1];
+                data = data_append(data, name, "", DATA_FORMAT, "%02x", DATA_INT, temp, NULL);
+                snprintf(name, sizeof(name), "temp_low (zone %u)", msg->payload[i]);
+                temp = msg->payload[6*i+2] << 8 | msg->payload[6*i+3];
+                data = data_append(data, name, "", DATA_DOUBLE, temp/100.0, NULL);
+                snprintf(name, sizeof(name), "temp_high (zone %u)", msg->payload[i]);
+                temp = msg->payload[6*i+4] << 8 | msg->payload[6*i+5];
+                data = data_append(data, name, "", DATA_DOUBLE, temp/100.0, NULL);
+            }
             break;
         }
         default: /* Unknown command */
@@ -336,40 +395,74 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // post=10101100
     // each byte surrounded by start/stop bits (0byte1)
     // then manchester decode.
-    const uint8_t preamble_pattern[4] = { 0x55, 0x5F, 0xF0, 0x04 };
-    const uint8_t preamble_bit_length = 30;
+    const uint8_t preamble_pattern[4] = { 0x55, 0xff, 0x00, 0x40 }; // { 0x55, 0x5F, 0xF0, 0x04 };
+    const uint8_t preamble_bit_length = 26; //30;
     const int row = 0; // we expect a single row only.
+    int sep = 0;
 
-    if (bitbuffer->num_rows != 1 || bitbuffer->bits_per_row[row] < 60)
+    if (bitbuffer->num_rows != 1 || bitbuffer->bits_per_row[row] < 60) {
+        decoder_logf(decoder, 1, __func__, "num_rows=%d, bits_per_row=%d", bitbuffer->num_rows, bitbuffer->bits_per_row[row]);
         return DECODE_ABORT_LENGTH;
+    }
 
-    decoder_log_bitrow(decoder, 1, __func__, bitbuffer->bb[row], bitbuffer->bits_per_row[row], "");
+    decoder_log_bitrow(decoder, 1, __func__, bitbuffer->bb[row], bitbuffer->bits_per_row[row], "RX");
 
-    int preamble_start = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, preamble_bit_length);
+    int preamble_start = bitbuffer_search(bitbuffer, row, sep, preamble_pattern, preamble_bit_length);
     int start = preamble_start + preamble_bit_length;
     int len = bitbuffer->bits_per_row[row] - start;
     decoder_logf(decoder, 1, __func__, "preamble_start=%d start=%d len=%d", preamble_start, start, len);
-    if (len < 8)
+    {
+        int y;
+        for(y=0;y<8;y++) {
+            uint8_t tmp[1000];
+            char tstr[200];
+            memset(&tmp,0,1000);
+            bitbuffer_extract_bytes(bitbuffer, 0, y,tmp, bitbuffer->bits_per_row[row]-y);
+            bitrow_snprint(tmp, bitbuffer->bits_per_row[row]-y, tstr, sizeof (tstr));
+            //decoder_logf(decoder, 1, __func__, "AA%d %s",y,tstr);
+        }
+    }
+    if (len < 8 )
+    {
+        decoder_logf(decoder, 1, __func__, "err_runt");
+        // continue;
         return DECODE_ABORT_LENGTH;
-    int end = start + len;
+    }
 
+    int end = start + len;
     bitbuffer_t bytes = {0};
     int pos = start;
     while (pos < end) {
         uint8_t byte = 0;
-        if (decode_10to8(bitbuffer->bb[row], pos, end, &byte) != 10)
+        if (decode_10to8(bitbuffer->bb[row], pos, end, &byte) != 10) {
+            decoder_logf(decoder, 1, __func__, "err_8to10");
             break;
+        }
         for (unsigned i = 0; i < 8; i++)
             bitbuffer_add_bit(&bytes, (byte >> i) & 0x1);
         pos += 10;
     }
 
+    decoder_log_bitrow(decoder, 1, __func__, bytes.bb[0], bytes.bits_per_row[0], "BBB");
+
+while( sep < bytes.bits_per_row[row])
+{
+
+    uint8_t header_pattern[3] = { 0x33, 0x55, 0x53 };
+    int start33 = bitbuffer_search(&bytes, row, sep, header_pattern, sizeof(header_pattern)*8);
+
+    if ( start33 != sep ) decoder_logf(decoder, 1, __func__, "Strange start33=%d",start33);
+
+#if 0
     // Skip Manchester breaking header
     uint8_t header[3] = { 0x33, 0x55, 0x53 };
     if (bitrow_get_byte(bytes.bb[row], 0) != header[0] ||
         bitrow_get_byte(bytes.bb[row], 8) != header[1] ||
         bitrow_get_byte(bytes.bb[row], 16) != header[2])
+    {
+        decoder_logf(decoder, 1, __func__, "did not find 33 55 53");
         return DECODE_FAIL_SANITY;
+    }
 
     // Find Footer 0x35 (0x55*)
     int fi = bytes.bits_per_row[row] - 8;
@@ -379,33 +472,66 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         fi -= 8;
     }
     if (!seen_aa || bitrow_get_byte(bytes.bb[row], fi) != 0x35)
+    {
+        decoder_logf(decoder, 1, __func__, "did not find 35 55+");
         return DECODE_FAIL_SANITY;
+    }
+#endif
+    unsigned first_byte = start33+24;
+    uint8_t seperator_pattern[2] = { 0xff, 0x00 };
+    sep = bitbuffer_search(&bytes, row, first_byte, seperator_pattern, sizeof(seperator_pattern)*8);
+    // if no seperator, this will be the end of the buffer
 
-    unsigned first_byte = 24;
-    unsigned end_byte   = fi;
-    unsigned num_bits   = end_byte - first_byte;
+    if ( sep < bytes.bits_per_row[row] )
+        decoder_logf(decoder, 1, __func__, "seperator at %d", sep);
+
+    // Find Footer 0x35 (0x55*)
+    unsigned fi = sep - 8;
+    sep = sep + 16; // advance over seperator
+
+    int seen_aa = 0;
+    while (fi>8 && bitrow_get_byte(bytes.bb[row], fi) == 0x55) {
+        seen_aa = 1;
+        fi -= 8;
+    }
+    if (!seen_aa || bitrow_get_byte(bytes.bb[row], fi) != 0x35)
+    {
+        decoder_logf(decoder, 1, __func__, "did not find 35 55+");
+        //return DECODE_FAIL_SANITY;
+        continue;
+    }
+
+
+    //unsigned end_byte   = fi;
+    //unsigned num_bits   = end_byte - first_byte;
     //unsigned num_bytes = num_bits/8 / 2;
 
     bitbuffer_t packet = {0};
-    unsigned fpos = bitbuffer_manchester_decode(&bytes, row, first_byte, &packet, num_bits);
-    unsigned man_errors = num_bits - (fpos - first_byte - 2);
+    unsigned fpos = bitbuffer_manchester_decode(&bytes, row, first_byte, &packet, fi-first_byte); // decode as much as we can
 
-#ifndef _DEBUG
-    if (man_errors != 0)
-        return DECODE_FAIL_SANITY;
-#endif
+    if ( fpos < fi )
+    {
+        decoder_logf(decoder, 1, __func__, "manchester_fail start=%d sep=%d fail_at=%d", first_byte, sep, fpos);
 
+        char *bitrow_asprint_bits(uint8_t const *bitrow, unsigned bit_len);
+        void free( void* ptr );
+
+        char * p = bitrow_asprint_bits(bytes.bb[0], fpos);
+        decoder_logf(decoder, 1, __func__, "USED: %s", p);
+        free(p);
+        p = bitrow_asprint_bits(bytes.bb[0],  bytes.bits_per_row[0]);
+        decoder_logf(decoder, 1, __func__, "FULL: %s", p);
+        free(p);
+        //return DECODE_FAIL_SANITY;
+        continue;
+    }
+
+    decoder_logf(decoder, 1, __func__, "cool %d bytes",packet.bits_per_row[0]/8);
     message_t message;
-
     int pr = parse_msg(&packet, 0, &message);
 
-#ifndef _DEBUG // XXX
-    if (pr <= 0)
-        return pr;
-#endif //XXX
-
     /* clang-format off */
-data_t *data;
+    data_t *data;
 if (pr <= 0)
 {
     data = data_make(
@@ -414,10 +540,11 @@ if (pr <= 0)
             NULL);
     data = add_hex_string(data, "Packet", packet.bb[row], packet.bits_per_row[row] / 8);
     data = add_hex_string(data, "CRC", &message.crc, 1);
-    data = data_append(data, "# man errors", "", DATA_INT, man_errors, NULL);
+//    data = data_append(data, "# man errors", "", DATA_INT, man_errors, NULL);
 
     decoder_output_data(decoder, data);
-    return 1;
+    //return 1;
+    continue;
 }
 else
 {
@@ -438,10 +565,11 @@ else
     data = add_hex_string(data, "Payload", message.payload, message.payload_length);
     data = add_hex_string(data, "Unparsed", message.unparsed, message.unparsed_length);
     data = add_hex_string(data, "CRC", &message.crc, 1);
-    data = data_append(data, "# man errors", "", DATA_INT, man_errors, NULL);
+    //data = data_append(data, "# man errors", "", DATA_INT, man_errors, NULL);
 #endif
 
     decoder_output_data(decoder, data);
+}
 
     return 1;
 }
@@ -485,7 +613,87 @@ static char *output_fields[] = {
         "actuator_run_time",
         "min_flow_temp",
         "mic",
+        "aux_input",
+        "temp (zone 0)",
         "temp (zone 1)",
+        "temp (zone 2)",
+        "temp (zone 3)",
+        "temp (zone 4)",
+        "temp (zone 5)",
+        "temp (zone 6)",
+        "temp (zone 7)",
+        "temp (zone 8)",
+        "temp (zone 9)",
+        "temp (zone 10)",
+        "temp (zone 11)",
+        "temp (zone 12)",
+        "temp (zone 13)",
+        "temp (zone 14)",
+        "temp (zone 15)",
+        "setpoint (zone 0)",
+        "setpoint (zone 1)",
+        "setpoint (zone 2)",
+        "setpoint (zone 3)",
+        "setpoint (zone 4)",
+        "setpoint (zone 5)",
+        "setpoint (zone 6)",
+        "setpoint (zone 7)",
+        "setpoint (zone 8)",
+        "setpoint (zone 9)",
+        "setpoint (zone 10)",
+        "setpoint (zone 11)",
+        "setpoint (zone 12)",
+        "setpoint (zone 13)",
+        "setpoint (zone 14)",
+        "setpoint (zone 15)",
+        "temp_low (zone 0)",
+        "temp_low (zone 1)",
+        "temp_low (zone 2)",
+        "temp_low (zone 3)",
+        "temp_low (zone 4)",
+        "temp_low (zone 5)",
+        "temp_low (zone 6)",
+        "temp_low (zone 7)",
+        "temp_low (zone 8)",
+        "temp_low (zone 9)",
+        "temp_low (zone 10)",
+        "temp_low (zone 11)",
+        "temp_low (zone 12)",
+        "temp_low (zone 13)",
+        "temp_low (zone 14)",
+        "temp_low (zone 15)",
+        "temp_high (zone 0)",
+        "temp_high (zone 1)",
+        "temp_high (zone 2)",
+        "temp_high (zone 3)",
+        "temp_high (zone 4)",
+        "temp_high (zone 5)",
+        "temp_high (zone 6)",
+        "temp_high (zone 7)",
+        "temp_high (zone 8)",
+        "temp_high (zone 9)",
+        "temp_high (zone 10)",
+        "temp_high (zone 11)",
+        "temp_high (zone 12)",
+        "temp_high (zone 13)",
+        "temp_high (zone 14)",
+        "temp_high (zone 15)",
+        "flags (zone 0)",
+        "flags (zone 1)",
+        "flags (zone 2)",
+        "flags (zone 3)",
+        "flags (zone 4)",
+        "flags (zone 5)",
+        "flags (zone 6)",
+        "flags (zone 7)",
+        "flags (zone 8)",
+        "flags (zone 9)",
+        "flags (zone 10)",
+        "flags (zone 11)",
+        "flags (zone 12)",
+        "flags (zone 13)",
+        "flags (zone 14)",
+        "flags (zone 15)",
         NULL,
 };
 
