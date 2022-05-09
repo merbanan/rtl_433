@@ -400,6 +400,9 @@
     <ClCompile Include="..\src\devices\elro_db286a.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\elro_ab440r.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\elv.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

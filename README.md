@@ -300,6 +300,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [215]  Altronics X7064 temperature and humidity sensor
     [216]* ANT and ANT+ devices
     [217]  EMOS E6016 rain gauge
+    [218]  ELRO Remote home control (AB440R)
 
 * Disabled by default, use -R n or a conf file to enable
 

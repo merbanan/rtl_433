@@ -86,6 +86,7 @@ add_library(r_433 STATIC
     devices/efergy_optical.c
     devices/efth800.c
     devices/elro_db286a.c
+    devices/elro_ab440r.c
     devices/elv.c
     devices/emontx.c
     devices/emos_e6016.c
