@@ -1480,7 +1480,7 @@ int main(int argc, char **argv) {
 
     char const **well_known = well_known_output_fields(cfg);
     start_outputs(cfg, well_known);
-    free(well_known);
+    free((void *)well_known);
 
     if (cfg->out_block_size < MINIMAL_BUF_LENGTH ||
             cfg->out_block_size > MAXIMAL_BUF_LENGTH) {

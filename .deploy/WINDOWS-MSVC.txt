@@ -1,8 +1,9 @@
 # rtl_433 Windows MSVC build
 
 For the SoapySDR builds you need PothosSDR installed https://downloads.myriadrf.org/builds/PothosSDR/
-Any recent version should work, currently built with 2021.01.28-vc16:
-https://downloads.myriadrf.org/builds/PothosSDR/PothosSDR-2021.05.01-vc16-x64.exe
+Any recent version should work, currently built with 2021.07.25-vc16:
+https://downloads.myriadrf.org/builds/PothosSDR/PothosSDR-2021.07.25-vc16-x64.exe
+When installing choose "Add PothosSDR to the system PATH for the current user"
 
 For the TLS builds (mqtts and influxs) you need OpenSSL installed.
 E.g. install Chocolatey https://chocolatey.org/install

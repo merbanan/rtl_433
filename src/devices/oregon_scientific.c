@@ -114,7 +114,7 @@ static unsigned int get_os_rollingcode(unsigned char *message)
     return rc;
 }
 
-static unsigned short int cm180i_power(uint8_t const *msg,unsigned int offset)
+static unsigned short int cm180i_power(uint8_t const *msg, unsigned int offset)
 {
     unsigned short int val = 0;
 

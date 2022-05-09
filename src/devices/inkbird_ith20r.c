@@ -104,9 +104,9 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint16_t word56 = (msg[6] << 8 | msg[5]);
     int battery = msg[7];
     uint16_t sensor_id = (msg[9] << 8 | msg[8]);
-    float temperature = (float)((int16_t)(msg[11] << 8 | msg[10])) / 10.0;
-    float temperature_ext = (float)((int16_t)(msg[13] << 8 | msg[12])) / 10.0;
-    float humidity = (float)(msg[15] << 8 | msg[14]) / 10.0;
+    float temperature = ((int16_t)(msg[11] << 8 | msg[10])) * 0.1f;
+    float temperature_ext = ((int16_t)(msg[13] << 8 | msg[12])) * 0.1f;
+    float humidity = (msg[15] << 8 | msg[14]) * 0.1f;
     uint8_t word18 = msg[18];
 
     decoder_logf(decoder, 1, __func__, "dword0-3= 0x%08X word5-6= 0x%04X byte18= 0x%02X", subtype, word56, word18);

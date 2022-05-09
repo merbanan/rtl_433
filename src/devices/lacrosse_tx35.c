@@ -111,7 +111,7 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
 
         // message "envelope" has been validated, start parsing data
         int sensor_id   = ((b[0] & 0x0f) << 2) | (b[1] >> 6);
-        float temp_c    = 10.0 * (b[1] & 0x0f) + 1.0 * ((b[2] >> 4) & 0x0f) + 0.1 * (b[2] & 0x0f) - 40.0;
+        float temp_c    = 10 * (b[1] & 0x0f) + 1 * ((b[2] >> 4) & 0x0f) + 0.1f * (b[2] & 0x0f) - 40.0f;
         int new_batt    = (b[1] >> 5) & 1;
         int battery_low = b[3] >> 7;
         int humidity    = b[3] & 0x7f;

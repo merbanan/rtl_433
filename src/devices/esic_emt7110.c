@@ -66,12 +66,12 @@ static int esic_emt7110_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int pairing      = (b[4] & 0x80) >> 7;
     int connected    = (b[4] & 0x40) >> 6;
     int power_raw    = ((b[4] & 0x3f) << 8) | (b[5]);
-    float power_w    = power_raw * 0.5;
+    float power_w    = power_raw * 0.5f;
     int current_ma   = (b[6] << 8) | (b[7]);
-    float current_a   = current_ma * 0.001;
-    float voltage_v  = (b[8] + 256) * 0.5;
+    float current_a   = current_ma * 0.001f;
+    float voltage_v  = (b[8] + 256) * 0.5f;
     int energy_raw   = ((b[9] & 0x3f) << 8) | (b[10]);
-    float energy_kwh = energy_raw * 0.01;
+    float energy_kwh = energy_raw * 0.01f;
 
     /* clang-format off */
     data = data_make(

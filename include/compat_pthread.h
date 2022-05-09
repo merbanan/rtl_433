@@ -27,7 +27,7 @@ typedef HANDLE                          pthread_mutex_t;
 typedef CONDITION_VARIABLE              pthread_cond_t;
 #define pthread_cond_init(cp, a)        (InitializeConditionVariable(cp))
 #define pthread_cond_destroy(cp)        (0)
-#define pthread_cond_wait(cp, mp)       (SleepConditionVariableCS(cp, mp, INFINITE) ? 0 : 1)
+#define pthread_cond_wait(cp, mp)       (SleepConditionVariableCS(cp, *mp, INFINITE) ? 0 : 1)
 #define pthread_cond_signal(cp)         (WakeConditionVariable(cp))
 #define pthread_cond_broadcast(cp)      (WakeAllConditionVariable(cp))
 
