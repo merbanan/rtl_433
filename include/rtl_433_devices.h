@@ -227,7 +227,6 @@
     DECL(emos_e6016_rain) \
     DECL(elro_ab440r) \
 
-
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
