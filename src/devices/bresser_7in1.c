@@ -108,7 +108,8 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             + (msg[18] & 0x0f) * 100 + (msg[19] >> 4) * 10 + (msg[19] & 0x0f);
     int uv_raw =   (msg[20] >> 4) * 100 + (msg[20] & 0x0f) * 10 + (msg[21] >> 4);
 
-    float light_klx = lght_raw * 0.001f;
+    float light_klx = lght_raw * 0.001f; // TODO: remove this
+    float light_lux = lght_raw;
     float uv_index = uv_raw * 0.1f;
 
     /* clang-format off */
@@ -121,7 +122,8 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "wind_avg_m_s",     "Wind Speed",   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wavg_raw * 0.1f,
             "wind_dir_deg",     "Direction",    DATA_INT,    wdir,
             "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
-            "light_klx",        "Light",        DATA_FORMAT, "%.3f klx", DATA_DOUBLE, light_klx,
+            "light_klx",        "Light",        DATA_FORMAT, "%.3f klx", DATA_DOUBLE, light_klx, // TODO: remove this
+            "light_lux",        "Light",        DATA_FORMAT, "%.3f lux", DATA_DOUBLE, light_lux,
             "uv",               "UV Index",     DATA_FORMAT, "%.1f", DATA_DOUBLE, uv_index,
             "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "mic",              "Integrity",    DATA_STRING, "CRC",
@@ -141,7 +143,8 @@ static char *output_fields[] = {
         "wind_avg_m_s",
         "wind_dir_deg",
         "rain_mm",
-        "light_klx",
+        "light_klx", // TODO: remove this
+        "light_lux",
         "uv",
         "battery_ok",
         "mic",

@@ -347,9 +347,9 @@ static THREAD_RETURN THREAD_CALL accept_thread(void *arg)
         pthread_mutex_unlock(&srv->lock);
 
         fprintf(stderr, "rtl_tcp client disconnected from %s port %s\n", host, port);
-        close(sock);
+        closesocket(sock);
     }
-    return NULL;
+    return 0;
 }
 
 static int rtltcp_server_start(rtltcp_server_t *srv, char const *host, char const *port, r_cfg_t *cfg, struct raw_output *output)

@@ -955,7 +955,7 @@ void start_outputs(r_cfg_t *cfg, char const *const *well_known)
         data_output_start(cfg->output_handler.elems[i], output_fields, num_output_fields);
     }
 
-    free(output_fields);
+    free((void *)output_fields);
 }
 
 void add_kv_output(r_cfg_t *cfg, char *param)

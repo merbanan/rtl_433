@@ -40,12 +40,6 @@ Data format is:
 
 static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t *b;
-    data_t *data;
-    int channel;
-    int temp_raw;
-    float temp_c;
-
     bitbuffer_invert(bitbuffer);
 
     // Correct number of rows?
@@ -62,7 +56,7 @@ static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
-    b = bitbuffer->bb[0];
+    uint8_t *b = bitbuffer->bb[0];
 
     // No need to decode/extract values for simple test
     if (!b[0] && !b[2] && !b[3] && !b[4]) {
@@ -83,7 +77,7 @@ static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Channel
-    channel = (b[1]);
+    int channel = (b[1]);
     switch (channel) {
     case 0x36:
         channel = 3;
@@ -101,12 +95,12 @@ static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_logf(decoder, 1, __func__, "channel decoded is %d", channel);
 
     // Temperature
-    temp_raw = ((b[3] & 0x3f) << 8) | b[2];
-    temp_c   = (temp_raw / 353.0) - 9.2; // TODO: this is very likely wrong
+    int temp_raw = ((b[3] & 0x3f) << 8) | b[2];
+    float temp_c = (temp_raw / 353.0f) - 9.2f; // TODO: this is very likely wrong
     decoder_logf(decoder, 1, __func__, "temperature: raw: %d %08X converted: %.2f", temp_raw, temp_raw, temp_c);
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Philips-AJ7010",
             "channel",          "Channel",      DATA_INT,    channel,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,

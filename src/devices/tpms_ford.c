@@ -63,9 +63,9 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     /* range seems to have different formulas */
     psibits = (((b[6] & 0x20) << 3) | b[4]);
     if (psibits < 90)
-        pressure_psi = 0.3 + psibits * 0.25f; // BdyCM + FORScan
+        pressure_psi = 0.3f + psibits * 0.25f; // BdyCM + FORScan
     else
-        pressure_psi = 6.8 + psibits * 0.2122727273;
+        pressure_psi = 6.8f + psibits * 0.2122727273f;
     temperature_c = b[5] - 56; // approximate
     if (b[6] & 0x40)           // temperature scale mode?
         temperature_c = (b[5] ^ 0x80) - 56;

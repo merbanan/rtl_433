@@ -258,7 +258,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         rain_cup_count = 0.254f;
     }
     // Wind speed is scaled by 8, wind speed = raw / 8 * 1.12 m/s (0.51 for WH65B)
-    float wind_speed_ms = wind_speed_raw * 0.125 * wind_speed_factor;
+    float wind_speed_ms = wind_speed_raw * 0.125f * wind_speed_factor;
     int gust_speed_raw  = b[7];             // 0xff if invalid
     // Wind gust is unscaled, multiply by wind speed factor 1.12 m/s
     float gust_speed_ms = gust_speed_raw * wind_speed_factor;
@@ -629,7 +629,7 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     sprintf(id, "%02x%02x%02x", b[1], b[2], b[3]);
     int boost           = (b[4] & 0xe0) >> 5;
     int battery_mv      = (b[4] & 0x1f) * 100;
-    float battery_level = (battery_mv - 700) / 900.0; // assume 1.6V (100%) to 0.7V (0%) range
+    float battery_level = (battery_mv - 700) / 900.0f; // assume 1.6V (100%) to 0.7V (0%) range
     int ad_raw          = (((int)b[7] & 0x01) << 8) | (int)b[8];
     int moisture        = b[6];
 
@@ -701,7 +701,7 @@ static int alecto_ws1200v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int temp_raw      = (b[1] & 0x7) << 8 | b[2];
     float temperature = (temp_raw - 400) * 0.1f;
     int rainfall_raw  = b[4] << 8 | b[3];   // rain tip counter
-    float rainfall    = rainfall_raw * 0.3; // each tip is 0.3mm
+    float rainfall    = rainfall_raw * 0.3f; // each tip is 0.3mm
 
     /* clang-format off */
     data = data_make(
@@ -859,7 +859,7 @@ static int alecto_ws1200v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int temp_raw      = (b[1] & 0x7) << 8 | b[2];
     float temperature = (temp_raw - 400) * 0.1f;
     int rainfall_raw  = b[4] << 8 | b[3];   // rain tip counter
-    float rainfall    = rainfall_raw * 0.3; // each tip is 0.3mm
+    float rainfall    = rainfall_raw * 0.3f; // each tip is 0.3mm
 
     /* clang-format off */
     data = data_make(
@@ -932,7 +932,7 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int temp_raw      = (b[1] & 0x7) << 8 | b[2];
     float temperature = (temp_raw - 400) * 0.1f;
     int rainfall_raw  = b[4] << 8 | b[3];   // rain tip counter
-    float rainfall    = rainfall_raw * 0.3; // each tip is 0.3mm
+    float rainfall    = rainfall_raw * 0.3f; // each tip is 0.3mm
 
     /* clang-format off */
     data = data_make(

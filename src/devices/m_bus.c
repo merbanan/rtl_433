@@ -174,7 +174,7 @@ typedef struct {
     uint8_t     data[512];
 } m_bus_data_t;
 
-static float humidity_factor[2] = { 0.1, 1 };
+static float humidity_factor[2] = { 0.1f, 1.0f };
 
 
 static char *oms_hum[4][4] = {

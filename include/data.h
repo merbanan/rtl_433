@@ -22,10 +22,12 @@
 #define INCLUDE_DATA_H_
 
 #if defined _WIN32 || defined __CYGWIN__
-    #ifdef data_EXPORTS
+    #if defined data_EXPORTS
         #define R_API __stdcall __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
-    #else
+    #elif defined data_IMPORTS
         #define R_API __stdcall __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
+    #else
+        #define R_API // for static linking
     #endif
     #define R_API_CALLCONV __stdcall
 #else

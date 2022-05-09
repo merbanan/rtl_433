@@ -2,9 +2,9 @@
 
 set -e
 
-libusb_ver=1.0.22
+libusb_ver=1.0.25
 rtlsdr_ver=0.6.0
-pothos_ver=2020.01.26-vc14
+pothos_ver=2021.07.25-vc16
 
 # from https://libusb.info/
 [ -e libusb-${libusb_ver}.7z ] || curl -L -O https://github.com/libusb/libusb/releases/download/v${libusb_ver}/libusb-${libusb_ver}.7z

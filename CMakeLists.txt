@@ -104,6 +104,10 @@ if(MSVC)
     ADD_DEFINITIONS(-D_CRT_NONSTDC_NO_DEPRECATE)
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
     ADD_DEFINITIONS(-DNOMINMAX)
+    # don't warn on type truncation
+    add_compile_options("/wd4244")
+    add_compile_options("/wd4267")
+    add_compile_options("/wd4305")
 endif()
 
 # Fix printf %zu
@@ -135,6 +139,10 @@ option(ENABLE_IPV6 "Enable IPv6 support" TRUE)
 if(ENABLE_IPV6)
     message(STATUS "IPv6 support enabled.")
     ADD_DEFINITIONS(-DMG_ENABLE_IPV6=1)
+    if(MINGW)
+        # IPv6 requires at least Vista for inet_pton, inet_ntop
+        add_definitions(-D_WIN32_WINNT=0x0600)
+    endif()
 else()
     message(STATUS "IPv6 support disabled.")
 endif()
