@@ -1134,8 +1134,8 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         else if (strncmp(arg, "syslog", 6) == 0) {
             add_syslog_output(cfg, arg_param(arg));
         }
-        else if (strncmp(optarg, "http", 4) == 0) {
-            add_http_output(cfg, arg_param(optarg));
+        else if (strncmp(arg, "http", 4) == 0) {
+            add_http_output(cfg, arg_param(arg));
         }
         else if (strncmp(arg, "trigger", 7) == 0) {
             add_trigger_output(cfg, arg_param(arg));
