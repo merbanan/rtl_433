@@ -27,23 +27,14 @@ beginning with a 0 will have data in this gap.
 static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int ret = 0;
-    int row;
-    int cs;
-    int i;
     int nibble[OSV1_BITS/4];
-    int sid, channel;
-    // int uk1;
-    float tempC;
-    int battery, sign, checksum;
-    // int uk2, uk3;
-    data_t *data;
 
-    for (row = 0; row < bitbuffer->num_rows; row++) {
+    for (int row = 0; row < bitbuffer->num_rows; row++) {
         if (bitbuffer->bits_per_row[row] != OSV1_BITS)
             continue; // DECODE_ABORT_LENGTH
 
-        cs = 0;
-        for (i = 0; i < OSV1_BITS / 8; i++) {
+        int cs = 0;
+        for (int i = 0; i < OSV1_BITS / 8; i++) {
             uint8_t byte = reverse8(bitbuffer->bb[row][i]);
             nibble[i * 2    ] = byte & 0x0f;
             nibble[i * 2 + 1] = byte >> 4;
@@ -53,37 +44,37 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
 
 
         // No need to decode/extract values for simple test
-        if ( bitbuffer->bb[row][0] == 0xFF && bitbuffer->bb[row][1] == 0xFF
-            && bitbuffer->bb[row][2] == 0xFF && bitbuffer->bb[row][3] == 0xFF )  {
+        if (bitbuffer->bb[row][0] == 0xFF && bitbuffer->bb[row][1] == 0xFF
+                && bitbuffer->bb[row][2] == 0xFF && bitbuffer->bb[row][3] == 0xFF )  {
             decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0xff");
             continue; //  DECODE_FAIL_SANITY
         }
 
         cs = (cs & 0xFF) + (cs >> 8);
-        checksum = nibble[6] + (nibble[7] << 4);
+        int checksum = nibble[6] + (nibble[7] << 4);
         /* reject 0x00 checksums to reduce false positives */
         if (!checksum || (checksum != cs))
             continue; // DECODE_FAIL_MIC
 
-        sid      = nibble[0];
-        channel  = ((nibble[1] >> 2) & 0x03) + 1;
-        //uk1      = (nibble[1] >> 0) & 0x03; /* unknown.  Seen change every 60 minutes */
-        tempC    =  nibble[2] * 0.1 + nibble[3] + nibble[4] * 10.;
-        battery  = (nibble[5] >> 3) & 0x01;
-        //uk2      = (nibble[5] >> 2) & 0x01; /* unknown.  Always zero? */
-        sign     = (nibble[5] >> 1) & 0x01;
-        //uk3      = (nibble[5] >> 0) & 0x01; /* unknown.  Always zero? */
+        int sid      = nibble[0];
+        int channel  = ((nibble[1] >> 2) & 0x03) + 1;
+        //int uk1      = (nibble[1] >> 0) & 0x03; /* unknown.  Seen change every 60 minutes */
+        float temp_c =  nibble[2] * 0.1f + nibble[3] + nibble[4] * 10.0f;
+        int battery  = (nibble[5] >> 3) & 0x01;
+        //int uk2      = (nibble[5] >> 2) & 0x01; /* unknown.  Always zero? */
+        int sign     = (nibble[5] >> 1) & 0x01;
+        //int uk3      = (nibble[5] >> 0) & 0x01; /* unknown.  Always zero? */
 
         if (sign)
-            tempC = -tempC;
+            temp_c = -temp_c;
 
         /* clang-format off */
-        data = data_make(
+        data_t *data = data_make(
                 "model",            "",             DATA_STRING,    "Oregon-v1",
                 "id",               "SID",          DATA_INT,       sid,
                 "channel",          "Channel",      DATA_INT,       channel,
                 "battery_ok",       "Battery",      DATA_INT,       !battery,
-                "temperature_C",    "Temperature",  DATA_FORMAT,    "%.01f C",              DATA_DOUBLE,    tempC,
+                "temperature_C",    "Temperature",  DATA_FORMAT,    "%.01f C",              DATA_DOUBLE,    temp_c,
                 "mic",              "Integrity",    DATA_STRING,    "CHECKSUM",
                 NULL);
         /* clang-format on */

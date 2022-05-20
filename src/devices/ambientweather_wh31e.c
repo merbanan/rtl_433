@@ -212,8 +212,8 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             id         = b[1];
             battery_ok = (b[2] >> 7);
             channel    = ((b[2] & 0x70) >> 4) + 1;
-            temp_raw   = ((b[2] & 0x0f) << 8) | b[3];
-            temp_c     = temp_raw * 0.1 - 40.0;
+            temp_raw   = ((b[2] & 0x0f) << 8) | (b[3]);
+            temp_c     = (temp_raw - 400) * 0.1f;
             humidity   = b[4];
             sprintf(extra, "%02x%02x%02x%02x%02x", b[6], b[7], b[8], b[9], b[10]);
 

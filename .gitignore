@@ -58,6 +58,7 @@ _*/
 
 rtl_433_tests
 
+.vs
 .idea
 cmake-build-debug/
 

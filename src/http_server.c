@@ -1189,7 +1189,7 @@ typedef struct {
     struct http_server_context *server;
 } data_output_http_t;
 
-static void print_http_data(data_output_t *output, data_t *data, char const *format)
+static void R_API_CALLCONV print_http_data(data_output_t *output, data_t *data, char const *format)
 {
     UNUSED(format);
     data_output_http_t *http = (data_output_http_t *)output;
@@ -1221,7 +1221,7 @@ static void print_http_data(data_output_t *output, data_t *data, char const *for
     }
 }
 
-static void data_output_http_free(data_output_t *output)
+static void R_API_CALLCONV data_output_http_free(data_output_t *output)
 {
     data_output_http_t *http = (data_output_http_t *)output;
 

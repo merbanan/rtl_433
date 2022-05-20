@@ -1,7 +1,7 @@
 ########################################################################
 # Compile test cases
 ########################################################################
-add_executable(data-test data-test.c ../src/output_file.c)
+add_executable(data-test data-test.c ../src/output_file.c ../src/term_ctl.c)
 
 target_link_libraries(data-test data)
 

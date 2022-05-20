@@ -10,7 +10,6 @@ cd ${0%/*}
 sed 's/docs\///' ../README.md >README.md
 cp ../CHANGELOG.md .
 cp ../rtl_433_tests/README.md TESTS.md
-cp ../vs15/README.md VS15.md
 
 # build
 yarn install

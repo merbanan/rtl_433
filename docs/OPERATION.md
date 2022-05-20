@@ -153,26 +153,22 @@ Note that the suffix is metric, the 1024000 Hz sample rate common with RTL-SDR h
 
 ## Decoders
 
-Decoders can be selected with the `-R`, `-G`, and `-X` option:
+Decoders can be selected with the `-R` and `-X` option:
 
 ```
   [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)
        Specify a negative number to disable a device decoding protocol (can be used multiple times)
-  [-G] Enable blacklisted device decoding protocols, for testing only.
   [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)
 ```
 
-By default all non-blacklisted decoders are enabled.
+By default all decoders with proper validity checking are enabled.
 
 You can disable selected decoders with any number of `-R -<number>` options.
 E.g. use `rtl_433 -R -8 -19` to disable the LaCrosse and Nexus decoders.
 
 Some decoders have little validity checking and may share very common signal characteristics.
 This will result in lots of false-positive decodes.
-These decoders are black-listed and you need to explicitly enable them with `-R <number>`.
-
-You can also use `-G` to enable all the blacklisted decoders.
-This is for testing only and strongly discouraged for continuous operation.
+These decoders are not enabled by default and you need to explicitly enable them with `-R <number>`.
 
 You can enable only selected decoders with any number of `-R <number>` options.
 Note that this will override the default and not select any decoder by default.
@@ -498,7 +494,7 @@ Without any `-F` option the default is KV output. Use `-F null` to remove that d
 ### Meta information
 
 ```
-  [-M time[:<options>]|protocol|level|stats|bits]
+  [-M time[:<options>]|protocol|level|noise[:<secs>]|stats|bits]
     Add various metadata to every output line.
 ```
 - Use `time` to add current date and time meta data (preset for live inputs).
@@ -507,11 +503,14 @@ Without any `-F` option the default is KV output. Use `-F null` to remove that d
 - Use `time:iso` to show the time with ISO-8601 format (`YYYY-MM-DD"T"hh:mm:ss`).
 - Use `time:off` to remove time meta data.
 - Use `time:usec` to add microseconds to date time meta data.
+- Use `time:tz` to output time with timezone offset.
 - Use `time:utc` to output time in UTC.
   (this may also be accomplished by invocation with TZ environment variable set).
   `usec` and `utc` can be combined with other options, eg. `time:unix:utc:usec`.
+- Use `replay[:N]` to replay file inputs at (N-times) realtime.
 - Use `protocol` / `noprotocol` to output the decoder protocol number meta data.
 - Use `level` to add Modulation, Frequency, RSSI, SNR, and Noise meta data.
+- Use `noise[:secs]` to report estimated noise level at intervals (default: 10 seconds).
 - Use `stats[:[<level>][:<interval>]]` to report statistics (default: 600 seconds).
   level 0: no report, 1: report successful devices, 2: report active devices, 3: report all
 - Use `bits` to add bit representation to code outputs (for debug).

@@ -21,6 +21,24 @@
 #ifndef INCLUDE_DATA_H_
 #define INCLUDE_DATA_H_
 
+#if defined _WIN32 || defined __CYGWIN__
+    #if defined data_EXPORTS
+        #define R_API __stdcall __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+    #elif defined data_IMPORTS
+        #define R_API __stdcall __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
+    #else
+        #define R_API // for static linking
+    #endif
+    #define R_API_CALLCONV __stdcall
+#else
+    #if __GNUC__ >= 4
+        #define R_API __attribute__((visibility ("default")))
+    #else
+        #define R_API
+    #endif
+    #define R_API_CALLCONV
+#endif
+
 #include <stddef.h>
 
 typedef enum {
@@ -87,19 +105,19 @@ typedef struct data {
 
     @return A constructed data_t* object or NULL if there was a memory allocation error.
 */
-data_t *data_make(const char *key, const char *pretty_key, ...);
+R_API data_t *data_make(const char *key, const char *pretty_key, ...);
 
 /** Adds to a structured data object, by appending data.
 
     @see data_make()
 */
-data_t *data_append(data_t *first, const char *key, const char *pretty_key, ...);
+R_API data_t *data_append(data_t *first, const char *key, const char *pretty_key, ...);
 
 /** Adds to a structured data object, by prepending data.
 
     @see data_make()
 */
-data_t *data_prepend(data_t *first, const char *key, const char *pretty_key, ...);
+R_API data_t *data_prepend(data_t *first, const char *key, const char *pretty_key, ...);
 
 /** Constructs an array from given data of the given uniform type.
 
@@ -110,28 +128,28 @@ data_t *data_prepend(data_t *first, const char *key, const char *pretty_key, ...
     @return The constructed data array object, typically placed inside a data_t or NULL
             if there was a memory allocation error.
 */
-data_array_t *data_array(int num_values, data_type_t type, void *ptr);
+R_API data_array_t *data_array(int num_values, data_type_t type, void *ptr);
 
 /** Releases a data array. */
-void data_array_free(data_array_t *array);
+R_API void data_array_free(data_array_t *array);
 
 /** Retain a structure object, returns the structure object passed in. */
-data_t *data_retain(data_t *data);
+R_API data_t *data_retain(data_t *data);
 
 /** Releases a structure object if retain is zero, decrement retain otherwise. */
-void data_free(data_t *data);
+R_API void data_free(data_t *data);
 
 struct data_output;
 
 typedef struct data_output {
-    void (*print_data)(struct data_output *output, data_t *data, char const *format);
-    void (*print_array)(struct data_output *output, data_array_t *data, char const *format);
-    void (*print_string)(struct data_output *output, const char *data, char const *format);
-    void (*print_double)(struct data_output *output, double data, char const *format);
-    void (*print_int)(struct data_output *output, int data, char const *format);
-    void (*output_start)(struct data_output *output, char const *const *fields, int num_fields);
-    void (*output_flush)(struct data_output *output);
-    void (*output_free)(struct data_output *output);
+    void (R_API_CALLCONV *print_data)(struct data_output *output, data_t *data, char const *format);
+    void (R_API_CALLCONV *print_array)(struct data_output *output, data_array_t *data, char const *format);
+    void (R_API_CALLCONV *print_string)(struct data_output *output, const char *data, char const *format);
+    void (R_API_CALLCONV *print_double)(struct data_output *output, double data, char const *format);
+    void (R_API_CALLCONV *print_int)(struct data_output *output, int data, char const *format);
+    void (R_API_CALLCONV *output_start)(struct data_output *output, char const *const *fields, int num_fields);
+    void (R_API_CALLCONV *output_flush)(struct data_output *output);
+    void (R_API_CALLCONV *output_free)(struct data_output *output);
 } data_output_t;
 
 /** Setup known field keys and start output, used by CSV only.
@@ -141,19 +159,19 @@ typedef struct data_output {
                   strings not. The list may contain duplicates and they are eliminated.
     @param num_fields number of fields
 */
-void data_output_start(struct data_output *output, char const *const *fields, int num_fields);
+R_API void data_output_start(struct data_output *output, char const *const *fields, int num_fields);
 
 /** Prints a structured data object, flushes the output if applicable. */
-void data_output_print(struct data_output *output, data_t *data);
+R_API void data_output_print(struct data_output *output, data_t *data);
 
-void data_output_free(struct data_output *output);
+R_API void data_output_free(struct data_output *output);
 
 /* data output helpers */
 
-void print_value(data_output_t *output, data_type_t type, data_value_t value, char const *format);
+R_API void print_value(data_output_t *output, data_type_t type, data_value_t value, char const *format);
 
-void print_array_value(data_output_t *output, data_array_t *array, char const *format, int idx);
+R_API void print_array_value(data_output_t *output, data_array_t *array, char const *format, int idx);
 
-size_t data_print_jsons(data_t *data, char *dst, size_t len);
+R_API size_t data_print_jsons(data_t *data, char *dst, size_t len);
 
 #endif // INCLUDE_DATA_H_

@@ -83,7 +83,7 @@ static int tfa_303196_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int channel     = (b[1] >> 4) + 1;
     int temp_raw    = ((b[1] & 0x0F) << 8) | b[2];
-    float temp_c    = temp_raw * 0.1 - 40;
+    float temp_c    = (temp_raw - 400) * 0.1f;
     int battery_low = b[3] >> 7;
     int humidity    = b[3] & 0x7F;
 

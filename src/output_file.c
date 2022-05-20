@@ -28,7 +28,7 @@ typedef struct {
     FILE *file;
 } data_output_json_t;
 
-static void print_json_array(data_output_t *output, data_array_t *array, char const *format)
+static void R_API_CALLCONV print_json_array(data_output_t *output, data_array_t *array, char const *format)
 {
     data_output_json_t *json = (data_output_json_t *)output;
 
@@ -41,7 +41,7 @@ static void print_json_array(data_output_t *output, data_array_t *array, char co
     fprintf(json->file, "]");
 }
 
-static void print_json_data(data_output_t *output, data_t *data, char const *format)
+static void R_API_CALLCONV print_json_data(data_output_t *output, data_t *data, char const *format)
 {
     UNUSED(format);
     data_output_json_t *json = (data_output_json_t *)output;
@@ -60,7 +60,7 @@ static void print_json_data(data_output_t *output, data_t *data, char const *for
     fputc('}', json->file);
 }
 
-static void print_json_string(data_output_t *output, const char *str, char const *format)
+static void R_API_CALLCONV print_json_string(data_output_t *output, const char *str, char const *format)
 {
     UNUSED(format);
     data_output_json_t *json = (data_output_json_t *)output;
@@ -94,7 +94,7 @@ static void print_json_string(data_output_t *output, const char *str, char const
     fprintf(json->file, "\"");
 }
 
-static void print_json_double(data_output_t *output, double data, char const *format)
+static void R_API_CALLCONV print_json_double(data_output_t *output, double data, char const *format)
 {
     UNUSED(format);
     data_output_json_t *json = (data_output_json_t *)output;
@@ -102,7 +102,7 @@ static void print_json_double(data_output_t *output, double data, char const *fo
     fprintf(json->file, "%.3f", data);
 }
 
-static void print_json_int(data_output_t *output, int data, char const *format)
+static void R_API_CALLCONV print_json_int(data_output_t *output, int data, char const *format)
 {
     UNUSED(format);
     data_output_json_t *json = (data_output_json_t *)output;
@@ -110,7 +110,7 @@ static void print_json_int(data_output_t *output, int data, char const *format)
     fprintf(json->file, "%d", data);
 }
 
-static void print_json_flush(data_output_t *output)
+static void R_API_CALLCONV print_json_flush(data_output_t *output)
 {
     data_output_json_t *json = (data_output_json_t *)output;
 
@@ -120,7 +120,7 @@ static void print_json_flush(data_output_t *output)
     }
 }
 
-static void data_output_json_free(data_output_t *output)
+static void R_API_CALLCONV data_output_json_free(data_output_t *output)
 {
     if (!output)
         return;
@@ -198,7 +198,7 @@ typedef struct {
 
 #define KV_SEP "_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ "
 
-static void print_kv_data(data_output_t *output, data_t *data, char const *format)
+static void R_API_CALLCONV print_kv_data(data_output_t *output, data_t *data, char const *format)
 {
     UNUSED(format);
     data_output_kv_t *kv = (data_output_kv_t *)output;
@@ -271,7 +271,7 @@ static void print_kv_data(data_output_t *output, data_t *data, char const *forma
     }
 }
 
-static void print_kv_array(data_output_t *output, data_array_t *array, char const *format)
+static void R_API_CALLCONV print_kv_array(data_output_t *output, data_array_t *array, char const *format)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
@@ -284,28 +284,28 @@ static void print_kv_array(data_output_t *output, data_array_t *array, char cons
     //fprintf(kv->file, " ]");
 }
 
-static void print_kv_double(data_output_t *output, double data, char const *format)
+static void R_API_CALLCONV print_kv_double(data_output_t *output, double data, char const *format)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
     kv->column += fprintf(kv->file, format ? format : "%.3f", data);
 }
 
-static void print_kv_int(data_output_t *output, int data, char const *format)
+static void R_API_CALLCONV print_kv_int(data_output_t *output, int data, char const *format)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
     kv->column += fprintf(kv->file, format ? format : "%d", data);
 }
 
-static void print_kv_string(data_output_t *output, const char *data, char const *format)
+static void R_API_CALLCONV print_kv_string(data_output_t *output, const char *data, char const *format)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
     kv->column += fprintf(kv->file, format ? format : "%s", data);
 }
 
-static void print_kv_flush(data_output_t *output)
+static void R_API_CALLCONV print_kv_flush(data_output_t *output)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
@@ -315,7 +315,7 @@ static void print_kv_flush(data_output_t *output)
     }
 }
 
-static void data_output_kv_free(data_output_t *output)
+static void R_API_CALLCONV data_output_kv_free(data_output_t *output)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
@@ -362,7 +362,7 @@ typedef struct {
     const char *separator;
 } data_output_csv_t;
 
-static void print_csv_data(data_output_t *output, data_t *data, char const *format)
+static void R_API_CALLCONV print_csv_data(data_output_t *output, data_t *data, char const *format)
 {
     UNUSED(format);
     data_output_csv_t *csv = (data_output_csv_t *)output;
@@ -399,7 +399,7 @@ static void print_csv_data(data_output_t *output, data_t *data, char const *form
     --csv->data_recursion;
 }
 
-static void print_csv_array(data_output_t *output, data_array_t *array, char const *format)
+static void R_API_CALLCONV print_csv_array(data_output_t *output, data_array_t *array, char const *format)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
@@ -410,7 +410,7 @@ static void print_csv_array(data_output_t *output, data_array_t *array, char con
     }
 }
 
-static void print_csv_string(data_output_t *output, const char *str, char const *format)
+static void R_API_CALLCONV print_csv_string(data_output_t *output, const char *str, char const *format)
 {
     UNUSED(format);
     data_output_csv_t *csv = (data_output_csv_t *)output;
@@ -428,7 +428,7 @@ static int compare_strings(const void *a, const void *b)
     return strcmp(*(char **)a, *(char **)b);
 }
 
-static void data_output_csv_start(struct data_output *output, char const *const *fields, int num_fields)
+static void R_API_CALLCONV data_output_csv_start(struct data_output *output, char const *const *fields, int num_fields)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
@@ -508,7 +508,7 @@ alloc_error:
     free(csv);
 }
 
-static void print_csv_double(data_output_t *output, double data, char const *format)
+static void R_API_CALLCONV print_csv_double(data_output_t *output, double data, char const *format)
 {
     UNUSED(format);
     data_output_csv_t *csv = (data_output_csv_t *)output;
@@ -516,7 +516,7 @@ static void print_csv_double(data_output_t *output, double data, char const *for
     fprintf(csv->file, "%.3f", data);
 }
 
-static void print_csv_int(data_output_t *output, int data, char const *format)
+static void R_API_CALLCONV print_csv_int(data_output_t *output, int data, char const *format)
 {
     UNUSED(format);
     data_output_csv_t *csv = (data_output_csv_t *)output;
@@ -524,7 +524,7 @@ static void print_csv_int(data_output_t *output, int data, char const *format)
     fprintf(csv->file, "%d", data);
 }
 
-static void print_csv_flush(data_output_t *output)
+static void R_API_CALLCONV print_csv_flush(data_output_t *output)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
@@ -534,7 +534,7 @@ static void print_csv_flush(data_output_t *output)
     }
 }
 
-static void data_output_csv_free(data_output_t *output)
+static void R_API_CALLCONV data_output_csv_free(data_output_t *output)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
 

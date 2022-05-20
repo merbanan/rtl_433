@@ -140,7 +140,7 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         //uint8_t msg_len      = msg_nybbles[1];
         uint8_t msg_type     = msg_nybbles[2];
         uint8_t sensor_id    = (msg_nybbles[3] << 3) + (msg_nybbles[4] >> 1);
-        float msg_value      = msg_nybbles[5] * 10 + msg_nybbles[6] + msg_nybbles[7] / 10.0;
+        float msg_value      = msg_nybbles[5] * 10 + msg_nybbles[6] + msg_nybbles[7] * 0.1f;
         int msg_value_int    = msg_nybbles[8] * 10 + msg_nybbles[9];
 
         // Check Repeated data values as another way of verifying
@@ -155,7 +155,7 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         if (msg_type == 0x00) {
-            float temp_c = msg_value - 50.0;
+            float temp_c = msg_value - 50.0f;
             /* clang-format off */
             data = data_make(
                     "model",            "",             DATA_STRING, "LaCrosse-TX",

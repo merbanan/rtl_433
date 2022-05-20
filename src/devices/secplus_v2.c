@@ -392,7 +392,7 @@ static char *output_fields[] = {
 
 r_device secplus_v2 = {
         .name        = "Security+ 2.0 (Keyfob)",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 250,
         .long_width  = 250,
         .tolerance   = 50,

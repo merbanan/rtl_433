@@ -180,7 +180,7 @@ static void mbuf_remove_part(struct mbuf *a, char *pos, size_t len)
     }
 }
 
-static void print_influx_array(data_output_t *output, data_array_t *array, char const *format)
+static void R_API_CALLCONV print_influx_array(data_output_t *output, data_array_t *array, char const *format)
 {
     UNUSED(array);
     UNUSED(format);
@@ -189,14 +189,14 @@ static void print_influx_array(data_output_t *output, data_array_t *array, char 
     mbuf_snprintf(buf, "\"array\""); // TODO
 }
 
-static void print_influx_data_escaped(data_output_t *output, data_t *data, char const *format)
+static void R_API_CALLCONV print_influx_data_escaped(data_output_t *output, data_t *data, char const *format)
 {
     char str[1000];
     data_print_jsons(data, str, sizeof (str));
     output->print_string(output, str, format);
 }
 
-static void print_influx_string_escaped(data_output_t *output, char const *str, char const *format)
+static void R_API_CALLCONV print_influx_string_escaped(data_output_t *output, char const *str, char const *format)
 {
     UNUSED(format);
     influx_client_t *influx = (influx_client_t *)output;
@@ -248,7 +248,7 @@ static void print_influx_string_escaped(data_output_t *output, char const *str, 
     databuf->len = databuf->size - size;
 }
 
-static void print_influx_string(data_output_t *output, char const *str, char const *format)
+static void R_API_CALLCONV print_influx_string(data_output_t *output, char const *str, char const *format)
 {
     UNUSED(format);
     influx_client_t *influx = (influx_client_t *)output;
@@ -257,7 +257,7 @@ static void print_influx_string(data_output_t *output, char const *str, char con
 }
 
 // Generate InfluxDB line protocol
-static void print_influx_data(data_output_t *output, data_t *data, char const *format)
+static void R_API_CALLCONV print_influx_data(data_output_t *output, data_t *data, char const *format)
 {
     UNUSED(format);
     influx_client_t *influx = (influx_client_t *)output;
@@ -376,7 +376,7 @@ static void print_influx_data(data_output_t *output, data_t *data, char const *f
     influx_client_send(influx);
 }
 
-static void print_influx_double(data_output_t *output, double data, char const *format)
+static void R_API_CALLCONV print_influx_double(data_output_t *output, double data, char const *format)
 {
     UNUSED(format);
     influx_client_t *influx = (influx_client_t *)output;
@@ -384,7 +384,7 @@ static void print_influx_double(data_output_t *output, double data, char const *
     mbuf_snprintf(buf, "%f", data);
 }
 
-static void print_influx_int(data_output_t *output, int data, char const *format)
+static void R_API_CALLCONV print_influx_int(data_output_t *output, int data, char const *format)
 {
     UNUSED(format);
     influx_client_t *influx = (influx_client_t *)output;
@@ -392,7 +392,7 @@ static void print_influx_int(data_output_t *output, int data, char const *format
     mbuf_snprintf(buf, "%d", data);
 }
 
-static void data_output_influx_free(data_output_t *output)
+static void R_API_CALLCONV data_output_influx_free(data_output_t *output)
 {
     influx_client_t *influx = (influx_client_t *)output;
 

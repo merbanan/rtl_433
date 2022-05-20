@@ -240,6 +240,17 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
           }
           break;
         }
+        case 0x1fd4: {
+            int temp = (msg->payload[1] << 8) | msg->payload[2];
+            data = data_append(data, "ticker", "", DATA_INT, temp, NULL);
+            break;
+        }
+        case 0x3150: {
+            // example packet Heat Demand: 18 28ad9a 884dd3 3150 0200c6 88
+            data = data_append(data, "zone", "", DATA_INT, msg->payload[0], NULL);
+            data = data_append(data, "heat_demand", "", DATA_INT, msg->payload[1], NULL);
+            break;
+        }
         default: /* Unknown command */
             UNKNOWN_IF(1);
     }
@@ -419,6 +430,20 @@ static char *output_fields[] = {
         "CRC",
         "# man errors",
 #endif
+        "unknown",
+        "time_request",
+        "flame_status",
+        "zone",
+        "setpoint",
+        "cycle_rate",
+        "minimum_on_time",
+        "minimum_off_time",
+        "proportional_band_width",
+        "device_number",
+        "failsafe_mode",
+        "ticker",
+        "heat_demand",
+        "boiler_modulation_level",
         "datetime",
         "domain_id",
         "state",

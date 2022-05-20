@@ -11,7 +11,6 @@
 
 #include "pulse_detect.h"
 #include "rfraw.h"
-#include "pulse_demod.h"
 #include "pulse_detect_fsk.h"
 #include "baseband.h"
 #include "util.h"
@@ -246,7 +245,7 @@ struct pulse_detect {
         PD_OOK_STATE_IDLE      = 0,
         PD_OOK_STATE_PULSE     = 1,
         PD_OOK_STATE_GAP_START = 2,
-        PD_OOK_STATE_GAP       = 3
+        PD_OOK_STATE_GAP       = 3,
     } ook_state;
     int pulse_length; ///< Counter for internal pulse detection
     int max_pulse;    ///< Size of biggest pulse detected
@@ -405,6 +404,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
         fsk_pulses->start_ago += len;
     }
 
+    int eop_on_spurious = 0;
     // Process all new samples
     while (s->data_counter < len) {
         // Calculate OOK detection threshold and hysteresis
@@ -458,7 +458,14 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 if (am_n < (ook_threshold - ook_hysteresis)) {    // Gap?
                     // Check for spurious short pulses
                     if (s->pulse_length < PD_MIN_PULSE_SAMPLES) {
-                        s->ook_state = PD_OOK_STATE_IDLE;
+                        if (pulses->num_pulses <= 1) {
+                            // if this was the first pulse go back to idle
+                            s->ook_state = PD_OOK_STATE_IDLE;
+                        } else {
+                            // otherwise emit a package, which then goes back to idle
+                            eop_on_spurious = 1;
+                            s->ook_state = PD_OOK_STATE_GAP;
+                        }
                     }
                     else {
                         // Continue with OOK decoding
@@ -551,9 +558,10 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 }
 
                 // EOP if gap is too long
-                if (((s->pulse_length > (PD_MAX_GAP_RATIO * s->max_pulse))    // gap/pulse ratio exceeded
-                        && (s->pulse_length > (PD_MIN_GAP_MS * samples_per_ms)))    // Minimum gap exceeded
-                        || (s->pulse_length > (PD_MAX_GAP_MS * samples_per_ms))) {    // maximum gap exceeded
+                if (eop_on_spurious
+                        || (s->pulse_length > (PD_MAX_GAP_RATIO * s->max_pulse)    // gap/pulse ratio exceeded
+                            && s->pulse_length > (PD_MIN_GAP_MS * samples_per_ms)) // Minimum gap exceeded
+                        || s->pulse_length > (PD_MAX_GAP_MS * samples_per_ms)) {   // maximum gap exceeded
                     pulses->gap[pulses->num_pulses] = s->pulse_length;    // Store gap width
                     pulses->num_pulses++;    // Store last pulse
                     s->ook_state = PD_OOK_STATE_IDLE;

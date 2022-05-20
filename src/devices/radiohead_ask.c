@@ -155,7 +155,7 @@ static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     header_flags = rh_payload[4];
 
     // Format data
-    for (int j = 0; j < msg_len; j++) {
+    for (int j = 0; j < data_len; j++) {
         rh_data_payload[j] = (int)rh_payload[5 + j];
     }
     /* clang-format off */
@@ -242,7 +242,7 @@ static char *sensible_living_output_fields[] = {
 
 r_device radiohead_ask = {
         .name        = "Radiohead ASK",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 500,
         .long_width  = 500,
         .reset_limit = 5 * 500,
@@ -252,7 +252,7 @@ r_device radiohead_ask = {
 
 r_device sensible_living = {
         .name        = "Sensible Living Mini-Plant Moisture Sensor",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 1000,
         .long_width  = 1000,
         .reset_limit = 5 * 1000,

@@ -117,7 +117,7 @@ static bool import_values(void *dst, void *src, int num_values, data_type_t type
 
 /* data */
 
-data_array_t *data_array(int num_values, data_type_t type, void *values)
+R_API data_array_t *data_array(int num_values, data_type_t type, void *values)
 {
     if (num_values < 0) {
       return NULL;
@@ -271,7 +271,7 @@ alloc_error:
     return NULL;
 }
 
-data_t *data_make(const char *key, const char *pretty_key, ...)
+R_API data_t *data_make(const char *key, const char *pretty_key, ...)
 {
     va_list ap;
     va_start(ap, pretty_key);
@@ -280,7 +280,7 @@ data_t *data_make(const char *key, const char *pretty_key, ...)
     return result;
 }
 
-data_t *data_append(data_t *first, const char *key, const char *pretty_key, ...)
+R_API data_t *data_append(data_t *first, const char *key, const char *pretty_key, ...)
 {
     va_list ap;
     va_start(ap, pretty_key);
@@ -289,7 +289,7 @@ data_t *data_append(data_t *first, const char *key, const char *pretty_key, ...)
     return result;
 }
 
-data_t *data_prepend(data_t *first, const char *key, const char *pretty_key, ...)
+R_API data_t *data_prepend(data_t *first, const char *key, const char *pretty_key, ...)
 {
     va_list ap;
     va_start(ap, pretty_key);
@@ -307,7 +307,7 @@ data_t *data_prepend(data_t *first, const char *key, const char *pretty_key, ...
     return result;
 }
 
-void data_array_free(data_array_t *array)
+R_API void data_array_free(data_array_t *array)
 {
     array_element_release_fn release = dmt[array->type].array_element_release;
     if (release) {
@@ -319,14 +319,14 @@ void data_array_free(data_array_t *array)
     free(array);
 }
 
-data_t *data_retain(data_t *data)
+R_API data_t *data_retain(data_t *data)
 {
     if (data)
         ++data->retain;
     return data;
 }
 
-void data_free(data_t *data)
+R_API void data_free(data_t *data)
 {
     if (data && data->retain) {
         --data->retain;
@@ -346,7 +346,7 @@ void data_free(data_t *data)
 
 /* data output */
 
-void data_output_print(data_output_t *output, data_t *data)
+R_API void data_output_print(data_output_t *output, data_t *data)
 {
     if (!output)
         return;
@@ -356,14 +356,14 @@ void data_output_print(data_output_t *output, data_t *data)
         output->output_flush(output);
 }
 
-void data_output_start(struct data_output *output, char const *const *fields, int num_fields)
+R_API void data_output_start(struct data_output *output, char const *const *fields, int num_fields)
 {
     if (!output || !output->output_start)
         return;
     output->output_start(output, fields, num_fields);
 }
 
-void data_output_free(data_output_t *output)
+R_API void data_output_free(data_output_t *output)
 {
     if (!output)
         return;
@@ -372,7 +372,7 @@ void data_output_free(data_output_t *output)
 
 /* output helpers */
 
-void print_value(data_output_t *output, data_type_t type, data_value_t value, char const *format)
+R_API void print_value(data_output_t *output, data_type_t type, data_value_t value, char const *format)
 {
     switch (type) {
     case DATA_FORMAT:
@@ -398,7 +398,7 @@ void print_value(data_output_t *output, data_type_t type, data_value_t value, ch
     }
 }
 
-void print_array_value(data_output_t *output, data_array_t *array, char const *format, int idx)
+R_API void print_array_value(data_output_t *output, data_array_t *array, char const *format, int idx)
 {
     int element_size = dmt[array->type].array_element_size;
     data_value_t value = {0};
@@ -418,7 +418,7 @@ typedef struct {
     abuf_t msg;
 } data_print_jsons_t;
 
-static void format_jsons_array(data_output_t *output, data_array_t *array, char const *format)
+static void R_API_CALLCONV format_jsons_array(data_output_t *output, data_array_t *array, char const *format)
 {
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
 
@@ -431,7 +431,7 @@ static void format_jsons_array(data_output_t *output, data_array_t *array, char 
     abuf_cat(&jsons->msg, "]");
 }
 
-static void format_jsons_object(data_output_t *output, data_t *data, char const *format)
+static void R_API_CALLCONV format_jsons_object(data_output_t *output, data_t *data, char const *format)
 {
     UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
@@ -450,7 +450,7 @@ static void format_jsons_object(data_output_t *output, data_t *data, char const 
     abuf_cat(&jsons->msg, "}");
 }
 
-static void format_jsons_string(data_output_t *output, const char *str, char const *format)
+static void R_API_CALLCONV format_jsons_string(data_output_t *output, const char *str, char const *format)
 {
     UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
@@ -510,7 +510,7 @@ static void format_jsons_string(data_output_t *output, const char *str, char con
     jsons->msg.left = size;
 }
 
-static void format_jsons_double(data_output_t *output, double data, char const *format)
+static void R_API_CALLCONV format_jsons_double(data_output_t *output, double data, char const *format)
 {
     UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
@@ -529,14 +529,14 @@ static void format_jsons_double(data_output_t *output, double data, char const *
     }
 }
 
-static void format_jsons_int(data_output_t *output, int data, char const *format)
+static void R_API_CALLCONV format_jsons_int(data_output_t *output, int data, char const *format)
 {
     UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
     abuf_printf(&jsons->msg, "%d", data);
 }
 
-size_t data_print_jsons(data_t *data, char *dst, size_t len)
+R_API size_t data_print_jsons(data_t *data, char *dst, size_t len)
 {
     data_print_jsons_t jsons = {
             .output = {

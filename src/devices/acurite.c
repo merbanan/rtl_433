@@ -682,7 +682,7 @@ static int acurite_tower_decode(r_device* decoder, uint8_t* bb)
     // is not possible on Earth.
     // pIII IIII pIII IIII
     int temp_raw = ((bb[4] & 0x7F) << 7) | (bb[5] & 0x7F);
-    float tempc = temp_raw * 0.1 - 100;
+    float tempc = (temp_raw - 1000) * 0.1f;
     if (tempc < -40 || tempc > 70) {
         decoder_logf(decoder, 1, __func__, "0x%04X Ch %s : Impossible temperature: %0.2f C",
                 sensor_id, channel_str, tempc);
@@ -1318,15 +1318,15 @@ static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Combine signal if exactly three repeats were found
     if (n_rows == 3) {
-        uint8_t *b = bitbuffer->bb[bitbuffer->num_rows];
+        bitbuffer_add_row(bitbuffer);
+        uint8_t *b = bitbuffer->bb[bitbuffer->num_rows - 1];
         for (int i = 0; i < 11; ++i) {
             // The majority bit count wins
             b[i] = (b_rows[0][i] & b_rows[1][i]) |
                     (b_rows[1][i] & b_rows[2][i]) |
                     (b_rows[2][i] & b_rows[0][i]);
         }
-        bitbuffer->bits_per_row[bitbuffer->num_rows] = 88;
-        bitbuffer->num_rows += 1;
+        bitbuffer->bits_per_row[bitbuffer->num_rows - 1] = 88;
     }
 
     // Output the first valid row
@@ -1348,14 +1348,16 @@ static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int id          = (b[0] << 16) | (b[1] << 8) | b[3];
         int battery_low = (b[2] & 0x40) == 0;
         int model_flag  = (b[2] & 1);
-        float tempc     = ((b[4] << 4) | (b[5] >> 4)) * 0.1 - 100;
+        int temp_raw    = (b[4] << 4) | (b[5] >> 4);
+        float tempc     = (temp_raw - 1000) * 0.1f;
         int probe       = b[5] & 3;
         int humidity    = ((b[6] & 0x1f) << 2) | (b[7] >> 6);
 
         //  Water probe (detects water leak)
         int water = (b[7] & 0x0f) == 15; // valid only if (probe == 1)
         //  Soil probe (detects temperature)
-        float ptempc = (((b[7] & 0x0f) << 8) | b[8]) * 0.1 - 100; // valid only if (probe == 2 || probe == 3)
+        int ptemp_raw = ((b[7] & 0x0f) << 8) | (b[8]); // valid only if (probe == 2 || probe == 3)
+        float ptempc = (ptemp_raw - 1000) * 0.1f;
         //  Spot probe (detects temperature and humidity)
         int phumidity = b[9] & 0x7f; // valid only if (probe == 3)
 

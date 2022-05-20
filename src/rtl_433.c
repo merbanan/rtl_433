@@ -37,7 +37,7 @@
 #include "pulse_analyzer.h"
 #include "pulse_detect.h"
 #include "pulse_detect_fsk.h"
-#include "pulse_demod.h"
+#include "pulse_slicer.h"
 #include "rfraw.h"
 #include "data.h"
 #include "raw_output.h"
@@ -153,7 +153,6 @@ static void usage(int exit_code)
             "\t\t= Demodulator options =\n"
             "  [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)\n"
             "       Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
-            "  [-G] Enable blacklisted device decoding protocols, for testing only.\n"
             "  [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)\n"
             "  [-Y auto | classic | minmax] FSK pulse detector mode.\n"
             "  [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto).\n"
@@ -202,7 +201,7 @@ static void help_protocols(r_device *devices, unsigned num_devices, int exit_cod
             if (devices[i].disabled <= 2) // if not hidden
                 fprintf(stderr, "    [%02u]%c %s\n", i + 1, disabledc, devices[i].name);
         }
-        fprintf(stderr, "\n* Disabled by default, use -R n or -G\n");
+        fprintf(stderr, "\n* Disabled by default, use -R n or a conf file to enable\n");
     }
     exit(exit_code);
 }
@@ -705,7 +704,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     // choose hop_index as frequency_index, if there are too few hop_times use the last one
     int hop_index = cfg->hop_times > cfg->frequency_index ? cfg->frequency_index : cfg->hop_times - 1;
     if (cfg->hop_times > 0 && cfg->frequencies > 1
-            && difftime(rawtime, cfg->hop_start_time) > cfg->hop_time[hop_index]) {
+            && difftime(rawtime, cfg->hop_start_time) >= cfg->hop_time[hop_index]) {
         alarm(0); // cancel the watchdog timer
         cfg->hop_now = 1;
     }
@@ -745,7 +744,7 @@ static int hasopt(int test, int argc, char *argv[], char const *optstring)
 
 static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg);
 
-#define OPTSTRING "hVvqDc:x:z:p:a:AI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UG:y:E:Y:"
+#define OPTSTRING "hVvqDc:x:z:p:a:AI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E:Y:"
 
 // these should match the short options exactly
 static struct conf_keywords const conf_keywords[] = {
@@ -901,15 +900,8 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             FATAL_STRDUP("parse_conf_option()");
         break;
     case 'G':
-        if (atobv(arg, 1) == 4) {
-            fprintf(stderr, "\n\tUse -G for testing only. Enable protocols with -R if you really need them.\n\n");
-            cfg->no_default_devices = 1;
-            register_all_protocols(cfg, 1);
-        }
-        else {
-            fprintf(stderr, "\n\tUse -G for testing only. Enable with -G 4 if you really mean it.\n\n");
-            exit(1);
-        }
+        fprintf(stderr, "register_all (-G) is deprecated. Use -R or a config file to enable additional protocols.\n");
+        exit(1);
         break;
     case 'p':
         cfg->ppm_error = atobv(arg, 0);
@@ -1142,8 +1134,8 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         else if (strncmp(arg, "syslog", 6) == 0) {
             add_syslog_output(cfg, arg_param(arg));
         }
-        else if (strncmp(optarg, "http", 4) == 0) {
-            add_http_output(cfg, arg_param(optarg));
+        else if (strncmp(arg, "http", 4) == 0) {
+            add_http_output(cfg, arg_param(arg));
         }
         else if (strncmp(arg, "trigger", 7) == 0) {
             add_trigger_output(cfg, arg_param(arg));
@@ -1488,7 +1480,7 @@ int main(int argc, char **argv) {
 
     char const **well_known = well_known_output_fields(cfg);
     start_outputs(cfg, well_known);
-    free(well_known);
+    free((void *)well_known);
 
     if (cfg->out_block_size < MINIMAL_BUF_LENGTH ||
             cfg->out_block_size > MAXIMAL_BUF_LENGTH) {
@@ -1556,7 +1548,7 @@ int main(int argc, char **argv) {
                         r += run_fsk_demods(&single_dev, &pulse_data);
                     list_free_elems(&single_dev, NULL);
                 } else
-                r += pulse_demod_string(e, r_dev);
+                r += pulse_slicer_string(e, r_dev);
                 continue;
             }
             // otherwise test all decoders
@@ -1572,7 +1564,7 @@ int main(int argc, char **argv) {
                 r_device *r_dev = *iter;
                 if (cfg->verbosity)
                     fprintf(stderr, "Verifying test data with device %s.\n", r_dev->name);
-                r += pulse_demod_string(line, r_dev);
+                r += pulse_slicer_string(line, r_dev);
             }
         }
 
@@ -1598,7 +1590,7 @@ int main(int argc, char **argv) {
             r_device *r_dev = *iter;
             if (cfg->verbosity)
                 fprintf(stderr, "Verifying test data with device %s.\n", r_dev->name);
-            r += pulse_demod_string(cfg->test_data, r_dev);
+            r += pulse_slicer_string(cfg->test_data, r_dev);
         }
         r_free_cfg(cfg);
         exit(!r);

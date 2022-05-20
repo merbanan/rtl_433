@@ -231,7 +231,7 @@ data_tag_t *data_tag_create(char *param, struct mg_mgr *mgr)
 
 void data_tag_free(data_tag_t *tag)
 {
-    free(tag->includes);
+    free((void *)tag->includes);
     gpsd_client_free(tag->gpsd_client);
 
     free(tag);

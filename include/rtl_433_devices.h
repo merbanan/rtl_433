@@ -221,6 +221,11 @@
     DECL(regency_fan) \
     DECL(tpms_renault_0435r) \
     DECL(fineoffset_ws80) \
+    DECL(emos_e6016) \
+    DECL(altronics_7064) \
+    DECL(ant_antplus) \
+    DECL(emos_e6016_rain) \
+    DECL(hcs200_fsk) \
     DECL(deltadore_x3d) \
 
     /* Add new decoders here. */

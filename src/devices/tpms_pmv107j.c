@@ -29,17 +29,10 @@ based on work by Werner Johansson.
 
 static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    data_t *data;
-    unsigned int start_pos;
     bitbuffer_t packet_bits = {0};
     uint8_t b[9];
-    unsigned id;
-    char id_str[9];
-    unsigned status, pressure1, pressure2, temp, battery_low, counter, failed;
-    float pressure_kpa, temperature_c;
-    int crc;
 
-    start_pos = bitbuffer_differential_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 70); // 67 bits expected
+    unsigned start_pos = bitbuffer_differential_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 70); // 67 bits expected
     if (start_pos - bitpos < 67 * 2) {
         return 0;
     }
@@ -50,31 +43,32 @@ static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     bitbuffer_extract_bytes(&packet_bits, 0, 2, b + 1, 64);
     decoder_log_bitrow(decoder, 2, __func__, b, 72, "Realigned");
 
-    crc = b[8];
+    int crc = b[8];
     if (crc8(b, 8, 0x13, 0x00) != crc) {
         return 0;
     }
 
-    id            = b[0] << 26 | b[1] << 18 | b[2] << 10 | b[3] << 2 | b[4] >> 6; // realigned bits 6 - 34
-    status        = b[4] & 0x3f;                                                  // status bits and 0 filler
-    battery_low   = (b[4] & 0x20) >> 5;
-    counter       = (b[4] & 0x18) >> 3;
-    failed        = b[4] & 0x01;
-    pressure1     = b[5];
-    pressure2     = b[6] ^ 0xff;
-    temp          = b[7];
-    pressure_kpa  = (pressure1 - 40.0) * 2.48;
-    temperature_c = temp - 40.0;
+    unsigned id            = b[0] << 26 | b[1] << 18 | b[2] << 10 | b[3] << 2 | b[4] >> 6; // realigned bits 6 - 34
+    unsigned status        = b[4] & 0x3f;                                                  // status bits and 0 filler
+    unsigned battery_low   = (b[4] & 0x20) >> 5;
+    unsigned counter       = (b[4] & 0x18) >> 3;
+    unsigned failed        = b[4] & 0x01;
+    unsigned pressure1     = b[5];
+    unsigned pressure2     = b[6] ^ 0xff;
+    unsigned temp          = b[7];
+    float pressure_kpa  = (pressure1 - 40.0f) * 2.48f;
+    float temperature_c = temp - 40.0f;
 
     if (pressure1 != pressure2) {
         decoder_logf(decoder, 1, __func__, "Toyota TPMS pressure check error: %02x vs %02x", pressure1, pressure2);
         return 0;
     }
 
+    char id_str[9];
     sprintf(id_str, "%08x", id);
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING,    "PMV-107J",
             "type",             "",             DATA_STRING,    "TPMS",
             "id",               "",             DATA_STRING,    id_str,

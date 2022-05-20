@@ -108,3 +108,15 @@ r_device hcs200 = {
         .decode_fn   = &hcs200_callback,
         .fields      = output_fields,
 };
+
+r_device hcs200_fsk = {
+        .name        = "Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes (FSK)",
+        .modulation  = FSK_PULSE_PWM,
+        .short_width = 370,
+        .long_width  = 772,
+        .gap_limit   = 1500,
+        .reset_limit = 9000,
+        .tolerance   = 152, // us
+        .decode_fn   = &hcs200_callback,
+        .fields      = output_fields,
+};
