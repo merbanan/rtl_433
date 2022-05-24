@@ -72,7 +72,7 @@ Register address:
   - 15-21: Unknown
   - 16-11: Unknown
 
-  - 16-31: 
+  - 16-31:
     - Set current Target Temp  {8}
     - Enabled Modes?           {8}
       Could be a Bitmask or enum:
@@ -84,12 +84,12 @@ Register address:
   - 16-41: on off state?
     - 3907 = on, 3807 = off
 
-  - 16-61: {16} 
+  - 16-61: {16}
     - Party on time in minutes
     - Holiday time in minutes starting from current time.
       (Days - 1) * 1440 + Current Time in Minutes
 
-  - 16-81: 
+  - 16-81:
     - Freeze Temp {8}
     - unknown     {8}
 
@@ -99,7 +99,7 @@ Register address:
 
   - 18-01: Unknown
 
-  - 19-10 (RO): {16} On time lsb in seconds 
+  - 19-10 (RO): {16} On time lsb in seconds
   - 19-90 (RO): {16} On time msb
     used to calculate energy consumption
 
