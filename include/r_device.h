@@ -11,7 +11,7 @@
     Note that Modulation is a term used usually to refer to the analog domain.
     We refer to Modulation for the process of (de-)modulating a digital line code,
     represented as pulses and gaps (OOK) or mark and space (FSK) onto a RF carrier signal.
-    The line code is a coding of the bitstream data and refered to as the Coding of the data.
+    The line code is a coding of the bitstream data and referred to as the Coding of the data.
 
     We however use the well known terms to refer to the combinations of this.
     E.g. the term PWM is well known as anlog or discrete range modulation, but here used
