@@ -1,5 +1,5 @@
 /** @file
-    Kia TPMS FSK 154-bit Manchester encoded CRC-8 TPMS data.
+    Kia Rio UB III (UB) 2011-2017 TPMS sensor and some Hyundai models too.
 
     Copyright (C) 2022 Lasse Mikkel Reinhold, Todor Uzunov aka teou, TTiges, 2019 Andreas
     Spiess, 2017 Christian W. Zuckschwerdt <zany@triq.net>
@@ -9,28 +9,28 @@
     2 of the License, or (at your option) any later version.
 */
 
-/*
-    TPMS sensor for Kio Rio III (UB) 2011-2017 and some Hyundai models. Possibly other brands
-    and models too.
-    
-    154 bits in a packet. Bit layout (leftmost bit in a field is the most significant):
-        zzzzzzzzzzzzzzzz aaaa pppppppp tttttttt iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii dddddddd ccccc
+/**
+TPMS sensor for Kio Rio III (UB) 2011-2017 and some Hyundai models. Possibly other brands and
+models too.
 
-    Legend:
-        z: 16-bit preamble = 0xed71. Must be omitted from Manchester-decoding
-        a: Unknown, but 0xf in all my own readings
-        p: 8-bit pressure given as PSI * 5
-        t: 8-bit temperature given as Celcius + 50
-        i: 32-bit Sensor ID
-        d: Unknown, with different value in each packet
-        c: First 5 bits of CRC. We need to append 000 to reach 8 bits. poly=0x07, init=0x76.
+154 bits in a packet. Bit layout (leftmost bit in a field is the most significant):
+    zzzzzzzzzzzzzzzz aaaa pppppppp tttttttt iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii dddddddd ccccc
 
-    NOTE: I often get pressure and temperature values that are outliers (like 200 C or 10 PSI)
-    from all four sensors, even when CRC is OK. I don't know if all my sensors are defunct or if
-    I have missed something in the encoding. I have included a "raw" field to make it easier for
-    other users to investigate it.
+Legend:
+    z: 16-bit preamble = 0xed71. Must be omitted from Manchester-decoding
+    a: Unknown, but 0xf in all my own readings
+    p: 8-bit pressure given as PSI * 5
+    t: 8-bit temperature given as Celcius + 50
+    i: 32-bit Sensor ID
+    d: Unknown, with different value in each packet
+    c: First 5 bits of CRC. We need to append 000 to reach 8 bits. poly=0x07, init=0x76.
 
-    NOTE: You may need to use the "-s 1000000" option of rtl_433 in order to get a clear signal.
+NOTE: I often get pressure and temperature values that are outliers (like 200 C or 10 PSI) from
+all four sensors, even when CRC is OK. I don't know if all my sensors are defunct or if I have
+missed something in the encoding. I have included a "raw" field to make it easier for other 
+users to investigate it.
+
+NOTE: You may need to use the "-s 1000000" option of rtl_433 in order to get a clear signal.
  */
 
 #include "decoder.h"
