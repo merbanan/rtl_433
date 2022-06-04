@@ -226,6 +226,7 @@
     DECL(ant_antplus) \
     DECL(emos_e6016_rain) \
     DECL(hcs200_fsk) \
+    DECL(tpms_kia) \
 
     /* Add new decoders here. */
 

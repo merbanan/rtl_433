@@ -212,6 +212,7 @@ add_library(r_433 STATIC
     devices/tpms_hyundai_vdo.c
     devices/tpms_jansite.c
     devices/tpms_jansite_solar.c
+    devices/tpms_kia.c
     devices/tpms_pmv107j.c
     devices/tpms_porsche.c
     devices/tpms_renault.c
