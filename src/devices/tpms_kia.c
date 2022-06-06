@@ -27,7 +27,7 @@ Legend:
 
 NOTE: I often get pressure and temperature values that are outliers (like 200 C or 10 PSI) from
 all four sensors, even when CRC is OK. I don't know if all my sensors are defunct or if I have
-missed something in the encoding. I have included a "raw" field to make it easier for other 
+missed something in the encoding. I have included a "raw" field to make it easier for other
 users to investigate it.
 
 NOTE: You may need to use the "-s 1000000" option of rtl_433 in order to get a clear signal.
