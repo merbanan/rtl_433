@@ -30,7 +30,7 @@ https://www.bresser.de/en/Weather-Time/Accessories/EXPLORE-SCIENTIFIC-Soil-Moist
 Moisture:
 
     f16e 187000e34 7 ffffff0000 252 2 16 fff 004 000 [25,2, 99%, CH 7]
-    DIGEST:8h8h ID?8h8h8h8h STYPE:4h ?1b CH:3d 8h 8h8h 8h8h TEMP:12h ?1b BATT:1b ?1b MOIST:8h TRAILER:8h8h8h8h4h
+    DIGEST:8h8h ID?8h8h8h8h STYPE:4h STARTUP:1b CH:3d 8h 8h8h 8h8h TEMP:12h ?1b BATT:1b ?1b MOIST:8h TRAILER:8h8h8h8h4h
 
 Moisture is transmitted in the humidity field as index 1-16: 0, 7, 13, 20, 27, 33, 40, 47, 53, 60, 67, 73, 80, 87, 93, 99.
 The Wind speed and direction fields decode to valid zero but we exclude them from the output.
@@ -68,8 +68,8 @@ The Wind speed and direction fields decode to valid zero but we exclude them fro
 
 Wind and Temperature/Humidity or Rain:
 
-    DIGEST:8h8h ID:8h8h8h8h STYPE:4h BATT:1b CH:3d WSPEED:~8h~4h ~4h~8h WDIR:12h ?4h TEMP:8h.4h ?4h HUM:8h UV?~12h ?4h CHKSUM:8h
-    DIGEST:8h8h ID:8h8h8h8h STYPE:4h BATT:1b CH:3d WSPEED:~8h~4h ~4h~8h WDIR:12h ?4h RAINFLAG:8h RAIN:8h8h UV:8h8h CHKSUM:8h
+    DIGEST:8h8h ID:8h8h8h8h STYPE:4h STARTUP:1b CH:3d WSPEED:~8h~4h ~4h~8h WDIR:12h ?4h TEMP:8h.4h ?1b BATT:1b ?1b HUM:8h UV?~12h ?4h CHKSUM:8h
+    DIGEST:8h8h ID:8h8h8h8h STYPE:4h STARTUP:1b CH:3d WSPEED:~8h~4h ~4h~8h WDIR:12h ?4h RAINFLAG:8h RAIN:8h8h UV:8h8h CHKSUM:8h
 
 Digest is LFSR-16 gen 0x8810 key 0x5412, excluding the add-checksum and trailer.
 Checksum is 8-bit add (with carry) to 0xff.
@@ -134,13 +134,11 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    uint32_t id  = ((uint32_t)msg[2] << 24) | (msg[3] << 16) | (msg[4] << 8) | (msg[5]);
-    int s_type   = (msg[6] >> 4); // 1: weather station, 2: indoor?, 4: soil probe
-    int batt_ok  = (msg[6] >> 3) & 1;
-    int chan     = (msg[6] & 0x7);
-    // b[13] & 0x02 is a battery_good bit for soil sensors, s.a. #1993 and #1214
-    if (s_type == 4)
-        batt_ok = (msg[13] >> 1) & 1;
+    uint32_t id = ((uint32_t)msg[2] << 24) | (msg[3] << 16) | (msg[4] << 8) | (msg[5]);
+    int s_type  = (msg[6] >> 4); // 1: weather station, 2: indoor?, 4: soil probe
+    int startup = (msg[6] >> 3) & 1; // s.a. #1214
+    int chan    = (msg[6] & 0x7);
+    int battery = (msg[13] >> 1) & 1; // b[13] & 0x02 is battery_good, s.a. #1993
 
     // temperature, humidity, shared with rain counter, only if valid BCD digits
     int temp_ok  = msg[12] <= 0x99 && (msg[13] & 0xf0) <= 0x90;
@@ -164,7 +162,7 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     msg[7] ^= 0xff;
     msg[8] ^= 0xff;
     msg[9] ^= 0xff;
-    int wind_ok = (msg[7] <= 0x99) && (msg[8] <= 0x99) && (msg[9] <= 0x99) && s_type != 4;
+    int wind_ok = (msg[7] <= 0x99) && (msg[8] <= 0x99) && (msg[9] <= 0x99) && (s_type != 4);
 
     int gust_raw    = (msg[7] >> 4) * 100 + (msg[7] & 0x0f) * 10 + (msg[8] >> 4);
     float wind_gust = gust_raw * 0.1f;
@@ -191,7 +189,7 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, "Bresser-6in1",
             "id",               "",             DATA_FORMAT, "%08x", DATA_INT,    id,
             "channel",          "",             DATA_INT,    chan,
-            "battery_ok",       "Battery",      DATA_INT,    batt_ok,
+            "battery_ok",       "Battery",      DATA_COND, !rain_ok, DATA_INT,    battery,
             "temperature_C",    "Temperature",  DATA_COND, temp_ok, DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",     DATA_COND, temp_ok && moisture < 0, DATA_INT,    humidity,
             "sensor_type",      "Sensor type",  DATA_INT,    s_type,
@@ -202,6 +200,7 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "rain_mm",          "Rain",         DATA_COND, rain_ok, DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
             //"unknown",          "Unknown",      DATA_COND, unk_ok, DATA_INT,    unk_raw,
             "uv",               "UV",           DATA_COND, uv_ok, DATA_FORMAT, "%.1f", DATA_DOUBLE,    uv,
+            "startup",          "Startup",      DATA_COND,   startup,   DATA_INT,    startup,
             "flags",            "Flags",        DATA_INT,    flags,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
@@ -225,6 +224,7 @@ static char *output_fields[] = {
         "wind_dir_deg",
         "rain_mm",
         "uv",
+        "startup",
         "flags",
         "mic",
         NULL,
