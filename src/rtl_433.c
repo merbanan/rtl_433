@@ -282,7 +282,7 @@ static void help_tags(void)
             "\t\t\"-K loc=gpsd,lat,lon\" (report lat and lon in loc object)\n"
             "\t\t\"-K gpsd\" (full json TPV report, in default \"gps\" object)\n"
             "\t\t\"-K foo=gpsd://127.0.0.1:2947\" (with key and address)\n"
-            "\t\t\"-K bar=gpsd,nmea\" (NMEA deault GPGGA report)\n"
+            "\t\t\"-K bar=gpsd,nmea\" (NMEA default GPGGA report)\n"
             "\t\t\"-K rmc=gpsd,nmea,filter='$GPRMC'\" (NMEA GPRMC report)\n"
             "\tAlso <tag> can be a generic tcp address, e.g.\n"
             "\t\t\"-K foo=tcp:localhost:4000\" (read lines as TCP client)\n"

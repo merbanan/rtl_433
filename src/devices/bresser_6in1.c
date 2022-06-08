@@ -30,7 +30,7 @@ https://www.bresser.de/en/Weather-Time/Accessories/EXPLORE-SCIENTIFIC-Soil-Moist
 Moisture:
 
     f16e 187000e34 7 ffffff0000 252 2 16 fff 004 000 [25,2, 99%, CH 7]
-    DIGEST:8h8h ID?8h8h8h8h STYPE:4h STARTUP:1b CH:3d 8h 8h8h 8h8h TEMP:12h ?1b BATT:1b ?1b MOIST:8h TRAILER:8h8h8h8h4h
+    DIGEST:8h8h ID?8h8h8h8h STYPE:4h STARTUP:1b CH:3d 8h 8h8h 8h8h TEMP:12h ?2b BATT:1b ?1b MOIST:8h UV?~12h ?4h CHKSUM:8h
 
 Moisture is transmitted in the humidity field as index 1-16: 0, 7, 13, 20, 27, 33, 40, 47, 53, 60, 67, 73, 80, 87, 93, 99.
 The Wind speed and direction fields decode to valid zero but we exclude them from the output.
@@ -68,7 +68,7 @@ The Wind speed and direction fields decode to valid zero but we exclude them fro
 
 Wind and Temperature/Humidity or Rain:
 
-    DIGEST:8h8h ID:8h8h8h8h STYPE:4h STARTUP:1b CH:3d WSPEED:~8h~4h ~4h~8h WDIR:12h ?4h TEMP:8h.4h ?1b BATT:1b ?1b HUM:8h UV?~12h ?4h CHKSUM:8h
+    DIGEST:8h8h ID:8h8h8h8h STYPE:4h STARTUP:1b CH:3d WSPEED:~8h~4h ~4h~8h WDIR:12h ?4h TEMP:8h.4h ?2b BATT:1b ?1b HUM:8h UV?~12h ?4h CHKSUM:8h
     DIGEST:8h8h ID:8h8h8h8h STYPE:4h STARTUP:1b CH:3d WSPEED:~8h~4h ~4h~8h WDIR:12h ?4h RAINFLAG:8h RAIN:8h8h UV:8h8h CHKSUM:8h
 
 Digest is LFSR-16 gen 0x8810 key 0x5412, excluding the add-checksum and trailer.
@@ -162,7 +162,7 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     msg[7] ^= 0xff;
     msg[8] ^= 0xff;
     msg[9] ^= 0xff;
-    int wind_ok = (msg[7] <= 0x99) && (msg[8] <= 0x99) && (msg[9] <= 0x99) && (s_type != 4);
+    int wind_ok = (msg[7] <= 0x99) && (msg[8] <= 0x99) && (msg[9] <= 0x99);
 
     int gust_raw    = (msg[7] >> 4) * 100 + (msg[7] & 0x0f) * 10 + (msg[8] >> 4);
     float wind_gust = gust_raw * 0.1f;
@@ -179,6 +179,12 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             + (msg[13] >> 4) * 1000 + (msg[13] & 0x0f) * 100
             + (msg[14] >> 4) * 10 + (msg[14] & 0x0f);
     float rain_mm = rain_raw * 0.1f;
+
+    // the moisture sensor might present valid readings but does not have the hardware
+    if (s_type == 4) {
+        wind_ok = 0;
+        uv_ok = 0;
+    }
 
     int moisture = -1;
     if (s_type == 4 && temp_ok && humidity >= 1 && humidity <= 16)
