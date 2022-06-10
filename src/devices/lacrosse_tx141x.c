@@ -17,6 +17,7 @@ LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX145wsdth sensor.
 Also TFA 30.3221.02 (a TX141TH-Bv2),
 also TFA 30.3222.02 (a LaCrosse-TX141W).
 also TFA 30.3251.10 (a LaCrosse-TX141W).
+also some rebrand (ORIA WA50B) with a slightly longer timing, s.a. #2088
 
 LaCrosse Color Forecast Station (model C85845), or other LaCrosse product
 utilizing the remote temperature/humidity sensor TX141TH-Bv2 transmitting
@@ -129,7 +130,8 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Find the most frequent data packet
     // reduce false positives, require at least 5 out of 12 or 3 of 4 repeats.
-    r = bitbuffer_find_repeated_row(bitbuffer, bitbuffer->num_rows > 4 ? 5 : 3, 32); // 32
+    // allows 4-repeats transmission to contain a bogus extra row.
+    r = bitbuffer_find_repeated_row(bitbuffer, bitbuffer->num_rows > 5 ? 5 : 3, 32); // 32
     if (r < 0) {
         // try again for TX141W/TX145wsdth, require at least 2 out of 3-7 repeats.
         r = bitbuffer_find_repeated_row(bitbuffer, 2, 64); // 65
