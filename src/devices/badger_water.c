@@ -33,7 +33,7 @@ preamble of 0000 1111 01. This is followed by 10 bytes encoded using a 4:6 NRZ
 encoding. This code treats 6 bits of the sync sequence as part of a 16 bit preamble.
 
 Once the data has been decoded with the NRZ 6:4 decoding, it has the following format:
-- Device ID: 3 bytes, little-endian. Value as stamped on cover, mod 2^24
+- Device ID: 3 bytes, little-endian. Typically utility provider's number, mod 2^24 or mod 10^7.
 - Device flags: 1 byte. Fields not known
 - Meter reading: 3 bytes, little-endian. Value in gallons for meters with 1-gallon resolution.
 - Status flags: 1 byte. Fields not known
