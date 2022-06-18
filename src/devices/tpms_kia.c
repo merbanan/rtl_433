@@ -13,6 +13,12 @@
 TPMS sensor for Kio Rio III (UB) 2011-2017 and some Hyundai models. Possibly other brands and
 models too.
 
+The sensors have accelerometers that sense the centripetal force in a spinning wheel and begin
+to transmit data around 40 km/h. They usually keep transmitting for several minutes after
+stopping, but not always; on a few rare occasions they stop instantly. Each sensor sends a
+burst of 4-6 packets two times a minutes. The packets in a burst are often, but not always,
+identical.
+
 154 bits in a packet. Bit layout (leftmost bit in a field is the most significant):
     zzzzzzzzzzzzzzzz aaaa pppppppp tttttttt iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii dddddddd ccccc
 
@@ -141,9 +147,9 @@ static char *output_fields[] = {
 r_device tpms_kia = {
         .name        = "Kia TPMS (-s 1M)",
         .modulation  = FSK_PULSE_PCM,
-        .short_width = 200,
-        .long_width  = 200,
-        .reset_limit = 800,
+        .short_width = 50,
+        .long_width  = 50,
+        .reset_limit = 200,
         .decode_fn   = &tpms_kia_callback,
         .fields      = output_fields,
 };
