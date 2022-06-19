@@ -627,6 +627,9 @@ def publish_config(mqttc, topic, model, instance, mapping):
     if args.force_update:
         config["force_update"] = "true"
 
+    if args.expire_after:
+        config["expire_after"] = args.expire_after
+
     logging.debug(path + ":" + json.dumps(config))
 
     mqttc.publish(path, json.dumps(config), retain=args.retain)
@@ -741,6 +744,9 @@ if __name__ == "__main__":
                         dest="discovery_interval",
                         default=600,
                         help="Interval to republish config topics in seconds (default: %(default)d)")
+    parser.add_argument("-x", "--expire-after", type=int,
+                        dest="expire_after",
+                        help="Number of seconds with no updates after which the sensor becomes unavailable")
     parser.add_argument("-I", "--ids", type=int, nargs="+",
                         help="ID's of devices that will be discovered (omit for all)")
     args = parser.parse_args()
