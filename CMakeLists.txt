@@ -23,44 +23,6 @@ set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
 
 ########################################################################
-# Get version info from Git
-########################################################################
-include(GetGitRevisionDescription)
-get_git_head_revision(GIT_REFSPEC GIT_COMMIT)
-if(GIT_COMMIT) # is a git repo
-    # shorten branch spec
-    string(REGEX REPLACE ".*/" "" GIT_BRANCH "${GIT_REFSPEC}")
-    # use lightweight (non-annotated) tags
-    git_describe(GIT_VERSION "--tags")
-    git_timestamp(GIT_TIMESTAMP)
-    message(STATUS "Found Git version: ${GIT_REFSPEC} commit ${GIT_COMMIT} from ${GIT_TIMESTAMP_ISO}")
-    message(STATUS "Using Git version tag: ${GIT_VERSION} on ${GIT_BRANCH} at ${GIT_TIMESTAMP}")
-    ADD_DEFINITIONS(-DGIT_VERSION=${GIT_VERSION})
-    ADD_DEFINITIONS(-DGIT_BRANCH=${GIT_BRANCH})
-    ADD_DEFINITIONS(-DGIT_TIMESTAMP=${GIT_TIMESTAMP})
-endif()
-
-########################################################################
-# Fallback to get release version info from Changelog
-########################################################################
-if(NOT GIT_COMMIT AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CHANGELOG.md")
-    # parse the CHANGELOG.md, this is clever, i.e. might go wrong ;)
-    file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/CHANGELOG.md" CHANGELOG LIMIT_COUNT 42)
-    # list(FILTER ...) needs CMake 3.6+
-    foreach(item ${CHANGELOG})
-        string(REGEX MATCH "^## Release (.+)" item ${item})
-        if(CMAKE_MATCH_1)
-            list(APPEND RELEASE_VERSIONS ${CMAKE_MATCH_1})
-        endif()
-    endforeach()
-    if(RELEASE_VERSIONS)
-        list(GET RELEASE_VERSIONS 0 RELEASE_VERSION)
-        message(STATUS "Found Release version: ${RELEASE_VERSION}")
-        ADD_DEFINITIONS(-DGIT_VERSION=${RELEASE_VERSION})
-    endif()
-endif()
-
-########################################################################
 # Compiler specific setup
 ########################################################################
 set(CMAKE_C_EXTENSIONS OFF)

@@ -1,14 +1,6 @@
-# rtl_433
+# rtl_433_autosec
 
-rtl_433 (despite the name) is a generic data receiver, mainly for the 433.92 MHz, 868 MHz (SRD), 315 MHz, 345 MHz, and 915 MHz ISM bands.
-
-The official source code is in the https://github.com/merbanan/rtl_433/ repository.
-For more documentation and related projects see the https://triq.org/ site.
-
-It works with [RTL-SDR](https://github.com/osmocom/rtl-sdr/) and/or [SoapySDR](https://github.com/pothosware/SoapySDR/).
-Actively tested and supported are Realtek RTL2832 based DVB dongles (using RTL-SDR) and LimeSDR ([LimeSDR USB](https://www.crowdsupply.com/lime-micro/limesdr) and [LimeSDR mini](https://www.crowdsupply.com/lime-micro/limesdr-mini) engineering samples kindly provided by [MyriadRf](https://myriadrf.org/)), PlutoSDR, HackRF One (using SoapySDR drivers), as well as SoapyRemote.
-
-![rtl_433 screenshot](./docs/screenshot.png)
+This program will caputure signals from car keyfob, convert it into bits and log it to a python program over dbus for storage.
 
 ## Building / Installation
 
@@ -29,14 +21,11 @@ Docker images with rtl_433 are available [on the github page of hertzg](https://
 
 ## How to add support for unsupported sensors
 
-See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
-
 ## Running
 
     rtl_433 -h
 
 ```
-
 		= General options =
   [-V] Output the version string and exit
   [-v] Increase verbosity (can be used multiple times).
