@@ -98,7 +98,7 @@ static int fineoffset_wh45_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm2_5,
             "pm10_ug_m3",       "10um Coarse Particulate Matter",  DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm10,
             "co2_ppm",          "Carbon Dioxide", DATA_FORMAT, "%i ppm", DATA_INT, co2,
-            "ext_power",        "External Power", DATA_INT, ext_power, 
+            "ext_power",        "External Power", DATA_INT, ext_power,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
