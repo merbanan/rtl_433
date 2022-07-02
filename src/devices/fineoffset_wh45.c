@@ -15,7 +15,7 @@
 Fine Offset Electronics WH45 air quality sensor,
 
 - also Ecowitt WH45, Ecowitt WH0295
-- also Froggit DP150
+- also Froggit DP250
 - also Ambient Weather AQIN
 
 Preamble is aaaa aaaa, sync word is 2dd4.
@@ -81,7 +81,7 @@ static int fineoffset_wh45_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // A battery bars value of 6 means the sensor is powered via USB (the Ecowitt WS View app shows 'DC')
     int ext_power     = battery_bars == 6 ? 1 : 0;
     //  Battery level is indicated with 5 bars. Convert to 0 (0 bars) to 1 (5 or 6 bars)
-    float battery_ok  = MIN(battery_bars * 0.2f, 1);
+    float battery_ok  = MIN(battery_bars * 0.2f, 1.0f);
     int pm2_5_raw     = (b[7] & 0x3f) << 8 | b[8];
     float pm2_5       = pm2_5_raw * 0.1f;
     int pm10_raw      = (b[9] & 0x3f) << 8 | b[10];
