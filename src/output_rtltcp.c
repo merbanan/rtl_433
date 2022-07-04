@@ -30,46 +30,49 @@
 #endif
 
 #ifndef _MSC_VER
+
 #include <unistd.h>
+
 #endif
 
 #ifdef _WIN32
-    #if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x0600)
-    #undef _WIN32_WINNT
-    #define _WIN32_WINNT 0x0600   /* Needed to pull in 'struct sockaddr_storage' */
-    #endif
+#if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x0600)
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0600   /* Needed to pull in 'struct sockaddr_storage' */
+#endif
 
-    #include <winsock2.h>
-    #include <ws2tcpip.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #else
-    #include <sys/types.h>
-    #include <sys/socket.h>
-    #include <sys/select.h>
-    #include <netdb.h>
-    #include <netinet/in.h>
 
-    #define SOCKET          int
-    #define INVALID_SOCKET  (-1)
-    #define closesocket(x)  close(x)
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/select.h>
+#include <netdb.h>
+#include <netinet/in.h>
+
+#define SOCKET          int
+#define INVALID_SOCKET  (-1)
+#define closesocket(x)  close(x)
 #endif
 
 #include <time.h>
 
 #ifdef _WIN32
-    #define _POSIX_HOST_NAME_MAX  128
-    #define perror(str)           ws2_perror(str)
+#define _POSIX_HOST_NAME_MAX  128
+#define perror(str)           ws2_perror(str)
 
-    static void ws2_perror(const char *str)
-    {
-        if (str && *str)
-            fprintf(stderr, "%s: ", str);
-        fprintf(stderr, "Winsock error %d.\n", WSAGetLastError());
-    }
+static void ws2_perror(const char *str)
+{
+    if (str && *str)
+        fprintf(stderr, "%s: ", str);
+    fprintf(stderr, "Winsock error %d.\n", WSAGetLastError());
+}
 #endif
 #ifdef ESP32
-    #include <tcpip_adapter.h>
-    #define _POSIX_HOST_NAME_MAX 128
-    #define gai_strerror strerror
+#include <tcpip_adapter.h>
+#define _POSIX_HOST_NAME_MAX 128
+#define gai_strerror strerror
 #endif
 
 #ifdef _MSC_VER
@@ -93,38 +96,36 @@ typedef SSIZE_T ssize_t;
 #ifdef THREADS
 
 typedef struct rtltcp_server {
-    struct sockaddr_storage addr;
-    socklen_t addr_len;
-    SOCKET sock;
-    int client_count; ///< number of connected clients
+        struct sockaddr_storage addr;
+        socklen_t addr_len;
+        SOCKET sock;
+        int client_count; ///< number of connected clients
 
-    uint8_t const *data_buf; ///< data buffer with most recent data, NULL otherwise
-    uint32_t data_len;       ///< data buffer length in bytes, 0 otherwise
-    unsigned data_cnt;       ///< data buffer update counter
+        uint8_t const *data_buf; ///< data buffer with most recent data, NULL otherwise
+        uint32_t data_len;       ///< data buffer length in bytes, 0 otherwise
+        unsigned data_cnt;       ///< data buffer update counter
 
-    pthread_t thread;
-    pthread_mutex_t lock; ///< lock for data buffer
-    pthread_cond_t cond;  ///< wait for data buffer
-    r_cfg_t *cfg;
-    struct raw_output *output;
+        pthread_t thread;
+        pthread_mutex_t lock; ///< lock for data buffer
+        pthread_cond_t cond;  ///< wait for data buffer
+        r_cfg_t *cfg;
+        struct raw_output *output;
 } rtltcp_server_t;
 
-static ssize_t send_all(int sockfd, void const *buf, size_t len, int flags)
-{
-    size_t sent = 0;
-    while (sent < len) {
-        ssize_t ret = send(sockfd, (uint8_t *)buf + sent, len - sent, flags);
-        if (ret < 0)
-            return ret;
-        sent += (size_t)ret;
-    }
-    return sent;
+static ssize_t send_all(int sockfd, void const *buf, size_t len, int flags) {
+        size_t sent = 0;
+        while (sent < len) {
+                ssize_t ret = send(sockfd, (uint8_t *) buf + sent, len - sent, flags);
+                if (ret < 0)
+                        return ret;
+                sent += (size_t) ret;
+        }
+        return sent;
 }
 
-static void send_header(SOCKET sock)
-{
-    uint8_t msg[] = {'R', 'T', 'L', '0', 0, 0, 0, 0, 0, 0, 0, 0};
-    send_all(sock, msg, sizeof(msg), MSG_NOSIGNAL); // ignore SIGPIPE
+static void send_header(SOCKET sock) {
+        uint8_t msg[] = {'R', 'T', 'L', '0', 0, 0, 0, 0, 0, 0, 0, 0};
+        send_all(sock, msg, sizeof(msg), MSG_NOSIGNAL); // ignore SIGPIPE
 }
 
 #define RTLTCP_SET_FREQ 0x01
@@ -156,350 +157,344 @@ E.g. initialization from Gqrx:
 - RTLTCP_SET_FREQ  with 433968000
 */
 
-static int parse_command(r_cfg_t *cfg, uint8_t const *buf, int len)
-{
-    UNUSED(cfg);
+static int parse_command(r_cfg_t *cfg, uint8_t const *buf, int len) {
+        UNUSED(cfg);
 
-    if (len < 5)
-        return 0;
-    int cmd = buf[0];
-    unsigned arg = (unsigned)buf[1] << 24 | buf[2] << 16 | buf[3] << 8 | buf[4];
-    // fprintf(stderr, "CMD: %d with %u (%d) %02x %02x %02x %02x\n", cmd, arg, (int)arg, buf[1], buf[2], buf[3], buf[4]);
-    len -= 5;
+        if (len < 5)
+                return 0;
+        int cmd = buf[0];
+        unsigned arg = (unsigned) buf[1] << 24 | buf[2] << 16 | buf[3] << 8 | buf[4];
+        // fprintf(stderr, "CMD: %d with %u (%d) %02x %02x %02x %02x\n", cmd, arg, (int)arg, buf[1], buf[2], buf[3], buf[4]);
+        len -= 5;
 
-    switch (cmd) {
-    case RTLTCP_SET_FREQ:
-        fprintf(stderr, "rtl_tcp received command SET_FREQ with %u\n", arg);
-        // set_center_freq(cfg, arg);
-        break;
-    case RTLTCP_SET_SAMPLE_RATE:
-        fprintf(stderr, "rtl_tcp received command SET_SAMPLE_RATE with %u\n", arg);
-        // set_sample_rate(cfg, arg);
-        break;
-    case RTLTCP_SET_GAIN_MODE:
-        fprintf(stderr, "rtl_tcp received command SET_GAIN_MODE with %u\n", arg);
-        break;
-    case RTLTCP_SET_GAIN:
-        fprintf(stderr, "rtl_tcp received command SET_GAIN with %u\n", arg);
-        break;
-    case RTLTCP_SET_FREQ_CORRECTION:
-        fprintf(stderr, "rtl_tcp received command SET_FREQ_CORRECTION with %u\n", arg);
-        // set_freq_correction(cfg, (int)arg);
-        break;
-    case RTLTCP_SET_IF_TUNER_GAIN:
-        fprintf(stderr, "rtl_tcp received command SET_IF_TUNER_GAIN with %u\n", arg);
-        break;
-    case RTLTCP_SET_TEST_MODE:
-        fprintf(stderr, "rtl_tcp received command SET_TEST_MODE with %u\n", arg);
-        break;
-    case RTLTCP_SET_AGC_MODE:
-        fprintf(stderr, "rtl_tcp received command SET_AGC_MODE with %u\n", arg);
-        break;
-    case RTLTCP_SET_DIRECT_SAMPLING:
-        fprintf(stderr, "rtl_tcp received command SET_DIRECT_SAMPLING with %u\n", arg);
-        break;
-    case RTLTCP_SET_OFFSET_TUNING:
-        fprintf(stderr, "rtl_tcp received command SET_OFFSET_TUNING with %u\n", arg);
-        break;
-    case RTLTCP_SET_RTL_XTAL:
-        fprintf(stderr, "rtl_tcp received command SET_RTL_XTAL with %u\n", arg);
-        break;
-    case RTLTCP_SET_TUNER_XTAL:
-        fprintf(stderr, "rtl_tcp received command SET_TUNER_XTAL with %u\n", arg);
-        break;
-    case RTLTCP_SET_TUNER_GAIN_BY_ID:
-        fprintf(stderr, "rtl_tcp received command SET_TUNER_GAIN_BY_ID with %u\n", arg);
-        break;
-    case RTLTCP_SET_BIAS_TEE:
-        fprintf(stderr, "rtl_tcp received command SET_BIAS_TEE with %u\n", arg);
-        break;
-    default:
-        fprintf(stderr, "rtl_tcp received unknown command %d with %u\n", cmd, arg);
-        break;
-    }
+        switch (cmd) {
+                case RTLTCP_SET_FREQ:
+                        fprintf(stderr, "rtl_tcp received command SET_FREQ with %u\n", arg);
+                        // set_center_freq(cfg, arg);
+                        break;
+                case RTLTCP_SET_SAMPLE_RATE:
+                        fprintf(stderr, "rtl_tcp received command SET_SAMPLE_RATE with %u\n", arg);
+                        // set_sample_rate(cfg, arg);
+                        break;
+                case RTLTCP_SET_GAIN_MODE:
+                        fprintf(stderr, "rtl_tcp received command SET_GAIN_MODE with %u\n", arg);
+                        break;
+                case RTLTCP_SET_GAIN:
+                        fprintf(stderr, "rtl_tcp received command SET_GAIN with %u\n", arg);
+                        break;
+                case RTLTCP_SET_FREQ_CORRECTION:
+                        fprintf(stderr, "rtl_tcp received command SET_FREQ_CORRECTION with %u\n", arg);
+                        // set_freq_correction(cfg, (int)arg);
+                        break;
+                case RTLTCP_SET_IF_TUNER_GAIN:
+                        fprintf(stderr, "rtl_tcp received command SET_IF_TUNER_GAIN with %u\n", arg);
+                        break;
+                case RTLTCP_SET_TEST_MODE:
+                        fprintf(stderr, "rtl_tcp received command SET_TEST_MODE with %u\n", arg);
+                        break;
+                case RTLTCP_SET_AGC_MODE:
+                        fprintf(stderr, "rtl_tcp received command SET_AGC_MODE with %u\n", arg);
+                        break;
+                case RTLTCP_SET_DIRECT_SAMPLING:
+                        fprintf(stderr, "rtl_tcp received command SET_DIRECT_SAMPLING with %u\n", arg);
+                        break;
+                case RTLTCP_SET_OFFSET_TUNING:
+                        fprintf(stderr, "rtl_tcp received command SET_OFFSET_TUNING with %u\n", arg);
+                        break;
+                case RTLTCP_SET_RTL_XTAL:
+                        fprintf(stderr, "rtl_tcp received command SET_RTL_XTAL with %u\n", arg);
+                        break;
+                case RTLTCP_SET_TUNER_XTAL:
+                        fprintf(stderr, "rtl_tcp received command SET_TUNER_XTAL with %u\n", arg);
+                        break;
+                case RTLTCP_SET_TUNER_GAIN_BY_ID:
+                        fprintf(stderr, "rtl_tcp received command SET_TUNER_GAIN_BY_ID with %u\n", arg);
+                        break;
+                case RTLTCP_SET_BIAS_TEE:
+                        fprintf(stderr, "rtl_tcp received command SET_BIAS_TEE with %u\n", arg);
+                        break;
+                default:
+                        fprintf(stderr, "rtl_tcp received unknown command %d with %u\n", cmd, arg);
+                        break;
+        }
 
-    return 5;
+        return 5;
 }
 
 // event handler to broadcast to all our sockets
-static void rtltcp_broadcast_send(rtltcp_server_t *srv, uint8_t const *data, uint32_t len)
-{
-    // fprintf(stderr, "%s: %d byte frame\n", __func__, len);
-    pthread_mutex_lock(&srv->lock);
+static void rtltcp_broadcast_send(rtltcp_server_t *srv, uint8_t const *data, uint32_t len) {
+        // fprintf(stderr, "%s: %d byte frame\n", __func__, len);
+        pthread_mutex_lock(&srv->lock);
 
-    // update the data buffer reference
-    srv->data_buf = data;
-    srv->data_len = len;
-    srv->data_cnt += 1;
+        // update the data buffer reference
+        srv->data_buf = data;
+        srv->data_len = len;
+        srv->data_cnt += 1;
 
-    pthread_mutex_unlock(&srv->lock);
-    pthread_cond_signal(&srv->cond);
-    // perhaps broadcast if we want to support multiple clients
-    //int pthread_cond_broadcast(&srv->cond);
+        pthread_mutex_unlock(&srv->lock);
+        pthread_cond_signal(&srv->cond);
+        // perhaps broadcast if we want to support multiple clients
+        //int pthread_cond_broadcast(&srv->cond);
 }
 
-static THREAD_RETURN THREAD_CALL accept_thread(void *arg)
-{
-    rtltcp_server_t *srv = arg;
+static THREAD_RETURN THREAD_CALL accept_thread(void *arg) {
+        rtltcp_server_t *srv = arg;
 
-    // Start listening for clients, waits for an incoming connection
-    listen(srv->sock, 1);
-    //fprintf(stderr, "rtl_tcp listening...\n");
+        // Start listening for clients, waits for an incoming connection
+        listen(srv->sock, 1);
+        //fprintf(stderr, "rtl_tcp listening...\n");
 
-    for (;;) {
-        // Accept actual connection from the client
-        struct sockaddr_storage addr = {0};
-        unsigned addr_len = sizeof(addr);
-        int sock = accept(srv->sock, (struct sockaddr *)&addr, &addr_len);
-
-        if (sock < 0) {
-            perror("ERROR on accept");
-            continue;
-        }
-
-        // Prevent SIGPIPE per file descriptor, supported on MacOS and most BSDs
-#ifdef SO_NOSIGPIPE
-        int opt = 1;
-        if (setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt)) == -1) {
-            perror("setsockopt");
-            continue;
-        }
-#endif
-
-        char host[INET6_ADDRSTRLEN] = {0};
-        char port[NI_MAXSERV]       = {0};
-
-        int err = getnameinfo((struct sockaddr *)&addr, addr_len,
-                host, sizeof(host), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV);
-        if (err != 0) {
-            fprintf(stderr, "failed to convert address to string (code=%d)\n", err);
-            continue;
-        }
-        fprintf(stderr, "rtl_tcp client connected from %s port %s\n", host, port);
-
-        pthread_mutex_lock(&srv->lock);
-        srv->client_count += 1;
-        unsigned prev_cnt = srv->data_cnt + 9; // data sent in previous loop, random value to get the current buffer
-        pthread_mutex_unlock(&srv->lock);
-
-        send_header(sock);
-
-        // Client loop
         for (;;) {
-            // Read available commands
-            int abort = 0;
-            for (;;) {
-                fd_set fds;
-                FD_ZERO(&fds);
-                FD_SET(sock, &fds);
-                struct timeval timeout = {0};
+                // Accept actual connection from the client
+                struct sockaddr_storage addr = {0};
+                unsigned addr_len = sizeof(addr);
+                int sock = accept(srv->sock, (struct sockaddr *) &addr, &addr_len);
 
-                int ready = select(sock + 1, &fds, NULL, NULL, &timeout);
-                if (ready <= 0)
-                    break;
-
-                uint8_t buf[128] = {0};
-                ssize_t len = recv(sock, buf, sizeof(buf), 0);
-                //fprintf(stderr, "rtl_tcp recv %zd bytes (%d)\n", len, ready);
-                if (len <= 0) {
-                    abort = 1;
-                    break;
+                if (sock < 0) {
+                        perror("ERROR on accept");
+                        continue;
                 }
-                int pos = 0;
-                while (pos + 5 <= len) {
-                    pos += parse_command(srv->cfg, &buf[pos], (int)len - pos);
+
+                // Prevent SIGPIPE per file descriptor, supported on MacOS and most BSDs
+#ifdef SO_NOSIGPIPE
+                int opt = 1;
+                if (setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt)) == -1) {
+                    perror("setsockopt");
+                    continue;
                 }
-            }
-            if (abort) {
-                break;
-            }
-
-            // Send frames
-            fd_set fds;
-            FD_ZERO(&fds);
-            FD_SET(sock, &fds);
-            struct timeval timeout = {0};
-
-            int ready = select(sock + 1, NULL, &fds, NULL, &timeout);
-            if (ready <= 0) {
-                fprintf(stderr, "rtl_tcp send not ready for write?\n");
-                break;
-            }
-
-            pthread_mutex_lock(&srv->lock);
-            while (srv->data_cnt == prev_cnt || srv->data_buf == NULL)
-                pthread_cond_wait(&srv->cond, &srv->lock);
-            // Maybe timeout to check recv()
-            // pthread_cond_timedwait(&srv->cond, &srv->lock, const struct timespec *abstime);
-
-            // Get data buffer reference
-            void const *data = srv->data_buf;
-            int data_len     = srv->data_len;
-            prev_cnt         = srv->data_cnt;
-
-            pthread_mutex_unlock(&srv->lock);
-
-            send_all(sock, data, data_len, MSG_NOSIGNAL); // ignore SIGPIPE
-        }
-
-        pthread_mutex_lock(&srv->lock);
-        srv->client_count -= 1;
-        pthread_mutex_unlock(&srv->lock);
-
-        fprintf(stderr, "rtl_tcp client disconnected from %s port %s\n", host, port);
-        closesocket(sock);
-    }
-    return 0;
-}
-
-static int rtltcp_server_start(rtltcp_server_t *srv, char const *host, char const *port, r_cfg_t *cfg, struct raw_output *output)
-{
-    if (!host || !port)
-        return -1;
-
-    struct addrinfo hints, *res, *res0;
-    int error;
-    SOCKET sock;
-
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family   = PF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags    = AI_ADDRCONFIG;
-    error             = getaddrinfo(host, port, &hints, &res0);
-    if (error) {
-        fprintf(stderr, "%s\n", gai_strerror(error));
-        return -1;
-    }
-    sock = INVALID_SOCKET;
-    for (res = res0; res; res = res->ai_next) {
-        sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-        if (sock >= 0) {
-            srv->sock = sock;
-            memset(&srv->addr, 0, sizeof(srv->addr));
-            memcpy(&srv->addr, res->ai_addr, res->ai_addrlen);
-            srv->addr_len = res->ai_addrlen;
-            break; // success
-        }
-    }
-    freeaddrinfo(res0);
-    if (sock == INVALID_SOCKET) {
-        perror("socket");
-        return -1;
-    }
-
-    if (bind(sock, (struct sockaddr *)&srv->addr, srv->addr_len) < 0) {
-        perror("error on binding");
-        return -1;
-    }
-
-    srv->cfg     = cfg;
-    srv->output  = output;
-
-    char address[INET6_ADDRSTRLEN] = {0};
-    char portstr[NI_MAXSERV] = {0};
-
-    int err = getnameinfo((struct sockaddr *)&srv->addr, srv->addr_len,
-            address, sizeof(address), portstr, sizeof(portstr), NI_NUMERICHOST | NI_NUMERICSERV);
-    if (err != 0) {
-        fprintf(stderr, "failed to convert address to string (code=%d)\n", err);
-        return -1;
-    }
-    fprintf(stderr, "Starting rtl_tcp server on address %s %s\n", address, portstr);
-
-    pthread_mutex_init(&srv->lock, NULL);
-    pthread_cond_init(&srv->cond, NULL);
-
-#ifndef _WIN32
-    // Block all signals from the worker thread
-    sigset_t sigset;
-    sigset_t oldset;
-    sigfillset(&sigset);
-    pthread_sigmask(SIG_SETMASK, &sigset, &oldset);
 #endif
-    int r = pthread_create(&srv->thread, NULL, accept_thread, srv);
-#ifndef _WIN32
-    pthread_sigmask(SIG_SETMASK, &oldset, NULL);
-#endif
-    if (r) {
-        fprintf(stderr, "%s: error in pthread_create, rc: %d\n", __func__, r);
-    }
 
-    return r;
-}
+                char host[INET6_ADDRSTRLEN] = {0};
+                char port[NI_MAXSERV] = {0};
 
-static int rtltcp_server_stop(rtltcp_server_t *srv)
-{
-    if (!srv)
+                int err = getnameinfo((struct sockaddr *) &addr, addr_len,
+                                      host, sizeof(host), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV);
+                if (err != 0) {
+                        fprintf(stderr, "failed to convert address to string (code=%d)\n", err);
+                        continue;
+                }
+                fprintf(stderr, "rtl_tcp client connected from %s port %s\n", host, port);
+
+                pthread_mutex_lock(&srv->lock);
+                srv->client_count += 1;
+                unsigned prev_cnt =
+                        srv->data_cnt + 9; // data sent in previous loop, random value to get the current buffer
+                pthread_mutex_unlock(&srv->lock);
+
+                send_header(sock);
+
+                // Client loop
+                for (;;) {
+                        // Read available commands
+                        int abort = 0;
+                        for (;;) {
+                                fd_set fds;
+                                FD_ZERO(&fds);
+                                FD_SET(sock, &fds);
+                                struct timeval timeout = {0};
+
+                                int ready = select(sock + 1, &fds, NULL, NULL, &timeout);
+                                if (ready <= 0)
+                                        break;
+
+                                uint8_t buf[128] = {0};
+                                ssize_t len = recv(sock, buf, sizeof(buf), 0);
+                                //fprintf(stderr, "rtl_tcp recv %zd bytes (%d)\n", len, ready);
+                                if (len <= 0) {
+                                        abort = 1;
+                                        break;
+                                }
+                                int pos = 0;
+                                while (pos + 5 <= len) {
+                                        pos += parse_command(srv->cfg, &buf[pos], (int) len - pos);
+                                }
+                        }
+                        if (abort) {
+                                break;
+                        }
+
+                        // Send frames
+                        fd_set fds;
+                        FD_ZERO(&fds);
+                        FD_SET(sock, &fds);
+                        struct timeval timeout = {0};
+
+                        int ready = select(sock + 1, NULL, &fds, NULL, &timeout);
+                        if (ready <= 0) {
+                                fprintf(stderr, "rtl_tcp send not ready for write?\n");
+                                break;
+                        }
+
+                        pthread_mutex_lock(&srv->lock);
+                        while (srv->data_cnt == prev_cnt || srv->data_buf == NULL)
+                                pthread_cond_wait(&srv->cond, &srv->lock);
+                        // Maybe timeout to check recv()
+                        // pthread_cond_timedwait(&srv->cond, &srv->lock, const struct timespec *abstime);
+
+                        // Get data buffer reference
+                        void const *data = srv->data_buf;
+                        int data_len = srv->data_len;
+                        prev_cnt = srv->data_cnt;
+
+                        pthread_mutex_unlock(&srv->lock);
+
+                        send_all(sock, data, data_len, MSG_NOSIGNAL); // ignore SIGPIPE
+                }
+
+                pthread_mutex_lock(&srv->lock);
+                srv->client_count -= 1;
+                pthread_mutex_unlock(&srv->lock);
+
+                fprintf(stderr, "rtl_tcp client disconnected from %s port %s\n", host, port);
+                closesocket(sock);
+        }
         return 0;
+}
 
-    fprintf(stderr, "Stopping rtl_tcp server...\n");
-    // thread is likely blocking in accept, recv, or send
-    int r = pthread_cancel(srv->thread);
-    if (r) {
-        fprintf(stderr, "%s: error in pthread_cancel, rc: %d\n", __func__, r);
-    }
-    pthread_mutex_destroy(&srv->lock);
-    pthread_cond_destroy(&srv->cond);
+static int
+rtltcp_server_start(rtltcp_server_t *srv, char const *host, char const *port, r_cfg_t *cfg, struct raw_output *output) {
+        if (!host || !port)
+                return -1;
 
-    srv->client_count = 0;
+        struct addrinfo hints, *res, *res0;
+        int error;
+        SOCKET sock;
 
-    // close server socket
-    int ret = 0;
-    if (srv->sock != INVALID_SOCKET) {
-        ret = closesocket(srv->sock);
-        srv->sock = INVALID_SOCKET;
-    }
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family = PF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_flags = AI_ADDRCONFIG;
+        error = getaddrinfo(host, port, &hints, &res0);
+        if (error) {
+                fprintf(stderr, "%s\n", gai_strerror(error));
+                return -1;
+        }
+        sock = INVALID_SOCKET;
+        for (res = res0; res; res = res->ai_next) {
+                sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+                if (sock >= 0) {
+                        srv->sock = sock;
+                        memset(&srv->addr, 0, sizeof(srv->addr));
+                        memcpy(&srv->addr, res->ai_addr, res->ai_addrlen);
+                        srv->addr_len = res->ai_addrlen;
+                        break; // success
+                }
+        }
+        freeaddrinfo(res0);
+        if (sock == INVALID_SOCKET) {
+                perror("socket");
+                return -1;
+        }
+
+        if (bind(sock, (struct sockaddr *) &srv->addr, srv->addr_len) < 0) {
+                perror("error on binding");
+                return -1;
+        }
+
+        srv->cfg = cfg;
+        srv->output = output;
+
+        char address[INET6_ADDRSTRLEN] = {0};
+        char portstr[NI_MAXSERV] = {0};
+
+        int err = getnameinfo((struct sockaddr *) &srv->addr, srv->addr_len,
+                              address, sizeof(address), portstr, sizeof(portstr), NI_NUMERICHOST | NI_NUMERICSERV);
+        if (err != 0) {
+                fprintf(stderr, "failed to convert address to string (code=%d)\n", err);
+                return -1;
+        }
+        fprintf(stderr, "Starting rtl_tcp server on address %s %s\n", address, portstr);
+
+        pthread_mutex_init(&srv->lock, NULL);
+        pthread_cond_init(&srv->cond, NULL);
+
+#ifndef _WIN32
+        // Block all signals from the worker thread
+        sigset_t sigset;
+        sigset_t oldset;
+        sigfillset(&sigset);
+        pthread_sigmask(SIG_SETMASK, &sigset, &oldset);
+#endif
+        int r = pthread_create(&srv->thread, NULL, accept_thread, srv);
+#ifndef _WIN32
+        pthread_sigmask(SIG_SETMASK, &oldset, NULL);
+#endif
+        if (r) {
+                fprintf(stderr, "%s: error in pthread_create, rc: %d\n", __func__, r);
+        }
+
+        return r;
+}
+
+static int rtltcp_server_stop(rtltcp_server_t *srv) {
+        if (!srv)
+                return 0;
+
+        fprintf(stderr, "Stopping rtl_tcp server...\n");
+        // thread is likely blocking in accept, recv, or send
+        int r = pthread_cancel(srv->thread);
+        if (r) {
+                fprintf(stderr, "%s: error in pthread_cancel, rc: %d\n", __func__, r);
+        }
+        pthread_mutex_destroy(&srv->lock);
+        pthread_cond_destroy(&srv->cond);
+
+        srv->client_count = 0;
+
+        // close server socket
+        int ret = 0;
+        if (srv->sock != INVALID_SOCKET) {
+                ret = closesocket(srv->sock);
+                srv->sock = INVALID_SOCKET;
+        }
 
 #ifdef _WIN32
-    WSACleanup();
+        WSACleanup();
 #endif
 
-    return ret;
+        return ret;
 }
 
 /* rtl_tcp raw output */
 
 typedef struct raw_output_rtltcp {
-    struct raw_output output;
-    rtltcp_server_t server;
+        struct raw_output output;
+        rtltcp_server_t server;
 } raw_output_rtltcp_t;
 
-static void raw_output_rtltcp_frame(raw_output_t *output, uint8_t const *data, uint32_t len)
-{
-    raw_output_rtltcp_t *rtltcp = (raw_output_rtltcp_t *)output;
+static void raw_output_rtltcp_frame(raw_output_t *output, uint8_t const *data, uint32_t len) {
+        raw_output_rtltcp_t *rtltcp = (raw_output_rtltcp_t *) output;
 
-    rtltcp_broadcast_send(&rtltcp->server, data, len);
+        rtltcp_broadcast_send(&rtltcp->server, data, len);
 }
 
-static void raw_output_rtltcp_free(raw_output_t *output)
-{
-    raw_output_rtltcp_t *rtltcp = (raw_output_rtltcp_t *)output;
+static void raw_output_rtltcp_free(raw_output_t *output) {
+        raw_output_rtltcp_t *rtltcp = (raw_output_rtltcp_t *) output;
 
-    if (!rtltcp)
-        return;
+        if (!rtltcp)
+                return;
 
-    rtltcp_server_stop(&rtltcp->server);
+        rtltcp_server_stop(&rtltcp->server);
 
-    free(rtltcp);
+        free(rtltcp);
 }
 
-struct raw_output *raw_output_rtltcp_create(const char *host, const char *port, r_cfg_t *cfg)
-{
-    raw_output_rtltcp_t *rtltcp = calloc(1, sizeof(raw_output_rtltcp_t));
-    if (!rtltcp) {
-        WARN_CALLOC("raw_output_rtltcp_create()");
-        return NULL; // NOTE: returns NULL on alloc failure.
-    }
+struct raw_output *raw_output_rtltcp_create(const char *host, const char *port, r_cfg_t *cfg) {
+        raw_output_rtltcp_t *rtltcp = calloc(1, sizeof(raw_output_rtltcp_t));
+        if (!rtltcp) {
+                WARN_CALLOC("raw_output_rtltcp_create()");
+                return NULL; // NOTE: returns NULL on alloc failure.
+        }
 
-    rtltcp->output.output_frame  = raw_output_rtltcp_frame;
-    rtltcp->output.output_free   = raw_output_rtltcp_free;
+        rtltcp->output.output_frame = raw_output_rtltcp_frame;
+        rtltcp->output.output_free = raw_output_rtltcp_free;
 
-    int ret = rtltcp_server_start(&rtltcp->server, host, port, cfg, &rtltcp->output);
-    if (ret != 0) {
-        exit(1);
-    }
+        int ret = rtltcp_server_start(&rtltcp->server, host, port, cfg, &rtltcp->output);
+        if (ret != 0) {
+                exit(1);
+        }
 
-    return &rtltcp->output;
+        return &rtltcp->output;
 }
 
 #else

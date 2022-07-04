@@ -16,42 +16,44 @@
 
 // makes strcasecmp() and strncasecmp() available when including optparse.h
 #ifdef _MSC_VER
-    #include <string.h>
-    #define strcasecmp(s1,s2)     _stricmp(s1,s2)
-    #define strncasecmp(s1,s2,n)  _strnicmp(s1,s2,n)
+#include <string.h>
+#define strcasecmp(s1,s2)     _stricmp(s1,s2)
+#define strncasecmp(s1,s2,n)  _strnicmp(s1,s2,n)
 #else
-    #include <strings.h>
+
+#include <strings.h>
+
 #endif
 
 /// TLS settings.
 typedef struct tls_opts {
-    /// Client certificate to present to the server.
-    char const *tls_cert;
-    /// Private key corresponding to the certificate.
-    /// If tls_cert is set but tls_key is not, tls_cert is used.
-    char const *tls_key;
-    /// Verify server certificate using this CA bundle. If set to "*", then TLS
-    /// is enabled but no cert verification is performed.
-    char const *tls_ca_cert;
-    /// Colon-delimited list of acceptable cipher suites.
-    /// Names depend on the library used, for example:
-    /// ECDH-ECDSA-AES128-GCM-SHA256:DHE-RSA-AES128-SHA256 (OpenSSL)
-    /// For OpenSSL the list can be obtained by running "openssl ciphers".
-    /// If NULL, a reasonable default is used.
-    char const *tls_cipher_suites;
-    /// Server name verification. If tls_ca_cert is set and the certificate has
-    /// passed verification, its subject will be verified against this string.
-    /// By default (if tls_server_name is NULL) hostname part of the address will
-    /// be used. Wildcard matching is supported. A special value of "*" disables
-    /// name verification.
-    char const *tls_server_name;
-    /// PSK identity is a NUL-terminated string.
-    /// Note: Default list of cipher suites does not include PSK suites, if you
-    /// want to use PSK you will need to set tls_cipher_suites as well.
-    char const *tls_psk_identity;
-    /// PSK key hex string, must be either 16 or 32 bytes (32 or 64 hex digits)
-    /// for AES-128 or AES-256 respectively.
-    char const *tls_psk_key;
+        /// Client certificate to present to the server.
+        char const *tls_cert;
+        /// Private key corresponding to the certificate.
+        /// If tls_cert is set but tls_key is not, tls_cert is used.
+        char const *tls_key;
+        /// Verify server certificate using this CA bundle. If set to "*", then TLS
+        /// is enabled but no cert verification is performed.
+        char const *tls_ca_cert;
+        /// Colon-delimited list of acceptable cipher suites.
+        /// Names depend on the library used, for example:
+        /// ECDH-ECDSA-AES128-GCM-SHA256:DHE-RSA-AES128-SHA256 (OpenSSL)
+        /// For OpenSSL the list can be obtained by running "openssl ciphers".
+        /// If NULL, a reasonable default is used.
+        char const *tls_cipher_suites;
+        /// Server name verification. If tls_ca_cert is set and the certificate has
+        /// passed verification, its subject will be verified against this string.
+        /// By default (if tls_server_name is NULL) hostname part of the address will
+        /// be used. Wildcard matching is supported. A special value of "*" disables
+        /// name verification.
+        char const *tls_server_name;
+        /// PSK identity is a NUL-terminated string.
+        /// Note: Default list of cipher suites does not include PSK suites, if you
+        /// want to use PSK you will need to set tls_cipher_suites as well.
+        char const *tls_psk_identity;
+        /// PSK key hex string, must be either 16 or 32 bytes (32 or 64 hex digits)
+        /// for AES-128 or AES-256 respectively.
+        char const *tls_psk_key;
 } tls_opts_t;
 
 /// Parse a TLS option.

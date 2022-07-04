@@ -5,7 +5,7 @@
 
 // explicit request for "no threads"
 
-#elif _MSC_VER>=1200
+#elif _MSC_VER >= 1200
 
 #include <windows.h>
 #include <process.h>
@@ -35,6 +35,7 @@ typedef CONDITION_VARIABLE              pthread_cond_t;
 #else
 
 #include <pthread.h>
+
 #define THREAD_CALL
 #define THREAD_RETURN                   void*
 

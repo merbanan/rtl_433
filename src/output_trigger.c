@@ -21,39 +21,36 @@
 /* Trigger printer */
 
 typedef struct {
-    struct data_output output;
-    FILE *file;
+        struct data_output output;
+        FILE *file;
 } data_output_trigger_t;
 
-static void R_API_CALLCONV print_trigger_data(data_output_t *output, data_t *data, char const *format)
-{
-    UNUSED(data);
-    UNUSED(format);
-    data_output_trigger_t *trigger = (data_output_trigger_t *)output;
+static void R_API_CALLCONV print_trigger_data(data_output_t *output, data_t *data, char const *format) {
+        UNUSED(data);
+        UNUSED(format);
+        data_output_trigger_t *trigger = (data_output_trigger_t *) output;
 
-    fputc('1', trigger->file);
-    fflush(trigger->file);
+        fputc('1', trigger->file);
+        fflush(trigger->file);
 }
 
-static void R_API_CALLCONV data_output_trigger_free(data_output_t *output)
-{
-    if (!output)
-        return;
+static void R_API_CALLCONV data_output_trigger_free(data_output_t *output) {
+        if (!output)
+                return;
 
-    free(output);
+        free(output);
 }
 
-struct data_output *data_output_trigger_create(FILE *file)
-{
-    data_output_trigger_t *trigger = calloc(1, sizeof(data_output_trigger_t));
-    if (!trigger) {
-        WARN_CALLOC("data_output_trigger_create()");
-        return NULL; // NOTE: returns NULL on alloc failure.
-    }
+struct data_output *data_output_trigger_create(FILE *file) {
+        data_output_trigger_t *trigger = calloc(1, sizeof(data_output_trigger_t));
+        if (!trigger) {
+                WARN_CALLOC("data_output_trigger_create()");
+                return NULL; // NOTE: returns NULL on alloc failure.
+        }
 
-    trigger->output.print_data  = print_trigger_data;
-    trigger->output.output_free = data_output_trigger_free;
-    trigger->file               = file;
+        trigger->output.print_data = print_trigger_data;
+        trigger->output.output_free = data_output_trigger_free;
+        trigger->file = file;
 
-    return &trigger->output;
+        return &trigger->output;
 }

@@ -149,7 +149,7 @@
 
 #if !defined(WEAK)
 #if (defined(__GNUC__) || defined(__clang__) || \
-     defined(__TI_COMPILER_VERSION__)) &&       \
+     defined(__TI_COMPILER_VERSION__)) && \
     !defined(_WIN32)
 #define WEAK __attribute__((weak))
 #else
@@ -437,7 +437,9 @@ unsigned int sleep(unsigned int seconds);
  */
 #if !(defined(__cplusplus) && __cplusplus >= 201103L) && \
     !(defined(__DARWIN_C_LEVEL) && __DARWIN_C_LEVEL >= 200809L)
+
 long long strtoll(const char *, char **, int);
+
 #endif
 
 typedef int sock_t;
@@ -2150,13 +2152,15 @@ extern "C" {
 #endif /* __cplusplus */
 
 typedef struct {
-  uint32_t buf[4];
-  uint32_t bits[2];
-  unsigned char in[64];
+        uint32_t buf[4];
+        uint32_t bits[2];
+        unsigned char in[64];
 } cs_md5_ctx;
 
 void cs_md5_init(cs_md5_ctx *c);
+
 void cs_md5_update(cs_md5_ctx *c, const unsigned char *data, size_t len);
+
 void cs_md5_final(unsigned char *md, cs_md5_ctx *c);
 
 #ifdef __cplusplus
@@ -2200,17 +2204,21 @@ extern "C" {
 #endif /* __cplusplus */
 
 typedef struct {
-  uint32_t state[5];
-  uint32_t count[2];
-  unsigned char buffer[64];
+        uint32_t state[5];
+        uint32_t count[2];
+        unsigned char buffer[64];
 } cs_sha1_ctx;
 
 void cs_sha1_init(cs_sha1_ctx *);
+
 void cs_sha1_update(cs_sha1_ctx *, const unsigned char *data, uint32_t len);
+
 void cs_sha1_final(unsigned char digest[20], cs_sha1_ctx *);
+
 void cs_hmac_sha1(const unsigned char *key, size_t key_len,
                   const unsigned char *text, size_t text_len,
                   unsigned char out[20]);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
@@ -2294,8 +2302,8 @@ extern "C" {
 
 /* Describes chunk of memory */
 struct mg_str {
-  const char *p; /* Memory chunk pointer */
-  size_t len;    /* Memory chunk length */
+        const char *p; /* Memory chunk pointer */
+        size_t len;    /* Memory chunk length */
 };
 
 /*
@@ -2425,9 +2433,9 @@ extern "C" {
 
 /* Memory buffer descriptor */
 struct mbuf {
-  char *buf;   /* Buffer pointer */
-  size_t len;  /* Data length. Data is located between offset 0 and len. */
-  size_t size; /* Buffer size allocated by realloc(1). Must be >= len */
+        char *buf;   /* Buffer pointer */
+        size_t len;  /* Data length. Data is located between offset 0 and len. */
+        size_t size; /* Buffer size allocated by realloc(1). Must be >= len */
 };
 
 /*
@@ -2526,19 +2534,22 @@ extern "C" {
 typedef void (*cs_base64_putc_t)(char, void *);
 
 struct cs_base64_ctx {
-  /* cannot call it putc because it's a macro on some environments */
-  cs_base64_putc_t b64_putc;
-  unsigned char chunk[3];
-  int chunk_size;
-  void *user_data;
+        /* cannot call it putc because it's a macro on some environments */
+        cs_base64_putc_t b64_putc;
+        unsigned char chunk[3];
+        int chunk_size;
+        void *user_data;
 };
 
 void cs_base64_init(struct cs_base64_ctx *ctx, cs_base64_putc_t putc,
                     void *user_data);
+
 void cs_base64_update(struct cs_base64_ctx *ctx, const char *str, size_t len);
+
 void cs_base64_finish(struct cs_base64_ctx *ctx);
 
 void cs_base64_encode(const unsigned char *src, int src_len, char *dst);
+
 void cs_fprint_base64(FILE *f, const unsigned char *src, int src_len);
 
 /*
@@ -2628,7 +2639,7 @@ size_t c_strnlen(const char *s, size_t maxlen);
  * Equivalent of standard `snprintf()`.
  */
 int c_snprintf(char *buf, size_t buf_size, const char *format, ...)
-    PRINTF_LIKE(3, 4);
+PRINTF_LIKE(3, 4);
 
 /*
  * Equivalent of standard `vsnprintf()`.
@@ -2697,7 +2708,7 @@ int mg_casecmp(const char *s1, const char *s2);
  * The purpose of this is to avoid malloc-ing if generated strings are small.
  */
 int mg_asprintf(char **buf, size_t size, const char *fmt, ...)
-    PRINTF_LIKE(3, 4);
+PRINTF_LIKE(3, 4);
 
 /* Same as mg_asprintf, but takes varargs list. */
 int mg_avprintf(char **buf, size_t size, const char *fmt, va_list ap);
@@ -2795,7 +2806,7 @@ size_t mg_match_prefix_n(const struct mg_str pattern, const struct mg_str str);
  */
 
 #ifndef _SYS_QUEUE_H_
-#define	_SYS_QUEUE_H_
+#define        _SYS_QUEUE_H_
 
 /*
  * This file defines four types of data structures: singly-linked lists,
@@ -2873,10 +2884,10 @@ size_t mg_match_prefix_n(const struct mg_str pattern, const struct mg_str str);
 #ifdef QUEUE_MACRO_DEBUG
 /* Store the last 2 places the queue element or head was altered */
 struct qm_trace {
-	unsigned long	 lastline;
-	unsigned long	 prevline;
-	const char	*lastfile;
-	const char	*prevfile;
+        unsigned long	 lastline;
+        unsigned long	 prevline;
+        const char	*lastfile;
+        const char	*prevfile;
 };
 
 #define	TRACEBUF	struct qm_trace trace;
@@ -2885,27 +2896,27 @@ struct qm_trace {
 #define	QMD_SAVELINK(name, link)	void **name = (void *)&(link)
 
 #define	QMD_TRACE_HEAD(head) do {					\
-	(head)->trace.prevline = (head)->trace.lastline;		\
-	(head)->trace.prevfile = (head)->trace.lastfile;		\
-	(head)->trace.lastline = __LINE__;				\
-	(head)->trace.lastfile = __FILE__;				\
+        (head)->trace.prevline = (head)->trace.lastline;		\
+        (head)->trace.prevfile = (head)->trace.lastfile;		\
+        (head)->trace.lastline = __LINE__;				\
+        (head)->trace.lastfile = __FILE__;				\
 } while (0)
 
 #define	QMD_TRACE_ELEM(elem) do {					\
-	(elem)->trace.prevline = (elem)->trace.lastline;		\
-	(elem)->trace.prevfile = (elem)->trace.lastfile;		\
-	(elem)->trace.lastline = __LINE__;				\
-	(elem)->trace.lastfile = __FILE__;				\
+        (elem)->trace.prevline = (elem)->trace.lastline;		\
+        (elem)->trace.prevfile = (elem)->trace.lastfile;		\
+        (elem)->trace.lastline = __LINE__;				\
+        (elem)->trace.lastfile = __FILE__;				\
 } while (0)
 
 #else
-#define	QMD_TRACE_ELEM(elem)
-#define	QMD_TRACE_HEAD(head)
-#define	QMD_SAVELINK(name, link)
-#define	TRACEBUF
-#define	TRACEBUF_INITIALIZER
-#define	TRASHIT(x)
-#endif	/* QUEUE_MACRO_DEBUG */
+#define        QMD_TRACE_ELEM(elem)
+#define        QMD_TRACE_HEAD(head)
+#define        QMD_SAVELINK(name, link)
+#define        TRACEBUF
+#define        TRACEBUF_INITIALIZER
+#define        TRASHIT(x)
+#endif        /* QUEUE_MACRO_DEBUG */
 
 #ifdef __cplusplus
 /*
@@ -2913,271 +2924,271 @@ struct qm_trace {
  */
 #define	QUEUE_TYPEOF(type) type
 #else
-#define	QUEUE_TYPEOF(type) struct type
+#define        QUEUE_TYPEOF(type) struct type
 #endif
 
 /*
  * Singly-linked List declarations.
  */
-#define	SLIST_HEAD(name, type)						\
-struct name {								\
-	struct type *slh_first;	/* first element */			\
+#define        SLIST_HEAD(name, type)                                                \
+struct name {                                                                \
+        struct type *slh_first;        /* first element */                        \
 }
 
-#define	SLIST_CLASS_HEAD(name, type)					\
-struct name {								\
-	class type *slh_first;	/* first element */			\
+#define        SLIST_CLASS_HEAD(name, type)                                        \
+struct name {                                                                \
+        class type *slh_first;        /* first element */                        \
 }
 
-#define	SLIST_HEAD_INITIALIZER(head)					\
-	{ NULL }
+#define        SLIST_HEAD_INITIALIZER(head)                                        \
+        { NULL }
 
-#define	SLIST_ENTRY(type)						\
-struct {								\
-	struct type *sle_next;	/* next element */			\
+#define        SLIST_ENTRY(type)                                                \
+struct {                                                                \
+        struct type *sle_next;        /* next element */                        \
 }
 
-#define	SLIST_CLASS_ENTRY(type)						\
-struct {								\
-	class type *sle_next;		/* next element */		\
+#define        SLIST_CLASS_ENTRY(type)                                                \
+struct {                                                                \
+        class type *sle_next;                /* next element */                \
 }
 
 /*
  * Singly-linked List functions.
  */
-#define	SLIST_EMPTY(head)	((head)->slh_first == NULL)
+#define        SLIST_EMPTY(head)        ((head)->slh_first == NULL)
 
-#define	SLIST_FIRST(head)	((head)->slh_first)
+#define        SLIST_FIRST(head)        ((head)->slh_first)
 
-#define	SLIST_FOREACH(var, head, field)					\
-	for ((var) = SLIST_FIRST((head));				\
-	    (var);							\
-	    (var) = SLIST_NEXT((var), field))
+#define        SLIST_FOREACH(var, head, field)                                        \
+        for ((var) = SLIST_FIRST((head));                                \
+            (var);                                                        \
+            (var) = SLIST_NEXT((var), field))
 
-#define	SLIST_FOREACH_FROM(var, head, field)				\
-	for ((var) = ((var) ? (var) : SLIST_FIRST((head)));		\
-	    (var);							\
-	    (var) = SLIST_NEXT((var), field))
+#define        SLIST_FOREACH_FROM(var, head, field)                                \
+        for ((var) = ((var) ? (var) : SLIST_FIRST((head)));                \
+            (var);                                                        \
+            (var) = SLIST_NEXT((var), field))
 
-#define	SLIST_FOREACH_SAFE(var, head, field, tvar)			\
-	for ((var) = SLIST_FIRST((head));				\
-	    (var) && ((tvar) = SLIST_NEXT((var), field), 1);		\
-	    (var) = (tvar))
+#define        SLIST_FOREACH_SAFE(var, head, field, tvar)                        \
+        for ((var) = SLIST_FIRST((head));                                \
+            (var) && ((tvar) = SLIST_NEXT((var), field), 1);                \
+            (var) = (tvar))
 
-#define	SLIST_FOREACH_FROM_SAFE(var, head, field, tvar)			\
-	for ((var) = ((var) ? (var) : SLIST_FIRST((head)));		\
-	    (var) && ((tvar) = SLIST_NEXT((var), field), 1);		\
-	    (var) = (tvar))
+#define        SLIST_FOREACH_FROM_SAFE(var, head, field, tvar)                        \
+        for ((var) = ((var) ? (var) : SLIST_FIRST((head)));                \
+            (var) && ((tvar) = SLIST_NEXT((var), field), 1);                \
+            (var) = (tvar))
 
-#define	SLIST_FOREACH_PREVPTR(var, varp, head, field)			\
-	for ((varp) = &SLIST_FIRST((head));				\
-	    ((var) = *(varp)) != NULL;					\
-	    (varp) = &SLIST_NEXT((var), field))
+#define        SLIST_FOREACH_PREVPTR(var, varp, head, field)                        \
+        for ((varp) = &SLIST_FIRST((head));                                \
+            ((var) = *(varp)) != NULL;                                        \
+            (varp) = &SLIST_NEXT((var), field))
 
-#define	SLIST_INIT(head) do {						\
-	SLIST_FIRST((head)) = NULL;					\
+#define        SLIST_INIT(head) do {                                                \
+        SLIST_FIRST((head)) = NULL;                                        \
 } while (0)
 
-#define	SLIST_INSERT_AFTER(slistelm, elm, field) do {			\
-	SLIST_NEXT((elm), field) = SLIST_NEXT((slistelm), field);	\
-	SLIST_NEXT((slistelm), field) = (elm);				\
+#define        SLIST_INSERT_AFTER(slistelm, elm, field) do {                        \
+        SLIST_NEXT((elm), field) = SLIST_NEXT((slistelm), field);        \
+        SLIST_NEXT((slistelm), field) = (elm);                                \
 } while (0)
 
-#define	SLIST_INSERT_HEAD(head, elm, field) do {			\
-	SLIST_NEXT((elm), field) = SLIST_FIRST((head));			\
-	SLIST_FIRST((head)) = (elm);					\
+#define        SLIST_INSERT_HEAD(head, elm, field) do {                        \
+        SLIST_NEXT((elm), field) = SLIST_FIRST((head));                        \
+        SLIST_FIRST((head)) = (elm);                                        \
 } while (0)
 
-#define	SLIST_NEXT(elm, field)	((elm)->field.sle_next)
+#define        SLIST_NEXT(elm, field)        ((elm)->field.sle_next)
 
-#define	SLIST_REMOVE(head, elm, type, field) do {			\
-	QMD_SAVELINK(oldnext, (elm)->field.sle_next);			\
-	if (SLIST_FIRST((head)) == (elm)) {				\
-		SLIST_REMOVE_HEAD((head), field);			\
-	}								\
-	else {								\
-		QUEUE_TYPEOF(type) *curelm = SLIST_FIRST(head);		\
-		while (SLIST_NEXT(curelm, field) != (elm))		\
-			curelm = SLIST_NEXT(curelm, field);		\
-		SLIST_REMOVE_AFTER(curelm, field);			\
-	}								\
-	TRASHIT(*oldnext);						\
+#define        SLIST_REMOVE(head, elm, type, field) do {                        \
+        QMD_SAVELINK(oldnext, (elm)->field.sle_next);                        \
+        if (SLIST_FIRST((head)) == (elm)) {                                \
+                SLIST_REMOVE_HEAD((head), field);                        \
+        }                                                                \
+        else {                                                                \
+                QUEUE_TYPEOF(type) *curelm = SLIST_FIRST(head);                \
+                while (SLIST_NEXT(curelm, field) != (elm))                \
+                        curelm = SLIST_NEXT(curelm, field);                \
+                SLIST_REMOVE_AFTER(curelm, field);                        \
+        }                                                                \
+        TRASHIT(*oldnext);                                                \
 } while (0)
 
-#define SLIST_REMOVE_AFTER(elm, field) do {				\
-	SLIST_NEXT(elm, field) =					\
-	    SLIST_NEXT(SLIST_NEXT(elm, field), field);			\
+#define SLIST_REMOVE_AFTER(elm, field) do {                                \
+        SLIST_NEXT(elm, field) =                                        \
+            SLIST_NEXT(SLIST_NEXT(elm, field), field);                        \
 } while (0)
 
-#define	SLIST_REMOVE_HEAD(head, field) do {				\
-	SLIST_FIRST((head)) = SLIST_NEXT(SLIST_FIRST((head)), field);	\
+#define        SLIST_REMOVE_HEAD(head, field) do {                                \
+        SLIST_FIRST((head)) = SLIST_NEXT(SLIST_FIRST((head)), field);        \
 } while (0)
 
-#define SLIST_SWAP(head1, head2, type) do {				\
-	QUEUE_TYPEOF(type) *swap_first = SLIST_FIRST(head1);		\
-	SLIST_FIRST(head1) = SLIST_FIRST(head2);			\
-	SLIST_FIRST(head2) = swap_first;				\
+#define SLIST_SWAP(head1, head2, type) do {                                \
+        QUEUE_TYPEOF(type) *swap_first = SLIST_FIRST(head1);                \
+        SLIST_FIRST(head1) = SLIST_FIRST(head2);                        \
+        SLIST_FIRST(head2) = swap_first;                                \
 } while (0)
 
 /*
  * Singly-linked Tail queue declarations.
  */
-#define	STAILQ_HEAD(name, type)						\
-struct name {								\
-	struct type *stqh_first;/* first element */			\
-	struct type **stqh_last;/* addr of last next element */		\
+#define        STAILQ_HEAD(name, type)                                                \
+struct name {                                                                \
+        struct type *stqh_first;/* first element */                        \
+        struct type **stqh_last;/* addr of last next element */                \
 }
 
-#define	STAILQ_CLASS_HEAD(name, type)					\
-struct name {								\
-	class type *stqh_first;	/* first element */			\
-	class type **stqh_last;	/* addr of last next element */		\
+#define        STAILQ_CLASS_HEAD(name, type)                                        \
+struct name {                                                                \
+        class type *stqh_first;        /* first element */                        \
+        class type **stqh_last;        /* addr of last next element */                \
 }
 
-#define	STAILQ_HEAD_INITIALIZER(head)					\
-	{ NULL, &(head).stqh_first }
+#define        STAILQ_HEAD_INITIALIZER(head)                                        \
+        { NULL, &(head).stqh_first }
 
-#define	STAILQ_ENTRY(type)						\
-struct {								\
-	struct type *stqe_next;	/* next element */			\
+#define        STAILQ_ENTRY(type)                                                \
+struct {                                                                \
+        struct type *stqe_next;        /* next element */                        \
 }
 
-#define	STAILQ_CLASS_ENTRY(type)					\
-struct {								\
-	class type *stqe_next;	/* next element */			\
+#define        STAILQ_CLASS_ENTRY(type)                                        \
+struct {                                                                \
+        class type *stqe_next;        /* next element */                        \
 }
 
 /*
  * Singly-linked Tail queue functions.
  */
-#define	STAILQ_CONCAT(head1, head2) do {				\
-	if (!STAILQ_EMPTY((head2))) {					\
-		*(head1)->stqh_last = (head2)->stqh_first;		\
-		(head1)->stqh_last = (head2)->stqh_last;		\
-		STAILQ_INIT((head2));					\
-	}								\
+#define        STAILQ_CONCAT(head1, head2) do {                                \
+        if (!STAILQ_EMPTY((head2))) {                                        \
+                *(head1)->stqh_last = (head2)->stqh_first;                \
+                (head1)->stqh_last = (head2)->stqh_last;                \
+                STAILQ_INIT((head2));                                        \
+        }                                                                \
 } while (0)
 
-#define	STAILQ_EMPTY(head)	((head)->stqh_first == NULL)
+#define        STAILQ_EMPTY(head)        ((head)->stqh_first == NULL)
 
-#define	STAILQ_FIRST(head)	((head)->stqh_first)
+#define        STAILQ_FIRST(head)        ((head)->stqh_first)
 
-#define	STAILQ_FOREACH(var, head, field)				\
-	for((var) = STAILQ_FIRST((head));				\
-	   (var);							\
-	   (var) = STAILQ_NEXT((var), field))
+#define        STAILQ_FOREACH(var, head, field)                                \
+        for((var) = STAILQ_FIRST((head));                                \
+           (var);                                                        \
+           (var) = STAILQ_NEXT((var), field))
 
-#define	STAILQ_FOREACH_FROM(var, head, field)				\
-	for ((var) = ((var) ? (var) : STAILQ_FIRST((head)));		\
-	   (var);							\
-	   (var) = STAILQ_NEXT((var), field))
+#define        STAILQ_FOREACH_FROM(var, head, field)                                \
+        for ((var) = ((var) ? (var) : STAILQ_FIRST((head)));                \
+           (var);                                                        \
+           (var) = STAILQ_NEXT((var), field))
 
-#define	STAILQ_FOREACH_SAFE(var, head, field, tvar)			\
-	for ((var) = STAILQ_FIRST((head));				\
-	    (var) && ((tvar) = STAILQ_NEXT((var), field), 1);		\
-	    (var) = (tvar))
+#define        STAILQ_FOREACH_SAFE(var, head, field, tvar)                        \
+        for ((var) = STAILQ_FIRST((head));                                \
+            (var) && ((tvar) = STAILQ_NEXT((var), field), 1);                \
+            (var) = (tvar))
 
-#define	STAILQ_FOREACH_FROM_SAFE(var, head, field, tvar)		\
-	for ((var) = ((var) ? (var) : STAILQ_FIRST((head)));		\
-	    (var) && ((tvar) = STAILQ_NEXT((var), field), 1);		\
-	    (var) = (tvar))
+#define        STAILQ_FOREACH_FROM_SAFE(var, head, field, tvar)                \
+        for ((var) = ((var) ? (var) : STAILQ_FIRST((head)));                \
+            (var) && ((tvar) = STAILQ_NEXT((var), field), 1);                \
+            (var) = (tvar))
 
-#define	STAILQ_INIT(head) do {						\
-	STAILQ_FIRST((head)) = NULL;					\
-	(head)->stqh_last = &STAILQ_FIRST((head));			\
+#define        STAILQ_INIT(head) do {                                                \
+        STAILQ_FIRST((head)) = NULL;                                        \
+        (head)->stqh_last = &STAILQ_FIRST((head));                        \
 } while (0)
 
-#define	STAILQ_INSERT_AFTER(head, tqelm, elm, field) do {		\
-	if ((STAILQ_NEXT((elm), field) = STAILQ_NEXT((tqelm), field)) == NULL)\
-		(head)->stqh_last = &STAILQ_NEXT((elm), field);		\
-	STAILQ_NEXT((tqelm), field) = (elm);				\
+#define        STAILQ_INSERT_AFTER(head, tqelm, elm, field) do {                \
+        if ((STAILQ_NEXT((elm), field) = STAILQ_NEXT((tqelm), field)) == NULL)\
+                (head)->stqh_last = &STAILQ_NEXT((elm), field);                \
+        STAILQ_NEXT((tqelm), field) = (elm);                                \
 } while (0)
 
-#define	STAILQ_INSERT_HEAD(head, elm, field) do {			\
-	if ((STAILQ_NEXT((elm), field) = STAILQ_FIRST((head))) == NULL)	\
-		(head)->stqh_last = &STAILQ_NEXT((elm), field);		\
-	STAILQ_FIRST((head)) = (elm);					\
+#define        STAILQ_INSERT_HEAD(head, elm, field) do {                        \
+        if ((STAILQ_NEXT((elm), field) = STAILQ_FIRST((head))) == NULL)        \
+                (head)->stqh_last = &STAILQ_NEXT((elm), field);                \
+        STAILQ_FIRST((head)) = (elm);                                        \
 } while (0)
 
-#define	STAILQ_INSERT_TAIL(head, elm, field) do {			\
-	STAILQ_NEXT((elm), field) = NULL;				\
-	*(head)->stqh_last = (elm);					\
-	(head)->stqh_last = &STAILQ_NEXT((elm), field);			\
+#define        STAILQ_INSERT_TAIL(head, elm, field) do {                        \
+        STAILQ_NEXT((elm), field) = NULL;                                \
+        *(head)->stqh_last = (elm);                                        \
+        (head)->stqh_last = &STAILQ_NEXT((elm), field);                        \
 } while (0)
 
-#define	STAILQ_LAST(head, type, field)				\
-	(STAILQ_EMPTY((head)) ? NULL :				\
-	    __containerof((head)->stqh_last,			\
-	    QUEUE_TYPEOF(type), field.stqe_next))
+#define        STAILQ_LAST(head, type, field)                                \
+        (STAILQ_EMPTY((head)) ? NULL :                                \
+            __containerof((head)->stqh_last,                        \
+            QUEUE_TYPEOF(type), field.stqe_next))
 
-#define	STAILQ_NEXT(elm, field)	((elm)->field.stqe_next)
+#define        STAILQ_NEXT(elm, field)        ((elm)->field.stqe_next)
 
-#define	STAILQ_REMOVE(head, elm, type, field) do {			\
-	QMD_SAVELINK(oldnext, (elm)->field.stqe_next);			\
-	if (STAILQ_FIRST((head)) == (elm)) {				\
-		STAILQ_REMOVE_HEAD((head), field);			\
-	}								\
-	else {								\
-		QUEUE_TYPEOF(type) *curelm = STAILQ_FIRST(head);	\
-		while (STAILQ_NEXT(curelm, field) != (elm))		\
-			curelm = STAILQ_NEXT(curelm, field);		\
-		STAILQ_REMOVE_AFTER(head, curelm, field);		\
-	}								\
-	TRASHIT(*oldnext);						\
+#define        STAILQ_REMOVE(head, elm, type, field) do {                        \
+        QMD_SAVELINK(oldnext, (elm)->field.stqe_next);                        \
+        if (STAILQ_FIRST((head)) == (elm)) {                                \
+                STAILQ_REMOVE_HEAD((head), field);                        \
+        }                                                                \
+        else {                                                                \
+                QUEUE_TYPEOF(type) *curelm = STAILQ_FIRST(head);        \
+                while (STAILQ_NEXT(curelm, field) != (elm))                \
+                        curelm = STAILQ_NEXT(curelm, field);                \
+                STAILQ_REMOVE_AFTER(head, curelm, field);                \
+        }                                                                \
+        TRASHIT(*oldnext);                                                \
 } while (0)
 
-#define STAILQ_REMOVE_AFTER(head, elm, field) do {			\
-	if ((STAILQ_NEXT(elm, field) =					\
-	     STAILQ_NEXT(STAILQ_NEXT(elm, field), field)) == NULL)	\
-		(head)->stqh_last = &STAILQ_NEXT((elm), field);		\
+#define STAILQ_REMOVE_AFTER(head, elm, field) do {                        \
+        if ((STAILQ_NEXT(elm, field) =                                        \
+             STAILQ_NEXT(STAILQ_NEXT(elm, field), field)) == NULL)        \
+                (head)->stqh_last = &STAILQ_NEXT((elm), field);                \
 } while (0)
 
-#define	STAILQ_REMOVE_HEAD(head, field) do {				\
-	if ((STAILQ_FIRST((head)) =					\
-	     STAILQ_NEXT(STAILQ_FIRST((head)), field)) == NULL)		\
-		(head)->stqh_last = &STAILQ_FIRST((head));		\
+#define        STAILQ_REMOVE_HEAD(head, field) do {                                \
+        if ((STAILQ_FIRST((head)) =                                        \
+             STAILQ_NEXT(STAILQ_FIRST((head)), field)) == NULL)                \
+                (head)->stqh_last = &STAILQ_FIRST((head));                \
 } while (0)
 
-#define STAILQ_SWAP(head1, head2, type) do {				\
-	QUEUE_TYPEOF(type) *swap_first = STAILQ_FIRST(head1);		\
-	QUEUE_TYPEOF(type) **swap_last = (head1)->stqh_last;		\
-	STAILQ_FIRST(head1) = STAILQ_FIRST(head2);			\
-	(head1)->stqh_last = (head2)->stqh_last;			\
-	STAILQ_FIRST(head2) = swap_first;				\
-	(head2)->stqh_last = swap_last;					\
-	if (STAILQ_EMPTY(head1))					\
-		(head1)->stqh_last = &STAILQ_FIRST(head1);		\
-	if (STAILQ_EMPTY(head2))					\
-		(head2)->stqh_last = &STAILQ_FIRST(head2);		\
+#define STAILQ_SWAP(head1, head2, type) do {                                \
+        QUEUE_TYPEOF(type) *swap_first = STAILQ_FIRST(head1);                \
+        QUEUE_TYPEOF(type) **swap_last = (head1)->stqh_last;                \
+        STAILQ_FIRST(head1) = STAILQ_FIRST(head2);                        \
+        (head1)->stqh_last = (head2)->stqh_last;                        \
+        STAILQ_FIRST(head2) = swap_first;                                \
+        (head2)->stqh_last = swap_last;                                        \
+        if (STAILQ_EMPTY(head1))                                        \
+                (head1)->stqh_last = &STAILQ_FIRST(head1);                \
+        if (STAILQ_EMPTY(head2))                                        \
+                (head2)->stqh_last = &STAILQ_FIRST(head2);                \
 } while (0)
 
 
 /*
  * List declarations.
  */
-#define	LIST_HEAD(name, type)						\
-struct name {								\
-	struct type *lh_first;	/* first element */			\
+#define        LIST_HEAD(name, type)                                                \
+struct name {                                                                \
+        struct type *lh_first;        /* first element */                        \
 }
 
-#define	LIST_CLASS_HEAD(name, type)					\
-struct name {								\
-	class type *lh_first;	/* first element */			\
+#define        LIST_CLASS_HEAD(name, type)                                        \
+struct name {                                                                \
+        class type *lh_first;        /* first element */                        \
 }
 
-#define	LIST_HEAD_INITIALIZER(head)					\
-	{ NULL }
+#define        LIST_HEAD_INITIALIZER(head)                                        \
+        { NULL }
 
-#define	LIST_ENTRY(type)						\
-struct {								\
-	struct type *le_next;	/* next element */			\
-	struct type **le_prev;	/* address of previous next element */	\
+#define        LIST_ENTRY(type)                                                \
+struct {                                                                \
+        struct type *le_next;        /* next element */                        \
+        struct type **le_prev;        /* address of previous next element */        \
 }
 
-#define	LIST_CLASS_ENTRY(type)						\
-struct {								\
-	class type *le_next;	/* next element */			\
-	class type **le_prev;	/* address of previous next element */	\
+#define        LIST_CLASS_ENTRY(type)                                                \
+struct {                                                                \
+        class type *le_next;        /* next element */                        \
+        class type **le_prev;        /* address of previous next element */        \
 }
 
 /*
@@ -3186,144 +3197,144 @@ struct {								\
 
 #if (defined(_KERNEL) && defined(INVARIANTS))
 #define	QMD_LIST_CHECK_HEAD(head, field) do {				\
-	if (LIST_FIRST((head)) != NULL &&				\
-	    LIST_FIRST((head))->field.le_prev !=			\
-	     &LIST_FIRST((head)))					\
-		panic("Bad list head %p first->prev != head", (head));	\
+        if (LIST_FIRST((head)) != NULL &&				\
+            LIST_FIRST((head))->field.le_prev !=			\
+             &LIST_FIRST((head)))					\
+                panic("Bad list head %p first->prev != head", (head));	\
 } while (0)
 
 #define	QMD_LIST_CHECK_NEXT(elm, field) do {				\
-	if (LIST_NEXT((elm), field) != NULL &&				\
-	    LIST_NEXT((elm), field)->field.le_prev !=			\
-	     &((elm)->field.le_next))					\
-	     	panic("Bad link elm %p next->prev != elm", (elm));	\
+        if (LIST_NEXT((elm), field) != NULL &&				\
+            LIST_NEXT((elm), field)->field.le_prev !=			\
+             &((elm)->field.le_next))					\
+                     panic("Bad link elm %p next->prev != elm", (elm));	\
 } while (0)
 
 #define	QMD_LIST_CHECK_PREV(elm, field) do {				\
-	if (*(elm)->field.le_prev != (elm))				\
-		panic("Bad link elm %p prev->next != elm", (elm));	\
+        if (*(elm)->field.le_prev != (elm))				\
+                panic("Bad link elm %p prev->next != elm", (elm));	\
 } while (0)
 #else
-#define	QMD_LIST_CHECK_HEAD(head, field)
-#define	QMD_LIST_CHECK_NEXT(elm, field)
-#define	QMD_LIST_CHECK_PREV(elm, field)
+#define        QMD_LIST_CHECK_HEAD(head, field)
+#define        QMD_LIST_CHECK_NEXT(elm, field)
+#define        QMD_LIST_CHECK_PREV(elm, field)
 #endif /* (_KERNEL && INVARIANTS) */
 
-#define	LIST_EMPTY(head)	((head)->lh_first == NULL)
+#define        LIST_EMPTY(head)        ((head)->lh_first == NULL)
 
-#define	LIST_FIRST(head)	((head)->lh_first)
+#define        LIST_FIRST(head)        ((head)->lh_first)
 
-#define	LIST_FOREACH(var, head, field)					\
-	for ((var) = LIST_FIRST((head));				\
-	    (var);							\
-	    (var) = LIST_NEXT((var), field))
+#define        LIST_FOREACH(var, head, field)                                        \
+        for ((var) = LIST_FIRST((head));                                \
+            (var);                                                        \
+            (var) = LIST_NEXT((var), field))
 
-#define	LIST_FOREACH_FROM(var, head, field)				\
-	for ((var) = ((var) ? (var) : LIST_FIRST((head)));		\
-	    (var);							\
-	    (var) = LIST_NEXT((var), field))
+#define        LIST_FOREACH_FROM(var, head, field)                                \
+        for ((var) = ((var) ? (var) : LIST_FIRST((head)));                \
+            (var);                                                        \
+            (var) = LIST_NEXT((var), field))
 
-#define	LIST_FOREACH_SAFE(var, head, field, tvar)			\
-	for ((var) = LIST_FIRST((head));				\
-	    (var) && ((tvar) = LIST_NEXT((var), field), 1);		\
-	    (var) = (tvar))
+#define        LIST_FOREACH_SAFE(var, head, field, tvar)                        \
+        for ((var) = LIST_FIRST((head));                                \
+            (var) && ((tvar) = LIST_NEXT((var), field), 1);                \
+            (var) = (tvar))
 
-#define	LIST_FOREACH_FROM_SAFE(var, head, field, tvar)			\
-	for ((var) = ((var) ? (var) : LIST_FIRST((head)));		\
-	    (var) && ((tvar) = LIST_NEXT((var), field), 1);		\
-	    (var) = (tvar))
+#define        LIST_FOREACH_FROM_SAFE(var, head, field, tvar)                        \
+        for ((var) = ((var) ? (var) : LIST_FIRST((head)));                \
+            (var) && ((tvar) = LIST_NEXT((var), field), 1);                \
+            (var) = (tvar))
 
-#define	LIST_INIT(head) do {						\
-	LIST_FIRST((head)) = NULL;					\
+#define        LIST_INIT(head) do {                                                \
+        LIST_FIRST((head)) = NULL;                                        \
 } while (0)
 
-#define	LIST_INSERT_AFTER(listelm, elm, field) do {			\
-	QMD_LIST_CHECK_NEXT(listelm, field);				\
-	if ((LIST_NEXT((elm), field) = LIST_NEXT((listelm), field)) != NULL)\
-		LIST_NEXT((listelm), field)->field.le_prev =		\
-		    &LIST_NEXT((elm), field);				\
-	LIST_NEXT((listelm), field) = (elm);				\
-	(elm)->field.le_prev = &LIST_NEXT((listelm), field);		\
+#define        LIST_INSERT_AFTER(listelm, elm, field) do {                        \
+        QMD_LIST_CHECK_NEXT(listelm, field);                                \
+        if ((LIST_NEXT((elm), field) = LIST_NEXT((listelm), field)) != NULL)\
+                LIST_NEXT((listelm), field)->field.le_prev =                \
+                    &LIST_NEXT((elm), field);                                \
+        LIST_NEXT((listelm), field) = (elm);                                \
+        (elm)->field.le_prev = &LIST_NEXT((listelm), field);                \
 } while (0)
 
-#define	LIST_INSERT_BEFORE(listelm, elm, field) do {			\
-	QMD_LIST_CHECK_PREV(listelm, field);				\
-	(elm)->field.le_prev = (listelm)->field.le_prev;		\
-	LIST_NEXT((elm), field) = (listelm);				\
-	*(listelm)->field.le_prev = (elm);				\
-	(listelm)->field.le_prev = &LIST_NEXT((elm), field);		\
+#define        LIST_INSERT_BEFORE(listelm, elm, field) do {                        \
+        QMD_LIST_CHECK_PREV(listelm, field);                                \
+        (elm)->field.le_prev = (listelm)->field.le_prev;                \
+        LIST_NEXT((elm), field) = (listelm);                                \
+        *(listelm)->field.le_prev = (elm);                                \
+        (listelm)->field.le_prev = &LIST_NEXT((elm), field);                \
 } while (0)
 
-#define	LIST_INSERT_HEAD(head, elm, field) do {				\
-	QMD_LIST_CHECK_HEAD((head), field);				\
-	if ((LIST_NEXT((elm), field) = LIST_FIRST((head))) != NULL)	\
-		LIST_FIRST((head))->field.le_prev = &LIST_NEXT((elm), field);\
-	LIST_FIRST((head)) = (elm);					\
-	(elm)->field.le_prev = &LIST_FIRST((head));			\
+#define        LIST_INSERT_HEAD(head, elm, field) do {                                \
+        QMD_LIST_CHECK_HEAD((head), field);                                \
+        if ((LIST_NEXT((elm), field) = LIST_FIRST((head))) != NULL)        \
+                LIST_FIRST((head))->field.le_prev = &LIST_NEXT((elm), field);\
+        LIST_FIRST((head)) = (elm);                                        \
+        (elm)->field.le_prev = &LIST_FIRST((head));                        \
 } while (0)
 
-#define	LIST_NEXT(elm, field)	((elm)->field.le_next)
+#define        LIST_NEXT(elm, field)        ((elm)->field.le_next)
 
-#define	LIST_PREV(elm, head, type, field)			\
-	((elm)->field.le_prev == &LIST_FIRST((head)) ? NULL :	\
-	    __containerof((elm)->field.le_prev,			\
-	    QUEUE_TYPEOF(type), field.le_next))
+#define        LIST_PREV(elm, head, type, field)                        \
+        ((elm)->field.le_prev == &LIST_FIRST((head)) ? NULL :        \
+            __containerof((elm)->field.le_prev,                        \
+            QUEUE_TYPEOF(type), field.le_next))
 
-#define	LIST_REMOVE(elm, field) do {					\
-	QMD_SAVELINK(oldnext, (elm)->field.le_next);			\
-	QMD_SAVELINK(oldprev, (elm)->field.le_prev);			\
-	QMD_LIST_CHECK_NEXT(elm, field);				\
-	QMD_LIST_CHECK_PREV(elm, field);				\
-	if (LIST_NEXT((elm), field) != NULL)				\
-		LIST_NEXT((elm), field)->field.le_prev = 		\
-		    (elm)->field.le_prev;				\
-	*(elm)->field.le_prev = LIST_NEXT((elm), field);		\
-	TRASHIT(*oldnext);						\
-	TRASHIT(*oldprev);						\
+#define        LIST_REMOVE(elm, field) do {                                        \
+        QMD_SAVELINK(oldnext, (elm)->field.le_next);                        \
+        QMD_SAVELINK(oldprev, (elm)->field.le_prev);                        \
+        QMD_LIST_CHECK_NEXT(elm, field);                                \
+        QMD_LIST_CHECK_PREV(elm, field);                                \
+        if (LIST_NEXT((elm), field) != NULL)                                \
+                LIST_NEXT((elm), field)->field.le_prev =                \
+                    (elm)->field.le_prev;                                \
+        *(elm)->field.le_prev = LIST_NEXT((elm), field);                \
+        TRASHIT(*oldnext);                                                \
+        TRASHIT(*oldprev);                                                \
 } while (0)
 
-#define LIST_SWAP(head1, head2, type, field) do {			\
-	QUEUE_TYPEOF(type) *swap_tmp = LIST_FIRST(head1);		\
-	LIST_FIRST((head1)) = LIST_FIRST((head2));			\
-	LIST_FIRST((head2)) = swap_tmp;					\
-	if ((swap_tmp = LIST_FIRST((head1))) != NULL)			\
-		swap_tmp->field.le_prev = &LIST_FIRST((head1));		\
-	if ((swap_tmp = LIST_FIRST((head2))) != NULL)			\
-		swap_tmp->field.le_prev = &LIST_FIRST((head2));		\
+#define LIST_SWAP(head1, head2, type, field) do {                        \
+        QUEUE_TYPEOF(type) *swap_tmp = LIST_FIRST(head1);                \
+        LIST_FIRST((head1)) = LIST_FIRST((head2));                        \
+        LIST_FIRST((head2)) = swap_tmp;                                        \
+        if ((swap_tmp = LIST_FIRST((head1))) != NULL)                        \
+                swap_tmp->field.le_prev = &LIST_FIRST((head1));                \
+        if ((swap_tmp = LIST_FIRST((head2))) != NULL)                        \
+                swap_tmp->field.le_prev = &LIST_FIRST((head2));                \
 } while (0)
 
 /*
  * Tail queue declarations.
  */
-#define	TAILQ_HEAD(name, type)						\
-struct name {								\
-	struct type *tqh_first;	/* first element */			\
-	struct type **tqh_last;	/* addr of last next element */		\
-	TRACEBUF							\
+#define        TAILQ_HEAD(name, type)                                                \
+struct name {                                                                \
+        struct type *tqh_first;        /* first element */                        \
+        struct type **tqh_last;        /* addr of last next element */                \
+        TRACEBUF                                                        \
 }
 
-#define	TAILQ_CLASS_HEAD(name, type)					\
-struct name {								\
-	class type *tqh_first;	/* first element */			\
-	class type **tqh_last;	/* addr of last next element */		\
-	TRACEBUF							\
+#define        TAILQ_CLASS_HEAD(name, type)                                        \
+struct name {                                                                \
+        class type *tqh_first;        /* first element */                        \
+        class type **tqh_last;        /* addr of last next element */                \
+        TRACEBUF                                                        \
 }
 
-#define	TAILQ_HEAD_INITIALIZER(head)					\
-	{ NULL, &(head).tqh_first, TRACEBUF_INITIALIZER }
+#define        TAILQ_HEAD_INITIALIZER(head)                                        \
+        { NULL, &(head).tqh_first, TRACEBUF_INITIALIZER }
 
-#define	TAILQ_ENTRY(type)						\
-struct {								\
-	struct type *tqe_next;	/* next element */			\
-	struct type **tqe_prev;	/* address of previous next element */	\
-	TRACEBUF							\
+#define        TAILQ_ENTRY(type)                                                \
+struct {                                                                \
+        struct type *tqe_next;        /* next element */                        \
+        struct type **tqe_prev;        /* address of previous next element */        \
+        TRACEBUF                                                        \
 }
 
-#define	TAILQ_CLASS_ENTRY(type)						\
-struct {								\
-	class type *tqe_next;	/* next element */			\
-	class type **tqe_prev;	/* address of previous next element */	\
-	TRACEBUF							\
+#define        TAILQ_CLASS_ENTRY(type)                                                \
+struct {                                                                \
+        class type *tqe_next;        /* next element */                        \
+        class type **tqe_prev;        /* address of previous next element */        \
+        TRACEBUF                                                        \
 }
 
 /*
@@ -3331,185 +3342,185 @@ struct {								\
  */
 #if (defined(_KERNEL) && defined(INVARIANTS))
 #define	QMD_TAILQ_CHECK_HEAD(head, field) do {				\
-	if (!TAILQ_EMPTY(head) &&					\
-	    TAILQ_FIRST((head))->field.tqe_prev !=			\
-	     &TAILQ_FIRST((head)))					\
-		panic("Bad tailq head %p first->prev != head", (head));	\
+        if (!TAILQ_EMPTY(head) &&					\
+            TAILQ_FIRST((head))->field.tqe_prev !=			\
+             &TAILQ_FIRST((head)))					\
+                panic("Bad tailq head %p first->prev != head", (head));	\
 } while (0)
 
 #define	QMD_TAILQ_CHECK_TAIL(head, field) do {				\
-	if (*(head)->tqh_last != NULL)					\
-	    	panic("Bad tailq NEXT(%p->tqh_last) != NULL", (head)); 	\
+        if (*(head)->tqh_last != NULL)					\
+                    panic("Bad tailq NEXT(%p->tqh_last) != NULL", (head)); 	\
 } while (0)
 
 #define	QMD_TAILQ_CHECK_NEXT(elm, field) do {				\
-	if (TAILQ_NEXT((elm), field) != NULL &&				\
-	    TAILQ_NEXT((elm), field)->field.tqe_prev !=			\
-	     &((elm)->field.tqe_next))					\
-		panic("Bad link elm %p next->prev != elm", (elm));	\
+        if (TAILQ_NEXT((elm), field) != NULL &&				\
+            TAILQ_NEXT((elm), field)->field.tqe_prev !=			\
+             &((elm)->field.tqe_next))					\
+                panic("Bad link elm %p next->prev != elm", (elm));	\
 } while (0)
 
 #define	QMD_TAILQ_CHECK_PREV(elm, field) do {				\
-	if (*(elm)->field.tqe_prev != (elm))				\
-		panic("Bad link elm %p prev->next != elm", (elm));	\
+        if (*(elm)->field.tqe_prev != (elm))				\
+                panic("Bad link elm %p prev->next != elm", (elm));	\
 } while (0)
 #else
-#define	QMD_TAILQ_CHECK_HEAD(head, field)
-#define	QMD_TAILQ_CHECK_TAIL(head, headname)
-#define	QMD_TAILQ_CHECK_NEXT(elm, field)
-#define	QMD_TAILQ_CHECK_PREV(elm, field)
+#define        QMD_TAILQ_CHECK_HEAD(head, field)
+#define        QMD_TAILQ_CHECK_TAIL(head, headname)
+#define        QMD_TAILQ_CHECK_NEXT(elm, field)
+#define        QMD_TAILQ_CHECK_PREV(elm, field)
 #endif /* (_KERNEL && INVARIANTS) */
 
-#define	TAILQ_CONCAT(head1, head2, field) do {				\
-	if (!TAILQ_EMPTY(head2)) {					\
-		*(head1)->tqh_last = (head2)->tqh_first;		\
-		(head2)->tqh_first->field.tqe_prev = (head1)->tqh_last;	\
-		(head1)->tqh_last = (head2)->tqh_last;			\
-		TAILQ_INIT((head2));					\
-		QMD_TRACE_HEAD(head1);					\
-		QMD_TRACE_HEAD(head2);					\
-	}								\
+#define        TAILQ_CONCAT(head1, head2, field) do {                                \
+        if (!TAILQ_EMPTY(head2)) {                                        \
+                *(head1)->tqh_last = (head2)->tqh_first;                \
+                (head2)->tqh_first->field.tqe_prev = (head1)->tqh_last;        \
+                (head1)->tqh_last = (head2)->tqh_last;                        \
+                TAILQ_INIT((head2));                                        \
+                QMD_TRACE_HEAD(head1);                                        \
+                QMD_TRACE_HEAD(head2);                                        \
+        }                                                                \
 } while (0)
 
-#define	TAILQ_EMPTY(head)	((head)->tqh_first == NULL)
+#define        TAILQ_EMPTY(head)        ((head)->tqh_first == NULL)
 
-#define	TAILQ_FIRST(head)	((head)->tqh_first)
+#define        TAILQ_FIRST(head)        ((head)->tqh_first)
 
-#define	TAILQ_FOREACH(var, head, field)					\
-	for ((var) = TAILQ_FIRST((head));				\
-	    (var);							\
-	    (var) = TAILQ_NEXT((var), field))
+#define        TAILQ_FOREACH(var, head, field)                                        \
+        for ((var) = TAILQ_FIRST((head));                                \
+            (var);                                                        \
+            (var) = TAILQ_NEXT((var), field))
 
-#define	TAILQ_FOREACH_FROM(var, head, field)				\
-	for ((var) = ((var) ? (var) : TAILQ_FIRST((head)));		\
-	    (var);							\
-	    (var) = TAILQ_NEXT((var), field))
+#define        TAILQ_FOREACH_FROM(var, head, field)                                \
+        for ((var) = ((var) ? (var) : TAILQ_FIRST((head)));                \
+            (var);                                                        \
+            (var) = TAILQ_NEXT((var), field))
 
-#define	TAILQ_FOREACH_SAFE(var, head, field, tvar)			\
-	for ((var) = TAILQ_FIRST((head));				\
-	    (var) && ((tvar) = TAILQ_NEXT((var), field), 1);		\
-	    (var) = (tvar))
+#define        TAILQ_FOREACH_SAFE(var, head, field, tvar)                        \
+        for ((var) = TAILQ_FIRST((head));                                \
+            (var) && ((tvar) = TAILQ_NEXT((var), field), 1);                \
+            (var) = (tvar))
 
-#define	TAILQ_FOREACH_FROM_SAFE(var, head, field, tvar)			\
-	for ((var) = ((var) ? (var) : TAILQ_FIRST((head)));		\
-	    (var) && ((tvar) = TAILQ_NEXT((var), field), 1);		\
-	    (var) = (tvar))
+#define        TAILQ_FOREACH_FROM_SAFE(var, head, field, tvar)                        \
+        for ((var) = ((var) ? (var) : TAILQ_FIRST((head)));                \
+            (var) && ((tvar) = TAILQ_NEXT((var), field), 1);                \
+            (var) = (tvar))
 
-#define	TAILQ_FOREACH_REVERSE(var, head, headname, field)		\
-	for ((var) = TAILQ_LAST((head), headname);			\
-	    (var);							\
-	    (var) = TAILQ_PREV((var), headname, field))
+#define        TAILQ_FOREACH_REVERSE(var, head, headname, field)                \
+        for ((var) = TAILQ_LAST((head), headname);                        \
+            (var);                                                        \
+            (var) = TAILQ_PREV((var), headname, field))
 
-#define	TAILQ_FOREACH_REVERSE_FROM(var, head, headname, field)		\
-	for ((var) = ((var) ? (var) : TAILQ_LAST((head), headname));	\
-	    (var);							\
-	    (var) = TAILQ_PREV((var), headname, field))
+#define        TAILQ_FOREACH_REVERSE_FROM(var, head, headname, field)                \
+        for ((var) = ((var) ? (var) : TAILQ_LAST((head), headname));        \
+            (var);                                                        \
+            (var) = TAILQ_PREV((var), headname, field))
 
-#define	TAILQ_FOREACH_REVERSE_SAFE(var, head, headname, field, tvar)	\
-	for ((var) = TAILQ_LAST((head), headname);			\
-	    (var) && ((tvar) = TAILQ_PREV((var), headname, field), 1);	\
-	    (var) = (tvar))
+#define        TAILQ_FOREACH_REVERSE_SAFE(var, head, headname, field, tvar)        \
+        for ((var) = TAILQ_LAST((head), headname);                        \
+            (var) && ((tvar) = TAILQ_PREV((var), headname, field), 1);        \
+            (var) = (tvar))
 
-#define	TAILQ_FOREACH_REVERSE_FROM_SAFE(var, head, headname, field, tvar) \
-	for ((var) = ((var) ? (var) : TAILQ_LAST((head), headname));	\
-	    (var) && ((tvar) = TAILQ_PREV((var), headname, field), 1);	\
-	    (var) = (tvar))
+#define        TAILQ_FOREACH_REVERSE_FROM_SAFE(var, head, headname, field, tvar) \
+        for ((var) = ((var) ? (var) : TAILQ_LAST((head), headname));        \
+            (var) && ((tvar) = TAILQ_PREV((var), headname, field), 1);        \
+            (var) = (tvar))
 
-#define	TAILQ_INIT(head) do {						\
-	TAILQ_FIRST((head)) = NULL;					\
-	(head)->tqh_last = &TAILQ_FIRST((head));			\
-	QMD_TRACE_HEAD(head);						\
+#define        TAILQ_INIT(head) do {                                                \
+        TAILQ_FIRST((head)) = NULL;                                        \
+        (head)->tqh_last = &TAILQ_FIRST((head));                        \
+        QMD_TRACE_HEAD(head);                                                \
 } while (0)
 
-#define	TAILQ_INSERT_AFTER(head, listelm, elm, field) do {		\
-	QMD_TAILQ_CHECK_NEXT(listelm, field);				\
-	if ((TAILQ_NEXT((elm), field) = TAILQ_NEXT((listelm), field)) != NULL)\
-		TAILQ_NEXT((elm), field)->field.tqe_prev = 		\
-		    &TAILQ_NEXT((elm), field);				\
-	else {								\
-		(head)->tqh_last = &TAILQ_NEXT((elm), field);		\
-		QMD_TRACE_HEAD(head);					\
-	}								\
-	TAILQ_NEXT((listelm), field) = (elm);				\
-	(elm)->field.tqe_prev = &TAILQ_NEXT((listelm), field);		\
-	QMD_TRACE_ELEM(&(elm)->field);					\
-	QMD_TRACE_ELEM(&(listelm)->field);				\
+#define        TAILQ_INSERT_AFTER(head, listelm, elm, field) do {                \
+        QMD_TAILQ_CHECK_NEXT(listelm, field);                                \
+        if ((TAILQ_NEXT((elm), field) = TAILQ_NEXT((listelm), field)) != NULL)\
+                TAILQ_NEXT((elm), field)->field.tqe_prev =                \
+                    &TAILQ_NEXT((elm), field);                                \
+        else {                                                                \
+                (head)->tqh_last = &TAILQ_NEXT((elm), field);                \
+                QMD_TRACE_HEAD(head);                                        \
+        }                                                                \
+        TAILQ_NEXT((listelm), field) = (elm);                                \
+        (elm)->field.tqe_prev = &TAILQ_NEXT((listelm), field);                \
+        QMD_TRACE_ELEM(&(elm)->field);                                        \
+        QMD_TRACE_ELEM(&(listelm)->field);                                \
 } while (0)
 
-#define	TAILQ_INSERT_BEFORE(listelm, elm, field) do {			\
-	QMD_TAILQ_CHECK_PREV(listelm, field);				\
-	(elm)->field.tqe_prev = (listelm)->field.tqe_prev;		\
-	TAILQ_NEXT((elm), field) = (listelm);				\
-	*(listelm)->field.tqe_prev = (elm);				\
-	(listelm)->field.tqe_prev = &TAILQ_NEXT((elm), field);		\
-	QMD_TRACE_ELEM(&(elm)->field);					\
-	QMD_TRACE_ELEM(&(listelm)->field);				\
+#define        TAILQ_INSERT_BEFORE(listelm, elm, field) do {                        \
+        QMD_TAILQ_CHECK_PREV(listelm, field);                                \
+        (elm)->field.tqe_prev = (listelm)->field.tqe_prev;                \
+        TAILQ_NEXT((elm), field) = (listelm);                                \
+        *(listelm)->field.tqe_prev = (elm);                                \
+        (listelm)->field.tqe_prev = &TAILQ_NEXT((elm), field);                \
+        QMD_TRACE_ELEM(&(elm)->field);                                        \
+        QMD_TRACE_ELEM(&(listelm)->field);                                \
 } while (0)
 
-#define	TAILQ_INSERT_HEAD(head, elm, field) do {			\
-	QMD_TAILQ_CHECK_HEAD(head, field);				\
-	if ((TAILQ_NEXT((elm), field) = TAILQ_FIRST((head))) != NULL)	\
-		TAILQ_FIRST((head))->field.tqe_prev =			\
-		    &TAILQ_NEXT((elm), field);				\
-	else								\
-		(head)->tqh_last = &TAILQ_NEXT((elm), field);		\
-	TAILQ_FIRST((head)) = (elm);					\
-	(elm)->field.tqe_prev = &TAILQ_FIRST((head));			\
-	QMD_TRACE_HEAD(head);						\
-	QMD_TRACE_ELEM(&(elm)->field);					\
+#define        TAILQ_INSERT_HEAD(head, elm, field) do {                        \
+        QMD_TAILQ_CHECK_HEAD(head, field);                                \
+        if ((TAILQ_NEXT((elm), field) = TAILQ_FIRST((head))) != NULL)        \
+                TAILQ_FIRST((head))->field.tqe_prev =                        \
+                    &TAILQ_NEXT((elm), field);                                \
+        else                                                                \
+                (head)->tqh_last = &TAILQ_NEXT((elm), field);                \
+        TAILQ_FIRST((head)) = (elm);                                        \
+        (elm)->field.tqe_prev = &TAILQ_FIRST((head));                        \
+        QMD_TRACE_HEAD(head);                                                \
+        QMD_TRACE_ELEM(&(elm)->field);                                        \
 } while (0)
 
-#define	TAILQ_INSERT_TAIL(head, elm, field) do {			\
-	QMD_TAILQ_CHECK_TAIL(head, field);				\
-	TAILQ_NEXT((elm), field) = NULL;				\
-	(elm)->field.tqe_prev = (head)->tqh_last;			\
-	*(head)->tqh_last = (elm);					\
-	(head)->tqh_last = &TAILQ_NEXT((elm), field);			\
-	QMD_TRACE_HEAD(head);						\
-	QMD_TRACE_ELEM(&(elm)->field);					\
+#define        TAILQ_INSERT_TAIL(head, elm, field) do {                        \
+        QMD_TAILQ_CHECK_TAIL(head, field);                                \
+        TAILQ_NEXT((elm), field) = NULL;                                \
+        (elm)->field.tqe_prev = (head)->tqh_last;                        \
+        *(head)->tqh_last = (elm);                                        \
+        (head)->tqh_last = &TAILQ_NEXT((elm), field);                        \
+        QMD_TRACE_HEAD(head);                                                \
+        QMD_TRACE_ELEM(&(elm)->field);                                        \
 } while (0)
 
-#define	TAILQ_LAST(head, headname)					\
-	(*(((struct headname *)((head)->tqh_last))->tqh_last))
+#define        TAILQ_LAST(head, headname)                                        \
+        (*(((struct headname *)((head)->tqh_last))->tqh_last))
 
-#define	TAILQ_NEXT(elm, field) ((elm)->field.tqe_next)
+#define        TAILQ_NEXT(elm, field) ((elm)->field.tqe_next)
 
-#define	TAILQ_PREV(elm, headname, field)				\
-	(*(((struct headname *)((elm)->field.tqe_prev))->tqh_last))
+#define        TAILQ_PREV(elm, headname, field)                                \
+        (*(((struct headname *)((elm)->field.tqe_prev))->tqh_last))
 
-#define	TAILQ_REMOVE(head, elm, field) do {				\
-	QMD_SAVELINK(oldnext, (elm)->field.tqe_next);			\
-	QMD_SAVELINK(oldprev, (elm)->field.tqe_prev);			\
-	QMD_TAILQ_CHECK_NEXT(elm, field);				\
-	QMD_TAILQ_CHECK_PREV(elm, field);				\
-	if ((TAILQ_NEXT((elm), field)) != NULL)				\
-		TAILQ_NEXT((elm), field)->field.tqe_prev = 		\
-		    (elm)->field.tqe_prev;				\
-	else {								\
-		(head)->tqh_last = (elm)->field.tqe_prev;		\
-		QMD_TRACE_HEAD(head);					\
-	}								\
-	*(elm)->field.tqe_prev = TAILQ_NEXT((elm), field);		\
-	TRASHIT(*oldnext);						\
-	TRASHIT(*oldprev);						\
-	QMD_TRACE_ELEM(&(elm)->field);					\
+#define        TAILQ_REMOVE(head, elm, field) do {                                \
+        QMD_SAVELINK(oldnext, (elm)->field.tqe_next);                        \
+        QMD_SAVELINK(oldprev, (elm)->field.tqe_prev);                        \
+        QMD_TAILQ_CHECK_NEXT(elm, field);                                \
+        QMD_TAILQ_CHECK_PREV(elm, field);                                \
+        if ((TAILQ_NEXT((elm), field)) != NULL)                                \
+                TAILQ_NEXT((elm), field)->field.tqe_prev =                \
+                    (elm)->field.tqe_prev;                                \
+        else {                                                                \
+                (head)->tqh_last = (elm)->field.tqe_prev;                \
+                QMD_TRACE_HEAD(head);                                        \
+        }                                                                \
+        *(elm)->field.tqe_prev = TAILQ_NEXT((elm), field);                \
+        TRASHIT(*oldnext);                                                \
+        TRASHIT(*oldprev);                                                \
+        QMD_TRACE_ELEM(&(elm)->field);                                        \
 } while (0)
 
-#define TAILQ_SWAP(head1, head2, type, field) do {			\
-	QUEUE_TYPEOF(type) *swap_first = (head1)->tqh_first;		\
-	QUEUE_TYPEOF(type) **swap_last = (head1)->tqh_last;		\
-	(head1)->tqh_first = (head2)->tqh_first;			\
-	(head1)->tqh_last = (head2)->tqh_last;				\
-	(head2)->tqh_first = swap_first;				\
-	(head2)->tqh_last = swap_last;					\
-	if ((swap_first = (head1)->tqh_first) != NULL)			\
-		swap_first->field.tqe_prev = &(head1)->tqh_first;	\
-	else								\
-		(head1)->tqh_last = &(head1)->tqh_first;		\
-	if ((swap_first = (head2)->tqh_first) != NULL)			\
-		swap_first->field.tqe_prev = &(head2)->tqh_first;	\
-	else								\
-		(head2)->tqh_last = &(head2)->tqh_first;		\
+#define TAILQ_SWAP(head1, head2, type, field) do {                        \
+        QUEUE_TYPEOF(type) *swap_first = (head1)->tqh_first;                \
+        QUEUE_TYPEOF(type) **swap_last = (head1)->tqh_last;                \
+        (head1)->tqh_first = (head2)->tqh_first;                        \
+        (head1)->tqh_last = (head2)->tqh_last;                                \
+        (head2)->tqh_first = swap_first;                                \
+        (head2)->tqh_last = swap_last;                                        \
+        if ((swap_first = (head1)->tqh_first) != NULL)                        \
+                swap_first->field.tqe_prev = &(head1)->tqh_first;        \
+        else                                                                \
+                (head1)->tqh_last = &(head1)->tqh_first;                \
+        if ((swap_first = (head2)->tqh_first) != NULL)                        \
+                swap_first->field.tqe_prev = &(head2)->tqh_first;        \
+        else                                                                \
+                (head2)->tqh_last = &(head2)->tqh_first;                \
 } while (0)
 
 #endif /* !_SYS_QUEUE_H_ */
@@ -3728,47 +3739,56 @@ union socket_address;
 struct mg_iface_vtable;
 
 struct mg_iface {
-  struct mg_mgr *mgr;
-  void *data; /* Implementation-specific data */
-  const struct mg_iface_vtable *vtable;
+        struct mg_mgr *mgr;
+        void *data; /* Implementation-specific data */
+        const struct mg_iface_vtable *vtable;
 };
 
 struct mg_iface_vtable {
-  void (*init)(struct mg_iface *iface);
-  void (*_free)(struct mg_iface *iface);
-  void (*add_conn)(struct mg_connection *nc);
-  void (*remove_conn)(struct mg_connection *nc);
-  time_t (*poll)(struct mg_iface *iface, int timeout_ms);
+        void (*init)(struct mg_iface *iface);
 
-  /* Set up a listening TCP socket on a given address. rv = 0 -> ok. */
-  int (*listen_tcp)(struct mg_connection *nc, union socket_address *sa);
-  /* Request that a "listening" UDP socket be created. */
-  int (*listen_udp)(struct mg_connection *nc, union socket_address *sa);
+        void (*_free)(struct mg_iface *iface);
 
-  /* Request that a TCP connection is made to the specified address. */
-  void (*connect_tcp)(struct mg_connection *nc, const union socket_address *sa);
-  /* Open a UDP socket. Doesn't actually connect anything. */
-  void (*connect_udp)(struct mg_connection *nc);
+        void (*add_conn)(struct mg_connection *nc);
 
-  /* Send functions for TCP and UDP. Sent data is copied before return. */
-  int (*tcp_send)(struct mg_connection *nc, const void *buf, size_t len);
-  int (*udp_send)(struct mg_connection *nc, const void *buf, size_t len);
+        void (*remove_conn)(struct mg_connection *nc);
 
-  int (*tcp_recv)(struct mg_connection *nc, void *buf, size_t len);
-  int (*udp_recv)(struct mg_connection *nc, void *buf, size_t len,
-                  union socket_address *sa, size_t *sa_len);
+        time_t (*poll)(struct mg_iface *iface, int timeout_ms);
 
-  /* Perform interface-related connection initialization. Return 1 on ok. */
-  int (*create_conn)(struct mg_connection *nc);
-  /* Perform interface-related cleanup on connection before destruction. */
-  void (*destroy_conn)(struct mg_connection *nc);
+        /* Set up a listening TCP socket on a given address. rv = 0 -> ok. */
+        int (*listen_tcp)(struct mg_connection *nc, union socket_address *sa);
 
-  /* Associate a socket to a connection. */
-  void (*sock_set)(struct mg_connection *nc, sock_t sock);
+        /* Request that a "listening" UDP socket be created. */
+        int (*listen_udp)(struct mg_connection *nc, union socket_address *sa);
 
-  /* Put connection's address into *sa, local (remote = 0) or remote. */
-  void (*get_conn_addr)(struct mg_connection *nc, int remote,
-                        union socket_address *sa);
+        /* Request that a TCP connection is made to the specified address. */
+        void (*connect_tcp)(struct mg_connection *nc, const union socket_address *sa);
+
+        /* Open a UDP socket. Doesn't actually connect anything. */
+        void (*connect_udp)(struct mg_connection *nc);
+
+        /* Send functions for TCP and UDP. Sent data is copied before return. */
+        int (*tcp_send)(struct mg_connection *nc, const void *buf, size_t len);
+
+        int (*udp_send)(struct mg_connection *nc, const void *buf, size_t len);
+
+        int (*tcp_recv)(struct mg_connection *nc, void *buf, size_t len);
+
+        int (*udp_recv)(struct mg_connection *nc, void *buf, size_t len,
+                        union socket_address *sa, size_t *sa_len);
+
+        /* Perform interface-related connection initialization. Return 1 on ok. */
+        int (*create_conn)(struct mg_connection *nc);
+
+        /* Perform interface-related cleanup on connection before destruction. */
+        void (*destroy_conn)(struct mg_connection *nc);
+
+        /* Associate a socket to a connection. */
+        void (*sock_set)(struct mg_connection *nc, sock_t sock);
+
+        /* Put connection's address into *sa, local (remote = 0) or remote. */
+        void (*get_conn_addr)(struct mg_connection *nc, int remote,
+                              union socket_address *sa);
 };
 
 extern const struct mg_iface_vtable *mg_ifaces[];
@@ -3785,6 +3805,7 @@ struct mg_iface *mg_if_create_iface(const struct mg_iface_vtable *vtable,
 struct mg_iface *mg_find_iface(struct mg_mgr *mgr,
                                const struct mg_iface_vtable *vtable,
                                struct mg_iface *from);
+
 /*
  * Deliver a new TCP connection. Returns NULL in case on error (unable to
  * create connection, in which case interface state should be discarded.
@@ -3792,17 +3813,21 @@ struct mg_iface *mg_find_iface(struct mg_mgr *mgr,
  * when mg_if_accept_tcp_cb is invoked.
  */
 struct mg_connection *mg_if_accept_new_conn(struct mg_connection *lc);
+
 void mg_if_accept_tcp_cb(struct mg_connection *nc, union socket_address *sa,
                          size_t sa_len);
 
 /* Callback invoked by connect methods. err = 0 -> ok, != 0 -> error. */
 void mg_if_connect_cb(struct mg_connection *nc, int err);
+
 /*
  * Callback that tells the core that data can be received.
  * Core will use tcp/udp_recv to retrieve the data.
  */
 void mg_if_can_recv_cb(struct mg_connection *nc);
+
 void mg_if_can_send_cb(struct mg_connection *nc);
+
 /*
  * Receive callback.
  * buf must be heap-allocated and ownership is transferred to the core.
@@ -3938,12 +3963,12 @@ extern "C" {
 #endif /* __cplusplus */
 
 union socket_address {
-  struct sockaddr sa;
-  struct sockaddr_in sin;
+        struct sockaddr sa;
+        struct sockaddr_in sin;
 #if MG_ENABLE_IPV6
-  struct sockaddr_in6 sin6;
+        struct sockaddr_in6 sin6;
 #else
-  struct sockaddr sin6;
+        struct sockaddr sin6;
 #endif
 };
 
@@ -3969,56 +3994,57 @@ typedef void (*mg_event_handler_t)(struct mg_connection *nc, int ev,
  * Mongoose event manager.
  */
 struct mg_mgr {
-  struct mg_connection *active_connections;
+        struct mg_connection *active_connections;
 #if MG_ENABLE_HEXDUMP
-  const char *hexdump_file; /* Debug hexdump file path */
+        const char *hexdump_file; /* Debug hexdump file path */
 #endif
 #if MG_ENABLE_BROADCAST
-  sock_t ctl[2]; /* Socketpair for mg_broadcast() */
+        sock_t ctl[2]; /* Socketpair for mg_broadcast() */
 #endif
-  void *user_data; /* User data */
-  int num_ifaces;
-  int num_calls;
-  struct mg_iface **ifaces; /* network interfaces */
-  const char *nameserver;   /* DNS server to use */
+        void *user_data; /* User data */
+        int num_ifaces;
+        int num_calls;
+        struct mg_iface **ifaces; /* network interfaces */
+        const char *nameserver;   /* DNS server to use */
 };
 
 /*
  * Mongoose connection.
  */
 struct mg_connection {
-  struct mg_connection *next, *prev; /* mg_mgr::active_connections linkage */
-  struct mg_connection *listener;    /* Set only for accept()-ed connections */
-  struct mg_mgr *mgr;                /* Pointer to containing manager */
+        struct mg_connection *next, *prev; /* mg_mgr::active_connections linkage */
+        struct mg_connection *listener;    /* Set only for accept()-ed connections */
+        struct mg_mgr *mgr;                /* Pointer to containing manager */
 
-  sock_t sock; /* Socket to the remote peer */
-  int err;
-  union socket_address sa; /* Remote peer address */
-  size_t recv_mbuf_limit;  /* Max size of recv buffer */
-  struct mbuf recv_mbuf;   /* Received data */
-  struct mbuf send_mbuf;   /* Data scheduled for sending */
-  time_t last_io_time;     /* Timestamp of the last socket IO */
-  double ev_timer_time;    /* Timestamp of the future MG_EV_TIMER */
+        sock_t sock; /* Socket to the remote peer */
+        int err;
+        union socket_address sa; /* Remote peer address */
+        size_t recv_mbuf_limit;  /* Max size of recv buffer */
+        struct mbuf recv_mbuf;   /* Received data */
+        struct mbuf send_mbuf;   /* Data scheduled for sending */
+        time_t last_io_time;     /* Timestamp of the last socket IO */
+        double ev_timer_time;    /* Timestamp of the future MG_EV_TIMER */
 #if MG_ENABLE_SSL
-  void *ssl_if_data; /* SSL library data. */
+        void *ssl_if_data; /* SSL library data. */
 #endif
-  mg_event_handler_t proto_handler; /* Protocol-specific event handler */
-  void *proto_data;                 /* Protocol-specific data */
-  void (*proto_data_destructor)(void *proto_data);
-  mg_event_handler_t handler; /* Event handler function */
-  void *user_data;            /* User-specific data */
-  union {
-    void *v;
-    /*
-     * the C standard is fussy about fitting function pointers into
-     * void pointers, since some archs might have fat pointers for functions.
-     */
-    mg_event_handler_t f;
-  } priv_1;
-  void *priv_2;
-  void *mgr_data; /* Implementation-specific event manager's data. */
-  struct mg_iface *iface;
-  unsigned long flags;
+        mg_event_handler_t proto_handler; /* Protocol-specific event handler */
+        void *proto_data;                 /* Protocol-specific data */
+        void (*proto_data_destructor)(void *proto_data);
+
+        mg_event_handler_t handler; /* Event handler function */
+        void *user_data;            /* User-specific data */
+        union {
+                void *v;
+                /*
+                 * the C standard is fussy about fitting function pointers into
+                 * void pointers, since some archs might have fat pointers for functions.
+                 */
+                mg_event_handler_t f;
+        } priv_1;
+        void *priv_2;
+        void *mgr_data; /* Implementation-specific event manager's data. */
+        struct mg_iface *iface;
+        unsigned long flags;
 /* Flags set by Mongoose */
 #define MG_F_LISTENING (1 << 0)          /* This connection is listening */
 #define MG_F_UDP (1 << 1)                /* This connection is UDP */
@@ -4072,10 +4098,10 @@ void mg_mgr_init(struct mg_mgr *mgr, void *user_data);
  * `num_ifaces` pointers it contains will be reclaimed by `mg_mgr_free`.
  */
 struct mg_mgr_init_opts {
-  const struct mg_iface_vtable *main_iface;
-  int num_ifaces;
-  const struct mg_iface_vtable **ifaces;
-  const char *nameserver;
+        const struct mg_iface_vtable *main_iface;
+        int num_ifaces;
+        const struct mg_iface_vtable **ifaces;
+        const char *nameserver;
 };
 
 /*
@@ -4105,6 +4131,7 @@ void mg_mgr_free(struct mg_mgr *mgr);
 int mg_mgr_poll(struct mg_mgr *mgr, int milli);
 
 #if MG_ENABLE_BROADCAST
+
 /*
  * Passes a message of a given length to all connections.
  *
@@ -4119,6 +4146,7 @@ int mg_mgr_poll(struct mg_mgr *mgr, int milli);
  */
 void mg_broadcast(struct mg_mgr *mgr, mg_event_handler_t cb, void *data,
                   size_t len);
+
 #endif
 
 /*
@@ -4143,10 +4171,10 @@ struct mg_connection *mg_next(struct mg_mgr *mgr, struct mg_connection *c);
  * see `MG_F_*` flags definitions.
  */
 struct mg_add_sock_opts {
-  void *user_data;           /* Initial value for connection's user_data */
-  unsigned int flags;        /* Initial connection flags */
-  const char **error_string; /* Placeholder for the error string */
-  struct mg_iface *iface;    /* Interface instance */
+        void *user_data;           /* Initial value for connection's user_data */
+        unsigned int flags;        /* Initial connection flags */
+        const char **error_string; /* Placeholder for the error string */
+        struct mg_iface *iface;    /* Interface instance */
 };
 
 /*
@@ -4177,35 +4205,35 @@ struct mg_connection *mg_add_sock_opt(struct mg_mgr *mgr, sock_t sock,
  * see `MG_F_*` flags definitions.
  */
 struct mg_bind_opts {
-  void *user_data;           /* Initial value for connection's user_data */
-  unsigned int flags;        /* Extra connection flags */
-  const char **error_string; /* Placeholder for the error string */
-  struct mg_iface *iface;    /* Interface instance */
+        void *user_data;           /* Initial value for connection's user_data */
+        unsigned int flags;        /* Extra connection flags */
+        const char **error_string; /* Placeholder for the error string */
+        struct mg_iface *iface;    /* Interface instance */
 #if MG_ENABLE_SSL
-  /*
-   * SSL settings.
-   *
-   * Server certificate to present to clients or client certificate to
-   * present to tunnel dispatcher (for tunneled connections).
-   */
-  const char *ssl_cert;
-  /* Private key corresponding to the certificate. If ssl_cert is set but
-   * ssl_key is not, ssl_cert is used. */
-  const char *ssl_key;
-  /* CA bundle used to verify client certificates or tunnel dispatchers. */
-  const char *ssl_ca_cert;
-  /* Colon-delimited list of acceptable cipher suites.
-   * Names depend on the library used, for example:
-   *
-   * ECDH-ECDSA-AES128-GCM-SHA256:DHE-RSA-AES128-SHA256 (OpenSSL)
-   * TLS-ECDH-ECDSA-WITH-AES-128-GCM-SHA256:TLS-DHE-RSA-WITH-AES-128-GCM-SHA256
-   *   (mbedTLS)
-   *
-   * For OpenSSL the list can be obtained by running "openssl ciphers".
-   * For mbedTLS, names can be found in library/ssl_ciphersuites.c
-   * If NULL, a reasonable default is used.
-   */
-  const char *ssl_cipher_suites;
+        /*
+         * SSL settings.
+         *
+         * Server certificate to present to clients or client certificate to
+         * present to tunnel dispatcher (for tunneled connections).
+         */
+        const char *ssl_cert;
+        /* Private key corresponding to the certificate. If ssl_cert is set but
+         * ssl_key is not, ssl_cert is used. */
+        const char *ssl_key;
+        /* CA bundle used to verify client certificates or tunnel dispatchers. */
+        const char *ssl_ca_cert;
+        /* Colon-delimited list of acceptable cipher suites.
+         * Names depend on the library used, for example:
+         *
+         * ECDH-ECDSA-AES128-GCM-SHA256:DHE-RSA-AES128-SHA256 (OpenSSL)
+         * TLS-ECDH-ECDSA-WITH-AES-128-GCM-SHA256:TLS-DHE-RSA-WITH-AES-128-GCM-SHA256
+         *   (mbedTLS)
+         *
+         * For OpenSSL the list can be obtained by running "openssl ciphers".
+         * For mbedTLS, names can be found in library/ssl_ciphersuites.c
+         * If NULL, a reasonable default is used.
+         */
+        const char *ssl_cipher_suites;
 #endif
 };
 
@@ -4217,6 +4245,7 @@ struct mg_bind_opts {
 struct mg_connection *mg_bind(struct mg_mgr *mgr, const char *address,
                               MG_CB(mg_event_handler_t handler,
                                     void *user_data));
+
 /*
  * Creates a listening connection.
  *
@@ -4242,56 +4271,56 @@ struct mg_connection *mg_bind_opt(struct mg_mgr *mgr, const char *address,
 
 /* Optional parameters to `mg_connect_opt()` */
 struct mg_connect_opts {
-  void *user_data;           /* Initial value for connection's user_data */
-  unsigned int flags;        /* Extra connection flags */
-  const char **error_string; /* Placeholder for the error string */
-  struct mg_iface *iface;    /* Interface instance */
-  const char *nameserver;    /* DNS server to use, NULL for default */
+        void *user_data;           /* Initial value for connection's user_data */
+        unsigned int flags;        /* Extra connection flags */
+        const char **error_string; /* Placeholder for the error string */
+        struct mg_iface *iface;    /* Interface instance */
+        const char *nameserver;    /* DNS server to use, NULL for default */
 #if MG_ENABLE_SSL
-  /*
-   * SSL settings.
-   * Client certificate to present to the server.
-   */
-  const char *ssl_cert;
-  /*
-   * Private key corresponding to the certificate.
-   * If ssl_cert is set but ssl_key is not, ssl_cert is used.
-   */
-  const char *ssl_key;
-  /*
-   * Verify server certificate using this CA bundle. If set to "*", then SSL
-   * is enabled but no cert verification is performed.
-   */
-  const char *ssl_ca_cert;
-  /* Colon-delimited list of acceptable cipher suites.
-   * Names depend on the library used, for example:
-   *
-   * ECDH-ECDSA-AES128-GCM-SHA256:DHE-RSA-AES128-SHA256 (OpenSSL)
-   * TLS-ECDH-ECDSA-WITH-AES-128-GCM-SHA256:TLS-DHE-RSA-WITH-AES-128-GCM-SHA256
-   *   (mbedTLS)
-   *
-   * For OpenSSL the list can be obtained by running "openssl ciphers".
-   * For mbedTLS, names can be found in library/ssl_ciphersuites.c
-   * If NULL, a reasonable default is used.
-   */
-  const char *ssl_cipher_suites;
-  /*
-   * Server name verification. If ssl_ca_cert is set and the certificate has
-   * passed verification, its subject will be verified against this string.
-   * By default (if ssl_server_name is NULL) hostname part of the address will
-   * be used. Wildcard matching is supported. A special value of "*" disables
-   * name verification.
-   */
-  const char *ssl_server_name;
-  /*
-   * PSK identity and key. Identity is a NUL-terminated string and key is a hex
-   * string. Key must be either 16 or 32 bytes (32 or 64 hex digits) for AES-128
-   * or AES-256 respectively.
-   * Note: Default list of cipher suites does not include PSK suites, if you
-   * want to use PSK you will need to set ssl_cipher_suites as well.
-   */
-  const char *ssl_psk_identity;
-  const char *ssl_psk_key;
+        /*
+         * SSL settings.
+         * Client certificate to present to the server.
+         */
+        const char *ssl_cert;
+        /*
+         * Private key corresponding to the certificate.
+         * If ssl_cert is set but ssl_key is not, ssl_cert is used.
+         */
+        const char *ssl_key;
+        /*
+         * Verify server certificate using this CA bundle. If set to "*", then SSL
+         * is enabled but no cert verification is performed.
+         */
+        const char *ssl_ca_cert;
+        /* Colon-delimited list of acceptable cipher suites.
+         * Names depend on the library used, for example:
+         *
+         * ECDH-ECDSA-AES128-GCM-SHA256:DHE-RSA-AES128-SHA256 (OpenSSL)
+         * TLS-ECDH-ECDSA-WITH-AES-128-GCM-SHA256:TLS-DHE-RSA-WITH-AES-128-GCM-SHA256
+         *   (mbedTLS)
+         *
+         * For OpenSSL the list can be obtained by running "openssl ciphers".
+         * For mbedTLS, names can be found in library/ssl_ciphersuites.c
+         * If NULL, a reasonable default is used.
+         */
+        const char *ssl_cipher_suites;
+        /*
+         * Server name verification. If ssl_ca_cert is set and the certificate has
+         * passed verification, its subject will be verified against this string.
+         * By default (if ssl_server_name is NULL) hostname part of the address will
+         * be used. Wildcard matching is supported. A special value of "*" disables
+         * name verification.
+         */
+        const char *ssl_server_name;
+        /*
+         * PSK identity and key. Identity is a NUL-terminated string and key is a hex
+         * string. Key must be either 16 or 32 bytes (32 or 64 hex digits) for AES-128
+         * or AES-256 respectively.
+         * Note: Default list of cipher suites does not include PSK suites, if you
+         * want to use PSK you will need to set ssl_cipher_suites as well.
+         */
+        const char *ssl_psk_identity;
+        const char *ssl_psk_key;
 #endif
 };
 
@@ -4387,6 +4416,7 @@ void mg_send(struct mg_connection *, const void *buf, int len);
 
 /* Enables format string warnings for mg_printf */
 #if defined(__GNUC__)
+
 __attribute__((format(printf, 2, 3)))
 #endif
 /* don't separate from mg_printf declaration */
@@ -4614,6 +4644,7 @@ int mg_base64_decode(const unsigned char *s, int len, char *dst);
 void mg_base64_encode(const unsigned char *src, int src_len, char *dst);
 
 #if MG_ENABLE_FILESYSTEM
+
 /*
  * Performs a 64-bit `stat()` call against a given file.
  *
@@ -4672,6 +4703,7 @@ void mg_set_close_on_exec(sock_t);
 #define MG_SOCK_STRINGIFY_IP 1
 #define MG_SOCK_STRINGIFY_PORT 2
 #define MG_SOCK_STRINGIFY_REMOTE 4
+
 /*
  * Converts a connection's local or remote address into string.
  *
@@ -4688,9 +4720,12 @@ void mg_set_close_on_exec(sock_t);
  */
 int mg_conn_addr_to_str(struct mg_connection *c, char *buf, size_t len,
                         int flags);
+
 #if MG_NET_IF == MG_NET_IF_SOCKET
+
 /* Legacy interface. */
 void mg_sock_to_str(sock_t sock, char *buf, size_t len, int flags);
+
 #endif
 
 /*
@@ -4702,6 +4737,7 @@ int mg_sock_addr_to_str(const union socket_address *sa, char *buf, size_t len,
                         int flags);
 
 #if MG_ENABLE_HEXDUMP
+
 /*
  * Generates a human-readable hexdump of memory chunk.
  *
@@ -4724,6 +4760,7 @@ void mg_hexdumpf(FILE *fp, const void *buf, int len);
  */
 void mg_hexdump_connection(struct mg_connection *nc, const char *path,
                            const void *buf, int num_bytes, int ev);
+
 #endif
 
 /*
@@ -4758,6 +4795,7 @@ void mg_basic_auth_header(const struct mg_str user, const struct mg_str pass,
  */
 #define MG_URL_ENCODE_F_SPACE_AS_PLUS (1 << 0)
 #define MG_URL_ENCODE_F_UPPERCASE_HEX (1 << 1)
+
 struct mg_str mg_url_encode_opt(const struct mg_str src,
                                 const struct mg_str safe, unsigned int flags);
 
@@ -4810,64 +4848,64 @@ extern "C" {
 
 /* HTTP message */
 struct http_message {
-  struct mg_str message; /* Whole message: request line + headers + body */
-  struct mg_str body;    /* Message body. 0-length for requests with no body */
+        struct mg_str message; /* Whole message: request line + headers + body */
+        struct mg_str body;    /* Message body. 0-length for requests with no body */
 
-  /* HTTP Request line (or HTTP response line) */
-  struct mg_str method; /* "GET" */
-  struct mg_str uri;    /* "/my_file.html" */
-  struct mg_str proto;  /* "HTTP/1.1" -- for both request and response */
+        /* HTTP Request line (or HTTP response line) */
+        struct mg_str method; /* "GET" */
+        struct mg_str uri;    /* "/my_file.html" */
+        struct mg_str proto;  /* "HTTP/1.1" -- for both request and response */
 
-  /* For responses, code and response status message are set */
-  int resp_code;
-  struct mg_str resp_status_msg;
+        /* For responses, code and response status message are set */
+        int resp_code;
+        struct mg_str resp_status_msg;
 
-  /*
-   * Query-string part of the URI. For example, for HTTP request
-   *    GET /foo/bar?param1=val1&param2=val2
-   *    |    uri    |     query_string     |
-   *
-   * Note that question mark character doesn't belong neither to the uri,
-   * nor to the query_string
-   */
-  struct mg_str query_string;
+        /*
+         * Query-string part of the URI. For example, for HTTP request
+         *    GET /foo/bar?param1=val1&param2=val2
+         *    |    uri    |     query_string     |
+         *
+         * Note that question mark character doesn't belong neither to the uri,
+         * nor to the query_string
+         */
+        struct mg_str query_string;
 
-  /* Headers */
-  struct mg_str header_names[MG_MAX_HTTP_HEADERS];
-  struct mg_str header_values[MG_MAX_HTTP_HEADERS];
+        /* Headers */
+        struct mg_str header_names[MG_MAX_HTTP_HEADERS];
+        struct mg_str header_values[MG_MAX_HTTP_HEADERS];
 };
 
 #if MG_ENABLE_HTTP_WEBSOCKET
 /* WebSocket message */
 struct websocket_message {
-  unsigned char *data;
-  size_t size;
-  unsigned char flags;
+        unsigned char *data;
+        size_t size;
+        unsigned char flags;
 };
 #endif
 
 /* HTTP multipart part */
 struct mg_http_multipart_part {
-  const char *file_name;
-  const char *var_name;
-  struct mg_str data;
-  int status; /* <0 on error */
-  void *user_data;
-  /*
-   * User handler can indicate how much of the data was consumed
-   * by setting this variable. By default, it is assumed that all
-   * data has been consumed by the handler.
-   * If not all data was consumed, user's handler will be invoked again later
-   * with the remainder.
-   */
-  size_t num_data_consumed;
+        const char *file_name;
+        const char *var_name;
+        struct mg_str data;
+        int status; /* <0 on error */
+        void *user_data;
+        /*
+         * User handler can indicate how much of the data was consumed
+         * by setting this variable. By default, it is assumed that all
+         * data has been consumed by the handler.
+         * If not all data was consumed, user's handler will be invoked again later
+         * with the remainder.
+         */
+        size_t num_data_consumed;
 };
 
 /* SSI call context */
 struct mg_ssi_call_ctx {
-  struct http_message *req; /* The request being processed. */
-  struct mg_str file;       /* Filesystem path of the file being processed. */
-  struct mg_str arg; /* The argument passed to the tag: <!-- call arg -->. */
+        struct http_message *req; /* The request being processed. */
+        struct mg_str file;       /* Filesystem path of the file being processed. */
+        struct mg_str arg; /* The argument passed to the tag: <!-- call arg -->. */
 };
 
 /* HTTP and websocket events. void *ev_data is described in a comment. */
@@ -4950,6 +4988,7 @@ struct mg_ssi_call_ctx {
 void mg_set_protocol_http_websocket(struct mg_connection *nc);
 
 #if MG_ENABLE_HTTP_WEBSOCKET
+
 /*
  * Send websocket handshake to the server.
  *
@@ -5030,9 +5069,9 @@ struct mg_connection *mg_connect_ws(struct mg_mgr *mgr,
  * (for example, SSL parameters)
  */
 struct mg_connection *mg_connect_ws_opt(
-    struct mg_mgr *mgr, MG_CB(mg_event_handler_t ev_handler, void *user_data),
-    struct mg_connect_opts opts, const char *url, const char *protocol,
-    const char *extra_headers);
+        struct mg_mgr *mgr, MG_CB(mg_event_handler_t ev_handler, void *user_data),
+        struct mg_connect_opts opts, const char *url, const char *protocol,
+        const char *extra_headers);
 
 /*
  * Send WebSocket frame to the remote end.
@@ -5111,6 +5150,7 @@ int mg_url_decode(const char *src, int src_len, char *dst, int dst_len,
 
 extern void mg_hash_md5_v(size_t num_msgs, const uint8_t *msgs[],
                           const size_t *msg_lens, uint8_t *digest);
+
 extern void mg_hash_sha1_v(size_t num_msgs, const uint8_t *msgs[],
                            const size_t *msg_lens, uint8_t *digest);
 
@@ -5214,9 +5254,9 @@ int mg_http_parse_header2(struct mg_str *hdr, const char *var_name, char **buf,
 int mg_http_parse_header(struct mg_str *hdr, const char *var_name, char *buf,
                          size_t buf_size)
 #ifdef __GNUC__
-    __attribute__((deprecated))
+__attribute__((deprecated))
 #endif
-    ;
+;
 
 /*
  * Gets and parses the Authorization: Basic header
@@ -5294,159 +5334,159 @@ int mg_get_http_var(const struct mg_str *buf, const char *name, char *dst,
  * Best practice is to set only required settings, and leave the rest as NULL.
  */
 struct mg_serve_http_opts {
-  /* Path to web root directory */
-  const char *document_root;
+        /* Path to web root directory */
+        const char *document_root;
 
-  /* List of index files. Default is "" */
-  const char *index_files;
+        /* List of index files. Default is "" */
+        const char *index_files;
 
-  /*
-   * Leave as NULL to disable authentication.
-   * To enable directory protection with authentication, set this to ".htpasswd"
-   * Then, creating ".htpasswd" file in any directory automatically protects
-   * it with digest authentication.
-   * Use `mongoose` web server binary, or `htdigest` Apache utility to
-   * create/manipulate passwords file.
-   * Make sure `auth_domain` is set to a valid domain name.
-   */
-  const char *per_directory_auth_file;
+        /*
+         * Leave as NULL to disable authentication.
+         * To enable directory protection with authentication, set this to ".htpasswd"
+         * Then, creating ".htpasswd" file in any directory automatically protects
+         * it with digest authentication.
+         * Use `mongoose` web server binary, or `htdigest` Apache utility to
+         * create/manipulate passwords file.
+         * Make sure `auth_domain` is set to a valid domain name.
+         */
+        const char *per_directory_auth_file;
 
-  /* Authorization domain (domain name of this web server) */
-  const char *auth_domain;
+        /* Authorization domain (domain name of this web server) */
+        const char *auth_domain;
 
-  /*
-   * Leave as NULL to disable authentication.
-   * Normally, only selected directories in the document root are protected.
-   * If absolutely every access to the web server needs to be authenticated,
-   * regardless of the URI, set this option to the path to the passwords file.
-   * Format of that file is the same as ".htpasswd" file. Make sure that file
-   * is located outside document root to prevent people fetching it.
-   */
-  const char *global_auth_file;
+        /*
+         * Leave as NULL to disable authentication.
+         * Normally, only selected directories in the document root are protected.
+         * If absolutely every access to the web server needs to be authenticated,
+         * regardless of the URI, set this option to the path to the passwords file.
+         * Format of that file is the same as ".htpasswd" file. Make sure that file
+         * is located outside document root to prevent people fetching it.
+         */
+        const char *global_auth_file;
 
-  /* Set to "no" to disable directory listing. Enabled by default. */
-  const char *enable_directory_listing;
+        /* Set to "no" to disable directory listing. Enabled by default. */
+        const char *enable_directory_listing;
 
-  /*
-   * SSI files pattern. If not set, "**.shtml$|**.shtm$" is used.
-   *
-   * All files that match ssi_pattern are treated as SSI.
-   *
-   * Server Side Includes (SSI) is a simple interpreted server-side scripting
-   * language which is most commonly used to include the contents of a file
-   * into a web page. It can be useful when it is desirable to include a common
-   * piece of code throughout a website, for example, headers and footers.
-   *
-   * In order for a webpage to recognize an SSI-enabled HTML file, the
-   * filename should end with a special extension, by default the extension
-   * should be either .shtml or .shtm
-   *
-   * Unknown SSI directives are silently ignored by Mongoose. Currently,
-   * the following SSI directives are supported:
-   *    &lt;!--#include FILE_TO_INCLUDE --&gt;
-   *    &lt;!--#exec "COMMAND_TO_EXECUTE" --&gt;
-   *    &lt;!--#call COMMAND --&gt;
-   *
-   * Note that &lt;!--#include ...> directive supports three path
-   *specifications:
-   *
-   * &lt;!--#include virtual="path" --&gt;  Path is relative to web server root
-   * &lt;!--#include abspath="path" --&gt;  Path is absolute or relative to the
-   *                                  web server working dir
-   * &lt;!--#include file="path" --&gt;,    Path is relative to current document
-   * &lt;!--#include "path" --&gt;
-   *
-   * The include directive may be used to include the contents of a file or
-   * the result of running a CGI script.
-   *
-   * The exec directive is used to execute
-   * a command on a server, and show command's output. Example:
-   *
-   * &lt;!--#exec "ls -l" --&gt;
-   *
-   * The call directive is a way to invoke a C handler from the HTML page.
-   * On each occurence of &lt;!--#call COMMAND OPTIONAL_PARAMS> directive,
-   * Mongoose calls a registered event handler with MG_EV_SSI_CALL event,
-   * and event parameter will point to the COMMAND OPTIONAL_PARAMS string.
-   * An event handler can output any text, for example by calling
-   * `mg_printf()`. This is a flexible way of generating a web page on
-   * server side by calling a C event handler. Example:
-   *
-   * &lt;!--#call foo --&gt; ... &lt;!--#call bar --&gt;
-   *
-   * In the event handler:
-   *    case MG_EV_SSI_CALL: {
-   *      const char *param = (const char *) ev_data;
-   *      if (strcmp(param, "foo") == 0) {
-   *        mg_printf(c, "hello from foo");
-   *      } else if (strcmp(param, "bar") == 0) {
-   *        mg_printf(c, "hello from bar");
-   *      }
-   *      break;
-   *    }
-   */
-  const char *ssi_pattern;
+        /*
+         * SSI files pattern. If not set, "**.shtml$|**.shtm$" is used.
+         *
+         * All files that match ssi_pattern are treated as SSI.
+         *
+         * Server Side Includes (SSI) is a simple interpreted server-side scripting
+         * language which is most commonly used to include the contents of a file
+         * into a web page. It can be useful when it is desirable to include a common
+         * piece of code throughout a website, for example, headers and footers.
+         *
+         * In order for a webpage to recognize an SSI-enabled HTML file, the
+         * filename should end with a special extension, by default the extension
+         * should be either .shtml or .shtm
+         *
+         * Unknown SSI directives are silently ignored by Mongoose. Currently,
+         * the following SSI directives are supported:
+         *    &lt;!--#include FILE_TO_INCLUDE --&gt;
+         *    &lt;!--#exec "COMMAND_TO_EXECUTE" --&gt;
+         *    &lt;!--#call COMMAND --&gt;
+         *
+         * Note that &lt;!--#include ...> directive supports three path
+         *specifications:
+         *
+         * &lt;!--#include virtual="path" --&gt;  Path is relative to web server root
+         * &lt;!--#include abspath="path" --&gt;  Path is absolute or relative to the
+         *                                  web server working dir
+         * &lt;!--#include file="path" --&gt;,    Path is relative to current document
+         * &lt;!--#include "path" --&gt;
+         *
+         * The include directive may be used to include the contents of a file or
+         * the result of running a CGI script.
+         *
+         * The exec directive is used to execute
+         * a command on a server, and show command's output. Example:
+         *
+         * &lt;!--#exec "ls -l" --&gt;
+         *
+         * The call directive is a way to invoke a C handler from the HTML page.
+         * On each occurence of &lt;!--#call COMMAND OPTIONAL_PARAMS> directive,
+         * Mongoose calls a registered event handler with MG_EV_SSI_CALL event,
+         * and event parameter will point to the COMMAND OPTIONAL_PARAMS string.
+         * An event handler can output any text, for example by calling
+         * `mg_printf()`. This is a flexible way of generating a web page on
+         * server side by calling a C event handler. Example:
+         *
+         * &lt;!--#call foo --&gt; ... &lt;!--#call bar --&gt;
+         *
+         * In the event handler:
+         *    case MG_EV_SSI_CALL: {
+         *      const char *param = (const char *) ev_data;
+         *      if (strcmp(param, "foo") == 0) {
+         *        mg_printf(c, "hello from foo");
+         *      } else if (strcmp(param, "bar") == 0) {
+         *        mg_printf(c, "hello from bar");
+         *      }
+         *      break;
+         *    }
+         */
+        const char *ssi_pattern;
 
-  /* IP ACL. By default, NULL, meaning all IPs are allowed to connect */
-  const char *ip_acl;
+        /* IP ACL. By default, NULL, meaning all IPs are allowed to connect */
+        const char *ip_acl;
 
 #if MG_ENABLE_HTTP_URL_REWRITES
-  /* URL rewrites.
-   *
-   * Comma-separated list of `uri_pattern=url_file_or_directory_path` rewrites.
-   * When HTTP request is received, Mongoose constructs a file name from the
-   * requested URI by combining `document_root` and the URI. However, if the
-   * rewrite option is used and `uri_pattern` matches requested URI, then
-   * `document_root` is ignored. Instead, `url_file_or_directory_path` is used,
-   * which should be a full path name or a path relative to the web server's
-   * current working directory. It can also be an URI (http:// or https://)
-   * in which case mongoose will behave as a reverse proxy for that destination.
-   *
-   * Note that `uri_pattern`, as all Mongoose patterns, is a prefix pattern.
-   *
-   * If uri_pattern starts with `@` symbol, then Mongoose compares it with the
-   * HOST header of the request. If they are equal, Mongoose sets document root
-   * to `file_or_directory_path`, implementing virtual hosts support.
-   * Example: `@foo.com=/document/root/for/foo.com`
-   *
-   * If `uri_pattern` starts with `%` symbol, then Mongoose compares it with
-   * the listening port. If they match, then Mongoose issues a 301 redirect.
-   * For example, to redirect all HTTP requests to the
-   * HTTPS port, do `%80=https://my.site.com`. Note that the request URI is
-   * automatically appended to the redirect location.
-   */
-  const char *url_rewrites;
+        /* URL rewrites.
+         *
+         * Comma-separated list of `uri_pattern=url_file_or_directory_path` rewrites.
+         * When HTTP request is received, Mongoose constructs a file name from the
+         * requested URI by combining `document_root` and the URI. However, if the
+         * rewrite option is used and `uri_pattern` matches requested URI, then
+         * `document_root` is ignored. Instead, `url_file_or_directory_path` is used,
+         * which should be a full path name or a path relative to the web server's
+         * current working directory. It can also be an URI (http:// or https://)
+         * in which case mongoose will behave as a reverse proxy for that destination.
+         *
+         * Note that `uri_pattern`, as all Mongoose patterns, is a prefix pattern.
+         *
+         * If uri_pattern starts with `@` symbol, then Mongoose compares it with the
+         * HOST header of the request. If they are equal, Mongoose sets document root
+         * to `file_or_directory_path`, implementing virtual hosts support.
+         * Example: `@foo.com=/document/root/for/foo.com`
+         *
+         * If `uri_pattern` starts with `%` symbol, then Mongoose compares it with
+         * the listening port. If they match, then Mongoose issues a 301 redirect.
+         * For example, to redirect all HTTP requests to the
+         * HTTPS port, do `%80=https://my.site.com`. Note that the request URI is
+         * automatically appended to the redirect location.
+         */
+        const char *url_rewrites;
 #endif
 
-  /* DAV document root. If NULL, DAV requests are going to fail. */
-  const char *dav_document_root;
+        /* DAV document root. If NULL, DAV requests are going to fail. */
+        const char *dav_document_root;
 
-  /*
-   * DAV passwords file. If NULL, DAV requests are going to fail.
-   * If passwords file is set to "-", then DAV auth is disabled.
-   */
-  const char *dav_auth_file;
+        /*
+         * DAV passwords file. If NULL, DAV requests are going to fail.
+         * If passwords file is set to "-", then DAV auth is disabled.
+         */
+        const char *dav_auth_file;
 
-  /* Glob pattern for the files to hide. */
-  const char *hidden_file_pattern;
+        /* Glob pattern for the files to hide. */
+        const char *hidden_file_pattern;
 
-  /* Set to non-NULL to enable CGI, e.g. **.cgi$|**.php$" */
-  const char *cgi_file_pattern;
+        /* Set to non-NULL to enable CGI, e.g. **.cgi$|**.php$" */
+        const char *cgi_file_pattern;
 
-  /* If not NULL, ignore CGI script hashbang and use this interpreter */
-  const char *cgi_interpreter;
+        /* If not NULL, ignore CGI script hashbang and use this interpreter */
+        const char *cgi_interpreter;
 
-  /*
-   * Comma-separated list of Content-Type overrides for path suffixes, e.g.
-   * ".txt=text/plain; charset=utf-8,.c=text/plain"
-   */
-  const char *custom_mime_types;
+        /*
+         * Comma-separated list of Content-Type overrides for path suffixes, e.g.
+         * ".txt=text/plain; charset=utf-8,.c=text/plain"
+         */
+        const char *custom_mime_types;
 
-  /*
-   * Extra HTTP headers to add to each server response.
-   * Example: to enable CORS, set this to "Access-Control-Allow-Origin: *".
-   */
-  const char *extra_headers;
+        /*
+         * Extra HTTP headers to add to each server response.
+         * Example: to enable CORS, set this to "Access-Control-Allow-Origin: *".
+         */
+        const char *extra_headers;
 };
 
 /*
@@ -5571,10 +5611,10 @@ void mg_register_http_endpoint(struct mg_connection *nc, const char *uri_path,
                                      void *user_data));
 
 struct mg_http_endpoint_opts {
-  void *user_data;
-  /* Authorization domain (realm) */
-  const char *auth_domain;
-  const char *auth_file;
+        void *user_data;
+        /* Authorization domain (realm) */
+        const char *auth_domain;
+        const char *auth_file;
 };
 
 void mg_register_http_endpoint_opt(struct mg_connection *nc,
@@ -5687,6 +5727,7 @@ void mg_send_head(struct mg_connection *n, int status_code,
 void mg_printf_html_escape(struct mg_connection *nc, const char *fmt, ...);
 
 #if MG_ENABLE_HTTP_URL_REWRITES
+
 /*
  * Proxies a given request to a given upstream http server. The path prefix
  * in `mount` will be stripped of the path requested to the upstream server,
@@ -5700,6 +5741,7 @@ void mg_printf_html_escape(struct mg_connection *nc, const char *fmt, ...);
 void mg_http_reverse_proxy(struct mg_connection *nc,
                            const struct http_message *hm, struct mg_str mount,
                            struct mg_str upstream);
+
 #endif
 
 #ifdef __cplusplus
@@ -5748,9 +5790,9 @@ extern "C" {
  * ```
  */
 struct mg_connection *mg_connect_http(
-    struct mg_mgr *mgr,
-    MG_CB(mg_event_handler_t event_handler, void *user_data), const char *url,
-    const char *extra_headers, const char *post_data);
+        struct mg_mgr *mgr,
+        MG_CB(mg_event_handler_t event_handler, void *user_data), const char *url,
+        const char *extra_headers, const char *post_data);
 
 /*
  * Helper function that creates an outbound HTTP connection.
@@ -5760,9 +5802,9 @@ struct mg_connection *mg_connect_http(
  * (for example, SSL parameters)
  */
 struct mg_connection *mg_connect_http_opt(
-    struct mg_mgr *mgr, MG_CB(mg_event_handler_t ev_handler, void *user_data),
-    struct mg_connect_opts opts, const char *url, const char *extra_headers,
-    const char *post_data);
+        struct mg_mgr *mgr, MG_CB(mg_event_handler_t ev_handler, void *user_data),
+        struct mg_connect_opts opts, const char *url, const char *extra_headers,
+        const char *post_data);
 
 /* Creates digest authentication header for a client request. */
 int mg_http_create_digest_auth_header(char *buf, size_t buf_len,
@@ -5804,45 +5846,45 @@ int mg_http_create_digest_auth_header(char *buf, size_t buf_len,
 /* Amalgamated: #include "mg_net.h" */
 
 struct mg_mqtt_message {
-  int cmd;
-  int qos;
-  int len; /* message length in the IO buffer */
-  struct mg_str topic;
-  struct mg_str payload;
+        int cmd;
+        int qos;
+        int len; /* message length in the IO buffer */
+        struct mg_str topic;
+        struct mg_str payload;
 
-  uint8_t connack_ret_code; /* connack */
-  uint16_t message_id;      /* puback */
+        uint8_t connack_ret_code; /* connack */
+        uint16_t message_id;      /* puback */
 
-  /* connect */
-  uint8_t protocol_version;
-  uint8_t connect_flags;
-  uint16_t keep_alive_timer;
-  struct mg_str protocol_name;
-  struct mg_str client_id;
-  struct mg_str will_topic;
-  struct mg_str will_message;
-  struct mg_str user_name;
-  struct mg_str password;
+        /* connect */
+        uint8_t protocol_version;
+        uint8_t connect_flags;
+        uint16_t keep_alive_timer;
+        struct mg_str protocol_name;
+        struct mg_str client_id;
+        struct mg_str will_topic;
+        struct mg_str will_message;
+        struct mg_str user_name;
+        struct mg_str password;
 };
 
 struct mg_mqtt_topic_expression {
-  const char *topic;
-  uint8_t qos;
+        const char *topic;
+        uint8_t qos;
 };
 
 struct mg_send_mqtt_handshake_opts {
-  unsigned char flags; /* connection flags */
-  uint16_t keep_alive;
-  const char *will_topic;
-  const char *will_message;
-  const char *user_name;
-  const char *password;
+        unsigned char flags; /* connection flags */
+        uint16_t keep_alive;
+        const char *will_topic;
+        const char *will_message;
+        const char *user_name;
+        const char *password;
 };
 
 /* mg_mqtt_proto_data should be in header to allow external access to it */
 struct mg_mqtt_proto_data {
-  uint16_t keep_alive;
-  double last_control_time;
+        uint16_t keep_alive;
+        double last_control_time;
 };
 
 /* Message types */
@@ -6149,34 +6191,34 @@ extern "C" {
 #define MG_DNS_MESSAGE 100 /* High-level DNS message event */
 
 enum mg_dns_resource_record_kind {
-  MG_DNS_INVALID_RECORD = 0,
-  MG_DNS_QUESTION,
-  MG_DNS_ANSWER
+        MG_DNS_INVALID_RECORD = 0,
+        MG_DNS_QUESTION,
+        MG_DNS_ANSWER
 };
 
 /* DNS resource record. */
 struct mg_dns_resource_record {
-  struct mg_str name; /* buffer with compressed name */
-  int rtype;
-  int rclass;
-  int ttl;
-  enum mg_dns_resource_record_kind kind;
-  struct mg_str rdata; /* protocol data (can be a compressed name) */
+        struct mg_str name; /* buffer with compressed name */
+        int rtype;
+        int rclass;
+        int ttl;
+        enum mg_dns_resource_record_kind kind;
+        struct mg_str rdata; /* protocol data (can be a compressed name) */
 };
 
 /* DNS message (request and response). */
 struct mg_dns_message {
-  struct mg_str pkt; /* packet body */
-  uint16_t flags;
-  uint16_t transaction_id;
-  int num_questions;
-  int num_answers;
-  struct mg_dns_resource_record questions[MG_MAX_DNS_QUESTIONS];
-  struct mg_dns_resource_record answers[MG_MAX_DNS_ANSWERS];
+        struct mg_str pkt; /* packet body */
+        uint16_t flags;
+        uint16_t transaction_id;
+        int num_questions;
+        int num_answers;
+        struct mg_dns_resource_record questions[MG_MAX_DNS_QUESTIONS];
+        struct mg_dns_resource_record answers[MG_MAX_DNS_ANSWERS];
 };
 
 struct mg_dns_resource_record *mg_dns_next_record(
-    struct mg_dns_message *msg, int query, struct mg_dns_resource_record *prev);
+        struct mg_dns_message *msg, int query, struct mg_dns_resource_record *prev);
 
 /*
  * Parses the record data from a DNS resource record.
@@ -6398,10 +6440,10 @@ extern "C" {
 #endif /* __cplusplus */
 
 enum mg_resolve_err {
-  MG_RESOLVE_OK = 0,
-  MG_RESOLVE_NO_ANSWERS = 1,
-  MG_RESOLVE_EXCEEDED_RETRY_COUNT = 2,
-  MG_RESOLVE_TIMEOUT = 3
+        MG_RESOLVE_OK = 0,
+        MG_RESOLVE_NO_ANSWERS = 1,
+        MG_RESOLVE_EXCEEDED_RETRY_COUNT = 2,
+        MG_RESOLVE_TIMEOUT = 3
 };
 
 typedef void (*mg_resolve_callback_t)(struct mg_dns_message *dns_message,
@@ -6409,12 +6451,12 @@ typedef void (*mg_resolve_callback_t)(struct mg_dns_message *dns_message,
 
 /* Options for `mg_resolve_async_opt`. */
 struct mg_resolve_async_opts {
-  const char *nameserver;
-  int max_retries;    /* defaults to 2 if zero */
-  int timeout;        /* in seconds; defaults to 5 if zero */
-  int accept_literal; /* pseudo-resolve literal ipv4 and ipv6 addrs */
-  int only_literal;   /* only resolves literal addrs; sync cb invocation */
-  struct mg_connection **dns_conn; /* return DNS connection */
+        const char *nameserver;
+        int max_retries;    /* defaults to 2 if zero */
+        int timeout;        /* in seconds; defaults to 5 if zero */
+        int accept_literal; /* pseudo-resolve literal ipv4 and ipv6 addrs */
+        int only_literal;   /* only resolves literal addrs; sync cb invocation */
+        struct mg_connection **dns_conn; /* return DNS connection */
 };
 
 /* See `mg_resolve_async_opt()` */

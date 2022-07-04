@@ -31,133 +31,131 @@
 #endif
 #endif
 #ifndef _MSC_VER
+
 #include <unistd.h>
+
 #endif
 
-static off_t fsize(const char *path)
-{
-    struct stat st;
-    if (stat(path, &st) == 0)
-        return st.st_size;
+static off_t fsize(const char *path) {
+        struct stat st;
+        if (stat(path, &st) == 0)
+                return st.st_size;
 
-    return -1;
+        return -1;
 }
 
-int hasconf(char const *path)
-{
-    return !access(path, R_OK);
+int hasconf(char const *path) {
+        return !access(path, R_OK);
 }
 
-char *readconf(char const *path)
-{
-    FILE *fp;
-    char *conf;
-    off_t file_size = fsize(path);
+char *readconf(char const *path) {
+        FILE *fp;
+        char *conf;
+        off_t file_size = fsize(path);
 
-    if (file_size < 0) {
-        fprintf(stderr, "Failed to stat \"%s\"\n", path);
-        return NULL;
-    }
+        if (file_size < 0) {
+                fprintf(stderr, "Failed to stat \"%s\"\n", path);
+                return NULL;
+        }
 
-    fp = fopen(path, "rb");
-    if (fp == NULL) {
-        fprintf(stderr, "Failed to open \"%s\"\n", path);
-        return NULL;
-    }
+        fp = fopen(path, "rb");
+        if (fp == NULL) {
+                fprintf(stderr, "Failed to open \"%s\"\n", path);
+                return NULL;
+        }
 
-    conf = malloc(file_size + 1);
-    if (!conf) {
-        WARN_MALLOC("readconf()");
-        fprintf(stderr, "Failed to allocate memory for \"%s\"\n", path);
+        conf = malloc(file_size + 1);
+        if (!conf) {
+                WARN_MALLOC("readconf()");
+                fprintf(stderr, "Failed to allocate memory for \"%s\"\n", path);
+                fclose(fp);
+                return NULL;
+        }
+
+        off_t n_read = fread(conf, sizeof(char), file_size, fp);
         fclose(fp);
-        return NULL;
-    }
+        if (n_read != file_size) {
+                fprintf(stderr, "Failed to read \"%s\"\n", path);
+                free(conf);
+                return NULL;
+        }
+        conf[file_size] = '\0';
 
-    off_t n_read = fread(conf, sizeof(char), file_size, fp);
-    fclose(fp);
-    if (n_read != file_size) {
-        fprintf(stderr, "Failed to read \"%s\"\n", path);
-        free(conf);
-        return NULL;
-    }
-    conf[file_size] = '\0';
-
-    return conf;
+        return conf;
 }
 
-int getconf(char **conf, struct conf_keywords const keywords[], char **arg)
-{
-    // abort if no conf or EOF
-    if (!conf || !*conf || !**conf)
-        return -1;
+int getconf(char **conf, struct conf_keywords const keywords[], char **arg) {
+        // abort if no conf or EOF
+        if (!conf || !*conf || !**conf)
+                return -1;
 
-    char *p = *conf;
+        char *p = *conf;
 
-    // skip whitespace and comments
-    while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n' || *p == '#')
-        if (*p++ == '#') {
-            while (*p && *p != '\r' && *p != '\n') p++;
-        }
+        // skip whitespace and comments
+        while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n' || *p == '#')
+                if (*p++ == '#') {
+                        while (*p && *p != '\r' && *p != '\n') p++;
+                }
 
-    // abort if EOF
-    if (!*p)
-        return -1;
+        // abort if EOF
+        if (!*p)
+                return -1;
 
-    // parse keyword
-    char *kw = p;
-    while (*p && *p != ' ' && *p != '\t' && *p != '\r' && *p != '\n')
-        p++;
-    if (*p)
-        *p++ = '\0';
-
-    // parse arg
-    while (*p == ' ' || *p == '\t')
-        p++;
-    char *ka = p;
-    if (*p == '{') { // quoted
-        ka = ++p;
-        while (*p) { // skip to end-quote
-            while (*p && *p != '}')
+        // parse keyword
+        char *kw = p;
+        while (*p && *p != ' ' && *p != '\t' && *p != '\r' && *p != '\n')
                 p++;
-            char *e = p; // possible end-quote
-            if (*p)
-                p++;
-            // skip ws
-            while (*p == ' ' || *p == '\t')
-                p++;
-            // check if proper end-quote
-            if (!*p || *p == '\r' || *p == '\n' || *p == '#') {
-                *e = '\0';
-                break;
-            }
-        }
-
-    } else { // not quoted
-        // find end of arg/eol
-        while (*p && *p != '\r' && *p != '\n' && *p != '#')
-            p++;
-        // skip eol comments
-        if (*p == '#') {
-            *p++ = '\0';
-            while (*p && *p != '\r' && *p != '\n')
-                p++;
-        }
         if (*p)
-            *p++ = '\0';
-    }
+                *p++ = '\0';
 
-    // set OUT vars
-    if (arg)
-        *arg = ka;
-    *conf = p;
+        // parse arg
+        while (*p == ' ' || *p == '\t')
+                p++;
+        char *ka = p;
+        if (*p == '{') { // quoted
+                ka = ++p;
+                while (*p) { // skip to end-quote
+                        while (*p && *p != '}')
+                                p++;
+                        char *e = p; // possible end-quote
+                        if (*p)
+                                p++;
+                        // skip ws
+                        while (*p == ' ' || *p == '\t')
+                                p++;
+                        // check if proper end-quote
+                        if (!*p || *p == '\r' || *p == '\n' || *p == '#') {
+                                *e = '\0';
+                                break;
+                        }
+                }
 
-    // decode keyword
-    for (; keywords->keyword; keywords++) {
-        if (!strcmp(keywords->keyword, kw)) {
-            return keywords->key;
+        } else { // not quoted
+                // find end of arg/eol
+                while (*p && *p != '\r' && *p != '\n' && *p != '#')
+                        p++;
+                // skip eol comments
+                if (*p == '#') {
+                        *p++ = '\0';
+                        while (*p && *p != '\r' && *p != '\n')
+                                p++;
+                }
+                if (*p)
+                        *p++ = '\0';
         }
-    }
 
-    fprintf(stderr, "Unknown keyword \"%s\"\n", kw);
-    return '?';
+        // set OUT vars
+        if (arg)
+                *arg = ka;
+        *conf = p;
+
+        // decode keyword
+        for (; keywords->keyword; keywords++) {
+                if (!strcmp(keywords->keyword, kw)) {
+                        return keywords->key;
+                }
+        }
+
+        fprintf(stderr, "Unknown keyword \"%s\"\n", kw);
+        return '?';
 }

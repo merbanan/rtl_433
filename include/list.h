@@ -16,9 +16,9 @@
 
 /// Dynamically growing list, elems is always NULL terminated, call list_ensure_size() to alloc elems.
 typedef struct list {
-    void **elems;
-    size_t size;
-    size_t len;
+        void **elems;
+        size_t size;
+        size_t len;
 } list_t;
 
 typedef void (*list_elem_free_fn)(void *);

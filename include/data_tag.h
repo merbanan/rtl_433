@@ -17,10 +17,10 @@ struct mg_mgr;
 struct data;
 
 typedef struct data_tag {
-    char const *key;
-    char const *val;
-    char const **includes;
-    struct gpsd_client *gpsd_client;
+        char const *key;
+        char const *val;
+        char const **includes;
+        struct gpsd_client *gpsd_client;
 } data_tag_t;
 
 /// Create a data tag. Might fail and return NULL.

@@ -20,22 +20,22 @@
 typedef struct sdr_dev sdr_dev_t;
 
 typedef enum sdr_event_flags {
-    SDR_EV_EMPTY = 0,
-    SDR_EV_DATA = 1 << 0,
-    SDR_EV_RATE = 1 << 1,
-    SDR_EV_CORR = 1 << 2,
-    SDR_EV_FREQ = 1 << 3,
-    SDR_EV_GAIN = 1 << 4,
+        SDR_EV_EMPTY = 0,
+        SDR_EV_DATA = 1 << 0,
+        SDR_EV_RATE = 1 << 1,
+        SDR_EV_CORR = 1 << 2,
+        SDR_EV_FREQ = 1 << 3,
+        SDR_EV_GAIN = 1 << 4,
 } sdr_event_flags_t;
 
 typedef struct sdr_event {
-    sdr_event_flags_t ev;
-    uint32_t sample_rate;
-    int freq_correction;
-    uint32_t center_frequency;
-    char const *gain_str;
-    void *buf;
-    int len;
+        sdr_event_flags_t ev;
+        uint32_t sample_rate;
+        int freq_correction;
+        uint32_t center_frequency;
+        char const *gain_str;
+        void *buf;
+        int len;
 } sdr_event_t;
 
 typedef void (*sdr_event_cb_t)(sdr_event_t *ev, void *ctx);

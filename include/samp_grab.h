@@ -15,15 +15,15 @@
 #include <stdint.h>
 
 typedef struct samp_grab {
-    uint32_t *frequency;
-    uint32_t *samp_rate;
-    int *sample_size;
+        uint32_t *frequency;
+        uint32_t *samp_rate;
+        int *sample_size;
 
-    unsigned sg_counter;
-    char *sg_buf;
-    unsigned sg_size;
-    unsigned sg_index;
-    unsigned sg_len;
+        unsigned sg_counter;
+        char *sg_buf;
+        unsigned sg_size;
+        unsigned sg_index;
+        unsigned sg_len;
 } samp_grab_t;
 
 samp_grab_t *samp_grab_create(unsigned size);

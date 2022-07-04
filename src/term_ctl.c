@@ -12,9 +12,12 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+
 #ifndef _WIN32
+
 #include <unistd.h>
 #include <sys/ioctl.h>
+
 #endif
 
 #include "term_ctl.h"
@@ -166,292 +169,267 @@ static void *_term_init(FILE *fp)
 }
 #endif /* _WIN32 */
 
-int term_get_columns(void *ctx)
-{
+int term_get_columns(void *ctx) {
 #ifdef _WIN32
-    console_t *console = (console_t *)ctx;
-    /*
-     * Call this again as the screen dimensions could have changes since
-     * we called '_term_init()'.
-     */
-    CONSOLE_SCREEN_BUFFER_INFO c_info;
+        console_t *console = (console_t *)ctx;
+        /*
+         * Call this again as the screen dimensions could have changes since
+         * we called '_term_init()'.
+         */
+        CONSOLE_SCREEN_BUFFER_INFO c_info;
 
-    if (!console->hnd || console->hnd == INVALID_HANDLE_VALUE)
-       return (80);
+        if (!console->hnd || console->hnd == INVALID_HANDLE_VALUE)
+           return (80);
 
-    if (!GetConsoleScreenBufferInfo(console->hnd, &c_info))
-       return (80);
-    return (c_info.srWindow.Right - c_info.srWindow.Left + 1);
+        if (!GetConsoleScreenBufferInfo(console->hnd, &c_info))
+           return (80);
+        return (c_info.srWindow.Right - c_info.srWindow.Left + 1);
 #else
-    FILE *fp = (FILE *)ctx;
-    struct winsize w;
-    ioctl(fileno(fp), TIOCGWINSZ, &w);
-    return w.ws_col;
+        FILE *fp = (FILE *) ctx;
+        struct winsize w;
+        ioctl(fileno(fp), TIOCGWINSZ, &w);
+        return w.ws_col;
 #endif
 }
 
-int term_has_color(void *ctx)
-{
+int term_has_color(void *ctx) {
 #ifdef _WIN32
-    return _term_has_color(ctx);
+        return _term_has_color(ctx);
 #else
-    FILE *fp = (FILE *)ctx;
-    return isatty(fileno(fp)); // || get_env("force_color")
+        FILE *fp = (FILE *) ctx;
+        return isatty(fileno(fp)); // || get_env("force_color")
 #endif
 }
 
-void *term_init(FILE *fp)
-{
+void *term_init(FILE *fp) {
 #ifdef _WIN32
-    return _term_init(fp);
+        return _term_init(fp);
 #else
-    return fp;
+        return fp;
 #endif
 }
 
-void term_free(void *ctx)
-{
-    if (!ctx)
-        return;
+void term_free(void *ctx) {
+        if (!ctx)
+                return;
 #ifdef _WIN32
-    _term_free(ctx);
+        _term_free(ctx);
 #else
-    FILE *fp = (FILE *)ctx;
-    if (term_has_color(ctx))
-        fprintf(fp, "\033[0m");
+        FILE *fp = (FILE *) ctx;
+        if (term_has_color(ctx))
+                fprintf(fp, "\033[0m");
 #endif
 }
 
-void term_ring_bell(void *ctx)
-{
+void term_ring_bell(void *ctx) {
 #ifdef _WIN32
-    Beep(800, 20);
-    UNUSED(ctx);
+        Beep(800, 20);
+        UNUSED(ctx);
 #else
-    FILE *fp = (FILE *)ctx;
-    fprintf(fp, "\a");
+        FILE *fp = (FILE *) ctx;
+        fprintf(fp, "\a");
 #endif
 }
 
-void term_set_fg(void *ctx, term_color_t color)
-{
+void term_set_fg(void *ctx, term_color_t color) {
 #ifdef _WIN32
-   _term_set_color(ctx, TRUE, color);
+        _term_set_color(ctx, TRUE, color);
 #else
-    FILE *fp = (FILE *)ctx;
-    if (color == TERM_COLOR_RESET)
-        fprintf(fp, "\033[0m");
-    else
-        fprintf(fp, "\033[%d;1m", color);
+        FILE *fp = (FILE *) ctx;
+        if (color == TERM_COLOR_RESET)
+                fprintf(fp, "\033[0m");
+        else
+                fprintf(fp, "\033[%d;1m", color);
 #endif
 }
 
-void term_set_bg(void *ctx, term_color_t color)
-{
+void term_set_bg(void *ctx, term_color_t color) {
 #ifdef _WIN32
-    _term_set_color(ctx, FALSE, color);
+        _term_set_color(ctx, FALSE, color);
 #else
-    FILE *fp = (FILE *)ctx;
-    if (color == TERM_COLOR_RESET)
-        fprintf(fp, "\033[0m");
-    else
-        fprintf(fp, "\033[%d;1m", color + 10);
+        FILE *fp = (FILE *) ctx;
+        if (color == TERM_COLOR_RESET)
+                fprintf(fp, "\033[0m");
+        else
+                fprintf(fp, "\033[%d;1m", color + 10);
 #endif
 }
 
 #define DIM(array) (int) (sizeof(array) / sizeof(array[0]))
 
 static term_color_t color_map[] = {
-                    TERM_COLOR_RESET,     /* "~0" */
-                    TERM_COLOR_GREEN,
-                    TERM_COLOR_WHITE,     /* "~2" */
-                    TERM_COLOR_BLUE,
-                    TERM_COLOR_CYAN,      /* "~4" */
-                    TERM_COLOR_MAGENTA,
-                    TERM_COLOR_YELLOW,    /* "~6" */
-                    TERM_COLOR_BLACK,
-                    TERM_COLOR_RED,       /* "~8" */
-                  };
+        TERM_COLOR_RESET,     /* "~0" */
+        TERM_COLOR_GREEN,
+        TERM_COLOR_WHITE,     /* "~2" */
+        TERM_COLOR_BLUE,
+        TERM_COLOR_CYAN,      /* "~4" */
+        TERM_COLOR_MAGENTA,
+        TERM_COLOR_YELLOW,    /* "~6" */
+        TERM_COLOR_BLACK,
+        TERM_COLOR_RED,       /* "~8" */
+};
 
-int term_set_color_map(int ascii_idx, term_color_t color)
-{
-    ascii_idx -= '0';
-    if (ascii_idx < 0 || ascii_idx >= DIM(color_map))
+int term_set_color_map(int ascii_idx, term_color_t color) {
+        ascii_idx -= '0';
+        if (ascii_idx < 0 || ascii_idx >= DIM(color_map))
+                return -1;
+        color_map[ascii_idx] = color;
+        return ascii_idx;
+}
+
+int term_get_color_map(int ascii_idx) {
+        int i;
+
+        ascii_idx -= '0';
+        for (i = 0; ascii_idx >= 0 && i < DIM(color_map); i++)
+                if (i == ascii_idx)
+                        return (int) color_map[i];
         return -1;
-    color_map[ascii_idx] = color;
-    return ascii_idx;
 }
 
-int term_get_color_map(int ascii_idx)
-{
-    int i;
+int term_puts(void *ctx, char const *buf) {
+        char const *p = buf;
+        int i, len, buf_len, color;
+        FILE *fp;
 
-    ascii_idx -= '0';
-    for (i = 0; ascii_idx >= 0 && i < DIM(color_map); i++)
-        if (i == ascii_idx)
-           return (int)color_map[i];
-    return -1;
-}
-
-int term_puts(void *ctx, char const *buf)
-{
-    char const *p = buf;
-    int i, len, buf_len, color;
-    FILE *fp;
-
-    if (!ctx)
-        return fprintf(stderr, "%s", buf);
+        if (!ctx)
+                return fprintf(stderr, "%s", buf);
 
 #ifdef _WIN32
-    console_t *console = (console_t *)ctx;
-    fp = console->file;
+        console_t *console = (console_t *)ctx;
+        fp = console->file;
 #else
-    fp = (FILE *)ctx;
+        fp = (FILE *) ctx;
 #endif
 
-    if (!fp)
-        fp = stderr;
+        if (!fp)
+                fp = stderr;
 
-    buf_len = (int)strlen(buf);
-    for (i = len = 0; *p && i < buf_len; i++, p++) {
-        if (*p == '~') {
-            p++;
-            color = ctx ? term_get_color_map(*p) : -1;
-            if (color >= 0)
-                term_set_fg(ctx, (term_color_t)color);
+        buf_len = (int) strlen(buf);
+        for (i = len = 0; *p && i < buf_len; i++, p++) {
+                if (*p == '~') {
+                        p++;
+                        color = ctx ? term_get_color_map(*p) : -1;
+                        if (color >= 0)
+                                term_set_fg(ctx, (term_color_t) color);
+                } else {
+                        fputc(*p, fp);
+                        len++;
+                }
         }
-        else {
-            fputc(*p, fp);
-            len++;
-        }
-    }
-    return len;
+        return len;
 }
 
-int term_printf(void *ctx, _Printf_format_string_ char const *format, ...)
-{
-    int len;
-    va_list args;
-    char buf[4000];
+int term_printf(void *ctx, _Printf_format_string_ char const *format, ...) {
+        int len;
+        va_list args;
+        char buf[4000];
 
-    va_start(args, format);
+        va_start(args, format);
 
-    // Terminate first in case a buggy '_MSC_VER < 1900' is used.
-    buf[sizeof(buf)-1] = '\0';
-    vsnprintf(buf, sizeof(buf)-1, format, args);
-    len = term_puts(ctx, buf);
-    va_end (args);
-    return len;
+        // Terminate first in case a buggy '_MSC_VER < 1900' is used.
+        buf[sizeof(buf) - 1] = '\0';
+        vsnprintf(buf, sizeof(buf) - 1, format, args);
+        len = term_puts(ctx, buf);
+        va_end (args);
+        return len;
 }
 
-int term_help_puts(void *ctx, char const *buf)
-{
-    char const *p = buf;
-    int i, len, buf_len, color, state = 0, set_color = -1, next_color = -1;
-    FILE *fp;
+int term_help_puts(void *ctx, char const *buf) {
+        char const *p = buf;
+        int i, len, buf_len, color, state = 0, set_color = -1, next_color = -1;
+        FILE *fp;
 
-    if (!ctx)
-        return fprintf(stderr, "%s", buf);
+        if (!ctx)
+                return fprintf(stderr, "%s", buf);
 
 #ifdef _WIN32
-    console_t *console = (console_t *)ctx;
-    fp = console->file;
+        console_t *console = (console_t *)ctx;
+        fp = console->file;
 #else
-    fp = (FILE *)ctx;
+        fp = (FILE *) ctx;
 #endif
 
-    if (!fp)
-        fp = stderr;
+        if (!fp)
+                fp = stderr;
 
-    buf_len = (int)strlen(buf);
-    for (i = len = 0; *p && i < buf_len; i++, p++) {
-        if (*p == '~') {
-            p++;
-            color = ctx ? term_get_color_map(*p) : -1;
-            if (color >= 0)
-                term_set_fg(ctx, (term_color_t)color);
-            continue;
-        }
+        buf_len = (int) strlen(buf);
+        for (i = len = 0; *p && i < buf_len; i++, p++) {
+                if (*p == '~') {
+                        p++;
+                        color = ctx ? term_get_color_map(*p) : -1;
+                        if (color >= 0)
+                                term_set_fg(ctx, (term_color_t) color);
+                        continue;
+                }
 
-        if (state == 0 && *p == '[') {
-            state = 1;
-            next_color = 5;
-        }
-        else if ((state == 1 || state == 2) && *p == ']' && ((p[1] == ' ' && p[2] != '|') || p[1] == '\n' || p[1] == '\0')) {
-            state = 0;
-            set_color = 0;
-        }
-        else if (state == 1 && *p == ' ') {
-            state = 2;
-            next_color = 6;
-        }
-        else if (state == 2 && *p == '|') {
-            set_color = 0;
-            next_color = 6;
-        }
+                if (state == 0 && *p == '[') {
+                        state = 1;
+                        next_color = 5;
+                } else if ((state == 1 || state == 2) && *p == ']' &&
+                           ((p[1] == ' ' && p[2] != '|') || p[1] == '\n' || p[1] == '\0')) {
+                        state = 0;
+                        set_color = 0;
+                } else if (state == 1 && *p == ' ') {
+                        state = 2;
+                        next_color = 6;
+                } else if (state == 2 && *p == '|') {
+                        set_color = 0;
+                        next_color = 6;
+                } else if (state == 0 && *p == '=' && p[1] == ' ') {
+                        state = 3;
+                        set_color = 1;
+                } else if (state == 3 && *p == '=') {
+                        state = 0;
+                        next_color = 0;
+                } else if (state == 0 && *p == '\'') {
+                        state = 4;
+                        next_color = 4;
+                } else if (state == 4 && *p == '\'') {
+                        state = 0;
+                        set_color = 0;
+                } else if (state == 0 && *p == '\"') {
+                        state = 5;
+                        set_color = 4;
+                } else if (state == 5 && *p == '\"') {
+                        state = 0;
+                        next_color = 0;
+                }
 
-        else if (state == 0 && *p == '=' && p[1] == ' ') {
-            state = 3;
-            set_color = 1;
-        }
-        else if (state == 3 && *p == '=') {
-            state = 0;
-            next_color = 0;
-        }
+                if (set_color >= 0) {
+                        color = ctx ? (int) color_map[set_color] : -1;
+                        if (color >= 0)
+                                term_set_fg(ctx, (term_color_t) color);
+                }
+                set_color = next_color;
+                next_color = -1;
 
-        else if (state == 0 && *p == '\'') {
-            state = 4;
-            next_color = 4;
+                fputc(*p, fp);
+                len++;
         }
-        else if (state == 4 && *p == '\'') {
-            state = 0;
-            set_color = 0;
-        }
-
-        else if (state == 0 && *p == '\"') {
-            state = 5;
-            set_color = 4;
-        }
-        else if (state == 5 && *p == '\"') {
-            state = 0;
-            next_color = 0;
-        }
-
-        if (set_color >= 0) {
-            color = ctx ? (int)color_map[set_color] : -1;
-            if (color >= 0)
-                term_set_fg(ctx, (term_color_t)color);
-        }
-        set_color = next_color;
-        next_color = -1;
-
-        fputc(*p, fp);
-        len++;
-    }
-    return len;
+        return len;
 }
 
-int term_help_printf(_Printf_format_string_ char const *format, ...)
-{
-    int len;
-    va_list args;
-    char buf[4000];
+int term_help_printf(_Printf_format_string_ char const *format, ...) {
+        int len;
+        va_list args;
+        char buf[4000];
 
-    va_start(args, format);
+        va_start(args, format);
 
-    void *term = term_init(stderr);
-    if (!term_has_color(term)) {
+        void *term = term_init(stderr);
+        if (!term_has_color(term)) {
+                term_free(term);
+                term = NULL;
+        }
+
+        // Terminate first in case a buggy '_MSC_VER < 1900' is used.
+        buf[sizeof(buf) - 1] = '\0';
+        vsnprintf(buf, sizeof(buf) - 1, format, args);
+        len = term_help_puts(term, buf);
+
         term_free(term);
-        term = NULL;
-    }
 
-    // Terminate first in case a buggy '_MSC_VER < 1900' is used.
-    buf[sizeof(buf) - 1] = '\0';
-    vsnprintf(buf, sizeof(buf) - 1, format, args);
-    len = term_help_puts(term, buf);
-
-    term_free(term);
-
-    va_end(args);
-    return len;
+        va_end(args);
+        return len;
 }

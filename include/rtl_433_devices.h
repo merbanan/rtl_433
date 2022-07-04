@@ -227,7 +227,7 @@
     DECL(emos_e6016_rain) \
     DECL(hcs200_fsk) \
 
-    /* Add new decoders here. */
+/* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
 DEVICES

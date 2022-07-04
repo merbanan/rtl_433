@@ -17,8 +17,9 @@
 struct raw_output;
 
 typedef struct raw_output {
-    void (*output_frame)(struct raw_output *output, uint8_t const *data, uint32_t len);
-    void (*output_free)(struct raw_output *output);
+        void (*output_frame)(struct raw_output *output, uint8_t const *data, uint32_t len);
+
+        void (*output_free)(struct raw_output *output);
 } raw_output_t;
 
 void raw_output_frame(struct raw_output *output, uint8_t const *data, uint32_t len);

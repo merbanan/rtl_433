@@ -25,23 +25,23 @@ int term_has_color(void *ctx);
 void term_ring_bell(void *ctx);
 
 typedef enum term_color {
-    TERM_COLOR_RESET          = 0,
-    TERM_COLOR_BLACK          = 30,
-    TERM_COLOR_RED            = 31,
-    TERM_COLOR_GREEN          = 32,
-    TERM_COLOR_YELLOW         = 33,
-    TERM_COLOR_BLUE           = 34,
-    TERM_COLOR_MAGENTA        = 35,
-    TERM_COLOR_CYAN           = 36,
-    TERM_COLOR_WHITE          = 37,
-    TERM_COLOR_BRIGHT_BLACK   = 90,
-    TERM_COLOR_BRIGHT_RED     = 91,
-    TERM_COLOR_BRIGHT_GREEN   = 92,
-    TERM_COLOR_BRIGHT_YELLOW  = 93,
-    TERM_COLOR_BRIGHT_BLUE    = 94,
-    TERM_COLOR_BRIGHT_MAGENTA = 95,
-    TERM_COLOR_BRIGHT_CYAN    = 96,
-    TERM_COLOR_BRIGHT_WHITE   = 97,
+        TERM_COLOR_RESET = 0,
+        TERM_COLOR_BLACK = 30,
+        TERM_COLOR_RED = 31,
+        TERM_COLOR_GREEN = 32,
+        TERM_COLOR_YELLOW = 33,
+        TERM_COLOR_BLUE = 34,
+        TERM_COLOR_MAGENTA = 35,
+        TERM_COLOR_CYAN = 36,
+        TERM_COLOR_WHITE = 37,
+        TERM_COLOR_BRIGHT_BLACK = 90,
+        TERM_COLOR_BRIGHT_RED = 91,
+        TERM_COLOR_BRIGHT_GREEN = 92,
+        TERM_COLOR_BRIGHT_YELLOW = 93,
+        TERM_COLOR_BRIGHT_BLUE = 94,
+        TERM_COLOR_BRIGHT_MAGENTA = 95,
+        TERM_COLOR_BRIGHT_CYAN = 96,
+        TERM_COLOR_BRIGHT_WHITE = 97,
 } term_color_t;
 
 void term_set_fg(void *ctx, term_color_t color);
@@ -72,9 +72,9 @@ void term_set_bg(void *ctx, term_color_t color);
  */
 int term_printf(void *ctx, _Printf_format_string_ const char *format, ...)
 #if defined(__GNUC__) || defined(__clang__)
-        __attribute__((format(printf, 2, 3)))
+__attribute__((format(printf, 2, 3)))
 #endif
-        ;
+;
 
 /**
  * Print to terminal with markup turned into colors.
@@ -88,9 +88,9 @@ int term_printf(void *ctx, _Printf_format_string_ const char *format, ...)
  */
 int term_help_printf(_Printf_format_string_ char const *format, ...)
 #if defined(__GNUC__) || defined(__clang__)
-        __attribute__((format(printf, 1, 2)))
+__attribute__((format(printf, 1, 2)))
 #endif
-        ;
+;
 
 /**
  * Like 'term_printf()', but no var-arg format.

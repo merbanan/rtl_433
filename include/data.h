@@ -22,56 +22,56 @@
 #define INCLUDE_DATA_H_
 
 #if defined _WIN32 || defined __CYGWIN__
-    #if defined data_EXPORTS
-        #define R_API __stdcall __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
-    #elif defined data_IMPORTS
-        #define R_API __stdcall __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
-    #else
-        #define R_API // for static linking
-    #endif
-    #define R_API_CALLCONV __stdcall
+#if defined data_EXPORTS
+#define R_API __stdcall __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+#elif defined data_IMPORTS
+#define R_API __stdcall __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
 #else
-    #if __GNUC__ >= 4
-        #define R_API __attribute__((visibility ("default")))
-    #else
-        #define R_API
-    #endif
-    #define R_API_CALLCONV
+#define R_API // for static linking
+#endif
+#define R_API_CALLCONV __stdcall
+#else
+#if __GNUC__ >= 4
+#define R_API __attribute__((visibility ("default")))
+#else
+#define R_API
+#endif
+#define R_API_CALLCONV
 #endif
 
 #include <stddef.h>
 
 typedef enum {
-    DATA_DATA,   /**< pointer to data is stored */
-    DATA_INT,    /**< pointer to integer is stored */
-    DATA_DOUBLE, /**< pointer to a double is stored */
-    DATA_STRING, /**< pointer to a string is stored */
-    DATA_ARRAY,  /**< pointer to an array of values is stored */
-    DATA_COUNT,  /**< invalid */
-    DATA_FORMAT, /**< indicates the following value is formatted */
-    DATA_COND,   /**< add data only if condition is true, skip otherwise */
+        DATA_DATA,   /**< pointer to data is stored */
+        DATA_INT,    /**< pointer to integer is stored */
+        DATA_DOUBLE, /**< pointer to a double is stored */
+        DATA_STRING, /**< pointer to a string is stored */
+        DATA_ARRAY,  /**< pointer to an array of values is stored */
+        DATA_COUNT,  /**< invalid */
+        DATA_FORMAT, /**< indicates the following value is formatted */
+        DATA_COND,   /**< add data only if condition is true, skip otherwise */
 } data_type_t;
 
 typedef struct data_array {
-    int         num_values;
-    data_type_t type;
-    void        *values;
+        int num_values;
+        data_type_t type;
+        void *values;
 } data_array_t;
 
 typedef union data_value {
-    int         v_int;
-    double      v_dbl;
-    void        *v_ptr;
+        int v_int;
+        double v_dbl;
+        void *v_ptr;
 } data_value_t;
 
 typedef struct data {
-    char        *key;
-    char        *pretty_key; /**< the name used for displaying data to user in with a nicer name */
-    data_type_t type;
-    char        *format; /**< if not null, contains special formatting string */
-    data_value_t value;
-    unsigned    retain; /**< incremented on data_retain, data_free only frees if this is zero */
-    struct data *next; /**< chaining to the next element in the linked list; NULL indicates end-of-list */
+        char *key;
+        char *pretty_key; /**< the name used for displaying data to user in with a nicer name */
+        data_type_t type;
+        char *format; /**< if not null, contains special formatting string */
+        data_value_t value;
+        unsigned retain; /**< incremented on data_retain, data_free only frees if this is zero */
+        struct data *next; /**< chaining to the next element in the linked list; NULL indicates end-of-list */
 } data_t;
 
 /** Constructs a structured data object.
@@ -142,14 +142,21 @@ R_API void data_free(data_t *data);
 struct data_output;
 
 typedef struct data_output {
-    void (R_API_CALLCONV *print_data)(struct data_output *output, data_t *data, char const *format);
-    void (R_API_CALLCONV *print_array)(struct data_output *output, data_array_t *data, char const *format);
-    void (R_API_CALLCONV *print_string)(struct data_output *output, const char *data, char const *format);
-    void (R_API_CALLCONV *print_double)(struct data_output *output, double data, char const *format);
-    void (R_API_CALLCONV *print_int)(struct data_output *output, int data, char const *format);
-    void (R_API_CALLCONV *output_start)(struct data_output *output, char const *const *fields, int num_fields);
-    void (R_API_CALLCONV *output_flush)(struct data_output *output);
-    void (R_API_CALLCONV *output_free)(struct data_output *output);
+        void (R_API_CALLCONV *print_data)(struct data_output *output, data_t *data, char const *format);
+
+        void (R_API_CALLCONV *print_array)(struct data_output *output, data_array_t *data, char const *format);
+
+        void (R_API_CALLCONV *print_string)(struct data_output *output, const char *data, char const *format);
+
+        void (R_API_CALLCONV *print_double)(struct data_output *output, double data, char const *format);
+
+        void (R_API_CALLCONV *print_int)(struct data_output *output, int data, char const *format);
+
+        void (R_API_CALLCONV *output_start)(struct data_output *output, char const *const *fields, int num_fields);
+
+        void (R_API_CALLCONV *output_flush)(struct data_output *output);
+
+        void (R_API_CALLCONV *output_free)(struct data_output *output);
 } data_output_t;
 
 /** Setup known field keys and start output, used by CSV only.

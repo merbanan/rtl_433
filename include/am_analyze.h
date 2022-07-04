@@ -18,25 +18,25 @@
 #define PULSE_DATA_SIZE 4000 /* maximum number of pulses */
 
 typedef struct am_analyze {
-    int level_limit;
-    int override_short;
-    int override_long;
-    uint32_t *frequency;
-    uint32_t *samp_rate;
-    int *sample_size;
+        int level_limit;
+        int override_short;
+        int override_long;
+        uint32_t *frequency;
+        uint32_t *samp_rate;
+        int *sample_size;
 
-    /* state */
-    unsigned counter;
-    unsigned print;
-    unsigned print2;
-    unsigned pulses_found;
-    unsigned prev_pulse_start;
-    unsigned pulse_start;
-    unsigned pulse_end;
-    unsigned pulse_avg;
-    unsigned signal_start;
-    unsigned signal_pulse_counter;
-    unsigned signal_pulse_data[4000][3];
+        /* state */
+        unsigned counter;
+        unsigned print;
+        unsigned print2;
+        unsigned pulses_found;
+        unsigned prev_pulse_start;
+        unsigned pulse_start;
+        unsigned pulse_end;
+        unsigned pulse_avg;
+        unsigned signal_start;
+        unsigned signal_pulse_counter;
+        unsigned signal_pulse_data[4000][3];
 } am_analyze_t;
 
 /// Create an AM-Analyzer. Might fail and return NULL.

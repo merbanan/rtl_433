@@ -17,48 +17,48 @@
 #include "compat_time.h"
 
 struct dm_state {
-    float auto_level;
-    float squelch_offset;
-    float level_limit;
-    float noise_level;
-    float min_level_auto;
-    float min_level;
-    float min_snr;
-    float low_pass;
-    int use_mag_est;
-    int detect_verbosity;
+        float auto_level;
+        float squelch_offset;
+        float level_limit;
+        float noise_level;
+        float min_level_auto;
+        float min_level;
+        float min_snr;
+        float low_pass;
+        int use_mag_est;
+        int detect_verbosity;
 
-    int16_t am_buf[MAXIMAL_BUF_LENGTH];  // AM demodulated signal (for OOK decoding)
-    union {
-        // These buffers aren't used at the same time, so let's use a union to save some memory
-        int16_t fm[MAXIMAL_BUF_LENGTH];  // FM demodulated signal (for FSK decoding)
-        uint16_t temp[MAXIMAL_BUF_LENGTH];  // Temporary buffer (to be optimized out..)
-    } buf;
-    uint8_t u8_buf[MAXIMAL_BUF_LENGTH]; // format conversion buffer
-    float f32_buf[MAXIMAL_BUF_LENGTH]; // format conversion buffer
-    int sample_size; // CU8: 2, CS16: 4
-    pulse_detect_t *pulse_detect;
-    filter_state_t lowpass_filter_state;
-    demodfm_state_t demod_FM_state;
-    int enable_FM_demod;
-    unsigned fsk_pulse_detect_mode;
-    unsigned frequency;
-    samp_grab_t *samp_grab;
-    am_analyze_t *am_analyze;
-    int analyze_pulses;
-    file_info_t load_info;
-    list_t dumper;
+        int16_t am_buf[MAXIMAL_BUF_LENGTH];  // AM demodulated signal (for OOK decoding)
+        union {
+                // These buffers aren't used at the same time, so let's use a union to save some memory
+                int16_t fm[MAXIMAL_BUF_LENGTH];  // FM demodulated signal (for FSK decoding)
+                uint16_t temp[MAXIMAL_BUF_LENGTH];  // Temporary buffer (to be optimized out..)
+        } buf;
+        uint8_t u8_buf[MAXIMAL_BUF_LENGTH]; // format conversion buffer
+        float f32_buf[MAXIMAL_BUF_LENGTH]; // format conversion buffer
+        int sample_size; // CU8: 2, CS16: 4
+        pulse_detect_t *pulse_detect;
+        filter_state_t lowpass_filter_state;
+        demodfm_state_t demod_FM_state;
+        int enable_FM_demod;
+        unsigned fsk_pulse_detect_mode;
+        unsigned frequency;
+        samp_grab_t *samp_grab;
+        am_analyze_t *am_analyze;
+        int analyze_pulses;
+        file_info_t load_info;
+        list_t dumper;
 
-    /* Protocol states */
-    list_t r_devs;
+        /* Protocol states */
+        list_t r_devs;
 
-    pulse_data_t    pulse_data;
-    pulse_data_t    fsk_pulse_data;
-    unsigned frame_event_count;
-    unsigned frame_start_ago;
-    unsigned frame_end_ago;
-    struct timeval now;
-    float sample_file_pos;
+        pulse_data_t pulse_data;
+        pulse_data_t fsk_pulse_data;
+        unsigned frame_event_count;
+        unsigned frame_start_ago;
+        unsigned frame_end_ago;
+        struct timeval now;
+        float sample_file_pos;
 };
 
 #endif /* INCLUDE_R_PRIVATE_H_ */

@@ -18,10 +18,10 @@
 #include "compat_time.h"
 
 #if defined _MSC_VER || defined ESP32 // Microsoft Visual Studio or ESP32
-    // MSC and ESP32 have something like C99 restrict as __restrict
-    #ifndef restrict
-    #define restrict  __restrict
-    #endif
+// MSC and ESP32 have something like C99 restrict as __restrict
+#ifndef restrict
+#define restrict  __restrict
+#endif
 #endif
 
 // buffer to hold localized timestamp "YYYY-MM-DD HH:MM:SS.000000+0000"
@@ -162,6 +162,6 @@ char *str_replace(char const *orig, char const *rep, char const *with);
 
     @param freq the frequency to convert to a string.
 */
-char const *nice_freq (double freq);
+char const *nice_freq(double freq);
 
 #endif /* INCLUDE_R_UTIL_H_ */

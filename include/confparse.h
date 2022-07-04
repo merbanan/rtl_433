@@ -13,8 +13,8 @@
 #define INCLUDE_CONFPARSE_H_
 
 struct conf_keywords {
-    char const *keyword;
-    int key;
+        char const *keyword;
+        int key;
 };
 
 /** Check if a file exists and can be read.
