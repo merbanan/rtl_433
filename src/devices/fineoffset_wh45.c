@@ -38,6 +38,27 @@ Packet layout:
 - X: 8 bit CRC
 - A: 8 bit checksum
 
+Older air quality sensors (WH0290/WH41/WH43) from Fine Offset use a
+particulate sensor from Honeywell that crudely estimates PM10 values
+from PM2.5 measurements. Though Ecowitt and other displays only show
+PM2.5, the rtl_433 WH0290 decoder includes the estimated PM10 value.
+See the WH0290 decoder for more details.
+
+The WH45 uses a Sensirion SPS30 sensor for PM2.5/PM10 and a
+Sensirion SCD30 for CO2.
+
+Technical documents for the SPS30 are here:
+
+https://sensirion.com/products/catalog/SPS30
+
+The sensor specification statement states that PM10 values are estimated
+from distribution profiles of PM0.5, PM1.0, and PM2.5 measurements, but
+the datasheet does a specify a degree of accuracy for the values unlike
+the Honeywell sensor.
+
+Technical documents for the SCD30 are here:
+
+https://sensirion.com/products/catalog/SCD30/
 */
 
 static int fineoffset_wh45_decode(r_device *decoder, bitbuffer_t *bitbuffer)
