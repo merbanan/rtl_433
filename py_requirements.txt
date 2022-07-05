@@ -1,0 +1,8 @@
+Cython==0.29.30
+dbus-python==1.2.16
+ipython==8.4.0
+ooktools==1.4
+PyGObject==3.36.0
+PyOpenGL==3.1.0
+pyusb==1.2.1
+rfcat==1.9.5

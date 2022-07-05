@@ -1,0 +1,4 @@
+pkg-congig
+LibRTLSDR
+LibUSB
+dbus-1

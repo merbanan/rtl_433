@@ -15,6 +15,8 @@
 import dbus
 import dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
+from rf_sender import *
+import time
 
 DBusGMainLoop(set_as_default=True)
 OPATH = "/org/autosec/PuckBitsReceiver"
@@ -160,6 +162,7 @@ class PuckBitsReceiver(dbus.service.Object):
         #
         # perform bit operations
         #
-        #
+        
+
         print(bits)
         return bits
