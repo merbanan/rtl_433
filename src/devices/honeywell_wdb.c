@@ -77,8 +77,8 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    device = bytes[0] << 12 | bytes[1] << 4 | (bytes[2]&0xF);
-    tmp = (bytes[3]&0x30) >> 4;
+    device = bytes[0] << 12 | bytes[1] << 4 | (bytes[2] >> 4);
+    tmp = (bytes[3] & 0x30) >> 4;
     switch (tmp) {
     case 0x1: class = "PIR-Motion"; break;
     case 0x2: class = "Doorbell"; break;
@@ -92,9 +92,9 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     case 0x3: alert = "Full"; break;
     default: alert = "Unknown"; break;
     }
-    secret_knock = (bytes[5]&0x10) >> 4;
-    relay = (bytes[5]&0x8) >> 3;
-    battery = (bytes[5]&0x2) >> 1;
+    secret_knock = (bytes[5] & 0x10) >> 4;
+    relay = (bytes[5] & 0x8) >> 3;
+    battery = (bytes[5] & 0x2) >> 1;
 
     /* clang-format off */
     data = data_make(
