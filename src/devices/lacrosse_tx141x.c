@@ -18,6 +18,7 @@ Also TFA 30.3221.02 (a TX141TH-Bv2),
 also TFA 30.3222.02 (a LaCrosse-TX141W).
 also TFA 30.3251.10 (a LaCrosse-TX141W).
 also some rebrand (ORIA WA50B) with a slightly longer timing, s.a. #2088
+also TFA 30.3243.02 (a LaCrosse-TX141Bv3)
 
 LaCrosse Color Forecast Station (model C85845), or other LaCrosse product
 utilizing the remote temperature/humidity sensor TX141TH-Bv2 transmitting
@@ -326,7 +327,7 @@ static char *output_fields[] = {
 
 // note TX141W, TX145wsdth: m=OOK_PWM, s=256, l=500, r=1888, y=748
 r_device lacrosse_tx141x = {
-        .name        = "LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX141W, TX145wsdth sensor",
+        .name        = "LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX141W, TX145wsdth, (TFA, ORIA) sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 208,  // short pulse is 208 us + 417 us gap
         .long_width  = 417,  // long pulse is 417 us + 208 us gap
