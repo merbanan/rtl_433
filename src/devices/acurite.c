@@ -996,6 +996,13 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 valid++;
             }
             else if (message_type == ACURITE_MSGTYPE_RAINFALL) {
+                // If the row is missing zeros, it can still pass the checksum.
+                // The earlier length check passes as ACURITE_TXR_BITLEN is 56.
+                if (browlen < 8) {
+                    decoder_log(decoder, 2, __func__, "skipping wrong len");
+                    continue;
+                } // DECODE_ABORT_LENGTH
+
                 // Rain Fall Gauge 899
                 // The high 2 bits of byte zero are the channel (bits 7,6), 00 = A, 01 = B, 10 = C
                 int channel = bb[0] >> 6;
