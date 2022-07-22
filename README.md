@@ -90,7 +90,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
 
 		= Supported device protocols =
     [01]  Silvercrest Remote Control
-    [02]  Rubicson Temperature Sensor
+    [02]  Rubicson or InFactory PT-310 Temperature Sensor
     [03]  Prologue, FreeTec NC-7104, NC-7159-675 temperature sensor
     [04]  Waveman Switch Transmitter
     [06]* ELV EM 1000
