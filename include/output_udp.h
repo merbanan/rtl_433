@@ -15,5 +15,6 @@
 #include "data.h"
 
 struct data_output *data_output_syslog_create(const char *host, const char *port);
+struct data_output *data_output_statsd_create(const char *host, const char *port);
 
 #endif /* INCLUDE_OUTPUT_UDP_H_ */
