@@ -996,9 +996,9 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 valid++;
             }
             else if (message_type == ACURITE_MSGTYPE_RAINFALL) {
-                // If the row is missing zeros, it can still pass the checksum.
-                // The earlier length check passes as ACURITE_TXR_BITLEN is 56.
-                if (browlen < 8) {
+                // The earlier length check passes as ACURITE_TXR_BITLEN is 56
+                // bits / 7 bytes. This message type is always 8 bytes.
+                if (browlen != 8) {
                     decoder_log(decoder, 2, __func__, "skipping wrong len");
                     continue;
                 } // DECODE_ABORT_LENGTH
