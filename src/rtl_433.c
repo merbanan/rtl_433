@@ -176,7 +176,7 @@ static void usage(int exit_code)
             "  [-F kv | json | csv | mqtt | influx | syslog | trigger | null | help] Produce decoded output in given format.\n"
             "       Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "       Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
-            "  [-M time[:<options>] | protocol | level | noise[:secs] | stats | bits | help] Add various meta data to each output.\n"
+            "  [-M time[:<options>] | protocol | level | noise[:<secs>] | stats | bits | help] Add various meta data to each output.\n"
             "  [-K FILE | PATH | <tag> | <key>=<tag>] Add an expanded token or fixed tag to every output line.\n"
             "  [-C native | si | customary] Convert units in decoded output.\n"
             "  [-n <value>] Specify number of samples to take (each sample is an I/Q pair)\n"
@@ -310,7 +310,7 @@ static void help_meta(void)
             "\tUse \"replay[:N]\" to replay file inputs at (N-times) realtime.\n"
             "\tUse \"protocol\" / \"noprotocol\" to output the decoder protocol number meta data.\n"
             "\tUse \"level\" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.\n"
-            "\tUse \"noise[:secs]\" to report estimated noise level at intervals (default: 10 seconds).\n"
+            "\tUse \"noise[:<secs>]\" to report estimated noise level at intervals (default: 10 seconds).\n"
             "\tUse \"stats[:[<level>][:<interval>]]\" to report statistics (default: 600 seconds).\n"
             "\t  level 0: no report, 1: report successful devices, 2: report active devices, 3: report all\n"
             "\tUse \"bits\" to add bit representation to code outputs (for debug).\n");

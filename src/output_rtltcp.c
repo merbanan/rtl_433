@@ -490,6 +490,15 @@ struct raw_output *raw_output_rtltcp_create(const char *host, const char *port, 
         WARN_CALLOC("raw_output_rtltcp_create()");
         return NULL; // NOTE: returns NULL on alloc failure.
     }
+#ifdef _WIN32
+    WSADATA wsa;
+
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+        perror("WSAStartup()");
+        free(rtltcp);
+        return NULL;
+    }
+#endif
 
     rtltcp->output.output_frame  = raw_output_rtltcp_frame;
     rtltcp->output.output_free   = raw_output_rtltcp_free;
