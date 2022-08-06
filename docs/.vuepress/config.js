@@ -32,6 +32,7 @@ module.exports = {
     sidebar: [
       { text: 'Overview', link: '/' },
       'BUILDING',
+      'STARTING',
       'CHANGELOG',
       'CONTRIBUTING',
       'PRIMER',

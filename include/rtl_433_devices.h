@@ -227,6 +227,8 @@
     DECL(emos_e6016_rain) \
     DECL(hcs200_fsk) \
     DECL(fineoffset_wh45) \
+    DECL(maverick_xr30) \
+    DECL(elv_ws2000_combo) \
     DECL(fineoffset_wn34) \
 
     /* Add new decoders here. */

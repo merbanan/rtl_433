@@ -77,7 +77,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-F kv | json | csv | mqtt | influx | syslog | trigger | null | help] Produce decoded output in given format.
        Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
-  [-M time[:<options>] | protocol | level | noise[:secs] | stats | bits | help] Add various meta data to each output.
+  [-M time[:<options>] | protocol | level | noise[:<secs>] | stats | bits | help] Add various meta data to each output.
   [-K FILE | PATH | <tag> | <key>=<tag>] Add an expanded token or fixed tag to every output line.
   [-C native | si | customary] Convert units in decoded output.
   [-n <value>] Specify number of samples to take (each sample is an I/Q pair)
@@ -302,7 +302,9 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [217]  EMOS E6016 rain gauge
     [218]  Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes (FSK)
     [219]  Fine Offset Electronics WH45 air quality sensor
-    [220]  Fine Offset Electronics WN34 temperature sensor
+    [220]  Maverick XR-30 BBQ Sensor
+    [221]  ELV WS 2000
+    [222]  Fine Offset Electronics WN34 temperature sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -422,7 +424,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	Use "replay[:N]" to replay file inputs at (N-times) realtime.
 	Use "protocol" / "noprotocol" to output the decoder protocol number meta data.
 	Use "level" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.
-	Use "noise[:secs]" to report estimated noise level at intervals (default: 10 seconds).
+	Use "noise[:<secs>]" to report estimated noise level at intervals (default: 10 seconds).
 	Use "stats[:[<level>][:<interval>]]" to report statistics (default: 600 seconds).
 	  level 0: no report, 1: report successful devices, 2: report active devices, 3: report all
 	Use "bits" to add bit representation to code outputs (for debug).
