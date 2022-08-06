@@ -94,6 +94,7 @@ struct flex_params {
     uint8_t preamble_bits[128];
     struct flex_get getter[GETTER_SLOTS];
     unsigned decode_uart;
+    char const *fields[7 + GETTER_SLOTS + 1]; // NOTE: needs to match output_fields
 };
 
 static void print_row_bytes(char *row_bytes, uint8_t *bits, int num_bits)
@@ -313,6 +314,8 @@ static char *output_fields[] = {
         "num_rows",
         "rows",
         "codes",
+        // "len", // unique only
+        // "data", // unique only
         NULL,
 };
 
@@ -640,6 +643,20 @@ r_device *flex_create_device(char *spec)
 
     if (params->min_bits > 0 && params->min_repeats < 1)
         params->min_repeats = 1;
+
+    // add getter fields if unique requested
+    if (params->unique) {
+        int i = 0;
+        for (int f = 0; output_fields[f]; ++f) {
+            params->fields[i++] = output_fields[f];
+        }
+        params->fields[i++] = "len";
+        params->fields[i++] = "data";
+        for (int g = 0; g < GETTER_SLOTS && params->getter[g].name; ++g) {
+            params->fields[i++] = params->getter[g].name;
+        }
+        dev->fields = (char **)params->fields;
+    }
 
     // sanity checks
 

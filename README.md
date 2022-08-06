@@ -155,7 +155,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [70]  Honeywell Door/Window Sensor, 2Gig DW10/DW11, RE208 repeater
     [71]  Maverick ET-732/733 BBQ Sensor
     [72]* RF-tech
-    [73]  LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX141W, TX145wsdth sensor
+    [73]  LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX141W, TX145wsdth, (TFA, ORIA) sensor
     [74]  Acurite 00275rm,00276rm Temp/Humidity with optional probe
     [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
     [76]  LaCrosse TX29IT, TFA Dostmann 30.3159.IT Temperature sensor
@@ -301,6 +301,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [216]* ANT and ANT+ devices
     [217]  EMOS E6016 rain gauge
     [218]  Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes (FSK)
+    [219]  Fine Offset Electronics WH45 air quality sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
