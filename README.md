@@ -303,6 +303,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [218]  Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes (FSK)
     [219]  Fine Offset Electronics WH45 air quality sensor
     [220]  Maverick XR-30 BBQ Sensor
+    [221]  Fine Offset Electronics WN34 temperature sensor
 
 * Disabled by default, use -R n or a conf file to enable
 

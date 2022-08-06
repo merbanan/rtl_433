@@ -228,6 +228,7 @@
     DECL(hcs200_fsk) \
     DECL(fineoffset_wh45) \
     DECL(maverick_xr30) \
+    DECL(fineoffset_wn34) \
 
     /* Add new decoders here. */
 
