@@ -129,7 +129,7 @@ Produce decoded output in given format.
        Append output to file with :<filename> (e.g. \-F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. \-F syslog:127.0.0.1:1514
 .TP
-[ \fB\-M\fI time[:<options>] | protocol | level | noise[:secs] | stats | bits | help\fP ]
+[ \fB\-M\fI time[:<options>] | protocol | level | noise[:<secs>] | stats | bits | help\fP ]
 Add various meta data to each output.
 .TP
 [ \fB\-K\fI FILE | PATH | <tag> | <key>=<tag>\fP ]
@@ -412,7 +412,7 @@ Use "protocol" / "noprotocol" to output the decoder protocol number meta data.
 Use "level" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.
 .RE
 .RS
-Use "noise[:secs]" to report estimated noise level at intervals (default: 10 seconds).
+Use "noise[:<secs>]" to report estimated noise level at intervals (default: 10 seconds).
 .RE
 .RS
 Use "stats[:[<level>][:<interval>]]" to report statistics (default: 600 seconds).
