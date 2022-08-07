@@ -90,7 +90,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
 
 		= Supported device protocols =
     [01]  Silvercrest Remote Control
-    [02]  Rubicson Temperature Sensor
+    [02]  Rubicson, TFA 30.3197 or InFactory PT-310 Temperature Sensor
     [03]  Prologue, FreeTec NC-7104, NC-7159-675 temperature sensor
     [04]  Waveman Switch Transmitter
     [06]* ELV EM 1000
@@ -304,7 +304,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [219]  Fine Offset Electronics WH45 air quality sensor
     [220]  Maverick XR-30 BBQ Sensor
     [221]  Fine Offset Electronics WN34 temperature sensor
-    [222]  Rubicson pool thermometer 48942
+    [222]  Rubicson Pool Thermometer 48942
 
 * Disabled by default, use -R n or a conf file to enable
 
