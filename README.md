@@ -305,6 +305,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [220]  Maverick XR-30 BBQ Sensor
     [221]  Fine Offset Electronics WN34 temperature sensor
     [222]  Rubicson Pool Thermometer 48942
+    [223]  Badger ORION water meter, 100kbps (-f 916450000 -s 1200000)
 
 * Disabled by default, use -R n or a conf file to enable
 

@@ -230,6 +230,7 @@
     DECL(maverick_xr30) \
     DECL(fineoffset_wn34) \
     DECL(rubicson_pool_48942) \
+    DECL(badger_orion) \
 
     /* Add new decoders here. */
 
