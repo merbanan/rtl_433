@@ -226,6 +226,10 @@
     DECL(ant_antplus) \
     DECL(emos_e6016_rain) \
     DECL(hcs200_fsk) \
+    DECL(fineoffset_wh45) \
+    DECL(maverick_xr30) \
+    DECL(fineoffset_wn34) \
+    DECL(rubicson_pool_48942) \
     DECL(badger_orion) \
 
     /* Add new decoders here. */

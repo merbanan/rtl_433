@@ -1,5 +1,5 @@
 /** @file
-    Rubicson temperature sensor.
+    Rubicson or InFactory PT-310 temperature sensor.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -11,6 +11,10 @@
 Rubicson temperature sensor.
 
 Also older TFA 30.3197 sensors.
+
+Also InFactory PT-310 pool temperature sensor (AKA ZX-7074/7073). This device
+has longer packet lengths of 37 or 38 bits but is otherwise compatible. See more at
+https://github.com/merbanan/rtl_433/issues/2119
 
 The sensor sends 12 packets of  36 bits pwm modulated data.
 
@@ -26,7 +30,7 @@ data is grouped into 9 nibbles
 - F is always 0xf
 - crc1 and crc2 forms a 8-bit crc, polynomial 0x31, initial value 0x6c, final value 0x0
 
-The sensor can be bought at Kjell&Co
+The sensor can be bought at Kjell&Co. The Infactory pool sensor can be bought at Pearl.
 */
 
 #include "decoder.h"
@@ -60,7 +64,8 @@ static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     b = bitbuffer->bb[r];
 
-    if (bitbuffer->bits_per_row[r] != 36)
+    // Infactory devices report 38 (or for last repetition) 37 bits
+    if (bitbuffer->bits_per_row[r] < 36 || bitbuffer->bits_per_row[r] > 38)
         return DECODE_ABORT_LENGTH;
 
     if ((b[3] & 0xf0) != 0xf0)
@@ -102,7 +107,7 @@ static char *output_fields[] = {
 
 // timings based on samp_rate=1024000
 r_device rubicson = {
-        .name        = "Rubicson Temperature Sensor",
+        .name        = "Rubicson, TFA 30.3197 or InFactory PT-310 Temperature Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1000, // Gaps:  Short 976us, Long 1940us, Sync 4000us
         .long_width  = 2000, // Pulse: 500us (Initial pulse in each package is 388us)
