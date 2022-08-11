@@ -17,14 +17,16 @@ RFXMeter is using X10RF-like frame with some variations.
 The data has the same meaning and order as through RFXCom (RFXtrx).
 
 The device uses PPM encoding,
-- 0 is encoded as 1 ms pulse and 1 ms gap,
-- 1 is encoded as 1 ms pulse and 3 ms gap.
-A packet starts with a 18 ms pulse, followed by a 8 ms gap us pulse.
+- 0 is encoded as 0.5 ms pulse and 0.5 ms gap (1 ms pulse and 1 ms gap),
+- 1 is encoded as 0.5 ms pulse and 1.5 ms gap (1 ms pulse and 3 ms gap).
+A packet starts with a 9 ms pulse, followed by a 4 ms gap us pulse.
+(A packet starts with a 18 ms pulse, followed by a 8 ms gap us pulse.)
 
 Packet is 165 ms long, message is 139 ms long.
 Packet is repeated 4 times for each address.
 
-There is 70 ms between each packet.
+There is 38 ms between each packet.
+(There is 70 ms between each packet.)
 Message ends with a 0 (10 then). True? (Or is it 1000 => 141 and 167 ms long and then 68 ms between packets).
 
 A message is 48-byte long.
@@ -35,7 +37,7 @@ A message is 48-byte long.
      7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0
      4               4                   3                   2                   1
      7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-     < - - - - - - address - - - - > < - - - - - - - - counter value - - - - - - - > < - - > <parity>
+     < - - - - - - address - - - - > < - - - - - - - - counter value - - - - - - - > < - - > <checksum>
                                      1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 2 2 2 2 1 1 1 1    |
                                      5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 3 2 1 0 9 8 7 6    packettype
 
@@ -67,34 +69,39 @@ Type of packets:
               0xC0 - 0xFF = RFXMeter
       Byte 3 = time interval (see packet type 0001)
 
-The 4 bits for parity are computed as nibble sum over the whole message.
+The 4 bit checksum is a nibble sum over the whole message.
 
+-X 'n=RFXMeter,m=OOK_PPM,s=500,l=1500,g=2500,r=5000'
 */
 
 #include "decoder.h"
 
 static int rfxmeter_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    // All RfxMeter packets have one row.
-    if (bitbuffer->num_rows != 1) {
+    // All RfxMeter packets have one row, but a sync might be first
+    if (bitbuffer->num_rows != 1 && bitbuffer->num_rows != 2) {
+        decoder_logf(decoder, 2, __func__, "Too many rows");
         return DECODE_ABORT_LENGTH;
     }
 
     // All RfxMeter packets have 48 bits.
-    if (bitbuffer->bits_per_row[0] != 48) {
+    if (bitbuffer->bits_per_row[bitbuffer->num_rows - 1] != 48) {
+        decoder_logf(decoder, 2, __func__, "Expected 48 bits got %u bits", bitbuffer->bits_per_row[bitbuffer->num_rows - 1]);
         return DECODE_ABORT_LENGTH;
     }
 
-    uint8_t *b = bitbuffer->bb[0];
+    uint8_t *b = bitbuffer->bb[bitbuffer->num_rows - 1];
 
     // Check address complement
-    if ((b[0] ^ b[1]) != 0) {
+    if ((b[0] ^ 0xf0) !=  b[1]) {
+        decoder_logf_bitrow(decoder, 1, __func__, b, 48, "Address error");
         return DECODE_FAIL_SANITY;
     }
 
     // Check message parity
     int chk = add_nibbles(b, 6);
-    if (chk != 0) {
+    if ((chk & 0x0f) != 0x0f) {
+        decoder_logf_bitrow(decoder, 1, __func__, b, 48, "Checksum error");
         return DECODE_FAIL_MIC;
     }
 
@@ -133,9 +140,10 @@ static char *output_fields[] = {
 r_device rfxmeter = {
         .name        = "RfxMeter, RFXPwr",
         .modulation  = OOK_PULSE_PPM,
-        .short_width = 1000,
-        .long_width  = 3000,
-        .reset_limit = 4000,
+        .short_width = 500,
+        .long_width  = 1500,
+        .gap_limit   = 2500,
+        .reset_limit = 5000,
         .decode_fn   = &rfxmeter_decode,
         .fields      = output_fields,
 };
