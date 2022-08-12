@@ -177,6 +177,9 @@ void pulse_data_print_pulse_header(FILE *file)
 
 void pulse_data_dump(FILE *file, pulse_data_t *data)
 {
+    char time_str[LOCAL_TIME_BUFLEN];
+
+    chk_ret(fprintf(file, ";received %s\n", format_time_str(time_str, NULL, 1, 0)));
     if (data->fsk_f2_est) {
         chk_ret(fprintf(file, ";fsk %u pulses\n", data->num_pulses));
         chk_ret(fprintf(file, ";freq1 %.0f\n", data->freq1_hz));
