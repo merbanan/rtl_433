@@ -306,6 +306,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [221]  Fine Offset Electronics WN34 temperature sensor
     [222]  Rubicson Pool Thermometer 48942
     [223]  Badger ORION water meter, 100kbps (-f 916450000 -s 1200000)
+    [224]  SRSmith Pool Light Remote Control SRS-2C-TX (-f 915000000)
 
 * Disabled by default, use -R n or a conf file to enable
 
