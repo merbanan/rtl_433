@@ -197,7 +197,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, ubuntu-18.04]
+        os: [ubuntu-20.04, ubuntu-22.04]
     runs-on: ${{ matrix.os }}
     name: Build with CMake on ${{ matrix.os }}
     steps:
@@ -223,7 +223,7 @@ jobs:
     if: ${{ false }}  # disable for now
     needs: release_job
     # The host should always be Linux
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       # jessie, ubuntu16.04 has no SoapySDR
