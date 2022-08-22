@@ -10,7 +10,9 @@
     (at your option) any later version.
 */
 
-/**
+/*
+Decode Ambient Weather F007TH, F012TH, TF 30.3208.02, SwitchDoc F016TH
+
 Devices supported:
 
 - Ambient Weather F007TH Thermo-Hygrometer.
@@ -19,21 +21,21 @@ Devices supported:
 - SwitchDoc Labs F016TH.
 
 This decoder handles the 433mhz/868mhz thermo-hygrometers.
-The 915mhz family of devices use different modulation/encoding.
+The 915mhz (WH*) family of devices use different modulation/encoding.
 
-The check is an LFSR Digest-8, gen 0x98, key 0x3e, init 0x64
 
-    Byte 0   Byte 1   Byte 2   Byte 3   Byte 4   Byte 5
-    xxxxMMMM IIIIIIII BCCCTTTT TTTTTTTT HHHHHHHH MMMMMMMM
+Byte 0   Byte 1   Byte 2   Byte 3   Byte 4   Byte 5
+xxxxMMMM IIIIIIII BCCCTTTT TTTTTTTT HHHHHHHH MMMMMMMM
 
-    x - Unknown 0x04 on F007TH/F012TH
-    M - Model Number?, 0x05 on F007TH/F012TH/SwitchDocLabs F016TH
-    I - ID byte (8 bits), volatie, changes at power up,
-    B - Battery Low
-    C - Channel (3 bits 1-8) - F007TH set by Dip switch, F012TH soft setting
-    T - Temperature 12 bits - Fahrenheit * 10 + 400
-    H - Humidity (8 bits)
-    M - Message integrity check LFSR Digest-8, gen 0x98, key 0x3e, init 0x64
+- x: Unknown 0x04 on F007TH/F012TH
+- M: Model Number?, 0x05 on F007TH/F012TH/SwitchDocLabs F016TH
+- I: ID byte (8 bits), volatie, changes at power up,
+- B: Battery Low
+- C: Channel (3 bits 1-8) - F007TH set by Dip switch, F012TH soft setting
+- T: Temperature 12 bits - Fahrenheit * 10 + 400
+- H: Humidity (8 bits)
+- M: Message integrity check LFSR Digest-8, gen 0x98, key 0x3e, init 0x64
+
 */
 
 #include "decoder.h"
@@ -66,18 +68,21 @@ static int ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
     temperature  = (temp_f - 400) * 0.1f;
     humidity     = b[4];
 
-    /**
+    /*
     Sanity checks to reduce false positives and other bad data
 
     Packets with Bad data often pass the MIC check.
+
     - humidity > 100 (such as 255) and
     - temperatures > 140 F (such as 369.5 F and 348.8 F
 
     Specs in the F007TH and F012TH manuals state the range is:
+
     - Temperature: -40 to 140 F
     - Humidity: 10 to 99%
 
     @todo - sanity check b[0] "model number"
+
     - 0x45 - F007TH and F012TH
     - 0x?5 - SwitchDocLabs F016TH temperature sensor (based on comment b[0] & 0x0f == 5)
     - ? - TFA 30.3208.02
