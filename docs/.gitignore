@@ -1,5 +1,7 @@
 # ignore VuePress build files
 .vuepress/dist
+.temp
+.cache
 node_modules
 yarn.lock
 # ignore copied files

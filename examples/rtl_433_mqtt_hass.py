@@ -627,6 +627,9 @@ def publish_config(mqttc, topic, model, instance, mapping):
     if args.force_update:
         config["force_update"] = "true"
 
+    if args.expire_after:
+        config["expire_after"] = args.expire_after
+
     logging.debug(path + ":" + json.dumps(config))
 
     mqttc.publish(path, json.dumps(config), retain=args.retain)
@@ -652,7 +655,7 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
         logging.warning("No suitable identifier found for model: ", model)
         return
 
-    if args.ids and data.get("id") not in args.ids:
+    if args.ids and id in data and data.get("id") not in args.ids:
         # not in the safe list
         logging.debug("Device (%s) is not in the desired list of device ids: [%s]" % (data["id"], ids))
         return
@@ -741,6 +744,9 @@ if __name__ == "__main__":
                         dest="discovery_interval",
                         default=600,
                         help="Interval to republish config topics in seconds (default: %(default)d)")
+    parser.add_argument("-x", "--expire-after", type=int,
+                        dest="expire_after",
+                        help="Number of seconds with no updates after which the sensor becomes unavailable")
     parser.add_argument("-I", "--ids", type=int, nargs="+",
                         help="ID's of devices that will be discovered (omit for all)")
     args = parser.parse_args()

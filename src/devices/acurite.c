@@ -762,6 +762,7 @@ similar RF encoding and data format:
 - 5-n-1 weather station
 - 6045M Lightning Detector with Temperature and Humidity
 - Atlas
+- 899 Rain Fall Gauge
 
     CC RR IIII | IIII IIII | pBMMMMMM | pxxWWWWW | pWWWTTTT | pTTTTTTT | pSSSSSSS
     C:2d R:2d ID:12d 1x BATT:1b TYPE:6h 1x ?2b W:5b 1x 3b T:4b 1x 7b S: 1x 7d
@@ -995,6 +996,13 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 valid++;
             }
             else if (message_type == ACURITE_MSGTYPE_RAINFALL) {
+                // The earlier length check passes as ACURITE_TXR_BITLEN is 56
+                // bits / 7 bytes. This message type is always 8 bytes.
+                if (browlen != 8) {
+                    decoder_log(decoder, 2, __func__, "skipping wrong len");
+                    continue;
+                } // DECODE_ABORT_LENGTH
+
                 // Rain Fall Gauge 899
                 // The high 2 bits of byte zero are the channel (bits 7,6), 00 = A, 01 = B, 10 = C
                 int channel = bb[0] >> 6;
@@ -1460,7 +1468,7 @@ static char *acurite_txr_output_fields[] = {
 };
 
 r_device acurite_txr = {
-        .name        = "Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning, 3N1, Atlas",
+        .name        = "Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning, 899 Rain, 3N1, Atlas",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 220,  // short pulse is 220 us + 392 us gap
         .long_width  = 408,  // long pulse is 408 us + 204 us gap

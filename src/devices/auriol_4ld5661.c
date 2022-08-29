@@ -51,7 +51,14 @@ static int auriol_4ld5661_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         float temp_c = (temp_raw >> 4) * 0.1F;
 
         int rain_raw = (b[4] << 12) | (b[5] << 4) | b[6] >> 4;
-        float rain   = rain_raw * 0.3F;
+
+        /* The display unit which comes with this device, multiplies gauge tip counts by 0.3 mm, which seems
+           to be very inaccurate. We did a lot of measurements, the gauge's capacity is about 7.5 ml, the
+           rain collection surface diameter is 96mm, 7.5 ml /((9.6 cm/2)^2*pi) ~= 1 mm of rain. Therefore
+           we decided to correct this multiplier.
+           See also: https://github.com/merbanan/rtl_433/issues/1837
+        */
+        float rain   = rain_raw * 1.0F;
 
         /* clang-format off */
         data_t *data = data_make(
