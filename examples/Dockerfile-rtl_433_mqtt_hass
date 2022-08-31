@@ -1,0 +1,16 @@
+# Install python/pip
+FROM alpine
+
+ENV PYTHONUNBUFFERED=1
+RUN apk add --update --no-cache python3 py3-paho-mqtt && ln -sf python3 /usr/bin/python
+
+RUN mkdir /app
+WORKDIR /app
+
+ENV MQTT_USERNAME=""
+ENV MQTT_PASSWORD=""
+ENV MQTT_HOSTNAME=""
+
+COPY ./rtl_433_mqtt_hass.py /app
+
+CMD ["python3", "/app/rtl_433_mqtt_hass.py", "-H", "$MQTT_HOSTNAME"]
