@@ -244,7 +244,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data = data_make(
                 "model",         "",              DATA_STRING, "LaCrosse-TX141Bv2",
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
-                "channel",       "Channel",       DATA_FORMAT, "%02x", DATA_INT, channel,
+                "channel",       "Channel",       DATA_INT, channel,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 "battery_ok",    "Battery",       DATA_INT,    !battery_low,
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
@@ -256,7 +256,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data = data_make(
                 "model",         "",              DATA_STRING, "LaCrosse-TX141Bv3",
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
-                "channel",       "Channel",       DATA_FORMAT, "%02x", DATA_INT, channel,
+                "channel",       "Channel",       DATA_INT, channel,
                 "battery_ok",    "Battery",       DATA_INT,    !battery_low,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
@@ -273,7 +273,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data = data_make(
                 "model",         "",              DATA_STRING, "LaCrosse-TX141THBv2",
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
-                "channel",       "Channel",       DATA_FORMAT, "%02x", DATA_INT, channel,
+                "channel",       "Channel",       DATA_INT, channel,
                 "battery_ok",    "Battery",       DATA_INT,    !battery_low,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 "humidity",      "Humidity",      DATA_FORMAT, "%u %%", DATA_INT, humidity,
