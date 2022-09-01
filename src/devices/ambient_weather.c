@@ -10,8 +10,8 @@
     (at your option) any later version.
 */
 
-/*
-Decode Ambient Weather F007TH, F012TH, TF 30.3208.02, SwitchDoc F016TH
+/**
+Decode Ambient Weather F007TH, F012TH, TF 30.3208.02, SwitchDoc F016TH.
 
 Devices supported:
 

@@ -12,6 +12,11 @@
 
 #include "decoder.h"
 
+/**
+CurrentCost TX, CurrentCost EnviR current sensors.
+
+@todo Documentation needed.
+*/
 static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;

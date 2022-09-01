@@ -8,7 +8,7 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/** @fn static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+/**
 Digitech XC-0324 device.
 
 The encoding is pulse position modulation

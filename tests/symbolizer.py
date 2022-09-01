@@ -100,6 +100,9 @@ def process_source(path, name):
                 if fName:
                     if fName not in links:
                         links[fName] = {"src": name, "type": "func"}
+                    if dSee:
+                        links[fName].update({"doc_line": dLine, "doc_see": dSee})
+                        dSee = None
                     links[fName].update({"doc_line": dLine, "doc": doc})
                     doc = None
                     fName = None
@@ -141,6 +144,7 @@ def process_source(path, name):
                 continue
             m = re.match(r'\s*/\*\*', line)
             if m:
+                fName = None
                 captureDoc = True
                 dLine = i + 1
                 doc = ''
@@ -279,7 +283,8 @@ def check_symbols(symbols):
             if "line" not in d:
                 err(f"::error file={d['src']}::func missing ({f})")
             if "doc" not in d or not d["doc"]:
-                #err(f"::warning file={d['src']},line={d['line']}::doc missing for {f}")
+                if "doc_see" not in d or not d["doc_see"]:
+                    err(f"::warning file={d['src']},line={d['line']}::doc missing for {f}")
                 pass
 
         if d["type"] == "model":
