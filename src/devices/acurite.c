@@ -161,7 +161,10 @@ static void data_append_exception(data_t* data, int exception, uint8_t* bb, int 
 }
 
 
+/**
+Acurite 896 rain gauge
 
+*/
 static int acurite_rain_896_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t *b = bitbuffer->bb[0];
@@ -1634,6 +1637,10 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return result;
 }
 
+/**
+Acurite 606 Temperature sensor
+
+*/
 static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
@@ -1688,6 +1695,10 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
+/**
+Acurite 590TX temperature/humidity sensor
+
+*/
 static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
@@ -1763,6 +1774,10 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
+/**
+Acurite 00275rm Room Monitor sensors
+
+*/
 static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int result = 0;
