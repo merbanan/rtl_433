@@ -162,6 +162,8 @@ static void data_append_exception(data_t* data, int exception, uint8_t* bb, int 
 
 }
 
+
+
 static int acurite_rain_896_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t *b = bitbuffer->bb[0];
@@ -443,6 +445,7 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     strike_distance = bb[7] & 0x1f;
     rfi_detect = (bb[7] & 0x20) == 0x20;
 
+
     /*
      * 2018-04-21 rct - There are still a number of unknown bits in the
      * message that need to be figured out. Add the raw message hex to
@@ -455,6 +458,7 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
         rawp += 2;
     }
     *rawp = '\0';
+
 
     // Flag whether this message might need further analysis
     if ((bb[4] & 0x20) != 0) // unknown status bits, always off
@@ -712,6 +716,7 @@ static int acurite_5n1_decode(r_device* decoder, uint8_t* bb)
     return 1; // If we got here 1 valid message was output
 }
 
+
 /**
 Acurite Atlas weather and lightning sensor.
 
@@ -964,6 +969,7 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
     return 1; // one valid message decoded
 }
+
 
 /*
 Acurite 592TXR Temperature Humidity sensor decoder
@@ -1489,6 +1495,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     else
         return error_ret;
 }
+
 
 /**
 Acurite 00986 Refrigerator / Freezer Thermometer.
