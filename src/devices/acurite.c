@@ -8,25 +8,23 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 
-
-*/
-/**
 Acurite weather stations and temperature / humidity sensors.
-    Devices decoded:
-    - Acurite Iris (5-n-1) weather station, Model; VN1TXC, 06004RM
-    - Acurite 5-n-1 pro weather sensor, Model: 06014RM
-    - Acurite Atlas (7-n-1) weather station
-    - Acurite Notos (3-n-1) weather station
-    - Acurite 896 Rain gauge, Model: 00896
-    - Acurite 592TXR / 06002RM / 6044m Tower sensor (temperature and humidity)
-      (Note: Some newer sensors share the 592TXR coding for compatibility.
-    - Acurite 609TXC "TH" temperature and humidity sensor (609A1TX)
-    - Acurite 986 Refrigerator / Freezer Thermometer
-    - Acurite 515 Refrigerator / Freezer Thermometer
-    - Acurite 606TX temperature sensor
-    - Acurite 6045M Lightning Detector
-    - Acurite 00275rm and 00276rm temp. and humidity with optional probe.
-    - Acurite 1190/1192 leak/water detector
+
+Devices decoded:
+- Acurite Iris (5-n-1) weather station, Model; VN1TXC, 06004RM
+- Acurite 5-n-1 pro weather sensor, Model: 06014RM
+- Acurite Atlas (7-n-1) weather station
+- Acurite Notos (3-n-1) weather station
+- Acurite 896 Rain gauge, Model: 00896
+- Acurite 592TXR / 06002RM / 6044m Tower sensor (temperature and humidity)
+  (Note: Some newer sensors share the 592TXR coding for compatibility.
+- Acurite 609TXC "TH" temperature and humidity sensor (609A1TX)
+- Acurite 986 Refrigerator / Freezer Thermometer
+- Acurite 515 Refrigerator / Freezer Thermometer
+- Acurite 606TX temperature sensor
+- Acurite 6045M Lightning Detector
+- Acurite 00275rm and 00276rm temp. and humidity with optional probe.
+- Acurite 1190/1192 leak/water detector
 */
 
 #include "decoder.h"
@@ -390,7 +388,6 @@ Notes:
 @todo - storm_distance conversion to miles/KM (should match Acurite consoles)
 
 */
-
 static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row)
 {
     float tempf;
@@ -486,13 +483,13 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     return 1; // If we got here 1 valid message was output
 }
 
-
-/*
+/**
 Acurite 899 Rain Gauge decoder
 
 */
-static int acurite_899_decode(r_device* decoder, uint8_t* bb)
+static int acurite_899_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t *bb)
 {
+    (void)bitbuffer;
     // MIC (checkum, parity) validated in calling function
 
     uint16_t sensor_id = ((bb[0] & 0x3f) << 8) | bb[1]; //
@@ -537,13 +534,14 @@ static int acurite_899_decode(r_device* decoder, uint8_t* bb)
 
 }
 
-/*
+/**
 Acurite 3n1 Weather Station decoder
 
 */
-static int acurite_3n1_decode(r_device* decoder, uint8_t* bb)
+static int acurite_3n1_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t *bb)
 {
     // MIC (checkum, parity) validated in calling function
+    (void)bitbuffer;
 
     char const* channel_str = acurite_getChannel(bb[0]);
 
@@ -618,17 +616,16 @@ static int acurite_3n1_decode(r_device* decoder, uint8_t* bb)
 }
 
 
-/*
+/**
 Acurite 5n1 Weather Station decoder
 
 XXX todo docs
 
 */
-
-static int acurite_5n1_decode(r_device* decoder, uint8_t* bb)
+static int acurite_5n1_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t* bb)
 {
     // MIC (checkum, parity) validated in calling function
-
+    (void)bitbuffer;
 
     char const* channel_str = acurite_getChannel(bb[0]);
     uint16_t sensor_id = ((bb[0] & 0x0f) << 8) | bb[1];
@@ -970,8 +967,7 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
     return 1; // one valid message decoded
 }
 
-
-/*
+/**
 Acurite 592TXR Temperature Humidity sensor decoder
 
 Message Type 0x04, 7 bytes
@@ -981,28 +977,29 @@ Message Type 0x04, 7 bytes
 | CCII IIII | IIII IIII | pB00 0100 | pHHH HHHH | p??T TTTT | pTTT TTTT | KKKK KKKK |
 
 
-* C: Channel 00: C, 10: B, 11: A, (01 is invalid)
-* I: Device ID (14 bits)
-* B: Battery, 1 is battery OK, 0 is battery low
-* M: Message type (6 bits), 0x04
-* T: Temperature Celsius (11 - 14 bits?), + 1000 * 10
-* H: Relative Humidity (%) (7 bits)
-* K: Checksum (8 bits)
-* p: Parity bit
+- C: Channel 00: C, 10: B, 11: A, (01 is invalid)
+- I: Device ID (14 bits)
+- B: Battery, 1 is battery OK, 0 is battery low
+- M: Message type (6 bits), 0x04
+- T: Temperature Celsius (11 - 14 bits?), + 1000 * 10
+- H: Relative Humidity (%) (7 bits)
+- K: Checksum (8 bits)
+- p: Parity bit
 
 Notes:
 
-* Temperature
-  * Encoded as Celsius + 1000 * 10
-  * only 11 bits needed for specified range -40 C to 70 C (-40 F - 158 F)
-  * However 14 bits available for temperature, giving possible range of -100 C to 1538.4 C
-  * @todo - check if high 3 bits ever used for anything else
+- Temperature
+  - Encoded as Celsius + 1000 * 10
+  - only 11 bits needed for specified range -40 C to 70 C (-40 F - 158 F)
+  - However 14 bits available for temperature, giving possible range of -100 C to 1538.4 C
+  - @todo - check if high 3 bits ever used for anything else
 
 */
-static int acurite_tower_decode(r_device* decoder, uint8_t* bb)
+static int acurite_tower_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t *bb)
 {
     // MIC (checkum, parity) validated in calling function
 
+    (void)bitbuffer;
     int exception = 0;
     char const* channel_str = acurite_getChannel(bb[0]);
     int sensor_id = ((bb[0] & 0x3f) << 8) | bb[1];
@@ -1057,7 +1054,7 @@ static int acurite_tower_decode(r_device* decoder, uint8_t* bb)
     return 1;
 }
 
-/*
+/**
 Acurite 1190/1192 leak detector
 
 Note: it seems like Acurite has deleted this product and
@@ -1065,10 +1062,9 @@ related information from their website so specs, manual, etc.
 aren't easy to find
 
 */
-static int acurite_1190_decode(r_device* decoder, uint8_t* bb)
+static int acurite_1190_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t *bb)
 {
-    // MIC (checkum, parity) validated in calling function
-
+    (void)bitbuffer;
     // Channel is the first two bits of the 0th byte
     // but only 3 of the 4 possible values are valid
     char const* channel_str = acurite_getChannel(bb[0]);
@@ -1100,7 +1096,7 @@ static int acurite_1190_decode(r_device* decoder, uint8_t* bb)
     return 1;
 }
 
-/*
+/**
 Decode Acurite 515 Refrigerator/Freezer sensors
 
 Byte 0    | Byte 1    | Byte 2    | Byte 3    | Byte 4    | Byte 5
@@ -1115,11 +1111,11 @@ CCII IIII | IIII IIII | pBMM MMMM | bTTT TTTT | bTTT TTTT | KKKK KKKK
 - p: Parity bit
 
 */
-
-static int acurite_515_decode(r_device* decoder, uint8_t* bb)
+static int acurite_515_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t *bb)
 {
     // length, MIC (checkum, parity) validated in calling function
 
+    (void)bitbuffer;
     int exception = 0;
     char channel_type_str[3];
     uint8_t message_type = bb[2] & 0x3f;
@@ -1187,7 +1183,7 @@ static int acurite_515_decode(r_device* decoder, uint8_t* bb)
     return 1;
 }
 
-/*
+/**
 Check Acurite TXR message integrity (length, checksum, parity)
 
 Need to pass in expected length - correct number of bytes for
@@ -1236,7 +1232,7 @@ static int acurite_txr_check(r_device *decoder, uint8_t const bb[], unsigned bro
     // check sanity to cut down an bad messages that pass MIC checks
     char const *channel_str = acurite_getChannel(bb[0]);
     if (*channel_str == 'E') {
-	uint8_t message_type = bb[2] & 0x3f;
+        uint8_t message_type = bb[2] & 0x3f;
         decoder_logf(decoder, 1, __func__,
                      "bad channel Ch %s, msg type 0x%02x, msg len %d",
                      channel_str, message_type, browlen);
@@ -1248,7 +1244,15 @@ static int acurite_txr_check(r_device *decoder, uint8_t const bb[], unsigned bro
 
 
 /**
-Process messages for Acurite weather stations, tower, and related sensors
+Process messages for Acurite weather stations, tower and related sensors
+@sa acurite_1190_decode()
+@sa acurite_515_decode()
+@sa acurite_6045_decode()
+@sa acurite_899_decode()
+#sa acurite_3n1_decode()
+@sa acurite_5n1_decode()
+@sa acurite_atlas_decode()
+@sa acurite_tower_decode()
 
 This callback is used for devices that use a very similar message format:
 
@@ -1263,7 +1267,6 @@ This callback is used for devices that use a very similar message format:
 
 These devices have a message type in the 3rd byte and an 8 bit checksum
 in the last byte.
-
 
 */
 static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -1347,7 +1350,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_TXR_BYTELEN)) != 0) {
                 error_ret = ret;
             } else {
-                if ((ret = acurite_tower_decode(decoder, bb)) > 0) {
+                    if ((ret = acurite_tower_decode(decoder, bitbuffer, bb)) > 0) {
                     decoded += ret;
                 } else if (ret < 0) {
                     error_ret = ret;
@@ -1359,7 +1362,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_1190_BYTELEN)) != 0) {
                 error_ret = ret;
             } else {
-                if ((ret = acurite_1190_decode(decoder, bb)) > 0) {
+                    if ((ret = acurite_1190_decode(decoder, bitbuffer, bb)) > 0) {
                     decoded += ret;
                 } else if (ret < 0) {
                     error_ret = ret;
@@ -1384,7 +1387,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_515_BYTELEN)) != 0) {
                 error_ret = ret;
             } else {
-                if ((ret = acurite_515_decode(decoder, bb)) > 0) {
+                if ((ret = acurite_515_decode(decoder, bitbuffer, bb)) > 0) {
                     decoded += ret;
                 } else if (ret < 0) {
                     error_ret = ret;
@@ -1397,7 +1400,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_5N1_BYTELEN)) != 0) {
                 error_ret = ret;
             } else {
-                if ((ret = acurite_5n1_decode(decoder, bb)) > 0) {
+                if ((ret = acurite_5n1_decode(decoder, bitbuffer, bb)) > 0) {
                     decoded += ret;
                 } else if (ret < 0) {
                     error_ret = ret;
@@ -1425,7 +1428,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 continue;
             }
 
-            if ((ret = acurite_3n1_decode(decoder, bb)) > 0) {
+            if ((ret = acurite_3n1_decode(decoder, bitbuffer, bb)) > 0) {
                 decoded += ret;
             } else if (ret < 0) {
                 error_ret = ret;
@@ -1442,7 +1445,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_899_BYTELEN)) != 0) {
                 error_ret = ret;
             } else {
-                if ((ret = acurite_899_decode(decoder, bb)) > 0) {
+                if ((ret = acurite_899_decode(decoder, bitbuffer, bb)) > 0) {
                     decoded += ret;
                 } else if (ret < 0) {
                     error_ret = ret;
