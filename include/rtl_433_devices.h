@@ -231,6 +231,7 @@
     DECL(fineoffset_wn34) \
     DECL(rubicson_pool_48942) \
     DECL(badger_orion) \
+    DECL(vauno_en8822c) \
 
     /* Add new decoders here. */
 
