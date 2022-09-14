@@ -63,11 +63,11 @@ static int vauno_en8822c_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int r = 2;
 
     // remove the two leading 0-bits and align the data
-    bitbuffer_extract_bytes(bitbuffer, r, 2, b, 40);
+    bitbuffer_extract_bytes(bitbuffer, r, 2, b, 42);
 
-    // CRC-4 poly 0x3, init 0x0 over 32 bits then XOR the next 4 bits
-    int crc = crc4(b, 4, 0x3, 0x0) ^ (b[4] >> 4);
-    if (crc != (b[4] & 0xf))
+    // checksum is addition
+    int chk = ((b[4] & 0x0f) << 2) | (b[5] & 0x03);
+    if (add_nibbles(b, 4) != chk)
         return DECODE_FAIL_MIC;
 
     int device_id = b[0];
@@ -76,7 +76,7 @@ static int vauno_en8822c_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     //unsigned char const battery_low = (b[4] & 0x40) == 0x40;
     int temp_raw  = ((b[2] & 0x0f) << 8) | (b[2] & 0xf0) | (b[1] & 0x0f);
     float temp_c  = (temp_raw) * 0.1f;
-    int humidity  = ((b[3] & 0x0f) << 4) | ((b[3] & 0xf0) >> 4);
+    int humidity  = ((b[3] & 0xf0) >> 3);
 
     /* clang-format off */
     data = data_make(
@@ -107,7 +107,7 @@ static char *output_fields[] = {
 
 r_device esperanza_ews = {
         .name        = "Vauno EN8822C",
-        .modulation  = OOK_PPM,
+        .modulation  = OOK_PULSE_PPM,
         .short_width = 2044,
         .long_width  = 4092,
         .gap_limit   = 4212,
