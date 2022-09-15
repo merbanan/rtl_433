@@ -45,15 +45,12 @@ Sample Data:
 
 static int vauno_en8822c_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    if (bitbuffer->num_rows != 13)
-        return DECODE_ABORT_LENGTH;
-
     int row = bitbuffer_find_repeated_prefix(bitbuffer, 4, 42);
     if (row < 0) {
         return DECODE_ABORT_EARLY;
     }
 
-    uint8_t *b = bitbuffer->bb[row]
+    uint8_t *b = bitbuffer->bb[row];
 
     // checksum is addition
     int chk = ((b[4] & 0x0f) << 2) | (b[5] & 0x03);
