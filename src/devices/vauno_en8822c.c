@@ -26,7 +26,7 @@ Frame structure:
 - T: Temperature (Little-endian)
 - H: Humidity (Little-endian)
 - F: Flags (unknown)
-- X: 
+- X: Checksum
 
 Sample Data:
 
@@ -45,25 +45,15 @@ Sample Data:
 
 static int vauno_en8822c_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t b[6];
-    data_t *data;
-
-    // require two leading sync pulses
-    if (bitbuffer->bits_per_row[0] != 0 || bitbuffer->bits_per_row[1] != 0)
-        return DECODE_FAIL_SANITY;
-
-    if (bitbuffer->num_rows != 14)
+    if (bitbuffer->num_rows != 13)
         return DECODE_ABORT_LENGTH;
 
-    for (int row = 2; row < bitbuffer->num_rows - 3; row += 2) {
-        if (memcmp(bitbuffer->bb[row], bitbuffer->bb[row + 2], sizeof(bitbuffer->bb[row])) != 0
-                || bitbuffer->bits_per_row[row] != 42)
-            return DECODE_FAIL_SANITY;
+    int row = bitbuffer_find_repeated_prefix(bitbuffer, 4, 42);
+    if (row < 0) {
+        return DECODE_ABORT_EARLY;
     }
-    int r = 2;
 
-    // remove the two leading 0-bits and align the data
-    bitbuffer_extract_bytes(bitbuffer, r, 2, b, 42);
+    uint8_t *b = bitbuffer->bb[row]
 
     // checksum is addition
     int chk = ((b[4] & 0x0f) << 2) | (b[5] & 0x03);
@@ -110,8 +100,8 @@ r_device vauno_en8822c = {
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,
         .long_width  = 4000,
-        .gap_limit   = 4200,
-        .reset_limit = 9100,
+        .gap_limit   = 5000,
+        .reset_limit = 9500,
         .decode_fn   = &vauno_en8822c_callback,
         .fields      = output_fields,
 };
