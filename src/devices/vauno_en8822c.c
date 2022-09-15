@@ -66,7 +66,7 @@ static int vauno_en8822c_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int humidity  = ((b[3] & 0xf0) >> 3);
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Vauno-EN8822C",
             "id",               "ID",           DATA_INT, device_id,
             "channel",          "Channel",      DATA_INT, channel,
