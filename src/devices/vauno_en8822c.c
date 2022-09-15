@@ -45,7 +45,7 @@ Sample Data:
 
 static int vauno_en8822c_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t b[5];
+    uint8_t b[6];
     data_t *data;
 
     // require two leading sync pulses
@@ -86,7 +86,7 @@ static int vauno_en8822c_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     //        "battery_ok",       "Battery",      DATA_INT, !battery_low,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
@@ -105,13 +105,13 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device esperanza_ews = {
+r_device vauno_en8822c = {
         .name        = "Vauno EN8822C",
         .modulation  = OOK_PULSE_PPM,
-        .short_width = 2044,
-        .long_width  = 4092,
-        .gap_limit   = 4212,
-        .reset_limit = 9140,
+        .short_width = 2000,
+        .long_width  = 4000,
+        .gap_limit   = 4200,
+        .reset_limit = 9100,
         .decode_fn   = &vauno_en8822c_callback,
         .fields      = output_fields,
 };
