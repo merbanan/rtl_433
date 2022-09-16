@@ -15,7 +15,7 @@ Largely the same as Esperanza EWS, s3318p.
 List of known supported devices:
 - EN8822C-1
 
-Frame structure:
+Frame structure (42 bits):
 
     Byte:      0        1        2        3        4
     Nibble:    1   2    3   4    5   6    7   8    9   10   11
@@ -26,7 +26,7 @@ Frame structure:
 - T: Temperature (Little-endian)
 - H: Humidity (Little-endian)
 - F: Flags (unknown)
-- X: Checksum
+- X: Checksum (6 bit nibble sum)
 
 Sample Data:
 
