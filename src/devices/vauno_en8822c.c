@@ -61,8 +61,9 @@ static int vauno_en8822c_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int channel   = ((b[1] & 0x30) >> 4) + 1;
     // Battery status is the 7th bit 0x40. 0 = normal, 1 = low
     //unsigned char const battery_low = (b[4] & 0x40) == 0x40;
-    int temp_raw  = ((b[2] & 0x0f) << 8) | (b[2] & 0xf0) | (b[1] & 0x0f);
-    float temp_c  = (temp_raw) * 0.1f;
+    int temp_raw   = ((b[2] & 0x0f) << 8) | (b[2] & 0xf0) | (b[1] & 0x0f);
+    temp_raw   = (int16_t)(temp_raw << 4); // use sign extend
+    float temp_c  = (temp_raw >> 4) * 0.1f;
     int humidity  = ((b[3] & 0xf0) >> 3);
 
     /* clang-format off */
