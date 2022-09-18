@@ -21,6 +21,7 @@ Tested devices:
   - "Nexa"
   - "Intertechno ITLS-16" (OEM model # "ITAPT-821")
   - Nexa - LMST-606
+  - Smartwares SH4-90152
 
 From http://elektronikforumet.com/wiki/index.php/RF_Protokoll_-_Proove_self_learning
 
@@ -108,7 +109,7 @@ r_device proove = {
         .modulation  = OOK_PULSE_PPM,
         .short_width = 270,  // 1:1
         .long_width  = 1300, // 1:5
-        .sync_width  = 2700, // 1:10
+        .sync_width  = 2650, // 1:10, tuned to widely match 2450 to 2850
         .tolerance   = 200,
         .gap_limit   = 1500,
         .reset_limit = 2800,
