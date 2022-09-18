@@ -176,6 +176,7 @@ add_library(r_433 STATIC
     devices/prologue.c
     devices/proove.c
     devices/quhwa.c
+	devices/r900.c
     devices/radiohead_ask.c
     devices/rainpoint.c
     devices/regency_fan.c
