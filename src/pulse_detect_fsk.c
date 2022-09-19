@@ -1,9 +1,9 @@
 /** @file
-    Pulse detection functions.
-
-    FSK pulse detector
+    Pulse detection functions, FSK pulse detector.
 
     Copyright (C) 2015 Tommy Vestermark
+    Copyright (C) 2019 Benjamin Larsson.
+    Copyright (C) 2022 Christian W. Zuckschwerdt <zany@triq.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -11,7 +11,6 @@
     (at your option) any later version.
 */
 
-#include "pulse_detect.h"
 #include "pulse_detect_fsk.h"
 #include "util.h"
 #include <limits.h>
@@ -19,26 +18,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 // FSK adaptive frequency estimator constants
 #define FSK_DEFAULT_FM_DELTA 6000       // Default estimate for frequency delta
 #define FSK_EST_SLOW        64          // Constant for slowness of FSK estimators
 #define FSK_EST_FAST        16          // Constant for slowness of FSK estimators
 
+void pulse_detect_fsk_init(pulse_detect_fsk_t *s)
+{
+    *s              = (pulse_detect_fsk_t){0};
+    s->var_test_max = INT16_MIN;
+    s->var_test_min = INT16_MAX;
+    s->skip_samples = 40;
+}
 
-/// Demodulate Frequency Shift Keying (FSK) sample by sample.
-///
-/// Function is stateful between calls
-/// Builds estimate for initial frequency. When frequency deviates more than a
-/// threshold value it will determine whether the deviation is positive or negative
-/// to classify it as a pulse or gap. It will then transition to other state (F1 or F2)
-/// and build an estimate of the other frequency. It will then transition back and forth when current
-/// frequency is closer to other frequency estimate.
-/// Includes spurious suppression by coalescing pulses when pulse/gap widths are too short.
-/// Pulses equal higher frequency (F1) and Gaps equal lower frequency (F2)
-/// @param fm_n One single sample of FM data
-/// @param fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
-/// @param s Internal state
 void pulse_detect_fsk_classic(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses)
 {
     int const fm_f1_delta = abs(fm_n - s->fm_f1_est); // Get delta from F1 frequency estimate
@@ -146,10 +138,6 @@ void pulse_detect_fsk_classic(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t 
     } // switch(s->fsk_state)
 }
 
-/// Wrap up FSK modulation and store last data at End Of Package.
-///
-/// @param fsk_pulses Pulse_data_t structure for FSK demodulated data
-/// @param s Internal state
 void pulse_detect_fsk_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pulses)
 {
     if (fsk_pulses->num_pulses < PD_MAX_PULSES) { // Avoid overflow
@@ -165,13 +153,6 @@ void pulse_detect_fsk_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pulses)
     }
 }
 
-
-/// Demodulate Frequency Shift Keying (FSK) sample by sample.
-///
-/// Function is stateful between calls
-/// @param fm_n One single sample of FM data
-/// @param fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
-/// @param s Internal state
 void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses)
 {
     int16_t mid = 0;
