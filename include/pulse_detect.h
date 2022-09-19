@@ -53,7 +53,7 @@ enum package_types {
     PULSE_DATA_FSK = 2,
 };
 
-/// state data for pulse_FSK_detect()
+/// state data for pulse_detect_fsk_ functions
 typedef struct {
     unsigned int fsk_pulse_length; ///< Counter for internal FSK pulse detection
     enum {
@@ -72,7 +72,7 @@ typedef struct {
     int16_t minn;
     int16_t midd;
     int skip_samples;
-} pulse_FSK_state_t;
+} pulse_detect_fsk_t;
 
 typedef struct pulse_detect pulse_detect_t;
 

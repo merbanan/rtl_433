@@ -17,9 +17,9 @@
 #include <stdint.h>
 #include "pulse_detect.h"
 
-void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t *s);
-void pulse_FSK_wrap_up(pulse_data_t *fsk_pulses, pulse_FSK_state_t *s);
-void pulse_FSK_detect_mm(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t *s);
+void pulse_detect_fsk_classic(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses);
+void pulse_detect_fsk_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pulses);
+void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses);
 
 #define    FSK_PULSE_DETECT_START 0
 enum {

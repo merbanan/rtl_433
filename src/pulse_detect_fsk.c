@@ -14,7 +14,6 @@
 #include "pulse_detect.h"
 #include "pulse_detect_fsk.h"
 #include "util.h"
-#include "decoder.h"
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,7 +39,7 @@
 /// @param fm_n One single sample of FM data
 /// @param fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
 /// @param s Internal state
-void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t *s)
+void pulse_detect_fsk_classic(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses)
 {
     int const fm_f1_delta = abs(fm_n - s->fm_f1_est); // Get delta from F1 frequency estimate
     int const fm_f2_delta = abs(fm_n - s->fm_f2_est); // Get delta from F2 frequency estimate
@@ -116,7 +115,7 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
                     s->fsk_pulse_length = 0;
                     // When pulse buffer is full go to error state
                     if (fsk_pulses->num_pulses >= PD_MAX_PULSES) {
-                        //fprintf(stderr, "pulse_FSK_detect(): Maximum number of pulses reached!\n");
+                        //fprintf(stderr, "pulse_detect_fsk_classic(): Maximum number of pulses reached!\n");
                         //s->fsk_state = PD_FSK_STATE_ERROR;
                         // TODO: workaround, specifically for the Inkbird-ITH20R: free some of the buffer
                         pulse_data_shift(fsk_pulses);
@@ -142,7 +141,7 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
         case PD_FSK_STATE_ERROR:        // Stay here until cleared
             break;
         default:
-            fprintf(stderr, "pulse_FSK_detect(): Unknown FSK state!!\n");
+            fprintf(stderr, "pulse_detect_fsk_classic(): Unknown FSK state!!\n");
             s->fsk_state = PD_FSK_STATE_ERROR;
     } // switch(s->fsk_state)
 }
@@ -151,7 +150,7 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
 ///
 /// @param fsk_pulses Pulse_data_t structure for FSK demodulated data
 /// @param s Internal state
-void pulse_FSK_wrap_up(pulse_data_t *fsk_pulses, pulse_FSK_state_t *s)
+void pulse_detect_fsk_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pulses)
 {
     if (fsk_pulses->num_pulses < PD_MAX_PULSES) { // Avoid overflow
         s->fsk_pulse_length++;
@@ -173,7 +172,7 @@ void pulse_FSK_wrap_up(pulse_data_t *fsk_pulses, pulse_FSK_state_t *s)
 /// @param fm_n One single sample of FM data
 /// @param fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
 /// @param s Internal state
-void pulse_FSK_detect_mm(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t *s)
+void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses)
 {
     int16_t mid = 0;
 
@@ -213,7 +212,7 @@ void pulse_FSK_detect_mm(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state
                     s->fsk_pulse_length = 0;
                     // When pulse buffer is full go to error state
                     if (fsk_pulses->num_pulses >= PD_MAX_PULSES) {
-                        //fprintf(stderr, "pulse_FSK_detect(): Maximum number of pulses reached!\n");
+                        //fprintf(stderr, "pulse_detect_fsk_minmax(): Maximum number of pulses reached!\n");
                         //s->fsk_state = PD_FSK_STATE_ERROR;
                         // TODO: workaround, specifically for the Inkbird-ITH20R: free some of the buffer
                         pulse_data_shift(fsk_pulses);
@@ -224,7 +223,7 @@ void pulse_FSK_detect_mm(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state
             case PD_FSK_STATE_ERROR:        // Stay here until cleared
                 break;
             default:
-                fprintf(stderr, "pulse_FSK_detect(): Unknown FSK state!!\n");
+                fprintf(stderr, "pulse_detect_fsk_minmax(): Unknown FSK state!!\n");
                 s->fsk_state = PD_FSK_STATE_ERROR;
                 break;
         }
