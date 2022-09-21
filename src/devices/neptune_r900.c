@@ -120,7 +120,7 @@ static int r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint8_t *bb = bitbuffer->bb[0];
     bitbuffer_t bytes = {0};
-    uint8_t base6_dec[21];
+    uint8_t base6_dec[21] = {0};
     int count = 0;
 
     /*
@@ -196,8 +196,8 @@ static int r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // 2 = high (continuous leak) water use in every 15-min interval for the last 24 hours
     LeakNow = b[9]&0x03;
     // extra 24 bits ???
-	char extra[7];
-	sprintf(extra,"%02x%02x%02x", b[10], b[11], b[12]);
+    char extra[7];
+    sprintf(extra,"%02x%02x%02x", b[10], b[11], b[12]);
 
     /* clang-format off */
     data_t *data = data_make(
