@@ -13,13 +13,6 @@
 Similar to prologue, kedsum, esperanza_ews, s3318p
 Only available information for this device: https://fcc.report/FCC-ID/WEC-2103
 
-Example datagram:
- f2 90          6b5        96       1     8
-|ID|Checksum?|Temperature|Humidity|Channel|
-
-Temperature in Fahrenheit*100+900->hex
-Example: 82.4F->824->1724->0x6bc
-
 
 Byte:      0        1        2        3        4        5
 Nibble:    1   2    3   4    5   6    7   8    9   10   11
@@ -30,9 +23,14 @@ X: Checksum?
 F: Flags
 T: Temperature
 H: Humidity
-
 Flags: tx-button pressed|?|?|?
 
+Example datagram:
+ f2 90              6b5         96       1       8
+|ID|Checksum?+Flags|Temperature|Humidity|Channel|unknown
+
+Temperature in Fahrenheit*100+900->hex
+Example: 82.4F->824->1724->0x6bc
 */
 
 #include "decoder.h"
