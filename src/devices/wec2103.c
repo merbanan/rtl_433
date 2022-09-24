@@ -1,4 +1,6 @@
 /** @file
+    WEC-2103 temperature/humidity sensor
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -81,7 +83,7 @@ static char *output_fields[] = {
 };
 
 r_device wec2103 = {
-    .name           = "WEC-2103 Temperature/Humidity Sensor",
+    .name           = "WEC-2103 temperature/humidity sensor",
     .modulation     = OOK_PULSE_PPM,
     .short_width    = 1900,
     .long_width     = 3800,
