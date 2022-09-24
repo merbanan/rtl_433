@@ -45,13 +45,6 @@ static int wec2103_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_extract_bytes(bitbuffer, 3, 0, b, 42);
 
-    for(int i = 0; i<6; i++){
-        printf("%o2x", b[i]);
-    }
-    printf("\n");
-
-
-
     int temp_raw  = (b[2] << 4) | ((b[3] & 0xf0) >> 4);
 
     int device_id = b[0];
@@ -98,4 +91,3 @@ r_device wec2103 = {
     .disabled       = 0,
     .fields         = output_fields,
 };
-
