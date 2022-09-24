@@ -66,19 +66,11 @@ static void decode_5to8(bitbuffer_t *bytes, uint8_t *base6_dec) {
     // is there a better way to convert groups of 5 bits to groups of 8 bits?
     for (int i=0; i < 21; i++) {
         uint8_t data = base6_dec[i];
-        if (data < 0x0F) {
-            bitbuffer_add_bit(bytes, 0);
-            bitbuffer_add_bit(bytes, data >> 3 & 0x01);
-            bitbuffer_add_bit(bytes, data >> 2 & 0x01);
-            bitbuffer_add_bit(bytes, data >> 1 & 0x01);
-            bitbuffer_add_bit(bytes, data >> 0 & 0x01);
-        } else {
-            bitbuffer_add_bit(bytes, data >> 4 & 0x01);
-            bitbuffer_add_bit(bytes, data >> 3 & 0x01);
-            bitbuffer_add_bit(bytes, data >> 2 & 0x01);
-            bitbuffer_add_bit(bytes, data >> 1 & 0x01);
-            bitbuffer_add_bit(bytes, data >> 0 & 0x01);
-        }
+        bitbuffer_add_bit(bytes, data >> 4 & 0x01);
+        bitbuffer_add_bit(bytes, data >> 3 & 0x01);
+        bitbuffer_add_bit(bytes, data >> 2 & 0x01);
+        bitbuffer_add_bit(bytes, data >> 1 & 0x01);
+        bitbuffer_add_bit(bytes, data >> 0 & 0x01);
     }
 }
 
