@@ -9,7 +9,7 @@
     (at your option) any later version.
 */
 
-/** @fn int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+/** @fn int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int row, unsigned int start_pos)
 Insteon RF decoder.
 
     "Insteon is a home automation (domotics) technology that enables

@@ -23,7 +23,11 @@ static uint16_t AD_POP(uint8_t *bb, uint8_t bits, uint8_t bit)
     return val;
 }
 
-// based on fs20.c
+/**
+ELV EM 1000 decoder.
+
+based on fs20.c
+*/
 static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
