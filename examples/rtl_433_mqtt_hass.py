@@ -579,6 +579,34 @@ mappings = {
 
 }
 
+# Use secret_knock to trigger device automations for Honeywell ActivLink
+# doorbells. We have this outside of mappings as we need to configure two
+# different configuration topics.
+secret_knock_mappings = [
+
+    {
+        "device_type": "device_automation",
+        "object_suffix": "Knock",
+        "config": {
+            "automation_type": "trigger",
+            "type": "button_short_release",
+            "subtype": "button_1",
+            "payload": 0,
+        }
+    },
+
+    {
+        "device_type": "device_automation",
+        "object_suffix": "Secret-Knock",
+        "config": {
+            "automation_type": "trigger",
+            "type": "button_triple_press",
+            "subtype": "button_1",
+            "payload": 1,
+        }
+    },
+
+]
 
 def mqtt_connect(client, userdata, flags, rc):
     """Callback for MQTT connects."""
@@ -711,6 +739,12 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
         else:
             if key not in SKIP_KEYS:
                 skipped_keys.append(key)
+
+    if "secret_knock" in data.keys():
+        for m in secret_knock_mappings:
+            topic = "/".join([topicprefix,"devices",instance,"secret_knock"])
+            if publish_config(mqttc, topic, model, instance, m):
+                published_keys.append("secret_knock")
 
     if published_keys:
         logging.info("Published %s: %s" % (instance, ", ".join(published_keys)))
