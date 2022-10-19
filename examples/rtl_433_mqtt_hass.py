@@ -684,6 +684,9 @@ def publish_config(mqttc, topic, model, instance, mapping, value=None):
 
     config = mapping["config"].copy()
 
+    # Device Automation configuration is in a different structure compared to
+    # all other mqtt discovery types.
+    # https://www.home-assistant.io/integrations/device_trigger.mqtt/
     if device_type == 'device_automation':
         config["topic"] = topic
         config["platform"] = 'mqtt'
