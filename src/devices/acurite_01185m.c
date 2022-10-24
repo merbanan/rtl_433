@@ -74,6 +74,14 @@ static int acurite_01185m_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             result = DECODE_FAIL_MIC;
             continue; // return DECODE_FAIL_MIC;
         }
+        /* A sanity check to detect some false positives. The following in
+           particular checks for a row of 56 "0"s, which would be unreasonable
+           temperatures, channel and id of 0, an 'ok' battery, which all
+           happens to result in a '0' checksum as well.
+        */
+        if (chk == 0) {
+            return DECODE_FAIL_SANITY;
+        }
 
         // Decode fields
         int id        = (b[0]);
