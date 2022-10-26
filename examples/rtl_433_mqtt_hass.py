@@ -105,7 +105,7 @@ NAMING_KEYS = [ "type", "model", "subtype", "channel", "id" ]
 
 # Fields that get ignored when publishing to Home Assistant
 # (reduces noise to help spot missing field mappings)
-SKIP_KEYS = NAMING_KEYS + [ "time", "mic", "mod", "freq", "sequence_num",
+SKIP_KEYS = NAMING_KEYS + [ "mic", "mod", "freq", "sequence_num",
                             "message_type", "exception", "raw_msg" ]
 
 
@@ -156,6 +156,22 @@ mappings = {
             "unit_of_measurement": "°F",
             "value_template": "{{ value|float|round(1) }}",
             "state_class": "measurement"
+        }
+    },
+
+    # This diagnostic sensor is useful to see when a device last sent a value,
+    # even if the value didn't change.
+    # https://community.home-assistant.io/t/send-metrics-to-influxdb-at-regular-intervals/9096
+    # https://github.com/home-assistant/frontend/discussions/13687
+    "time": {
+        "device_type": "sensor",
+        "object_suffix": "UTC",
+        "config": {
+            "device_class": "timestamp",
+            "name": "Timestamp",
+            "entity_category": "diagnostic",
+            "enabled_by_default": False,
+            "icon": "mdi:clock-in"
         }
     },
 
@@ -541,6 +557,26 @@ mappings = {
         }
     },
 
+    "channel": {
+        "device_type": "device_automation",
+        "object_suffix": "CH",
+        "config": {
+           "automation_type": "trigger",
+           "type": "button_short_release",
+           "subtype": "button_1",
+        }
+    },
+
+    "button": {
+        "device_type": "device_automation",
+        "object_suffix": "BTN",
+        "config": {
+           "automation_type": "trigger",
+           "type": "button_short_release",
+           "subtype": "button_1",
+        }
+    },
+
 }
 
 
@@ -597,7 +633,7 @@ def rtl_433_device_topic(data):
     return '/'.join(path_elements)
 
 
-def publish_config(mqttc, topic, model, instance, mapping):
+def publish_config(mqttc, topic, model, instance, mapping, value=None):
     """Publish Home Assistant auto discovery data."""
     global discovery_timeouts
 
@@ -619,10 +655,15 @@ def publish_config(mqttc, topic, model, instance, mapping):
     discovery_timeouts[path] = now + args.discovery_interval
 
     config = mapping["config"].copy()
-    config["name"] = object_name
-    config["state_topic"] = topic
-    config["unique_id"] = object_name
-    config["device"] = { "identifiers": object_id, "name": object_id, "model": model, "manufacturer": "rtl_433" }
+
+    if device_type == 'device_automation':
+        config["topic"] = topic
+        config["platform"] = 'mqtt'
+    else:
+        config["state_topic"] = topic
+        config["unique_id"] = object_name
+        config["name"] = object_name
+    config["device"] = { "identifiers": [object_id], "name": object_id, "model": model, "manufacturer": "rtl_433" }
 
     if args.force_update:
         config["force_update"] = "true"
