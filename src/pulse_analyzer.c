@@ -10,11 +10,12 @@
 */
 
 #include "pulse_analyzer.h"
-#include "pulse_demod.h"
+#include "pulse_slicer.h"
 #include "util.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #define MAX_HIST_BINS 16
 
@@ -203,6 +204,11 @@ static void hexstr_print(hexstr_t *h, FILE *out)
 /// Analyze the statistics of a pulse data structure and print result
 void pulse_analyzer(pulse_data_t *data, int package_type)
 {
+    if (data->num_pulses == 0) {
+        fprintf(stderr, "No pulses detected.\n");
+        return;
+    }
+
     double to_ms = 1e3 / data->sample_rate;
     double to_us = 1e6 / data->sample_rate;
     // Generate pulse period data
@@ -314,8 +320,8 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
             && (abs(hist_gaps.bins[0].mean   -   hist_pulses.bins[0].mean) <= hist_pulses.bins[0].mean/8)    // Gaps are multiples of shortest pulse
             && (abs(hist_gaps.bins[1].mean   - 2*hist_pulses.bins[0].mean) <= hist_pulses.bins[0].mean/8)
             && (abs(hist_gaps.bins[2].mean   - 3*hist_pulses.bins[0].mean) <= hist_pulses.bins[0].mean/8)) {
-        fprintf(stderr, "Pulse Code Modulation (Not Return to Zero)\n");
-        device.modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PCM : OOK_PULSE_PCM_RZ;
+        fprintf(stderr, "Non Return to Zero coding (Pulse Code)\n");
+        device.modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PCM : OOK_PULSE_PCM;
         device.short_width = to_us * hist_pulses.bins[0].mean;        // Shortest pulse is bit width
         device.long_width  = to_us * hist_pulses.bins[0].mean;        // Bit period equal to pulse length (NRZ)
         device.reset_limit = to_us * hist_pulses.bins[0].mean * 1024; // No limit to run of zeros...
@@ -345,7 +351,8 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
             hexstr_push_byte(&hexstr, 0xb1);
             hexstr_push_byte(&hexstr, hist_timings.bins_count);
             for (unsigned b = 0; b < hist_timings.bins_count; ++b) {
-                hexstr_push_word(&hexstr, hist_timings.bins[b].mean * to_us);
+                double w = hist_timings.bins[b].mean * to_us;
+                hexstr_push_word(&hexstr, w < USHRT_MAX ? w : USHRT_MAX);
             }
             for (unsigned i = 0; i < data->num_pulses; ++i) {
                 int p = histogram_find_bin_index(&hist_timings, data->pulse[i]);
@@ -377,7 +384,8 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
                 hexstr_push_byte(hexstr, hist_timings.bins_count);
                 hexstr_push_byte(hexstr, 1); // repeats
                 for (unsigned b = 0; b < hist_timings.bins_count; ++b) {
-                    hexstr_push_word(hexstr, hist_timings.bins[b].mean * to_us);
+                    double w =hist_timings.bins[b].mean * to_us;
+                    hexstr_push_word(hexstr, w < USHRT_MAX ? w : USHRT_MAX);
                 }
                 for (; i < data->num_pulses; ++i) {
                     int p = histogram_find_bin_index(&hist_timings, data->pulse[i]);
@@ -404,10 +412,10 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
             }
 
             fprintf(stderr, "view at https://triq.org/pdv/#");
-            for (unsigned i = 0; i < hexstr_cnt; ++i) {
-                if (i > 0)
+            for (unsigned j = 0; j < hexstr_cnt; ++j) {
+                if (j > 0)
                     fprintf(stderr, "+");
-                hexstr_print(&hexstrs[i], stderr);
+                hexstr_print(&hexstrs[j], stderr);
             }
             fprintf(stderr, "\n");
             if (hexstr_cnt >= HEXSTR_MAX_COUNT) {
@@ -425,34 +433,34 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
         case FSK_PULSE_PCM:
             fprintf(stderr, "Use a flex decoder with -X 'n=name,m=FSK_PCM,s=%.0f,l=%.0f,r=%.0f'\n",
                     device.short_width, device.long_width, device.reset_limit);
-            pulse_demod_pcm(data, &device);
+            pulse_slicer_pcm(data, &device);
             break;
         case OOK_PULSE_PPM:
             fprintf(stderr, "Use a flex decoder with -X 'n=name,m=OOK_PPM,s=%.0f,l=%.0f,g=%.0f,r=%.0f'\n",
                     device.short_width, device.long_width,
                     device.gap_limit, device.reset_limit);
             data->gap[data->num_pulses - 1] = device.reset_limit / to_us + 1; // Be sure to terminate package
-            pulse_demod_ppm(data, &device);
+            pulse_slicer_ppm(data, &device);
             break;
         case OOK_PULSE_PWM:
             fprintf(stderr, "Use a flex decoder with -X 'n=name,m=OOK_PWM,s=%.0f,l=%.0f,r=%.0f,g=%.0f,t=%.0f,y=%.0f'\n",
                     device.short_width, device.long_width, device.reset_limit,
                     device.gap_limit, device.tolerance, device.sync_width);
             data->gap[data->num_pulses - 1] = device.reset_limit / to_us + 1; // Be sure to terminate package
-            pulse_demod_pwm(data, &device);
+            pulse_slicer_pwm(data, &device);
             break;
         case FSK_PULSE_PWM:
             fprintf(stderr, "Use a flex decoder with -X 'n=name,m=FSK_PWM,s=%.0f,l=%.0f,r=%.0f,g=%.0f,t=%.0f,y=%.0f'\n",
                     device.short_width, device.long_width, device.reset_limit,
                     device.gap_limit, device.tolerance, device.sync_width);
             data->gap[data->num_pulses - 1] = device.reset_limit / to_us + 1; // Be sure to terminate package
-            pulse_demod_pwm(data, &device);
+            pulse_slicer_pwm(data, &device);
             break;
         case OOK_PULSE_MANCHESTER_ZEROBIT:
             fprintf(stderr, "Use a flex decoder with -X 'n=name,m=OOK_MC_ZEROBIT,s=%.0f,l=%.0f,r=%.0f'\n",
                     device.short_width, device.long_width, device.reset_limit);
             data->gap[data->num_pulses - 1] = device.reset_limit / to_us + 1; // Be sure to terminate package
-            pulse_demod_manchester_zerobit(data, &device);
+            pulse_slicer_manchester_zerobit(data, &device);
             break;
         default:
             fprintf(stderr, "Unsupported\n");

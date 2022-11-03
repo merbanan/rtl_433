@@ -61,10 +61,8 @@ static int ert_scm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // No need to decode/extract values for simple test
     // check id tamper type crc  value not all zero'ed
-    if ( !b[0] && !b[1] && !b[2] && !b[3] ) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
-        }
+    if (!b[0] && !b[1] && !b[2] && !b[3]) {
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00");
         return DECODE_FAIL_SANITY;
     }
 
@@ -116,6 +114,5 @@ r_device ert_scm = {
         .gap_limit   = 0,
         .reset_limit = 64,
         .decode_fn   = &ert_scm_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

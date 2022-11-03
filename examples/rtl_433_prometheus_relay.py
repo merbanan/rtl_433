@@ -37,7 +37,6 @@ class rtl_433(object):
     # These fields are used to separate and tag unique sensors, instead of being exported
     # as readings/values.
     _ID_FIELDS = [
-        ("brand", str),
         ("model", str),
         ("type", str),
         ("subtype", str),

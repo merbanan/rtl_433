@@ -51,7 +51,7 @@ void abuf_cat(abuf_t *buf, char const *str)
     }
 }
 
-int abuf_printf(abuf_t *buf, char const *restrict format, ...)
+int abuf_printf(abuf_t *buf, _Printf_format_string_ char const *restrict format, ...)
 {
     va_list ap;
     va_start(ap, format);

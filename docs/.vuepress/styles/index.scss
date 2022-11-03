@@ -1,0 +1,4 @@
+// Missing background color on bare code sections
+.theme-default-content pre, .theme-default-content pre[class*="language-"] {
+  background-color: var(--code-bg-color);
+}

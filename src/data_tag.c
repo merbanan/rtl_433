@@ -231,7 +231,7 @@ data_tag_t *data_tag_create(char *param, struct mg_mgr *mgr)
 
 void data_tag_free(data_tag_t *tag)
 {
-    free(tag->includes);
+    free((void *)tag->includes);
     gpsd_client_free(tag->gpsd_client);
 
     free(tag);
@@ -254,7 +254,7 @@ static data_t *append_filtered_json(data_t *data, char const *json, char const *
 {
     jsmn_parser parser = {0};
     jsmn_init(&parser);
-    jsmntok_t tok[MAX_JSON_TOKENS] = {0};
+    jsmntok_t tok[MAX_JSON_TOKENS] = {{0}}; // make the compiler happy, should be {0}
 
     int toks = jsmn_parse(&parser, json, strlen(json), tok, MAX_JSON_TOKENS);
     if (toks < 1 || tok[0].type != JSMN_OBJECT) {

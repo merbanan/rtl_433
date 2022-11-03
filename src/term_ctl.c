@@ -328,7 +328,7 @@ int term_puts(void *ctx, char const *buf)
     return len;
 }
 
-int term_printf(void *ctx, char const *format, ...)
+int term_printf(void *ctx, _Printf_format_string_ char const *format, ...)
 {
     int len;
     va_list args;
@@ -377,7 +377,7 @@ int term_help_puts(void *ctx, char const *buf)
             state = 1;
             next_color = 5;
         }
-        else if ((state == 1 || state == 2) && *p == ']' && (p[1] == ' ' || p[1] == '\n' || p[1] == '\0')) {
+        else if ((state == 1 || state == 2) && *p == ']' && ((p[1] == ' ' && p[2] != '|') || p[1] == '\n' || p[1] == '\0')) {
             state = 0;
             set_color = 0;
         }
@@ -431,7 +431,7 @@ int term_help_puts(void *ctx, char const *buf)
     return len;
 }
 
-int term_help_printf(char const *format, ...)
+int term_help_printf(_Printf_format_string_ char const *format, ...)
 {
     int len;
     va_list args;

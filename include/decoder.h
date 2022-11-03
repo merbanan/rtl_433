@@ -6,13 +6,11 @@
 #define INCLUDE_DECODER_H_
 
 #include <string.h>
+#include <stdio.h>
 #include "r_device.h"
 #include "bitbuffer.h"
 #include "data.h"
 #include "util.h"
 #include "decoder_util.h"
-
-/* TODO: temporary allow to change to new style model keys */
-#define _X(n, o) (decoder->old_model_keys ? (o) : (n))
 
 #endif /* INCLUDE_DECODER_H_ */

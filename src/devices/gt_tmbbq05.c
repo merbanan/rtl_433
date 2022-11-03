@@ -23,7 +23,7 @@ Next 8 bits are static per device (even after battery change)
 Next 2 bits contain the upper 2 bits of the temperature
 Next 1 bit is unknown
 Next 1 bit is an odd parity bit
-Last 4 bits are the sum of the preceeding 5 nibbles (mod 0xf)
+Last 4 bits are the sum of the preceding 5 nibbles (mod 0xf)
 
 Here's the data I used to reverse engineer, more sampes in rtl_test
 
@@ -72,12 +72,8 @@ Frame structure:
 
 static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t b[4],p[4];
+    uint8_t b[4], p[4];
     data_t *data;
-
-    if (decoder->verbose > 1) {
-        bitbuffer_printf(bitbuffer, "%s: Possible Quigg BBQ: ", __func__);
-    }
 
     // 33 bit, repeated multiple times (technically it is repeated 8 times, look for 5 identical versions)
     int r = bitbuffer_find_repeated_row(bitbuffer, 5, 33);
@@ -93,28 +89,22 @@ static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // reject if Checksum Id and temperature are all zero
     // No need to decode/extract values for simple test
     if (!b[0] && !b[1] && !b[2] && !b[3]) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all zero\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all zero");
         return DECODE_FAIL_SANITY;
     }
 
     /* Parity check over 7 nibbles (must be ODD) */
     memcpy(p, b, 4);
-    p[3]=p[3]&0xF0;
+    p[3] = p[3] & 0xF0;
 
     if (parity_bytes(p, 4)) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "gt_tmbbq05_decode: parity check failed (should be ODD)\n");
-        }
+        decoder_log(decoder, 2, __func__, "gt_tmbbq05_decode: parity check failed (should be ODD)");
         return DECODE_FAIL_MIC;
     }
 
     int sum = add_nibbles(b, 3) + (b[3] >> 4);
     if ((sum & 0xf) != (b[3] & 0xf)) {
-        if (decoder->verbose > 1) {
-            bitrow_printf(b, 32, "%s: Bad checksum (%x) ", __func__, sum);
-        }
+        decoder_logf_bitrow(decoder, 2, __func__, b, 32, "Bad checksum (%x)", sum);
         return DECODE_FAIL_MIC;
     }
 
@@ -153,6 +143,5 @@ r_device gt_tmbbq05 = {
         .gap_limit   = 4200,
         .reset_limit = 9100,
         .decode_fn   = &gt_tmbbq05_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

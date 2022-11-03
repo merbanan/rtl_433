@@ -53,6 +53,7 @@ typedef struct r_cfg {
     char const *test_data;
     list_t in_files;
     char const *in_filename;
+    int in_replay;
     volatile sig_atomic_t hop_now;
     volatile sig_atomic_t exit_async;
     volatile sig_atomic_t exit_code; ///< 0=no err, 1=params or cmd line err, 2=sdr device read error, 3=usb init error, 5=USB error (reset), other=other error
@@ -77,6 +78,7 @@ typedef struct r_cfg {
     int verbose_bits;
     conversion_mode_t conversion_mode;
     int report_meta;
+    int report_noise;
     int report_protocol;
     time_mode_t report_time;
     int report_time_hires;
@@ -92,10 +94,10 @@ typedef struct r_cfg {
     uint16_t num_r_devices;
     list_t data_tags;
     list_t output_handler;
+    list_t raw_handler;
     struct dm_state *demod;
     char const *sr_filename;
     int sr_execopen;
-    int old_model_keys;
     /* stats*/
     time_t frames_since; ///< stats start time
     unsigned frames_count; ///< stats counter for interval

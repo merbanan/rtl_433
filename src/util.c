@@ -96,6 +96,64 @@ unsigned extract_bytes_uart(uint8_t *message, unsigned offset_bits, unsigned num
     return ret;
 }
 
+static unsigned symbol_match(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint32_t symbol)
+{
+    unsigned symbol_len = symbol & 0x1f;
+
+    // check required len
+    if (num_bits < symbol_len) {
+        return 0;
+    }
+
+    // match each bit otherwise abort
+    for (unsigned pos = 0; pos < symbol_len; ++pos) {
+        unsigned m_pos = offset_bits + pos;
+        unsigned m_bit = message[m_pos / 8] >> (7 - (m_pos % 8));
+        unsigned s_bit = symbol >> (31 - pos);
+        if ((m_bit & 1) != (s_bit & 1)) {
+            return 0;
+        }
+    }
+
+    return symbol_len;
+}
+
+unsigned extract_bits_symbols(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint32_t zero, uint32_t one, uint32_t sync, uint8_t *dst)
+{
+    unsigned zero_len = zero & 0x1f;
+    unsigned one_len  = one & 0x1f;
+    unsigned sync_len = sync & 0x1f;
+
+    unsigned dst_len = 0;
+
+    while (num_bits >= 1) {
+        // TODO: match the longest symbol first
+        if (symbol_match(message, offset_bits, num_bits, sync)) {
+            offset_bits += sync_len;
+            num_bits -= sync_len;
+            // just skip
+        }
+        else if (symbol_match(message, offset_bits, num_bits, zero)) {
+            offset_bits += zero_len;
+            num_bits -= zero_len;
+            // no need to set a zero
+            dst_len += 1;
+        }
+        else if (symbol_match(message, offset_bits, num_bits, one)) {
+            offset_bits += one_len;
+            num_bits -= one_len;
+            dst[dst_len / 8] |= 0x80 >> (dst_len % 8);
+            dst_len += 1;
+        }
+        else {
+            break;
+        }
+    }
+
+    // fprintf(stderr, "extract_bits_symbols: %x %x %x : %u (%u)\n", zero, one, sync, dst_len, num_bits);
+    return dst_len;
+}
+
 uint8_t crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
 {
     unsigned remainder = init << 4; // LSBs are unused

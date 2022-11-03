@@ -90,39 +90,40 @@ static int tfa_twin_plus_303049_callback(r_device *decoder, bitbuffer_t *bitbuff
 
     float tempC = (negative_sign ? -( (1<<9) - temp ) : temp ) * 0.1F;
 
+    /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, _X("TFA-TwinPlus","TFA-Twin-Plus-30.3049"),
-            "id",            "Id",          DATA_INT, sensor_id,
-            "channel",       "Channel",     DATA_INT, channel,
-            "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
+            "model",         "",            DATA_STRING, "TFA-TwinPlus",
+            "id",            "Id",          DATA_INT,    sensor_id,
+            "channel",       "Channel",     DATA_INT,    channel,
+            "battery_ok",    "Battery",     DATA_INT,    !battery_low,
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempC,
             "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
             NULL);
-    decoder_output_data(decoder, data);
+    /* clang-format on */
 
+    decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "channel",
-    "battery",
-    "temperature_C",
-    "humidity",
-    "mic",
-    NULL
+        "model",
+        "id",
+        "channel",
+        "battery_ok",
+        "temperature_C",
+        "humidity",
+        "mic",
+        NULL,
 };
 
 r_device tfa_twin_plus_303049 = {
-    .name          = "TFA-Twin-Plus-30.3049, Conrad KW9010, Ea2 BL999",
-    .modulation    = OOK_PULSE_PPM,
-    .short_width   = 2000,
-    .long_width    = 4000,
-    .gap_limit     = 6000,
-    .reset_limit   = 10000,
-    .decode_fn     = &tfa_twin_plus_303049_callback,
-    .disabled      = 0,
-    .fields         = output_fields
+        .name        = "TFA-Twin-Plus-30.3049, Conrad KW9010, Ea2 BL999",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 2000,
+        .long_width  = 4000,
+        .gap_limit   = 6000,
+        .reset_limit = 10000,
+        .decode_fn   = &tfa_twin_plus_303049_callback,
+        .fields      = output_fields,
 };

@@ -22,15 +22,16 @@
     @param iq_buf input samples (I/Q samples in interleaved uint8)
     @param[out] y_buf output buffer
     @param len number of samples to process
+    @return the average level in dB
 */
-void envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
+float envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
 
 // for evaluation
-void envelope_detect_nolut(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
-void magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
-void magnitude_true_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
-void magnitude_est_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len);
-void magnitude_true_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len);
+float envelope_detect_nolut(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
+float magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
+float magnitude_true_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
+float magnitude_est_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len);
+float magnitude_true_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len);
 
 #define AMP_TO_DB(x) (10.0f * ((x) > 0 ? log10f(x) : 0) - 42.1442f)  // 10*log10f(16384.0f)
 #define MAG_TO_DB(x) (20.0f * ((x) > 0 ? log10f(x) : 0) - 84.2884f)  // 20*log10f(16384.0f)
@@ -121,8 +122,8 @@ void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t le
     @param x_buf input samples (I/Q samples in interleaved uint8)
     @param[out] y_buf output from FM demodulator
     @param num_samples number of samples to process
+    @param low_pass Low-pass filter frequency or ratio
     @param[in,out] state State to store between chunk processing
-    @param fpdm Index of filter setting to use
 */
 void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, uint32_t samp_rate, float low_pass, demodfm_state_t *state);
 

@@ -9,7 +9,7 @@
 
 - [SigRok](https://sigrok.org/) [PulseView](https://sigrok.org/wiki/PulseView)
 - [Audacity](https://www.audacityteam.org/)
-- [iqSpectrogram](http://triq.net/iqs) to visualize sample files
+- [iqSpectrogram](http://triq.org/iqs) to visualize sample files
 - [BitBench](http://triq.net/bitbench) to analyze data formats
 
 # Related projects
@@ -31,3 +31,6 @@
 - [WeeWx](http://weewx.com/)
   the weewx-sdr driver gets data from rtl_433 and feeds it into weewx. from there the data can be combined with data from other sources, displayed using any of the many weewx skins, and/or uploaded to many different web services. the first weewx-sdr release was in 2016.
   S.a. https://github.com/matthewwall/weewx-sdr https://github.com/weewx/weewx/wiki#skins https://github.com/weewx/weewx/wiki#uploaders
+
+- [rtl_snr](https://github.com/hdtodd/rtl_snr): 
+  snr is a pair of equivalent C and Python programs that catalog and analyze signal-to-noise ratios from devices seen by RTL_SDR dongles and logged in JSON format by rtl_433.

@@ -82,12 +82,57 @@ typedef struct {
     FILE *file;
 } file_info_t;
 
-int parse_file_info(const char *filename, file_info_t *info);
+/// Clear all file info.
+///
+/// @param[in,out] info the file info to clear
+void file_info_clear(file_info_t *info);
 
-void check_read_file_info(file_info_t *info);
+/// Parse file info from a filename, optionally prefixed with overrides.
+///
+/// Detects tags in the file name delimited by non-alphanum
+/// and prefixes delimited with a colon.
+///
+/// Parse "[0-9]+(\.[0-9]+)?[A-Za-z]"
+/// - as frequency (suffix "M" or "[kMG]?Hz")
+/// - or sample rate (suffix "k" or "[kMG]?sps")
+///
+/// Parse "[A-Za-z][0-9A-Za-z]+" as format or content specifier:
+/// - 2ch formats: "cu8", "cs8", "cs16", "cs32", "cf32"
+/// - 1ch formats: "u8", "s8", "s16", "u16", "s32", "u32", "f32"
+/// - text formats: "vcd", "ook"
+/// - content types: "iq", "i", "q", "am", "fm", "logic"
+///
+/// Parses left to right, with the exception of a prefix up to the last colon ":"
+/// This prefix is the forced override, parsed last and removed from the filename.
+///
+/// All matches are case-insensitive.
+///
+/// - default detection, e.g.: path/filename.am.s16
+/// - overrides, e.g.: am:s16:path/filename.ext
+/// - other styles are detected but discouraged, e.g.:
+///   am-s16:path/filename.ext, am.s16:path/filename.ext, path/filename.am_s16
+///
+/// @param[in,out] info the file info to parse into
+/// @param filename a file name with optional override prefix to parse
+/// @return the detected file format, 0 otherwise
+int file_info_parse_filename(file_info_t *info, const char *filename);
 
-void check_write_file_info(file_info_t *info);
+/// Check if the format in this file info is supported for reading,
+/// print a warning and exit otherwise.
+///
+/// @param info the file info to check
+void file_info_check_read(file_info_t *info);
 
+/// Check if the format in this file info is supported for reading,
+/// print a warning and exit otherwise.
+///
+/// @param info the file info to check
+void file_info_check_write(file_info_t *info);
+
+/// Return a string describing the format in this file info.
+///
+/// @param info the file info to check
+/// @return a string describing the format
 char const *file_info_string(file_info_t *info);
 
 #endif /* INCLUDE_FILEFORMAT_H_ */

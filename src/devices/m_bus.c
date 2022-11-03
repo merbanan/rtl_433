@@ -58,7 +58,7 @@ static uint8_t m_bus_decode_3of6(uint8_t byte)
 
 // Decode input 6 bit nibbles to output 4 bit nibbles (packed in bytes). "3of6" coding used for Mode T
 // Bad data must be handled with second layer CRC
-static int m_bus_decode_3of6_buffer(const bitrow_t bits, unsigned bit_offset, uint8_t* output, unsigned num_bytes)
+static int m_bus_decode_3of6_buffer(uint8_t const *bits, unsigned bit_offset, uint8_t* output, unsigned num_bytes)
 {
     for (unsigned n=0; n<num_bytes; ++n) {
         uint8_t nibble_h = m_bus_decode_3of6(bitrow_get_byte(bits, n*12+bit_offset) >> 2);
@@ -76,9 +76,7 @@ static int m_bus_crc_valid(r_device *decoder, const uint8_t *bytes, unsigned crc
     uint16_t crc_calc = ~crc16(bytes, crc_offset, CRC_POLY, 0);
     uint16_t crc_read = (((uint16_t)bytes[crc_offset] << 8) | bytes[crc_offset+1]);
     if (crc_calc != crc_read) {
-        if (decoder->verbose) {
-            fprintf(stderr, "M-Bus: CRC error: Calculated 0x%0X, Read: 0x%0X\n", (unsigned)crc_calc, (unsigned)crc_read);
-        }
+        decoder_logf(decoder, 1, __func__, "M-Bus: CRC error: Calculated 0x%0X, Read: 0x%0X", (unsigned)crc_calc, (unsigned)crc_read);
         return 0;
     }
     return 1;
@@ -86,7 +84,7 @@ static int m_bus_crc_valid(r_device *decoder, const uint8_t *bytes, unsigned crc
 
 
 // Decode two bytes into three letters of five bits
-static void m_bus_manuf_decode(uint16_t m_field, char* three_letter_code)
+static void m_bus_manuf_decode(uint16_t m_field, char *three_letter_code)
 {
     three_letter_code[0] = (m_field >> 10 & 0x1F) + 0x40;
     three_letter_code[1] = (m_field >> 5 & 0x1F) + 0x40;
@@ -96,7 +94,7 @@ static void m_bus_manuf_decode(uint16_t m_field, char* three_letter_code)
 
 
 // Decode device type string
-const char* m_bus_device_type_str(uint8_t devType)
+static char const *m_bus_device_type_str(uint8_t devType)
 {
     char *str = "";
     switch(devType) {
@@ -176,17 +174,17 @@ typedef struct {
     uint8_t     data[512];
 } m_bus_data_t;
 
-static float humidity_factor[2] = { 0.1, 1 };
+static float humidity_factor[2] = { 0.1f, 1.0f };
 
 
-static char* oms_hum[4][4] = {
+static char *oms_hum[4][4] = {
 {"humidity","average_humidity_1h","average_humidity_24h","error_04", },
 {"maximum_humidity_1h","maximum_humidity_24h","error_13","error_14",},
 {"minimum_humidity_1h","minimum_humidity_24h","error_23","error_24",},
 {"error_31","error_32","error_33","error_34",}
 };
 
-static char* oms_hum_el[4][4] = {
+static char *oms_hum_el[4][4] = {
 {"Humidity","Average Humidity 1h","Average Humidity 24h","Error [0][4]", },
 {"Maximum Humidity 1h","Maximum Humidity 24h","Error [1][3]","Error [1][4]",},
 {"Minimum Humidity 1h","Minimum Humidity 24h","Error [2][3]","Error [2][4]",},
@@ -282,7 +280,7 @@ static char *unit_names[][3] = {
 static double pow10_table[8] = { 0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000 };
 
 
-static data_t *append_str(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, const char* extra, const char* value)
+static data_t *append_str(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, char const *extra, char const *value)
 {
     char key[100] = {0};
     char pretty[100] = {0};
@@ -301,9 +299,9 @@ static data_t *append_str(data_t *data, enum UnitType unit_type, uint8_t value_t
 
 }
 
-static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, const char* extra, int64_t val, int exp)
+static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, char const *extra, int64_t val, int exp)
 {
-    const char *prefix = "";
+    char const *prefix = "";
     char buffer_val[256] = {0};
 
     if (exp < -6) {
@@ -337,7 +335,7 @@ static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_t
     return append_str(data, unit_type, value_type, sn, extra, buffer_val);
 }
 
-size_t m_bus_tm_decode(const uint8_t *data, size_t data_size, char *output, size_t output_size)
+static size_t m_bus_tm_decode(const uint8_t *data, size_t data_size, char *output, size_t output_size)
 {
     size_t out_len = 0;
 
@@ -657,6 +655,7 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
                 default:
                     break;
             }
+            break;
         default:
             break;
     }
@@ -798,10 +797,8 @@ static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bu
     // Check length of package is sufficient
     unsigned num_data_blocks = (block1->L-9+15)/16;      // Data blocks are 16 bytes long + 2 CRC bytes (not counted in L)
     if ((block1->L < 9) || ((block1->L-9)+num_data_blocks*2 > in->length-BLOCK1A_SIZE)) {   // add CRC bytes for each data block
-        if (decoder->verbose) {
-            fprintf(stderr, "M-Bus: Package (%u) too short for packet Length: %u\n", in->length, block1->L);
-            fprintf(stderr, "M-Bus: %u > %u\n", (block1->L-9)+num_data_blocks*2, in->length-BLOCK1A_SIZE);
-        }
+        decoder_logf(decoder, 1, __func__, "M-Bus: Package (%u) too short for packet Length: %u", in->length, block1->L);
+        decoder_logf(decoder, 1, __func__, "M-Bus: %u > %u", (block1->L-9)+num_data_blocks*2, in->length-BLOCK1A_SIZE);
         return 0;
     }
 
@@ -839,7 +836,7 @@ static int m_bus_decode_format_b(r_device *decoder, const m_bus_data_t *in, m_bu
 
     // Check length of package is sufficient
     if ((block1->L < 12) || (block1->L+1 > (int)in->length)) {   // L includes all bytes except itself
-        if (decoder->verbose) { fprintf(stderr, "M-Bus: Package too short for Length: %u\n", block1->L); }
+        decoder_logf(decoder, 1, __func__, "M-Bus: Package too short for Length: %u", block1->L);
         return 0;
     }
 
@@ -863,8 +860,10 @@ static int m_bus_decode_format_b(r_device *decoder, const m_bus_data_t *in, m_bu
     return 1;
 }
 
-static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const m_bus_block1_t *block1, const char *mode)
+static int m_bus_output_data(r_device *decoder, bitbuffer_t *bitbuffer, const m_bus_data_t *out, const m_bus_block1_t *block1, char const *mode)
 {
+    (void)bitbuffer; // note: to match the common decoder function signature
+
     data_t  *data;
     char    str_buf[1024];
 
@@ -877,55 +876,67 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
         char sn_str[7*2] = {0};
         for (unsigned n=0; n<6; n++) { sprintf(sn_str+n*2, "%02x", block1->knx_sn[n]); }
 
+        /* clang-format off */
         data = data_make(
-        "model",    "",             DATA_STRING,    "KNX-RF",
-        "sn",       "SN",           DATA_STRING,    sn_str,
-        "knx_ctrl", "KNX-Ctrl",     DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.knx_ctrl,
-        "src",      "Src",          DATA_FORMAT,    "0x%04X", DATA_INT, block1->block2.src,
-        "dst",      "Dst",          DATA_FORMAT,    "0x%04X", DATA_INT, block1->block2.dst,
-        "l_npci",   "L/NPCI",       DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.l_npci,
-        "tpci",     "TPCI",         DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.tpci,
-        "apci",     "APCI",         DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.apci,
-        "data_length","Data Length",DATA_INT,       out->length,
-        "data",     "Data",         DATA_STRING,    str_buf,
-        "mic",      "Integrity",    DATA_STRING,    "CRC",
-        NULL);
+                "model",    "",             DATA_STRING,    "KNX-RF",
+                "sn",       "SN",           DATA_STRING,    sn_str,
+                "knx_ctrl", "KNX-Ctrl",     DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.knx_ctrl,
+                "src",      "Src",          DATA_FORMAT,    "0x%04X", DATA_INT, block1->block2.src,
+                "dst",      "Dst",          DATA_FORMAT,    "0x%04X", DATA_INT, block1->block2.dst,
+                "l_npci",   "L/NPCI",       DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.l_npci,
+                "tpci",     "TPCI",         DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.tpci,
+                "apci",     "APCI",         DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.apci,
+                "data_length","Data Length",DATA_INT,       out->length,
+                "data",     "Data",         DATA_STRING,    str_buf,
+                "mic",      "Integrity",    DATA_STRING,    "CRC",
+                NULL);
+        /* clang-format on */
     } else {
+        /* clang-format off */
         data = data_make(
-        "model",    "",             DATA_STRING,    _X("Wireless-MBus","Wireless M-Bus"),
-        "mode",     "Mode",         DATA_STRING,    mode,
-        "M",        "Manufacturer", DATA_STRING,    block1->M_str,
-        "id",       "ID",           DATA_INT,       block1->A_ID,
-        "version",  "Version",      DATA_INT,       block1->A_Version,
-        "type",     "Device Type",  DATA_FORMAT,    "0x%02X",   DATA_INT, block1->A_DevType,
-        "type_string",  "Device Type String",   DATA_STRING,        m_bus_device_type_str(block1->A_DevType),
-        "C",        "Control",      DATA_FORMAT,    "0x%02X",   DATA_INT, block1->C,
-//        "L",        "Length",       DATA_INT,       block1->L,
-        "data_length",  "Data Length",          DATA_INT,           out->length,
-        "data",     "Data",         DATA_STRING,    str_buf,
-        "mic",      "Integrity",    DATA_STRING,    "CRC",
-        NULL);
+                "model",    "",             DATA_STRING,    "Wireless-MBus",
+                "mode",     "Mode",         DATA_STRING,    mode,
+                "M",        "Manufacturer", DATA_STRING,    block1->M_str,
+                "id",       "ID",           DATA_INT,       block1->A_ID,
+                "version",  "Version",      DATA_INT,       block1->A_Version,
+                "type",     "Device Type",  DATA_FORMAT,    "0x%02X",   DATA_INT, block1->A_DevType,
+                "type_string",  "Device Type String",   DATA_STRING,        m_bus_device_type_str(block1->A_DevType),
+                "C",        "Control",      DATA_FORMAT,    "0x%02X",   DATA_INT, block1->C,
+//                "L",        "Length",       DATA_INT,       block1->L,
+                "data_length",  "Data Length",          DATA_INT,           out->length,
+                "data",     "Data",         DATA_STRING,    str_buf,
+                "mic",      "Integrity",    DATA_STRING,    "CRC",
+                NULL);
+        /* clang-format on */
     }
     if (block1->block2.CI) {
+        /* clang-format off */
         data = data_append(data,
-        "CI",     "Control Info",   DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.CI,
-        "AC",     "Access number",  DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.AC,
-        "ST",     "Device Type",    DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.ST,
-        "CW",     "Configuration Word",DATA_FORMAT, "0x%04X",   DATA_INT, block1->block2.CW,
-        NULL);
+                "CI",     "Control Info",   DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.CI,
+                "AC",     "Access number",  DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.AC,
+                "ST",     "Device Type",    DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.ST,
+                "CW",     "Configuration Word",DATA_FORMAT, "0x%04X",   DATA_INT, block1->block2.CW,
+                NULL);
+        /* clang-format on */
     }
     /* Encryption not supported */
     if (!(block1->block2.CW&0x0500)) {
         parse_payload(data, block1, out);
     } else {
+        /* clang-format off */
         data = data_append(data,
                 "payload_encrypted", "Payload Encrypted", DATA_FORMAT, "1", DATA_INT, NULL,
                 NULL);
+        /* clang-format on */
     }
     decoder_output_data(decoder, data);
+    return 1;
 }
 
-
+/**
+Wireless M-Bus, Mode C&T.
+@sa m_bus_output_data()
+*/
 static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     static const uint8_t PREAMBLE_T[]  = {0x54, 0x3D};      // Mode T Preamble (always format A - 3of6 encoded)
@@ -948,9 +959,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
     }
 
-    if (decoder->verbose) { fprintf(stderr, "PREAMBLE_T: found at: %u\n", bit_offset);
-    bitbuffer_print(bitbuffer);
-    }
+    decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "PREAMBLE_T: found at: %u", bit_offset);
     bit_offset += sizeof(PREAMBLE_T)*8;     // skip preamble
 
     uint8_t next_byte = bitrow_get_byte(bitbuffer->bb[0], bit_offset);
@@ -962,7 +971,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         bit_offset += 8;
         // Format A
         if (next_byte == 0xCD) {
-            if (decoder->verbose) { fprintf(stderr, "M-Bus: Mode C, Format A\n"); }
+            decoder_log(decoder, 1, __func__, "M-Bus: Mode C, Format A");
             // Extract data
             data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
             bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
@@ -971,7 +980,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         } // Format A
         // Format B
         else if (next_byte == 0x3D) {
-            if (decoder->verbose) { fprintf(stderr, "M-Bus: Mode C, Format B\n"); }
+            decoder_log(decoder, 1, __func__, "M-Bus: Mode C, Format B");
             // Extract data
             data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
             bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
@@ -980,10 +989,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }   // Format B
         // Unknown Format
         else {
-            if (decoder->verbose) {
-                fprintf(stderr, "M-Bus: Mode C, Unknown format: 0x%X\n", next_byte);
-                bitbuffer_print(bitbuffer);
-            }
+            decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "M-Bus: Mode C, Unknown format: 0x%X", next_byte);
             return 0;
         }
     }   // Mode C
@@ -991,26 +997,29 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     else {
         mode = "T";
         bit_offset -= 8; // Rewind offset to start of telegram
-        if (decoder->verbose) { fprintf(stderr, "M-Bus: Mode T\n"); }
-        if (decoder->verbose) { fprintf(stderr, "Experimental - Not tested\n"); }
+        decoder_log(decoder, 1, __func__, "M-Bus: Mode T");
+        decoder_log(decoder, 1, __func__, "Experimental - Not tested");
         // Extract data
 
         data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/12;    // Each byte is encoded into 12 bits
 
-        if (decoder->verbose) { fprintf(stderr, "MBus telegram length: %u\n", data_in.length); }
+        decoder_logf(decoder, 1, __func__, "MBus telegram length: %u", data_in.length);
         if (m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, data_in.data, data_in.length) < 0) {
-            if (decoder->verbose) fprintf(stderr, "M-Bus: Decoding error\n");
+            decoder_log(decoder, 1, __func__, "M-Bus: Decoding error");
             return 0;
         }
         // Decode
         if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
     }   // Mode T
 
-    m_bus_output_data(decoder, &data_out, &block1, mode);
+    m_bus_output_data(decoder, bitbuffer, &data_out, &block1, mode);
     return 1;
 }
 
-
+/**
+Wireless M-Bus, Mode R.
+@sa m_bus_output_data()
+*/
 static int m_bus_mode_r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     static const uint8_t PREAMBLE_RA[]  = {0x55, 0x54, 0x76, 0x96};      // Mode R, format A (B not supported)
@@ -1031,19 +1040,24 @@ static int m_bus_mode_r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     bit_offset += sizeof(PREAMBLE_RA)*8;     // skip preamble
 
-    if (decoder->verbose) { fprintf(stderr, "M-Bus: Mode R, Format A\n"); }
-    if (decoder->verbose) { fprintf(stderr, "Experimental - Not tested\n"); }
+    decoder_log(decoder, 1, __func__, "M-Bus: Mode R, Format A");
+    decoder_log(decoder, 1, __func__, "Experimental - Not tested");
     // Extract data
     data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
     // Decode
     if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
 
-    m_bus_output_data(decoder, &data_out, &block1, "R");
+    m_bus_output_data(decoder, bitbuffer, &data_out, &block1, "R");
     return 1;
 }
 
-// Untested code, signal samples missing
+/**
+Wireless M-Bus, Mode F.
+@sa m_bus_output_data()
+
+Untested code, signal samples missing.
+*/
 static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     static const uint8_t PREAMBLE_F[]  = {0x55, 0xF6};      // Mode F Preamble
@@ -1070,29 +1084,30 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bit_offset += 8;
     // Format A
     if (next_byte == 0x8D) {
-        if (decoder->verbose) { fprintf(stderr, "M-Bus: Mode F, Format A\n"); }
-        if (decoder->verbose) { fprintf(stderr, "Not implemented\n"); }
+        decoder_log(decoder, 1, __func__, "M-Bus: Mode F, Format A");
+        decoder_log(decoder, 1, __func__, "Not implemented");
         return 1;
     } // Format A
     // Format B
     else if (next_byte == 0x72) {
-        if (decoder->verbose) { fprintf(stderr, "M-Bus: Mode F, Format B\n"); }
-        if (decoder->verbose) { fprintf(stderr, "Not implemented\n"); }
+        decoder_log(decoder, 1, __func__, "M-Bus: Mode F, Format B");
+        decoder_log(decoder, 1, __func__, "Not implemented");
         return 1;
     }   // Format B
     // Unknown Format
     else {
-        if (decoder->verbose) {
-            fprintf(stderr, "M-Bus: Mode F, Unknown format: 0x%X\n", next_byte);
-            bitbuffer_print(bitbuffer);
-        }
+        decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "M-Bus: Mode F, Unknown format: 0x%X", next_byte);
         return 0;
     }
 
-    //m_bus_output_data(decoder, &data_out, &block1, "F");
+    //m_bus_output_data(decoder, bitbuffer, &data_out, &block1, "F");
     return 1;
 }
 
+/**
+Wireless M-Bus, Mode S.
+@sa m_bus_output_data()
+*/
 static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     static const uint8_t PREAMBLE_S[]  = {0x54, 0x76, 0x96};  // Mode S Preamble
@@ -1114,100 +1129,96 @@ static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
 
-    m_bus_output_data(decoder, &data_out, &block1, "S");
+    m_bus_output_data(decoder, bitbuffer, &data_out, &block1, "S");
 
     return 1;
 }
 
+// NOTE: we'd need to add "value_types_tab X unit_names X n" fields
 static char *output_fields[] = {
-    "model",
-    "mode",
-    "id",
-    "version",
-    "type",
-    "type_string",
-    "CI",
-    "AC",
-    "ST",
-    "CW",
-    "sn",
-    "knx_ctrl",
-    "src",
-    "dst",
-    "l_npci",
-    "tpci",
-    "apci",
-    "crc",
-    "M",
-    "C",
-    "data_length",
-    "data",
-    "mic",
-    "temperature_C",
-    "average_temperature_1h_C",
-    "average_temperature_24h_C",
-    "humidity",
-    "average_humidity_1h",
-    "average_humidity_24h",
-    "minimum_temperature_1h_C",
-    "maximum_temperature_1h_C",
-    "minimum_temperature_24h_C",
-    "maximum_temperature_24h_C",
-    "minimum_humidity_1h",
-    "maximum_humidity_1h",
-    "minimum_humidity_24h",
-    "maximum_humidity_24h",
-    "switch",
-    "counter_0",
-    "counter_1",
-    NULL,
+        "model",
+        "mode",
+        "id",
+        "version",
+        "type",
+        "type_string",
+        "CI",
+        "AC",
+        "ST",
+        "CW",
+        "sn",
+        "knx_ctrl",
+        "src",
+        "dst",
+        "l_npci",
+        "tpci",
+        "apci",
+        "crc",
+        "M",
+        "C",
+        "data_length",
+        "data",
+        "mic",
+        "temperature_C",
+        "average_temperature_1h_C",
+        "average_temperature_24h_C",
+        "humidity",
+        "average_humidity_1h",
+        "average_humidity_24h",
+        "minimum_temperature_1h_C",
+        "maximum_temperature_1h_C",
+        "minimum_temperature_24h_C",
+        "maximum_temperature_24h_C",
+        "minimum_humidity_1h",
+        "maximum_humidity_1h",
+        "minimum_humidity_24h",
+        "maximum_humidity_24h",
+        "switch",
+        "counter_0",
+        "counter_1",
+        NULL,
 };
 
 // Mode C1, C2 (Meter TX), T1, T2 (Meter TX),
 // Frequency 868.95 MHz, Bitrate 100 kbps, Modulation NRZ FSK
 r_device m_bus_mode_c_t = {
-    .name           = "Wireless M-Bus, Mode C&T, 100kbps (-f 868950000 -s 1200000)",     // Minimum samplerate = 1.2 MHz (12 samples of 100kb/s)
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = 10,   // Bit rate: 100 kb/s
-    .long_width     = 10,   // NRZ encoding (bit width = pulse width)
-    .reset_limit    = 500,  //
-    .decode_fn      = &m_bus_mode_c_t_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Wireless M-Bus, Mode C&T, 100kbps (-f 868950000 -s 1200000)", // Minimum samplerate = 1.2 MHz (12 samples of 100kb/s)
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 10,  // Bit rate: 100 kb/s
+        .long_width  = 10,  // NRZ encoding (bit width = pulse width)
+        .reset_limit = 500, //
+        .decode_fn   = &m_bus_mode_c_t_callback,
+        .fields      = output_fields,
 };
-
 
 // Mode S1, S1-m, S2, T2 (Meter RX),    (Meter RX not so interesting)
 // Frequency 868.3 MHz, Bitrate 32.768 kbps, Modulation Manchester FSK
 r_device m_bus_mode_s = {
-    .name           = "Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)",   // Minimum samplerate = 1 MHz (15 samples of 32kb/s manchester coded)
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = (1000.0/32.768),   // ~31 us per bit
-    .long_width     = (1000.0/32.768),
-    .reset_limit    = ((1000.0/32.768)*9), // 9 bit periods
-    .decode_fn      = &m_bus_mode_s_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)", // Minimum samplerate = 1 MHz (15 samples of 32kb/s manchester coded)
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = (1000.0 / 32.768), // ~31 us per bit
+        .long_width  = (1000.0 / 32.768),
+        .reset_limit = ((1000.0 / 32.768) * 9), // 9 bit periods
+        .decode_fn   = &m_bus_mode_s_callback,
+        .fields      = output_fields,
 };
-
 
 // Mode C2 (Meter RX)
 // Frequency 869.525 MHz, Bitrate 50 kbps, Modulation Manchester
 //      Note: Not so interesting, as it is only Meter RX
-
 
 // Mode R2
 // Frequency 868.33 MHz, Bitrate 4.8 kbps, Modulation Manchester FSK
 //      Preamble {0x55, 0x54, 0x76, 0x96} (Format A) (B not supported)
 // Untested stub!!! (Need samples)
 r_device m_bus_mode_r = {
-    .name           = "Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)",
-    .modulation     = FSK_PULSE_MANCHESTER_ZEROBIT,
-    .short_width    = (1000.0f / 4.8f / 2),   // ~208 us per bit -> clock half period ~104 us
-    .long_width     = 0,    // Unused
-    .reset_limit    = (1000.0f / 4.8f * 1.5f), // 3 clock half periods
-    .decode_fn      = &m_bus_mode_r_callback,
-    .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
+        .name        = "Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)",
+        .modulation  = FSK_PULSE_MANCHESTER_ZEROBIT,
+        .short_width = (1000.0f / 4.8f / 2),    // ~208 us per bit -> clock half period ~104 us
+        .long_width  = 0,                       // Unused
+        .reset_limit = (1000.0f / 4.8f * 1.5f), // 3 clock half periods
+        .decode_fn   = &m_bus_mode_r_callback,
+        .disabled    = 1, // Disable per default, as it runs on non-standard frequency
 };
 
 // Mode N
@@ -1219,18 +1230,17 @@ r_device m_bus_mode_r = {
 // Bitrate 19.2 kbps, Modulation 4 GFSK (9600 BAUD)
 //      Note: Not currently possible with rtl_433
 
-
 // Mode F2
 // Frequency 433.82 MHz, Bitrate 2.4 kbps, Modulation NRZ FSK
 //      Preamble {0x55, 0xF6, 0x8D} (Format A)
 //      Preamble {0x55, 0xF6, 0x72} (Format B)
 // Untested stub!!! (Need samples)
 r_device m_bus_mode_f = {
-    .name           = "Wireless M-Bus, Mode F, 2.4kbps",
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = 1000.0f / 2.4f,   // ~417 us
-    .long_width     = 1000.0f / 2.4f,   // NRZ encoding (bit width = pulse width)
-    .reset_limit    = 5000,         // ??
-    .decode_fn      = &m_bus_mode_f_callback,
-    .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
+        .name        = "Wireless M-Bus, Mode F, 2.4kbps",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 1000.0f / 2.4f, // ~417 us
+        .long_width  = 1000.0f / 2.4f, // NRZ encoding (bit width = pulse width)
+        .reset_limit = 5000,           // ??
+        .decode_fn   = &m_bus_mode_f_callback,
+        .disabled    = 1, // Disable per default, as it runs on non-standard frequency
 };

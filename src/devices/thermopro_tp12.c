@@ -57,7 +57,7 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
     // The device transmits 16 rows, let's check for 3 matching.
     // (Really 17 rows, but the last one doesn't match because it's missing a trailing 1.)
     // Update for TP08: same is true but only 2 rows.
-    row = bitbuffer_find_repeated_row(
+    row = bitbuffer_find_repeated_prefix(
             bitbuffer,
             (bitbuffer->num_rows > 5) ? 5 : 2,
             BITS_IN_VALID_ROW - 1); // allow 1 bit less to also match the last row
@@ -82,21 +82,22 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
     // or long-press its power button, it pairs with the first device ID it hears.
     device = bytes[0];
 
-
-
     temp1_raw = ((bytes[2] & 0xf0) << 4) | bytes[1];
     temp2_raw = ((bytes[2] & 0x0f) << 8) | bytes[3];
 
     temp1_c = (temp1_raw - 200) * 0.1f;
     temp2_c = (temp2_raw - 200) * 0.1f;
 
+    /* clang-format off */
     data = data_make(
-            "model",            "",            DATA_STRING, _X("Thermopro-TP12","Thermopro TP12 Thermometer"),
+            "model",            "",            DATA_STRING, "Thermopro-TP12",
             "id",               "Id",          DATA_INT,    device,
             "temperature_1_C",  "Temperature 1 (Food)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp1_c,
             "temperature_2_C",  "Temperature 2 (Barbecue)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp2_c,
             "mic",              "Integrity",   DATA_STRING, "CRC",
             NULL);
+    /* clang-format on */
+
     decoder_output_data(decoder, data);
     return 1;
 }
@@ -118,6 +119,5 @@ r_device thermopro_tp12 = {
         .gap_limit   = 2000,
         .reset_limit = 4000,
         .decode_fn   = &thermopro_tp12_sensor_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

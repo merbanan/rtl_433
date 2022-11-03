@@ -66,14 +66,15 @@ static int ibis_beacon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         sprintf(&code_str[i*2], "%02x", msg[i]);
     }
 
-    /* Get time now */
+    /* clang-format off */
     data = data_make(
-        "model",    "",             DATA_STRING,    _X("IBIS-Beacon","IBIS beacon"),
-        "id",       "Vehicle No.",  DATA_INT,       id,
-        "counter",  "Counter",      DATA_INT,       counter,
-        "code",     "Code data",    DATA_STRING,    code_str,
-        "mic",      "Integrity",    DATA_STRING,    "CRC",
-        NULL);
+            "model",    "",             DATA_STRING,    "IBIS-Beacon",
+            "id",       "Vehicle No.",  DATA_INT,       id,
+            "counter",  "Counter",      DATA_INT,       counter,
+            "code",     "Code data",    DATA_STRING,    code_str,
+            "mic",      "Integrity",    DATA_STRING,    "CRC",
+            NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
@@ -95,6 +96,5 @@ r_device ibis_beacon = {
         .long_width  = 0,   // Not used
         .reset_limit = 100, // Maximum gap size before End Of Message [us].
         .decode_fn   = &ibis_beacon_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

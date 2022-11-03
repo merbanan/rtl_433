@@ -255,6 +255,7 @@ typedef int bool;
 #define snprintf _snprintf
 #define vsnprintf _vsnprintf
 #define to64(x) _atoi64(x)
+#define rmdir _rmdir
 #if !defined(__MINGW32__) && !defined(__MINGW64__)
 #define popen(x, y) _popen((x), (y))
 #define pclose(x) _pclose(x)

@@ -52,8 +52,6 @@ static int cavius_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         cavius_unknown1 = 0x01,
     };
 
-    data_t *data;
-
     // Find the sync
     unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8);
     if (bit_offset + 22 * 8 >= bitbuffer->bits_per_row[0]) { // Did not find a big enough package
@@ -73,44 +71,42 @@ static int cavius_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint8_t *b = databits.bb[0];
 
+    int crc = crc8le(b, 7, 0x31, 0x0);
+    if (crc != 0) {
+        return DECODE_FAIL_MIC; // invalid CRC
+    }
+
     uint32_t net_id    = ((uint32_t)b[0] << 24) | (b[1] << 16) | (b[2] << 8) | (b[3]);
     uint32_t sender_id = ((uint32_t)b[7] << 24) | (b[8] << 16) | (b[9] << 8) | (b[10]);
-    int message        = (b[4]);
     int batt_low       = (b[4] & cavius_battlow) != 0;
+    int message        = (b[4] & ~cavius_battlow); // exclude batt_low bit
 
-    int crc = crc8le(databits.bb[0], 7, 0x31, 0x0);
-    if (crc != 0)
-        return DECODE_FAIL_MIC; // invalid CRC
-
-    char *text = "Unknown";
+    char *text = batt_low ? "Battery low" : "Unknown";
     switch (message) {
-        case cavius_alarm:
-            text = "Fire alarm";
-            break;
-        case cavius_mute:
-            text = "Alarm muted";
-            break;
-        case cavius_pairing:
-            text = "Pairing";
-            break;
-        case cavius_test:
-            text = "Test alarm";
-            break;
-        case cavius_warning:
-            text = "Warning/Water detected";
-            break;
-        case cavius_battlow:
-            text = "Battery low";
-            break;
-        default:
-            break;
+    case cavius_alarm:
+        text = "Fire alarm";
+        break;
+    case cavius_mute:
+        text = "Alarm muted";
+        break;
+    case cavius_pairing:
+        text = "Pairing";
+        break;
+    case cavius_test:
+        text = "Test alarm";
+        break;
+    case cavius_warning:
+        text = "Warning/Water detected";
+        break;
+    default:
+        break;
     }
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",        "",             DATA_STRING, "Cavius-Security",
             "id",           "Device ID",    DATA_INT,    sender_id,
-            "battery_ok",   "Battery OK",   DATA_INT,    !batt_low,
+            "battery_ok",   "Battery",      DATA_INT,    !batt_low,
             "net_id",       "Net ID",       DATA_INT,    net_id,
             "message",      "Message",      DATA_INT,    message,
             "text",         "Description",  DATA_STRING, text,
@@ -125,7 +121,7 @@ static int cavius_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
         "model",
         "id",
-        "battery_ok"
+        "battery_ok",
         "net_id",
         "message",
         "text",

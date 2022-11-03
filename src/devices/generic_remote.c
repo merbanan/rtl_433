@@ -22,8 +22,7 @@ Tested devices:
 static int generic_remote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    bitrow_t *bb = bitbuffer->bb;
-    uint8_t *b = bb[0];
+    uint8_t *b = bitbuffer->bb[0];
     char tristate[23];
     char *p = tristate;
 
@@ -48,7 +47,7 @@ static int generic_remote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint32_t full = b[0] << 16 | b[1] << 8 | b[2];
 
     for (int i = 22; i >= 0; i -= 2) {
-        switch ((full>>i) & 0x03) {
+        switch ((full >> i) & 0x03) {
         case 0x00: *p++ = '0'; break;
         case 0x01: *p++ = 'Z'; break; // floating / "open"
         case 0x02: *p++ = 'X'; break; // tristate 10 is invalid code for SC226x but valid in EV1527
@@ -58,12 +57,14 @@ static int generic_remote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     *p = '\0';
 
+    /* clang-format off */
     data = data_make(
-            "model",        "",             DATA_STRING, _X("Generic-Remote","Generic Remote"),
+            "model",        "",             DATA_STRING, "Generic-Remote",
             "id",           "House Code",   DATA_INT, id_16b,
             "cmd",          "Command",      DATA_INT, cmd_8b,
             "tristate",     "Tri-State",    DATA_STRING, tristate,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
 
@@ -87,6 +88,5 @@ r_device generic_remote = {
         .sync_width  = 0,   // No sync bit used
         .tolerance   = 200, // us
         .decode_fn   = &generic_remote_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

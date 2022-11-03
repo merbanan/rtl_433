@@ -1,33 +1,39 @@
 # - Try to find LibRTLSDR
 # Once done this will define
-#  LIBRTLSDR_FOUND - System has LibRTLSDR
-#  LIBRTLSDR_INCLUDE_DIRS - The LibRTLSDR include directories
-#  LIBRTLSDR_LIBRARIES - The libraries needed to use LibRTLSDR
-#  LIBRTLSDR_DEFINITIONS - Compiler switches required for using LibRTLSDR
+#
+#  LibRTLSDR_FOUND - System has librtlsdr
+#  LibRTLSDR_INCLUDE_DIRS - The librtlsdr include directories
+#  LibRTLSDR_LIBRARIES - The libraries needed to use librtlsdr
+#  LibRTLSDR_DEFINITIONS - Compiler switches required for using librtlsdr
+#  LibRTLSDR_VERSION - The librtlsdr version
+#
 
 find_package(PkgConfig)
-pkg_check_modules(LIBRTLSDR_PKG QUIET librtlsdr)
-set(LIBRTLSDR_DEFINITIONS ${LIBRTLSDR_PKG_CFLAGS_OTHER})
+pkg_check_modules(PC_LibRTLSDR QUIET librtlsdr)
+set(LibRTLSDR_DEFINITIONS ${PC_LibRTLSDR_CFLAGS_OTHER})
 
-find_path(LIBRTLSDR_INCLUDE_DIR NAMES rtl-sdr.h
-          HINTS ${LIBRTLSDR_PKG_INCLUDE_DIRS}
+find_path(LibRTLSDR_INCLUDE_DIR NAMES rtl-sdr.h
+          HINTS ${PC_LibRTLSDR_INCLUDE_DIRS}
           PATHS
           /usr/include
           /usr/local/include )
 
-find_library(LIBRTLSDR_LIBRARY NAMES rtlsdr
-             HINTS ${LIBRTLSDR_PKG_LIBRARY_DIRS}
+find_library(LibRTLSDR_LIBRARY NAMES rtlsdr
+             HINTS ${PC_LibRTLSDR_LIBRARY_DIRS}
              PATHS
              /usr/lib
              /usr/local/lib )
 
+set(LibRTLSDR_VERSION ${PC_LibRTLSDR_VERSION})
+
 include(FindPackageHandleStandardArgs)
-# handle the QUIETLY and REQUIRED arguments and set LIBRTLSDR_FOUND to TRUE
+# handle the QUIETLY and REQUIRED arguments and set LibRTLSDR_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(LibRTLSDR  DEFAULT_MSG
-                                  LIBRTLSDR_LIBRARY LIBRTLSDR_INCLUDE_DIR)
+find_package_handle_standard_args(LibRTLSDR
+                                  REQUIRED_VARS LibRTLSDR_LIBRARY LibRTLSDR_INCLUDE_DIR
+                                  VERSION_VAR LibRTLSDR_VERSION)
 
-mark_as_advanced(LIBRTLSDR_LIBRARY LIBRTLSDR_INCLUDE_DIR)
+mark_as_advanced(LibRTLSDR_LIBRARY LibRTLSDR_INCLUDE_DIR LibRTLSDR_VERSION)
 
-set(LIBRTLSDR_LIBRARIES ${LIBRTLSDR_LIBRARY} )
-set(LIBRTLSDR_INCLUDE_DIRS ${LIBRTLSDR_INCLUDE_DIR} )
+set(LibRTLSDR_LIBRARIES ${LibRTLSDR_LIBRARY} )
+set(LibRTLSDR_INCLUDE_DIRS ${LibRTLSDR_INCLUDE_DIR} )

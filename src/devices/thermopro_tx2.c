@@ -14,6 +14,8 @@ ThermoPro TX2 sensor protocol.
 Note: this is the Prologue protocol with the battery low flag inverted.
 Disable Prologue and enable this to use, e.g. `-R -3 -R 162`.
 
+Note: this is a false positive for AlectoV1.
+
 The sensor sends 36 bits 7 times, before the first packet there is a sync pulse.
 The packets are ppm modulated (distance coding) with a pulse of ~500 us
 followed by a short gap of ~2000 us for a 0 bit or a long ~4000 us gap for a
@@ -36,13 +38,10 @@ The data is grouped in 9 nibbles
 
 #include "decoder.h"
 
-extern int alecto_checksum(r_device *decoder, bitrow_t *bb);
-
 static int thermopro_tx2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t *b;
     data_t *data;
-    int ret;
 
     int type;
     int id;
@@ -67,13 +66,7 @@ static int thermopro_tx2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if ((b[0] & 0xF0) != 0x90 && (b[0] & 0xF0) != 0x50)
         return DECODE_FAIL_SANITY;
 
-    /* Check for Alecto collision */
-    ret = alecto_checksum(decoder, bitbuffer->bb);
-    // if the checksum is correct, it's not Prologue/ThermoPro-TX2
-    if (ret > 0)
-        return DECODE_FAIL_SANITY;
-
-    /* Prologue/ThermoPro-TX2 sensor */
+    // Prologue/ThermoPro-TX2 sensor
     type     = b[0] >> 4;
     id       = ((b[0] & 0x0F) << 4) | ((b[1] & 0xF0) >> 4);
     battery  = b[1] & 0x08;
@@ -121,5 +114,6 @@ r_device thermopro_tx2 = {
         .reset_limit = 10000,
         .decode_fn   = &thermopro_tx2_decode,
         .disabled    = 1,
+        .priority    = 10, // Alecto collision, if Alecto checksum is correct it's not Prologue/ThermoPro-TX2
         .fields      = output_fields,
 };

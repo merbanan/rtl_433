@@ -39,7 +39,7 @@ static int auriol_ahfl_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int channel;
     int tx_button;
     int battery_ok;
-    int16_t temp_raw;
+    int temp_raw;
     float temp_c;
     int humidity;
     int nibble_sum, checksum;
@@ -55,29 +55,29 @@ static int auriol_ahfl_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     b = bitbuffer->bb[row];
 
     /* Check fixed message values */
-    if (((b[4]&0xF0) != 0x40) || ((b[3]&0x1) != 0x0)) {
+    if (((b[4] & 0xF0) != 0x40) || ((b[3] & 0x1) != 0x0)) {
         return DECODE_FAIL_SANITY;
     }
 
     // calculate nibble sum
-    nibble_sum = (b[0]&0xF) + (b[0]>>4) +
-                 (b[1]&0xF) + (b[1]>>4) +
-                 (b[2]&0xF) + (b[2]>>4) +
-                 (b[3]&0xF) + (b[3]>>4) +
-                              (b[4]>>4);
-    checksum = ((b[4]&0xF) << 2) | ((b[5]&0xC0)>>6);
+    nibble_sum = (b[0] & 0xF) + (b[0] >> 4) +
+                 (b[1] & 0xF) + (b[1] >> 4) +
+                 (b[2] & 0xF) + (b[2] >> 4) +
+                 (b[3] & 0xF) + (b[3] >> 4) +
+                 (b[4] >> 4);
+    checksum = ((b[4] & 0xF) << 2) | ((b[5] & 0xC0) >> 6);
 
     // check 6 bits of nibble sum
-    if ((nibble_sum&0x3F) != checksum)
+    if ((nibble_sum & 0x3F) != checksum)
         return DECODE_FAIL_MIC;
 
-    id          = b[0];
-    battery_ok  = b[1] >> 7;
-    channel     = (b[1] & 0x30) >> 4;
-    tx_button   = (b[1] & 0x40) >> 6;
-    temp_raw    = ((b[1] & 0x0f) << 12) | (b[2] << 4); // use sign extend into int16_t
-    temp_c      = (temp_raw >> 4) * 0.1f;
-    humidity    = b[3] >> 1;
+    id         = b[0];
+    battery_ok = b[1] >> 7;
+    channel    = (b[1] & 0x30) >> 4;
+    tx_button  = (b[1] & 0x40) >> 6;
+    temp_raw   = (int16_t)(((b[1] & 0x0f) << 12) | (b[2] << 4)); // uses sign extend
+    temp_c     = (temp_raw >> 4) * 0.1f;
+    humidity   = b[3] >> 1;
 
     /* clang-format off */
     data = data_make(
@@ -117,6 +117,5 @@ r_device auriol_ahfl = {
         .gap_limit   = 4248,
         .reset_limit = 9150,
         .decode_fn   = &auriol_ahfl_decode,
-        .disabled    = 0, // No side effects known.
         .fields      = output_fields,
 };

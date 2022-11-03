@@ -36,11 +36,8 @@ def rtl_433_probe():
             if "channel" in data:
                 label += ".CH" + str(data["channel"])
 
-            if "battery" in data:
-                if data["battery"] == "OK":
-                    statsd.gauge(label + '.battery', 1)
-                else:
-                    statsd.gauge(label + '.battery', 0)
+            if "battery_ok" in data:
+                statsd.gauge(label + '.battery', data["battery_ok"])
 
             if "humidity" in data:
                 statsd.gauge(label + '.humidity', data["humidity"])

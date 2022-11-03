@@ -94,13 +94,13 @@ static char *output_fields[] = {
 };
 
 r_device eurochron = {
-        .name          = "Eurochron temperature and humidity sensor",
-        .modulation    = OOK_PULSE_PPM,
-        .short_width   = 1016,
-        .long_width    = 2024,
-        .gap_limit     = 2100,
-        .reset_limit   = 8200,
-        .decode_fn     = &eurochron_decode,
-        .disabled      = 1,
-        .fields        = output_fields,
+        .name        = "Eurochron temperature and humidity sensor",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 1016,
+        .long_width  = 2024,
+        .gap_limit   = 2100,
+        .reset_limit = 8200,
+        .decode_fn   = &eurochron_decode,
+        .disabled    = 1,
+        .fields      = output_fields,
 };

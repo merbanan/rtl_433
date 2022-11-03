@@ -38,11 +38,17 @@ Depending on your system, you may need to install the following libraries.
 
 Debian:
 
-    sudo apt-get install libtool libusb-1.0-0-dev librtlsdr-dev rtl-sdr build-essential autoconf cmake pkg-config
+* If you require TLS connections, install `libssl-dev`.
+
+````
+sudo apt-get install libtool libusb-1.0-0-dev librtlsdr-dev rtl-sdr build-essential cmake pkg-config
+````
+
 
 Centos/Fedora/RHEL with EPEL repo using cmake:
 
   * If `dnf` doesn't exist, use `yum`.
+  * If you require TLS connections, install `openssl-devel`.
 
 ````
 sudo dnf install libtool libusbx-devel rtl-sdr-devel rtl-sdr cmake
@@ -50,13 +56,21 @@ sudo dnf install libtool libusbx-devel rtl-sdr-devel rtl-sdr cmake
 
 Mac OS X with MacPorts:
 
-    sudo port install rtl-sdr cmake
+* If you require TLS connections, install `openssl` from either MacPorts or Homebrew.
+
+````
+sudo port install rtl-sdr cmake
+````
 
 Mac OS X with Homebrew:
 
     brew install rtl-sdr cmake pkg-config
 
 ### CMake
+
+Get the `rtl_433` git repository if needed:
+
+    git clone https://github.com/merbanan/rtl_433.git
 
 Installation using CMake:
 
@@ -72,27 +86,50 @@ E.g. use:
 
     cmake -DENABLE_SOAPYSDR=ON ..
 
-### Autotools (Autoconf, Automake)
-
-Installation using Autotools:
-
-    cd rtl_433/
-    autoreconf --install
-    ./configure
-    make
-    make install
-
-The final 'make install' step should be run as a user with appropriate permissions - if in doubt, 'sudo' it.
+::: warning
+If you experience trouble with SoapySDR when compiling or running: you likely mixed version 0.7 and version 0.8 headers and libs.
+Purge all SoapySDR packages and source installation from /usr/local.
+Then install only from packages (version 0.7) or only from source (version 0.8).
+:::
 
 ## Windows
+
+### Visual Studio 2017
+
+You need [PothosSDR](https://downloads.myriadrf.org/builds/PothosSDR/) installed to get RTL-SDR and SoapySDR libraries.
+Any recent version should work, e.g. [2021.07.25-vc16](https://downloads.myriadrf.org/builds/PothosSDR/PothosSDR-2021.07.25-vc16-x64.exe).
+
+When installing PothosSDR choose "Add PothosSDR to the system PATH for the current user".
+
+For TLS support (mqtts and influxs) you need OpenSSL installed.
+E.g. [install Chocolatey](https://chocolatey.org/install) then open a Command Prompt and
+
+    choco install openssl
+
+Clone the project, e.g. open Visual Studio, change to "Team Explorer" > "Projects" > "Manage Connections" > "Clone"
+and enter `https://github.com/merbanan/rtl_433.git`
+
+If you want to change options, in the menu select "CMake" > "Change CMake Settings" > "rtl433", select e.g. "x64-Release", change e.g.
+
+    "buildRoot": "${workspaceRoot}\\build",
+    "installRoot": "${workspaceRoot}\\install",
+
+To start a build use in the menu e.g. "CMake" > "Build all"
+
+Or build at the Command Prompt without opening Visual Studio. Clone rtl_433 sources, then
+
+    cd rtl_433
+    mkdir build
+    cd build
+    cmake -G "Visual Studio 15 2017 Win64" ..
+    cmake --build .
 
 ### MinGW-w64
 
 You'll probably want librtlsdr and libusb.
 
-libusb has prebuilt binaries for windows, 
-librtlsdr needs to be built (at least for the latest version, some binaries 
-of older versions seem to be floating around)
+libusb has prebuilt binaries for windows,
+librtlsdr needs to be built (or extracted from the PothosSDR installer)
 
 #### librtlsdr
 
@@ -115,7 +152,7 @@ taken and adapted from here: https://www.onetransistor.eu/2017/03/compile-librtl
 ```
 SET(CMAKE_THREAD_LIBS_INIT "-lpthread")
 SET(CMAKE_HAVE_THREADS_LIBRARY 1)
-SET(THREADS_FOUND TRUE)
+SET(Threads_FOUND TRUE)
 ```
 
 * go into the cmake/modules folder and open FindLibUSB.cmake with a text editor
@@ -162,25 +199,5 @@ SET(THREADS_FOUND TRUE)
 * rtl_433.exe should be built now
 * you need to place it in the same folder as librtlsdr.dll and libusb-1.0.dll (you should have seen both of them by now)
 * good luck!
-
-### Visual Studio 2017 CMake MSBuild
-
-    cd rtl_433
-    mkdir build
-    cd build
-    cmake -G "Visual Studio 15 2017 Win64" ..
-    MSBuild.exe rtl433.sln
-
-* -or- open the `rtl433.sln`
-
-### Visual Studio 2017 supplied project/solution
-
-* Open the `rtl_433.sln` from the `vs15` folder -or-
-
-```
-cd rtl_433
-cd vs15
-MSBuild.exe rtl_433.sln
-```
 
 If your system is missing or you find these steps are outdated please PR an update or open an issue.

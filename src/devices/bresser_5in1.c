@@ -71,9 +71,7 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->num_rows != 1
             || bitbuffer->bits_per_row[0] < 248
             || bitbuffer->bits_per_row[0] > 440) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: bit_per_row %u out of range\n", __func__, bitbuffer->bits_per_row[0]);
-        }
+        decoder_logf(decoder, 2, __func__, "bit_per_row %u out of range", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_EARLY; // Unrecognized data
     }
 
@@ -86,9 +84,7 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     start_pos += sizeof (preamble_pattern) * 8;
     len = bitbuffer->bits_per_row[0] - start_pos;
     if (((len + 7) / 8) < sizeof (msg)) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: %u too short\n", __func__, len);
-        }
+        decoder_logf(decoder, 2, __func__, "%u too short", len);
         return DECODE_ABORT_LENGTH; // message too short
     }
     // truncate any excessive bits
@@ -99,9 +95,7 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // First 13 bytes need to match inverse of last 13 bytes
     for (unsigned col = 0; col < sizeof (msg) / 2; ++col) {
         if ((msg[col] ^ msg[col + 13]) != 0xff) {
-            if (decoder->verbose > 1) {
-                fprintf(stderr, "%s: Parity wrong at %u\n", __func__, col);
-            }
+            decoder_logf(decoder, 2, __func__, "Parity wrong at %u", col);
             return DECODE_FAIL_MIC; // message isn't correct
         }
     }
@@ -129,7 +123,7 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int rain_raw = (msg[23] & 0x0f) + ((msg[23] & 0xf0) >> 4) * 10 + (msg[24] & 0x0f) * 100;
     float rain = rain_raw * 0.1f;
 
-    int battery_ok = ((msg[25] & 0x80) == 0);
+    int battery_low = (msg[25] & 0x80);
 
     /* check if the message is from a Bresser Professional Rain Gauge */
     if ((msg[15] & 0xF) == 0x9) {
@@ -139,9 +133,9 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data = data_make(
                 "model",            "",             DATA_STRING, "Bresser-ProRainGauge",
                 "id",               "",             DATA_INT,    sensor_id,
-                "battery",          "Battery",      DATA_STRING, battery_ok ? "OK": "LOW",
-                "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-                "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm",DATA_DOUBLE, rain,
+                "battery_ok",       "Battery",      DATA_INT,    !battery_low,
+                "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C",      DATA_DOUBLE, temperature,
+                "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm",     DATA_DOUBLE, rain,
                 "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
@@ -151,13 +145,13 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data = data_make(
                 "model",            "",             DATA_STRING, "Bresser-5in1",
                 "id",               "",             DATA_INT,    sensor_id,
-                "battery",          "Battery",      DATA_STRING, battery_ok ? "OK": "LOW",
-                "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-                "humidity",         "Humidity",     DATA_INT, humidity,
-                _X("wind_max_m_s","wind_gust"),        "Wind Gust",    DATA_FORMAT, "%.1f m/s",DATA_DOUBLE, wind_gust,
-                _X("wind_avg_m_s","wind_speed"),       "Wind Speed",   DATA_FORMAT, "%.1f m/s",DATA_DOUBLE, wind_avg,
-                "wind_dir_deg",     "Direction",    DATA_FORMAT, "%.1f",DATA_DOUBLE, wind_direction_deg,
-                "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm",DATA_DOUBLE, rain,
+                "battery_ok",       "Battery",      DATA_INT,    !battery_low,
+                "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C",      DATA_DOUBLE, temperature,
+                "humidity",         "Humidity",     DATA_INT,    humidity,
+                "wind_max_m_s",     "Wind Gust",    DATA_FORMAT, "%.1f m/s",    DATA_DOUBLE, wind_gust,
+                "wind_avg_m_s",     "Wind Speed",   DATA_FORMAT, "%.1f m/s",    DATA_DOUBLE, wind_avg,
+                "wind_dir_deg",     "Direction",    DATA_FORMAT, "%.1f",        DATA_DOUBLE, wind_direction_deg,
+                "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm",     DATA_DOUBLE, rain,
                 "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
@@ -169,11 +163,9 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
         "model",
         "id",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "humidity",
-        "wind_gust",  // TODO: delete this
-        "wind_speed", // TODO: delete this
         "wind_max_m_s",
         "wind_avg_m_s",
         "wind_dir_deg",
@@ -189,6 +181,5 @@ r_device bresser_5in1 = {
         .long_width  = 124,
         .reset_limit = 25000,
         .decode_fn   = &bresser_5in1_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

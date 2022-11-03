@@ -93,7 +93,7 @@ static int tpms_hyundai_vdo_decode(r_device *decoder, bitbuffer_t *bitbuffer, un
             "pressure_kPa",     "pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure * 1.375,
             "temperature_C",    "temp",         DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature - 50.0,
             "maybe_battery",    "",             DATA_INT,    maybe_battery,
-            "mic",              "",             DATA_STRING, "CRC",
+            "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -101,6 +101,10 @@ static int tpms_hyundai_vdo_decode(r_device *decoder, bitbuffer_t *bitbuffer, un
     return 1;
 }
 
+/**
+Wrapper for the Hyundai-VDO tpms.
+@sa tpms_hyundai_vdo_decode()
+*/
 static int tpms_hyundai_vdo_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // full preamble is 55 55 55 56 (inverted: aa aa aa a9)
@@ -145,6 +149,5 @@ r_device tpms_hyundai_vdo = {
         .long_width  = 52,  // FSK
         .reset_limit = 150, // Maximum gap size before End Of Message [us].
         .decode_fn   = &tpms_hyundai_vdo_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

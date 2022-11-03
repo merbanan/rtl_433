@@ -58,9 +58,7 @@ static int bresser_3ch_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     b[4] = ~b[4];
 
     if (((b[0] + b[1] + b[2] + b[3] - b[4]) & 0xFF) != 0) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: checksum error\n", __func__);
-        }
+        decoder_log(decoder, 1, __func__, "checksum error");
         return DECODE_FAIL_MIC;
     }
 
@@ -77,18 +75,16 @@ static int bresser_3ch_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     humidity = b[3];
 
     if ((channel == 0) || (humidity > 100) || (temp_f < -20.0) || (temp_f > 160.0)) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: data error\n", __func__);
-        }
+        decoder_log(decoder, 1, __func__, "data error");
         return DECODE_FAIL_SANITY;
     }
 
     /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, _X("Bresser-3CH","Bresser 3CH sensor"),
+            "model",         "",            DATA_STRING, "Bresser-3CH",
             "id",            "Id",          DATA_INT,    id,
             "channel",       "Channel",     DATA_INT,    channel,
-            "battery",       "Battery",     DATA_STRING, battery_low ? "LOW": "OK",
+            "battery_ok",    "Battery",     DATA_INT,    !battery_low,
             "temperature_F", "Temperature", DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
             "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
@@ -103,7 +99,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "temperature_F",
         "humidity",
         "mic",

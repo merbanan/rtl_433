@@ -71,6 +71,18 @@ unsigned extract_nibbles_4b1s(uint8_t *message, unsigned offset_bits, unsigned n
 /// @return number of successful decoded bytes
 unsigned extract_bytes_uart(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst);
 
+/// Decode symbols to bits.
+///
+/// @param message bytes of message data
+/// @param offset_bits start offset of message in bits
+/// @param num_bits message length in bits
+/// @param zero symbol for zero bit, bits MSB aligned, count in LSB
+/// @param one symbol for one bit, bits MSB aligned, count in LSB
+/// @param sync symbol for sync bit, ignored at start, terminates at end
+/// @param dst target buffer for extracted bits, at least num_bits/symbol_x_len size
+/// @return number of successful decoded bits
+unsigned extract_bits_symbols(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint32_t zero, uint32_t one, uint32_t sync, uint8_t *dst);
+
 /// CRC-4.
 ///
 /// @param message array of bytes to check

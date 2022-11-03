@@ -62,14 +62,14 @@ static int tpms_jansite_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer, 
     b = packet_bits.bb[0];
 
     /* Check for sync */
-    if ((b[0]<<8 | b[1]) != 0xdd33) {
+    if ((b[0] << 8 | b[1]) != 0xdd33) {
         return DECODE_FAIL_SANITY;
     }
 
     /* Check crc */
     uint16_t crc_calc = crc16(&b[2], 7, 0x8005, 0x0000);
-    if ( ((b[9]<<8) | b[10]) != crc_calc) {
-        fprintf(stderr, "CRC missmatch %04x vs %02x %02x\n", crc_calc, b[9], b[10]);
+    if (((b[9] << 8) | b[10]) != crc_calc) {
+        decoder_logf(decoder, 1, __func__, "CRC mismatch %04x vs %02x %02x", crc_calc, b[9], b[10]);
         return DECODE_FAIL_MIC;
     }
 
@@ -82,14 +82,14 @@ static int tpms_jansite_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer, 
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, "Jansite Solar",
+            "model",            "",             DATA_STRING, "Jansite-Solar",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,
             "flags",            "",             DATA_INT, flags,
             "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (float)pressure * 1.6,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (float)temperature - 55.0,
             "code",             "",             DATA_STRING, code_str,
-            "mic",              "",             DATA_STRING, "CRC",
+            "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -137,6 +137,5 @@ r_device tpms_jansite_solar = {
         .long_width  = 51,
         .reset_limit = 5000, // Large enough to merge the 3 duplicate messages
         .decode_fn   = &tpms_jansite_solar_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -53,9 +53,44 @@ You can easily set up some MQTT things then:
 
 Home Assistant has good MQTT support and can read rtl_433 event topics.
 
-::: warning
-Example needed
-:::
+Assuming rtl_433 is started with
+
+    rtl_433 -C si -M time:unix:usec:utc -F mqtt
+
+you can set up temperature and humidity sensors in Home Assistant with
+
+    sensor:
+
+      - name: temperature_raw
+        state_topic: "rtl_433/host/devices/Prologue-TH/5/3/+/temperature_C"
+        platform: mqtt
+        device_class: temperature
+        unit_of_measurement: "°C"
+        force_update: true
+        expire_after: 610
+
+      - name: humidity_raw
+        state_topic: "rtl_433/host/devices/Prologue-TH/5/3/+/humidity"
+        platform: mqtt
+        device_class: humidity
+        unit_of_measurement: "%"
+        force_update: true
+        expire_after: 610
+
+You may want to postprocess the received values with something like
+
+    sensor:
+
+      - name: temperature
+        entity_id: sensor.temperature_raw
+        platform: filter
+        filters:
+          - filter: outlier
+            window_size: 2
+            radius: 3.0
+
+See [the Home Assistant documentation](https://www.home-assistant.io/integrations/sensor.mqtt/)
+for more information.
 
 See also [rtl_433_mqtt_hass.py](https://github.com/merbanan/rtl_433/tree/master/examples/rtl_433_mqtt_hass.py)
 MQTT Home Assistant auto discovery.
@@ -98,6 +133,11 @@ Basically run `rtl_433` with `-F syslog:127.0.0.1:1433` and the relay script as 
 
     rtl_433_mqtt_relay.py &
     rtl_433 -F syslog:127.0.0.1:1433
+
+### SQL
+
+An example to push data to SQL is at [Domifry/RTL_433_SQL_Connection](https://github.com/Domifry/RTL_433_SQL_Connection/),
+see also [#1828](https://github.com/merbanan/rtl_433/issues/1828).
 
 ### RRD
 

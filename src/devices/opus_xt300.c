@@ -32,7 +32,7 @@ Data is transmitted with 6 bytes row:
 
 static int opus_xt300_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int ret = 0;
+    int ret       = 0;
     int fail_code = 0;
     int row;
     int chk;
@@ -50,9 +50,7 @@ static int opus_xt300_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         b = bitbuffer->bb[row];
 
         if (!b[0] && !b[1] && !b[2] && !b[3]) {
-            if (decoder->verbose > 1) {
-                fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
-            }
+            decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00");
             fail_code = DECODE_FAIL_SANITY;
             continue;
         }
@@ -63,8 +61,8 @@ static int opus_xt300_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
         chk = add_bytes(b + 1, 4); // sum bytes 1-4
         chk = chk & 0xFF;
-        if (chk != 0 && chk != b[5] ) {
-            fail_code =  DECODE_FAIL_MIC;
+        if (chk != 0 && chk != b[5]) {
+            fail_code = DECODE_FAIL_MIC;
             continue;
         }
 
@@ -76,7 +74,7 @@ static int opus_xt300_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // test for Boiling water
         // over 100% soil humidity ?
         if (temp > 100 || moisture > 101) {
-            // fprintf(stderr, "%s: temp %d moisture %d\n", __func__, temp, moisture);
+            // decoder_logf(decoder, 0, __func__, "temp %d moisture %d", temp, moisture);
             fail_code = DECODE_FAIL_SANITY;
             continue;
         }

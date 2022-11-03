@@ -12,8 +12,8 @@
 #ifndef INCLUDE_ABUF_H_
 #define INCLUDE_ABUF_H_
 
-#if defined _MSC_VER // Microsoft Visual Studio
-    // MSC has something like C99 restrict as __restrict
+#if defined _MSC_VER || defined ESP32 // Microsoft Visual Studio or ESP32
+    // MSC and ESP32 have something like C99 restrict as __restrict
     #ifndef restrict
     #define restrict  __restrict
     #endif
