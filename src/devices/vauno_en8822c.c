@@ -53,18 +53,17 @@ static int vauno_en8822c_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b = bitbuffer->bb[row];
 
     // checksum is addition
-    int chk = ((b[4] & 0x0f) << 2) | (b[5] & 0x03);
-    if (add_nibbles(b, 4) != chk)
-        return DECODE_FAIL_MIC;
+    int chk = ((b[4] & 0x0f) << 2) | (b[5] >> 6);
+    if (add_nibbles(b, 4) != chk) {
+        return DECODE_FAIL_MIC; }
 
     int device_id = b[0];
     int channel   = ((b[1] & 0x30) >> 4) + 1;
     // Battery status is the 7th bit 0x40. 0 = normal, 1 = low
     //unsigned char const battery_low = (b[4] & 0x40) == 0x40;
-    int temp_raw   = ((b[2] & 0x0f) << 8) | (b[2] & 0xf0) | (b[1] & 0x0f);
-    temp_raw   = (int16_t)(temp_raw << 4); // use sign extend
+    int temp_raw = (int16_t)(((b[1] & 0x0f) << 12) | ((b[2] & 0xff) << 4));
     float temp_c  = (temp_raw >> 4) * 0.1f;
-    int humidity  = ((b[3] & 0xf0) >> 3);
+    int humidity  = (b[3] >> 1);
 
     /* clang-format off */
     data_t *data = data_make(
