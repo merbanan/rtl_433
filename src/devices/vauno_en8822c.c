@@ -19,13 +19,14 @@ Frame structure (42 bits):
 
     Byte:      0        1        2        3        4
     Nibble:    1   2    3   4    5   6    7   8    9   10   11
-    Type:      IIIIIIII ??CCTTTT TTTTTTTT HHHHHHH? FFFFXXXX XX
+    Type:      IIIIIIII B?CCTTTT TTTTTTTT HHHHHHHF FFFBXXXX XX
 
 - I: Random device ID
 - C: Channel (1-3)
 - T: Temperature (Little-endian)
 - H: Humidity (Little-endian)
 - F: Flags (unknown)
+- B: Battery (1=low voltage ~<2.5V)
 - X: Checksum (6 bit nibble sum)
 
 Sample Data:
@@ -54,13 +55,12 @@ static int vauno_en8822c_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // checksum is addition
     int chk = ((b[4] & 0x0f) << 2) | (b[5] >> 6);
-    if (add_nibbles(b, 4) != chk) {
+    if ((add_nibbles(b, 4) + (b[4] >> 4)) != chk) {
         return DECODE_FAIL_MIC; }
 
     int device_id = b[0];
     int channel   = ((b[1] & 0x30) >> 4) + 1;
-    // Battery status is the 7th bit 0x40. 0 = normal, 1 = low
-    //unsigned char const battery_low = (b[4] & 0x40) == 0x40;
+    int battery_low = (b[4] & 0x10) >> 4;
     int temp_raw = (int16_t)(((b[1] & 0x0f) << 12) | ((b[2] & 0xff) << 4));
     float temp_c  = (temp_raw >> 4) * 0.1f;
     int humidity  = (b[3] >> 1);
@@ -70,7 +70,7 @@ static int vauno_en8822c_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, "Vauno-EN8822C",
             "id",               "ID",           DATA_INT, device_id,
             "channel",          "Channel",      DATA_INT, channel,
-    //        "battery_ok",       "Battery",      DATA_INT, !battery_low,
+            "battery_ok",       "Battery",      DATA_INT, !battery_low,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
@@ -85,7 +85,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "channel",
-//        "battery_ok",
+        "battery_ok",
         "temperature_C",
         "humidity",
         "mic",
