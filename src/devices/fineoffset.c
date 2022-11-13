@@ -554,6 +554,7 @@ Fine Offset WH51, ECOWITT WH51, MISOL/1 Soil Moisture Sensor.
 Also: SwitchDoc Labs SM23 Soil Moisture Sensor.
 
 Test decoding with: rtl_433 -f 433920000  -X "n=soil_sensor,m=FSK_PCM,s=58,l=58,t=5,r=5000,g=4000,preamble=aa2dd4"
+NOTE Regarding 915MHz WH51: need to use "-Y classic" i.e. : rtl_433 -f 915M -Y classic   ---  see https://github.com/merbanan/rtl_433/issues/2235
 
 Data format:
 
