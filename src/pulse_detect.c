@@ -52,7 +52,7 @@ struct pulse_detect {
     pulse_detect_fsk_t pulse_detect_fsk;
 };
 
-pulse_detect_t *pulse_detect_create()
+pulse_detect_t *pulse_detect_create(void)
 {
     pulse_detect_t *pulse_detect = calloc(1, sizeof(pulse_detect_t));
     if (!pulse_detect) {

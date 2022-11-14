@@ -341,14 +341,14 @@ static char *output_fields[] = {
         NULL,
 };
 
-static void usage()
+static void usage(void)
 {
     fprintf(stderr,
             "Use -X <spec> to add a general purpose decoder. For usage use -X help\n");
     exit(1);
 }
 
-static void help()
+static void help(void)
 {
     fprintf(stderr,
             "\t\t= Flex decoder spec =\n"
