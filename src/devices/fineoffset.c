@@ -555,6 +555,8 @@ Also: SwitchDoc Labs SM23 Soil Moisture Sensor.
 
 Test decoding with: rtl_433 -f 433920000  -X "n=soil_sensor,m=FSK_PCM,s=58,l=58,t=5,r=5000,g=4000,preamble=aa2dd4"
 
+Note: for WH51 at 915MHz: try also "-Y classic" i.e. : rtl_433 -f 915M -Y classic -- see https://github.com/merbanan/rtl_433/issues/2235
+
 Data format:
 
                    00 01 02 03 04 05 06 07 08 09 10 11 12 13
