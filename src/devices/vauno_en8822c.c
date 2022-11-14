@@ -55,7 +55,7 @@ static int vauno_en8822c_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // checksum is addition
     int chk = ((b[4] & 0x0f) << 2) | (b[5] >> 6);
-    if ((add_nibbles(b, 4) + (b[4] >> 4)) != chk) {
+    if (((add_nibbles(b, 4) + (b[4] >> 4)) & 0x3f) != chk) {
         return DECODE_FAIL_MIC; }
 
     int device_id = b[0];
