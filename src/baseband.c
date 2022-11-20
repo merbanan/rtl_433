@@ -21,7 +21,7 @@
 static uint16_t scaled_squares[256];
 
 /// precalculate lookup table for envelope detection.
-static void calc_squares()
+static void calc_squares(void)
 {
     if (scaled_squares[0])
         return; // already initialized

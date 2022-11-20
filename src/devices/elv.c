@@ -33,7 +33,6 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     bitrow_t *bb = bitbuffer->bb;
     uint8_t dec[10];
-    uint8_t bytes=0;
     uint8_t bit=18; // preamble
     uint8_t bb_p[14];
     //char* types[] = {"EM 1000-S", "EM 1000-?", "EM 1000-GZ"};
@@ -63,7 +62,6 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             return DECODE_ABORT_EARLY;
         }
         checksum_calculated ^= dec[i];
-        bytes++;
     }
 
     // Read checksum
@@ -73,7 +71,7 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-//    decoder_log_bitrow(decoder, 0, __func__, dec, bytes * 8, "");
+//    decoder_log_bitrow(decoder, 0, __func__, dec, 9 * 8, "");
 
     // based on 15_CUL_EM.pm
     //char *subtype = dec[0] >= 1 && dec[0] <= 3 ? types[dec[0] - 1] : "?";

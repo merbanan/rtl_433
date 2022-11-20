@@ -68,11 +68,19 @@ static int acurite_01185m_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_log_bitrow(decoder, 2, __func__, b, 7 * 8, "");
 
         // Verify checksum, add with carry
-        int chk = add_bytes(b, 6);
-        if ((chk & 0xff) != b[6]) {
+        int sum = add_bytes(b, 6);
+        if ((sum & 0xff) != b[6]) {
             decoder_log_bitrow(decoder, 1, __func__, b, 7 * 8, "bad checksum");
             result = DECODE_FAIL_MIC;
             continue; // return DECODE_FAIL_MIC;
+        }
+        /* A sanity check to detect some false positives. The following in
+           particular checks for a row of 56 "0"s, which would be unreasonable
+           temperatures, channel and id of 0, an 'ok' battery, which all
+           happens to result in a '0' checksum as well.
+        */
+        if (sum == 0) {
+            return DECODE_FAIL_SANITY;
         }
 
         // Decode fields
