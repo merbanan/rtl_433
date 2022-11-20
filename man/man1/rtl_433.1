@@ -299,6 +299,9 @@ reflect : reflect each byte (MSB first to MSB last)
 decode_uart : UART 8n1 (10\-to\-8) decode
 .RE
 .RS
+decode_dm : Differential Manchester decode
+.RE
+.RS
 match=<bits> : only match if the <bits> are found
 .RE
 .RS
@@ -382,7 +385,7 @@ Use "time" to add current date and time meta data (preset for live inputs).
 Use "time:rel" to add sample position meta data (preset for read\-file and stdin).
 .RE
 .RS
-Use "time:unix" to show the seconds since unix epoch as time meta data.
+Use "time:unix" to show the seconds since unix epoch as time meta data. This is always UTC.
 .RE
 .RS
 Use "time:iso" to show the time with ISO\-8601 format (YYYY\-MM\-DD"T"hh:mm:ss).
@@ -403,7 +406,7 @@ Use "time:utc" to output time in UTC.
 	(this may also be accomplished by invocation with TZ environment variable set).
 .RE
 .RS
-	"usec" and "utc" can be combined with other options, eg. "time:unix:utc:usec".
+	"usec" and "utc" can be combined with other options, eg. "time:iso:utc" or "time:unix:usec".
 .RE
 .RS
 Use "replay[:N]" to replay file inputs at (N\-times) realtime.
