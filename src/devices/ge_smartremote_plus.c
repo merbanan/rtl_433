@@ -2,14 +2,18 @@
 
 rtl_433 -f 319.56M -X "n=ge,m=OOK_PWM,s=330,l=1000,r=1500"
 
+FCC ID: QOB-PT458
+
 House Code D
    Channel 0
-      On:  eaafa88
-      Off: eaafab8
+      On:  ea af a8 80  : 11101010 10101111 10101000 1
+      Off: ea af ab 80  : 11101010 10101111 10101011 1
+                           *                      **
 
    Channel 1
-      On:  aaafa88
-      Off: aaafab8
+      On:  aa af a8 80  : 10101010 10101111 10101000 1
+      Off: aa af ab 80  : 10101010 10101111 10101011 1
+                           *                      **
 */
 
 #include "decoder.h"
@@ -39,21 +43,30 @@ static void print_bitrow(char *raw_data, uint8_t const *bitrow, unsigned bit_len
 static int ge_smartremote_plus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
+    uint8_t *bitrow;
     char raw_data[BITBUF_ROWS * BITBUF_COLS * 2 + 1];
-    unsigned row;
+    unsigned row = 0;
+    int channel = -1;
 
     //bitbuffer_debug(bitbuffer);
 
-    for (row = 0; row < bitbuffer->num_rows; ++row) {
+    if (bitbuffer->bits_per_row[row] < 25)
+        return DECODE_ABORT_EARLY;
 
-	if (bitbuffer->bits_per_row[row] < 25)
-            return DECODE_ABORT_EARLY;
+    print_bitrow(raw_data, bitbuffer->bb[row], bitbuffer->bits_per_row[row], 1);
 
-        print_bitrow(raw_data, bitbuffer->bb[row], bitbuffer->bits_per_row[row], 1);
-    }
+    bitrow    = bitbuffer->bb[row];
+
+    if (bitrow[0] == 0xea)
+        channel = 0;
+
+    if (bitrow[0] == 0xaa)
+        channel = 1;
 
     data = data_make(
             "model",        "",             DATA_STRING, "GE Smartremote-RF108",
+            "channel",      "",             DATA_INT, channel,
+            "state",        "",             DATA_STRING, (bitrow[2] == 0xa8) ? "on" : "off",
             "data",         "Raw Data",     DATA_STRING, raw_data,
             NULL);
     /* clang-format on */
@@ -64,9 +77,8 @@ static int ge_smartremote_plus_callback(r_device *decoder, bitbuffer_t *bitbuffe
 
 static char *output_fields[] = {
         "model",
-        "id",
-        "unit",
-        "learn",
+        "channel",
+        "state",
         "data",
         NULL,
 };
