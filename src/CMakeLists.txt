@@ -112,6 +112,7 @@ add_library(r_433 STATIC
     devices/ft004b.c
     devices/funkbus.c
     devices/ge_coloreffects.c
+    devices/ge_smartremote_plus.c
     devices/generic_motion.c
     devices/generic_remote.c
     devices/generic_temperature_sensor.c

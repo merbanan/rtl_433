@@ -231,6 +231,7 @@
     DECL(fineoffset_wn34) \
     DECL(rubicson_pool_48942) \
     DECL(badger_orion) \
+    DECL(ge_smartremote_plus) \
 
     /* Add new decoders here. */
 
