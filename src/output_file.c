@@ -73,23 +73,23 @@ static void R_API_CALLCONV print_json_string(data_output_t *output, const char *
     }
 
     fprintf(json->file, "\"");
-    while (*str) {
+    for (; *str; ++str) {
         if (*str == '\r') {
             fprintf(json->file, "\\r");
-            continue;
         }
-        if (*str == '\n') {
+        else if (*str == '\n') {
             fprintf(json->file, "\\n");
-            continue;
         }
-        if (*str == '\t') {
+        else if (*str == '\t') {
             fprintf(json->file, "\\t");
-            continue;
         }
-        if (*str == '"' || *str == '\\')
+        else if (*str == '"' || *str == '\\') {
             fputc('\\', json->file);
-        fputc(*str, json->file);
-        ++str;
+            fputc(*str, json->file);
+        }
+        else {
+            fputc(*str, json->file);
+        }
     }
     fprintf(json->file, "\"");
 }

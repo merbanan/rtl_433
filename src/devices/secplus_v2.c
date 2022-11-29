@@ -211,7 +211,7 @@ static int secplus_v2_decode_v2_half(r_device *decoder, bitbuffer_t *bits, uint8
         roll_array[k++] = (x >> i) & 0x03;
     }
 
-    decoder_logf(decoder, 1, __func__, "roll_array : (%d) %d %d %d %d %d %d %d %d %d\n", part_id,
+    decoder_logf(decoder, 1, __func__, "roll_array : (%d) %d %d %d %d %d %d %d %d %d", part_id,
                 roll_array[0], roll_array[1], roll_array[2], roll_array[3],
                 roll_array[4], roll_array[5], roll_array[6], roll_array[7], roll_array[8]);
 

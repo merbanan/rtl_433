@@ -436,7 +436,7 @@ static int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
             ret = parse_insteon_pkt(decoder, bitbuffer, row, search_index);
 
-            // decoder_logf(decoder, 1, __func__, "parse_insteon_pkt ret value %d\n", ret_value);
+            // decoder_logf(decoder, 1, __func__, "parse_insteon_pkt ret value %d", ret_value);
             if (ret > 0) { // preamble good, decode good
                 ret_value += ret;
                 bit_index = search_index + INSTEON_BITLEN_MIN; // move a full packet length
