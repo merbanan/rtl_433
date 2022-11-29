@@ -9,7 +9,7 @@
 
 #include <windows.h>
 #include <process.h>
-#define THREAD_CALL                     __stdcall
+#define THREAD_CALL                     __cdecl
 #define THREAD_RETURN                   unsigned int
 typedef HANDLE                          pthread_t;
 #define pthread_create(tp, x, p, d)     ((*tp=(HANDLE)_beginthread(p, 0, d)) == NULL ? -1 : 0)
