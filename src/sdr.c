@@ -19,6 +19,7 @@
 #include "sdr.h"
 #include "r_util.h"
 #include "optparse.h"
+#include "logger.h"
 #include "fatal.h"
 #ifdef RTLSDR
 #include <rtl-sdr.h>
@@ -1644,4 +1645,19 @@ int sdr_stop(sdr_dev_t *dev)
 #endif
 
     return -1;
+}
+
+#ifdef SOAPYSDR
+static void soapysdr_log_handler(const SoapySDRLogLevel level, const char *message)
+{
+    // Our log levels are compatible with SoapySDR.
+    print_log((log_level_t)level, "SoapySDR", message);
+}
+#endif
+
+void sdr_redirect_logging(void)
+{
+#ifdef SOAPYSDR
+    SoapySDR_registerLogHandler(soapysdr_log_handler);
+#endif
 }
