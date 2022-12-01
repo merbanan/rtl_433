@@ -203,7 +203,7 @@ static int secplus_v2_decode_v2_half(r_device *decoder, bitbuffer_t *bits, uint8
         roll_array[k++] = (x >> i) & 0x03;
     }
 
-    // bitrow_print(buffy, 8);
+    // decoder_log_bitrow(decoder, 3, __func__, buffy, 8, "")
 
     // assemble binary bits into trinary
     x = p2;
