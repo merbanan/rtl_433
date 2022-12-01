@@ -136,8 +136,7 @@ static int somfy_iohc_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (num_bits <= 0)
         return DECODE_ABORT_EARLY;
 
-    if ((size_t)num_bits > sizeof b * 8)
-        num_bits = sizeof b * 8;
+    num_bits = MIN((size_t)num_bits, sizeof (b) * 8);
 
     int len = extract_bytes_uart(bitbuffer->bb[0], offset, num_bits, b);
     if (len < 11)
