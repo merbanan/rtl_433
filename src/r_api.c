@@ -276,7 +276,7 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
 
     list_push(&cfg->demod->r_devs, p);
 
-    if (cfg->verbosity) {
+    if (cfg->verbosity > 1) {
         fprintf(stderr, "Registering protocol [%u] \"%s\"\n", r_dev->protocol_num, r_dev->name);
     }
 }
