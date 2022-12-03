@@ -928,6 +928,43 @@ void flush_report_data(r_cfg_t *cfg)
 
 /* setup */
 
+static int lvlarg_param(char **param, int default_verb)
+{
+    if (!param || !*param) {
+        return default_verb;
+    }
+    // parse ", v = %d"
+    char *p = *param;
+    if (*p != ',') {
+        return default_verb;
+    }
+    p++;
+    while (*p == ' ' || *p == '\t')
+        p++;
+    if (*p != 'v') {
+        fprintf(stderr, "Unknown output option \"%s\"\n", *param);
+        exit(1);
+    }
+    p++;
+    while (*p == ' ' || *p == '\t')
+        p++;
+    if (*p != '=') {
+        fprintf(stderr, "Unknown output option \"%s\"\n", *param);
+        exit(1);
+    }
+    p++;
+    while (*p == ' ' || *p == '\t')
+        p++;
+    char *endptr;
+    int val = strtol(p, &endptr, 10);
+    if (p == endptr) {
+        fprintf(stderr, "Invalid output option \"%s\"\n", *param);
+        exit(1);
+    }
+    *param = endptr;
+    return val;
+}
+
 static FILE *fopen_output(char *param)
 {
     FILE *file;
@@ -944,12 +981,14 @@ static FILE *fopen_output(char *param)
 
 void add_json_output(r_cfg_t *cfg, char *param)
 {
-    list_push(&cfg->output_handler, data_output_json_create(fopen_output(param)));
+    int log_level = lvlarg_param(&param, 0);
+    list_push(&cfg->output_handler, data_output_json_create(log_level, fopen_output(param)));
 }
 
 void add_csv_output(r_cfg_t *cfg, char *param)
 {
-    list_push(&cfg->output_handler, data_output_csv_create(fopen_output(param)));
+    int log_level = lvlarg_param(&param, 0);
+    list_push(&cfg->output_handler, data_output_csv_create(log_level, fopen_output(param)));
 }
 
 void start_outputs(r_cfg_t *cfg, char const *const *well_known)
@@ -966,7 +1005,8 @@ void start_outputs(r_cfg_t *cfg, char const *const *well_known)
 
 void add_kv_output(r_cfg_t *cfg, char *param)
 {
-    list_push(&cfg->output_handler, data_output_kv_create(fopen_output(param)));
+    int log_level = lvlarg_param(&param, LOG_TRACE);
+    list_push(&cfg->output_handler, data_output_kv_create(log_level, fopen_output(param)));
 }
 
 void add_mqtt_output(r_cfg_t *cfg, char *param)
@@ -981,16 +1021,18 @@ void add_influx_output(r_cfg_t *cfg, char *param)
 
 void add_syslog_output(r_cfg_t *cfg, char *param)
 {
+    int log_level = lvlarg_param(&param, LOG_WARNING);
     char *host = "localhost";
     char *port = "514";
     hostport_param(param, &host, &port);
     print_logf(LOG_CRITICAL, "Syslog UDP", "Sending datagrams to %s port %s", host, port);
 
-    list_push(&cfg->output_handler, data_output_syslog_create(host, port));
+    list_push(&cfg->output_handler, data_output_syslog_create(log_level, host, port));
 }
 
 void add_http_output(r_cfg_t *cfg, char *param)
 {
+    // Note: no log_level, the HTTP-API consumes all log levels.
     char *host = "0.0.0.0";
     char *port = "8433";
     hostport_param(param, &host, &port);
@@ -1001,6 +1043,7 @@ void add_http_output(r_cfg_t *cfg, char *param)
 
 void add_trigger_output(r_cfg_t *cfg, char *param)
 {
+    // Note: no log_level, we never trigger on logs.
     list_push(&cfg->output_handler, data_output_trigger_create(fopen_output(param)));
 }
 
