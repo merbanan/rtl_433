@@ -30,6 +30,7 @@
 #include "list.h"
 #include "optparse.h"
 #include "output_file.h"
+#include "output_log.h"
 #include "output_udp.h"
 #include "output_mqtt.h"
 #include "output_influx.h"
@@ -276,6 +277,7 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
 
     p->verbose      = dev_verbose ? dev_verbose : (cfg->verbosity > 4 ? cfg->verbosity - 5 : 0);
     p->verbose_bits = cfg->verbose_bits;
+    p->log_fn       = log_device_handler;
 
     p->output_fn  = data_acquired_handler;
     p->output_ctx = cfg;
@@ -588,6 +590,44 @@ int run_fsk_demods(list_t *r_devs, pulse_data_t *fsk_pulse_data)
 
 /* handlers */
 
+static void log_handler(log_level_t level, char const *src, char const *msg, void *userdata)
+{
+    r_cfg_t *cfg = userdata;
+
+    if (cfg->verbosity < (int)level) {
+        return;
+    }
+    /* clang-format off */
+    data_t *data = data_make(
+            "src",     "",     DATA_STRING, src,
+            "lvl",      "",     DATA_INT,    level,
+            "msg",      "",     DATA_STRING, msg,
+            NULL);
+    /* clang-format on */
+
+    // prepend "time" if requested
+    if (cfg->report_time != REPORT_TIME_OFF) {
+        char time_str[LOCAL_TIME_BUFLEN];
+        time_pos_str(cfg, 0, time_str);
+        data = data_prepend(data,
+                "time", "", DATA_STRING, time_str,
+                NULL);
+    }
+
+    for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
+        data_output_t *output = cfg->output_handler.elems[i];
+        if (output && output->log_level >= (int)level) {
+            data_output_print(output, data);
+        }
+    }
+    data_free(data);
+}
+
+void r_redirect_logging(r_cfg_t *cfg)
+{
+    r_logger_set_log_handler(log_handler, cfg);
+}
+
 /** Pass the data structure to all output handlers. Frees data afterwards. */
 void event_occurred_handler(r_cfg_t *cfg, data_t *data)
 {
@@ -601,7 +641,31 @@ void event_occurred_handler(r_cfg_t *cfg, data_t *data)
     }
 
     for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
-        data_output_print(cfg->output_handler.elems[i], data);
+        data_output_t *output = cfg->output_handler.elems[i];
+        data_output_print(output, data);
+    }
+    data_free(data);
+}
+
+/** Pass the data structure to all output handlers. Frees data afterwards. */
+void log_device_handler(r_device *r_dev, int level, data_t *data)
+{
+    r_cfg_t *cfg = r_dev->output_ctx;
+
+    // prepend "time" if requested
+    if (cfg->report_time != REPORT_TIME_OFF) {
+        char time_str[LOCAL_TIME_BUFLEN];
+        time_pos_str(cfg, cfg->demod->pulse_data.start_ago, time_str);
+        data = data_prepend(data,
+                "time", "", DATA_STRING, time_str,
+                NULL);
+    }
+
+    for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
+        data_output_t *output = cfg->output_handler.elems[i];
+        if (output && output->log_level >= level) {
+            data_output_print(output, data);
+        }
     }
     data_free(data);
 }
@@ -829,7 +893,8 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
     }
 
     for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
-        data_output_print(cfg->output_handler.elems[i], data);
+        data_output_t *output = cfg->output_handler.elems[i];
+        data_output_print(output, data);
     }
     data_free(data);
 }
@@ -968,7 +1033,7 @@ static int lvlarg_param(char **param, int default_verb)
 static FILE *fopen_output(char *param)
 {
     FILE *file;
-    if (!param || !*param) {
+    if (!param || !*param || (*param == '-' && param[1] == '\0')) {
         return stdout;
     }
     file = fopen(param, "a");
@@ -997,10 +1062,17 @@ void start_outputs(r_cfg_t *cfg, char const *const *well_known)
     char const **output_fields = determine_csv_fields(cfg, well_known, &num_output_fields);
 
     for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
-        data_output_start(cfg->output_handler.elems[i], output_fields, num_output_fields);
+        data_output_t *output = cfg->output_handler.elems[i];
+        data_output_start(output, output_fields, num_output_fields);
     }
 
     free((void *)output_fields);
+}
+
+void add_log_output(r_cfg_t *cfg, char *param)
+{
+    int log_level = lvlarg_param(&param, LOG_TRACE);
+    list_push(&cfg->output_handler, data_output_log_create(log_level, fopen_output(param)));
 }
 
 void add_kv_output(r_cfg_t *cfg, char *param)

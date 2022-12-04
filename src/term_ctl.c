@@ -265,46 +265,52 @@ void term_set_fg(void *ctx, term_color_t color)
 {
 #ifdef _WIN32
     console_t *console = (console_t *)ctx;
-    if (console->ansi) {
-        FILE *fp = console->file;
-        if (color == TERM_COLOR_RESET)
-            fprintf(fp, "\033[0m");
-        else
-            fprintf(fp, "\033[%dm", color);
-    }
-    else {
+    if (!console->ansi) {
         _term_set_color(ctx, TRUE, color);
+        return;
     }
+    FILE *fp = console->file;
 #else
     FILE *fp = (FILE *)ctx;
+#endif
     if (color == TERM_COLOR_RESET)
         fprintf(fp, "\033[0m");
     else
         fprintf(fp, "\033[%d;1m", color);
-#endif
 }
 
-void term_set_bg(void *ctx, term_color_t color)
+void term_set_bg(void *ctx, term_color_t bg, term_color_t fg)
 {
+    if (bg < TERM_COLOR_BLACK
+            || (bg > TERM_COLOR_WHITE && bg < TERM_COLOR_BRIGHT_BLACK)
+            || bg > TERM_COLOR_BRIGHT_WHITE) {
+        bg = 0;
+    }
+    if (fg < TERM_COLOR_BLACK
+            || (fg > TERM_COLOR_WHITE && fg < TERM_COLOR_BRIGHT_BLACK)
+            || fg > TERM_COLOR_BRIGHT_WHITE) {
+        fg = 0;
+    }
+
 #ifdef _WIN32
     console_t *console = (console_t *)ctx;
-    if (console->ansi) {
-       FILE *fp = console->file;
-       if (color == TERM_COLOR_RESET)
-           fprintf(fp, "\033[0m");
-       else
-           fprintf(fp, "\033[%dm", color + 10);
+    if (!console->ansi) {
+        if (bg)
+            _term_set_color(ctx, FALSE, bg);
+        if (fg)
+            _term_set_color(ctx, TRUE, fg);
+        return;
     }
-    else {
-        _term_set_color(ctx, FALSE, color);
-    }
+    FILE *fp = console->file;
 #else
     FILE *fp = (FILE *)ctx;
-    if (color == TERM_COLOR_RESET)
-        fprintf(fp, "\033[0m");
-    else
-        fprintf(fp, "\033[%d;1m", color + 10);
 #endif
+    if (bg && fg)
+        fprintf(fp, "\033[%d;%dm", bg + 10, fg);
+    else if (bg)
+        fprintf(fp, "\033[%dm", bg + 10);
+    else if (fg)
+        fprintf(fp, "\033[%dm", fg);
 }
 
 #define DIM(array) (int) (sizeof(array) / sizeof(array[0]))

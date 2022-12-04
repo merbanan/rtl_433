@@ -174,7 +174,7 @@ static void usage(int exit_code)
             "  [-w <filename> | help] Save data stream to output file (a '-' dumps samples to stdout)\n"
             "  [-W <filename> | help] Save data stream to output file, overwrite existing file\n"
             "\t\t= Data output options =\n"
-            "  [-F kv | json | csv | mqtt | influx | syslog | trigger | null | help] Produce decoded output in given format.\n"
+            "  [-F log | kv | json | csv | mqtt | influx | syslog | trigger | null | help] Produce decoded output in given format.\n"
             "       Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "       Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
             "  [-M time[:<options>] | protocol | level | noise[:<secs>] | stats | bits | help] Add various meta data to each output.\n"
@@ -250,8 +250,8 @@ static void help_output(void)
 {
     term_help_printf(
             "\t\t= Output format option =\n"
-            "  [-F kv|json|csv|mqtt|influx|syslog|trigger|null] Produce decoded output in given format.\n"
-            "\tWithout this option the default is KV output. Use \"-F null\" to remove the default.\n"
+            "  [-F log|kv|json|csv|mqtt|influx|syslog|trigger|null] Produce decoded output in given format.\n"
+            "\tWithout this option the default is LOG and KV output. Use \"-F null\" to remove the default.\n"
             "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\tSpecify MQTT server with e.g. -F mqtt://localhost:1883\n"
             "\tAdd MQTT options with e.g. -F \"mqtt://host:1883,opt=arg\"\n"
@@ -1078,6 +1078,16 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         if (!arg)
             help_protocols(cfg->devices, cfg->num_r_devices, 0);
 
+        // use arg of 'v', 'vv', 'vvv' as global device verbosity
+        if (*arg == 'v') {
+            int decoder_verbosity = 0;
+            for (int i = 0; arg[i] == 'v'; ++i) {
+                decoder_verbosity += 1;
+            }
+            (void)decoder_verbosity; // FIXME: use this
+            break;
+        }
+
         n = atoi(arg);
         if (n > cfg->num_r_devices || -n > cfg->num_r_devices) {
             fprintf(stderr, "Protocol number specified (%d) is larger than number of protocols\n\n", n);
@@ -1124,8 +1134,13 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         else if (strncmp(arg, "csv", 3) == 0) {
             add_csv_output(cfg, arg_param(arg));
         }
+        else if (strncmp(arg, "log", 3) == 0) {
+            add_log_output(cfg, arg_param(arg));
+            cfg->has_logout = 1;
+        }
         else if (strncmp(arg, "kv", 2) == 0) {
             add_kv_output(cfg, arg_param(arg));
+            cfg->has_logout = 1;
         }
         else if (strncmp(arg, "mqtt", 4) == 0) {
             add_mqtt_output(cfg, arg);
@@ -1342,10 +1357,7 @@ static void sdr_handler(sdr_event_t *ev, void *ctx)
                 NULL);
     }
     if (data) {
-        for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
-            data_output_print(cfg->output_handler.elems[i], data);
-        }
-        data_free(data);
+        event_occurred_handler(cfg, data);
     }
 
     if (ev->ev == SDR_EV_DATA) {
@@ -1439,6 +1451,12 @@ int main(int argc, char **argv) {
     if (!cfg->output_handler.len) {
         add_kv_output(cfg, NULL);
     }
+    else if (!cfg->has_logout) {
+        // Warn if no log outputs are enabled
+        fprintf(stderr, "Use \"-F log\" if you want any messages, warnings, and errors in the console.\n");
+    }
+    // Change log handler after outputs are set up
+    r_redirect_logging(cfg);
 
     // register default decoders if nothing is configured
     if (!cfg->no_default_devices) {
