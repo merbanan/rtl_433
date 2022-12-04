@@ -383,10 +383,10 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 
     n_samples = len / demod->sample_size;
     if (n_samples * demod->sample_size != len) {
-        fprintf(stderr, "Sample buffer length not aligned to sample size!\n");
+        print_log(LOG_WARNING, __func__, "Sample buffer length not aligned to sample size!");
     }
     if (!n_samples) {
-        fprintf(stderr, "Sample buffer too short!\n");
+        print_log(LOG_WARNING, __func__, "Sample buffer too short!");
         return; // keep the watchdog timer running
     }
 
@@ -433,7 +433,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         if (demod->auto_level > 0 && demod->noise_level < demod->min_level - 3.0f
                 && fabsf(demod->min_level_auto - demod->noise_level - 3.0f) > 1.0f) {
             demod->min_level_auto = demod->noise_level + 3.0f;
-            fprintf(stderr, "Estimated noise level is %.1f dB, adjusting minimum detection level to %.1f dB\n", demod->noise_level, demod->min_level_auto);
+            print_logf(LOG_WARNING, "Auto Level", "Estimated noise level is %.1f dB, adjusting minimum detection level to %.1f dB",
+                    demod->noise_level, demod->min_level_auto);
             pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level_auto, demod->min_snr, demod->detect_verbosity);
         }
     } else {
@@ -441,7 +442,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     }
     // Report noise every report_noise seconds, but only for the first frame that second
     if (cfg->report_noise && last_frame_sec != demod->now.tv_sec && demod->now.tv_sec % cfg->report_noise == 0) {
-        fprintf(stderr, "Current %s level %.1f dB, estimated noise %.1f dB\n",
+        print_logf(LOG_WARNING, "Auto Level", "Current %s level %.1f dB, estimated noise %.1f dB",
                 noise_only ? "noise" : "signal", avg_db, demod->noise_level);
     }
 
@@ -681,7 +682,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         }
 
         if (fwrite(out_buf, 1, out_len, dumper->file) != out_len) {
-            fprintf(stderr, "Short write, samples lost, exiting!\n");
+            print_log(LOG_ERROR, __func__, "Short write, samples lost, exiting!");
             cfg->exit_async = 1;
         }
     }
@@ -712,7 +713,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     if (cfg->duration > 0 && rawtime >= cfg->stop_time) {
         alarm(0); // cancel the watchdog timer
         cfg->exit_async = 1;
-        fprintf(stderr, "Time expired, exiting!\n");
+        print_log(LOG_CRITICAL, __func__, "Time expired, exiting!");
     }
     if (cfg->stats_now || (cfg->report_stats && cfg->stats_interval && rawtime >= cfg->stats_time)) {
         event_occurred_handler(cfg, create_report_data(cfg, cfg->stats_now ? 3 : cfg->report_stats));
@@ -1476,7 +1477,7 @@ int main(int argc, char **argv) {
             }
             abuf_printf(&p, " ]");
         }
-        fprintf(stderr, "Registered %zu out of %u device decoding protocols%s\n",
+        print_logf(LOG_CRITICAL, "Protocols", "Registered %zu out of %u device decoding protocols%s",
                 demod->r_devs.len, cfg->num_r_devices, decoders_str);
     }
 
@@ -1486,12 +1487,12 @@ int main(int argc, char **argv) {
 
     if (cfg->out_block_size < MINIMAL_BUF_LENGTH ||
             cfg->out_block_size > MAXIMAL_BUF_LENGTH) {
-        fprintf(stderr,
-                "Output block size wrong value, falling back to default\n");
-        fprintf(stderr,
-                "Minimal length: %d\n", MINIMAL_BUF_LENGTH);
-        fprintf(stderr,
-                "Maximal length: %d\n", MAXIMAL_BUF_LENGTH);
+        print_logf(LOG_ERROR, "Block Size",
+                "Output block size wrong value, falling back to default (%d)", DEFAULT_BUF_LENGTH);
+        print_logf(LOG_ERROR, "Block Size",
+                "Minimal length: %d", MINIMAL_BUF_LENGTH);
+        print_logf(LOG_ERROR, "Block Size",
+                "Maximal length: %d", MAXIMAL_BUF_LENGTH);
         cfg->out_block_size = DEFAULT_BUF_LENGTH;
     }
 
@@ -1501,27 +1502,27 @@ int main(int argc, char **argv) {
         char line[INPUT_LINE_MAX];
 
         if (*cfg->test_data == '@') {
-            fprintf(stderr, "Reading test data from \"%s\"\n", &cfg->test_data[1]);
+            print_logf(LOG_CRITICAL, "Input", "Reading test data from \"%s\"", &cfg->test_data[1]);
             fp = fopen(&cfg->test_data[1], "r");
         } else {
-            fprintf(stderr, "Reading test data from stdin\n");
+            print_log(LOG_CRITICAL, "Input", "Reading test data from stdin");
             fp = stdin;
         }
         if (!fp) {
-            fprintf(stderr, "Failed to open %s\n", cfg->test_data);
+            print_logf(LOG_ERROR, "Input", "Failed to open %s", cfg->test_data);
             exit(1);
         }
 
         while (fgets(line, INPUT_LINE_MAX, fp)) {
             if (cfg->verbosity >= LOG_NOTICE)
-                fprintf(stderr, "Processing test data \"%s\"...\n", line);
+                print_logf(LOG_NOTICE, "Input", "Processing test data \"%s\"...", line);
             r = 0;
             // test a single decoder?
             if (*line == '[') {
                 char *e = NULL;
                 unsigned d = (unsigned)strtol(&line[1], &e, 10);
                 if (!e || *e != ']') {
-                    fprintf(stderr, "Bad protocol number %.5s.\n", line);
+                    print_logf(LOG_ERROR, "Protocol", "Bad protocol number %.5s.", line);
                     exit(1);
                 }
                 e++;
@@ -1534,11 +1535,11 @@ int main(int argc, char **argv) {
                     }
                 }
                 if (!r_dev) {
-                    fprintf(stderr, "Unknown protocol number %u.\n", d);
+                    print_logf(LOG_ERROR, "Protocol", "Unknown protocol number %u.", d);
                     exit(1);
                 }
                 if (cfg->verbosity >= LOG_NOTICE)
-                    fprintf(stderr, "Verifying test data with device %s.\n", r_dev->name);
+                    print_logf(LOG_NOTICE, "Input", "Verifying test data with device %s.", r_dev->name);
                 if (rfraw_check(e)) {
                     pulse_data_t pulse_data = {0};
                     rfraw_parse(&pulse_data, e);
@@ -1565,7 +1566,7 @@ int main(int argc, char **argv) {
             for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
                 r_device *r_dev = *iter;
                 if (cfg->verbosity >= LOG_NOTICE)
-                    fprintf(stderr, "Verifying test data with device %s.\n", r_dev->name);
+                    print_logf(LOG_NOTICE, "Input", "Verifying test data with device %s.", r_dev->name);
                 r += pulse_slicer_string(line, r_dev);
             }
         }
@@ -1591,7 +1592,7 @@ int main(int argc, char **argv) {
         for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
             r_device *r_dev = *iter;
             if (cfg->verbosity >= LOG_NOTICE)
-                fprintf(stderr, "Verifying test data with device %s.\n", r_dev->name);
+                print_logf(LOG_NOTICE, "Input", "Verifying test data with device %s.", r_dev->name);
             r += pulse_slicer_string(cfg->test_data, r_dev);
         }
         r_free_cfg(cfg);
@@ -1627,11 +1628,11 @@ int main(int argc, char **argv) {
             } else {
                 in_file = fopen(demod->load_info.path, "rb");
                 if (!in_file) {
-                    fprintf(stderr, "Opening file: %s failed!\n", cfg->in_filename);
+                    print_logf(LOG_ERROR, "Input", "Opening file \"%s\" failed!", cfg->in_filename);
                     break;
                 }
             }
-            fprintf(stderr, "Test mode active. Reading samples from file: %s\n", cfg->in_filename);  // Essential information (not quiet)
+            print_logf(LOG_CRITICAL, "Input", "Test mode active. Reading samples from file: %s", cfg->in_filename); // Essential information (not quiet)
             if (demod->load_info.format == CU8_IQ
                     || demod->load_info.format == CS8_IQ
                     || demod->load_info.format == S16_AM
@@ -1643,11 +1644,11 @@ int main(int argc, char **argv) {
             } else if (demod->load_info.format == PULSE_OOK) {
                 // ignore
             } else {
-                fprintf(stderr, "Input format invalid: %s\n", file_info_string(&demod->load_info));
+                print_logf(LOG_ERROR, "Input", "Input format invalid \"%s\"", file_info_string(&demod->load_info));
                 break;
             }
             if (cfg->verbosity >= LOG_NOTICE) {
-                fprintf(stderr, "Input format: %s\n", file_info_string(&demod->load_info));
+                print_logf(LOG_NOTICE, "Input", "Input format \"%s\"", file_info_string(&demod->load_info));
             }
             demod->sample_file_pos = 0.0;
 
@@ -1665,7 +1666,7 @@ int main(int argc, char **argv) {
                         } else if (dumper->format == PULSE_OOK) {
                             pulse_data_dump(dumper->file, &demod->pulse_data);
                         } else {
-                            fprintf(stderr, "Dumper (%s) not supported on OOK input\n", dumper->spec);
+                            print_logf(LOG_ERROR, "Input", "Dumper (%s) not supported on OOK input", dumper->spec);
                             exit(1);
                         }
                     }
@@ -1750,7 +1751,7 @@ int main(int argc, char **argv) {
             if (demod->am_analyze)
                 am_analyze_classify(demod->am_analyze);
             if (cfg->verbosity >= LOG_NOTICE) {
-                fprintf(stderr, "Test mode file issued %d packets\n", n_blocks);
+                print_logf(LOG_NOTICE, "Input", "Test mode file issued %d packets", n_blocks);
             }
 
             if (in_file != stdin)
@@ -1765,7 +1766,7 @@ int main(int argc, char **argv) {
     }
 
     if (cfg->sr_filename) {
-        fprintf(stderr, "SR writing not recommended for live input\n");
+        print_logf(LOG_ERROR, "Input", "SR writing not recommended for live input");
         exit(1);
     }
 
@@ -1795,7 +1796,7 @@ int main(int argc, char **argv) {
     r = sdr_set_sample_rate(cfg->dev, cfg->samp_rate, 1); // always verbose
 
     if (cfg->verbosity >= LOG_NOTICE || demod->level_limit < 0.0)
-        fprintf(stderr, "Bit detection level set to %.1f%s.\n", demod->level_limit, (demod->level_limit < 0.0 ? "" : " (Auto)"));
+        print_logf(LOG_NOTICE, "Input", "Bit detection level set to %.1f%s.", demod->level_limit, (demod->level_limit < 0.0 ? "" : " (Auto)"));
 
     r = sdr_apply_settings(cfg->dev, cfg->settings_str, 1); // always verbose for soapy
 
@@ -1808,11 +1809,11 @@ int main(int argc, char **argv) {
     /* Reset endpoint before we start reading from it (mandatory) */
     r = sdr_reset(cfg->dev, cfg->verbosity);
     if (r < 0)
-        fprintf(stderr, "WARNING: Failed to reset buffers.\n");
+        print_log(LOG_ERROR, "Input", "Failed to reset buffers.");
     r = sdr_activate(cfg->dev);
 
     if (cfg->verbosity >= LOG_NOTICE) {
-        fprintf(stderr, "Reading samples in async mode...\n");
+        print_log(LOG_NOTICE, "Input", "Reading samples in async mode...");
     }
     if (cfg->duration > 0) {
         time(&cfg->stop_time);
@@ -1828,7 +1829,7 @@ int main(int argc, char **argv) {
         r = sdr_start(cfg->dev, sdr_handler, (void *)cfg,
                 DEFAULT_ASYNC_BUF_NUMBER, cfg->out_block_size);
         if (r < 0) {
-            fprintf(stderr, "WARNING: async read failed (%i).\n", r);
+            print_logf(LOG_ERROR, "Input", "async read failed (%i).", r);
         }
 
         alarm(0); // cancel the watchdog timer
@@ -1839,7 +1840,7 @@ int main(int argc, char **argv) {
     }
 
     if (!cfg->exit_async) {
-        fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
+        print_logf(LOG_ERROR, "rtl_433", "Library error %d, exiting...", r);
         cfg->exit_code = r;
     }
 
