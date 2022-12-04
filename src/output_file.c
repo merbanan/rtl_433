@@ -110,11 +110,12 @@ static void R_API_CALLCONV print_json_int(data_output_t *output, int data, char 
     fprintf(json->file, "%d", data);
 }
 
-static void R_API_CALLCONV print_json_flush(data_output_t *output)
+static void R_API_CALLCONV data_output_json_print(data_output_t *output, data_t *data)
 {
     data_output_json_t *json = (data_output_json_t *)output;
 
     if (json && json->file) {
+        json->output.print_data(output, data, NULL);
         fputc('\n', json->file);
         fflush(json->file);
     }
@@ -141,7 +142,7 @@ struct data_output *data_output_json_create(FILE *file)
     json->output.print_string = print_json_string;
     json->output.print_double = print_json_double;
     json->output.print_int    = print_json_int;
-    json->output.output_flush = print_json_flush;
+    json->output.output_print = data_output_json_print;
     json->output.output_free  = data_output_json_free;
     json->file                = file;
 
@@ -305,11 +306,12 @@ static void R_API_CALLCONV print_kv_string(data_output_t *output, const char *da
     kv->column += fprintf(kv->file, format ? format : "%s", data);
 }
 
-static void R_API_CALLCONV print_kv_flush(data_output_t *output)
+static void R_API_CALLCONV data_output_kv_print(data_output_t *output, data_t *data)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
     if (kv && kv->file) {
+        kv->output.print_data(output, data, NULL);
         fputc('\n', kv->file);
         fflush(kv->file);
     }
@@ -340,7 +342,7 @@ struct data_output *data_output_kv_create(FILE *file)
     kv->output.print_string = print_kv_string;
     kv->output.print_double = print_kv_double;
     kv->output.print_int    = print_kv_int;
-    kv->output.output_flush = print_kv_flush;
+    kv->output.output_print = data_output_kv_print;
     kv->output.output_free  = data_output_kv_free;
     kv->file                = file;
 
@@ -524,11 +526,12 @@ static void R_API_CALLCONV print_csv_int(data_output_t *output, int data, char c
     fprintf(csv->file, "%d", data);
 }
 
-static void R_API_CALLCONV print_csv_flush(data_output_t *output)
+static void R_API_CALLCONV data_output_csv_print(data_output_t *output, data_t *data)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
     if (csv && csv->file) {
+        csv->output.print_data(output, data, NULL);
         fputc('\n', csv->file);
         fflush(csv->file);
     }
@@ -556,7 +559,7 @@ struct data_output *data_output_csv_create(FILE *file)
     csv->output.print_double = print_csv_double;
     csv->output.print_int    = print_csv_int;
     csv->output.output_start = data_output_csv_start;
-    csv->output.output_flush = print_csv_flush;
+    csv->output.output_print = data_output_csv_print;
     csv->output.output_free  = data_output_csv_free;
     csv->file                = file;
 
