@@ -51,6 +51,7 @@
 #include "term_ctl.h"
 #include "compat_alarm.h"
 #include "compat_paths.h"
+#include "logger.h"
 #include "fatal.h"
 #include "write_sigrok.h"
 #include "mongoose.h"
@@ -139,7 +140,7 @@ static void usage(int exit_code)
             "\t\t= General options =\n"
             "  [-V] Output the version string and exit\n"
             "  [-v] Increase verbosity (can be used multiple times).\n"
-            "       -v : verbose, -vv : verbose decoders, -vvv : debug decoders, -vvvv : trace decoding).\n"
+            "       -v : verbose notice, -vv : verbose info, -vvv : debug, -vvvv : trace.\n"
             "  [-c <path>] Read config options from a file\n"
             "\t\t= Tuner options =\n"
             "  [-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query> | rtl_tcp | help]\n"
@@ -514,7 +515,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                     if (dumper->format == PULSE_OOK) pulse_data_dump(dumper->file, &demod->pulse_data);
                 }
 
-                if (cfg->verbosity > 3) pulse_data_print(&demod->pulse_data);
+                if (cfg->verbosity >= LOG_TRACE) pulse_data_print(&demod->pulse_data);
                 if (cfg->raw_mode == 1 || (cfg->raw_mode == 2 && p_events == 0) || (cfg->raw_mode == 3 && p_events > 0)) {
                     data_t *data = pulse_data_print_data(&demod->pulse_data);
                     event_occurred_handler(cfg, data);
@@ -538,7 +539,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                     if (dumper->format == PULSE_OOK) pulse_data_dump(dumper->file, &demod->fsk_pulse_data);
                 }
 
-                if (cfg->verbosity > 3) pulse_data_print(&demod->fsk_pulse_data);
+                if (cfg->verbosity >= LOG_TRACE) pulse_data_print(&demod->fsk_pulse_data);
                 if (cfg->raw_mode == 1 || (cfg->raw_mode == 2 && p_events == 0) || (cfg->raw_mode == 3 && p_events > 0)) {
                     data_t *data = pulse_data_print_data(&demod->fsk_pulse_data);
                     event_occurred_handler(cfg, data);
@@ -582,7 +583,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     }
 
     if (demod->am_analyze) {
-        am_analyze(demod->am_analyze, demod->am_buf, n_samples, cfg->verbosity > 1, NULL);
+        am_analyze(demod->am_analyze, demod->am_buf, n_samples, cfg->verbosity >= LOG_INFO, NULL);
     }
 
     for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
@@ -1455,7 +1456,7 @@ int main(int argc, char **argv) {
     {
         char decoders_str[1024];
         decoders_str[0] = '\0';
-        if (cfg->verbosity <= 1) {
+        if (cfg->verbosity <= LOG_NOTICE) {
             abuf_t p = {0};
             abuf_init(&p, decoders_str, sizeof(decoders_str));
             // print registered decoder ranges
@@ -1512,7 +1513,7 @@ int main(int argc, char **argv) {
         }
 
         while (fgets(line, INPUT_LINE_MAX, fp)) {
-            if (cfg->verbosity)
+            if (cfg->verbosity >= LOG_NOTICE)
                 fprintf(stderr, "Processing test data \"%s\"...\n", line);
             r = 0;
             // test a single decoder?
@@ -1536,7 +1537,7 @@ int main(int argc, char **argv) {
                     fprintf(stderr, "Unknown protocol number %u.\n", d);
                     exit(1);
                 }
-                if (cfg->verbosity)
+                if (cfg->verbosity >= LOG_NOTICE)
                     fprintf(stderr, "Verifying test data with device %s.\n", r_dev->name);
                 if (rfraw_check(e)) {
                     pulse_data_t pulse_data = {0};
@@ -1563,7 +1564,7 @@ int main(int argc, char **argv) {
             } else
             for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
                 r_device *r_dev = *iter;
-                if (cfg->verbosity)
+                if (cfg->verbosity >= LOG_NOTICE)
                     fprintf(stderr, "Verifying test data with device %s.\n", r_dev->name);
                 r += pulse_slicer_string(line, r_dev);
             }
@@ -1589,7 +1590,7 @@ int main(int argc, char **argv) {
         } else
         for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
             r_device *r_dev = *iter;
-            if (cfg->verbosity)
+            if (cfg->verbosity >= LOG_NOTICE)
                 fprintf(stderr, "Verifying test data with device %s.\n", r_dev->name);
             r += pulse_slicer_string(cfg->test_data, r_dev);
         }
@@ -1645,7 +1646,7 @@ int main(int argc, char **argv) {
                 fprintf(stderr, "Input format invalid: %s\n", file_info_string(&demod->load_info));
                 break;
             }
-            if (cfg->verbosity) {
+            if (cfg->verbosity >= LOG_NOTICE) {
                 fprintf(stderr, "Input format: %s\n", file_info_string(&demod->load_info));
             }
             demod->sample_file_pos = 0.0;
@@ -1674,7 +1675,7 @@ int main(int argc, char **argv) {
                     }
                     else {
                         int p_events = run_ook_demods(&demod->r_devs, &demod->pulse_data);
-                        if (cfg->verbosity > 2)
+                        if (cfg->verbosity >= LOG_DEBUG)
                             pulse_data_print(&demod->pulse_data);
                         if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0))) {
                             pulse_analyzer(&demod->pulse_data, PULSE_DATA_OOK);
@@ -1748,7 +1749,7 @@ int main(int argc, char **argv) {
             //Always classify a signal at the end of the file
             if (demod->am_analyze)
                 am_analyze_classify(demod->am_analyze);
-            if (cfg->verbosity) {
+            if (cfg->verbosity >= LOG_NOTICE) {
                 fprintf(stderr, "Test mode file issued %d packets\n", n_blocks);
             }
 
@@ -1793,7 +1794,7 @@ int main(int argc, char **argv) {
     /* Set the sample rate */
     r = sdr_set_sample_rate(cfg->dev, cfg->samp_rate, 1); // always verbose
 
-    if (cfg->verbosity || demod->level_limit < 0.0)
+    if (cfg->verbosity >= LOG_NOTICE || demod->level_limit < 0.0)
         fprintf(stderr, "Bit detection level set to %.1f%s.\n", demod->level_limit, (demod->level_limit < 0.0 ? "" : " (Auto)"));
 
     r = sdr_apply_settings(cfg->dev, cfg->settings_str, 1); // always verbose for soapy
@@ -1810,7 +1811,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "WARNING: Failed to reset buffers.\n");
     r = sdr_activate(cfg->dev);
 
-    if (cfg->verbosity) {
+    if (cfg->verbosity >= LOG_NOTICE) {
         fprintf(stderr, "Reading samples in async mode...\n");
     }
     if (cfg->duration > 0) {
