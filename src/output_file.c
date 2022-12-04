@@ -354,13 +354,12 @@ struct data_output *data_output_kv_create(FILE *file)
     return &kv->output;
 }
 
-/* CSV printer; doesn't really support recursive data objects yet */
+/* CSV printer */
 
 typedef struct {
     struct data_output output;
     FILE *file;
     const char **fields;
-    int data_recursion;
     const char *separator;
 } data_output_csv_t;
 
@@ -369,36 +368,16 @@ static void R_API_CALLCONV print_csv_data(data_output_t *output, data_t *data, c
     UNUSED(format);
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
-    const char **fields = csv->fields;
-    int i;
-
-    if (csv->data_recursion)
-        return;
-
-    int regular = 0; // skip "states" output
-    for (data_t *d = data; d; d = d->next) {
-        if (!strcmp(d->key, "msg") || !strcmp(d->key, "codes") || !strcmp(d->key, "model")) {
-            regular = 1;
-            break;
-        }
+    fputc('{', csv->file);
+    for (bool separator = false; data; data = data->next) {
+        if (separator)
+            fprintf(csv->file, "; "); // NOTE: distinct from csv->separator
+        output->print_string(output, data->key, NULL);
+        fprintf(csv->file, ": ");
+        print_value(output, data->type, data->value, data->format);
+        separator = true;
     }
-    if (!regular)
-        return;
-
-    ++csv->data_recursion;
-    for (i = 0; fields[i]; ++i) {
-        const char *key = fields[i];
-        data_t *found = NULL;
-        if (i)
-            fprintf(csv->file, "%s", csv->separator);
-        for (data_t *iter = data; !found && iter; iter = iter->next)
-            if (strcmp(iter->key, key) == 0)
-                found = iter;
-
-        if (found)
-            print_value(output, found->type, found->value, found->format);
-    }
-    --csv->data_recursion;
+    fputc('}', csv->file);
 }
 
 static void R_API_CALLCONV print_csv_array(data_output_t *output, data_array_t *array, char const *format)
@@ -530,11 +509,33 @@ static void R_API_CALLCONV data_output_csv_print(data_output_t *output, data_t *
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
-    if (csv && csv->file) {
-        csv->output.print_data(output, data, NULL);
-        fputc('\n', csv->file);
-        fflush(csv->file);
+    const char **fields = csv->fields;
+
+    int regular = 0; // skip "states" output
+    for (data_t *d = data; d; d = d->next) {
+        if (!strcmp(d->key, "msg") || !strcmp(d->key, "codes") || !strcmp(d->key, "model")) {
+            regular = 1;
+            break;
+        }
     }
+    if (!regular)
+        return;
+
+    for (int i = 0; fields[i]; ++i) {
+        const char *key = fields[i];
+        data_t *found   = NULL;
+        if (i)
+            fprintf(csv->file, "%s", csv->separator);
+        for (data_t *iter = data; !found && iter; iter = iter->next)
+            if (strcmp(iter->key, key) == 0)
+                found = iter;
+
+        if (found)
+            print_value(output, found->type, found->value, found->format);
+    }
+
+    fputc('\n', csv->file);
+    fflush(csv->file);
 }
 
 static void R_API_CALLCONV data_output_csv_free(data_output_t *output)

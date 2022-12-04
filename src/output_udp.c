@@ -149,9 +149,8 @@ typedef struct {
     char hostname[_POSIX_HOST_NAME_MAX + 1];
 } data_output_syslog_t;
 
-static void R_API_CALLCONV print_syslog_data(data_output_t *output, data_t *data, char const *format)
+static void R_API_CALLCONV data_output_syslog_print(data_output_t *output, data_t *data)
 {
-    UNUSED(format);
     data_output_syslog_t *syslog = (data_output_syslog_t *)output;
 
     // we expect a normal message around 500 bytes
@@ -210,7 +209,7 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
     }
 #endif
 
-    syslog->output.print_data   = print_syslog_data;
+    syslog->output.output_print = data_output_syslog_print;
     syslog->output.output_free  = data_output_syslog_free;
     // Severity 5 "Notice", Facility 20 "local use 4"
     syslog->pri = 20 * 8 + 5;
