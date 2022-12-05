@@ -14,6 +14,7 @@
 #include "data.h"
 #include "abuf.h"
 #include "r_util.h"
+#include "logger.h"
 #include "fatal.h"
 
 #include <string.h>
@@ -91,7 +92,7 @@ static int datagram_client_open(datagram_client_t *client, const char *host, con
     hints.ai_flags = AI_ADDRCONFIG;
     error = getaddrinfo(host, port, &hints, &res0);
     if (error) {
-        fprintf(stderr, "%s\n", gai_strerror(error));
+        print_log(LOG_ERROR, __func__, gai_strerror(error));
         return -1;
     }
     sock = INVALID_SOCKET;

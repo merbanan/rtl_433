@@ -1138,7 +1138,7 @@ static struct http_server_context *http_server_start(struct mg_mgr *mgr, char co
     ctx->server_opts.document_root            = "."; // Serve current directory
     ctx->server_opts.enable_directory_listing = "yes";
 
-    print_logf(LOG_NOTICE, __func__, "Starting HTTP server on address %s, serving %s", address,
+    print_logf(LOG_NOTICE, "HTTP server", "Serving HTTP-API on address %s, serving %s", address,
             ctx->server_opts.document_root);
 
     return ctx;
