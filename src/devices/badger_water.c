@@ -45,7 +45,6 @@ Once the data has been decoded with the NRZ 6:4 decoding, it has the following f
 static uint8_t badger_decode_3of6(uint8_t byte)
 {
     uint8_t out = 0xFF; // Error
-    //fprintf(stderr,"Decode %0d\n", byte);
     switch(byte) {
     case 22:    out = 0x0;  break;  // 0x16
     case 13:    out = 0x1;  break;  // 0x0D

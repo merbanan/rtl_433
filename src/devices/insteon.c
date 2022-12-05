@@ -253,12 +253,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
         }
     }
 
-    // if (decoder->verbose > 1) {
-    //     for (int j=0; j < results_len; j++) {
-    //          fprintf(stderr, "%d:%02X ", j, results[j]);
-    //     }
-    //     fprintf(stderr, "\n");
-    // }
+    // decoder_log_bitrow(decoder, 2, __func__, results, results_len * 8, "results");
 
     if (results_len < min_pkt_len) {
         decoder_logf(decoder, 2, __func__, "fail: short packet %d < 9", results_len);

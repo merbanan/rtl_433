@@ -218,7 +218,7 @@ static int secplus_v2_decode_v2_half(r_device *decoder, bitbuffer_t *bits, uint8
     // SANITY check trinary values, 00/01/10 are valid,  11 is not
     for (int i = 0; i < 9; i++) {
         if (roll_array[i] == 3) {
-            fprintf(stderr, "roll_array val  FAIL\n");
+            decoder_log(decoder, 0, __func__, "roll_array val FAIL");
             return 1; // DECODE_FAIL_SANITY;
         }
     }
