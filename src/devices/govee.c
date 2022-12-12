@@ -252,13 +252,59 @@ r_device govee = {
         .fields      = output_fields,
 };
 
+/**
+Govee Water Leak Detector H5054
+
+Data layout:
+
+    II II XE DD CC CC
+
+- I: 16 bit ID, does not change with battery change
+- X: 4 bit, always 0x3 for the 5 sensors testsed
+- E: 4 bit event type
+- D: 8 bit event data
+- C: CRC-16/AUG-CCITT, poly=0x1021, init=0x1d0f
+
+
+Event Information:
+
+- 0x0 : Button Press
+  - The event data (DD) is always 0x54 for the 5 sensors evaluated. Unknown meaning.
+- 0x1 : Battery Report
+  - The event data (DD) reported for new batteries = 0x64 (decimal 100). When inserting
+    older batteries, this value decreased. Looking at prior versions of the device,
+    this appears to be a battery level percentage.
+- 0x2 = Water Leak
+  - The event data (DD) reported appears to be an incrementing counter for the event
+    number. This value is reset to 00 when new batteries are inserted.
+
+    When the first leak occurs, E=2 D=00. This value is transmitted once very 5 seconds
+    until the leak is cleared (sensor dried off). The next leak events will be:
+    
+    E=2, D=01
+    E=2, D=02
+    E=2, D=03
+    etc...
+
+CRC Information:
+
+The CRC was determined by using the tool CRC RevEng: https://reveng.sourceforge.io/:
+
+    ./reveng -w16 -s aaaaaaaaaaaa bbbbbbbbbbbb etc...
+
+where aaaaaaaaaaaa, bbbbbbbbbbbb, etc... were the unique codes collected from the 
+device.
+
+*/
+
 typedef enum {
     GOVEE_BUTTON_PRESS   = 0,
     GOVEE_BATTERY_REPORT = 1,
     GOVEE_WATER_LEAK     = 2,
 } govee_h5054_event_t;
 
-static int govee_decode_h5054(r_device *decoder, bitbuffer_t *bitbuffer)
+
+static int govee_h5054_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     if (bitbuffer->num_rows < 3) {
         return DECODE_ABORT_EARLY;
@@ -346,6 +392,6 @@ r_device govee_h5054 = {
         .long_width  = 940,  // Maximum gap size before new row of bits [us]
         .gap_limit   = 900,  // Maximum gap size before new row of bits [us]
         .reset_limit = 9000, // Maximum gap size before End Of Message [us]
-        .decode_fn   = &govee_decode_h5054,
+        .decode_fn   = &govee_h5054_decode,
         .fields      = output_fields,
 };
