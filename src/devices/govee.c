@@ -255,12 +255,15 @@ r_device govee = {
 /**
 Govee Water Leak Detector H5054
 
+This is an updated decoder for devices with board versions dated circa 2021 as originally
+reported in issue #2265.
+
 Data layout:
 
     II II XE DD CC CC
 
 - I: 16 bit ID, does not change with battery change
-- X: 4 bit, always 0x3 for the 5 sensors testsed
+- X: 4 bit, always 0x3 for the sensors evaluated
 - E: 4 bit event type
 - D: 8 bit event data
 - C: CRC-16/AUG-CCITT, poly=0x1021, init=0x1d0f
@@ -269,7 +272,7 @@ Data layout:
 Event Information:
 
 - 0x0 : Button Press
-  - The event data (DD) is always 0x54 for the 5 sensors evaluated. Unknown meaning.
+  - The event data (DD) is always 0x54 for the sensors evaluated. Unknown meaning.
 - 0x1 : Battery Report
   - The event data (DD) reported for new batteries = 0x64 (decimal 100). When inserting
     older batteries, this value decreased. Looking at prior versions of the device,
