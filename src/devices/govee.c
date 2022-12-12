@@ -280,7 +280,7 @@ Event Information:
 
     When the first leak occurs, E=2 D=00. This value is transmitted once very 5 seconds
     until the leak is cleared (sensor dried off). The next leak events will be:
-    
+
     E=2, D=01
     E=2, D=02
     E=2, D=03
@@ -292,7 +292,7 @@ The CRC was determined by using the tool CRC RevEng: https://reveng.sourceforge.
 
     ./reveng -w16 -s aaaaaaaaaaaa bbbbbbbbbbbb etc...
 
-where aaaaaaaaaaaa, bbbbbbbbbbbb, etc... were the unique codes collected from the 
+where aaaaaaaaaaaa, bbbbbbbbbbbb, etc... were the unique codes collected from the
 device.
 
 */
@@ -302,7 +302,6 @@ typedef enum {
     GOVEE_BATTERY_REPORT = 1,
     GOVEE_WATER_LEAK     = 2,
 } govee_h5054_event_t;
-
 
 static int govee_h5054_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
