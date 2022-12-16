@@ -73,23 +73,23 @@ static void R_API_CALLCONV print_json_string(data_output_t *output, const char *
     }
 
     fprintf(json->file, "\"");
-    while (*str) {
+    for (; *str; ++str) {
         if (*str == '\r') {
             fprintf(json->file, "\\r");
-            continue;
         }
-        if (*str == '\n') {
+        else if (*str == '\n') {
             fprintf(json->file, "\\n");
-            continue;
         }
-        if (*str == '\t') {
+        else if (*str == '\t') {
             fprintf(json->file, "\\t");
-            continue;
         }
-        if (*str == '"' || *str == '\\')
+        else if (*str == '"' || *str == '\\') {
             fputc('\\', json->file);
-        fputc(*str, json->file);
-        ++str;
+            fputc(*str, json->file);
+        }
+        else {
+            fputc(*str, json->file);
+        }
     }
     fprintf(json->file, "\"");
 }
@@ -110,11 +110,12 @@ static void R_API_CALLCONV print_json_int(data_output_t *output, int data, char 
     fprintf(json->file, "%d", data);
 }
 
-static void R_API_CALLCONV print_json_flush(data_output_t *output)
+static void R_API_CALLCONV data_output_json_print(data_output_t *output, data_t *data)
 {
     data_output_json_t *json = (data_output_json_t *)output;
 
     if (json && json->file) {
+        json->output.print_data(output, data, NULL);
         fputc('\n', json->file);
         fflush(json->file);
     }
@@ -141,7 +142,7 @@ struct data_output *data_output_json_create(FILE *file)
     json->output.print_string = print_json_string;
     json->output.print_double = print_json_double;
     json->output.print_int    = print_json_int;
-    json->output.output_flush = print_json_flush;
+    json->output.output_print = data_output_json_print;
     json->output.output_free  = data_output_json_free;
     json->file                = file;
 
@@ -305,11 +306,12 @@ static void R_API_CALLCONV print_kv_string(data_output_t *output, const char *da
     kv->column += fprintf(kv->file, format ? format : "%s", data);
 }
 
-static void R_API_CALLCONV print_kv_flush(data_output_t *output)
+static void R_API_CALLCONV data_output_kv_print(data_output_t *output, data_t *data)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
     if (kv && kv->file) {
+        kv->output.print_data(output, data, NULL);
         fputc('\n', kv->file);
         fflush(kv->file);
     }
@@ -340,7 +342,7 @@ struct data_output *data_output_kv_create(FILE *file)
     kv->output.print_string = print_kv_string;
     kv->output.print_double = print_kv_double;
     kv->output.print_int    = print_kv_int;
-    kv->output.output_flush = print_kv_flush;
+    kv->output.output_print = data_output_kv_print;
     kv->output.output_free  = data_output_kv_free;
     kv->file                = file;
 
@@ -352,13 +354,12 @@ struct data_output *data_output_kv_create(FILE *file)
     return &kv->output;
 }
 
-/* CSV printer; doesn't really support recursive data objects yet */
+/* CSV printer */
 
 typedef struct {
     struct data_output output;
     FILE *file;
     const char **fields;
-    int data_recursion;
     const char *separator;
 } data_output_csv_t;
 
@@ -367,36 +368,16 @@ static void R_API_CALLCONV print_csv_data(data_output_t *output, data_t *data, c
     UNUSED(format);
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
-    const char **fields = csv->fields;
-    int i;
-
-    if (csv->data_recursion)
-        return;
-
-    int regular = 0; // skip "states" output
-    for (data_t *d = data; d; d = d->next) {
-        if (!strcmp(d->key, "msg") || !strcmp(d->key, "codes") || !strcmp(d->key, "model")) {
-            regular = 1;
-            break;
-        }
+    fputc('{', csv->file);
+    for (bool separator = false; data; data = data->next) {
+        if (separator)
+            fprintf(csv->file, "; "); // NOTE: distinct from csv->separator
+        output->print_string(output, data->key, NULL);
+        fprintf(csv->file, ": ");
+        print_value(output, data->type, data->value, data->format);
+        separator = true;
     }
-    if (!regular)
-        return;
-
-    ++csv->data_recursion;
-    for (i = 0; fields[i]; ++i) {
-        const char *key = fields[i];
-        data_t *found = NULL;
-        if (i)
-            fprintf(csv->file, "%s", csv->separator);
-        for (data_t *iter = data; !found && iter; iter = iter->next)
-            if (strcmp(iter->key, key) == 0)
-                found = iter;
-
-        if (found)
-            print_value(output, found->type, found->value, found->format);
-    }
-    --csv->data_recursion;
+    fputc('}', csv->file);
 }
 
 static void R_API_CALLCONV print_csv_array(data_output_t *output, data_array_t *array, char const *format)
@@ -524,14 +505,37 @@ static void R_API_CALLCONV print_csv_int(data_output_t *output, int data, char c
     fprintf(csv->file, "%d", data);
 }
 
-static void R_API_CALLCONV print_csv_flush(data_output_t *output)
+static void R_API_CALLCONV data_output_csv_print(data_output_t *output, data_t *data)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
-    if (csv && csv->file) {
-        fputc('\n', csv->file);
-        fflush(csv->file);
+    const char **fields = csv->fields;
+
+    int regular = 0; // skip "states" output
+    for (data_t *d = data; d; d = d->next) {
+        if (!strcmp(d->key, "msg") || !strcmp(d->key, "codes") || !strcmp(d->key, "model")) {
+            regular = 1;
+            break;
+        }
     }
+    if (!regular)
+        return;
+
+    for (int i = 0; fields[i]; ++i) {
+        const char *key = fields[i];
+        data_t *found   = NULL;
+        if (i)
+            fprintf(csv->file, "%s", csv->separator);
+        for (data_t *iter = data; !found && iter; iter = iter->next)
+            if (strcmp(iter->key, key) == 0)
+                found = iter;
+
+        if (found)
+            print_value(output, found->type, found->value, found->format);
+    }
+
+    fputc('\n', csv->file);
+    fflush(csv->file);
 }
 
 static void R_API_CALLCONV data_output_csv_free(data_output_t *output)
@@ -556,7 +560,7 @@ struct data_output *data_output_csv_create(FILE *file)
     csv->output.print_double = print_csv_double;
     csv->output.print_int    = print_csv_int;
     csv->output.output_start = data_output_csv_start;
-    csv->output.output_flush = print_csv_flush;
+    csv->output.output_print = data_output_csv_print;
     csv->output.output_free  = data_output_csv_free;
     csv->file                = file;
 

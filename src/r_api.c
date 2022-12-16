@@ -38,6 +38,7 @@
 #include "write_sigrok.h"
 #include "mongoose.h"
 #include "compat_time.h"
+#include "logger.h"
 #include "fatal.h"
 #include "http_server.h"
 
@@ -146,6 +147,9 @@ void r_init_cfg(r_cfg_t *cfg)
     cfg->samp_rate       = DEFAULT_SAMPLE_RATE;
     cfg->conversion_mode = CONVERT_NATIVE;
     cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_AUTO;
+    // Default log level is to show all LOG_FATAL, LOG_ERROR, LOG_WARNING
+    // abnormal messages and LOG_CRITICAL information.
+    cfg->verbosity = LOG_WARNING;
 
     list_ensure_size(&cfg->in_files, 100);
     list_ensure_size(&cfg->output_handler, 16);
@@ -174,6 +178,8 @@ void r_init_cfg(r_cfg_t *cfg)
     cfg->demod->level_limit = 0.0;
     cfg->demod->min_level = -12.1442;
     cfg->demod->min_snr = 9.0;
+    // Pulse detect will only print LOG_NOTICE and lower.
+    cfg->demod->detect_verbosity = LOG_WARNING;
 
     // note: this should be optional
     cfg->demod->pulse_detect = pulse_detect_create();
@@ -268,7 +274,7 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
         *p = *r_dev; // copy
     }
 
-    p->verbose      = dev_verbose ? dev_verbose : (cfg->verbosity > 0 ? cfg->verbosity - 1 : 0);
+    p->verbose      = dev_verbose ? dev_verbose : (cfg->verbosity > 4 ? cfg->verbosity - 5 : 0);
     p->verbose_bits = cfg->verbose_bits;
 
     p->output_fn  = data_acquired_handler;
@@ -276,7 +282,7 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
 
     list_push(&cfg->demod->r_devs, p);
 
-    if (cfg->verbosity) {
+    if (cfg->verbosity >= LOG_INFO) {
         fprintf(stderr, "Registering protocol [%u] \"%s\"\n", r_dev->protocol_num, r_dev->name);
     }
 }
@@ -978,7 +984,7 @@ void add_syslog_output(r_cfg_t *cfg, char *param)
     char *host = "localhost";
     char *port = "514";
     hostport_param(param, &host, &port);
-    fprintf(stderr, "Syslog UDP datagrams to %s port %s\n", host, port);
+    print_logf(LOG_CRITICAL, "Syslog UDP", "Sending datagrams to %s port %s", host, port);
 
     list_push(&cfg->output_handler, data_output_syslog_create(host, port));
 }
@@ -988,7 +994,7 @@ void add_http_output(r_cfg_t *cfg, char *param)
     char *host = "0.0.0.0";
     char *port = "8433";
     hostport_param(param, &host, &port);
-    fprintf(stderr, "HTTP server at %s port %s\n", host, port);
+    print_logf(LOG_CRITICAL, "HTTP server", "Starting HTTP server at %s port %s", host, port);
 
     list_push(&cfg->output_handler, data_output_http_create(get_mgr(cfg), host, port, cfg));
 }
@@ -1009,7 +1015,7 @@ void add_rtltcp_output(r_cfg_t *cfg, char *param)
     char *host = "localhost";
     char *port = "1234";
     hostport_param(param, &host, &port);
-    fprintf(stderr, "rtl_tcp server at %s port %s\n", host, port);
+    print_logf(LOG_CRITICAL, "rtl_tcp server", "Starting rtl_tcp server at %s port %s", host, port);
 
     list_push(&cfg->raw_handler, raw_output_rtltcp_create(host, port, cfg));
 }

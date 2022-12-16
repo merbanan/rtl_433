@@ -25,10 +25,9 @@ typedef struct {
     FILE *file;
 } data_output_trigger_t;
 
-static void R_API_CALLCONV print_trigger_data(data_output_t *output, data_t *data, char const *format)
+static void R_API_CALLCONV data_output_trigger_print(data_output_t *output, data_t *data)
 {
     UNUSED(data);
-    UNUSED(format);
     data_output_trigger_t *trigger = (data_output_trigger_t *)output;
 
     fputc('1', trigger->file);
@@ -51,9 +50,9 @@ struct data_output *data_output_trigger_create(FILE *file)
         return NULL; // NOTE: returns NULL on alloc failure.
     }
 
-    trigger->output.print_data  = print_trigger_data;
-    trigger->output.output_free = data_output_trigger_free;
-    trigger->file               = file;
+    trigger->output.output_print = data_output_trigger_print;
+    trigger->output.output_free  = data_output_trigger_free;
+    trigger->file                = file;
 
     return &trigger->output;
 }

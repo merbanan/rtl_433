@@ -23,7 +23,7 @@
 #include "data.h"
 #include "output_file.h"
 
-int main()
+int main(void)
 {
 	data_t *data = data_make("label"      , "",		DATA_STRING, "1.2.3",
 				 "house_code" , "House Code",	DATA_INT, 42,

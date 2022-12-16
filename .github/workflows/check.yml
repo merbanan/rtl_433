@@ -6,31 +6,35 @@ jobs:
     name: Build with CMake
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
+    - name: Get latest CMake and Ninja
+      uses: lukka/get-cmake@latest
     - name: Run CMake+Ninja
-      uses: lukka/run-cmake@v3
+      uses: lukka/run-cmake@v10
       with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        buildDirectory: '${{runner.workspace}}/b/ninja'
-        cmakeAppendedArgs: '-GNinja -DENABLE_RTLSDR=OFF -DENABLE_SOAPYSDR=OFF'
+        configurePreset: dummy
+        configurePresetCmdString: "[`-B`, `${{ runner.workspace }}/b/ninja`, `-GNinja`, `-DENABLE_RTLSDR=OFF`, `-DENABLE_SOAPYSDR=OFF`]"
+        buildPreset: dummy
+        buildPresetCmdString: "[`--build`, `${{ runner.workspace }}/b/ninja`]"
     - name: Run CMake+UnixMakefiles
-      uses: lukka/run-cmake@v3
+      uses: lukka/run-cmake@v10
       with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        buildDirectory: '${{runner.workspace}}/b/unixmakefiles'
-        cmakeAppendedArgs: '-G "Unix Makefiles" -DENABLE_RTLSDR=OFF -DENABLE_SOAPYSDR=OFF'
+        configurePreset: dummy
+        configurePresetCmdString: "[`-B`, `${{ runner.workspace }}/b/unixmakefiles`, `-G`, `Unix Makefiles`, `-DENABLE_RTLSDR=OFF`, `-DENABLE_SOAPYSDR=OFF`]"
+        buildPreset: dummy
+        buildPresetCmdString: "[`--build`, `${{ runner.workspace }}/b/unixmakefiles`]"
   style_check_job:
     runs-on: ubuntu-latest
     name: Check code style
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Style Check
       uses: ./.github/actions/style-check
   maintainer_update_check_job:
     runs-on: ubuntu-latest
     name: Needs maintainer_update
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Working directory clean excluding untracked files
       run: |
         ./maintainer_update.py
@@ -39,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Check symbol errors
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Symbolizer report
       run: |
         ./tests/symbolizer.py check
@@ -54,7 +58,7 @@ jobs:
     runs-on: ubuntu-22.04
     name: Analyze with Clang
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Install Clang
       run: |
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key 2>/dev/null | sudo apt-key add -

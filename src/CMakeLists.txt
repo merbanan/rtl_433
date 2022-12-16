@@ -20,6 +20,7 @@ add_library(r_433 STATIC
     http_server.c
     jsmn.c
     list.c
+    logger.c
     mongoose.c
     optparse.c
     output_file.c
