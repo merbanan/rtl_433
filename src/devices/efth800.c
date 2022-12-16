@@ -47,7 +47,7 @@ static int eurochron_efth800_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_c;
 
     /* Validation checks */
-    while(true) {
+    while (true) {
         row = bitbuffer_find_repeated_row(bitbuffer, 2, 48);
 
         if (row < 0) // we didn't find any repeated rows
