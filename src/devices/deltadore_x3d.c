@@ -42,7 +42,8 @@ Known Data:
    - 0x08        on header len 0x0f
      - unknown      {8} 0x00  possible temp sign, if positive or negative
      - temperature {16} little-endian multiplied by 100 -> 2050 = 20.5 °C
-- Msg Id      {32}
+- Msg Id      {16}  some random value
+- Header Chk  {16}  Decremental checksum of the header part decrements every byte from device id on from 0x0000
 - Retry Cnt    {8} used for msg retry ? and direction
    - lower nibble and zero send from thermostat, count downwards
    - upper nibble send from switch actor, count upwards
