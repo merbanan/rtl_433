@@ -34,6 +34,8 @@ Data layout:
 The sensor sends messages at intervals of about 57-58 seconds.
 */
 
+#include <stdbool.h>
+
 #include "decoder.h"
 
 static int eurochron_efth800_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -45,16 +47,17 @@ static int eurochron_efth800_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_c;
 
     /* Validation checks */
-    row = bitbuffer_find_repeated_row(bitbuffer, 2, 48);
+    while(true) {
+        row = bitbuffer_find_repeated_row(bitbuffer, 2, 48);
 
-    if (row < 0) // repeated rows?
-        return DECODE_ABORT_EARLY;
+        if (row < 0) // we didn't find any repeated rows
+            return DECODE_ABORT_LENGTH;
 
-    while (row < bitbuffer->num_rows && (bitbuffer->bits_per_row[row] < 48 || bitbuffer->bits_per_row[row] > 49)) { // 48 bits per row?
-        row++; 
+        if (bitbuffer->bits_per_row[row] > 49)
+            bitbuffer->bits_per_row[row] = 0; // remove this row from candidates
+        else
+            break;
     }
-    if (row == bitbuffer->num_rows)
-        return DECODE_ABORT_LENGTH;
 
     b = bitbuffer->bb[row];
 
