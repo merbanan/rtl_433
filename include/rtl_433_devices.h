@@ -242,6 +242,7 @@
     DECL(tfa_14_1504_v2) \
     DECL(ced7000) \
     DECL(oil_watchman_advanced) \
+    DECL(oil_smart) \
 
     /* Add new decoders here. */
 

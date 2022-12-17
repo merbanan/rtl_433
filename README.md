@@ -317,6 +317,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [232]  TFA Dostmann 14.1504.V2 Radio-controlled grill and meat thermometer
     [233]* CED7000 Shot Timer
     [234]  Watchman Sonic Advanced / Plus
+    [235]  Oil Ultrasonic SMART FSK
 
 * Disabled by default, use -R n or a conf file to enable
 
