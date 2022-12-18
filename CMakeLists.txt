@@ -272,7 +272,7 @@ endif()
 # Setup the include and linker paths
 ########################################################################
 if(MINGW OR MSVC)
-list(APPEND NET_LIBRARIES ws2_32 mswsock)
+list(APPEND NET_LIBRARIES ws2_32 mswsock netapi32)
 endif()
 
 include_directories(
