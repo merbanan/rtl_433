@@ -129,7 +129,7 @@ static void R_API_CALLCONV data_output_json_free(data_output_t *output)
     free(output);
 }
 
-struct data_output *data_output_json_create(FILE *file)
+struct data_output *data_output_json_create(int log_level, FILE *file)
 {
     data_output_json_t *json = calloc(1, sizeof(data_output_json_t));
     if (!json) {
@@ -137,6 +137,7 @@ struct data_output *data_output_json_create(FILE *file)
         return NULL; // NOTE: returns NULL on alloc failure.
     }
 
+    json->output.log_level    = log_level;
     json->output.print_data   = print_json_data;
     json->output.print_array  = print_json_array;
     json->output.print_string = print_json_string;
@@ -329,7 +330,7 @@ static void R_API_CALLCONV data_output_kv_free(data_output_t *output)
 
     free(output);
 }
-struct data_output *data_output_kv_create(FILE *file)
+struct data_output *data_output_kv_create(int log_level, FILE *file)
 {
     data_output_kv_t *kv = calloc(1, sizeof(data_output_kv_t));
     if (!kv) {
@@ -337,6 +338,7 @@ struct data_output *data_output_kv_create(FILE *file)
         return NULL; // NOTE: returns NULL on alloc failure.
     }
 
+    kv->output.log_level    = log_level;
     kv->output.print_data   = print_kv_data;
     kv->output.print_array  = print_kv_array;
     kv->output.print_string = print_kv_string;
@@ -546,7 +548,7 @@ static void R_API_CALLCONV data_output_csv_free(data_output_t *output)
     free(csv);
 }
 
-struct data_output *data_output_csv_create(FILE *file)
+struct data_output *data_output_csv_create(int log_level, FILE *file)
 {
     data_output_csv_t *csv = calloc(1, sizeof(data_output_csv_t));
     if (!csv) {
@@ -554,6 +556,7 @@ struct data_output *data_output_csv_create(FILE *file)
         return NULL; // NOTE: returns NULL on alloc failure.
     }
 
+    csv->output.log_level    = log_level;
     csv->output.print_data   = print_csv_data;
     csv->output.print_array  = print_csv_array;
     csv->output.print_string = print_csv_string;
