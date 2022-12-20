@@ -62,7 +62,7 @@ static int eurochron_efth800_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     row = bitbuffer_find_repeated_row(bitbuffer, 2, 48);
 
     if (row < 0) // repeated rows?
-        return DECODE_ABORT_EARLY;    
+        return DECODE_ABORT_EARLY;
 
     if (bitbuffer->bits_per_row[row] > 49) // 48 bits per row?
         return DECODE_ABORT_LENGTH;
