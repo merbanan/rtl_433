@@ -231,6 +231,11 @@ int atoi_time(char const *str, char const *error_hint)
                 break;
             }
             // intentional fallthrough
+#if defined __has_attribute
+#if __has_attribute(fallthrough)
+            __attribute__((fallthrough));
+#endif
+#endif
         case ':':
             ++colons;
             if (colons == 1)
@@ -306,7 +311,7 @@ char *asepc(char **stringp, char delim)
     return p;
 }
 
-static char *achrb(char const *s, int c, int b)
+static char *achrb(char *s, int c, int b)
 {
     for (; s && *s && *s != b; ++s)
         if (*s == c) return (char *)s;
@@ -321,6 +326,41 @@ char *asepcb(char **stringp, char delim, char stop)
     char *p = *stringp;
     *stringp = s;
     return p;
+}
+
+int kwargs_match(char const *s, char const *key, char const **val)
+{
+    size_t len = strlen(key);
+    // check prefix match
+    if (strncmp(s, key, len)) {
+        return 0; // no match
+    }
+    s += len;
+    // skip whitespace after match
+    while (*s == ' ' || *s == '\t')
+        ++s;
+    if (*s == '\0' || * s == ',') {
+        if (val)
+            *val = NULL;
+        return 1; // match with no arg
+    }
+    if (*s == '=') {
+        if (val)
+            *val = s + 1;
+        return 1; // match with arg
+    }
+    return 0; // no exact match
+}
+
+char const *kwargs_skip(char const *s)
+{
+    // skip to the next comma if possible
+    while (s && *s && *s != ',')
+        ++s;
+    // skip comma and whitespace if possible
+    while (s && *s && (*s == ',' || *s == ' ' || *s == '\t'))
+        ++s;
+    return s;
 }
 
 char *getkwargs(char **s, char **key, char **val)

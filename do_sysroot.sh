@@ -2,16 +2,22 @@
 
 set -e
 
-libusb_ver=1.0.22
+libusb_ver=1.0.25
 rtlsdr_ver=0.6.0
-pothos_ver=2020.01.26-vc14
+pothos_ver=2021.07.25-vc16
+
+# prefer GNU commands
+realpath=$(command -v grealpath)
+realpath="${realpath:-realpath}"
+sed=$(command -v gsed)
+sed="${sed:-sed}"
 
 # from https://libusb.info/
 [ -e libusb-${libusb_ver}.7z ] || curl -L -O https://github.com/libusb/libusb/releases/download/v${libusb_ver}/libusb-${libusb_ver}.7z
 mkdir -p libusb
 7z x -olibusb -y libusb-${libusb_ver}.7z
 
-source_dir=$(dirname $(realpath -s $0))
+source_dir=$(dirname $($realpath -s $0))
 sysroot32=$(pwd)/sysroot32
 sysroot64=$(pwd)/sysroot64
 sysroot32static=$(pwd)/sysroot32static
@@ -75,7 +81,7 @@ cp pothos/bin/SoapySDR.dll $sysroot64/usr/bin
 cp -R pothos/include/SoapySDR $sysroot64/usr/include
 cp pothos/lib/SoapySDR.lib $sysroot64/usr/lib
 cp -R pothos/cmake $sysroot64/usr
-sed -i 's/.*INTERFACE_COMPILE_OPTIONS.*//g' $sysroot64/usr/cmake/SoapySDRExport.cmake
+$sed -i 's/.*INTERFACE_COMPILE_OPTIONS.*//g' $sysroot64/usr/cmake/SoapySDRExport.cmake
 
 # build rtl_433
 

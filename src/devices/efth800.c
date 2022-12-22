@@ -18,6 +18,13 @@ two packets of each
 (1-bit) 500 us pulse, 230 us gap or
 (0-bit) 250 us pulse, 480 us gap.
 
+There might be an alternative (longer) packet interleaved, e.g.:
+
+    {65} 2B 1E A9 90 AB D3 83 2A 8
+    {49} AB 1F B3 B7 B6 BE 80
+    {65} 2B 1E A9 90 AB D3 83 2A 8
+    {49} AB 1F B3 B7 B6 BE 8
+
 Data layout:
 
     ?ccc iiii  iiii iiii  bntt tttt  tttt ????  hhhh hhhh  xxxx xxxx
@@ -44,6 +51,13 @@ static int eurochron_efth800_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int id, channel, temp_raw, humidity, battery_low;
     float temp_c;
 
+    // Remove long rows with unknown data
+    for (row = 0; row < bitbuffer->num_rows; ++row) {
+        if (bitbuffer->bits_per_row[row] > 49) {
+            bitbuffer->bits_per_row[row] = 0; // cancel row
+        }
+    }
+
     /* Validation checks */
     row = bitbuffer_find_repeated_row(bitbuffer, 2, 48);
 
@@ -57,10 +71,8 @@ static int eurochron_efth800_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // This is actially a 0x00 packet error ( bitbuffer_invert )
     // No need to decode/extract values for simple test
-    if ( b[0] == 0xff &&  b[1] == 0xff && b[2] == 0xFF && b[4] == 0xFF )  {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0xff\n", __func__);
-        }
+    if (b[0] == 0xff && b[1] == 0xff && b[2] == 0xFF && b[4] == 0xFF) {
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0xff");
         return DECODE_FAIL_SANITY;
     }
 
@@ -105,13 +117,13 @@ static char *output_fields[] = {
 };
 
 r_device eurochron_efth800 = {
-        .name          = "Eurochron EFTH-800 temperature and humidity sensor",
-        .modulation    = OOK_PULSE_PWM,
-        .short_width   = 250,
-        .long_width    = 500,
-        .sync_width    = 750,
-        .gap_limit     = 900,
-        .reset_limit   = 5500,
-        .decode_fn     = &eurochron_efth800_decode,
-        .fields        = output_fields,
+        .name        = "Eurochron EFTH-800 temperature and humidity sensor",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 250,
+        .long_width  = 500,
+        .sync_width  = 750,
+        .gap_limit   = 900,
+        .reset_limit = 5500,
+        .decode_fn   = &eurochron_efth800_decode,
+        .fields      = output_fields,
 };

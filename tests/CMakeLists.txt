@@ -1,13 +1,13 @@
 ########################################################################
 # Compile test cases
 ########################################################################
-add_executable(data-test data-test.c)
+add_executable(data-test data-test.c ../src/output_file.c ../src/term_ctl.c)
 
 target_link_libraries(data-test data)
 
 add_test(data-test data-test)
 
-add_executable(baseband-test baseband-test.c ../src/baseband.c)
+add_executable(baseband-test baseband-test.c ../src/baseband.c ../src/logger.c)
 
 if(UNIX)
 target_link_libraries(baseband-test m)

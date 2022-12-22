@@ -9,21 +9,23 @@ to improve the feedback loop and decrease the burden for the maintainers.
 
 ## Commit messages
 
-PRs will be added as squash commit
+Pull-Requests (PR) will be added as squash commit
 and the commit message will likely be updated to follow this format.
 
 The commit messages should follow the common format of
 
-<area_of_work>: <verb> <commit_message>
+    <area_of_work>: <verb> <commit_message>
 
 Area of work is optional and may be one of the following:
 
 - build: for build/build system related work
 - docs: for documentation related work, both in code and readme/docs folder
 - ci: for work related to continuous integration
-- test: for test related work 
+- test: for test related work
 - deps: for changes related to (external) dependencies (e.g. soapysdr is updated or mongoose is updated)
 - cosmetics: for housekeeping work, code style changes
+
+Don't prefix general work, e.g. adding a decoder should be "Add support for TheDevice".
 
 Verb may be one of the following:
 
@@ -46,7 +48,7 @@ The signals will be stored individually in files named g**NNN**\_**FFF**M\_**RRR
 |---------|------------
 | **NNN** | signal grabbed number
 | **FFF** | frequency
-| **RRR** | sample rate   
+| **RRR** | sample rate
 
 This file can be played back with `rtl_433 -r gNNN_FFFM_RRRk.cu8`.
 
@@ -68,3 +70,61 @@ Please don't open a new github issue for device support or request decoding help
 until you've added test signals and the description to the repository.
 
 The rtl_433_test repository is also used to help test that changes to rtl_433 haven't caused any regressions.
+
+## Code style
+
+Indentation is 4 spaces. Check with `clang-format`.
+
+Indent `data_make()` nicely tabular and surround it with
+```
+/* clang-format off */
+...
+/* clang-format on */
+```
+
+Start your file with a copyright note (indent 4 spaces) like:
+```
+/** @file
+    Bresser Weather Center 5-in-1.
+
+    Copyright (C) 2019 Christian W. Zuckschwerdt <zany@triq.net>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+```
+
+Name your decode function `foobar_decode`.
+Put documentation (markdown, no indent) before the decode function:
+```
+/**
+Bresser Weather Center 7-in-1, outdoor sensor.
+
+...supported models etc.
+
+Data layout:
+
+    IIII F TTT HH CC
+
+- I: 16 bit ID
+- F: 4 bit flags
+- T: 12 bit temperature, scale 10
+- H: 8 bit humidity
+- C: 8 bit CRC-8, poly 0x81
+
+Format string:
+
+    ID:16h FLAGS:4h TEMP:12h HUMI:8h CRC:8h
+
+...Decoding notes like endianness, signedness
+*/
+```
+
+The keys in `data_make()` need to contain
+- `"model"`, short unique key for this decoder
+- `"id", `a unique sensor ID
+- `"mic"`, if applicable the integrity check, e.g. `"PARITY"`, `"SUM"`, `"CRC"`, or `"DIGEST"`.
+
+See [JSON Data fields](DATA_FORMAT.md) for common keys.

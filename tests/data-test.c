@@ -21,8 +21,9 @@
 #include <stdio.h>
 
 #include "data.h"
+#include "output_file.h"
 
-int main()
+int main(void)
 {
 	data_t *data = data_make("label"      , "",		DATA_STRING, "1.2.3",
 				 "house_code" , "House Code",	DATA_INT, 42,
@@ -36,9 +37,9 @@ int main()
 				 NULL);
 	const char *fields[] = { "label", "house_code", "temp", "array", "array2", "array3", "data", "house_code" };
 
-	void *json_output = data_output_json_create(stdout);
-	void *kv_output = data_output_kv_create(stdout);
-	void *csv_output = data_output_csv_create(stdout);
+	void *json_output = data_output_json_create(0, stdout);
+	void *kv_output = data_output_kv_create(0, stdout);
+	void *csv_output = data_output_csv_create(0, stdout);
 	data_output_start(csv_output, fields, sizeof fields / sizeof *fields);
 
 	data_output_print(json_output, data); fprintf(stdout, "\n");

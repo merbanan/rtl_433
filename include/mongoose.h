@@ -255,6 +255,7 @@ typedef int bool;
 #define snprintf _snprintf
 #define vsnprintf _vsnprintf
 #define to64(x) _atoi64(x)
+#define rmdir _rmdir
 #if !defined(__MINGW32__) && !defined(__MINGW64__)
 #define popen(x, y) _popen((x), (y))
 #define pclose(x) _pclose(x)
@@ -3845,7 +3846,7 @@ extern "C" {
 struct mg_ssl_if_ctx;
 struct mg_connection;
 
-void mg_ssl_if_init();
+void mg_ssl_if_init(void);
 
 enum mg_ssl_if_result {
   MG_SSL_OK = 0,

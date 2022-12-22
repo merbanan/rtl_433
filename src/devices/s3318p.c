@@ -78,9 +78,7 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // No need to decode/extract values for simple test
     // check id channel temperature humidity value not zero
     if (!b[0] && !b[1] && !b[2] && !b[3]) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00");
         return DECODE_FAIL_SANITY;
     }
 
@@ -99,13 +97,13 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, _X("Conrad-S3318P","S3318P Temperature & Humidity Sensor"),
-            "id",               "ID",           DATA_INT, id,
-            "channel",          "Channel",      DATA_INT, channel,
-            "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
+            "model",            "",             DATA_STRING, "Conrad-S3318P",
+            "id",               "ID",           DATA_INT,    id,
+            "channel",          "Channel",      DATA_INT,    channel,
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "button",           "Button",       DATA_INT, button,
+            "button",           "Button",       DATA_INT,    button,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -115,25 +113,24 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "channel",
-    "battery",
-    "button",
-    "temperature_F",
-    "humidity",
-    "mic",
-    NULL,
+        "model",
+        "id",
+        "channel",
+        "battery_ok",
+        "button",
+        "temperature_F",
+        "humidity",
+        "mic",
+        NULL,
 };
 
 r_device s3318p = {
-    .name           = "Conrad S3318P, FreeTec NC-5849-913 temperature humidity sensor",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 1900,
-    .long_width     = 3800,
-    .gap_limit      = 4400,
-    .reset_limit    = 9400,
-    .decode_fn      = &s3318p_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Conrad S3318P, FreeTec NC-5849-913 temperature humidity sensor",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 1900,
+        .long_width  = 3800,
+        .gap_limit   = 4400,
+        .reset_limit = 9400,
+        .decode_fn   = &s3318p_callback,
+        .fields      = output_fields,
 };
