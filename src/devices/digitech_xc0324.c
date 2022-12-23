@@ -9,7 +9,9 @@
     (at your option) any later version.
 */
 /**
-Digitech XC-0324 device.
+Decoder for Digitech XC-0324 temperature sensor.
+
+Also AmbientWeather FT005RH.
 
 The encoding is pulse position modulation
 (i.e. gap width contains the modulation information)
@@ -88,9 +90,9 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     // NB : b[0] ^ b[1] ^ b[2] ^ b[3] ^ b[4] ^ b[5] == 0x00 for a clean message
     chksum = xor_bytes(b, 6);
     if (chksum != 0x00) {
-        if (decoder->verbose) {
+        if (decoder->verbose > 1) {
             // Output the "bad" message (only for message level deciphering!)
-            decoder_logf_bitrow(decoder, 1, __func__, b, XC0324_MESSAGE_BITLEN,
+            decoder_logf_bitrow(decoder, 2, __func__, b, XC0324_MESSAGE_BITLEN,
                     "chksum = 0x%02X not 0x00 <- XC0324:vv row %d bit %d",
                     chksum, row, bitpos);
         }
@@ -125,8 +127,8 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     }
 
     // Output (simulated) message level deciphering information..
-    if (decoder->verbose) {
-        decoder_logf_bitrow(decoder, 1, __func__, b, XC0324_MESSAGE_BITLEN,
+    if (decoder->verbose > 1) {
+        decoder_logf_bitrow(decoder, 2, __func__, b, XC0324_MESSAGE_BITLEN,
                 "Temp was %4.1f <- XC0324:vv row %03d bit %03d",
                 temperature, row, bitpos);
     }
@@ -144,7 +146,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
 Digitech XC-0324 device.
 @sa decode_xc0324_message()
 */
-static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int digitech_xc0324_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble_pattern[] = {0x5F};
 
@@ -216,12 +218,11 @@ static char *output_fields[] = {
 };
 
 r_device digitech_xc0324 = {
-        .name        = "Digitech XC-0324 temperature sensor",
+        .name        = "Digitech XC-0324 / AmbientWeather FT005RH temp/hum sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 520,  // = 130 * 4
         .long_width  = 1000, // = 250 * 4
         .reset_limit = 3000,
-        .decode_fn   = &xc0324_callback,
-        .disabled    = 1, // stop debug output from spamming unsuspecting users
+        .decode_fn   = &digitech_xc0324_decode,
         .fields      = output_fields,
 };
