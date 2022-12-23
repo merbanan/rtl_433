@@ -76,6 +76,7 @@ typedef struct r_device {
     /* public for each decoder */
     int verbose;
     int verbose_bits;
+    void (*log_fn)(struct r_device *decoder, int level, struct data *data);
     void (*output_fn)(struct r_device *decoder, struct data *data);
 
     /* Decoder results / statistics */
