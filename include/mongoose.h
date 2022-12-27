@@ -404,7 +404,6 @@ unsigned int sleep(unsigned int seconds);
 #include <math.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <pthread.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -4658,6 +4657,7 @@ size_t mg_fwrite(const void *ptr, size_t size, size_t count, FILE *f);
 #endif /* MG_ENABLE_FILESYSTEM */
 
 #if MG_ENABLE_THREADS
+#include <pthread.h>
 /*
  * Starts a new detached thread.
  * Arguments and semantics are the same as pthead's `pthread_create()`.
