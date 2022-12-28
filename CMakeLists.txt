@@ -121,6 +121,11 @@ if(WIN32)
 endif()
 
 ########################################################################
+# Use pkg-config
+########################################################################
+find_package(PkgConfig)
+
+########################################################################
 # Option to force ANSI-colored build output (for Ninja)
 ########################################################################
 option(FORCE_COLORED_BUILD "Always produce ANSI-colored build output (GNU/Clang only)." FALSE)
@@ -175,13 +180,11 @@ set(ENABLE_OPENSSL AUTO CACHE STRING "Enable OpenSSL TLS support")
 set_property(CACHE ENABLE_OPENSSL PROPERTY STRINGS AUTO ON OFF)
 if(ENABLE_OPENSSL) # AUTO / ON
 
-find_package(PkgConfig)
-if(PKG_CONFIG_FOUND)
-    pkg_check_modules(OPENSSL openssl)
-    set(OPENSSL_LIBRARIES ${OPENSSL_LINK_LIBRARIES})
-    set(OPENSSL_INCLUDE_DIR ${OPENSSL_INCLUDE_DIRS})
-else()
-    find_package(OpenSSL)
+find_package(OpenSSL)
+# Get actual libs from pkg-config to support edge cases (static on Sparc)
+pkg_check_modules(PC_OPENSSL QUIET openssl)
+if(PC_OPENSSL_FOUND)
+    set(OPENSSL_LIBRARIES ${PC_OPENSSL_LINK_LIBRARIES})
 endif()
 if(OPENSSL_FOUND)
     message(STATUS "OpenSSL TLS support will be compiled. Found version ${OPENSSL_VERSION}")
@@ -206,7 +209,6 @@ set(ENABLE_RTLSDR ON CACHE STRING "Enable RTL-SDR (lbrtlsdr) driver support")
 set_property(CACHE ENABLE_RTLSDR PROPERTY STRINGS AUTO ON OFF)
 if(ENABLE_RTLSDR) # AUTO / ON
 
-find_package(PkgConfig)
 find_package(LibRTLSDR)
 find_package(LibUSB)
 if(LibRTLSDR_FOUND)
