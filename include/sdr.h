@@ -47,7 +47,7 @@ typedef void (*sdr_event_cb_t)(sdr_event_t *ev, void *ctx);
     @param verbose the verbosity level for reports to stderr
     @return dev 0 if successful
 */
-int sdr_open(sdr_dev_t **out_dev, char const *dev_query, int verbose);
+int sdr_open(sdr_dev_t **out_dev, uint32_t channel, char const *dev_query, int verbose);
 
 /** Close the device.
 

@@ -10,6 +10,7 @@
 #include <time.h>
 #include <signal.h>
 
+#define DEFAULT_CHANNEL         0
 #define DEFAULT_SAMPLE_RATE     250000
 #define DEFAULT_FREQUENCY       433920000
 #define DEFAULT_HOP_TIME        (60*10)
@@ -69,6 +70,7 @@ typedef struct r_cfg {
     time_t stop_time;
     int after_successful_events_flag;
     uint32_t samp_rate;
+    uint32_t channel;
     uint64_t input_pos;
     uint32_t bytes_to_read;
     struct sdr_dev *dev;

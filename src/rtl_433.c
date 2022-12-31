@@ -151,6 +151,7 @@ static void usage(int exit_code)
             "  [-H <seconds>] Hop interval for polling of multiple frequencies (default: %i seconds)\n"
             "  [-p <ppm_error>] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
             "  [-s <sample rate>] Set sample rate (default: %i Hz)\n"
+            "  [-N <channel number> If the device supports more than one channel, then it may be sellected (default %i)"
             "\t\t= Demodulator options =\n"
             "  [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)\n"
             "       Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
@@ -185,7 +186,7 @@ static void usage(int exit_code)
             "  [-E hop | quit] Hop/Quit after outputting successful event(s)\n"
             "  [-h] Output this usage help and exit\n"
             "       Use -d, -g, -R, -X, -F, -M, -r, -w, or -W without argument for more help\n\n",
-            DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE);
+            DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE, DEFAULT_CHANNEL);
     exit(exit_code);
 }
 
@@ -746,7 +747,7 @@ static int hasopt(int test, int argc, char *argv[], char const *optstring)
 
 static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg);
 
-#define OPTSTRING "hVvqDc:x:z:p:a:AI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E:Y:"
+#define OPTSTRING "hVvqDc:x:z:p:a:AI:S:m:M:r:w:W:l:d:t:f:H:g:s:N:b:n:R:X:F:K:C:T:UGy:E:Y:"
 
 // these should match the short options exactly
 static struct conf_keywords const conf_keywords[] = {
@@ -762,6 +763,7 @@ static struct conf_keywords const conf_keywords[] = {
         {"hop_interval", 'H'},
         {"ppm_error", 'p'},
         {"sample_rate", 's'},
+        {"channel", 'N'},
         {"protocol", 'R'},
         {"decoder", 'X'},
         {"register_all", 'G'},
@@ -910,6 +912,9 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         break;
     case 's':
         cfg->samp_rate = atouint32_metric(arg, "-s: ");
+        break;
+    case 'N':
+        cfg->channel = atouint32_metric(arg, "-N: ");
         break;
     case 'b':
         cfg->out_block_size = atouint32_metric(arg, "-b: ");
@@ -1789,7 +1794,7 @@ int main(int argc, char **argv) {
     }
 
     // Normal case, no test data, no in files
-    r = sdr_open(&cfg->dev, cfg->dev_query, cfg->verbosity);
+    r = sdr_open(&cfg->dev, cfg->channel, cfg->dev_query, cfg->verbosity);
     if (r < 0) {
         exit(2);
     }
