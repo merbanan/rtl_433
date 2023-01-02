@@ -246,6 +246,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         r = -1;
         match_count = 0;
         for (i = 0; i < bitbuffer->num_rows; i++) {
+            printf("row %d, bits %d\n", i, bitbuffer->bits_per_row[i]);
             unsigned pos = bitbuffer_search(bitbuffer, i, 0, params->preamble_bits, params->preamble_len);
             if (pos < bitbuffer->bits_per_row[i]) {
                 if (r < 0)
@@ -260,6 +261,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 bitbuffer->bits_per_row[i] = len;
             }
         }
+        printf("match count %d", match_count);
         if (!match_count)
             return DECODE_FAIL_SANITY;
     }
@@ -527,8 +529,8 @@ static const char *parse_expr(const char *arg, struct flex_get *getter) {
     memcpy( subbuff, &arg[0], pos );
     subbuff[pos] = '\0';
 
-    fprintf(stderr, "expr: %s\n", subbuff);
-    printf("Evaluating:\n\t%s\n", subbuff);
+    //fprintf(stderr, "expr: %s\n", subbuff);
+    //printf("Validating:\n\t%s\n", subbuff);
     const char *expression = subbuff;
 
     double value;
