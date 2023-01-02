@@ -24,46 +24,56 @@ Payload format:
 - Preamble          {32} 0xaaaaaaaa
 - Syncword          {32} 0x8169967e
 - Length            {8}
-- Payload           {n}
+- Header            {n}
+- Msg Payload       {n}
+- CRC16             {16}
 
 Known Data:
-- Length       {8}
-- Unknown      {8}  always 0xff
-- Msg No.      {8}
-- Msg Type     {8}
-   - 0x01        standard message
-   - 0x02        setup message
-   - 0x03        actor identifcation beacon (click/clack)
-- Header Len   {8}
-- Device ID   {16}  always the device ID of the thermostat, assigned switch actors send same id.
-- Unknown     {32}  always 0x40000598
-- Unknown      {8}  Influenced by header len
-   - 0x00        on header len 0x0c
-   - 0x08        on header len 0x0f
+- Length            {8}
+- Unknown           {8}  always 0xff
+- Msg No.           {8}
+- Msg Type          {8}
+   - 0x00   sensor message (from window detector)
+   - 0x01   standard message
+   - 0x02   setup message
+   - 0x03   actor identifcation beacon (click/clack)
+- Header Len/Flag   {8}
+   - possible upper 3 bits are flags, if bit 5 (0x20) is set, then no message payload is attached
+   - lower 5 bits align with length of following header
+- Device ID         {32}  always the device ID of the thermostat, assigned switch actors send same id.
+- Unknown           {8}
+- Some Flags        {8}
+   - Msg type 0: 0x41 window was opened, 0x01 window was closed, 0x00 nothing changed
+- Some Flags        {8}
+   - 0x00           nothing followed
+   - 0x01
+     - unknown      {8}
+   - 0x08 then following temperature
      - unknown      {8} 0x00  possible temp sign, if positive or negative
-     - temperature {16} little-endian multiplied by 100 -> 2050 = 20.5 °C
-- Msg Id      {16}  some random value
-- Header Chk  {16}  Decremental checksum of the header part decrements every byte from device id on from 0x0000
-- Retry Cnt    {8} used for msg retry ? and direction
+     - temperature  {16} little-endian multiplied by 100 -> 2050 = 20.5 °C
+- Msg Id            {16} some random value
+- Header Chk        {16} big-endian negated cross sum of the header part from device id on
+
+Optional message payload:
+The payload extends by the count of connected actors and also the retry count and actor number
+- Retry Cnt         {8} used for msg retry ? and direction
    - lower nibble and zero send from thermostat, count downwards
    - upper nibble send from switch actor, count upwards
-- Act No.      {8} target actor number
-payload data
-- CRC16       {16}
+- Act No.           {8} target actor number
 
 Payload standard message 0x01:
-- Unknown        {8}  always 0x00
-- Response       {8}  0x00 from Thermostat, 0x01 answer from actor
-- Unknown       {16}  0x0001 or 0x0000
-- Command?      {16}
+- Unknown           {8}  always 0x00
+- Response          {8}  0x00 from Thermostat, 0x01 answer from actor
+- Unknown           {16}  0x0001 or 0x0000
+- Command?          {16}
    - 0x0001        read register
    - 0x0008        status?
    - 0x0009        write register
-- Register No   {16}
-- Command resp  {8}  0x01 successful
-- Unknown       {8}  0x00
-- 1st Value     {8}
-- 2nd Value     {8}
+- Register No       {16}
+- Command resp      {8}  0x01 successful
+- Unknown           {8}  0x00
+- 1st Value         {8}
+- 2nd Value         {8}
 
 Register address:
 - register area  {8}  11, 15, 16, 18, 19, 1a
@@ -71,7 +81,13 @@ Register address:
 
   - 11-51: Unknown
   - 15-21: Unknown
-  - 16-11: Unknown
+
+  - 16-11: Current Target Temp and status
+    - Get current Target Temp  {8}
+    - Status                   {8}
+      0x10  Heater on
+      0x20  unknown
+      0x80  Window open
 
   - 16-31:
     - Set current Target Temp  {8}
