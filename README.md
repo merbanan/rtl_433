@@ -40,7 +40,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
 		= General options =
   [-V] Output the version string and exit
   [-v] Increase verbosity (can be used multiple times).
-       -v : verbose, -vv : verbose decoders, -vvv : debug decoders, -vvvv : trace decoding).
+       -v : verbose notice, -vv : verbose info, -vvv : debug, -vvvv : trace.
   [-c <path>] Read config options from a file
 		= Tuner options =
   [-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query> | rtl_tcp | help]
@@ -202,7 +202,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [117]* ESA1000 / ESA2000 Energy Monitor
     [118]* Biltema rain gauge
     [119]  Bresser Weather Center 5-in-1
-    [120]* Digitech XC-0324 temperature sensor
+    [120]  Digitech XC-0324 / AmbientWeather FT005RH temp/hum sensor
     [121]  Opus/Imagintronix XT300 Soil Moisture
     [122]* FS20
     [123]* Jansite TPMS Model TY02S

@@ -25,6 +25,7 @@ add_library(r_433 STATIC
     optparse.c
     output_file.c
     output_influx.c
+    output_log.c
     output_mqtt.c
     output_rtltcp.c
     output_trigger.c
