@@ -511,7 +511,12 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
     if (!mqtt)
         FATAL_CALLOC("data_output_mqtt_create()");
 
-    gethostname(mqtt->hostname, sizeof(mqtt->hostname) - 1);
+    const char *hostname = getenv("HOSTNAME");
+    if (hostname == NULL || *hostname == '\0')
+        gethostname(mqtt->hostname, sizeof(mqtt->hostname) - 1);
+    else
+        strncpy(mqtt->hostname, hostname, sizeof(mqtt->hostname) - 1);
+
     mqtt->hostname[sizeof(mqtt->hostname) - 1] = '\0';
     // only use hostname, not domain part
     char *dot = strchr(mqtt->hostname, '.');
