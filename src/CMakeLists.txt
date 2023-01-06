@@ -49,7 +49,6 @@ add_library(r_433 STATIC
     devices/acurite_01185m.c
     devices/akhan_100F14.c
     devices/alecto.c
-    devices/altronics_x7064.c
     devices/ambient_weather.c
     devices/ambientweather_tx8300.c
     devices/ambientweather_wh31e.c
@@ -91,6 +90,7 @@ add_library(r_433 STATIC
     devices/efth800.c
     devices/elro_db286a.c
     devices/elv.c
+    devices/emax.c
     devices/emontx.c
     devices/emos_e6016.c
     devices/emos_e6016_rain.c

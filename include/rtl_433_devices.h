@@ -222,7 +222,7 @@
     DECL(tpms_renault_0435r) \
     DECL(fineoffset_ws80) \
     DECL(emos_e6016) \
-    DECL(altronics_7064) \
+    DECL(emax) \
     DECL(ant_antplus) \
     DECL(emos_e6016_rain) \
     DECL(hcs200_fsk) \
