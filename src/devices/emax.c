@@ -15,7 +15,13 @@
 
 /**
 Fuzhou Emax Electronic W6 Professional Weather Station (other ref WEC-W6, 3390TX W6, EM3390W6)
-Rebrand ref : Altronics x7063/4, Optex 990040 SM-040, Infactory FWS-1200, Newentor Q9 Weather sensor
+Rebrand and compatible ref : 
+- Altronics x7063/4
+- Optex 990040, 990050, 990051
+- Infactory FWS-1200
+- Newentor Q9
+- Otio Weather Station Pro La Surprenante 810025
+- Orium Pro Atlanta 13093, Helios 13123
 
 
 S.a. issue #2000 #2299 request #2300
@@ -192,7 +198,7 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "wind_dir_deg",     "Wind Direction",   DATA_INT,    direction_deg,
                     "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",  DATA_DOUBLE, rain_mm,
                     "uv",               "UV Index",         DATA_FORMAT, "%u",       DATA_INT,    uv_index,
-	                "light_lux",        "Lux",              DATA_FORMAT, "%u",       DATA_INT,    light_lux,
+                    "light_lux",        "Lux",              DATA_FORMAT, "%u",       DATA_INT,    light_lux,
                     "pairing",          "Pairing?",         DATA_COND,   pairing,    DATA_INT,    !!pairing,
                     "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
                     NULL);
@@ -224,7 +230,7 @@ static char *output_fields[] = {
 };
 
 r_device emax = {
-        .name        = "Emax W6 and rebrand Altronics x7063/4, Optex 990040 SM-040, Infactory FWS-1200, Newentor Q9 Weather sensor",
+        .name        = "Emax W6, rebrand Altronics x7063/4, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025 Weather sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 90,
         .long_width  = 90,
