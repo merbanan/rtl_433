@@ -101,7 +101,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device klimalogg = {
+r_device const klimalogg = {
         .name        = "Klimalogg",
         .modulation  = OOK_PULSE_NRZS,
         .short_width = 26,

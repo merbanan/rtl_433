@@ -394,7 +394,7 @@ static char *output_fields[] = {
 //      Freq 310.01M
 //  -X "n=vI3,m=OOK_PCM,s=230,l=230,t=40,r=10000,g=7400,match={24}0xaaaa9560"
 
-r_device secplus_v2 = {
+r_device const secplus_v2 = {
         .name        = "Security+ 2.0 (Keyfob)",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 250,

@@ -125,7 +125,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device honeywell_wdb = {
+r_device const honeywell_wdb = {
         .name        = "Honeywell ActivLink, Wireless Doorbell",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 175,
@@ -137,7 +137,7 @@ r_device honeywell_wdb = {
         .fields      = output_fields,
 };
 
-r_device honeywell_wdb_fsk = {
+r_device const honeywell_wdb_fsk = {
         .name        = "Honeywell ActivLink, Wireless Doorbell (FSK)",
         .modulation  = FSK_PULSE_PWM,
         .short_width = 160,

@@ -92,7 +92,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device oil_watchman_advanced = {
+r_device const oil_watchman_advanced = {
         .name        = "Watchman Sonic Advanced / Plus",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 500,

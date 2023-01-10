@@ -110,7 +110,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device oil_watchman = {
+r_device const oil_watchman = {
         .name        = "Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 1000,

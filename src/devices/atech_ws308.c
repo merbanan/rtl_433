@@ -127,7 +127,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device atech_ws308 = {
+r_device const atech_ws308 = {
         .name        = "Atech-WS308 temperature sensor",
         .modulation  = OOK_PULSE_RZ,
         .short_width = 1600,

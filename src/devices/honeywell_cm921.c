@@ -458,7 +458,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device honeywell_cm921 = {
+r_device const honeywell_cm921 = {
         .name        = "Honeywell CM921 Wireless Programmable Room Thermostat",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 26,

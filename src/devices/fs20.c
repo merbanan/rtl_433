@@ -128,7 +128,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device fs20 = {
+r_device const fs20 = {
         .name        = "FS20",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 400,

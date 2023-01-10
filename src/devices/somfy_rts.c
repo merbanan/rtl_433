@@ -193,7 +193,7 @@ static char *output_fields[] = {
 // rtl_433 -r g001_433.414M_250k.cu8 -X "n=somfy-test,m=OOK_PCM,s=604,l=604,t=40,r=10000,g=3000,y=2416"
 // Nominal bit width is ~604 us, RZ, short=long
 
-r_device somfy_rts = {
+r_device const somfy_rts = {
         .name        = "Somfy RTS",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 604,   // each pulse is ~604 us (nominal bit width)

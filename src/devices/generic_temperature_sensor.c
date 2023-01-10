@@ -68,7 +68,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device generic_temperature_sensor = {
+r_device const generic_temperature_sensor = {
         .name        = "Generic temperature sensor 1",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

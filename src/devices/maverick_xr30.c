@@ -103,7 +103,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device maverick_xr30 = {
+r_device const maverick_xr30 = {
         .name        = "Maverick XR-30 BBQ Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 360,

@@ -159,7 +159,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device X10_RF = {
+r_device const X10_RF = {
         .name        = "X10 RF",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 562,  // Short gap 562.5 µs

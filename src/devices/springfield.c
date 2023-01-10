@@ -102,7 +102,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device springfield = {
+r_device const springfield = {
         .name        = "Springfield Temperature and Soil Moisture",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

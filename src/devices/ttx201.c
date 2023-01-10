@@ -216,7 +216,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ttx201 = {
+r_device const ttx201 = {
         .name        = "Emos TTX201 Temperature Sensor",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 510,

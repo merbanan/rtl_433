@@ -117,7 +117,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tfa_twin_plus_303049 = {
+r_device const tfa_twin_plus_303049 = {
         .name        = "TFA-Twin-Plus-30.3049, Conrad KW9010, Ea2 BL999",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

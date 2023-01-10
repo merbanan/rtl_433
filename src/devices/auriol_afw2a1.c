@@ -117,7 +117,7 @@ static char *output_fields[] = {
 };
 
 // ToDo: The timings have come about through trial and error. Audit this against weak signals!
-r_device auriol_afw2a1 = {
+r_device const auriol_afw2a1 = {
         .name        = "Auriol AFW2A1 temperature/humidity sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 576,

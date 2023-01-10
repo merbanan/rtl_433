@@ -96,7 +96,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tfa_marbella = {
+r_device const tfa_marbella = {
         .name        = "TFA Marbella Pool Thermometer",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 105,

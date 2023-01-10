@@ -105,7 +105,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device thermopro_tx2 = {
+r_device const thermopro_tx2 = {
         .name        = "ThermoPro-TX2 temperature sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

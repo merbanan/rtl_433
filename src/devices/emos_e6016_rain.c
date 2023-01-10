@@ -109,7 +109,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device emos_e6016_rain = {
+r_device const emos_e6016_rain = {
         .name        = "EMOS E6016 rain gauge",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 300,

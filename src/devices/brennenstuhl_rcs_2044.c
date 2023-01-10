@@ -120,7 +120,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device brennenstuhl_rcs_2044 = {
+r_device const brennenstuhl_rcs_2044 = {
         .name        = "Brennenstuhl RCS 2044",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 320,

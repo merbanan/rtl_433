@@ -115,7 +115,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ws2032 = {
+r_device const ws2032 = {
         .name        = "WS2032 weather station",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 500,

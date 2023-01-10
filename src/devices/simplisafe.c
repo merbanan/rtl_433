@@ -203,7 +203,7 @@ static char *sensor_output_fields[] = {
         NULL,
 };
 
-r_device ss_sensor = {
+r_device const ss_sensor = {
         .name        = "SimpliSafe Home Security System (May require disabling automatic gain for KeyPad decodes)",
         .modulation  = OOK_PULSE_PIWM_DC,
         .short_width = 500,  // half-bit width 500 us

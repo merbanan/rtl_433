@@ -219,7 +219,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device norgo = {
+r_device const norgo = {
         .name        = "Norgo NGE101",
         .modulation  = OOK_PULSE_DMC,
         .short_width = 486,

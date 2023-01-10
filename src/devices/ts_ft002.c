@@ -115,7 +115,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ts_ft002 = {
+r_device const ts_ft002 = {
         .name        = "TS-FT002 Wireless Ultrasonic Tank Liquid Level Meter With Temperature Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 464,

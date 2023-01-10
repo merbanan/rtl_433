@@ -114,7 +114,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device cardin = {
+r_device const cardin = {
         .name        = "Cardin S466-TX2",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 730,

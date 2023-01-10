@@ -88,7 +88,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device abmt = {
+r_device const abmt = {
         .name        = "Amazon Basics Meat Thermometer",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 550,

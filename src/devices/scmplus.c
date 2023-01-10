@@ -173,7 +173,7 @@ static char *output_fields[] = {
 //      Freq 912600155
 //     -X n=L58,m=OOK_MC_ZEROBIT,s=30,l=30,g=20000,r=20000,match={24}0x16a31e,preamble={1}0x00
 
-r_device scmplus = {
+r_device const scmplus = {
         .name        = "Standard Consumption Message Plus (SCMplus)",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 30,

@@ -223,7 +223,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device alectov1 = {
+r_device const alectov1 = {
         .name        = "AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

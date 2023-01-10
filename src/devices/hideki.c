@@ -242,7 +242,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device hideki_ts04 = {
+r_device const hideki_ts04 = {
         .name        = "HIDEKI TS04 Temperature, Humidity, Wind and Rain Sensor",
         .modulation  = OOK_PULSE_DMC,
         .short_width = 520,  // half-bit width 520 us

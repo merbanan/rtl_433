@@ -105,7 +105,7 @@ static char *elv_em1000_output_fields[] = {
         NULL,
 };
 
-r_device elv_em1000 = {
+r_device const elv_em1000 = {
         .name        = "ELV EM 1000",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 500,  // guessed, no samples available
@@ -279,7 +279,7 @@ static char *elv_ws2000_output_fields[] = {
         NULL,
 };
 
-r_device elv_ws2000 = {
+r_device const elv_ws2000 = {
         .name        = "ELV WS 2000",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 366,  // 0 => 854us, 1 => 366us according to link in top

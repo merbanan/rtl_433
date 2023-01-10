@@ -122,7 +122,7 @@ static char *output_fields[] = {
 
 // rtl_433 -f 433900000 -X 'n=name,m=OOK_PWM,s=368,l=704,r=10000,g=10000,t=0,y=5628'
 
-r_device markisol = {
+r_device const markisol = {
         .name        = "Markisol, E-Motion, BOFU, Rollerhouse, BF-30x, BF-415 curtain remote",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 368,

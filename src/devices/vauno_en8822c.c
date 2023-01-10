@@ -94,7 +94,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device vauno_en8822c = {
+r_device const vauno_en8822c = {
         .name        = "Vauno EN8822C",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

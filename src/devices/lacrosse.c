@@ -184,7 +184,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device lacrossetx = {
+r_device const lacrossetx = {
         .name        = "LaCrosse TX Temperature / Humidity Sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 550,  // 550 us pulse + 1000 us gap is 1

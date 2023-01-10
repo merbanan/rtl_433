@@ -99,7 +99,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device sharp_spc775 = {
+r_device const sharp_spc775 = {
         .name        = "Sharp SPC775 weather station",
         .modulation  = FSK_PULSE_PWM,
         .short_width = 225,

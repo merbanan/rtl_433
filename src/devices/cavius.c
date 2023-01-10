@@ -129,7 +129,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device cavius = {
+r_device const cavius = {
         .name        = "Cavius smoke, heat and water detector",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 206,

@@ -79,7 +79,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device mebus433 = {
+r_device const mebus433 = {
         .name        = "Mebus 433",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 800,  // guessed, no samples available

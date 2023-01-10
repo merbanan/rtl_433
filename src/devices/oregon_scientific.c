@@ -929,7 +929,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device oregon_scientific = {
+r_device const oregon_scientific = {
         .name        = "Oregon Scientific Weather Sensor",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 440, // Nominal 1024Hz (488us), but pulses are shorter than pauses

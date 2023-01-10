@@ -79,7 +79,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device generic_remote = {
+r_device const generic_remote = {
         .name        = "Generic Remote SC226x EV1527",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 464,

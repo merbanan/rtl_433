@@ -142,7 +142,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device fineoffset_wh45 = {
+r_device const fineoffset_wh45 = {
         .name        = "Fine Offset Electronics WH45 air quality sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 58,

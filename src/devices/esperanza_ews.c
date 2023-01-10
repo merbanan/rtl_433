@@ -123,7 +123,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device esperanza_ews = {
+r_device const esperanza_ews = {
         .name        = "Esperanza EWS",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

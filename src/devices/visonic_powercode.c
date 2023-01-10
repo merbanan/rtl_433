@@ -120,7 +120,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device visonic_powercode = {
+r_device const visonic_powercode = {
         .name        = "Visonic powercode",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 400,

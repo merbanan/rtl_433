@@ -168,7 +168,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ambient_weather = {
+r_device const ambient_weather = {
         .name        = "Ambient Weather F007TH, TFA 30.3208.02, SwitchDocLabs F016TH temperature sensor",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 500,

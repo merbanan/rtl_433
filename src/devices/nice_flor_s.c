@@ -75,7 +75,7 @@ static char *output_fields[] = {
 // model     : Nice Flor-s  Button ID : 1             Serial (enc.): 56bc8d1    Code (enc.): 89f4
 // count     : 6
 
-r_device nice_flor_s = {
+r_device const nice_flor_s = {
         .name        = "Nice Flor-s remote control for gates",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 500,  // short pulse is ~500 us + ~1000 us gap

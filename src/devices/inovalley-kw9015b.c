@@ -84,7 +84,7 @@ static char *kw9015b_csv_output_fields[] = {
         NULL,
 };
 
-r_device kw9015b = {
+r_device const kw9015b = {
         .name        = "Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

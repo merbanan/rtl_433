@@ -125,7 +125,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device calibeur_RF104 = {
+r_device const calibeur_RF104 = {
         .name        = "Calibeur RF-104 Sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 760,  // Short pulse 760µs

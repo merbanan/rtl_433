@@ -174,7 +174,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device bresser_5in1 = {
+r_device const bresser_5in1 = {
         .name        = "Bresser Weather Center 5-in-1",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 124,

@@ -140,7 +140,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device inkbird_ith20r = {
+r_device const inkbird_ith20r = {
         .name        = "Inkbird ITH-20R temperature humidity sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 100,  // Width of a '0' gap

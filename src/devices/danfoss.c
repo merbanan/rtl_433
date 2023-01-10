@@ -157,7 +157,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device danfoss_CFR = {
+r_device const danfoss_CFR = {
         .name        = "Danfoss CFR Thermostat",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 100, // NRZ decoding

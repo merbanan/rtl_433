@@ -93,7 +93,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device solight_te44 = {
+r_device const solight_te44 = {
         .name        = "Solight TE44/TE66, EMOS E0107T, NX-6876-917",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 972,  // short gap = 972 us

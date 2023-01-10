@@ -114,7 +114,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device lacrosse_tx34 = {
+r_device const lacrosse_tx34 = {
         .name        = "LaCrosse TX34-IT rain gauge",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 58,

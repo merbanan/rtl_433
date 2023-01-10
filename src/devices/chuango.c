@@ -95,7 +95,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device chuango = {
+r_device const chuango = {
         .name        = "Chuango Security Technology",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 568,  // Pulse: Short 568µs, Long 1704µs

@@ -113,7 +113,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device maverick_et73x = {
+r_device const maverick_et73x = {
         .name        = "Maverick ET-732/733 BBQ Sensor",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 230,

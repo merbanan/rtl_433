@@ -62,7 +62,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device blyss = {
+r_device const blyss = {
         .name        = "Blyss DC5-UK-WH",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 500,

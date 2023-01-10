@@ -104,7 +104,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device esic_emt7110 = {
+r_device const esic_emt7110 = {
         .name        = "ESIC EMT7110 power meter",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 104,

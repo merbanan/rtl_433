@@ -484,7 +484,7 @@ static char *output_fields[] = {
 
 //     -X 'n=Insteon_F16,m=FSK_PCM,s=110,l=110,t=15,g=20000,r=20000,invert,match={16}0x6666'
 
-r_device insteon = {
+r_device const insteon = {
         .name        = "Insteon",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 110, // short gap is 132 us

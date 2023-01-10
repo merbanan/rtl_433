@@ -131,7 +131,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device rainpoint = {
+r_device const rainpoint = {
         .name        = "RainPoint soil temperature and moisture sensor",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 500,

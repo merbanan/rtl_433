@@ -126,7 +126,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device wt450 = {
+r_device const wt450 = {
         .name        = "WT450, WT260H, WT405H",
         .modulation  = OOK_PULSE_DMC,
         .short_width = 976,  // half-bit width 976 us

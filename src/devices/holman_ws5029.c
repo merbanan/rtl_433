@@ -131,7 +131,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device holman_ws5029pcm = {
+r_device const holman_ws5029pcm = {
         .name        = "Holman Industries iWeather WS5029 weather station (newer PCM)",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 100,
@@ -212,7 +212,7 @@ static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-r_device holman_ws5029pwm = {
+r_device const holman_ws5029pwm = {
         .name        = "Holman Industries iWeather WS5029 weather station (older PWM)",
         .modulation  = FSK_PULSE_PWM,
         .short_width = 488,

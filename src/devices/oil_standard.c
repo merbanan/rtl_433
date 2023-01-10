@@ -137,7 +137,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device oil_standard = {
+r_device const oil_standard = {
         .name        = "Oil Ultrasonic STANDARD FSK",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 500,
@@ -147,7 +147,7 @@ r_device oil_standard = {
         .fields      = output_fields,
 };
 
-r_device oil_standard_ask = {
+r_device const oil_standard_ask = {
         .name        = "Oil Ultrasonic STANDARD ASK",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 500,

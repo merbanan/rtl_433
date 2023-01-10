@@ -134,7 +134,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device companion_wtr001 = {
+r_device const companion_wtr001 = {
         .name        = "Companion WTR001 Temperature Sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 732,  // 732 us pulse + 2196 us gap is 1 (will be inverted in code)

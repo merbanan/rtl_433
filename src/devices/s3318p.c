@@ -124,7 +124,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device s3318p = {
+r_device const s3318p = {
         .name        = "Conrad S3318P, FreeTec NC-5849-913 temperature humidity sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1900,

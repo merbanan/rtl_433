@@ -129,7 +129,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ambientweather_tx8300 = {
+r_device const ambientweather_tx8300 = {
         .name        = "Ambient Weather TX-8300 Temperature/Humidity Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

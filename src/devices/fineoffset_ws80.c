@@ -131,7 +131,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device fineoffset_ws80 = {
+r_device const fineoffset_ws80 = {
         .name        = "Fine Offset Electronics WS80 weather station",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 58,

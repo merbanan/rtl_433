@@ -133,7 +133,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device fineoffset_wh1050 = {
+r_device const fineoffset_wh1050 = {
         .name        = "Fine Offset WH1050 Weather Station",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 544,

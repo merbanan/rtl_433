@@ -95,7 +95,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device oregon_scientific_v1 = {
+r_device const oregon_scientific_v1 = {
         .name        = "OSv1 Temperature Sensor",
         .modulation  = OOK_PULSE_PWM_OSV1,
         .short_width = 1465, // nominal half-bit width

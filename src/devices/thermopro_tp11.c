@@ -68,7 +68,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device thermopro_tp11 = {
+r_device const thermopro_tp11 = {
         .name        = "Thermopro TP11 Thermometer",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 500,

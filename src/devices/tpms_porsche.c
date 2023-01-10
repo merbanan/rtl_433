@@ -113,7 +113,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_porsche = {
+r_device const tpms_porsche = {
         .name        = "Porsche Boxster/Cayman TPMS",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 52,  // 12-13 samples @250k

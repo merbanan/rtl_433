@@ -249,7 +249,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device govee = {
+r_device const govee = {
         .name        = "Govee Water Leak Detector H5054, Door Contact Sensor B5023",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 440,  // Threshold between short and long pulse [us]
@@ -389,7 +389,7 @@ static int govee_h5054_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-r_device govee_h5054 = {
+r_device const govee_h5054 = {
         .name        = "Govee Water Leak Detector H5054",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 440,  // Threshold between short and long pulse [us]

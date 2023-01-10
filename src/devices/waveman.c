@@ -88,7 +88,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device waveman = {
+r_device const waveman = {
         .name        = "Waveman Switch Transmitter",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 357,

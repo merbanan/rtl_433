@@ -170,7 +170,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device regency_fan = {
+r_device const regency_fan = {
         .name        = "Regency Ceiling Fan Remote (-f 303.75M to 303.96M)",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 580,

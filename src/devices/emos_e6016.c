@@ -138,7 +138,7 @@ static char *output_fields[] = {
         NULL,
 };
 // n=EMOS-E6016,m=OOK_PWM,s=280,l=796,r=804,g=0,t=0,y=1836,rows>=3,bits=120
-r_device emos_e6016 = {
+r_device const emos_e6016 = {
         .name        = "EMOS E6016 weatherstation with DCF77",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 280,

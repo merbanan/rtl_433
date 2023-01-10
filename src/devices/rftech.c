@@ -78,7 +78,7 @@ static char *csv_output_fields[] = {
         NULL,
 };
 
-r_device rftech = {
+r_device const rftech = {
         .name        = "RF-tech",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

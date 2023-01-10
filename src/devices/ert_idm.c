@@ -618,7 +618,7 @@ static char *output_fields[] = {
 //      Freq 912600155
 //     -X n=L58,m=OOK_MC_ZEROBIT,s=30,l=30,g=20000,r=20000,match={24}0x16a31e,preamble={1}0x00
 
-r_device ert_idm = {
+r_device const ert_idm = {
         .name        = "ERT Interval Data Message (IDM)",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 30,
@@ -631,7 +631,7 @@ r_device ert_idm = {
         .fields    = output_fields,
 };
 
-r_device ert_netidm = {
+r_device const ert_netidm = {
         .name        = "ERT Interval Data Message (IDM) for Net Meters",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 30,

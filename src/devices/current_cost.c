@@ -125,7 +125,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device current_cost = {
+r_device const current_cost = {
         .name        = "CurrentCost Current Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 250,

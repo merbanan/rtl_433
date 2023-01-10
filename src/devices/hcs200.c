@@ -97,7 +97,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device hcs200 = {
+r_device const hcs200 = {
         .name        = "Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 370,
@@ -109,7 +109,7 @@ r_device hcs200 = {
         .fields      = output_fields,
 };
 
-r_device hcs200_fsk = {
+r_device const hcs200_fsk = {
         .name        = "Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes (FSK)",
         .modulation  = FSK_PULSE_PWM,
         .short_width = 370,

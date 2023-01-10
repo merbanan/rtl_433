@@ -135,7 +135,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device gt_tmbbq05 = {
+r_device const gt_tmbbq05 = {
         .name        = "Globaltronics QUIGG GT-TMBBQ-05",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

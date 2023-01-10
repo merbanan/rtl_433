@@ -139,7 +139,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device dish_remote_6_3 = {
+r_device const dish_remote_6_3 = {
         .name        = "Dish remote 6.3",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1692,
