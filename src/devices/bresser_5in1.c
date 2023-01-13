@@ -54,7 +54,7 @@ Packet payload without preamble (203 bits):
 - T = temperature in 1/10 °C, BCD coded, TTxT = 1203 => 31.2 °C
 - t = temperature sign, minus if unequal 0
 - H = humidity in percent, BCD coded, HH = 23 => 23 %
-- R = rain in mm, BCD coded, RRxR = 1203 => 031.2 mm
+- R = rain in mm, BCD coded, RRRR = 1203 => 031.2 mm
 - B = Battery. 0=Ok, 8=Low.
 - S = sensor type, only low nibble used, 0x9 for Bresser Professional Rain Gauge
 */
