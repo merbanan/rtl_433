@@ -17,9 +17,14 @@
 #include "compat_time.h"
 
 struct dm_state {
+    float auto_level;
+    float squelch_offset;
     float level_limit;
+    float noise_level;
+    float min_level_auto;
     float min_level;
     float min_snr;
+    float low_pass;
     int use_mag_est;
     int detect_verbosity;
 
@@ -31,7 +36,7 @@ struct dm_state {
     } buf;
     uint8_t u8_buf[MAXIMAL_BUF_LENGTH]; // format conversion buffer
     float f32_buf[MAXIMAL_BUF_LENGTH]; // format conversion buffer
-    int sample_size; // CU8: 1, CS16: 2
+    int sample_size; // CU8: 2, CS16: 4
     pulse_detect_t *pulse_detect;
     filter_state_t lowpass_filter_state;
     demodfm_state_t demod_FM_state;

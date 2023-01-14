@@ -2,6 +2,7 @@
     Pulse detection functions.
 
     Copyright (C) 2015 Tommy Vestermark
+    Copyright (C) 2020 Christian W. Zuckschwerdt <zany@triq.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -10,185 +11,14 @@
 */
 
 #include "pulse_detect.h"
-#include "rfraw.h"
-#include "pulse_demod.h"
 #include "pulse_detect_fsk.h"
+#include "pulse_data.h"
 #include "baseband.h"
 #include "util.h"
-#include "r_device.h"
-#include "r_util.h"
+#include "logger.h"
 #include "fatal.h"
-#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-
-void pulse_data_clear(pulse_data_t *data)
-{
-    *data = (pulse_data_t const){0};
-}
-
-void pulse_data_print(pulse_data_t const *data)
-{
-    fprintf(stderr, "Pulse data: %u pulses\n", data->num_pulses);
-    for (unsigned n = 0; n < data->num_pulses; ++n) {
-        fprintf(stderr, "[%3u] Pulse: %4d, Gap: %4d, Period: %4d\n", n, data->pulse[n], data->gap[n], data->pulse[n] + data->gap[n]);
-    }
-}
-
-static void *bounded_memset(void *b, int c, int64_t size, int64_t offset, int64_t len)
-{
-    if (offset < 0) {
-        len += offset; // reduce len by negative offset
-        offset = 0;
-    }
-    if (offset + len > size) {
-        len = size - offset; // clip excessive len
-    }
-    if (len > 0)
-        memset((char *)b + offset, c, (size_t)len);
-    return b;
-}
-
-void pulse_data_dump_raw(uint8_t *buf, unsigned len, uint64_t buf_offset, pulse_data_t const *data, uint8_t bits)
-{
-    int64_t pos = data->offset - buf_offset;
-    for (unsigned n = 0; n < data->num_pulses; ++n) {
-        bounded_memset(buf, 0x01 | bits, len, pos, data->pulse[n]);
-        pos += data->pulse[n];
-        bounded_memset(buf, 0x01, len, pos, data->gap[n]);
-        pos += data->gap[n];
-    }
-}
-
-static inline void chk_ret(int ret)
-{
-    if (ret < 0) {
-        perror("File output error");
-        exit(1);
-    }
-}
-
-void pulse_data_print_vcd_header(FILE *file, uint32_t sample_rate)
-{
-    char time_str[LOCAL_TIME_BUFLEN];
-    char *timescale;
-    if (sample_rate <= 500000)
-        timescale = "1 us";
-    else
-        timescale = "100 ns";
-    chk_ret(fprintf(file, "$date %s $end\n", format_time_str(time_str, NULL, 0, 0)));
-    chk_ret(fprintf(file, "$version rtl_433 0.1.0 $end\n"));
-    chk_ret(fprintf(file, "$comment Acquisition at %s Hz $end\n", nice_freq(sample_rate)));
-    chk_ret(fprintf(file, "$timescale %s $end\n", timescale));
-    chk_ret(fprintf(file, "$scope module rtl_433 $end\n"));
-    chk_ret(fprintf(file, "$var wire 1 / FRAME $end\n"));
-    chk_ret(fprintf(file, "$var wire 1 ' AM $end\n"));
-    chk_ret(fprintf(file, "$var wire 1 \" FM $end\n"));
-    chk_ret(fprintf(file, "$upscope $end\n"));
-    chk_ret(fprintf(file, "$enddefinitions $end\n"));
-    chk_ret(fprintf(file, "#0 0/ 0' 0\"\n"));
-}
-
-void pulse_data_print_vcd(FILE *file, pulse_data_t const *data, int ch_id)
-{
-    float scale;
-    if (data->sample_rate <= 500000)
-        scale = 1000000 / data->sample_rate; // unit: 1 us
-    else
-        scale = 10000000 / data->sample_rate; // unit: 100 ns
-    uint64_t pos = data->offset;
-    for (unsigned n = 0; n < data->num_pulses; ++n) {
-        if (n == 0)
-            chk_ret(fprintf(file, "#%.f 1/ 1%c\n", pos * scale, ch_id));
-        else
-            chk_ret(fprintf(file, "#%.f 1%c\n", pos * scale, ch_id));
-        pos += data->pulse[n];
-        chk_ret(fprintf(file, "#%.f 0%c\n", pos * scale, ch_id));
-        pos += data->gap[n];
-    }
-    if (data->num_pulses > 0)
-        chk_ret(fprintf(file, "#%.f 0/\n", pos * scale));
-}
-
-void pulse_data_load(FILE *file, pulse_data_t *data, uint32_t sample_rate)
-{
-    char s[1024];
-    int i    = 0;
-    int size = sizeof(data->pulse) / sizeof(*data->pulse);
-
-    pulse_data_clear(data);
-    data->sample_rate = sample_rate;
-    double to_sample = sample_rate / 1e6;
-    // read line-by-line
-    while (i < size && fgets(s, sizeof(s), file)) {
-        // TODO: we should parse sample rate and timescale
-        if (!strncmp(s, ";freq1", 6)) {
-            data->freq1_hz = strtol(s + 6, NULL, 10);
-        }
-        if (!strncmp(s, ";freq2", 6)) {
-            data->freq2_hz = strtol(s + 6, NULL, 10);
-        }
-        if (*s == ';') {
-            if (i) {
-                break; // end or next header found
-            }
-            else {
-                continue; // still reading a header
-            }
-        }
-        if (rfraw_check(s)) {
-            rfraw_parse(data, s);
-            i = data->num_pulses;
-            continue;
-        }
-        // parse two ints.
-        char *p = s;
-        char *endptr;
-        long mark  = strtol(p, &endptr, 10);
-        p          = endptr + 1;
-        long space = strtol(p, &endptr, 10);
-        //fprintf(stderr, "read: mark %ld space %ld\n", mark, space);
-        data->pulse[i] = (int)(to_sample * mark);
-        data->gap[i++] = (int)(to_sample * space);
-    }
-    //fprintf(stderr, "read %d pulses\n", i);
-    data->num_pulses = i;
-}
-
-void pulse_data_print_pulse_header(FILE *file)
-{
-    char time_str[LOCAL_TIME_BUFLEN];
-
-    chk_ret(fprintf(file, ";pulse data\n"));
-    chk_ret(fprintf(file, ";version 1\n"));
-    chk_ret(fprintf(file, ";timescale 1us\n"));
-    //chk_ret(fprintf(file, ";samplerate %u\n", data->sample_rate));
-    chk_ret(fprintf(file, ";created %s\n", format_time_str(time_str, NULL, 1, 0)));
-}
-
-void pulse_data_dump(FILE *file, pulse_data_t *data)
-{
-    if (data->fsk_f2_est) {
-        chk_ret(fprintf(file, ";fsk %u pulses\n", data->num_pulses));
-        chk_ret(fprintf(file, ";freq1 %.0f\n", data->freq1_hz));
-        chk_ret(fprintf(file, ";freq2 %.0f\n", data->freq2_hz));
-    }
-    else {
-        chk_ret(fprintf(file, ";ook %u pulses\n", data->num_pulses));
-        chk_ret(fprintf(file, ";freq1 %.0f\n", data->freq1_hz));
-    }
-    chk_ret(fprintf(file, ";samplerate %u Hz\n", data->sample_rate));
-    chk_ret(fprintf(file, ";rssi %.1f dB\n", data->rssi_db));
-    chk_ret(fprintf(file, ";snr %.1f dB\n", data->snr_db));
-    chk_ret(fprintf(file, ";noise %.1f dB\n", data->noise_db));
-
-    double to_us = 1e6 / data->sample_rate;
-    for (unsigned i = 0; i < data->num_pulses; ++i) {
-        chk_ret(fprintf(file, "%.0f %.0f\n", data->pulse[i] * to_us, data->gap[i] * to_us));
-    }
-    chk_ret(fprintf(file, ";end\n"));
-}
 
 // OOK adaptive level estimator constants
 #define OOK_MAX_HIGH_LEVEL  DB_TO_AMP(0)   // Maximum estimate for high level (-0 dB)
@@ -198,7 +28,7 @@ void pulse_data_dump(FILE *file, pulse_data_t *data)
 
 /// Internal state data for pulse_pulse_package()
 struct pulse_detect {
-    int use_mag_est;          ///< Wether the envelope data is an amplitude or magnitude.
+    int use_mag_est;          ///< Whether the envelope data is an amplitude or magnitude.
     int ook_fixed_high_level; ///< Manual detection level override, 0 = auto.
     int ook_min_high_level;   ///< Minimum estimate of high level (-12 dB: 1000 amp, 4000 mag).
     int ook_high_low_ratio;   ///< Default ratio between high and low (noise) level (9 dB: x8 amp, 11 dB: x3.6 mag).
@@ -207,7 +37,7 @@ struct pulse_detect {
         PD_OOK_STATE_IDLE      = 0,
         PD_OOK_STATE_PULSE     = 1,
         PD_OOK_STATE_GAP_START = 2,
-        PD_OOK_STATE_GAP       = 3
+        PD_OOK_STATE_GAP       = 3,
     } ook_state;
     int pulse_length; ///< Counter for internal pulse detection
     int max_pulse;    ///< Size of biggest pulse detected
@@ -220,10 +50,10 @@ struct pulse_detect {
 
     int verbosity; ///< Debug output verbosity, 0=None, 1=Levels, 2=Histograms
 
-    pulse_FSK_state_t FSK_state;
+    pulse_detect_fsk_t pulse_detect_fsk;
 };
 
-pulse_detect_t *pulse_detect_create()
+pulse_detect_t *pulse_detect_create(void)
 {
     pulse_detect_t *pulse_detect = calloc(1, sizeof(pulse_detect_t));
     if (!pulse_detect) {
@@ -348,8 +178,9 @@ static inline int mag_to_att(int m)
 static void print_att_hist(char const *s, int att_hist[])
 {
     fprintf(stderr, "\n%s\n", s);
-    for (int i = 0; i < 37; ++i)
+    for (int i = 0; i < 37; ++i) {
         fprintf(stderr, ">%3d dB: %5d smps\n", 3 - i, att_hist[i]);
+    }
 }
 
 /// Demodulate On/Off Keying (OOK) and Frequency Shift Keying (FSK) from an envelope signal
@@ -366,17 +197,19 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
         fsk_pulses->start_ago += len;
     }
 
+    int eop_on_spurious = 0;
     // Process all new samples
     while (s->data_counter < len) {
         // Calculate OOK detection threshold and hysteresis
         int16_t const am_n    = envelope_data[s->data_counter];
-        if (pulse_detect->verbosity) {
+        if (pulse_detect->verbosity >= LOG_NOTICE) {
             int att = pulse_detect->use_mag_est ? mag_to_att(am_n) : amp_to_att(am_n);
-            att_hist[att]++;
+            att_hist[att] += 1;
         }
         int16_t ook_threshold = (s->ook_low_estimate + s->ook_high_estimate) / 2;
-        if (pulse_detect->ook_fixed_high_level != 0)
+        if (pulse_detect->ook_fixed_high_level != 0) {
             ook_threshold = pulse_detect->ook_fixed_high_level; // Manual override
+        }
         int16_t const ook_hysteresis = ook_threshold / 8; // +-12%
 
         // OOK State machine
@@ -395,10 +228,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     fsk_pulses->start_ago = len - s->data_counter;
                     s->pulse_length = 0;
                     s->max_pulse = 0;
-                    s->FSK_state = (pulse_FSK_state_t){0};
-                    s->FSK_state.var_test_max = INT16_MIN;
-                    s->FSK_state.var_test_min = INT16_MAX;
-                    s->FSK_state.skip_samples = 40;
+                    pulse_detect_fsk_init(&s->pulse_detect_fsk);
                     s->ook_state = PD_OOK_STATE_PULSE;
                 }
                 else {    // We are still idle..
@@ -410,16 +240,23 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     s->ook_high_estimate = pulse_detect->ook_high_low_ratio * s->ook_low_estimate; // Default is a ratio of low level
                     s->ook_high_estimate = MAX(s->ook_high_estimate, pulse_detect->ook_min_high_level);
                     s->ook_high_estimate = MIN(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL);
-                    if (s->lead_in_counter <= OOK_EST_LOW_RATIO) s->lead_in_counter++;        // Allow initial estimate to settle
+                    if (s->lead_in_counter <= OOK_EST_LOW_RATIO) s->lead_in_counter += 1;        // Allow initial estimate to settle
                 }
                 break;
             case PD_OOK_STATE_PULSE:
-                s->pulse_length++;
+                s->pulse_length += 1;
                 // End of pulse detected?
                 if (am_n < (ook_threshold - ook_hysteresis)) {    // Gap?
                     // Check for spurious short pulses
                     if (s->pulse_length < PD_MIN_PULSE_SAMPLES) {
-                        s->ook_state = PD_OOK_STATE_IDLE;
+                        if (pulses->num_pulses <= 1) {
+                            // if this was the first pulse go back to idle
+                            s->ook_state = PD_OOK_STATE_IDLE;
+                        } else {
+                            // otherwise emit a package, which then goes back to idle
+                            eop_on_spurious = 1;
+                            s->ook_state = PD_OOK_STATE_GAP;
+                        }
                     }
                     else {
                         // Continue with OOK decoding
@@ -440,14 +277,15 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 }
                 // FSK Demodulation
                 if (pulses->num_pulses == 0) {    // Only during first pulse
-                    if (fpdm == FSK_PULSE_DETECT_OLD)
-                        pulse_FSK_detect(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
-                    else
-                        pulse_FSK_detect_mm(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
+                    if (fpdm == FSK_PULSE_DETECT_OLD) {
+                        pulse_detect_fsk_classic(&s->pulse_detect_fsk, fm_data[s->data_counter], fsk_pulses);
+                    } else {
+                        pulse_detect_fsk_minmax(&s->pulse_detect_fsk, fm_data[s->data_counter], fsk_pulses);
+                    }
                 }
                 break;
             case PD_OOK_STATE_GAP_START:    // Beginning of gap - it might be a spurious gap
-                s->pulse_length++;
+                s->pulse_length += 1;
                 // Pulse detected again already? (This is a spurious short gap)
                 if (am_n > (ook_threshold + ook_hysteresis)) {    // New pulse?
                     s->pulse_length += pulses->pulse[pulses->num_pulses];    // Restore counter
@@ -460,40 +298,43 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     if (fsk_pulses->num_pulses > PD_MIN_PULSES) {
                         // Store last pulse/gap
                         if (fpdm == FSK_PULSE_DETECT_OLD)
-                            pulse_FSK_wrap_up(fsk_pulses, &s->FSK_state);
+                            pulse_detect_fsk_wrap_up(&s->pulse_detect_fsk, fsk_pulses);
                         // Store estimates
-                        fsk_pulses->fsk_f1_est = s->FSK_state.fm_f1_est;
-                        fsk_pulses->fsk_f2_est = s->FSK_state.fm_f2_est;
+                        fsk_pulses->fsk_f1_est = s->pulse_detect_fsk.fm_f1_est;
+                        fsk_pulses->fsk_f2_est = s->pulse_detect_fsk.fm_f2_est;
                         fsk_pulses->ook_low_estimate = s->ook_low_estimate;
                         fsk_pulses->ook_high_estimate = s->ook_high_estimate;
                         pulses->end_ago = len - s->data_counter;
                         fsk_pulses->end_ago = len - s->data_counter;
                         s->ook_state = PD_OOK_STATE_IDLE;    // Ensure everything is reset
-                        if (pulse_detect->verbosity > 1)
+                        if (pulse_detect->verbosity >= LOG_INFO) {
                             print_att_hist("PULSE_DATA_FSK", att_hist);
-                        if (pulse_detect->verbosity)
+                        }
+                        if (pulse_detect->verbosity >= LOG_NOTICE) {
                             fprintf(stderr, "Levels low: -%d dB  high: -%d dB  thres: -%d dB  hyst: (-%d to -%d dB)\n",
                                     mag_to_att(s->ook_low_estimate), mag_to_att(s->ook_high_estimate),
                                     mag_to_att(ook_threshold),
                                     mag_to_att(ook_threshold + ook_hysteresis),
                                     mag_to_att(ook_threshold - ook_hysteresis));
+                        }
                         return PULSE_DATA_FSK;
                     }
                 } // if
                 // FSK Demodulation (continue during short gap - we might return...)
                 if (pulses->num_pulses == 0) {    // Only during first pulse
-                    if (fpdm == FSK_PULSE_DETECT_OLD)
-                        pulse_FSK_detect(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
-                    else
-                        pulse_FSK_detect_mm(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
+                    if (fpdm == FSK_PULSE_DETECT_OLD) {
+                        pulse_detect_fsk_classic(&s->pulse_detect_fsk, fm_data[s->data_counter], fsk_pulses);
+                    } else {
+                        pulse_detect_fsk_minmax(&s->pulse_detect_fsk, fm_data[s->data_counter], fsk_pulses);
+                    }
                 }
                 break;
             case PD_OOK_STATE_GAP:
-                s->pulse_length++;
+                s->pulse_length += 1;
                 // New pulse detected?
                 if (am_n > (ook_threshold + ook_hysteresis)) {    // New pulse?
                     pulses->gap[pulses->num_pulses] = s->pulse_length;    // Store gap width
-                    pulses->num_pulses++;    // Next pulse
+                    pulses->num_pulses += 1;    // Next pulse
 
                     // EOP if too many pulses
                     if (pulses->num_pulses >= PD_MAX_PULSES) {
@@ -502,8 +343,9 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                         pulses->ook_low_estimate = s->ook_low_estimate;
                         pulses->ook_high_estimate = s->ook_high_estimate;
                         pulses->end_ago = len - s->data_counter;
-                        if (pulse_detect->verbosity > 1)
+                        if (pulse_detect->verbosity >= LOG_INFO) {
                             print_att_hist("PULSE_DATA_OOK MAX_PULSES", att_hist);
+                        }
                         return PULSE_DATA_OOK;    // End Of Package!!
                     }
 
@@ -512,24 +354,27 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 }
 
                 // EOP if gap is too long
-                if (((s->pulse_length > (PD_MAX_GAP_RATIO * s->max_pulse))    // gap/pulse ratio exceeded
-                        && (s->pulse_length > (PD_MIN_GAP_MS * samples_per_ms)))    // Minimum gap exceeded
-                        || (s->pulse_length > (PD_MAX_GAP_MS * samples_per_ms))) {    // maximum gap exceeded
+                if (eop_on_spurious
+                        || (s->pulse_length > (PD_MAX_GAP_RATIO * s->max_pulse)    // gap/pulse ratio exceeded
+                            && s->pulse_length > (PD_MIN_GAP_MS * samples_per_ms)) // Minimum gap exceeded
+                        || s->pulse_length > (PD_MAX_GAP_MS * samples_per_ms)) {   // maximum gap exceeded
                     pulses->gap[pulses->num_pulses] = s->pulse_length;    // Store gap width
-                    pulses->num_pulses++;    // Store last pulse
+                    pulses->num_pulses += 1;    // Store last pulse
                     s->ook_state = PD_OOK_STATE_IDLE;
                     // Store estimates
                     pulses->ook_low_estimate = s->ook_low_estimate;
                     pulses->ook_high_estimate = s->ook_high_estimate;
                     pulses->end_ago = len - s->data_counter;
-                    if (pulse_detect->verbosity > 1)
+                    if (pulse_detect->verbosity >= LOG_INFO) {
                         print_att_hist("PULSE_DATA_OOK EOP", att_hist);
-                    if (pulse_detect->verbosity)
+                    }
+                    if (pulse_detect->verbosity >= LOG_NOTICE) {
                         fprintf(stderr, "Levels low: -%d dB  high: -%d dB  thres: -%d dB  hyst: (-%d to -%d dB)\n",
                                 mag_to_att(s->ook_low_estimate), mag_to_att(s->ook_high_estimate),
                                 mag_to_att(ook_threshold),
                                 mag_to_att(ook_threshold + ook_hysteresis),
                                 mag_to_att(ook_threshold - ook_hysteresis));
+                    }
                     return PULSE_DATA_OOK;    // End Of Package!!
                 }
                 break;
@@ -537,11 +382,12 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 fprintf(stderr, "demod_OOK(): Unknown state!!\n");
                 s->ook_state = PD_OOK_STATE_IDLE;
         } // switch
-        s->data_counter++;
+        s->data_counter += 1;
     } // while
 
     s->data_counter = 0;
-    if (pulse_detect->verbosity > 2)
+    if (pulse_detect->verbosity >= LOG_DEBUG) {
         print_att_hist("Out of data", att_hist);
+    }
     return 0;    // Out of data
 }

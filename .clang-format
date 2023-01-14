@@ -5,7 +5,9 @@ BreakBeforeBraces: Stroustrup
 AlignAfterOpenBracket: DontAlign
 AlignEscapedNewlines: DontAlign
 AlignConsecutiveAssignments: true
+AlignConsecutiveMacros: AcrossEmptyLines
 AllowShortIfStatementsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: true
 IndentCaseLabels: false
 ColumnLimit: 0
 SortIncludes: false

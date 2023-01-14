@@ -13,6 +13,7 @@
 #include "output_mqtt.h"
 #include "optparse.h"
 #include "util.h"
+#include "logger.h"
 #include "fatal.h"
 #include "r_util.h"
 
@@ -25,7 +26,8 @@
 /* MQTT client abstraction */
 
 typedef struct mqtt_client {
-    struct mg_send_mqtt_handshake_opts opts;
+    struct mg_connect_opts connect_opts;
+    struct mg_send_mqtt_handshake_opts mqtt_opts;
     struct mg_connection *conn;
     int prev_status;
     char address[253 + 6 + 1]; // dns max + port
@@ -49,15 +51,15 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
         int connect_status = *(int *)ev_data;
         if (connect_status == 0) {
             // Success
-            fprintf(stderr, "MQTT Connected...\n");
+            print_log(LOG_NOTICE, "MQTT", "MQTT Connected...");
             mg_set_protocol_mqtt(nc);
             if (ctx)
-                mg_send_mqtt_handshake_opt(nc, ctx->client_id, ctx->opts);
+                mg_send_mqtt_handshake_opt(nc, ctx->client_id, ctx->mqtt_opts);
         }
         else {
             // Error, print only once
             if (ctx && ctx->prev_status != connect_status)
-                fprintf(stderr, "MQTT connect error: %s\n", strerror(connect_status));
+                print_logf(LOG_WARNING, "MQTT", "MQTT connect error: %s", strerror(connect_status));
         }
         if (ctx)
             ctx->prev_status = connect_status;
@@ -65,20 +67,20 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
     }
     case MG_EV_MQTT_CONNACK:
         if (msg->connack_ret_code != MG_EV_MQTT_CONNACK_ACCEPTED) {
-            fprintf(stderr, "MQTT Connection error: %d\n", msg->connack_ret_code);
+            print_logf(LOG_WARNING, "MQTT", "MQTT Connection error: %u", msg->connack_ret_code);
         }
         else {
-            fprintf(stderr, "MQTT Connection established.\n");
+            print_log(LOG_NOTICE, "MQTT", "MQTT Connection established.");
         }
         break;
     case MG_EV_MQTT_PUBACK:
-        fprintf(stderr, "MQTT Message publishing acknowledged (msg_id: %d)\n", msg->message_id);
+        print_logf(LOG_NOTICE, "MQTT", "MQTT Message publishing acknowledged (msg_id: %u)", msg->message_id);
         break;
     case MG_EV_MQTT_SUBACK:
-        fprintf(stderr, "MQTT Subscription acknowledged.\n");
+        print_log(LOG_NOTICE, "MQTT", "MQTT Subscription acknowledged.");
         break;
     case MG_EV_MQTT_PUBLISH: {
-        fprintf(stderr, "MQTT Incoming message %.*s: %.*s\n", (int)msg->topic.len,
+        print_logf(LOG_NOTICE, "MQTT", "MQTT Incoming message %.*s: %.*s", (int)msg->topic.len,
                 msg->topic.p, (int)msg->payload.len, msg->payload.p);
         break;
     }
@@ -86,26 +88,29 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
         if (!ctx)
             break; // shuttig down
         if (ctx->prev_status == 0)
-            fprintf(stderr, "MQTT Connection failed...\n");
+            print_log(LOG_WARNING, "MQTT", "MQTT Connection failed...");
         // reconnect
-        struct mg_connect_opts opts = {.user_data = ctx};
-        ctx->conn = mg_connect_opt(nc->mgr, ctx->address, mqtt_client_event, opts);
+        char const *error_string = NULL;
+        ctx->connect_opts.error_string = &error_string;
+        ctx->conn = mg_connect_opt(nc->mgr, ctx->address, mqtt_client_event, ctx->connect_opts);
+        ctx->connect_opts.error_string = NULL;
         if (!ctx->conn) {
-            fprintf(stderr, "MQTT connect(%s) failed\n", ctx->address);
+            print_logf(LOG_WARNING, "MQTT", "MQTT connect (%s) failed%s%s", ctx->address,
+                    error_string ? ": " : "", error_string ? error_string : "");
         }
         break;
     }
 }
 
-static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, char const *host, char const *port, char const *user, char const *pass, char const *client_id, int retain)
+static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, tls_opts_t *tls_opts, char const *host, char const *port, char const *user, char const *pass, char const *client_id, int retain, int qos)
 {
     mqtt_client_t *ctx = calloc(1, sizeof(*ctx));
     if (!ctx)
         FATAL_CALLOC("mqtt_client_init()");
 
-    ctx->opts.user_name = user;
-    ctx->opts.password  = pass;
-    ctx->publish_flags  = MG_MQTT_QOS(0) | (retain ? MG_MQTT_RETAIN : 0);
+    ctx->mqtt_opts.user_name = user;
+    ctx->mqtt_opts.password  = pass;
+    ctx->publish_flags  = MG_MQTT_QOS(qos) | (retain ? MG_MQTT_RETAIN : 0);
     // TODO: these should be user configurable options
     //ctx->opts.keepalive = 60;
     //ctx->timeout = 10000L;
@@ -119,10 +124,28 @@ static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, char const *host, cha
     else
         snprintf(ctx->address, sizeof(ctx->address), "%s:%s", host, port);
 
-    struct mg_connect_opts opts = {.user_data = ctx};
-    ctx->conn = mg_connect_opt(mgr, ctx->address, mqtt_client_event, opts);
+    ctx->connect_opts.user_data = ctx;
+    if (tls_opts && tls_opts->tls_ca_cert) {
+#if MG_ENABLE_SSL
+        ctx->connect_opts.ssl_cert          = tls_opts->tls_cert;
+        ctx->connect_opts.ssl_key           = tls_opts->tls_key;
+        ctx->connect_opts.ssl_ca_cert       = tls_opts->tls_ca_cert;
+        ctx->connect_opts.ssl_cipher_suites = tls_opts->tls_cipher_suites;
+        ctx->connect_opts.ssl_server_name   = tls_opts->tls_server_name;
+        ctx->connect_opts.ssl_psk_identity  = tls_opts->tls_psk_identity;
+        ctx->connect_opts.ssl_psk_key       = tls_opts->tls_psk_key;
+#else
+        print_log(LOG_FATAL, __func__, "mqtts (TLS) not available");
+        exit(1);
+#endif
+    }
+    char const *error_string = NULL;
+    ctx->connect_opts.error_string = &error_string;
+    ctx->conn = mg_connect_opt(mgr, ctx->address, mqtt_client_event, ctx->connect_opts);
+    ctx->connect_opts.error_string = NULL;
     if (!ctx->conn) {
-        fprintf(stderr, "MQTT connect(%s) failed\n", ctx->address);
+        print_logf(LOG_FATAL, "MQTT", "MQTT connect (%s) failed%s%s", ctx->address,
+                error_string ? ": " : "", error_string ? error_string : "");
         exit(1);
     }
 
@@ -173,7 +196,7 @@ typedef struct {
     //char *hass;
 } data_output_mqtt_t;
 
-static void print_mqtt_array(data_output_t *output, data_array_t *array, char const *format)
+static void R_API_CALLCONV print_mqtt_array(data_output_t *output, data_array_t *array, char const *format)
 {
     data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
 
@@ -197,7 +220,7 @@ static char *append_topic(char *topic, data_t *data)
         topic += sprintf(topic, "%d", data->value.v_int);
     }
     else {
-        fprintf(stderr, "Can't append data type %d to topic\n", data->type);
+        print_logf(LOG_ERROR, __func__, "Can't append data type %d to topic", data->type);
     }
 
     return topic;
@@ -244,8 +267,8 @@ static char *expand_topic(char *topic, char const *format, data_t *data, char co
             break;
         ++format;
         // read slash
-        if (*format == '/') {
-            leading_slash = 1;
+        if (!leading_slash && (*format < 'a' || *format > 'z')) {
+            leading_slash = *format;
             format++;
         }
         // read key until : or ]
@@ -260,7 +283,7 @@ static char *expand_topic(char *topic, char const *format, data_t *data, char co
         }
         // check for proper closing
         if (*format != ']') {
-            fprintf(stderr, "%s: unterminated token\n", __func__);
+            print_log(LOG_FATAL, __func__, "unterminated token");
             exit(1);
         }
         ++format;
@@ -281,7 +304,7 @@ static char *expand_topic(char *topic, char const *format, data_t *data, char co
         else if (!strncmp(t_start, "protocol", t_end - t_start))
             data_token = data_protocol;
         else {
-            fprintf(stderr, "%s: unknown token \"%.*s\"\n", __func__, (int)(t_end - t_start), t_start);
+            print_logf(LOG_FATAL, __func__, "unknown token \"%.*s\"", (int)(t_end - t_start), t_start);
             exit(1);
         }
 
@@ -289,7 +312,7 @@ static char *expand_topic(char *topic, char const *format, data_t *data, char co
         if (!data_token && !string_token && !d_start)
             continue;
         if (leading_slash)
-            *topic++ = '/';
+            *topic++ = leading_slash;
         if (data_token)
             topic = append_topic(topic, data_token);
         else if (string_token)
@@ -303,7 +326,7 @@ static char *expand_topic(char *topic, char const *format, data_t *data, char co
 }
 
 // <prefix>[/type][/model][/subtype][/channel][/id]/battery: "OK"|"LOW"
-static void print_mqtt_data(data_output_t *output, data_t *data, char const *format)
+static void R_API_CALLCONV print_mqtt_data(data_output_t *output, data_t *data, char const *format)
 {
     UNUSED(format);
     data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
@@ -340,7 +363,7 @@ static void print_mqtt_data(data_output_t *output, data_t *data, char const *for
 
         // "events" topic
         if (mqtt->events) {
-            char message[1024]; // we expect the biggest strings to be around 500 bytes.
+            char message[2048]; // we expect the biggest strings to be around 500 bytes.
             data_print_jsons(data, message, sizeof(message));
             expand_topic(mqtt->topic, mqtt->events, data, mqtt->hostname);
             mqtt_client_publish(mqtt->mqc, mqtt->topic, message);
@@ -356,8 +379,7 @@ static void print_mqtt_data(data_output_t *output, data_t *data, char const *for
     }
 
     while (data) {
-        if (!strcmp(data->key, "brand")
-                || !strcmp(data->key, "type")
+        if (!strcmp(data->key, "type")
                 || !strcmp(data->key, "model")
                 || !strcmp(data->key, "subtype")) {
             // skip, except "id", "channel"
@@ -374,14 +396,14 @@ static void print_mqtt_data(data_output_t *output, data_t *data, char const *for
     *orig = '\0'; // restore topic
 }
 
-static void print_mqtt_string(data_output_t *output, char const *str, char const *format)
+static void R_API_CALLCONV print_mqtt_string(data_output_t *output, char const *str, char const *format)
 {
     UNUSED(format);
     data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
     mqtt_client_publish(mqtt->mqc, mqtt->topic, str);
 }
 
-static void print_mqtt_double(data_output_t *output, double data, char const *format)
+static void R_API_CALLCONV print_mqtt_double(data_output_t *output, double data, char const *format)
 {
     char str[20];
     // use scientific notation for very big/small values
@@ -400,14 +422,14 @@ static void print_mqtt_double(data_output_t *output, double data, char const *fo
     print_mqtt_string(output, str, format);
 }
 
-static void print_mqtt_int(data_output_t *output, int data, char const *format)
+static void R_API_CALLCONV print_mqtt_int(data_output_t *output, int data, char const *format)
 {
     char str[20];
     snprintf(str, 20, "%d", data);
     print_mqtt_string(output, str, format);
 }
 
-static void data_output_mqtt_free(data_output_t *output)
+static void R_API_CALLCONV data_output_mqtt_free(data_output_t *output)
 {
     data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
 
@@ -446,7 +468,7 @@ static char *mqtt_topic_default(char const *topic, char const *base, char const 
     return ret;
 }
 
-struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host, char const *port, char *opts, char const *dev_hint)
+struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, char const *dev_hint)
 {
     data_output_mqtt_t *mqtt = calloc(1, sizeof(data_output_mqtt_t));
     if (!mqtt)
@@ -478,6 +500,18 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
     char *user = NULL;
     char *pass = NULL;
     int retain = 0;
+    int qos = 0;
+
+    // parse host and port
+    tls_opts_t tls_opts = {0};
+    if (strncmp(param, "mqtts", 5) == 0) {
+        tls_opts.tls_ca_cert = "*"; // TLS is enabled but no cert verification is performed.
+    }
+    param      = arg_param(param); // strip scheme
+    char *host = "localhost";
+    char *port = tls_opts.tls_ca_cert ? "8883" : "1883";
+    char *opts = hostport_param(param, &host, &port);
+    print_logf(LOG_CRITICAL, "MQTT", "Publishing MQTT data to %s port %s%s", host, port, tls_opts.tls_ca_cert ? " (TLS)" : "");
 
     // parse auth and format options
     char *key, *val;
@@ -492,16 +526,18 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
             pass = val;
         else if (!strcasecmp(key, "r") || !strcasecmp(key, "retain"))
             retain = atobv(val, 1);
+        else if (!strcasecmp(key, "q") || !strcasecmp(key, "qos"))
+            qos = atoiv(val, 1);
         // Simple key-topic mapping
         else if (!strcasecmp(key, "d") || !strcasecmp(key, "devices"))
             mqtt->devices = mqtt_topic_default(val, base_topic, path_devices);
         // deprecated, remove this
         else if (!strcasecmp(key, "c") || !strcasecmp(key, "usechannel")) {
-            fprintf(stderr, "\"usechannel=...\" has been removed. Use a topic format string:\n");
-            fprintf(stderr, "for \"afterid\"   use e.g. \"devices=rtl_433/[hostname]/devices[/type][/model][/subtype][/id][/channel]\"\n");
-            fprintf(stderr, "for \"beforeid\"  use e.g. \"devices=rtl_433/[hostname]/devices[/type][/model][/subtype][/channel][/id]\"\n");
-            fprintf(stderr, "for \"replaceid\" use e.g. \"devices=rtl_433/[hostname]/devices[/type][/model][/subtype][/channel]\"\n");
-            fprintf(stderr, "for \"no\"        use e.g. \"devices=rtl_433/[hostname]/devices[/type][/model][/subtype][/id]\"\n");
+            print_log(LOG_FATAL, "MQTT", "\"usechannel=...\" has been removed. Use a topic format string:");
+            print_log(LOG_FATAL, "MQTT", "for \"afterid\"   use e.g. \"devices=rtl_433/[hostname]/devices[/type][/model][/subtype][/id][/channel]\"");
+            print_log(LOG_FATAL, "MQTT", "for \"beforeid\"  use e.g. \"devices=rtl_433/[hostname]/devices[/type][/model][/subtype][/channel][/id]\"");
+            print_log(LOG_FATAL, "MQTT", "for \"replaceid\" use e.g. \"devices=rtl_433/[hostname]/devices[/type][/model][/subtype][/channel]\"");
+            print_log(LOG_FATAL, "MQTT", "for \"no\"        use e.g. \"devices=rtl_433/[hostname]/devices[/type][/model][/subtype][/id]\"");
             exit(1);
         }
         // JSON events to single topic
@@ -516,8 +552,11 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
         // TODO: Home Assistant MQTT discovery https://www.home-assistant.io/docs/mqtt/discovery/
         //else if (!strcasecmp(key, "a") || !strcasecmp(key, "hass"))
         //    mqtt->hass = mqtt_topic_default(val, NULL, "homeassistant"); // discovery prefix
+        else if (!tls_param(&tls_opts, key, val)) {
+            // ok
+        }
         else {
-            fprintf(stderr, "Invalid key \"%s\" option.\n", key);
+            print_logf(LOG_FATAL, __func__, "Invalid key \"%s\" option.", key);
             exit(1);
         }
     }
@@ -529,11 +568,11 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
         mqtt->states  = mqtt_topic_default(NULL, base_topic, path_states);
     }
     if (mqtt->devices)
-        fprintf(stderr, "Publishing device info to MQTT topic \"%s\".\n", mqtt->devices);
+        print_logf(LOG_NOTICE, "MQTT", "Publishing device info to MQTT topic \"%s\".", mqtt->devices);
     if (mqtt->events)
-        fprintf(stderr, "Publishing events info to MQTT topic \"%s\".\n", mqtt->events);
+        print_logf(LOG_NOTICE, "MQTT", "Publishing events info to MQTT topic \"%s\".", mqtt->events);
     if (mqtt->states)
-        fprintf(stderr, "Publishing states info to MQTT topic \"%s\".\n", mqtt->states);
+        print_logf(LOG_NOTICE, "MQTT", "Publishing states info to MQTT topic \"%s\".", mqtt->states);
 
     mqtt->output.print_data   = print_mqtt_data;
     mqtt->output.print_array  = print_mqtt_array;
@@ -542,7 +581,7 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
     mqtt->output.print_int    = print_mqtt_int;
     mqtt->output.output_free  = data_output_mqtt_free;
 
-    mqtt->mqc = mqtt_client_init(mgr, host, port, user, pass, client_id, retain);
+    mqtt->mqc = mqtt_client_init(mgr, &tls_opts, host, port, user, pass, client_id, retain, qos);
 
     return &mqtt->output;
 }

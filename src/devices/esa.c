@@ -31,10 +31,15 @@ static uint8_t decrypt_esa(uint8_t *b)
     crc += byte;
     b[pos++] ^= 0xff;
 
-    crc -= (b[pos] << 8) | b[pos+1];
+    crc -= (b[pos] << 8) | b[pos + 1];
     return crc;
 }
 
+/**
+ELV Energy Counter ESA 1000/2000.
+
+@todo Documentation needed.
+*/
 static int esa_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
@@ -60,9 +65,10 @@ static int esa_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     impulse_constant   = ((b[14] << 8) | b[15]) ^ b[1];
     impulses_total     = ((unsigned)b[5] << 24) | (b[6] << 16) | (b[7] << 8) | b[8];
     impulses_val       = (b[9] << 8) | b[10];
-    energy_total_val   = 1.0 * impulses_total / impulse_constant;
-    energy_impulse_val = 1.0 * impulses_val / impulse_constant;
+    energy_total_val   = 1.0f * impulses_total / impulse_constant;
+    energy_impulse_val = 1.0f * impulses_val / impulse_constant;
 
+    /* clang-format off */
     data = data_make(
             "model",            "Model",            DATA_STRING, "ESA-x000",
             "id",               "Id",               DATA_INT, deviceid,
@@ -75,6 +81,8 @@ static int esa_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "is_retry",         "Is Retry",         DATA_INT, is_retry,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
+    /* clang-format on */
+
     decoder_output_data(decoder, data);
     return 1;
 }

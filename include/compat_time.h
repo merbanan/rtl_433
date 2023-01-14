@@ -16,6 +16,15 @@
 #include <sys/time.h>
 #endif
 
+/** Subtract `struct timeval` values.
+
+    @param[out] result time difference result
+    @param x first time value
+    @param y second time value
+    @return 1 if the difference is negative, otherwise 0.
+*/
+int timeval_subtract(struct timeval *result, struct timeval *x, struct timeval *y);
+
 // platform-specific functions
 
 #ifdef _WIN32

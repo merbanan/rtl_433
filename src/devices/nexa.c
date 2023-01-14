@@ -56,7 +56,7 @@ static int nexa_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, _X("Nexa-Security","Nexa"),
+            "model",         "",            DATA_STRING, "Nexa-Security",
             "id",            "House Code",  DATA_INT,    id,
             "channel",       "Channel",     DATA_INT,    channel,
             "state",         "State",       DATA_STRING, on_bit ? "ON" : "OFF",
@@ -84,11 +84,10 @@ r_device nexa = {
         .modulation  = OOK_PULSE_PPM,
         .short_width = 270,  // 1:1
         .long_width  = 1300, // 1:5
-        .sync_width  = 2700, // 1:10
+        .sync_width  = 2650, // 1:10, tuned to widely match 2450 to 2850
         .tolerance   = 200,
         .gap_limit   = 1500,
         .reset_limit = 2800,
         .decode_fn   = &nexa_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

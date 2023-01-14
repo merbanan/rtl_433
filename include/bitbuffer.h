@@ -14,8 +14,16 @@
 
 #include <stdint.h>
 
-#define BITBUF_COLS 256 // Number of bytes in a column
+// NOTE: Wireless mbus protocol needs at least ((256+16*2+3)*12)/8 => 437 bytes
+//       which fits even if RTL_433_REDUCE_STACK_USE is defined because of row spilling
+#ifdef RTL_433_REDUCE_STACK_USE
+#define BITBUF_COLS 40 // Number of bytes in a column
 #define BITBUF_ROWS 25
+#else
+#define BITBUF_COLS 128 // Number of bytes in a column
+#define BITBUF_ROWS 50
+#endif
+#define BITBUF_MAX_ROW_BITS (BITBUF_ROWS * BITBUF_COLS * 8) // Maximum number of bits per row, max UINT16_MAX
 #define BITBUF_MAX_PRINT_BITS 50 // Maximum number of bits to print (in addition to hex values)
 
 typedef uint8_t bitrow_t[BITBUF_COLS];
@@ -23,10 +31,11 @@ typedef bitrow_t bitarray_t[BITBUF_ROWS];
 
 /// Bit buffer.
 typedef struct bitbuffer {
-    uint16_t num_rows;                      // Number of active rows
-    uint16_t bits_per_row[BITBUF_ROWS];     // Number of active bits per row
-    uint16_t syncs_before_row[BITBUF_ROWS]; // Number of sync pulses before row
-    bitarray_t bb;                          // The actual bits buffer
+    uint16_t num_rows;                      ///< Number of active rows
+    uint16_t free_row;                      ///< Index of next free row
+    uint16_t bits_per_row[BITBUF_ROWS];     ///< Number of active bits per row
+    uint16_t syncs_before_row[BITBUF_ROWS]; ///< Number of sync pulses before row
+    bitarray_t bb;                          ///< The actual bits buffer
 } bitbuffer_t;
 
 /// Clear the content of the bitbuffer.
@@ -57,18 +66,39 @@ void bitbuffer_nrzs_decode(bitbuffer_t *bits);
 void bitbuffer_nrzm_decode(bitbuffer_t *bits);
 
 /// Print the content of the bitbuffer.
+/// @deprecated For debug only, use decoder_log_bitbuffer otherwise
 void bitbuffer_print(const bitbuffer_t *bits);
 
 /// Debug the content of the bitbuffer.
+/// @deprecated For debug only, use decoder_log_bitbuffer otherwise
 void bitbuffer_debug(const bitbuffer_t *bits);
 
 /// Print the content of a bit row (byte buffer).
+/// @deprecated For debug only, use decoder_log_bitrow otherwise
 void bitrow_print(uint8_t const *bitrow, unsigned bit_len);
 
 /// Debug the content of a bit row (byte buffer).
+/// @deprecated For debug only, use decoder_log_bitrow otherwise
 void bitrow_debug(uint8_t const *bitrow, unsigned bit_len);
 
+/// Print the content of a bit row (byte buffer) to a string buffer.
+///
+/// Write at most @p size - 1 characters,
+/// the output is always null-terminated, unless size is 0.
+///
+/// @param bitrow the row of bytes to print
+/// @param bit_len the number of bits in @p bitrow to print
+/// @param str an output string buffer of sufficient size
+/// @param size the size of @p str
+///
+/// @return the number of characters printed (not including the trailing `\0`).
+int bitrow_snprint(uint8_t const *bitrow, unsigned bit_len, char *str, unsigned size);
+
 /// Parse a string into a bitbuffer.
+///
+/// The (optionally "0x" prefixed) hex code is processed into a bitbuffer_t.
+/// Each row is optionally prefixed with a length enclosed in braces "{}" or
+/// separated with a slash "/" character. Whitespace is ignored.
 void bitbuffer_parse(bitbuffer_t *bits, const char *code);
 
 /// Search the specified row of the bitbuffer, starting from bit 'start', for
@@ -94,23 +124,35 @@ unsigned bitbuffer_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned 
 unsigned bitbuffer_differential_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned start,
         bitbuffer_t *outbuf, unsigned max);
 
-/// Function to compare bitbuffer rows and count repetitions.
-int compare_rows(bitbuffer_t *bits, unsigned row_a, unsigned row_b);
+/// Compares two given rows of a bitbuffer.
+///
+/// If @p max_bits is greater than 0 then only up that many bits are compared.
+int bitbuffer_compare_rows(bitbuffer_t *bits, unsigned row_a, unsigned row_b, unsigned max_bits);
 
-unsigned count_repeats(bitbuffer_t *bits, unsigned row);
+/// Count the number of repeats of row at index @p row.
+///
+/// If @p max_bits is greater than 0 then only up that many bits are compared.
+/// The returned count will include the given row and will be at least 1.
+unsigned bitbuffer_count_repeats(bitbuffer_t *bits, unsigned row, unsigned max_bits);
 
-/// Find a repeated row that has a minimum count of bits.
-/// Return the row index or -1.
+/// Find a row repeated at least @p min_repeats times and with at least @p min_bits bits length,
+/// all bits in the repeats need to match.
+/// @return the row index or -1.
 int bitbuffer_find_repeated_row(bitbuffer_t *bits, unsigned min_repeats, unsigned min_bits);
 
+/// Find a row repeated at least @p min_repeats times and with at least @p min_bits bits length,
+/// a prefix of at most @p min_bits bits will be compared.
+/// @return the row index or -1.
+int bitbuffer_find_repeated_prefix(bitbuffer_t *bits, unsigned min_repeats, unsigned min_bits);
+
 /// Return a single bit from a bitrow at bit_idx position.
-static inline uint8_t bitrow_get_bit(const bitrow_t bitrow, unsigned bit_idx)
+static inline uint8_t bitrow_get_bit(uint8_t const *bitrow, unsigned bit_idx)
 {
     return bitrow[bit_idx >> 3] >> (7 - (bit_idx & 7)) & 1;
 }
 
 /// Return a single byte from a bitrow at bit_idx position (which may be unaligned).
-static inline uint8_t bitrow_get_byte(const bitrow_t bitrow, unsigned bit_idx)
+static inline uint8_t bitrow_get_byte(uint8_t const *bitrow, unsigned bit_idx)
 {
     return (uint8_t)((bitrow[(bit_idx >> 3)] << (bit_idx & 7)) |
                      (bitrow[(bit_idx >> 3) + 1] >> (8 - (bit_idx & 7))));

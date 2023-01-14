@@ -184,7 +184,55 @@
     DECL(ecodhome) \
     DECL(lacrosse_r1) \
     DECL(blueline) \
+    DECL(burnhardbbq) \
+    DECL(secplus_v1) \
+    DECL(cavius) \
+    DECL(tpms_jansite_solar) \
+    DECL(abmt) \
+    DECL(tfa_marbella) \
+    DECL(auriol_ahfl) \
+    DECL(auriol_aft77b2) \
+    DECL(honeywell_cm921) \
+    DECL(tpms_hyundai_vdo) \
+    DECL(rojaflex) \
+    DECL(marlec_solar) \
+    DECL(somfy_iohc) \
+    DECL(fineoffset_wh31l) \
+    DECL(markisol) \
+    DECL(govee) \
+    DECL(cmr113) \
+    DECL(inkbird_ith20r) \
+    DECL(rainpoint) \
+    DECL(atech_ws308) \
+    DECL(acurite_01185m) \
+    DECL(enocean_erp1) \
+    DECL(megacode) \
+    DECL(auriol_4ld5661) \
+    DECL(tpms_truck) \
+    DECL(funkbus_remote) \
+    DECL(tpms_porsche) \
+    DECL(jasco) \
+    DECL(telldus_ft0385r) \
+    DECL(lacrosse_tx34) \
+    DECL(proflame2) \
+    DECL(tpms_ave) \
+    DECL(simplisafe_gen3) \
+    DECL(yale_hsa) \
+    DECL(regency_fan) \
+    DECL(tpms_renault_0435r) \
+    DECL(fineoffset_ws80) \
+    DECL(emos_e6016) \
+    DECL(altronics_7064) \
+    DECL(ant_antplus) \
+    DECL(emos_e6016_rain) \
+    DECL(hcs200_fsk) \
+    DECL(fineoffset_wh45) \
+    DECL(maverick_xr30) \
+    DECL(fineoffset_wn34) \
+    DECL(rubicson_pool_48942) \
+    DECL(badger_orion) \
     DECL(acurite_985) \
+
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;

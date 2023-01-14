@@ -4,8 +4,9 @@
     Copyright (C) 2015 Paul Ortyl
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 3 as
-    published by the Free Software Foundation.
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 */
 /**
 GT-WT-02 sensor on 433.92MHz.
@@ -83,15 +84,15 @@ static int gt_wt_02_process_row(r_device *decoder, bitbuffer_t *bitbuffer, int r
     int battery_low    = (b[1] >> 7 & 1); // 1 bits
     int button_pressed = (b[1] >> 6 & 1); // 1 bits
     int channel        = (b[1] >> 4 & 3); // 2 bits
-    int temp_raw       = (int16_t)(((b[1] & 0x0f) << 12) | b[2] << 4) >> 4; // uses sign extend
-    float temp_c       = temp_raw * 0.1F;
+    int temp_raw       = (int16_t)(((b[1] & 0x0f) << 12) | (b[2] << 4)); // uses sign extend
+    float temp_c       = (temp_raw >> 4) * 0.1F;
 
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, "GT-WT02",
             "id",               "ID Code",      DATA_INT,    sensor_id,
             "channel",          "Channel",      DATA_INT,    channel + 1,
-            "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",     DATA_FORMAT, "%.0f %%", DATA_DOUBLE, (double)humidity,
             "button",           "Button ",      DATA_INT,    button_pressed,
@@ -117,7 +118,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "humidity",
         "button",
@@ -133,6 +134,5 @@ r_device gt_wt_02 = {
         .gap_limit   = 8000, // 10ms (old) / 9ms (new) sync gap
         .reset_limit = 12000,
         .decode_fn   = &gt_wt_02_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

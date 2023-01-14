@@ -45,7 +45,7 @@ typedef SSIZE_T ssize_t;
         printf("Time elapsed in ms: %f for: %s\n", elapsed, label);        \
     } while (0)
 
-int read_buf(const char *filename, void *buf, size_t nbyte)
+static int read_buf(const char *filename, void *buf, size_t nbyte)
 {
     int fd = open(filename, O_RDONLY);
     if (fd < 0) {
@@ -57,7 +57,7 @@ int read_buf(const char *filename, void *buf, size_t nbyte)
     return ret;
 }
 
-int write_buf(const char *filename, const void *buf, size_t nbyte)
+static int write_buf(const char *filename, const void *buf, size_t nbyte)
 {
     int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0) {
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
     );
     write_buf("bb.lp.am.s16", u16_buf, sizeof(int16_t) * n_samples);
     MEASURE("baseband_demod_FM",
-        baseband_demod_FM(cu8_buf, s16_buf, n_samples, &fm_state, 0);
+        baseband_demod_FM(cu8_buf, s16_buf, n_samples, 250000, 0.1f, &fm_state);
     );
     write_buf("bb.fm.s16", s16_buf, sizeof(int16_t) * n_samples);
 
@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
     //write_buf("bb.fm.s32", s32_buf, sizeof(int32_t) * n_samples);
 
     MEASURE("baseband_demod_FM_cs16",
-        baseband_demod_FM_cs16(cs16_buf, s16_buf, n_samples, &fm_state, 0);
+        baseband_demod_FM_cs16(cs16_buf, s16_buf, n_samples, 250000, 0.1f, &fm_state);
     );
     write_buf("bb.cs16.fm.s16", s16_buf, sizeof(int16_t) * n_samples);
 
