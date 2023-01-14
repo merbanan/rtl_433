@@ -306,6 +306,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [221]  Fine Offset Electronics WN34 temperature sensor
     [222]  Rubicson Pool Thermometer 48942
     [223]  Badger ORION water meter, 100kbps (-f 916450000 -s 1200000)
+    [224]  Acurite/Chaney 985 Refrigerator / Freezer Thermometer
 
 * Disabled by default, use -R n or a conf file to enable
 

@@ -231,6 +231,7 @@
     DECL(fineoffset_wn34) \
     DECL(rubicson_pool_48942) \
     DECL(badger_orion) \
+    DECL(acurite_985) \
 
     /* Add new decoders here. */
 

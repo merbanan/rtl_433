@@ -25,6 +25,7 @@ Devices decoded:
 - Acurite 6045M Lightning Detector
 - Acurite 00275rm and 00276rm temp. and humidity with optional probe.
 - Acurite 1190/1192 leak/water detector
+- Acurite/Chaney 985 Refrigerator / Freezer Thermometer
 */
 
 #include "decoder.h"
@@ -1638,6 +1639,198 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
+Acurite/Chaney 00985 Refrigerator / Freezer Thermometer.
+
+Includes two sensors and a display, labeled 1 and 2,
+by default 1 - Refrigerator, 2 - Freezer.
+
+This is very similar to the Acurite 00986.  The 985 is likely the version
+they sold before they rebranded as Acurite.  Chaney Instrument Co. is a
+subsidiary of the Primex Family of Companies and Acurite is a brand.
+
+FCC ID: RNE00985TX
+To access documents filed with the FCC
+https://apps.fcc.gov/oetcf/eas/reports/GenericSearch.cfm and fill in
+  Grantee Code: RNE
+  Product Code: 00985TX
+  Exact match: check
+In search result, select "detail".  Some of the information below
+came from those FCC documents (especially 'Manual').
+
+Temperature range: -40F to 104F (-40C to 40C)
+Accuracy +- 2F
+Base frequency is 433MHz
+
+@todo, the first 2 bytes appear to be garbage
+
+Data Format - 7 bytes, sent LSB first, reversed:
+
+    XX XX TT II II SS CC
+
+- X - Unknown (maybe the sync pulses)
+- T - Temperature in Fahrenheit, integer, MSB = sign.
+      Encoding is "Sign and magnitude"
+      More then maximum is 0x7f
+      Less then minimum is 0xff
+- I - 16 bit sensor ID
+      changes at each power up
+- S - status/sensor type
+      bit 0: 0 for channel 1 (Refrigerator), 1 for channel 2 (freezer)
+      bit 1: low battery indicator for channel 1
+      bit 2: low battery indicator for channel 2
+             low battery: 0=normal, 1=low (under 2.5V)
+      All other bits are undefined
+- C = CRC (CRC-8 poly 0x07, little-endian)
+
+The devices transmit three groups which are transmitted within 1 second.
+
+The transmitting interval is initially 64 seconds upon power on.
+After 20 minutes, the interval of sensor1 is 7.5 minutes, and
+the interval of sensor2 is 6 minutes.
+
+*/
+static int acurite_985_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    uint8_t *bb, sensor_num, status, crc, crcc;
+    const int browlen = 7; // expected number of bytes
+    uint8_t br[browlen];
+    int bits;
+    int8_t tempf; // Raw Temp is 8 bit signed magnitude Fahrenheit
+    uint16_t sensor_id, valid_cnt = 0;
+    char sensor_type;
+    char *channel_str;
+    int battery_low;
+    data_t *data;
+
+#define DIV_ROUND_UP(n, d) (((n) + (d) - 1) / (d))
+
+    for (uint16_t brow = 0; brow < bitbuffer->num_rows; ++brow) {
+        bb = bitbuffer->bb[brow];
+        bits = bitbuffer->bits_per_row[brow];
+
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: row %d, bits %d, (bytes expected %d)\n",
+                    __func__, brow, bits, browlen);
+        }
+
+        if (browlen != DIV_ROUND_UP(bits, 8)) {
+            if (decoder->verbose > 1)
+                fprintf(stderr,"%s: skipping, wrong len: %d bits\n",
+                        __func__, bits);
+            continue;
+        }
+
+        // Reduce false positives.  All zero bytes will pass the CRC check.
+        // This could in theory reject something legit.  But only if
+        // temp==0F, id==0, battery==ok, and sensor==refrigerator.
+        if (bb[2] == 0x00 && bb[3] == 0x00 && bb[4] == 0x00 &&
+            bb[5] == 0x00 && bb[6] == 0x00) {
+            if (decoder->verbose > 1)
+                fprintf(stderr,"%s: skipping, all zeros\n", __func__);
+            continue;
+        }
+
+        // Reverse the bits, msg sent LSB first
+        for (int i = 0; i < browlen; i++)
+            br[i] = reverse8(bb[i]);
+
+        if (decoder->verbose > 1)
+            bitrow_printf(br, bits, "%s: bits reversed: ", __func__);
+
+        // first 2 bytes seem to be garbage (part of sync pluse?)
+        tempf = br[2];
+        sensor_id = (br[3] << 8) + br[4];
+        status = br[5];
+        sensor_num = (status & 0x01) + 1;
+
+        // The two sensors use a different bit to denote low battery
+        if (sensor_num == 2)
+            battery_low = status & 0x04 ? 1 : 0;
+        else
+            battery_low = status & 0x02 ? 1 : 0;
+
+        // By default Sensor 1 is Refrigerator, 2 is Freezer
+        sensor_type = sensor_num == 2 ? 'F' : 'R';
+        channel_str = sensor_num == 2 ? "2F" : "1R";
+
+        crc = br[6];
+        crcc = crc8le(br+2, 4, 0x07, 0);
+
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: rawtemp=0x%x id=%d sensor_num=%d batt=%s\n",
+                    __func__, tempf, sensor_id, sensor_num,
+                    battery_low ? "low" : "ok");
+            fprintf(stderr, "%s: crc=0x%x crcc=0x%x\n", __func__, crc, crcc);
+        }
+
+        if (crcc != crc) {
+            if (decoder->verbose > 1)
+                bitrow_printf(br, bits,  "%s: bad CRC: %02x", __func__, crcc);
+            // HACK: rct 2018-04-22
+            // the message is often missing the last 1 bit either due to a
+            // problem with the device or demodulator
+            // Add 1 (0x80 because message is LSB) and retry CRC.
+            if (crcc == (crc | 0x80)) {
+                if (decoder->verbose > 1)
+                    fprintf(stderr, "%s: CRC fix %02x - %02x\n", __func__, crc, crcc);
+            }
+            else {
+                fprintf(stderr, "%s: skipping, CRC failed\n", __func__);
+                continue; // DECODE_FAIL_MIC
+            }
+        }
+
+        // convert from sign-magnitude
+        if (tempf & 0x80) {
+            tempf = (tempf & 0x7f) * -1;
+        }
+
+        // Validate temperature
+        if (tempf >= -40 && tempf <= 104) {
+            if (decoder->verbose > 1)
+                fprintf(stderr, "%s: valid temperature: %d\n", __func__, tempf);
+        }
+        else if (tempf == -127 || tempf == 127) {
+            if (decoder->verbose > 1)
+                fprintf(stderr, "%s: temperature %s operational range\n",
+                        __func__, tempf == 127 ? "above" : "below");
+        }
+        else {
+            if (decoder->verbose > 1)
+                fprintf(stderr, "%s: skipping, bad temperature: %d\n",
+                        __func__, tempf);
+            continue;
+        }
+
+
+        if (decoder->verbose)
+            fprintf(stderr, "%s: sensor 0x%04x - %d%c: %d F\n", __func__, sensor_id, sensor_num, sensor_type, tempf);
+
+        /* clang-format off */
+        data = data_make(
+                "model",            "",             DATA_STRING, _X("Acurite-985","Acurite 985 Sensor"),
+                "id",               NULL,           DATA_INT,    sensor_id,
+                "channel",          NULL,           DATA_STRING, channel_str,
+                "battery",          "battery",      DATA_STRING, battery_low ? "LOW" : "OK",
+                "temperature_F",    "temperature",  DATA_FORMAT, "%f F", DATA_DOUBLE,    (float)tempf,
+                "status",           "status",       DATA_INT,    status,
+                "mic",              "Integrity",    DATA_STRING, "CRC",
+                NULL);
+        /* clang-format on */
+
+        decoder_output_data(decoder, data);
+
+        valid_cnt++;
+    }
+
+    if (valid_cnt)
+        return 1;
+
+    return 0;
+}
+
+
+/**
 Acurite 606 Temperature sensor
 
 */
@@ -1979,6 +2172,35 @@ r_device acurite_986 = {
         .decode_fn   = &acurite_986_decode,
         .fields      = acurite_986_output_fields,
 };
+
+
+/*
+ * Acurite/Chaney 00985 Refrigerator / Freezer Thermometer
+ *
+ * Temperature only
+ */
+static char *acurite_985_output_fields[] = {
+        "model",
+        "id",
+        "channel",
+        "battery",
+        "temperature_F",
+        "status",
+        NULL,
+};
+
+r_device acurite_985 = {
+        .name        = "Acurite/Chaney 985 Refrigerator / Freezer Thermometer",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 556,
+        .long_width  = 1104,
+        .gap_limit   = 4000,
+        .reset_limit = 7636,
+        .sync_width  = 2996,
+        .decode_fn   = &acurite_985_decode,
+        .fields      = acurite_985_output_fields,
+};
+
 
 /*
  * Acurite 00606TX Tower Sensor
