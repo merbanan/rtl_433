@@ -18,6 +18,7 @@ Tested devices:
 
 static int oil_watchman_advanced_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    const uint8_t BODY_SIZE = 128;
     // total length of message is 192 bits
     // preamble is 40 bits of 10101... then the 'standard' sync 0x2dd4, then a model number, 0x0e0401
     uint8_t const preamble_pattern[8] = {0xaa, 0xaa, 0xaa, 0x2d, 0xd4, 0x0e, 0x04, 0x01};
@@ -33,17 +34,12 @@ static int oil_watchman_advanced_callback(r_device *decoder, bitbuffer_t *bitbuf
     int events           = 0;
 
     // Find a preamble with enough bits after it that it could be a complete packet
-    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 64)) + 128 <=
+    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 64)) + BODY_SIZE <=
             bitbuffer->bits_per_row[0]) {
 
-        decoder_log_bitbuffer(decoder, 1, __func__, bitbuffer, "Found Watchman Sonic Advanced message");
-
-        // Skip the matched preamble bits to point to the data
-        //bitpos += 8;
-
         bitpos += 64;
-        bitbuffer_extract_bytes(bitbuffer, 0, bitpos, msg, 128);
-        bitpos += 128;
+        bitbuffer_extract_bytes(bitbuffer, 0, bitpos, msg, BODY_SIZE);
+        bitpos += BODY_SIZE;
 
         b = msg;
 
@@ -53,13 +49,17 @@ static int oil_watchman_advanced_callback(r_device *decoder, bitbuffer_t *bitbuf
 
         b += 1; // not sure what this is yet; have so far seen values of 0xc0 and 0xd8 on one sensor and 0x80 on another
         
-        // don't quite understand how this is encoded yet
-        //maybetemp = (b[0] << 16) | (b[1] << 8) | b[2];
-        maybetemp = b[1];
-        temperature = (maybetemp - 73.0) / 3.0;
+        maybetemp = b[0];
+        temperature = 0.5 * (maybetemp - 70);
         b += 3;
 
         depth = b[0];
+        b++;
+
+        // skip past 4 bytes of seemingly constant values 0x01050300
+        b += 4;
+
+        // TODO: verify CRC
 
         /* clang-format off */
         data = data_make(
