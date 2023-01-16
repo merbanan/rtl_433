@@ -15,10 +15,10 @@
 #define THREAD_RETURN                   unsigned int
 typedef HANDLE                          pthread_t;
 #define pthread_create(tp, x, p, d)     ((*tp=(HANDLE)_beginthreadex(NULL, 0, p, d, 0, NULL)) == NULL ? -1 : 0)
-#define pthread_cancel(th)              TerminateThread(th, 0)
-#define pthread_join(th, p)             WaitForSingleObject(th, INFINITE)
+#define pthread_cancel(th)              (!TerminateThread(th, 0))
+#define pthread_join(th, p)             (WaitForSingleObject(th, INFINITE))
 #define pthread_equal(a, b)             ((a) == (b))
-#define pthread_self()                  GetCurrentThread()
+#define pthread_self()                  (GetCurrentThread())
 
 typedef HANDLE                          pthread_mutex_t;
 #define pthread_mutex_init(mp, a)       ((*mp = CreateMutex(NULL, FALSE, NULL)) == NULL ? -1 : 0)

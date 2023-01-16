@@ -15,6 +15,7 @@
 #include "bitbuffer.h"
 #include "util.h"
 #include "logger.h"
+#include "decoder_util.h" // TODO: this should be refactored
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -54,8 +55,7 @@ static int account_event(r_device *device, bitbuffer_t *bits, char const *demod_
 
     // Debug printout
     if (!device->decode_fn || (device->verbose && ret > 0) || (device->verbose > 1 && max_bits > 16) || (device->verbose > 2)) {
-        fprintf(stderr, "%s(): %s\n", demod_name, device->name);
-        bitbuffer_print(bits);
+        decoder_log_bitbuffer(device, 2, demod_name, bits, device->name);
     }
 
     return ret;

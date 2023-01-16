@@ -42,7 +42,7 @@ Packet payload without preamble (203 bits):
     ef a1 ff ff 1f ff ef dc ff de df ff 7f 10 5e 00 00 e0 00 10 23 00 21 20 00 80 00 00 (low batt +ve temp)
     ed a1 ff ff 1f ff ef 8f ff d6 df ff 77 12 5e 00 00 e0 00 10 70 00 29 20 00 88 00 00 (low batt -ve temp -7.0C)
     ec 91 ff ff 1f fb ef e7 fe ad ed ff f7 13 6e 00 00 e0 04 10 18 01 52 12 00 08 00 00 (good batt -ve temp)
-    CC CC CC CC CC CC CC CC CC CC CC CC CC uu II SS GG DG WW  W TT  T HH RR  R Bt
+    CC CC CC CC CC CC CC CC CC CC CC CC CC uu II SS GG DG WW  W TT  T HH RR RR Bt
                                               G-MSB ^     ^ W-MSB  (strange but consistent order)
 
 - C = Check, inverted data of 13 byte further
@@ -54,7 +54,7 @@ Packet payload without preamble (203 bits):
 - T = temperature in 1/10 °C, BCD coded, TTxT = 1203 => 31.2 °C
 - t = temperature sign, minus if unequal 0
 - H = humidity in percent, BCD coded, HH = 23 => 23 %
-- R = rain in mm, BCD coded, RRxR = 1203 => 31.2 mm
+- R = rain in mm, BCD coded, RRRR = 1203 => 031.2 mm
 - B = Battery. 0=Ok, 8=Low.
 - S = sensor type, only low nibble used, 0x9 for Bresser Professional Rain Gauge
 */
@@ -120,7 +120,7 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int wind_raw = (msg[18] & 0x0f) + ((msg[18] & 0xf0) >> 4) * 10 + (msg[19] & 0x0f) * 100; //fix merbanan/rtl_433#1315
     float wind_avg = wind_raw * 0.1f;
 
-    int rain_raw = (msg[23] & 0x0f) + ((msg[23] & 0xf0) >> 4) * 10 + (msg[24] & 0x0f) * 100;
+    int rain_raw = (msg[23] & 0x0f) + ((msg[23] & 0xf0) >> 4) * 10 + (msg[24] & 0x0f) * 100 + ((msg[24] & 0xf0) >> 4) * 1000;
     float rain = rain_raw * 0.1f;
 
     int battery_low = (msg[25] & 0x80);
