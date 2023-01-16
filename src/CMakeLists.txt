@@ -73,6 +73,7 @@ add_library(r_433 STATIC
     devices/calibeur.c
     devices/cardin.c
     devices/cavius.c
+    devices/ced7000.c
     devices/chuango.c
     devices/cmr113.c
     devices/companion_wtr001.c

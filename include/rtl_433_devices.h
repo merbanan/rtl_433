@@ -240,6 +240,7 @@
     DECL(vauno_en8822c) \
     DECL(govee_h5054) \
     DECL(tfa_14_1504_v2) \
+    DECL(ced7000) \
 
     /* Add new decoders here. */
 
