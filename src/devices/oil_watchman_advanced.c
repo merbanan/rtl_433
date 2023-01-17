@@ -18,15 +18,17 @@ Tested devices:
 
 static int oil_watchman_advanced_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    const uint8_t BODY_SIZE = 128;
+    static const uint8_t BODY_SIZE = 128;
     // total length of message is 192 bits
     // preamble is 40 bits of 10101... then the 'standard' sync 0x2dd4, then a model number, 0x0e0401
+    // no need to match all the preamble; 24 bits worth should do
     uint8_t const preamble_pattern[8] = {0xaa, 0xaa, 0xaa, 0x2d, 0xd4, 0x0e, 0x04, 0x01};
 
     uint8_t *b;
     uint8_t msg[16];
+    uint16_t crc;
     uint32_t serial_number;
-    uint8_t depth             = 0;
+    uint8_t depth        = 0;
     uint8_t maybetemp;
     double temperature;
     data_t *data;
@@ -42,6 +44,7 @@ static int oil_watchman_advanced_callback(r_device *decoder, bitbuffer_t *bitbuf
         bitpos += BODY_SIZE;
 
         b = msg;
+        crc = crc16(b, BODY_SIZE / 8 - 2, 0x8005, 0);
 
         // as printed on the side of the unit
         serial_number = (b[0] << 16) | (b[1] << 8) | b[2];
@@ -50,7 +53,7 @@ static int oil_watchman_advanced_callback(r_device *decoder, bitbuffer_t *bitbuf
         b += 1; // not sure what this is yet; have so far seen values of 0xc0 and 0xd8 on one sensor and 0x80 on another
         
         maybetemp = b[0];
-        temperature = 0.5 * (maybetemp - 70);
+        temperature = 0.5 * (maybetemp - 0x45); // seems about right; see discussion in issue #2306
         b += 3;
 
         depth = b[0];
@@ -60,12 +63,13 @@ static int oil_watchman_advanced_callback(r_device *decoder, bitbuffer_t *bitbuf
         b += 4;
 
         // TODO: verify CRC
+        decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "CRC - calculated: %x, found: %x", crc, (b[0] << 8) | b[1]);
 
         /* clang-format off */
         data = data_make(
                 "model",                "", DATA_STRING, "Oil Watchman Sonic Advanced / Plus",
                 "id",                   "", DATA_FORMAT, "%08d", DATA_INT, serial_number,
-                "maybetemp",            "", DATA_INT,    maybetemp,
+                "maybetemp",            "", DATA_FORMAT, "%02x", DATA_INT, maybetemp,
                 "temperature_C",        "", DATA_DOUBLE, temperature,
                 "depth_cm",             "", DATA_INT,    depth,
                 NULL);
