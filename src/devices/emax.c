@@ -15,7 +15,7 @@
 
 /**
 Fuzhou Emax Electronic W6 Professional Weather Station (other ref WEC-W6, 3390TX W6, EM3390W6)
-Rebrand and compatible ref : 
+Rebrand and compatible ref :
 - Altronics x7063/4
 - Optex 990040, 990050, 990051
 - Infactory FWS-1200
@@ -188,7 +188,7 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
             /* clang-format off */
             data_t *data = data_make(
-                    "model",            "",                 DATA_STRING, "Emax Temp Hum Rain Wind UV Lux Sensor",
+                    "model",            "",                 DATA_STRING, "Emax-W6",
                     "id",               "",                 DATA_FORMAT, "%03x", DATA_INT,    id,
                     "channel",          "Channel",          DATA_INT,    channel,
                     "battery_ok",       "Battery_OK",       DATA_INT,    !battery_low,
