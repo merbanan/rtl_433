@@ -18,15 +18,16 @@ Tested devices:
 
 static int oil_watchman_advanced_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    static const uint8_t BODY_SIZE = 128;
+    static const uint8_t PREAMBLE_SYNC_LENGTH_BITS = 40;
+    static const uint8_t MODEL_LENGTH_BITS = 24;
+    static const uint8_t BODY_LENGTH_BITS = 128;
     // total length of message is 192 bits
     // preamble is 40 bits of 10101... then the 'standard' sync 0x2dd4, then a model number, 0x0e0401
     // no need to match all the preamble; 24 bits worth should do
-    uint8_t const preamble_pattern[8] = {0xaa, 0xaa, 0xaa, 0x2d, 0xd4, 0x0e, 0x04, 0x01};
+    uint8_t const match_pattern[8] = {0xaa, 0xaa, 0xaa, 0x2d, 0xd4, 0x0e, 0x04, 0x01};
 
     uint8_t *b;
-    uint8_t msg[16];
-    uint16_t crc;
+    uint8_t msg[19];
     uint32_t serial_number;
     uint8_t depth        = 0;
     uint8_t maybetemp;
@@ -35,16 +36,19 @@ static int oil_watchman_advanced_callback(r_device *decoder, bitbuffer_t *bitbuf
     unsigned bitpos      = 0;
     int events           = 0;
 
-    // Find a preamble with enough bits after it that it could be a complete packet
-    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 64)) + BODY_SIZE <=
+    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, match_pattern, PREAMBLE_SYNC_LENGTH_BITS + MODEL_LENGTH_BITS)) + BODY_LENGTH_BITS <=
             bitbuffer->bits_per_row[0]) {
 
-        bitpos += 64;
-        bitbuffer_extract_bytes(bitbuffer, 0, bitpos, msg, BODY_SIZE);
-        bitpos += BODY_SIZE;
+        bitpos += PREAMBLE_SYNC_LENGTH_BITS;
+        // get buffer including model ID, as we need this in CRC calculation
+        bitbuffer_extract_bytes(bitbuffer, 0, bitpos, msg, BODY_LENGTH_BITS + MODEL_LENGTH_BITS);
+        bitpos += BODY_LENGTH_BITS + MODEL_LENGTH_BITS;
 
         b = msg;
-        crc = crc16(b, BODY_SIZE / 8 - 2, 0x8005, 0);
+        if (crc16(b, (BODY_LENGTH_BITS + MODEL_LENGTH_BITS) / 8, 0x8005, 0) != 0) {
+                return DECODE_FAIL_MIC;
+        }
+        b += 3; // skip past model
 
         // as printed on the side of the unit
         serial_number = (b[0] << 16) | (b[1] << 8) | b[2];
@@ -61,9 +65,6 @@ static int oil_watchman_advanced_callback(r_device *decoder, bitbuffer_t *bitbuf
 
         // skip past 4 bytes of seemingly constant values 0x01050300
         b += 4;
-
-        // TODO: verify CRC
-        decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "CRC - calculated: %x, found: %x", crc, (b[0] << 8) | b[1]);
 
         /* clang-format off */
         data = data_make(
