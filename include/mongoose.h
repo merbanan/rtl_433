@@ -4657,7 +4657,9 @@ size_t mg_fwrite(const void *ptr, size_t size, size_t count, FILE *f);
 #endif /* MG_ENABLE_FILESYSTEM */
 
 #if MG_ENABLE_THREADS
+#if CS_PLATFORM == CS_P_UNIX
 #include <pthread.h>
+#endif
 /*
  * Starts a new detached thread.
  * Arguments and semantics are the same as pthead's `pthread_create()`.
