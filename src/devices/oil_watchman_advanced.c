@@ -11,6 +11,25 @@
 /**
 Watchman Sonic Advanced/Plus oil tank level monitor.
 
+The devices uses GFSK with 500 us long and short pulses.
+Using -Y minmax should be sufficient to get it to work.
+
+Total length of message including preamble is 192 bits.
+The format might be most easily summarised in a BitBench string:
+
+PRE: 40b SYNC: 16h MODEL: 24h ID: 24d 8h TEMP: 8h 16h DEPTH: 8d 32h CRC: 16h
+
+- 40 bits of preamble, i.e. 10101010 etc.
+- 0x2dd4 - 'standard' sync word
+- 0x0e0401 - presumably a model identifier, common at least to the two devices we have tested this on
+- 3 byte integer serial number - as printed on a label attached to the device itself
+- 0x80 - so far, this seems to be constant
+- 1 byte temperature, in intervals of 0.5 degrees, offset by 0x45
+- two more varying bytes currently of unknown purpose
+- 1 byte integer depth (i.e. the distance between the sensor and the oil in the tank)
+- 0x01050300 - 4 bytes of constant values
+- 2 byte CRC 
+
 Tested devices:
 - Watchman Sonic Advanced
 */
@@ -21,8 +40,6 @@ static int oil_watchman_advanced_decode(r_device *decoder, bitbuffer_t *bitbuffe
     static const uint8_t PREAMBLE_SYNC_LENGTH_BITS = 40;
     static const uint8_t MODEL_LENGTH_BITS = 24;
     static const uint8_t BODY_LENGTH_BITS = 128;
-    // total length of message is 192 bits
-    // preamble is 40 bits of 10101... then the 'standard' sync 0x2dd4, then a model number, 0x0e0401
     // no need to match all the preamble; 24 bits worth should do
     uint8_t const match_pattern[8] = {0xaa, 0xaa, 0xaa, 0x2d, 0xd4, 0x0e, 0x04, 0x01};
     
@@ -67,9 +84,9 @@ static int oil_watchman_advanced_decode(r_device *decoder, bitbuffer_t *bitbuffe
 static char *output_fields[] = {
         "model",
         "id",
-        "maybetemp",
         "temperature_C",
         "depth_cm",
+        "mic",
         NULL,
 };
 
