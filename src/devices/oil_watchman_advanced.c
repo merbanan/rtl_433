@@ -42,31 +42,19 @@ static int oil_watchman_advanced_decode(r_device *decoder, bitbuffer_t *bitbuffe
         if (crc16(b, (BODY_LENGTH_BITS + MODEL_LENGTH_BITS) / 8, 0x8005, 0) != 0) {
                 return DECODE_FAIL_MIC;
         }
-        b += 3; // skip past model
 
         // as printed on the side of the unit
-        uint32_t serial_number = (b[0] << 16) | (b[1] << 8) | b[2];
-        b += 3;
-
-        b += 1; // not sure what this is yet; have so far seen values of 0xc0 and 0xd8 on one sensor and 0x80 on another
-        
-        uint8_t maybetemp = b[0];
-        double temperature = 0.5 * (maybetemp - 0x45); // seems about right; see discussion in issue #2306
-        b += 3;
-
-        uint8_t depth = b[0];
-        b++;
-
-        // skip past 4 bytes of seemingly constant values 0x01050300
-        b += 4;
+        uint32_t serial_number = (b[3] << 16) | (b[4] << 8) | b[5];        
+        float temperature = 0.5 * (b[7] - 0x45); // seems about right; see discussion in issue #2306
+        uint8_t depth = b[10];
 
         /* clang-format off */
         data_t *data = data_make(
-                "model",                "", DATA_STRING, "Oil-SonicAdv",
-                "id",                   "", DATA_FORMAT, "%08d", DATA_INT, serial_number,
-                "maybetemp",            "", DATA_FORMAT, "%02x", DATA_INT, maybetemp,
-                "temperature_C",        "", DATA_DOUBLE, temperature,
-                "depth_cm",             "", DATA_INT,    depth,
+                "model",                "Model",        DATA_STRING, "Oil-SonicAdv",
+                "id",                   "ID",           DATA_FORMAT, "%08d", DATA_INT, serial_number,
+                "temperature_C",        "Temperature",  DATA_DOUBLE, temperature,
+                "depth_cm",             "Depth",        DATA_INT,    depth,                
+                "mic",                  "Integrity",    DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
 
