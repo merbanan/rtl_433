@@ -47,10 +47,10 @@ Known Data:
 - Some Flags        {8}
    - 0x00           nothing followed
    - 0x01
-     - unknown      {8}
+     - unknown      {8} 0x00
    - 0x08 then following temperature
-     - unknown      {8} 0x00  possible temp sign, if positive or negative
-     - temperature  {16} little-endian multiplied by 100 -> 2050 = 20.5 °C
+     - unknown      {8} 0x00
+     - temperature  {16} int little-endian multiplied by 100 -> 2050 = 20.5 °C
 - Msg Id            {16} some random value
 - Header Chk        {16} big-endian negated cross sum of the header part from device id on
 
@@ -163,7 +163,7 @@ struct deltadore_x3d_message_header {
     uint8_t unknown_header_flags2;
     uint8_t unknown_header_flags3;
     uint8_t temp_sign;
-    uint16_t temperature;
+    int16_t temperature;
     uint16_t message_id;
     int16_t header_check;
 };
@@ -175,7 +175,6 @@ struct deltadore_x3d_message_payload {
     uint8_t response;
     uint8_t unknown2;
 };
-
 
 static void ccitt_dewhitening(uint8_t *whitening_key_msb_p, uint8_t *whitening_key_lsb_p, uint8_t *buffer, uint16_t buffer_size)
 {
