@@ -68,7 +68,7 @@ static int eurochron_efth800_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int dcf77_min  = (b[3] & 0x3f);
         int dcf77_sec  = (b[4] & 0x3f);
         int dcf77_year = (b[5] >> 1);
-        int dcf77_day  = ((b[5] & 0x01) << 5) | (b[6] & 0xf0) >> 4;
+        int dcf77_day  = ((b[5] & 0x01) << 4) | (b[6] & 0xf0) >> 4;
         int dcf77_mth  = (b[6] & 0x0f);
 
         if (!crc8(b, 8, 0x31, 0x00)) {
