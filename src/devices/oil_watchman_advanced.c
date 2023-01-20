@@ -26,7 +26,7 @@ In more detail:
 - 0x0e0401 - presumably a model identifier, common at least to the two devices we have tested this on
 - 3 byte integer serial number - as printed on a label attached to the device itself
 - 0x80 - so far, this seems to be constant
-- 1 byte temperature, in intervals of 0.5 degrees, offset by 0x45
+- 1 byte temperature, in intervals of 0.5 degrees, offset by 0x48
 - two more varying bytes currently of unknown purpose
 - 1 byte integer depth (i.e. the distance between the sensor and the oil in the tank)
 - 0x01050300 - 4 bytes of constant values
@@ -64,7 +64,7 @@ static int oil_watchman_advanced_decode(r_device *decoder, bitbuffer_t *bitbuffe
 
         // as printed on the side of the unit
         uint32_t serial_number = (b[3] << 16) | (b[4] << 8) | b[5];
-        float temperature = 0.5 * (b[7] - 0x45); // seems about right; see discussion in issue #2306
+        float temperature = (float)(int8_t)(0.5 * (b[7] - 0x48)); // truncate to whole number
         uint8_t depth = b[10];
 
         /* clang-format off */
