@@ -90,9 +90,7 @@ static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
      * 1. Enable with -vvv (debug decoders)
      * 2. Delete this block when your decoder is working
      */
-    //    if (decoder->verbose > 1) {
-    //        bitbuffer_printf(bitbuffer, "%s: ", __func__);
-    //    }
+    //    decoder_log_bitbuffer(decoder, 2, __func__, bitbuffer, "");
 
     /*
      * If you expect the bits flipped with respect to the demod
@@ -188,9 +186,7 @@ static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (!parity) {
         // Enable with -vv (verbose decoders)
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: parity check failed\n", __func__);
-        }
+        decoder_log(decoder, 1, __func__, "parity check failed");
         return 0;
     }
 
@@ -199,9 +195,7 @@ static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
      */
     if (((b[0] + b[1] + b[2] + b[3] - b[4]) & 0xFF) != 0) {
         // Enable with -vv (verbose decoders)
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: checksum error\n", __func__);
-        }
+        decoder_log(decoder, 1, __func__, "checksum error");
         return 0;
     }
 
@@ -214,10 +208,8 @@ static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     c_crc = crc8(b, MYDEVICE_BITLEN / 8, MYDEVICE_CRC_POLY, MYDEVICE_CRC_INIT);
     if (r_crc != c_crc) {
         // Enable with -vv (verbose decoders)
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: bad CRC: calculated %02x, received %02x\n",
-                    __func__, c_crc, r_crc);
-        }
+        decoder_logf(decoder, 1, __func__, "bad CRC: calculated %02x, received %02x",
+                c_crc, r_crc);
 
         // reject row
         return 0;
@@ -282,7 +274,7 @@ static char *output_fields[] = {
  *
  * The function used to turn the received signal into bits.
  * See:
- * - pulse_demod.h for descriptions
+ * - pulse_slicer.h for descriptions
  * - r_device.h for the list of defined names
  *
  * This device is disabled and hidden, it can not be enabled.

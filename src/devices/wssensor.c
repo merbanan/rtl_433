@@ -47,9 +47,7 @@ static int wssensor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // No need to decode/extract values for simple test
     if ((!b[0] && !b[1] && !b[2])
        || (b[0] == 0xff && b[1] == 0xff && b[2] == 0xff)) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00 or 0xFF\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00 or 0xFF");
         return DECODE_FAIL_SANITY;
     }
 
@@ -68,19 +66,6 @@ static int wssensor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     sensor_id = b[2];
 
     temperature_c = (temperature >> 4) * 0.1f;
-
-    if (decoder->verbose) {
-        fprintf(stderr, "Hyundai WS SENZOR received raw data:\n");
-        bitbuffer_print(bitbuffer);
-        fprintf(stderr, "Sensor ID = %01d = 0x%02x\n", sensor_id, sensor_id);
-        fprintf(stderr, "Bitstream HEX = ");
-        bitrow_print(b, 24);
-        fprintf(stderr, "Battery OK = %0d\n", battery_status);
-        fprintf(stderr, "Startup  = %0d\n", startup);
-        fprintf(stderr, "Channel  = %0d\n", channel);
-        fprintf(stderr, "temp  = %d = 0x%02x\n", temperature, temperature);
-        fprintf(stderr, "TemperatureC = %.1f\n", temperature_c);
-    }
 
     /* clang-format off */
     data = data_make(

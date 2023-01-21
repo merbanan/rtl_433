@@ -71,8 +71,8 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int temp2  = (b[3] & 0x3f) << 4 | (b[4] & 0xf0) >> 4;
     int digest = (b[4] & 0x0f) << 12 | b[5] << 4 | b[6] >> 4;
 
-    float temp1_c = temp1 - 532.0;
-    float temp2_c = temp2 - 532.0;
+    float temp1_c = temp1 - 532.0f;
+    float temp2_c = temp2 - 532.0f;
 
     char *status = "unknown";
     if (flags == 2)
@@ -86,9 +86,8 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     //digest is used to represent a session. This means, we get a new id if a reset or battery exchange is done.
     int id = lfsr_digest16(chk, 3, 0x8810, 0xdd38) ^ digest;
 
-    if (decoder->verbose)
-        fprintf(stderr, "%s: pre %03x, flags %0x, t1 %d, t2 %d, digest %04x, chk_data %02x%02x%02x, digest xor'ed: %04x\n",
-                __func__, pre, flags, temp1, temp2, digest, chk[0], chk[1], chk[2], id);
+    decoder_logf(decoder, 1, __func__, "pre %03x, flags %0x, t1 %d, t2 %d, digest %04x, chk_data %02x%02x%02x, digest xor'ed: %04x",
+                pre, flags, temp1, temp2, digest, chk[0], chk[1], chk[2], id);
 
     /* clang-format off */
     data = data_make(
@@ -120,8 +119,8 @@ r_device maverick_et73x = {
         .short_width = 230,
         .long_width  = 0, //not used
         .reset_limit = 4000,
-        //.reset_limit = 6000, // if pulse_demod_manchester_zerobit implements gap_limit
-        //.gap_limit   = 1000, // if pulse_demod_manchester_zerobit implements gap_limit
+        //.reset_limit = 6000, // if pulse_slicer_manchester_zerobit implements gap_limit
+        //.gap_limit   = 1000, // if pulse_slicer_manchester_zerobit implements gap_limit
         .decode_fn   = &maverick_et73x_callback,
         .fields      = output_fields,
 };

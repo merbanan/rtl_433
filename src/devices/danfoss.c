@@ -87,10 +87,7 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // Find a package
         unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 112, HEADER, sizeof(HEADER)*8);    // Normal index is 128, skip first 14 bytes to find faster
         if (bits-bit_offset < 126) {    // Package should be at least 126 bits
-            if (decoder->verbose) {
-                fprintf(stderr, "Danfoss: short package. Header index: %u\n", bit_offset);
-                bitbuffer_print(bitbuffer);
-            }
+            decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "Danfoss: short package. Header index: %u", bit_offset);
             return DECODE_ABORT_LENGTH;
         }
         bit_offset += 6; // Skip first nibble 0xE to get byte alignment and remove from CRC calculation
@@ -100,30 +97,21 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             uint8_t nibble_h = danfoss_decode_nibble(bitrow_get_byte(bitbuffer->bb[0], n * 12 + bit_offset) >> 2);
             uint8_t nibble_l = danfoss_decode_nibble(bitrow_get_byte(bitbuffer->bb[0], n * 12 + bit_offset + 6) >> 2);
             if (nibble_h > 0xF || nibble_l > 0xF) {
-                if (decoder->verbose) {
-                    fprintf(stderr, "Danfoss: 6b/4b decoding error\n");
-                    bitbuffer_print(bitbuffer);
-                }
+                decoder_log_bitbuffer(decoder, 1, __func__, bitbuffer, "Danfoss: 6b/4b decoding error");
                 return DECODE_FAIL_SANITY;
             }
             bytes[n] = (nibble_h << 4) | nibble_l;
         }
 
         // Output raw decoded data for debug
-        if (decoder->verbose) {
-            char str_raw[NUM_BYTES*2+4];    // Add some extra space for line end
-            for (unsigned n=0; n<NUM_BYTES; ++n) {
-                sprintf(str_raw+n*2, "%02X", bytes[n]);
-            }
-            fprintf(stderr, "Danfoss: Raw 6b/4b decoded = %s\n", str_raw);
-        }
+        decoder_log_bitrow(decoder, 1, __func__, bytes, NUM_BYTES * 8, "Danfoss: Raw 6b/4b decoded");
 
         // Validate Prefix and CRC
         uint16_t crc_calc = crc16(bytes, NUM_BYTES-2, 0x1021, 0x0000);
         if (bytes[0] != 0x02        // Somewhat redundant to header search, but checks last bits
          || crc_calc != (((uint16_t)bytes[8] << 8) | bytes[9])
         ) {
-            if (decoder->verbose) fprintf(stderr, "Danfoss: Prefix or CRC error.\n");
+            decoder_log(decoder, 1, __func__, "Danfoss: Prefix or CRC error.");
             return DECODE_FAIL_MIC;
         }
 

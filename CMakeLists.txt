@@ -104,6 +104,10 @@ if(MSVC)
     ADD_DEFINITIONS(-D_CRT_NONSTDC_NO_DEPRECATE)
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
     ADD_DEFINITIONS(-DNOMINMAX)
+    # don't warn on type truncation
+    add_compile_options("/wd4244")
+    add_compile_options("/wd4267")
+    add_compile_options("/wd4305")
 endif()
 
 # Fix printf %zu
@@ -115,6 +119,11 @@ endif()
 if(WIN32)
     add_definitions(-D_USE_MATH_DEFINES)
 endif()
+
+########################################################################
+# Use pkg-config
+########################################################################
+find_package(PkgConfig)
 
 ########################################################################
 # Option to force ANSI-colored build output (for Ninja)
@@ -129,6 +138,42 @@ if(FORCE_COLORED_BUILD)
 endif()
 
 ########################################################################
+# Enable IPv6 support
+########################################################################
+option(ENABLE_IPV6 "Enable IPv6 support" TRUE)
+if(ENABLE_IPV6)
+    message(STATUS "IPv6 support enabled.")
+    ADD_DEFINITIONS(-DMG_ENABLE_IPV6=1)
+    if(MINGW)
+        # IPv6 requires at least Vista for inet_pton, inet_ntop
+        add_definitions(-D_WIN32_WINNT=0x0600)
+    endif()
+else()
+    message(STATUS "IPv6 support disabled.")
+endif()
+
+########################################################################
+# Find Threads support build dependencies
+########################################################################
+set(ENABLE_THREADS AUTO CACHE STRING "Enable Threads support")
+set_property(CACHE ENABLE_THREADS PROPERTY STRINGS AUTO ON OFF)
+if(ENABLE_THREADS) # AUTO / ON
+
+find_package(Threads)
+if(Threads_FOUND)
+    message(STATUS "Threads support will be compiled.")
+    ADD_DEFINITIONS(-DTHREADS)
+elseif(ENABLE_THREADS STREQUAL "AUTO")
+    message(STATUS "Threads support not found, some features will be disabled.")
+else()
+    message(FATAL_ERROR "Threads support not found.")
+endif()
+
+else()
+    message(STATUS "Threads support disabled.")
+endif()
+
+########################################################################
 # Find OpenSSL build dependencies
 ########################################################################
 set(ENABLE_OPENSSL AUTO CACHE STRING "Enable OpenSSL TLS support")
@@ -136,6 +181,11 @@ set_property(CACHE ENABLE_OPENSSL PROPERTY STRINGS AUTO ON OFF)
 if(ENABLE_OPENSSL) # AUTO / ON
 
 find_package(OpenSSL)
+# Get actual libs from pkg-config to support edge cases (static on Sparc)
+pkg_check_modules(PC_OPENSSL QUIET openssl)
+if(PC_OPENSSL_FOUND)
+    set(OPENSSL_LIBRARIES ${PC_OPENSSL_LINK_LIBRARIES})
+endif()
 if(OPENSSL_FOUND)
     message(STATUS "OpenSSL TLS support will be compiled. Found version ${OPENSSL_VERSION}")
     include_directories(${OPENSSL_INCLUDE_DIR})
@@ -159,7 +209,6 @@ set(ENABLE_RTLSDR ON CACHE STRING "Enable RTL-SDR (lbrtlsdr) driver support")
 set_property(CACHE ENABLE_RTLSDR PROPERTY STRINGS AUTO ON OFF)
 if(ENABLE_RTLSDR) # AUTO / ON
 
-find_package(PkgConfig)
 find_package(LibRTLSDR)
 find_package(LibUSB)
 if(LibRTLSDR_FOUND)
@@ -232,7 +281,7 @@ endif()
 # Setup the include and linker paths
 ########################################################################
 if(MINGW OR MSVC)
-list(APPEND NET_LIBRARIES ws2_32 mswsock)
+list(APPEND NET_LIBRARIES ws2_32 mswsock netapi32)
 endif()
 
 include_directories(

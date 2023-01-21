@@ -87,8 +87,7 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, row, start_pos + sizeof (preamble) * 8, &len, 8);
 
     if (len > 60) {
-        if (decoder->verbose)
-            fprintf(stderr, "%s: packet to large (%d bytes), drop it\n", __func__, len);
+        decoder_logf(decoder, 1, __func__, "packet to large (%d bytes), drop it", len);
         return DECODE_ABORT_LENGTH;
     }
 
@@ -99,17 +98,13 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             start_pos + (sizeof (preamble) + 1) * 8,
             &frame[1], (len + 2) * 8);
 
-    if (decoder->verbose > 1) {
-        bitrow_printf(frame, (len + 1) * 8, "%s: frame data: ", __func__);
-    }
+    decoder_log_bitrow(decoder, 2, __func__, frame, (len + 1) * 8, "frame data");
 
     uint16_t crc = crc16(frame, len + 1, 0x8005, 0xffff);
 
     if ((frame[len + 1] << 8 | frame[len + 2]) != crc) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: CRC invalid %04x != %04x\n", __func__,
-                    frame[len + 1] << 8 | frame[len + 2], crc);
-        }
+        decoder_logf(decoder, 1, __func__, "CRC invalid %04x != %04x",
+                frame[len + 1] << 8 | frame[len + 2], crc);
         return DECODE_FAIL_MIC;
     }
 
@@ -124,28 +119,23 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     for (int i = 1; i < len; ++i) {
         payload[i] = frame[i] ^ frame[i + 1] ^ info[i % sizeof (info)];
     }
-    if (decoder->verbose > 1) {
-        bitrow_printf(payload, len * 8, "%s: frame data: ", __func__);
-    }
+    decoder_log_bitrow(decoder, 2, __func__, payload, len * 8, "frame data");
 
     uint8_t type = payload[4];
     uint32_t id  = payload[0] | payload[1] << 8 | payload[2] << 16 | (uint32_t)(payload[3]) << 24;
 
     if (type == 1) {
         // raw data
-        if (decoder->verbose)
-            fprintf(stderr, "%s: raw data from ID: %08x\n", __func__, id);
+        decoder_logf(decoder, 1, __func__, "raw data from ID: %08x", id);
 
         payload[4] = len - 4; //write len for crc (len - 4b ID)
 
-        if (decoder->verbose > 1) {
-            bitrow_printf(&payload[4], (len - 4) * 8, "%s: data: ", __func__);
-        }
+        decoder_log_bitrow(decoder, 2, __func__, &payload[4], (len - 4) * 8, "data");
 
         uint8_t c = crc8(&payload[4], len - 5, 0x07, 0x00);
 
         if (c != payload[len - 1]) {
-            fprintf(stderr, "%s: crc error\n", __func__);
+            decoder_log(decoder, 1, __func__, "crc error");
             return DECODE_FAIL_MIC;
         }
 
@@ -153,8 +143,7 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int ts       = payload[9] << 16 | payload[10] << 8 | payload[11];
         int maxPower = payload[12] << 8 | payload[13];
 
-        if (decoder->verbose > 1)
-            fprintf(stderr, "%s: index: %d, timestamp: %d, maxPower: %d\n", __func__,
+        decoder_logf(decoder, 2, __func__, "index: %d, timestamp: %d, maxPower: %d",
                     idx, ts, maxPower);
 
         /* clang-format off */
@@ -218,8 +207,7 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
     }
     else {
-        if (decoder->verbose)
-            fprintf(stderr, "%s: unknown frame received\n", __func__);
+        decoder_log(decoder, 1, __func__, "unknown frame received");
         return DECODE_FAIL_SANITY;
     }
 }

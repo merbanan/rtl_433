@@ -52,8 +52,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t msg[25];
 
     if (bitbuffer->num_rows != 1 || bitbuffer->bits_per_row[0] < 240 - 80) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "%s: to few bits (%u)\n", __func__, bitbuffer->bits_per_row[0]);
+        decoder_logf(decoder, 2, __func__, "to few bits (%u)", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH; // unrecognized
     }
 
@@ -62,21 +61,17 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     start_pos += sizeof(preamble_pattern) * 8;
 
     if (start_pos >= bitbuffer->bits_per_row[0]) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "%s: preamble not found\n", __func__);
+        decoder_log(decoder, 2, __func__, "preamble not found");
         return DECODE_ABORT_EARLY; // no preamble found
     }
     //if (start_pos + sizeof (msg) * 8 >= bitbuffer->bits_per_row[0]) {
     if (start_pos + 21*8 >= bitbuffer->bits_per_row[0]) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "%s: message too short (%u)\n", __func__, bitbuffer->bits_per_row[0] - start_pos);
+        decoder_logf(decoder, 2, __func__, "message too short (%u)", bitbuffer->bits_per_row[0] - start_pos);
         return DECODE_ABORT_LENGTH; // message too short
     }
 
     bitbuffer_extract_bytes(bitbuffer, 0, start_pos, msg, sizeof (msg) * 8);
-    if (decoder->verbose > 1) {
-        bitrow_printf(msg, sizeof(msg) * 8, "%s: MSG: ", __func__);
-    }
+    decoder_log_bitrow(decoder, 2, __func__, msg, sizeof(msg) * 8, "MSG");
 
     if (msg[21] == 0x00) {
         return DECODE_FAIL_SANITY;
@@ -85,16 +80,13 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     for (unsigned i = 0; i < sizeof (msg); ++i) {
         msg[i] ^= 0xaa;
     }
-    if (decoder->verbose > 1) {
-        bitrow_printf(msg, sizeof(msg) * 8, "%s: XOR: ", __func__);
-    }
+    decoder_log_bitrow(decoder, 2, __func__, msg, sizeof(msg) * 8, "XOR");
 
     // LFSR-16 digest, generator 0x8810 key 0xba95 final xor 0x6df1
     int chk    = (msg[0] << 8) | msg[1];
     int digest = lfsr_digest16(&msg[2], 23, 0x8810, 0xba95);
     if ((chk ^ digest) != 0x6df1) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "%s: Digest check failed %04x vs %04x (%04x)\n", __func__, chk, digest, chk ^ digest);
+        decoder_logf(decoder, 2, __func__, "Digest check failed %04x vs %04x (%04x)", chk, digest, chk ^ digest);
         return DECODE_FAIL_MIC;
     }
 
@@ -116,7 +108,8 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             + (msg[18] & 0x0f) * 100 + (msg[19] >> 4) * 10 + (msg[19] & 0x0f);
     int uv_raw =   (msg[20] >> 4) * 100 + (msg[20] & 0x0f) * 10 + (msg[21] >> 4);
 
-    float light_klx = lght_raw * 0.001f;
+    float light_klx = lght_raw * 0.001f; // TODO: remove this
+    float light_lux = lght_raw;
     float uv_index = uv_raw * 0.1f;
 
     /* clang-format off */
@@ -129,7 +122,8 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "wind_avg_m_s",     "Wind Speed",   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wavg_raw * 0.1f,
             "wind_dir_deg",     "Direction",    DATA_INT,    wdir,
             "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
-            "light_klx",        "Light",        DATA_FORMAT, "%.3f klx", DATA_DOUBLE, light_klx,
+            "light_klx",        "Light",        DATA_FORMAT, "%.3f klx", DATA_DOUBLE, light_klx, // TODO: remove this
+            "light_lux",        "Light",        DATA_FORMAT, "%.3f lux", DATA_DOUBLE, light_lux,
             "uv",               "UV Index",     DATA_FORMAT, "%.1f", DATA_DOUBLE, uv_index,
             "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "mic",              "Integrity",    DATA_STRING, "CRC",
@@ -149,7 +143,8 @@ static char *output_fields[] = {
         "wind_avg_m_s",
         "wind_dir_deg",
         "rain_mm",
-        "light_klx",
+        "light_klx", // TODO: remove this
+        "light_lux",
         "uv",
         "battery_ok",
         "mic",

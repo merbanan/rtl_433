@@ -84,10 +84,10 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     for (uint8_t firstbyte = 0; firstbyte < 21; firstbyte++) {
         for (uint8_t poly=0; poly<255; poly++) {
             if (crc8(&b[firstbyte], 21-firstbyte, poly, 0x00) == b[21]) {
-                fprintf(stderr, "CORRECT CRC8 with offset %u poly 0x%x\n", firstbyte, poly);
+                decoder_logf(decoder, 3, __func__, "CORRECT CRC8 with offset %u poly 0x%x", firstbyte, poly);
             }
             if (crc8le(&b[firstbyte], 21-firstbyte, poly, 0x00) == b[21]) {
-                fprintf(stderr, "CORRECT CRC8LE with offset %u poly 0x%x\n", firstbyte, poly);
+                decoder_logf(decoder, 3, __func__, "CORRECT CRC8LE with offset %u poly 0x%x", firstbyte, poly);
             }
         }
     }
@@ -190,7 +190,7 @@ static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     temp_raw    = (int16_t)(((b[4] & 0x0f) << 12) | (b[5] << 4));      // uses sign-extend
     temp_c      = (temp_raw >> 4) * 0.1f;                              // Convert sign extended int to float
     humidity    = b[6];                                                // Simple 0-100 RH
-    rain_mm     = ((b[7] << 4) + (b[8] >> 4)) * 0.79;                  // Multiplier tested empirically over 618 pulses
+    rain_mm     = ((b[7] << 4) + (b[8] >> 4)) * 0.79f;                  // Multiplier tested empirically over 618 pulses
     speed_kmh   = ((b[8] & 0xF) << 4) + (b[9] >> 4);                   // In discrete kph
     wind_dir    = b[9] & 0xF;                                          // 4 bit wind direction, clockwise from North
 

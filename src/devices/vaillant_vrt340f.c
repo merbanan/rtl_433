@@ -41,10 +41,8 @@ static int validate_checksum(r_device *decoder, uint8_t *b, int from, int to, in
     int chk        = (calculated + expected) & 0xffff;
 
     if (chk) {
-        if (decoder->verbose) {
-            fprintf(stderr, "Checksum error in Vaillant VRT340f.  Expected: %04x  Calculated: %04x\n", expected, calculated);
-            bitrow_printf(&b[from], (to - from + 1) * 8, "Message (data content of bytes %d-%d): ", from, to);
-        }
+        decoder_logf(decoder, 1, __func__, "Checksum error in Vaillant VRT340f.  Expected: %04x  Calculated: %04x", expected, calculated);
+        decoder_logf_bitrow(decoder, 1, __func__, &b[from], (to - from + 1) * 8, "Message (data content of bytes %d-%d)", from, to);
     }
     return !chk;
 }

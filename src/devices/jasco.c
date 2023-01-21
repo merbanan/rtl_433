@@ -25,8 +25,8 @@ static int jasco_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (bitbuffer->bits_per_row[0] < 80
             || bitbuffer->bits_per_row[0] > 87) {
-        if (decoder->verbose > 1 && bitbuffer->bits_per_row[0] > 0) {
-            fprintf(stderr, "%s: invalid bit count %d\n", __func__, bitbuffer->bits_per_row[0]);
+        if (bitbuffer->bits_per_row[0] > 0) {
+            decoder_logf(decoder, 2, __func__, "invalid bit count %d", bitbuffer->bits_per_row[0]);
         }
         return DECODE_ABORT_EARLY;
     }
@@ -79,7 +79,7 @@ static char *output_fields[] = {
 
 r_device jasco = {
         .name        = "Jasco/GE Choice Alert Security Devices",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 250,
         .long_width  = 250,
         .reset_limit = 1800, // Maximum gap size before End Of Message

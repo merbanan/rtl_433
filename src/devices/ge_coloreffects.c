@@ -64,7 +64,7 @@ static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
     bitbuffer_t packet_bits = {0};
 
     ge_decode(bitbuffer, row, start_pos, &packet_bits);
-    //bitbuffer_print(&packet_bits);
+    //decoder_log_bitbuffer(decoder, 0, __func__, &packet_bits, "");
 
     /* From http://www.deepdarc.com/2010/11/27/hacking-christmas-lights/
      * Decoded frame format is:

@@ -105,10 +105,7 @@ static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     for (unsigned n = 0; n < 10; ++n) { // We have 10 bytes/nibbles
         int nibble = lightwave_rf_nibble_from_byte(bb[2][n]);
         if (nibble < 0) {
-            if (decoder->verbose) {
-                fprintf(stderr, "LightwaveRF. Nibble decode error %X, idx: %u\n", bb[2][n], n);
-                bitbuffer_print(bitbuffer);
-            }
+            decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "Nibble decode error %X, idx: %u", bb[2][n], n);
             return DECODE_FAIL_SANITY; // Decode error
         }
         for (unsigned m = 0; m < 4; ++m) { // Add nibble one bit at a time...
@@ -122,10 +119,7 @@ static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int command = bb[3][1] & 0x0F;
     int parameter = bb[3][0];
 
-    if (decoder->verbose) {
-        bitbuffer_print(bitbuffer);
-        fprintf(stderr, "  Row 0 = Input, Row 1 = Zero bit stuffing, Row 2 = Stripped delimiters, Row 3 = Decoded nibbles\n");
-    }
+    decoder_log_bitbuffer(decoder, 1, __func__, bitbuffer, "Row 0 = Input, Row 1 = Zero bit stuffing, Row 2 = Stripped delimiters, Row 3 = Decoded nibbles");
 
     /* clang-format off */
     data = data_make(

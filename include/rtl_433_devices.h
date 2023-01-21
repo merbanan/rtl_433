@@ -219,6 +219,18 @@
     DECL(simplisafe_gen3) \
     DECL(yale_hsa) \
     DECL(regency_fan) \
+    DECL(tpms_renault_0435r) \
+    DECL(fineoffset_ws80) \
+    DECL(emos_e6016) \
+    DECL(altronics_7064) \
+    DECL(ant_antplus) \
+    DECL(emos_e6016_rain) \
+    DECL(hcs200_fsk) \
+    DECL(fineoffset_wh45) \
+    DECL(maverick_xr30) \
+    DECL(fineoffset_wn34) \
+    DECL(rubicson_pool_48942) \
+    DECL(badger_orion) \
     DECL(geo_minim) \
 
     /* Add new decoders here. */

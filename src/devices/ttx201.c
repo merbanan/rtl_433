@@ -111,11 +111,11 @@ static int ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row
         if (decoder->verbose > 1) {
             if (row == 0) {
                 if (bits < MSG_PREAMBLE_BITS) {
-                    fprintf(stderr, "Short preamble: %d bits (expected %d)\n",
+                    decoder_logf(decoder, 2, __func__, "Short preamble: %d bits (expected %d)",
                             bits, MSG_PREAMBLE_BITS);
                 }
             } else if (row != (unsigned)bitbuffer->num_rows - 1 && bits == 1) {
-                fprintf(stderr, "Wrong packet #%u length: %d bits (expected %d)\n",
+                decoder_logf(decoder, 2, __func__, "Wrong packet #%u length: %d bits (expected %d)",
                         row, bits, MSG_PACKET_BITS);
             }
         }
@@ -130,11 +130,11 @@ static int ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row
     postmark = b[5];
 
     if (decoder->verbose > 1) {
-        fprintf(stderr, "TTX201 received raw data: ");
-        bitbuffer_print(bitbuffer);
-        fprintf(stderr, "Data decoded:\n" \
+        decoder_log(decoder, 0, __func__, "TTX201 received raw data");
+        decoder_log_bitbuffer(decoder, 0, __func__, bitbuffer, "");
+        decoder_logf(decoder, 0, __func__, "Data decoded:" \
                 " r  cs    K   ID    S   B  C  X    T    M     J\n");
-        fprintf(stderr, "%2u  %2d    %2d  %3d  0x%01x  %1d  %1d  %1d  %4d  0x%02x",
+        decoder_logf(decoder, 0, __func__, "%2u  %2d    %2d  %3d  0x%01x  %1d  %1d  %1d  %4d  0x%02x",
                 row,
                 checksum_calculated,
                 checksum,
@@ -146,21 +146,19 @@ static int ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row
                 ((int8_t)((b[3] & 0x0f) << 4) << 4) | b[4], // Temperature
                 postmark);
         if (bits == MSG_PACKET_BITS) {
-            fprintf(stderr, "  0x%01x", b[6] >> 4);         // Packet separator
+            decoder_logf(decoder, 0, __func__, "  0x%01x", b[6] >> 4);         // Packet separator
         }
-        fprintf(stderr, "\n");
+        decoder_log(decoder, 0, __func__, "");
     }
 
     if (postmark != MSG_PACKET_POSTMARK) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "Packet #%u wrong postmark 0x%02x (expected 0x%02x).\n",
+        decoder_logf(decoder, 2, __func__, "Packet #%u wrong postmark 0x%02x (expected 0x%02x).",
                     row, postmark, MSG_PACKET_POSTMARK);
         return DECODE_FAIL_SANITY;
     }
 
     if (checksum != checksum_calculated) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "Packet #%u checksum error.\n", row);
+        decoder_logf(decoder, 2, __func__, "Packet #%u checksum error.", row);
         return DECODE_FAIL_MIC;
     }
 

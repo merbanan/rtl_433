@@ -1,17 +1,38 @@
+const { defaultTheme } = require('vuepress')
+const { searchPlugin } = require('@vuepress/plugin-search')
+
 module.exports = {
+  lang: 'en-US',
   title: 'rtl_433',
   description: 'generic data receiver for ISM/SRD bands.',
-  base: "/rtl_433/",
+
+  base: '/rtl_433/',
   markdown: {
-    linkify: true
+    code: {
+      lineNumbers: false,
+    },
   },
-  themeConfig: {
+
+  plugins: [
+    searchPlugin(),
+  ],
+
+  theme: defaultTheme({
     repo: 'merbanan/rtl_433',
     displayAllHeaders: true,
+
+    editLink: true,
+    docsBranch: 'master',
+    docsDir: 'docs',
+
+    navbar: [
+      { text: 'Projects', link: 'https://triq.org/' },
+    ],
+
     sidebar: [
-      ['/', 'Overview'],
+      { text: 'Overview', link: '/' },
       'BUILDING',
-      'VS15',
+      'STARTING',
       'CHANGELOG',
       'CONTRIBUTING',
       'PRIMER',
@@ -23,6 +44,6 @@ module.exports = {
       'INTEGRATION',
       'LINKS',
       'TESTS',
-    ]
-  }
+    ],
+  }),
 };

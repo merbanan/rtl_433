@@ -14,6 +14,9 @@
 
 #include <stdint.h>
 
+#define SDR_DEFAULT_BUF_NUMBER 15
+#define SDR_DEFAULT_BUF_LENGTH 0x40000
+
 typedef struct sdr_dev sdr_dev_t;
 
 typedef enum sdr_event_flags {
@@ -47,6 +50,10 @@ typedef void (*sdr_event_cb_t)(sdr_event_t *ev, void *ctx);
 int sdr_open(sdr_dev_t **out_dev, char const *dev_query, int verbose);
 
 /** Close the device.
+
+    @note
+    All previous sdr_event_t buffers will be invalid after calling sdr_close().
+    Make sure none are in use anymore.
 
     @param dev the device handle
     @return 0 on success
@@ -172,7 +179,33 @@ int sdr_deactivate(sdr_dev_t *dev);
 */
 int sdr_reset(sdr_dev_t *dev, int verbose);
 
+/** Start the SDR data acquisition.
+
+    @note
+    All previous sdr_event_t buffers will be invalid if @p buf_num or @p buf_len changed.
+    Make sure none are in use anymore.
+
+    @param dev the device handle
+    @param cb a callback for sdr_event_t messages
+    @param ctx a user context to be passed to @p cb
+    @param buf_num the number of buffers to keep
+    @param buf_len the size in bytes of each buffer
+    @return 0 on success
+*/
 int sdr_start(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len);
+
+/** Stop the SDR data acquisition.
+
+    @note
+    All previous sdr_event_t buffers will remain valid until sdr_close().
+
+    @param dev the device handle
+    @return 0 on success
+*/
 int sdr_stop(sdr_dev_t *dev);
+
+/** Redirect SoapySDR library logging.
+*/
+void sdr_redirect_logging(void);
 
 #endif /* INCLUDE_SDR_H_ */

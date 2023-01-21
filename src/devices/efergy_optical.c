@@ -85,8 +85,7 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     crc = crc16(bytes, 10, 0x1021, 0x0000);
 
     if (crc != csum1) {
-        if (decoder->verbose)
-            fprintf(stderr, "%s: CRC error.\n", __func__);
+        decoder_log(decoder, 1, __func__, "CRC error.");
         return DECODE_FAIL_MIC;
     }
 

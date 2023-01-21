@@ -66,8 +66,7 @@ static int simplisafe_gen3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int chk = crc16(b, len + 3, 0x8005, 0xffff);
     if (chk) {
-        if (decoder->verbose)
-            bitrow_printf(b, (len + 3) * 8, "%s: crc failed (%04x) ", __func__, chk);
+        decoder_logf_bitrow(decoder, 1, __func__, b, (len + 3) * 8, "crc failed (%04x)", chk);
         return DECODE_FAIL_MIC;
     }
 

@@ -64,8 +64,7 @@ static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         // reduce false positives by checking specified sensor range, this isn't great...
         if (temp_c < -30 || temp_c > 70) {
-            if (decoder->verbose > 1)
-                fprintf(stderr, "%s: temperature sanity check failed: %.1f C\n", __func__, temp_c);
+            decoder_logf(decoder, 2, __func__, "temperature sanity check failed: %.1f C", temp_c);
             return DECODE_FAIL_SANITY;
         }
 

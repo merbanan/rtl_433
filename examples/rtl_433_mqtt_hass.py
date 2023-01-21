@@ -77,12 +77,6 @@ MQTT Explorer also makes it easy to publish an empty config topic to delete an
 entity from Home Assistant.
 
 
-Known Issues:
-
-Currently there is no white or black lists, so any device that rtl_433 receives
-including transients, false positives, will create a bunch of entities in
-Home Assistant.
-
 As of 2020-10, Home Assistant MQTT auto discovery doesn't currently support
 supplying "friendly name", and "area" key, so some configuration must be
 done in Home Assistant.
@@ -111,7 +105,7 @@ NAMING_KEYS = [ "type", "model", "subtype", "channel", "id" ]
 
 # Fields that get ignored when publishing to Home Assistant
 # (reduces noise to help spot missing field mappings)
-SKIP_KEYS = NAMING_KEYS + [ "time", "mic", "mod", "freq", "sequence_num",
+SKIP_KEYS = NAMING_KEYS + [ "mic", "mod", "freq", "sequence_num",
                             "message_type", "exception", "raw_msg" ]
 
 
@@ -127,7 +121,7 @@ mappings = {
             "device_class": "temperature",
             "name": "Temperature",
             "unit_of_measurement": "°C",
-            "value_template": "{{ value|float }}",
+            "value_template": "{{ value|float|round(1) }}",
             "state_class": "measurement"
         }
     },
@@ -138,7 +132,7 @@ mappings = {
             "device_class": "temperature",
             "name": "Temperature 1",
             "unit_of_measurement": "°C",
-            "value_template": "{{ value|float }}",
+            "value_template": "{{ value|float|round(1) }}",
             "state_class": "measurement"
         }
     },
@@ -149,7 +143,7 @@ mappings = {
             "device_class": "temperature",
             "name": "Temperature 2",
             "unit_of_measurement": "°C",
-            "value_template": "{{ value|float }}",
+            "value_template": "{{ value|float|round(1) }}",
             "state_class": "measurement"
         }
     },
@@ -160,8 +154,24 @@ mappings = {
             "device_class": "temperature",
             "name": "Temperature",
             "unit_of_measurement": "°F",
-            "value_template": "{{ value|float }}",
+            "value_template": "{{ value|float|round(1) }}",
             "state_class": "measurement"
+        }
+    },
+
+    # This diagnostic sensor is useful to see when a device last sent a value,
+    # even if the value didn't change.
+    # https://community.home-assistant.io/t/send-metrics-to-influxdb-at-regular-intervals/9096
+    # https://github.com/home-assistant/frontend/discussions/13687
+    "time": {
+        "device_type": "sensor",
+        "object_suffix": "UTC",
+        "config": {
+            "device_class": "timestamp",
+            "name": "Timestamp",
+            "entity_category": "diagnostic",
+            "enabled_by_default": False,
+            "icon": "mdi:clock-in"
         }
     },
 
@@ -342,7 +352,7 @@ mappings = {
         "config": {
             "name": "Rain Total",
             "unit_of_measurement": "mm",
-            "value_template": "{{ value|float }}",
+            "value_template": "{{ value|float|round(2) }}",
             "state_class": "total_increasing"
         }
     },
@@ -467,17 +477,17 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "lux",
         "config": {
-            "name": "Outside Luminancee",
+            "name": "Outside Luminance",
             "unit_of_measurement": "lux",
             "value_template": "{{ value|int }}",
             "state_class": "measurement"
         }
     },
-    "light_lux": {
+    "lux": {
         "device_type": "sensor",
         "object_suffix": "lux",
         "config": {
-            "name": "Outside Luminancee",
+            "name": "Outside Luminance",
             "unit_of_measurement": "lux",
             "value_template": "{{ value|int }}",
             "state_class": "measurement"
@@ -537,8 +547,66 @@ mappings = {
         }
     },
 
+    "consumption_data": {
+        "device_type": "sensor",
+        "object_suffix": "consumption",
+        "config": {
+            "name": "SCM Consumption Value",
+            "value_template": "{{ value|int }}",
+            "state_class": "total_increasing",
+        }
+    },
+
+    "channel": {
+        "device_type": "device_automation",
+        "object_suffix": "CH",
+        "config": {
+           "automation_type": "trigger",
+           "type": "button_short_release",
+           "subtype": "button_1",
+        }
+    },
+
+    "button": {
+        "device_type": "device_automation",
+        "object_suffix": "BTN",
+        "config": {
+           "automation_type": "trigger",
+           "type": "button_short_release",
+           "subtype": "button_1",
+        }
+    },
+
 }
 
+# Use secret_knock to trigger device automations for Honeywell ActivLink
+# doorbells. We have this outside of mappings as we need to configure two
+# different configuration topics.
+secret_knock_mappings = [
+
+    {
+        "device_type": "device_automation",
+        "object_suffix": "Knock",
+        "config": {
+            "automation_type": "trigger",
+            "type": "button_short_release",
+            "subtype": "button_1",
+            "payload": 0,
+        }
+    },
+
+    {
+        "device_type": "device_automation",
+        "object_suffix": "Secret-Knock",
+        "config": {
+            "automation_type": "trigger",
+            "type": "button_triple_press",
+            "subtype": "button_1",
+            "payload": 1,
+        }
+    },
+
+]
 
 def mqtt_connect(client, userdata, flags, rc):
     """Callback for MQTT connects."""
@@ -593,7 +661,7 @@ def rtl_433_device_topic(data):
     return '/'.join(path_elements)
 
 
-def publish_config(mqttc, topic, model, instance, mapping):
+def publish_config(mqttc, topic, model, instance, mapping, value=None):
     """Publish Home Assistant auto discovery data."""
     global discovery_timeouts
 
@@ -615,13 +683,24 @@ def publish_config(mqttc, topic, model, instance, mapping):
     discovery_timeouts[path] = now + args.discovery_interval
 
     config = mapping["config"].copy()
-    config["name"] = object_name
-    config["state_topic"] = topic
-    config["unique_id"] = object_name
-    config["device"] = { "identifiers": object_id, "name": object_id, "model": model, "manufacturer": "rtl_433" }
+
+    # Device Automation configuration is in a different structure compared to
+    # all other mqtt discovery types.
+    # https://www.home-assistant.io/integrations/device_trigger.mqtt/
+    if device_type == 'device_automation':
+        config["topic"] = topic
+        config["platform"] = 'mqtt'
+    else:
+        config["state_topic"] = topic
+        config["unique_id"] = object_name
+        config["name"] = object_name
+    config["device"] = { "identifiers": [object_id], "name": object_id, "model": model, "manufacturer": "rtl_433" }
 
     if args.force_update:
         config["force_update"] = "true"
+
+    if args.expire_after:
+        config["expire_after"] = args.expire_after
 
     logging.debug(path + ":" + json.dumps(config))
 
@@ -648,6 +727,11 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
         logging.warning("No suitable identifier found for model: ", model)
         return
 
+    if args.ids and id in data and data.get("id") not in args.ids:
+        # not in the safe list
+        logging.debug("Device (%s) is not in the desired list of device ids: [%s]" % (data["id"], ids))
+        return
+
     # detect known attributes
     for key in data.keys():
         if key in mappings:
@@ -658,6 +742,12 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
         else:
             if key not in SKIP_KEYS:
                 skipped_keys.append(key)
+
+    if "secret_knock" in data.keys():
+        for m in secret_knock_mappings:
+            topic = "/".join([topicprefix,"devices",instance,"secret_knock"])
+            if publish_config(mqttc, topic, model, instance, m):
+                published_keys.append("secret_knock")
 
     if published_keys:
         logging.info("Published %s: %s" % (instance, ", ".join(published_keys)))
@@ -676,6 +766,10 @@ def rtl_433_bridge():
 
     if args.user is not None:
         mqttc.username_pw_set(args.user, args.password)
+
+    if args.ca_cert is not None:
+        mqttc.tls_set(ca_certs=args.ca_cert)
+
     mqttc.on_connect = mqtt_connect
     mqttc.on_disconnect = mqtt_disconnect
     mqttc.on_message = mqtt_message
@@ -712,6 +806,7 @@ if __name__ == "__main__":
                         help="MQTT hostname to connect to (default: %(default)s)")
     parser.add_argument("-p", "--port", type=int, default=1883,
                         help="MQTT port (default: %(default)s)")
+    parser.add_argument("-c", "--ca_cert", type=str, help="MQTT TLS CA certificate path")
     parser.add_argument("-r", "--retain", action="store_true")
     parser.add_argument("-f", "--force_update", action="store_true",
                         help="Append 'force_update = true' to all configs.")
@@ -727,6 +822,11 @@ if __name__ == "__main__":
                         dest="discovery_interval",
                         default=600,
                         help="Interval to republish config topics in seconds (default: %(default)d)")
+    parser.add_argument("-x", "--expire-after", type=int,
+                        dest="expire_after",
+                        help="Number of seconds with no updates after which the sensor becomes unavailable")
+    parser.add_argument("-I", "--ids", type=int, nargs="+",
+                        help="ID's of devices that will be discovered (omit for all)")
     args = parser.parse_args()
 
     if args.debug and args.quiet:
@@ -748,5 +848,11 @@ if __name__ == "__main__":
 
     if not args.user or not args.password:
         logging.warning("User or password is not set. Check credentials if subscriptions do not return messages.")
+
+    if args.ids:
+        ids = ', '.join(str(id) for id in args.ids)
+        logging.info("Only discovering devices with ids: [%s]" % ids)
+    else:
+        logging.info("Discovering all devices")
 
     run()

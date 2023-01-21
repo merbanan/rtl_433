@@ -80,7 +80,7 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int humidity    = (b[3] & 0x0F) * 10 + (b[4] >> 4); // BCD, 'A0'=100%rH
     int channel     = b[4] & 0x03;
 
-    float temp_f    = (float)temp_raw * 0.1 - 90;
+    float temp_f    = (temp_raw - 900) * 0.1f;
 
     /* clang-format off */
     data_t *data = data_make(
@@ -127,7 +127,7 @@ Breakdown:
 - syncPost after dataPtr has a '0' pulse length of ca. 16000us
 
 This analysis is the reason for the new r_device definitions below.
-NB: pulse_demod_ppm does not use .gap_limit if .tolerance is set.
+NB: pulse_slicer_ppm does not use .gap_limit if .tolerance is set.
 */
 
 r_device infactory = {

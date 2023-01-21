@@ -1,5 +1,5 @@
 /** @file
-    LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1 Wind Sensor.
+    LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1/W2 Wind Sensor.
 
     Copyright (C) 2020 Mike Bruski (AJ9X) <michael.bruski@gmail.com>
 
@@ -9,7 +9,7 @@
     (at your option) any later version.
 */
 /**
-LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1 Wind Sensor.
+LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1/W2 Wind Sensor.
 
 Note: This is an unfinished decoder.  It is able to read rainfall info
       from the sensor (raw_rain1 and raw_rain2) but does not calculate
@@ -66,7 +66,7 @@ does not have the CRC at byte 8 but a second 24 bit value and the check at byte 
     {144} 70f6a2 04 00aa0d 00aa0d  89  00...
     {143} 70f6a2 0c 00aa0d 00aa0d  56  00...
 
-LTV-W1:
+LTV-W1 (also LTV-W2):
 
     ID:24h BATTLOW:1b STARTUP:1b ?:2b SEQ:3h ?:1b 8h8h8h WIND:12d 12h CRC:8h TRAILER 8h8h8h8h8h8h8h8h
 
@@ -97,33 +97,25 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t b[20];
 
     if (bitbuffer->num_rows > 1) {
-        fprintf(stderr, "%s: Too many rows: %d\n", __func__, bitbuffer->num_rows);
+        decoder_logf(decoder, 1, __func__, "Too many rows: %d", bitbuffer->num_rows);
         return DECODE_FAIL_SANITY;
     }
     int msg_len = bitbuffer->bits_per_row[0];
     if (msg_len < 200) { // allows shorter preamble for LTV-R3
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: Packet too short: %d bits\n", __func__, msg_len);
-        }
+        decoder_logf(decoder, 1, __func__, "Packet too short: %d bits", msg_len);
         return DECODE_ABORT_LENGTH;
     } else if (msg_len > 272) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: Packet too long: %d bits\n", __func__, msg_len);
-        }
+        decoder_logf(decoder, 1, __func__, "Packet too long: %d bits", msg_len);
         return DECODE_ABORT_LENGTH;
     } else {
-        if (decoder->verbose) {
-           fprintf(stderr, "%s: packet length: %d\n", __func__, msg_len);
-        }
+        decoder_logf(decoder, 1, __func__, "packet length: %d", msg_len);
     }
 
     int offset = bitbuffer_search(bitbuffer, 0, 0,
             preamble_pattern, sizeof(preamble_pattern) * 8);
 
     if (offset >= msg_len) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: Sync word not found\n", __func__);
-        }
+        decoder_log(decoder, 1, __func__, "Sync word not found");
         return DECODE_ABORT_EARLY;
     }
 
@@ -135,7 +127,7 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (chk == 0
             && b[4] == 0xaa && b[5] == 0xaa && b[6] == 0xaa
             && (b[8] & 0x0f) == 0x0a && b[9] == 0xaa) {
-        rev = 9; // LTV-W1
+        rev = 9; // LTV-W1/W2
     }
     else if (chk == 0 && b[10] != 0) {
         rev = 3; // LTV-R3
@@ -143,16 +135,12 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     else {
         chk = crc8(b, 8, 0x31, 0x00);
         if (b[10] != 0 || chk != 0) { // make sure this really is a LTV-R1 and not just a CRC collision
-            if (decoder->verbose) {
-                fprintf(stderr, "%s: CRC failed!\n", __func__);
-            }
+            decoder_log(decoder, 1, __func__, "CRC failed!");
             return DECODE_FAIL_MIC;
         }
     }
 
-    if (decoder->verbose) {
-        bitrow_printf(b, bitbuffer->bits_per_row[0] - offset, "%s: ", __func__);
-    }
+    decoder_log_bitrow(decoder, 1, __func__, b, bitbuffer->bits_per_row[0] - offset, "");
 
     int id        = (b[0] << 16) | (b[1] << 8) | b[2];
     int flags     = (b[3] & 0x31); // masks off knonw bits
@@ -161,12 +149,12 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int seq       = (b[3] & 0x0e) >> 1;
     int raw_rain1 = (b[4] << 16) | (b[5] << 8) | (b[6]);
     int raw_rain2 = (b[7] << 16) | (b[8] << 8) | (b[9]); // only LTV-R3
-    int raw_wind  = (b[7] << 4) | (b[8] >> 4); // only LTV-W1
+    int raw_wind  = (b[7] << 4) | (b[8] >> 4); // only LTV-W1/W2
 
     // Seems rain is 0.25mm per tip, not sure what rain2 is
     float rain_mm = raw_rain1 * 0.25f;
     float rain2_mm = raw_rain2 * 0.25f;
-    // wind speed on LTV-W1
+    // wind speed on LTV-W1/W2
     float wspeed_kmh = raw_wind * 0.1f;
 
     /* clang-format off */
@@ -206,7 +194,7 @@ static char *output_fields[] = {
 
 // flex decoder m=FSK_PCM, s=104, l=104, r=9600
 r_device lacrosse_r1 = {
-        .name        = "LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1 Wind Sensor",
+        .name        = "LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1/W2 Wind Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 104,
         .long_width  = 104,

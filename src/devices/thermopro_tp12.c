@@ -57,7 +57,7 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
     // The device transmits 16 rows, let's check for 3 matching.
     // (Really 17 rows, but the last one doesn't match because it's missing a trailing 1.)
     // Update for TP08: same is true but only 2 rows.
-    row = bitbuffer_find_repeated_row(
+    row = bitbuffer_find_repeated_prefix(
             bitbuffer,
             (bitbuffer->num_rows > 5) ? 5 : 2,
             BITS_IN_VALID_ROW - 1); // allow 1 bit less to also match the last row

@@ -67,17 +67,13 @@ static int companion_wtr001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Make sure bit 5 is not set
     if ((b[0] & 0x04) == 0x04) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "companion_wtr001: Fixed Bit set (and it shouldn't be)\n");
-        }
+        decoder_log(decoder, 2, __func__, "companion_wtr001: Fixed Bit set (and it shouldn't be)");
         return DECODE_FAIL_SANITY;
     }
 
     /* Parity check (must be ODD) */
     if (!parity_bytes(b, 2)) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "companion_wtr001: parity check failed (should be ODD)\n");
-        }
+        decoder_log(decoder, 2, __func__, "companion_wtr001: parity check failed (should be ODD)");
         return DECODE_FAIL_MIC;
     }
 
@@ -87,17 +83,13 @@ static int companion_wtr001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (temp_tenth_raw < 0x0a) {
         // Value is too low
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "companion_wtr001: Temperature Degree Tenth too low (%d - 10 is less than 0\n", temp_tenth_raw);
-        }
+        decoder_logf(decoder, 2, __func__, "companion_wtr001: Temperature Degree Tenth too low (%d - 10 is less than 0", temp_tenth_raw);
         return DECODE_FAIL_SANITY;
     }
 
     if (temp_tenth_raw > 0x13) {
         // Value is too high
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "companion_wtr001: Temperature Degree Tenth too high (%d - 10 is greater than 9\n", temp_tenth_raw);
-        }
+        decoder_logf(decoder, 2, __func__, "companion_wtr001: Temperature Degree Tenth too high (%d - 10 is greater than 9", temp_tenth_raw);
         return DECODE_FAIL_SANITY;
     }
 
@@ -109,17 +101,13 @@ static int companion_wtr001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (temp_whole_raw < 11) {
         // Value is too low (outside published specs)
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "companion_wtr001: Whole part of Temperature is too low (%d - 41 is less than -30)\n", temp_whole_raw);
-        }
+        decoder_logf(decoder, 2, __func__, "companion_wtr001: Whole part of Temperature is too low (%d - 41 is less than -30)", temp_whole_raw);
         return DECODE_FAIL_SANITY;
     }
 
     if (temp_whole_raw > 111) {
         // Value is too high (outside published specs)
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "companion_wtr001: Whole part of Temperature is too high (%d - 41 is greater than 70)\n", temp_whole_raw);
-        }
+        decoder_logf(decoder, 2, __func__, "companion_wtr001: Whole part of Temperature is too high (%d - 41 is greater than 70)", temp_whole_raw);
         return DECODE_FAIL_SANITY;
     }
 

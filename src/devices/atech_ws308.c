@@ -88,7 +88,7 @@ static int atech_ws308_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint8_t b[4]; // 28 bit
     int len = pwm_decode(bitbuffer->bb[1], bitbuffer->bits_per_row[1], b, 32);
-    //bitrow_print(b, len);
+    //decoder_log_bitrow(decoder, 0, __func__, b, len, "");
     if (len < 28)
         return DECODE_ABORT_LENGTH;
 
@@ -129,8 +129,8 @@ static char *output_fields[] = {
 
 r_device atech_ws308 = {
         .name        = "Atech-WS308 temperature sensor",
-        .modulation  = OOK_PULSE_PCM_RZ,
-        .short_width = 1600, // actual RZ
+        .modulation  = OOK_PULSE_RZ,
+        .short_width = 1600,
         .long_width  = 1832,
         .gap_limit   = 2500,
         .reset_limit = 9000,

@@ -163,9 +163,7 @@ static int somfy_rts_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         control_str = seed_strs[seed & 0xf];
     }
 
-    if (decoder->verbose > 1) {
-        fprintf(stderr, "%s: seed=0x%02x, chksum=0x%x\n", __func__, seed, chksum);
-    }
+    decoder_logf(decoder, 2, __func__, "seed=0x%02x, chksum=0x%x", seed, chksum);
 
     /* clang-format off */
     data = data_make(
@@ -196,14 +194,14 @@ static char *output_fields[] = {
 // Nominal bit width is ~604 us, RZ, short=long
 
 r_device somfy_rts = {
-        .name           = "Somfy RTS",
-        .modulation     = OOK_PULSE_PCM_RZ,
-        .short_width    = 604,   // short pulse is ~604 us (1 x nominal bit width)
-        .long_width     = 604,   // long pulse is ~604 us (1 x nominal bit width)
+        .name        = "Somfy RTS",
+        .modulation  = OOK_PULSE_PCM,
+        .short_width = 604,   // each pulse is ~604 us (nominal bit width)
+        .long_width  = 604,   // each pulse is ~604 us (nominal bit width)
 //        .sync_width     = 2416,  // hardware sync pulse is ~2416 us (4 x nominal bit width), software sync pulse is ~4550 us. Commented, as sync_width has no effect on the PCM decoder.
-        .gap_limit      = 3000,  // largest off between two pulses is ~2416 us during sync. Gap between start pulse (9664 us) and first frame is 6644 us (11 x nominal bit width), 3000 us will split first message into two rows one with start pulse and one with first frame
-        .reset_limit    = 10000, // larger than gap between start pulse and first frame (6644 us = 11 x nominal bit width) to put start pulse and first frame in two rows, but smaller than inter-frame space of 30415 us
-        .tolerance      = 20,
-        .decode_fn      = &somfy_rts_decode,
-        .fields         = output_fields,
+        .gap_limit   = 3000,  // largest off between two pulses is ~2416 us during sync. Gap between start pulse (9664 us) and first frame is 6644 us (11 x nominal bit width), 3000 us will split first message into two rows one with start pulse and one with first frame
+        .reset_limit = 10000, // larger than gap between start pulse and first frame (6644 us = 11 x nominal bit width) to put start pulse and first frame in two rows, but smaller than inter-frame space of 30415 us
+        .tolerance   = 20,
+        .decode_fn   = &somfy_rts_decode,
+        .fields      = output_fields,
 };

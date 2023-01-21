@@ -42,8 +42,7 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b = bitbuffer->bb[0];
     // Reject codes with an incorrect preamble (expected 0xfff)
     if (b[0] != 0xff || (b[1] & 0xf0) != 0xf0) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "%s: Preamble not found\n", __func__);
+        decoder_log(decoder, 2, __func__, "Preamble not found");
         return DECODE_ABORT_EARLY;
     }
 
@@ -53,15 +52,13 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // No need to decode/extract values for simple test
     if (b[1] == 0xff && b[2] == 0xff && b[3] == 0xff && b[4] == 0xff
             && b[5] == 0xff && b[6] == 0xff && b[7] == 0xff) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0xff\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0xff");
         return DECODE_FAIL_SANITY;
     }
 
     // The transmission is LSB first, big endian.
     uint32_t encrypted = ((unsigned)reverse8(b[3]) << 24) | (reverse8(b[2]) << 16) | (reverse8(b[1]) << 8) | (reverse8(b[0]));
-    int serial         = (reverse8(b[7] & 0xf0) << 20) | (reverse8(b[6]) << 16) | (reverse8(b[5]) << 8) | (reverse8(b[4]));
+    int serial         = (reverse8(b[7] & 0xf0) << 24) | (reverse8(b[6]) << 16) | (reverse8(b[5]) << 8) | (reverse8(b[4]));
     int btn            = (b[7] & 0x0f);
     int btn_num        = (btn & 0x08) | ((btn & 0x01) << 2) | (btn & 0x02) | ((btn & 0x04) >> 2); // S3, S0, S1, S2
     int learn          = (b[7] & 0x0f) == 0x0f;
@@ -103,6 +100,18 @@ static char *output_fields[] = {
 r_device hcs200 = {
         .name        = "Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes",
         .modulation  = OOK_PULSE_PWM,
+        .short_width = 370,
+        .long_width  = 772,
+        .gap_limit   = 1500,
+        .reset_limit = 9000,
+        .tolerance   = 152, // us
+        .decode_fn   = &hcs200_callback,
+        .fields      = output_fields,
+};
+
+r_device hcs200_fsk = {
+        .name        = "Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes (FSK)",
+        .modulation  = FSK_PULSE_PWM,
         .short_width = 370,
         .long_width  = 772,
         .gap_limit   = 1500,

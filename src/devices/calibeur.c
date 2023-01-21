@@ -61,9 +61,7 @@ static int calibeur_rf104_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // check for 0x00 and 0xff
     if ( (!b[0] && !b[1] && !b[2])
        || (b[0] == 0xff && b[1] == 0xff && b[2] == 0xff)) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00 or 0xFF\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00 or 0xFF");
         return DECODE_FAIL_SANITY;
     }
 

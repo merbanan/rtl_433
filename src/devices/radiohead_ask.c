@@ -6,7 +6,7 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/**
+/** @fn int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 RadioHead ASK (generic) protocol.
 
 Default transmitter speed is 2000 bits per second, i.e. 500 us per bit.
@@ -51,6 +51,9 @@ static uint8_t symbol_6to4(uint8_t symbol)
     return 0xFF; // Not found
 }
 
+/**
+Radiohead ASK parser.
+*/
 static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t row, /*OUT*/ uint8_t *payload)
 {
     int len = bitbuffer->bits_per_row[row];
@@ -74,9 +77,7 @@ static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint
 
     pos = bitbuffer_search(bitbuffer, row, 0, init_pattern, init_pattern_len);
     if (pos == len) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: preamble not found\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "preamble not found");
         return DECODE_ABORT_EARLY;
     }
 
@@ -92,16 +93,12 @@ static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint
         rxBits[0] &= 0x3F;
         uint8_t hi_nibble = symbol_6to4(rxBits[0]);
         if (hi_nibble > 0xF) {
-            if (decoder->verbose) {
-                fprintf(stderr, "%s: Error on 6to4 decoding high nibble: %X\n", __func__, rxBits[0]);
-            }
+            decoder_logf(decoder, 1, __func__, "Error on 6to4 decoding high nibble: %X", rxBits[0]);
             return DECODE_FAIL_SANITY;
         }
         uint8_t lo_nibble = symbol_6to4(rxBits[1]);
         if (lo_nibble > 0xF) {
-            if (decoder->verbose) {
-                fprintf(stderr, "%s: Error on 6to4 decoding low nibble: %X\n", __func__, rxBits[1]);
-            }
+            decoder_logf(decoder, 1, __func__, "Error on 6to4 decoding low nibble: %X", rxBits[1]);
             return DECODE_FAIL_SANITY;
         }
         uint8_t byte = hi_nibble << 4 | lo_nibble;
@@ -118,16 +115,12 @@ static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint
 
     // Prevent buffer underflow when calculating CRC
     if (msg_len < 2) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: message too short to contain crc\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "message too short to contain crc");
         return DECODE_ABORT_LENGTH;
     }
     // Sanity check on excessive msg len
     if (msg_len > RH_ASK_MAX_MESSAGE_LEN) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: message too long: %d\n", __func__, msg_len);
-        }
+        decoder_logf(decoder, 2, __func__, "message too long: %d", msg_len);
         return DECODE_ABORT_LENGTH;
     }
 
@@ -135,9 +128,7 @@ static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint
     crc = (payload[msg_len - 1] << 8) | payload[msg_len - 2];
     crc_recompute = ~crc16lsb(payload, msg_len - 2, 0x8408, 0xFFFF);
     if (crc_recompute != crc) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: CRC error: %04X != %04X\n", __func__, crc_recompute, crc);
-        }
+        decoder_logf(decoder, 1, __func__, "CRC error: %04X != %04X", crc_recompute, crc);
         return DECODE_FAIL_MIC;
     }
 
@@ -167,7 +158,7 @@ static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     header_flags = rh_payload[4];
 
     // Format data
-    for (int j = 0; j < msg_len; j++) {
+    for (int j = 0; j < data_len; j++) {
         rh_data_payload[j] = (int)rh_payload[5 + j];
     }
     /* clang-format off */
@@ -187,6 +178,11 @@ static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
+/**
+Sensible Living Mini-Plant Moisture Sensor.
+
+@todo Documentation needed.
+*/
 static int sensible_living_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
@@ -254,7 +250,7 @@ static char *sensible_living_output_fields[] = {
 
 r_device radiohead_ask = {
         .name        = "Radiohead ASK",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 500,
         .long_width  = 500,
         .reset_limit = 5 * 500,
@@ -264,7 +260,7 @@ r_device radiohead_ask = {
 
 r_device sensible_living = {
         .name        = "Sensible Living Mini-Plant Moisture Sensor",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 1000,
         .long_width  = 1000,
         .reset_limit = 5 * 1000,

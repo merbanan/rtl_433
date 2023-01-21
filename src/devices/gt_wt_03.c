@@ -111,8 +111,7 @@ static int gt_wt_03_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // accept only correct checksum
     int chk = chk_rollbyte(b, 4, 0x3100) ^ b[4] ^ 0x2d;
     if (chk) {
-        if (decoder->verbose)
-            bitrow_printf(b, 5, "%s: Invalid checksum ", __func__);
+        decoder_log_bitrow(decoder, 1, __func__, b, 5, "Invalid checksum ");
         return DECODE_FAIL_MIC;
     }
 

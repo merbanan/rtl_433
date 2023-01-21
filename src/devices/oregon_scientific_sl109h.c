@@ -43,9 +43,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
         // No need to decode/extract values for simple test
         // check id channel temperature humidity value not zero
         if (!msg[0] && !msg[1] && !msg[2] && !msg[3]) {
-            if (decoder->verbose > 1) {
-                fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
-            }
+            decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00");
             continue; // DECODE_FAIL_SANITY
         }
 
@@ -63,8 +61,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
 
         sum = add_nibbles(b, 5) & 0xf;
         if (sum != chk) {
-            if (decoder->verbose > 1)
-                bitbuffer_printf(bitbuffer, "%s: Checksum error. Expected: %01x Calculated: %01x\n", __func__, chk, sum);
+            decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "Checksum error. Expected: %01x Calculated: %01x", chk, sum);
             continue; // DECODE_FAIL_MIC
         }
 
@@ -78,8 +75,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
 
         // reduce false positives by checking specified sensor range, this isn't great...
         if (temp_c < -20 || temp_c > 60) {
-            if (decoder->verbose > 1)
-                fprintf(stderr, "%s: temperature sanity check failed: %.1f C\n", __func__, temp_c);
+            decoder_logf(decoder, 2, __func__, "temperature sanity check failed: %.1f C", temp_c);
             return DECODE_FAIL_SANITY;
         }
 

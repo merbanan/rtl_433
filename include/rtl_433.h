@@ -94,6 +94,8 @@ typedef struct r_cfg {
     uint16_t num_r_devices;
     list_t data_tags;
     list_t output_handler;
+    list_t raw_handler;
+    int has_logout;
     struct dm_state *demod;
     char const *sr_filename;
     int sr_execopen;

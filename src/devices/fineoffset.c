@@ -112,8 +112,7 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Nibble 2 contains type, must be 0x04 -- or is this a (battery) flag maybe? please report.
     type = b[0] >> 4;
     if (type != 4) {
-        if (decoder->verbose)
-            fprintf(stderr, "%s: Unknown type: (%d) %d\n", __func__, model_num, type);
+        decoder_logf(decoder, 1, __func__, "Unknown type: (%d) %d", model_num, type);
         return DECODE_FAIL_SANITY;
     }
 
@@ -157,6 +156,8 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 /**
 Fine Offset Electronics WH24, WH65B, HP1000 and derivatives Temperature/Humidity/Pressure sensor protocol.
+
+Also: Misol WS2320 (rebranded WH65B, 433MHz)
 
 The sensor sends a package each ~16 s with a width of ~11 ms. The bits are PCM modulated with Frequency Shift Keying.
 
@@ -210,10 +211,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Find a data package and extract data buffer
     bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) { // Did not find a big enough package
-        if (decoder->verbose) {
-            fprintf(stderr, "Fineoffset_WH24: short package. Header index: %u\n", bit_offset);
-            bitbuffer_print(bitbuffer);
-        }
+        decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "Fineoffset_WH24: short package. Header index: %u", bit_offset);
         return DECODE_ABORT_LENGTH;
     }
     // Classification heuristics
@@ -227,13 +225,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
 
-    if (decoder->verbose) {
-        char raw_str[17 * 3 + 1];
-        for (unsigned n = 0; n < sizeof(b); n++) {
-            sprintf(raw_str + n * 3, "%02x ", b[n]);
-        }
-        fprintf(stderr, "Fineoffset_WH24: Raw: %s @ bit_offset [%u]\n", raw_str, bit_offset);
-    }
+    decoder_logf_bitrow(decoder, 1, __func__, b, sizeof(b) * 8, "Raw @ bit_offset [%u]", bit_offset);
 
     if (b[0] != 0x24) // Check for family code 0x24
         return DECODE_FAIL_SANITY;
@@ -245,9 +237,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         checksum += b[n];
     }
     if (crc != b[15] || checksum != b[16]) {
-        if (decoder->verbose) {
-            fprintf(stderr, "Fineoffset_WH24: Checksum error: %02x %02x\n", crc, checksum);
-        }
+        decoder_logf(decoder, 1, __func__, "Fineoffset_WH24: Checksum error: %02x %02x", crc, checksum);
         return DECODE_FAIL_MIC;
     }
 
@@ -270,7 +260,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         rain_cup_count = 0.254f;
     }
     // Wind speed is scaled by 8, wind speed = raw / 8 * 1.12 m/s (0.51 for WH65B)
-    float wind_speed_ms = wind_speed_raw * 0.125 * wind_speed_factor;
+    float wind_speed_ms = wind_speed_raw * 0.125f * wind_speed_factor;
     int gust_speed_raw  = b[7];             // 0xff if invalid
     // Wind gust is unscaled, multiply by wind speed factor 1.12 m/s
     float gust_speed_ms = gust_speed_raw * wind_speed_factor;
@@ -404,8 +394,7 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
-        if (decoder->verbose)
-            bitbuffer_printf(bitbuffer, "%s: short package. Row length: %u. Header index: %u\n", __func__, bitbuffer->bits_per_row[0], bit_offset);
+        decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "short package. Row length: %u. Header index: %u", bitbuffer->bits_per_row[0], bit_offset);
         return DECODE_ABORT_LENGTH;
     }
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
@@ -417,9 +406,7 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         checksum += b[n];
     }
     if (crc != b[6] || checksum != b[7]) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: Checksum error: %02x %02x\n", __func__, crc, checksum);
-        }
+        decoder_logf(decoder, 1, __func__, "Checksum error: %02x %02x", crc, checksum);
         return DECODE_FAIL_MIC;
     }
 
@@ -461,8 +448,9 @@ Example: 22.6 C, 40 %, 1001.7 hPa
 Data layout:
 
     aa 2d d4 e5 02 72 28 27 21 c9 bb aa
-             ?I IT TT HH PP PP CC BB
+             MI IT TT HH PP PP CC XX
 
+- M: 4 bit Model code, 0xd: old model, 0xe: new model.
 - I: 8 bit Sensor ID (based on 2 different sensors). Does not change at battery change.
 - B: 1 bit low battery indicator
 - F: 1 bit invalid reading indicator
@@ -470,7 +458,7 @@ Data layout:
 - H: 8 bit Humidity
 - P: 16 bit Pressure (*10)
 - C: 8 bit Checksum of previous 6 bytes (binary sum truncated to 8 bit)
-- B: 8 bit Bitsum (XOR) of the 6 data bytes (high and low nibble exchanged)
+- X: 8 bit Bitsum (XOR) of the 6 data bytes (high and low nibble exchanged)
 
 WH32B is the same as WH25 but two packets in one transmission of {971} and XOR sum missing.
 
@@ -501,8 +489,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // skip some bytes to find faster
     bit_offset = bitbuffer_search(bitbuffer, 0, 100, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
-        if (decoder->verbose)
-            bitbuffer_printf(bitbuffer, "%s: short package. Header index: %u\n", __func__, bit_offset);
+        decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "short package. Header index: %u", bit_offset);
         return DECODE_ABORT_LENGTH;
     }
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
@@ -514,8 +501,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         type = 31;
     }
     else if (msg_type != 0xe0) {
-        if (decoder->verbose)
-            fprintf(stderr, "%s: Msg type unknown: %2x\n", __func__, b[0]);
+        decoder_logf(decoder, 1, __func__, "Msg type unknown: %2x", b[0]);
         if (b[0] == 0x41) {
             return fineoffset_WH0290_callback(decoder, bitbuffer); // abort and try WH0290
         }
@@ -525,8 +511,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Verify checksum
     int sum = (add_bytes(b, 6) & 0xff) - b[6];
     if (sum) {
-        if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "%s: Checksum error: ", __func__);
+        decoder_log_bitrow(decoder, 1, __func__, b, sizeof (b) * 8, "Checksum error");
         return DECODE_FAIL_MIC;
     }
 
@@ -534,8 +519,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int bitsum = xor_bytes(b, 6);
     bitsum = ((bitsum & 0x0f) << 4) | (bitsum >> 4); // Swap nibbles
     if (type == 25 && bitsum != b[7]) { // only check for WH25
-        if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "%s: Bitsum error: ", __func__);
+        decoder_log_bitrow(decoder, 1, __func__, b, sizeof (b) * 8, "Bitsum error");
         return DECODE_FAIL_MIC;
     }
 
@@ -567,44 +551,45 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-/*
-Fine Offset WH51, ECOWITT WH51, MISOL/1 Soil Moisture Sensor
+/**
+Fine Offset WH51, ECOWITT WH51, MISOL/1 Soil Moisture Sensor.
 
 Also: SwitchDoc Labs SM23 Soil Moisture Sensor.
 
 Test decoding with: rtl_433 -f 433920000  -X "n=soil_sensor,m=FSK_PCM,s=58,l=58,t=5,r=5000,g=4000,preamble=aa2dd4"
 
+Note: for WH51 at 915MHz: try also "-Y classic" i.e. : rtl_433 -f 915M -Y classic -- see https://github.com/merbanan/rtl_433/issues/2235
+
 Data format:
 
-               00 01 02 03 04 05 06 07 08 09 10 11 12 13
-aa aa aa 2d d4 51 00 6b 58 6e 7f 24 f8 d2 ff ff ff 3c 28 8
-               FF II II II TB YY MM ZA AA XX XX XX CC SS
+                   00 01 02 03 04 05 06 07 08 09 10 11 12 13
+    aa aa aa 2d d4 51 00 6b 58 6e 7f 24 f8 d2 ff ff ff 3c 28 8
+                   FF II II II TB YY MM ZA AA XX XX XX CC SS
 
-Sync:     aa aa aa ...
-Preamble: 2d d4
-FF:       Family code 0x51 (ECOWITT/FineOffset WH51)
-IIIIII:   ID (3 bytes)
-T:        Transmission period boost: highest 3 bits set to 111 on moisture change and decremented each transmission;
-          if T = 0 period is 70 sec, if T > 0 period is 10 sec
-B:        Battery voltage: lowest 5 bits are battery voltage * 10 (e.g. 0x0c = 12 = 1.2V). Transmitter works down to 0.7V (0x07)
-YY:       ? Fixed: 0x7f
-MM:       Moisture percentage 0%-100% (0x00-0x64) MM = (AD - 70) / (450 - 70)
-Z:        ? Fixed: leftmost 7 bit 1111 100
-AAA:      9 bit AD value MSB byte[07] & 0x01, LSB byte[08]
-XXXXXX:   ? Fixed: 0xff 0xff 0xff
-CC:       CRC of the preceding 12 bytes (Polynomial 0x31, Initial value 0x00, Input not reflected, Result not reflected)
-SS:       Sum of the preceding 13 bytes % 256
+- Sync:     aa aa aa ...
+- Preamble: 2d d4
+- FF:       Family code 0x51 (ECOWITT/FineOffset WH51)
+- IIIIII:   ID (3 bytes)
+- T:        Transmission period boost: highest 3 bits set to 111 on moisture change and decremented each transmission;
+-           if T = 0 period is 70 sec, if T > 0 period is 10 sec
+- B:        Battery voltage: lowest 5 bits are battery voltage * 10 (e.g. 0x0c = 12 = 1.2V). Transmitter works down to 0.7V (0x07)
+- YY:       ? Fixed: 0x7f
+- MM:       Moisture percentage 0%-100% (0x00-0x64) MM = (AD - 70) / (450 - 70)
+- Z:        ? Fixed: leftmost 7 bit 1111 100
+- AAA:      9 bit AD value MSB byte[07] & 0x01, LSB byte[08]
+- XXXXXX:   ? Fixed: 0xff 0xff 0xff
+- CC:       CRC of the preceding 12 bytes (Polynomial 0x31, Initial value 0x00, Input not reflected, Result not reflected)
+- SS:       Sum of the preceding 13 bytes % 256
 
 See http://www.ecowitt.com/upfile/201904/WH51%20Manual.pdf for relationship between AD and moisture %
 
 Short explanation:
-Soil Moisture Percentage = (Moisture AD – 0%AD) / (100%AD – 0%AD) * 100
-0%AD = 70
-100%AD = 450 (manual states 500, but sensor internal computation are closer to 450)
-If sensor-calculated moisture percentage are inaccurate at low/high values, use the AD value and the above formaula
-changing 0%AD and 100%AD to cover the full scale from dry to damp
+- Soil Moisture Percentage = (Moisture AD – 0%AD) / (100%AD – 0%AD) * 100
+- 0%AD = 70
+- 100%AD = 450 (manual states 500, but sensor internal computation are closer to 450)
+- If sensor-calculated moisture percentage are inaccurate at low/high values, use the AD value and the above formaula
+  changing 0%AD and 100%AD to cover the full scale from dry to damp
 */
-
 static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
@@ -620,30 +605,26 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Find a data package and extract data payload
     bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
-        if (decoder->verbose)
-            bitbuffer_printf(bitbuffer, "%s: short package. Header index: %u\n", __func__, bit_offset);
+        decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "short package. Header index: %u", bit_offset);
         return DECODE_ABORT_LENGTH;
     }
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
 
     // Verify family code
     if (b[0] != 0x51) {
-        if (decoder->verbose)
-            fprintf(stderr, "%s: Msg family unknown: %2x\n", __func__, b[0]);
+        decoder_logf(decoder, 1, __func__, "Msg family unknown: %2x", b[0]);
         return DECODE_ABORT_EARLY;
     }
 
     // Verify checksum
     if ((add_bytes(b, 13) & 0xff) != b[13]) {
-        if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "%s: Checksum error: ", __func__);
+        decoder_log_bitrow(decoder, 1, __func__, b, sizeof (b) * 8, "Checksum error");
         return DECODE_FAIL_MIC;
     }
 
     // Verify crc
     if (crc8(b, 12, 0x31, 0) != b[12]) {
-        if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "%s: Bitsum error: ", __func__);
+        decoder_log_bitrow(decoder, 1, __func__, b, sizeof (b) * 8, "Bitsum error");
         return DECODE_FAIL_MIC;
     }
 
@@ -652,7 +633,7 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     sprintf(id, "%02x%02x%02x", b[1], b[2], b[3]);
     int boost           = (b[4] & 0xe0) >> 5;
     int battery_mv      = (b[4] & 0x1f) * 100;
-    float battery_level = (battery_mv - 700) / 900.0; // assume 1.6V (100%) to 0.7V (0%) range
+    float battery_level = (battery_mv - 700) / 900.0f; // assume 1.6V (100%) to 0.7V (0%) range
     int ad_raw          = (((int)b[7] & 0x01) << 8) | (int)b[8];
     int moisture        = b[6];
 
@@ -715,8 +696,7 @@ static int alecto_ws1200v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Verify checksum
     int crc = crc8(b, 7, 0x31, 0);
     if (crc) {
-        if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v1.0: CRC error ");
+        decoder_log_bitrow(decoder, 1, __func__, b, sizeof (b) * 8, "Alecto WS-1200 v1.0: CRC error ");
         return DECODE_FAIL_MIC;
     }
 
@@ -725,7 +705,7 @@ static int alecto_ws1200v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int temp_raw      = (b[1] & 0x7) << 8 | b[2];
     float temperature = (temp_raw - 400) * 0.1f;
     int rainfall_raw  = b[4] << 8 | b[3];   // rain tip counter
-    float rainfall    = rainfall_raw * 0.3; // each tip is 0.3mm
+    float rainfall    = rainfall_raw * 0.3f; // each tip is 0.3mm
 
     /* clang-format off */
     data = data_make(
@@ -787,15 +767,13 @@ static int alecto_ws1200v2_dcf_callback(r_device *decoder, bitbuffer_t *bitbuffe
     // Verify CRC
     int crc = crc8(b, 10, 0x31, 0);
     if (crc) {
-        //if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0 DCF77: CRC error ");
+        //decoder_log_bitrow(decoder, 1, __func__, b, sizeof (b) * 8, "Alecto WS-1200 v2.0 DCF77: CRC error ");
         return DECODE_FAIL_MIC;
     }
     // Verify checksum
     int sum = add_bytes(b, 10) - b[10];
     if (sum & 0xff) {
-        if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0 DCF77: Checksum error ");
+        decoder_log_bitrow(decoder, 1, __func__, b, sizeof (b) * 8, "Alecto WS-1200 v2.0 DCF77: Checksum error ");
         return DECODE_FAIL_MIC;
     }
 
@@ -870,15 +848,13 @@ static int alecto_ws1200v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Verify CRC
     int crc = crc8(b, 7, 0x31, 0);
     if (crc) {
-        if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0: CRC error ");
+        decoder_log_bitrow(decoder, 1, __func__, b, sizeof (b) * 8, "Alecto WS-1200 v2.0: CRC error ");
         return DECODE_FAIL_MIC;
     }
     // Verify checksum
     int sum = add_bytes(b, 7) - b[7];
     if (sum & 0xff) {
-        if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0: Checksum error ");
+        decoder_log_bitrow(decoder, 1, __func__, b, sizeof (b) * 8, "Alecto WS-1200 v2.0: Checksum error ");
         return DECODE_FAIL_MIC;
     }
 
@@ -887,7 +863,7 @@ static int alecto_ws1200v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int temp_raw      = (b[1] & 0x7) << 8 | b[2];
     float temperature = (temp_raw - 400) * 0.1f;
     int rainfall_raw  = b[4] << 8 | b[3];   // rain tip counter
-    float rainfall    = rainfall_raw * 0.3; // each tip is 0.3mm
+    float rainfall    = rainfall_raw * 0.3f; // each tip is 0.3mm
 
     /* clang-format off */
     data = data_make(
@@ -951,8 +927,7 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int sum = (add_bytes(b, 7) & 0xff) - b[7];
 
     if (crc || sum) {
-        if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "Fineoffset_WH0530: Checksum error: ");
+        decoder_log_bitrow(decoder, 1, __func__, b, sizeof (b) * 8, "Fineoffset_WH0530: Checksum error");
         return DECODE_FAIL_MIC;
     }
 
@@ -961,7 +936,7 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int temp_raw      = (b[1] & 0x7) << 8 | b[2];
     float temperature = (temp_raw - 400) * 0.1f;
     int rainfall_raw  = b[4] << 8 | b[3];   // rain tip counter
-    float rainfall    = rainfall_raw * 0.3; // each tip is 0.3mm
+    float rainfall    = rainfall_raw * 0.3f; // each tip is 0.3mm
 
     /* clang-format off */
     data = data_make(
@@ -1045,7 +1020,7 @@ r_device fineoffset_WH2 = {
 };
 
 r_device fineoffset_WH25 = {
-        .name        = "Fine Offset Electronics, WH25, WH32B, WH24, WH65B, HP1000 Temperature/Humidity/Pressure Sensor",
+        .name        = "Fine Offset Electronics, WH25, WH32B, WH24, WH65B, HP1000, Misol WS2320 Temperature/Humidity/Pressure Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 58,    // Bit width = 58µs (measured across 580 samples / 40 bits / 250 kHz )
         .long_width  = 58,    // NRZ encoding (bit width = pulse width)

@@ -14,6 +14,9 @@ Cotech 36-7959 Weatherstation, 433Mhz.
 
 Also: SwitchDoc Labs Weather FT020T.
 Also: Sainlogic Weather Station WS019T
+Also: Sainlogic Weather Station FT0300
+Also: Ragova WiFi Weather Station FT-0310
+Also: NicetyMeter Weather Station 0366 (without Lux or UV index)
 
 OOK modulated with Manchester encoding, halfbit-width 500 us.
 Message length is 112 bit, every second time it will transmit two identical messages, packet gap 5400 us.
@@ -44,6 +47,7 @@ Message layout
 - X : 8 bit: CRC, poly 0x31, init 0xc0
 */
 
+#include <stdbool.h>
 #include "decoder.h"
 
 static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -74,16 +78,12 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (r < 0) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: Couldn't find preamble\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "Couldn't find preamble");
         return DECODE_FAIL_SANITY;
     }
 
     if (crc8(b, 14, 0x31, 0xc0)) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: CRC8 fail\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "CRC8 fail");
         return DECODE_FAIL_MIC;
     }
 
@@ -108,6 +108,9 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     float temp_c = (temp_raw - 400) * 0.1f;
 
+    // On models without a light sensor, the value read for UV index is out of bounds with its top bits set
+    bool light_is_valid = ((uv & 0xf0) == 0);
+
     /* clang-format off */
     data = data_make(
             "model",            "",                 DATA_STRING, "Cotech-367959",
@@ -120,8 +123,8 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "wind_dir_deg",     "Wind direction",   DATA_INT,    wind_dir,
             "wind_avg_m_s",     "Wind",             DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind * 0.1f,
             "wind_max_m_s",     "Gust",             DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust * 0.1f,
-            "light_lux",        "Light Intensity",  DATA_FORMAT, "%u lux", DATA_INT, light_lux,
-            "uv",               "UV Index",         DATA_FORMAT, "%u", DATA_INT, uv,
+            "light_lux",        "Light Intensity",  DATA_COND, light_is_valid, DATA_FORMAT, "%u lux", DATA_INT, light_lux,
+            "uv",               "UV Index",         DATA_COND, light_is_valid, DATA_FORMAT, "%u", DATA_INT, uv,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */

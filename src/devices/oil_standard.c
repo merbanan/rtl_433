@@ -149,7 +149,7 @@ r_device oil_standard = {
 
 r_device oil_standard_ask = {
         .name        = "Oil Ultrasonic STANDARD ASK",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 500,
         .long_width  = 500,
         .reset_limit = 2000,

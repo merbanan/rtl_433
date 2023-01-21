@@ -128,8 +128,7 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // search for preamble and exit if not found
     unsigned int bit_offset = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, (sizeof preamble_pattern) * 8);
     if (bit_offset == bitbuffer->bits_per_row[row]) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "%s: Preamble not found, bit_offset: %u\n", __func__, bit_offset);
+        decoder_logf(decoder, 2, __func__, "Preamble not found, bit_offset: %u", bit_offset);
         return DECODE_FAIL_SANITY;
     }
 
@@ -159,14 +158,14 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int parity_error = parity ^ 0x3; // both parities are odd, i.e. 1 on success
 
     if (parity_error) {
-        if (decoder->verbose)
-            fprintf(stderr, "%s: Parity check failed (%d %d)\n", __func__, parity >> 1, parity & 1);
+        decoder_logf(decoder, 1, __func__, "Parity check failed (%d %d)", parity >> 1, parity & 1);
         return DECODE_FAIL_MIC;
     }
 
     sprintf(device_type_id, "%01x", (reverse8(message[2]) >> 4));
 
     switch ((reverse8(message[2]) >> 4)) {
+    case 0x2: device_type = "smoke"; break; //switch2 changes from closed to open on trigger and switch2 & switch4 change from closed to open on test
     case 0xa: device_type = "contact"; break;
     case 0xf: device_type = "keyfob"; break;
     case 0x4: device_type = "motion"; break;
@@ -188,6 +187,14 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         f3_latch_state = ((message[3] & 0xe) == 0xc) ? "CLOSED" : "OPEN";
         f4_latch_state = ((message[3] & 0xe) == 0x2) ? "CLOSED" : "OPEN";
         f5_latch_state = ((message[3] & 0xe) == 0xa) ? "CLOSED" : "OPEN";
+    // PET Immune SAW PIR motion sensor logic.
+    } else if ((reverse8(message[2]) >> 4) == 0x4) {
+        low_battery    = (message[3] & 0x10) ? 1 : 0;
+        f1_latch_state = ((message[3] & 0x04) | ((message[3] & 0x08) == 0x8)) ? "OPEN" : "CLOSED";
+        f2_latch_state = (message[3] & 0x01) ? "OPEN" : "CLOSED";
+        f3_latch_state = (message[4] & 0x40) ? "OPEN" : "CLOSED";
+        f4_latch_state = (message[4] & 0x10) ? "OPEN" : "CLOSED";
+        f5_latch_state = (message[4] & 0x04) ? "OPEN" : "CLOSED";
     } else {
         low_battery    = (message[3] & 0x10) ? 1 : 0;
         f1_latch_state = (message[3] & 0x04) ? "OPEN" : "CLOSED";

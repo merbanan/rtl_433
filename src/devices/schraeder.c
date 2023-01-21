@@ -118,9 +118,7 @@ static int schrader_EG53MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // No need to decode/extract values for simple test
     // check serial flags pressure temperature value not zero
     if ( !b[1] && !b[2] && !b[4] && !b[5] && !b[7] && !b[8] ) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00");
         return DECODE_FAIL_SANITY;
     }
 
@@ -172,8 +170,8 @@ Data layout:
 
 NOTE: there is NO CRC and NO temperature data transmitted
 
-We use OOK_PULSE_PCM_RZ with .short_pulse = .long_pulse to get the bitstream
-above. Then we use bitbuffer_manchester_decode() which will alert us to any
+We use OOK_PULSE_PCM to get the bitstream above.
+Then we use bitbuffer_manchester_decode() which will alert us to any
 bit sequence which is not a valid Manchester transition. This enables a sanity
 check on the Manchester pulses which is important for detecting possible
 corruption since there is no CRC.
@@ -214,9 +212,7 @@ static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     ret = bitbuffer_manchester_decode(bitbuffer, 0, NUM_BITS_PREAMBLE,
                                       &decoded, NUM_BITS_DATA);
     if (ret != NUM_BITS_TOTAL) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: invalid Manchester data\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "invalid Manchester data");
         return DECODE_FAIL_MIC;
     }
     bitbuffer_invert(&decoded);
@@ -230,9 +226,7 @@ static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* reject all-zero data */
     if (!flags && !serial_id && !pressure) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00");
         return DECODE_FAIL_SANITY;
     }
 
@@ -305,7 +299,7 @@ r_device schrader_EG53MA4 = {
 
 r_device schrader_SMD3MA4 = {
         .name        = "Schrader TPMS SMD3MA4 (Subaru)",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 120,
         .long_width  = 120,
         .reset_limit = 480,

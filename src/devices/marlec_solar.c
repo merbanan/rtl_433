@@ -62,8 +62,7 @@ static int marlec_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, row, start_pos + sizeof (preamble) * 8, &len, 8);
 
     if (len > 60) {
-        if (decoder->verbose)
-            fprintf(stderr, "%s: packet to large (%d bytes), drop it\n", __func__, len);
+        decoder_logf(decoder, 1, __func__, "packet to large (%d bytes), drop it", len);
         return DECODE_ABORT_LENGTH;
     }
 
@@ -74,17 +73,13 @@ static int marlec_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             start_pos + (sizeof (preamble) + 1) * 8,
             &frame[1], (len + 2) * 8);
 
-    if (decoder->verbose > 1) {
-        bitrow_printf(frame, (len + 1) * 8, "%s: frame data: ", __func__);
-    }
+    decoder_log_bitrow(decoder, 2, __func__, frame, (len + 1) * 8, "frame data");
 
     uint16_t crc = crc16(frame, len + 1, 0x8005, 0xffff);
 
     if ((frame[len + 1] << 8 | frame[len + 2]) != crc) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: CRC invalid %04x != %04x\n", __func__,
-                    frame[len + 1] << 8 | frame[len + 2], crc);
-        }
+        decoder_logf(decoder, 1, __func__, "CRC invalid %04x != %04x",
+                frame[len + 1] << 8 | frame[len + 2], crc);
         return DECODE_FAIL_MIC;
     }
 
