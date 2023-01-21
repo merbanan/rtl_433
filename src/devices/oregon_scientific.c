@@ -114,7 +114,7 @@ static unsigned int get_os_rollingcode(unsigned char *message)
     return rc;
 }
 
-static unsigned short int cm180i_power(uint8_t const *msg,unsigned int offset)
+static unsigned short int cm180i_power(uint8_t const *msg, unsigned int offset)
 {
     unsigned short int val = 0;
 
@@ -205,6 +205,11 @@ static int validate_os_v2_message(r_device *decoder, unsigned char *msg, int bit
     return 1;
 }
 
+/**
+Various Oregon Scientific protocols.
+
+@todo Documentation needed.
+*/
 static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t *b = bitbuffer->bb[0];
@@ -556,6 +561,11 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
 // ceil( (335 + 11) / 8 )
 #define EXPECTED_NUM_BYTES 44
 
+/**
+Various Oregon Scientific protocols.
+
+@todo Documentation needed.
+*/
 static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t *b = bitbuffer->bb[0];

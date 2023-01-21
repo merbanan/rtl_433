@@ -1,4 +1,4 @@
-/*** @file
+/** @file
     AlectoV1 Weather Sensor protocol.
 
     This program is free software; you can redistribute it and/or modify

@@ -427,7 +427,12 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code)
                 bitbuffer_add_row(bits);
             }
 
+            char const *p = c;
             width = strtol(c + 1, (char **)&c, 0);
+            while (*c == ' ' || *c == '\t' || *c == '\r' || *c == '\n')
+                c++;
+            if (*c != '}')
+                fprintf(stderr, "Bad length indication: %.10s\n", p);
             if (width > BITBUF_MAX_ROW_BITS)
                 width = BITBUF_MAX_ROW_BITS;
             if (!*c)
@@ -461,18 +466,30 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code)
     }
 }
 
-int compare_rows(bitbuffer_t *bits, unsigned row_a, unsigned row_b)
+int bitbuffer_compare_rows(bitbuffer_t *bits, unsigned row_a, unsigned row_b, unsigned max_bits)
 {
-    return (bits->bits_per_row[row_a] == bits->bits_per_row[row_b]
-            && !memcmp(bits->bb[row_a], bits->bb[row_b],
-                    (bits->bits_per_row[row_a] + 7) / 8));
+    if (max_bits == 0 || bits->bits_per_row[row_a] < max_bits || bits->bits_per_row[row_b] < max_bits) {
+        // full compare, no max_bits or rows too short
+        return (bits->bits_per_row[row_a] == bits->bits_per_row[row_b]
+                && !memcmp(bits->bb[row_a], bits->bb[row_b],
+                        (bits->bits_per_row[row_a] + 7) / 8));
+    }
+    else {
+        // prefix-only compare, both rows are at least max_bits long
+        uint8_t *a = bits->bb[row_a];
+        uint8_t *b = bits->bb[row_b];
+        unsigned last = (max_bits - 1) / 8; // max_bits is at least 1
+        unsigned mask = 0xff00 >> (max_bits & 7); // mask off bottom bits
+        return (!memcmp(bits->bb[row_a], bits->bb[row_b], max_bits / 8)
+                && (a[last] & mask) == (b[last] & mask));
+    }
 }
 
-unsigned count_repeats(bitbuffer_t *bits, unsigned row)
+unsigned bitbuffer_count_repeats(bitbuffer_t *bits, unsigned row, unsigned max_bits)
 {
     unsigned cnt = 0;
     for (int i = 0; i < bits->num_rows; ++i) {
-        if (compare_rows(bits, row, i)) {
+        if (bitbuffer_compare_rows(bits, row, i, max_bits)) {
             ++cnt;
         }
     }
@@ -483,7 +500,18 @@ int bitbuffer_find_repeated_row(bitbuffer_t *bits, unsigned min_repeats, unsigne
 {
     for (int i = 0; i < bits->num_rows; ++i) {
         if (bits->bits_per_row[i] >= min_bits &&
-                count_repeats(bits, i) >= min_repeats) {
+                bitbuffer_count_repeats(bits, i, 0) >= min_repeats) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int bitbuffer_find_repeated_prefix(bitbuffer_t *bits, unsigned min_repeats, unsigned min_bits)
+{
+    for (int i = 0; i < bits->num_rows; ++i) {
+        if (bits->bits_per_row[i] >= min_bits &&
+                bitbuffer_count_repeats(bits, i, min_bits) >= min_repeats) {
             return i;
         }
     }

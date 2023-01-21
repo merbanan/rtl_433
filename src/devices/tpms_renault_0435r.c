@@ -121,7 +121,7 @@ static int tpms_renault_0435r_decode(r_device *decoder, bitbuffer_t *bitbuffer, 
             "flags",           "",                         DATA_STRING, flags_str,
             "pressure_kPa",    "Pressure",                 DATA_FORMAT, "%.1f kPa",  DATA_DOUBLE, (double)pressure_kpa,
             "temperature_C",   "Temperature",              DATA_FORMAT, "%.0f C",    DATA_DOUBLE, (double)temp_c,
-            "centrifugal_acc", "Centrifugal Accelaration", DATA_FORMAT, "%.0f m/s2", DATA_DOUBLE, (double)rad_acc,
+            "centrifugal_acc", "Centrifugal Acceleration", DATA_FORMAT, "%.0f m/s2", DATA_DOUBLE, (double)rad_acc,
             "mic",             "",                         DATA_STRING, "CRC",
             "has_tick",        "",                         DATA_INT,    has_tick,
             "tick",            "",                         DATA_INT,    tick - 0x80*(1-has_tick), //set to negative value when has_tick == 0 (invert bit 7)

@@ -92,7 +92,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (type == 0) {
         // 0 = WS7000-27/28 Thermo sensor
         int sign          = (b[1] & 0x8) ? -1 : 1;
-        float temperature = ((b[4] * 10) + (b[3] * 1) + (b[2] * 0.1)) * sign;
+        float temperature = ((b[4] * 10) + (b[3] * 1) + (b[2] * 0.1f)) * sign;
 
         /* clang-format off */
         data = data_make(
@@ -110,8 +110,8 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     else if (type == 1) {
         // 1 = WS7000-22/25 Thermo/Humidity sensor
         int sign          = (b[1] & 0x8) ? -1 : 1;
-        float temperature = ((b[4] * 10) + (b[3] * 1) + (b[2] * 0.1)) * sign;
-        int humidity      = (b[7] * 10) + (b[6] * 1) + (b[5] * 0.1);
+        float temperature = ((b[4] * 10) + (b[3] * 1) + (b[2] * 0.1f)) * sign;
+        int humidity      = (b[7] * 10) + (b[6] * 1) + (b[5] * 0.1f);
 
         /* clang-format off */
         data = data_make(
@@ -146,9 +146,9 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     else if (type == 3) {
         // 3 = WS7000-15 Wind sensor
-        float speed     = (b[4] * 10) + (b[3] * 1) + (b[2] * 0.1);
+        float speed     = (b[4] * 10) + (b[3] * 1) + (b[2] * 0.1f);
         float direction = ((b[7] >> 2) * 100) + (b[6] * 10) + (b[5] * 1);
-        float deviation = (b[7] & 0x3) * 22.5;
+        float deviation = (b[7] & 0x3) * 22.5f;
 
         /* clang-format off */
         data = data_make(
@@ -168,8 +168,8 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     else if (type == 4) {
         // 4 = WS7000-20 Thermo/Humidity/Barometer sensor
         int sign          = (b[1] & 0x8) ? -1 : 1;
-        float temperature = ((b[4] * 10) + (b[3] * 1) + (b[2] * 0.1)) * sign;
-        int humidity      = (b[7] * 10) + (b[6] * 1) + (b[5] * 0.1);
+        float temperature = ((b[4] * 10) + (b[3] * 1) + (b[2] * 0.1f)) * sign;
+        int humidity      = (b[7] * 10) + (b[6] * 1) + (b[5] * 0.1f);
         int pressure      = (b[10] * 100) + (b[9] * 10) + (b[8] * 1) + 200;
 
         /* clang-format off */

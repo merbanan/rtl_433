@@ -78,7 +78,7 @@ static int secplus_v1_decode_v1_half(r_device *decoder, uint8_t *bits, uint8_t *
                     // fprintf(stderr, "\nbin 2 = {%ld} %s\n", strlen(binstr), binstr);
                 }
                 else { // x > 3
-                    decoder_logf(decoder, 1, __func__, "Error x == %d\n", x);
+                    decoder_logf(decoder, 1, __func__, "Error x == %d", x);
                     return -1; // DECODE_FAIL_SANITY
                 }
                 x = 0;
@@ -397,7 +397,7 @@ static char *output_fields[] = {
 
 r_device secplus_v1 = {
         .name        = "Security+ (Keyfob)",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 500,
         .long_width  = 500,
         .tolerance   = 20,

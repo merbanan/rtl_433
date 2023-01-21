@@ -18,6 +18,13 @@ two packets of each
 (1-bit) 500 us pulse, 230 us gap or
 (0-bit) 250 us pulse, 480 us gap.
 
+There might be an alternative (longer) packet interleaved, e.g.:
+
+    {65} 2B 1E A9 90 AB D3 83 2A 8
+    {49} AB 1F B3 B7 B6 BE 80
+    {65} 2B 1E A9 90 AB D3 83 2A 8
+    {49} AB 1F B3 B7 B6 BE 8
+
 Data layout:
 
     ?ccc iiii  iiii iiii  bntt tttt  tttt ????  hhhh hhhh  xxxx xxxx
@@ -43,6 +50,13 @@ static int eurochron_efth800_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b;
     int id, channel, temp_raw, humidity, battery_low;
     float temp_c;
+
+    // Remove long rows with unknown data
+    for (row = 0; row < bitbuffer->num_rows; ++row) {
+        if (bitbuffer->bits_per_row[row] > 49) {
+            bitbuffer->bits_per_row[row] = 0; // cancel row
+        }
+    }
 
     /* Validation checks */
     row = bitbuffer_find_repeated_row(bitbuffer, 2, 48);

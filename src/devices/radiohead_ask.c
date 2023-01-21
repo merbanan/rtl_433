@@ -6,7 +6,7 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/**
+/** @fn int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 RadioHead ASK (generic) protocol.
 
 Default transmitter speed is 2000 bits per second, i.e. 500 us per bit.
@@ -51,6 +51,9 @@ static uint8_t symbol_6to4(uint8_t symbol)
     return 0xFF; // Not found
 }
 
+/**
+Radiohead ASK parser.
+*/
 static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t row, /*OUT*/ uint8_t *payload)
 {
     int len = bitbuffer->bits_per_row[row];
@@ -155,7 +158,7 @@ static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     header_flags = rh_payload[4];
 
     // Format data
-    for (int j = 0; j < msg_len; j++) {
+    for (int j = 0; j < data_len; j++) {
         rh_data_payload[j] = (int)rh_payload[5 + j];
     }
     /* clang-format off */
@@ -175,6 +178,11 @@ static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
+/**
+Sensible Living Mini-Plant Moisture Sensor.
+
+@todo Documentation needed.
+*/
 static int sensible_living_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
@@ -242,7 +250,7 @@ static char *sensible_living_output_fields[] = {
 
 r_device radiohead_ask = {
         .name        = "Radiohead ASK",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 500,
         .long_width  = 500,
         .reset_limit = 5 * 500,
@@ -252,7 +260,7 @@ r_device radiohead_ask = {
 
 r_device sensible_living = {
         .name        = "Sensible Living Mini-Plant Moisture Sensor",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 1000,
         .long_width  = 1000,
         .reset_limit = 5 * 1000,

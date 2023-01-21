@@ -129,8 +129,8 @@ static char *output_fields[] = {
 
 r_device atech_ws308 = {
         .name        = "Atech-WS308 temperature sensor",
-        .modulation  = OOK_PULSE_PCM_RZ,
-        .short_width = 1600, // actual RZ
+        .modulation  = OOK_PULSE_RZ,
+        .short_width = 1600,
         .long_width  = 1832,
         .gap_limit   = 2500,
         .reset_limit = 9000,

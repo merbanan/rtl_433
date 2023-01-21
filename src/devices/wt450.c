@@ -96,7 +96,7 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     humidity      = ((b[1] & 0x7) << 4) | (b[2] >> 4);
     temp_whole    = (b[2] << 4) | (b[3] >> 4);
     temp_fraction = (b[3] & 0xF);
-    temp          = (temp_whole - 50) + (temp_fraction / 16.0);
+    temp          = (temp_whole - 50.0f) + (temp_fraction / 16.0f);
     seq           = (b[4] >> 6);
 
     /* clang-format off */
