@@ -104,7 +104,7 @@ static int geo_minim_ct_sensor_decode(r_device *decoder, bitbuffer_t *bitbuffer,
             "id",           "",             DATA_STRING, id,
             "power_VA",     "Power",        DATA_FORMAT, "%u VA", DATA_INT, va,
             "flags4",       "Flags",        DATA_COND, flags4 != 0x30, DATA_FORMAT, "%#x", DATA_INT, flags4,
-            "uptime_s",     "Uptime",       DATA_STRING, uptime_s,
+            "uptime_s",     "Uptime",       DATA_INT, uptime_s,
             "mic",          "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -235,30 +235,24 @@ static int geo_minim_display_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
 
 static int minim_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const pre[] = { 0x55, 0x55 };
-    const unsigned prelen = 8 * sizeof(pre);
-    uint8_t const syn[] = { 0x7b, 0xb9 };
-    const unsigned synlen = 8 * sizeof(syn);
+    // preamble and sync can be aaaa7bb9 or 55557bb9
+    uint8_t const preamble1[] = { 0xaa, 0xaa, 0x7b, 0xb9 };
+    uint8_t const preamble2[] = { 0x55, 0x55, 0x7b, 0xb9 };
+    const unsigned preamble_len = 8 * sizeof(preamble1);
 
     if (bitbuffer->num_rows != 1)
         return DECODE_ABORT_LENGTH;
 
     unsigned row = 0; // we expect only one row
 
-    if (bitbuffer->bits_per_row[row] <= prelen)
-        return DECODE_ABORT_LENGTH;
-
-    unsigned bitpos = bitbuffer_search(bitbuffer, row, 0, pre, prelen) + prelen;
-    if (bitpos >= bitbuffer->bits_per_row[row])
-        return DECODE_ABORT_EARLY;
-
-    if (bitbuffer->bits_per_row[row] <= bitpos + synlen)
-        return DECODE_ABORT_LENGTH;
-
-    bitpos = bitbuffer_search(bitbuffer, row, bitpos, syn, synlen) + synlen;
+    // Search preamble+sync, try alternative
+    unsigned bitpos = bitbuffer_search(bitbuffer, row, 0, preamble1, preamble_len) + preamble_len;
     if (bitpos >= bitbuffer->bits_per_row[row]) {
-        if (decoder->verbose >= 1)
-            decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "No sync");
+        bitpos = bitbuffer_search(bitbuffer, row, 0, preamble2, preamble_len) + preamble_len;
+    }
+    if (bitpos >= bitbuffer->bits_per_row[row]) {
+        if (decoder->verbose >= 2)
+            decoder_logf_bitbuffer(decoder, 3, __func__, bitbuffer, "Sync not found");
         return DECODE_ABORT_EARLY;
     }
 
