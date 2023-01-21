@@ -34,6 +34,12 @@ r_device *create_device(r_device *dev_template);
 /// Output data.
 void decoder_output_data(r_device *decoder, data_t *data);
 
+/// Output log.
+void decoder_output_log(r_device *decoder, int level, data_t *data);
+
+// be terse, a maximum msg length of 60 characters is supported on the decoder_log_ functions
+// e.g. "FoobarCorp-XY3000: unexpected type code %02x"
+
 /// Output a log message.
 void decoder_log(r_device *decoder, int level, char const *func, char const *msg);
 
@@ -61,52 +67,6 @@ void decoder_log_bitrow(r_device *decoder, int level, char const *func, uint8_t 
 void decoder_logf_bitrow(r_device *decoder, int level, char const *func, uint8_t const *bitrow, unsigned bit_len, _Printf_format_string_ const char *format, ...)
 #if defined(__GNUC__) || defined(__clang__)
         __attribute__((format(printf, 6, 7)))
-#endif
-        ;
-
-// be terse, a maximum msg length of 60 characters is supported on the decoder_output_ functions
-// e.g. "FoobarCorp-XY3000: unexpected type code %02x"
-
-/// Output a message.
-void decoder_output_message(r_device *decoder, char const *msg);
-
-/// Output a message and the content of a bitbuffer.
-void decoder_output_bitbuffer(r_device *decoder, bitbuffer_t const *bitbuffer, char const *msg);
-
-/// Output a message and the content of a bitbuffer.
-/// Usage not recommended.
-void decoder_output_bitbuffer_array(r_device *decoder, bitbuffer_t const *bitbuffer, char const *msg);
-
-/// Output a message and the content of a bit row (byte buffer).
-void decoder_output_bitrow(r_device *decoder, uint8_t const *bitrow, unsigned bit_len, char const *msg);
-
-// print helpers
-
-/// Output a message with args.
-void decoder_output_messagef(r_device *decoder, _Printf_format_string_ char const *restrict format, ...)
-#if defined(__GNUC__) || defined(__clang__)
-        __attribute__((format(printf, 2, 3)))
-#endif
-        ;
-
-/// Output a message with args and the content of a bitbuffer.
-void decoder_output_bitbufferf(r_device *decoder, bitbuffer_t const *bitbuffer, _Printf_format_string_ char const *restrict format, ...)
-#if defined(__GNUC__) || defined(__clang__)
-        __attribute__((format(printf, 3, 4)))
-#endif
-        ;
-
-/// Output a message with args and the content of a bitbuffer.
-void decoder_output_bitbuffer_arrayf(r_device *decoder, bitbuffer_t const *bitbuffer, _Printf_format_string_ char const *restrict format, ...)
-#if defined(__GNUC__) || defined(__clang__)
-        __attribute__((format(printf, 3, 4)))
-#endif
-        ;
-
-/// Output a message with args and the content of a bit row (byte buffer).
-void decoder_output_bitrowf(r_device *decoder, uint8_t const *bitrow, unsigned bit_len, _Printf_format_string_ char const *restrict format, ...)
-#if defined(__GNUC__) || defined(__clang__)
-        __attribute__((format(printf, 4, 5)))
 #endif
         ;
 

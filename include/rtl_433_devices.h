@@ -232,6 +232,9 @@
     DECL(rubicson_pool_48942) \
     DECL(badger_orion) \
     DECL(govee_h5054) \
+    DECL(geo_minim) \
+    DECL(tpms_tyreguard400) \
+    DECL(tpms_kia) \
 
     /* Add new decoders here. */
 

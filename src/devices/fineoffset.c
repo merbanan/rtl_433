@@ -448,8 +448,9 @@ Example: 22.6 C, 40 %, 1001.7 hPa
 Data layout:
 
     aa 2d d4 e5 02 72 28 27 21 c9 bb aa
-             ?I IT TT HH PP PP CC BB
+             MI IT TT HH PP PP CC XX
 
+- M: 4 bit Model code, 0xd: old model, 0xe: new model.
 - I: 8 bit Sensor ID (based on 2 different sensors). Does not change at battery change.
 - B: 1 bit low battery indicator
 - F: 1 bit invalid reading indicator
@@ -457,7 +458,7 @@ Data layout:
 - H: 8 bit Humidity
 - P: 16 bit Pressure (*10)
 - C: 8 bit Checksum of previous 6 bytes (binary sum truncated to 8 bit)
-- B: 8 bit Bitsum (XOR) of the 6 data bytes (high and low nibble exchanged)
+- X: 8 bit Bitsum (XOR) of the 6 data bytes (high and low nibble exchanged)
 
 WH32B is the same as WH25 but two packets in one transmission of {971} and XOR sum missing.
 

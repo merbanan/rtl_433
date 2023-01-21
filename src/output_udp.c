@@ -193,7 +193,7 @@ static void R_API_CALLCONV data_output_syslog_free(data_output_t *output)
     free(syslog);
 }
 
-struct data_output *data_output_syslog_create(const char *host, const char *port)
+struct data_output *data_output_syslog_create(int log_level, const char *host, const char *port)
 {
     data_output_syslog_t *syslog = calloc(1, sizeof(data_output_syslog_t));
     if (!syslog) {
@@ -210,6 +210,7 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
     }
 #endif
 
+    syslog->output.log_level    = log_level;
     syslog->output.output_print = data_output_syslog_print;
     syslog->output.output_free  = data_output_syslog_free;
     // Severity 5 "Notice", Facility 20 "local use 4"
