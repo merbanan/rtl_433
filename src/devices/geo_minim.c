@@ -71,8 +71,10 @@ Data format string:
     VA: Big endian power x10VA, bit14 = 5VA
     UP: Big endian uptime x9 seconds
 */
-static int geo_minim_ct_sensor_decode(r_device * const decoder, uint8_t const buf[], unsigned len)
+static int geo_minim_ct_sensor_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t const buf[], unsigned len)
 {
+    (void)bitbuffer;
+
     if (len != 11) {
         decoder_logf_bitrow(decoder, 1, __func__, buf, 8 * len,
             "Incorrect length. Expected 11 got %u bytes", len);
@@ -83,17 +85,8 @@ static int geo_minim_ct_sensor_decode(r_device * const decoder, uint8_t const bu
     snprintf(id, sizeof(id), "%02X%02X%02X%02X", buf[0], buf[1], buf[2], buf[3]);
 
     // Uptime in ~8 second intervals
-    unsigned n = 8 * (buf[8] + (buf[7] << 8) + (buf[6] << 16));
-
-    // Convert to days,hours,minutes,seconds
-    unsigned secs = n % 60;
-    n /= 60;
-    unsigned mins = n % 60;
-    n /= 60;
-    unsigned hours = n % 24;
-    n /= 24;
-    char up[32];
-    snprintf(up, sizeof(up), "%uday %02u:%02u:%02u", n, hours, mins, secs);
+    unsigned uptime_raw = (buf[6] << 16) + (buf[7] << 8) + buf[8];
+    unsigned uptime_s = 8 * uptime_raw;
 
     // Bytes 4 & 5 appear to be the instantaneous VA x10.
     // When scaled by the 'Fine Tune' setting (power factor [0.88]) set on the
@@ -107,12 +100,12 @@ static int geo_minim_ct_sensor_decode(r_device * const decoder, uint8_t const bu
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",    "Device",       DATA_STRING, "GEO-minimCT",
-            "id",       "ID",           DATA_STRING, id,
-            "va",       "VA",           DATA_INT, va,
-            "flags4",   "Flags",        DATA_COND, flags4 != 0x30, DATA_FORMAT, "%#x", DATA_INT, flags4,
-            "uptime",   "Uptime",       DATA_STRING, up,
-            "mic",      "Integrity",    DATA_STRING, "CRC",
+            "model",        "",             DATA_STRING, "GEO-minimCT",
+            "id",           "",             DATA_STRING, id,
+            "power_VA",     "Power",        DATA_FORMAT, "%u VA", DATA_INT, va,
+            "flags4",       "Flags",        DATA_COND, flags4 != 0x30, DATA_FORMAT, "%#x", DATA_INT, flags4,
+            "uptime_s",     "Uptime",       DATA_STRING, uptime_s,
+            "mic",          "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -120,7 +113,6 @@ static int geo_minim_ct_sensor_decode(r_device * const decoder, uint8_t const bu
 
     return 1; // Message successfully decoded
 }
-
 
 /**
 GEO minim+ display.
@@ -134,8 +126,8 @@ Packet layout:
 - CRC16
 
 The following Flex decoder will capture the raw display data:
-rtl_433 -f 868.29M -s1024000 -Y classic\
-        -X'n=minim+ display,m=FSK_PCM,s=24,l=24,r=3000,preamble=0x7bb9ea'
+
+    rtl_433 -f 868.29M -s 1024k -Y classic -X 'n=minim+ display,m=FSK_PCM,s=24,l=24,r=3000,preamble=0x7bb9ea'
 
 Data format string:
 
@@ -145,8 +137,10 @@ Data format string:
     WH: Watt-hours in last 15 minutes, little endian
     MIN,HRS,DAYs since 1/1/2007, little endian
 */
-static int geo_minim_display_decode(r_device * const decoder, uint8_t const buf[], unsigned len)
+static int geo_minim_display_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t const buf[], unsigned len)
 {
+    (void)bitbuffer;
+
     uint8_t const zeroes[8] = { 0 };
     uint8_t const aaes[5] = { 0xaa, 0xaa, 0xaa, 0xaa, 0xaa };
     uint8_t const trailer[12] = { 0xaa, 0xff, 0xff, 0, 0, 0, 0, 0xaa, 0xff, 0xaa, 0xaa, 0 };
@@ -219,16 +213,14 @@ static int geo_minim_display_decode(r_device * const decoder, uint8_t const buf[
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",    "",             DATA_STRING, "GEO-minimDP",
-            "id",       "",             DATA_STRING, id,
-            "watts",    "Watts",        DATA_FORMAT, "%u", DATA_INT, watts,
-            "kwh",      "kWh",          DATA_FORMAT, "%.3f", DATA_DOUBLE, wh * 0.001,
-            "time",     "Time",         DATA_STRING, now,
-            "flags5",   "Flags5",       DATA_COND, flags5 != 0,
-                                                DATA_FORMAT, "%#x", DATA_INT, flags5,
-            "flags15",  "Flags15",      DATA_COND, flags15 != 0x40,
-                                                DATA_FORMAT, "%#x", DATA_INT, flags15,
-            "mic",      "Integrity",    DATA_STRING, "CRC",
+            "model",        "",             DATA_STRING, "GEO-minimDP",
+            "id",           "",             DATA_STRING, id,
+            "power_W",      "Power",        DATA_FORMAT, "%u W", DATA_INT, watts,
+            "energy_kWh",   "Energy",       DATA_FORMAT, "%.3f kWh", DATA_DOUBLE, wh * 0.001,
+            "clock",         "Clock",         DATA_STRING, now,
+            "flags5",       "Flags5",       DATA_COND, flags5 != 0, DATA_FORMAT, "%#x", DATA_INT, flags5,
+            "flags15",      "Flags15",      DATA_COND, flags15 != 0x40, DATA_FORMAT, "%#x", DATA_INT, flags15,
+            "mic",          "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -236,6 +228,10 @@ static int geo_minim_display_decode(r_device * const decoder, uint8_t const buf[
 
     return 1; // Message successfully decoded
 }
+
+// packet type magic numbers
+#define MTYPE_DISPLAY 0xea
+#define MTYPE_CT 0x3f
 
 static int minim_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -282,17 +278,10 @@ static int minim_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // buf[0] = message type
     // buf[1], buf[2] = session ID from pairing
     // buf[3] = data byte length
-    uint8_t const header1[] = { 0xea, /* 0x01, 0x35, 0x2a */ }; // Display
-    uint8_t const header2[] = { 0x3f, /* 0x06, 0x29, 0x05 */ }; // CT sensor
-    enum EType { kTypeDisplay, kTypeCT } type;
-    if (!memcmp(header1, buf, sizeof(header1))) {
-        type = kTypeDisplay;
-    }
-    else if (!memcmp(header2, buf, sizeof(header2))) {
-        type = kTypeCT;
-    }
-    else
-    {
+    // e.g. ea 01 35 2a : Display
+    // e.g. 3f 06 29 05 : CT sensor
+    int mtype = buf[0];
+    if (mtype != MTYPE_DISPLAY && mtype != MTYPE_CT) {
         decoder_logf(decoder, 1, __func__,
                 "Unknown header %02x%02x%02x%02x",
                 buf[0], buf[1], buf[2], buf[3]);
@@ -312,29 +301,27 @@ static int minim_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned crc_len = hdr_len + buf[3];
     if (crc_len + 2 > bytes) {
         decoder_logf(decoder, 1, __func__,
-                "Truncated - got %u of %u bytes", bytes, crc_len +2);
+                "Truncated - got %u of %u bytes", bytes, crc_len + 2);
         return DECODE_FAIL_SANITY;
     }
 
     // Extract byte-aligned data
-    bitbuffer_extract_bytes(
-            bitbuffer, row, bitpos + hdr_bits, buf + hdr_len, (bytes - hdr_len) * 8);
+    bitbuffer_extract_bytes(bitbuffer, row, bitpos + hdr_bits, buf + hdr_len, (bytes - hdr_len) * 8);
 
     // Message Integrity Check
     unsigned crc = crc16(buf, crc_len, 0x8005, 0);
-    unsigned crc_rcvd = (buf[crc_len] << 8) | buf[crc_len +1];
+    unsigned crc_rcvd = (buf[crc_len] << 8) | buf[crc_len + 1];
     if (crc != crc_rcvd) {
         decoder_logf_bitrow(decoder, 1, __func__, buf, (crc_len + 2) * 8,
                 "Bad CRC. Expected %04X got %04X", crc, crc_rcvd);
         return DECODE_FAIL_MIC;
     }
 
-    switch (type) {
-    case kTypeDisplay:
-        return geo_minim_display_decode(decoder, buf, bytes);
-
-    case kTypeCT:
-        return geo_minim_ct_sensor_decode(decoder, buf, bytes);
+    if (mtype == MTYPE_DISPLAY) {
+        return geo_minim_display_decode(decoder, bitbuffer, buf, bytes);
+    }
+    if (mtype == MTYPE_CT) {
+        return geo_minim_ct_sensor_decode(decoder, bitbuffer, buf, bytes);
     }
 
     return DECODE_FAIL_SANITY;
@@ -344,12 +331,12 @@ static int minim_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
         "model",
         "id",
-        "va",
+        "power_VA",
         "flags4",
-        "uptime",
-        "watts",
-        "kwh",
-        "time",
+        "uptime_s",
+        "power_W",
+        "energy_kWh",
+        "clock",
         "flags5",
         "flags15",
         "mic",
