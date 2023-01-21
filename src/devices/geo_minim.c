@@ -12,6 +12,9 @@
 /** @fn int minim_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 GEO mimim+ energy monitor.
 
+@sa geo_minim_ct_sensor_decode()
+@sa geo_minim_display_decode()
+
 The GEO minim+ energy monitor comprises a sensor unit and a display unit.
 https://assets.geotogether.com/sites/4/20170719152420/Minim-Data-sheet.pdf
 
@@ -70,8 +73,6 @@ Data format string:
 */
 static int geo_minim_ct_sensor_decode(r_device * const decoder, uint8_t const buf[], unsigned len)
 {
-    unsigned n, va, flags4;
-
     if (len != 11) {
         decoder_logf_bitrow(decoder, 1, __func__, buf, 8 * len,
             "Incorrect length. Expected 11 got %u bytes", len);
@@ -236,10 +237,36 @@ static int geo_minim_display_decode(r_device * const decoder, uint8_t const buf[
     return 1; // Message successfully decoded
 }
 
-static int decode_minim_message(r_device *const decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+static int minim_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t buf[128];
-    unsigned bits = bitbuffer->bits_per_row[ row];
+    uint8_t const pre[] = { 0x55, 0x55 };
+    const unsigned prelen = 8 * sizeof(pre);
+    uint8_t const syn[] = { 0x7b, 0xb9 };
+    const unsigned synlen = 8 * sizeof(syn);
+
+    if (bitbuffer->num_rows != 1)
+        return DECODE_ABORT_LENGTH;
+
+    unsigned row = 0; // we expect only one row
+
+    if (bitbuffer->bits_per_row[row] <= prelen)
+        return DECODE_ABORT_LENGTH;
+
+    unsigned bitpos = bitbuffer_search(bitbuffer, row, 0, pre, prelen) + prelen;
+    if (bitpos >= bitbuffer->bits_per_row[row])
+        return DECODE_ABORT_EARLY;
+
+    if (bitbuffer->bits_per_row[row] <= bitpos + synlen)
+        return DECODE_ABORT_LENGTH;
+
+    bitpos = bitbuffer_search(bitbuffer, row, bitpos, syn, synlen) + synlen;
+    if (bitpos >= bitbuffer->bits_per_row[row]) {
+        if (decoder->verbose >= 1)
+            decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "No sync");
+        return DECODE_ABORT_EARLY;
+    }
+
+    unsigned bits = bitbuffer->bits_per_row[row];
 
     // Extract frame header
     unsigned const hdr_len = 4;
@@ -248,6 +275,7 @@ static int decode_minim_message(r_device *const decoder, bitbuffer_t *bitbuffer,
         return DECODE_ABORT_LENGTH;
 
     bits -= bitpos;
+    uint8_t buf[128];
     bitbuffer_extract_bytes(bitbuffer, row, bitpos, buf, hdr_bits);
 
     // Determine frame type. Assume:
@@ -294,7 +322,7 @@ static int decode_minim_message(r_device *const decoder, bitbuffer_t *bitbuffer,
 
     // Message Integrity Check
     unsigned crc = crc16(buf, crc_len, 0x8005, 0);
-    unsigned crc_rcvd = (buf[ crc_len] << 8) | buf[ crc_len +1];
+    unsigned crc_rcvd = (buf[crc_len] << 8) | buf[crc_len +1];
     if (crc != crc_rcvd) {
         decoder_logf_bitrow(decoder, 1, __func__, buf, (crc_len + 2) * 8,
                 "Bad CRC. Expected %04X got %04X", crc, crc_rcvd);
@@ -327,39 +355,6 @@ static char *output_fields[] = {
         "mic",
         NULL,
 };
-
-static int minim_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-{
-    uint8_t const pre[] = { 0x55, 0x55 };
-    const unsigned prelen = 8 * sizeof(pre);
-    uint8_t const syn[] = { 0x7b, 0xb9 };
-    const unsigned synlen = 8 * sizeof(syn);
-    int n;
-
-    if (bitbuffer->num_rows != 1)
-        return DECODE_ABORT_LENGTH;
-
-    if (bitbuffer->bits_per_row[0] <= prelen)
-        return DECODE_ABORT_LENGTH;
-
-    if ((n = bitbuffer_search(bitbuffer, 0, 0, pre, prelen)) >= bitbuffer->bits_per_row[0])
-        return DECODE_ABORT_EARLY;
-
-    if (bitbuffer->bits_per_row[0] <= n + prelen + synlen)
-        return DECODE_ABORT_LENGTH;
-
-    if ((n = bitbuffer_search(bitbuffer, 0, n + prelen, syn, synlen))
-            >= bitbuffer->bits_per_row[0]) {
-        if (decoder->verbose >= 1)
-            decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "No sync");
-        return DECODE_ABORT_EARLY;
-    }
-
-    if ((n = decode_minim_message(decoder, bitbuffer, 0, n + synlen)) <= 0)
-        return n;
-
-    return 1;
-}
 
 r_device geo_minim = {
         .name           = "GEO minim+ energy monitor",
