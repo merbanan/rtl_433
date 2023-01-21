@@ -14,24 +14,22 @@
 #include "decoder.h"
 
 /**
-Fuzhou Emax Electronic W6 Professional Weather Station (other ref WEC-W6, 3390TX W6, EM3390W6)
-Rebrand and compatible ref :
+Fuzhou Emax Electronic W6 Professional Weather Station.
+Rebrand and devices decoded :
+- Emax W6 / WEC-W6 / 3390TX W6 / EM3390W6
 - Altronics x7063/4
-- Optex 990040, 990050, 990051
+- Optex 990040 / 990050 / 990051 / SM-040
 - Infactory FWS-1200
 - Newentor Q9
 - Otio Weather Station Pro La Surprenante 810025
 - Orium Pro Atlanta 13093, Helios 13123
+- Protmex PT3390A
+- Jula Marquant 014331 weather station /014332 temp hum sensor
 
-
-S.a. issue #2000 #2299 request #2300
+S.a. issue #2000 #2299 #2326  PR #2300
 
 - Likely a rebranded device, sold by Altronics
 - Data length is 32 bytes with a preamble of 10 bytes (33 bytes for Rain/Wind Station)
-
---> Emax product, sold by Altronics, Technoline, Optex, Infactory ...
- Weather station EM3390W6 = Optex 990040 = Newentor Q9 = Infactory FWS-1200...
- Weather station are composed of a central weather display station with Wifi connection + External Temp/Hum sensor (same as Altronics X7064) + Multisensor station with Temp/Hum/Wind/Dir/Rain/UV/Lux.
 
 Data Layout:
 
@@ -82,7 +80,7 @@ default empty/null = 0x01 => value = 0
 - R: (16) Rain
 - W: (12) Wind speed
 - D: (9 bit) Wind Direction
-- U: (4 bit) UV index
+- U: (5 bit) UV index
 - L: (1 + 15 bit) Lux value, if first bit = 1 , then x 10 the rest.
 - A: (4 bit) fixed values of 0xA
 - 0: (4 bit) fixed values of 0x0
@@ -179,8 +177,8 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             int direction_deg = (((b[9] & 0x0f) - 1) << 8) | (b[10] - 1);
             int rain_raw      = ((b[11] - 1) << 8 ) | (b[12] -1);
             float rain_mm     = rain_raw * 0.2f;
-            int uv_index      = (b[13] & 0x0f) - 1;
-            int lux_multi     = ((b[14] & 0x80) >> 7);
+            int uv_index      = (b[13] & 0x1f) - 1;
+            int lux_multi     = (((b[14] - 1) & 0x80) >> 7);
             int light_lux     = ((b[14] & 0x7f) - 1) << 8 | (b[15] - 1);
             if (lux_multi == 1) {
                 light_lux = light_lux * 10;
@@ -230,7 +228,7 @@ static char *output_fields[] = {
 };
 
 r_device emax = {
-        .name        = "Emax W6, rebrand Altronics x7063/4, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025 Weather sensor",
+        .name        = "Emax W6, rebrand Altronics x7063/4, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025, Protmex PT3390A, Jula Marquant 014331/32, Weather Station or temperature/humidity sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 90,
         .long_width  = 90,
