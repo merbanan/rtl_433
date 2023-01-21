@@ -20,15 +20,18 @@ add_library(r_433 STATIC
     http_server.c
     jsmn.c
     list.c
+    logger.c
     mongoose.c
     optparse.c
     output_file.c
     output_influx.c
+    output_log.c
     output_mqtt.c
     output_rtltcp.c
     output_trigger.c
     output_udp.c
     pulse_analyzer.c
+    pulse_data.c
     pulse_detect.c
     pulse_detect_fsk.c
     pulse_slicer.c
@@ -58,6 +61,7 @@ add_library(r_433 STATIC
     devices/auriol_afw2a1.c
     devices/auriol_ahfl.c
     devices/auriol_hg02832.c
+    devices/badger_water.c
     devices/blueline.c
     devices/blyss.c
     devices/brennenstuhl_rcs_2044.c
@@ -101,6 +105,8 @@ add_library(r_433 STATIC
     devices/fineoffset_wh1050.c
     devices/fineoffset_wh1080.c
     devices/fineoffset_wh31l.c
+    devices/fineoffset_wh45.c
+    devices/fineoffset_wn34.c
     devices/fineoffset_ws80.c
     devices/flex.c
     devices/fordremote.c
@@ -111,6 +117,7 @@ add_library(r_433 STATIC
     devices/generic_motion.c
     devices/generic_remote.c
     devices/generic_temperature_sensor.c
+    devices/geo_minim.c
     devices/govee.c
     devices/gt_tmbbq05.c
     devices/gt_wt_02.c
@@ -151,6 +158,7 @@ add_library(r_433 STATIC
     devices/marlec_solar.c
     devices/maverick_et73.c
     devices/maverick_et73x.c
+    devices/maverick_xr30.c
     devices/mebus.c
     devices/megacode.c
     devices/missil_ml0757.c
@@ -179,6 +187,7 @@ add_library(r_433 STATIC
     devices/rojaflex.c
     devices/rubicson.c
     devices/rubicson_48659.c
+    devices/rubicson_pool_48942.c
     devices/s3318p.c
     devices/schraeder.c
     devices/scmplus.c
@@ -219,6 +228,7 @@ add_library(r_433 STATIC
     devices/tpms_renault_0435r.c
     devices/tpms_toyota.c
     devices/tpms_truck.c
+    devices/tpms_tyreguard400.c
     devices/ts_ft002.c
     devices/ttx201.c
     devices/vaillant_vrt340f.c

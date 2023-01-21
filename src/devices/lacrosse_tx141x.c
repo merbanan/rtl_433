@@ -17,6 +17,8 @@ LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX145wsdth sensor.
 Also TFA 30.3221.02 (a TX141TH-Bv2),
 also TFA 30.3222.02 (a LaCrosse-TX141W).
 also TFA 30.3251.10 (a LaCrosse-TX141W).
+also some rebrand (ORIA WA50B) with a slightly longer timing, s.a. #2088
+also TFA 30.3243.02 (a LaCrosse-TX141Bv3)
 
 LaCrosse Color Forecast Station (model C85845), or other LaCrosse product
 utilizing the remote temperature/humidity sensor TX141TH-Bv2 transmitting
@@ -55,27 +57,12 @@ The data is grouped in 5 bytes / 10 nybbles
 
     [id] [id] [flags] [temp] [temp] [temp] [humi] [humi] [chk] [chk]
 
-The "id" is an 8 bit random integer generated when the sensor powers up for the
-first time; "flags" are 4 bits for battery low indicator, test button press,
-and channel; "temp" is 12 bit unsigned integer which encodes temperature in degrees
-Celsius as follows:
-temp_c = temp/10 - 50
-to account for the -40 C -- 60 C range; "humi" is 8 bit integer indicating
-relative humidity in %. The method of calculating "chk", the presumed 8-bit checksum
-remains a complete mystery at the moment of this writing, and I am not totally sure
-if the last is any kind of CRC. I've run reveng 1.4.4 on exemplary data with all
-available CRC algorithms and found no match. Be my guest if you want to
-solve it - for example, if you figure out why the following two pairs have identical
-checksums you'll become a hero:
+- id:    8 bit random integer generated at each powers up
+- flags: 4 bit for battery low indicator, test button press, and channel
+- temp: 12 bit unsigned temperature in degrees Celsius, scaled by 10, offset 500, range -40 C to 60 C
+- humi:  8 bit integer indicating relative humidity in %.
+- chk:   8 bit checksum is a digest, 0x31, 0xf4, reflected
 
-    0x87 0x02 0x3c 0x3b 0xe1
-    0x87 0x02 0x7d 0x37 0xe1
-    0x87 0x01 0xc3 0x31 0xd8
-    0x87 0x02 0x28 0x37 0xd8
-
-Developer's comment: with unknown CRC (see above) the obvious way of checking the data
-integrity is making use of the 12 packet repetition. In principle, transmission errors are
-be relatively rare, thus the most frequent packet should represent the true data.
 A count enables us to determine the quality of radio transmission.
 
 *** Addition of TX141 temperature only device, Jan 2018 by Andrew Rivett <veggiefrog@gmail.com>**
@@ -90,16 +77,6 @@ Changes:
 - temp_f removed, temp_c (celsius) is what's provided by the device.
 
 - TX141TH-BV3 bitlen is 41
-
-The CRC Checksum is not checked. In trying to reverse engineer the
-CRC, the first nibble can be checked by:
-
-    a1 = (bytes[0]&0xF0) >> 4);
-    b1 = (bytes[1]&0x40) >> 4) - 1;
-    c1 = (bytes[2]&0xF0) >> 4);
-    n1 = (a1+a2+c3)&0x0F;
-
-The second nibble I could not figure out.
 
 Addition of TX141W and TX145wsdth:
 
@@ -129,7 +106,8 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Find the most frequent data packet
     // reduce false positives, require at least 5 out of 12 or 3 of 4 repeats.
-    r = bitbuffer_find_repeated_row(bitbuffer, bitbuffer->num_rows > 4 ? 5 : 3, 32); // 32
+    // allows 4-repeats transmission to contain a bogus extra row.
+    r = bitbuffer_find_repeated_row(bitbuffer, bitbuffer->num_rows > 5 ? 5 : 3, 32); // 32
     if (r < 0) {
         // try again for TX141W/TX145wsdth, require at least 2 out of 3-7 repeats.
         r = bitbuffer_find_repeated_row(bitbuffer, 2, 64); // 65
@@ -266,7 +244,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data = data_make(
                 "model",         "",              DATA_STRING, "LaCrosse-TX141Bv2",
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
-                "channel",       "Channel",       DATA_FORMAT, "%02x", DATA_INT, channel,
+                "channel",       "Channel",       DATA_INT, channel,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 "battery_ok",    "Battery",       DATA_INT,    !battery_low,
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
@@ -278,7 +256,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data = data_make(
                 "model",         "",              DATA_STRING, "LaCrosse-TX141Bv3",
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
-                "channel",       "Channel",       DATA_FORMAT, "%02x", DATA_INT, channel,
+                "channel",       "Channel",       DATA_INT, channel,
                 "battery_ok",    "Battery",       DATA_INT,    !battery_low,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
@@ -288,13 +266,14 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     else {
         // Digest check for TX141TH-Bv2
         if (lfsr_digest8_reflect(b, 4, 0x31, 0xf4) != b[4]) {
+            decoder_logf(decoder, 1, __func__, "Checksum digest TX141TH failed");
             return DECODE_FAIL_MIC;
         }
         /* clang-format off */
         data = data_make(
                 "model",         "",              DATA_STRING, "LaCrosse-TX141THBv2",
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
-                "channel",       "Channel",       DATA_FORMAT, "%02x", DATA_INT, channel,
+                "channel",       "Channel",       DATA_INT, channel,
                 "battery_ok",    "Battery",       DATA_INT,    !battery_low,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 "humidity",      "Humidity",      DATA_FORMAT, "%u %%", DATA_INT, humidity,
@@ -324,7 +303,7 @@ static char *output_fields[] = {
 
 // note TX141W, TX145wsdth: m=OOK_PWM, s=256, l=500, r=1888, y=748
 r_device lacrosse_tx141x = {
-        .name        = "LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX141W, TX145wsdth sensor",
+        .name        = "LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX141W, TX145wsdth, (TFA, ORIA) sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 208,  // short pulse is 208 us + 417 us gap
         .long_width  = 417,  // long pulse is 417 us + 208 us gap

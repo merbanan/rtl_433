@@ -148,8 +148,9 @@ typedef struct data_output {
     void (R_API_CALLCONV *print_double)(struct data_output *output, double data, char const *format);
     void (R_API_CALLCONV *print_int)(struct data_output *output, int data, char const *format);
     void (R_API_CALLCONV *output_start)(struct data_output *output, char const *const *fields, int num_fields);
-    void (R_API_CALLCONV *output_flush)(struct data_output *output);
+    void (R_API_CALLCONV *output_print)(struct data_output *output, data_t *data);
     void (R_API_CALLCONV *output_free)(struct data_output *output);
+    int log_level; ///< the maximum log level (verbosity) allowed, more verbose messages must be ignored.
 } data_output_t;
 
 /** Setup known field keys and start output, used by CSV only.

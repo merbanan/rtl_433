@@ -22,6 +22,10 @@ NOTE: The Govee Door Contact sensors only send a message when the contact
       is opened.
       Unfortunately, it does NOT send a message when the contact is closed.
 
+Data layout:
+
+    II II ?E DD ?? XX
+
 - A data packet is 6 bytes, 48 bits.
 - Bits are likely inverted (short=0, long=1)
 - First 2 bytes are the ID.
@@ -34,6 +38,10 @@ NOTE: The Govee Door Contact sensors only send a message when the contact
 - Byte 5 is unknown.
 - Last byte contains the parity bits in index 2-6 (101PPPP1).
   The parity checksum using CRC8 against the first 5 bytes
+
+Data decoding:
+
+    ID:8h8h ?4h EVENT:4h EVENTDATA:8h ?8h CHK:3b 4h 1b
 
 Battery levels:
 

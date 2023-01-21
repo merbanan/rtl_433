@@ -157,6 +157,8 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 /**
 Fine Offset Electronics WH24, WH65B, HP1000 and derivatives Temperature/Humidity/Pressure sensor protocol.
 
+Also: Misol WS2320 (rebranded WH65B, 433MHz)
+
 The sensor sends a package each ~16 s with a width of ~11 ms. The bits are PCM modulated with Frequency Shift Keying.
 
 Example:
@@ -446,8 +448,9 @@ Example: 22.6 C, 40 %, 1001.7 hPa
 Data layout:
 
     aa 2d d4 e5 02 72 28 27 21 c9 bb aa
-             ?I IT TT HH PP PP CC BB
+             MI IT TT HH PP PP CC XX
 
+- M: 4 bit Model code, 0xd: old model, 0xe: new model.
 - I: 8 bit Sensor ID (based on 2 different sensors). Does not change at battery change.
 - B: 1 bit low battery indicator
 - F: 1 bit invalid reading indicator
@@ -455,7 +458,7 @@ Data layout:
 - H: 8 bit Humidity
 - P: 16 bit Pressure (*10)
 - C: 8 bit Checksum of previous 6 bytes (binary sum truncated to 8 bit)
-- B: 8 bit Bitsum (XOR) of the 6 data bytes (high and low nibble exchanged)
+- X: 8 bit Bitsum (XOR) of the 6 data bytes (high and low nibble exchanged)
 
 WH32B is the same as WH25 but two packets in one transmission of {971} and XOR sum missing.
 
@@ -548,44 +551,45 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-/*
-Fine Offset WH51, ECOWITT WH51, MISOL/1 Soil Moisture Sensor
+/**
+Fine Offset WH51, ECOWITT WH51, MISOL/1 Soil Moisture Sensor.
 
 Also: SwitchDoc Labs SM23 Soil Moisture Sensor.
 
 Test decoding with: rtl_433 -f 433920000  -X "n=soil_sensor,m=FSK_PCM,s=58,l=58,t=5,r=5000,g=4000,preamble=aa2dd4"
 
+Note: for WH51 at 915MHz: try also "-Y classic" i.e. : rtl_433 -f 915M -Y classic -- see https://github.com/merbanan/rtl_433/issues/2235
+
 Data format:
 
-               00 01 02 03 04 05 06 07 08 09 10 11 12 13
-aa aa aa 2d d4 51 00 6b 58 6e 7f 24 f8 d2 ff ff ff 3c 28 8
-               FF II II II TB YY MM ZA AA XX XX XX CC SS
+                   00 01 02 03 04 05 06 07 08 09 10 11 12 13
+    aa aa aa 2d d4 51 00 6b 58 6e 7f 24 f8 d2 ff ff ff 3c 28 8
+                   FF II II II TB YY MM ZA AA XX XX XX CC SS
 
-Sync:     aa aa aa ...
-Preamble: 2d d4
-FF:       Family code 0x51 (ECOWITT/FineOffset WH51)
-IIIIII:   ID (3 bytes)
-T:        Transmission period boost: highest 3 bits set to 111 on moisture change and decremented each transmission;
-          if T = 0 period is 70 sec, if T > 0 period is 10 sec
-B:        Battery voltage: lowest 5 bits are battery voltage * 10 (e.g. 0x0c = 12 = 1.2V). Transmitter works down to 0.7V (0x07)
-YY:       ? Fixed: 0x7f
-MM:       Moisture percentage 0%-100% (0x00-0x64) MM = (AD - 70) / (450 - 70)
-Z:        ? Fixed: leftmost 7 bit 1111 100
-AAA:      9 bit AD value MSB byte[07] & 0x01, LSB byte[08]
-XXXXXX:   ? Fixed: 0xff 0xff 0xff
-CC:       CRC of the preceding 12 bytes (Polynomial 0x31, Initial value 0x00, Input not reflected, Result not reflected)
-SS:       Sum of the preceding 13 bytes % 256
+- Sync:     aa aa aa ...
+- Preamble: 2d d4
+- FF:       Family code 0x51 (ECOWITT/FineOffset WH51)
+- IIIIII:   ID (3 bytes)
+- T:        Transmission period boost: highest 3 bits set to 111 on moisture change and decremented each transmission;
+-           if T = 0 period is 70 sec, if T > 0 period is 10 sec
+- B:        Battery voltage: lowest 5 bits are battery voltage * 10 (e.g. 0x0c = 12 = 1.2V). Transmitter works down to 0.7V (0x07)
+- YY:       ? Fixed: 0x7f
+- MM:       Moisture percentage 0%-100% (0x00-0x64) MM = (AD - 70) / (450 - 70)
+- Z:        ? Fixed: leftmost 7 bit 1111 100
+- AAA:      9 bit AD value MSB byte[07] & 0x01, LSB byte[08]
+- XXXXXX:   ? Fixed: 0xff 0xff 0xff
+- CC:       CRC of the preceding 12 bytes (Polynomial 0x31, Initial value 0x00, Input not reflected, Result not reflected)
+- SS:       Sum of the preceding 13 bytes % 256
 
 See http://www.ecowitt.com/upfile/201904/WH51%20Manual.pdf for relationship between AD and moisture %
 
 Short explanation:
-Soil Moisture Percentage = (Moisture AD – 0%AD) / (100%AD – 0%AD) * 100
-0%AD = 70
-100%AD = 450 (manual states 500, but sensor internal computation are closer to 450)
-If sensor-calculated moisture percentage are inaccurate at low/high values, use the AD value and the above formaula
-changing 0%AD and 100%AD to cover the full scale from dry to damp
+- Soil Moisture Percentage = (Moisture AD – 0%AD) / (100%AD – 0%AD) * 100
+- 0%AD = 70
+- 100%AD = 450 (manual states 500, but sensor internal computation are closer to 450)
+- If sensor-calculated moisture percentage are inaccurate at low/high values, use the AD value and the above formaula
+  changing 0%AD and 100%AD to cover the full scale from dry to damp
 */
-
 static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
@@ -1016,7 +1020,7 @@ r_device fineoffset_WH2 = {
 };
 
 r_device fineoffset_WH25 = {
-        .name        = "Fine Offset Electronics, WH25, WH32B, WH24, WH65B, HP1000 Temperature/Humidity/Pressure Sensor",
+        .name        = "Fine Offset Electronics, WH25, WH32B, WH24, WH65B, HP1000, Misol WS2320 Temperature/Humidity/Pressure Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 58,    // Bit width = 58µs (measured across 580 samples / 40 bits / 250 kHz )
         .long_width  = 58,    // NRZ encoding (bit width = pulse width)

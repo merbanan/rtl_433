@@ -8,7 +8,7 @@
     published by the Free Software Foundation.
 */
 
-/*
+/**
 Simple FS20 remote decoder.
 
 Frequency: use rtl_433 -f 868.35M

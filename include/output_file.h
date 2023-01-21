@@ -21,10 +21,10 @@
     @return The auxiliary data to pass along with data_csv_printer to data_print.
             You must release this object with data_output_free once you're done with it.
 */
-struct data_output *data_output_csv_create(FILE *file);
+struct data_output *data_output_csv_create(int log_level, FILE *file);
 
-struct data_output *data_output_json_create(FILE *file);
+struct data_output *data_output_json_create(int log_level, FILE *file);
 
-struct data_output *data_output_kv_create(FILE *file);
+struct data_output *data_output_kv_create(int log_level, FILE *file);
 
 #endif /* INCLUDE_OUTPUT_FILE_H_ */

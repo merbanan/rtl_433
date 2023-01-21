@@ -9,7 +9,7 @@
     (at your option) any later version.
 */
 
-/*
+/**
 Brennenstuhl RCS 2044 remote control on 433.92MHz likely x1527.
 
 Receiver for the "RCS 2044 N Comfort Wireless Controller Set" sold under

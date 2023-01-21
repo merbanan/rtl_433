@@ -105,6 +105,7 @@ or `(echo "GET /stream HTTP/1.0\n"; sleep 600) | socat - tcp:127.0.0.1:8433`
 #include "list.h" // used for protocols
 #include "jsmn.h"
 #include "mongoose.h"
+#include "logger.h"
 #include "fatal.h"
 #include <stdbool.h>
 
@@ -385,13 +386,13 @@ static int json_parse(rpc_t *rpc, struct mg_str const *json)
     jsmn_init(&p);
     r = jsmn_parse(&p, json->p, json->len, t, sizeof(t) / sizeof(t[0]));
     if (r < 0) {
-        printf("Failed to parse JSON: %d\n", r);
+        print_logf(LOG_WARNING, __func__, "Failed to parse JSON: %d", r);
         return -1;
     }
 
     /* Assume the top-level element is an object */
     if (r < 1 || t[0].type != JSMN_OBJECT) {
-        printf("Object expected\n");
+        print_log(LOG_WARNING, __func__, "Object expected");
         return -1;
     }
 
@@ -414,7 +415,7 @@ static int json_parse(rpc_t *rpc, struct mg_str const *json)
             // compare endptr to t[i].end
         }
         else {
-            printf("Unexpected key: %.*s\n", t[i].end - t[i].start, json->p + t[i].start);
+            print_logf(LOG_WARNING, __func__, "Unexpected key: %.*s", t[i].end - t[i].start, json->p + t[i].start);
         }
     }
 
@@ -443,13 +444,13 @@ static int jsonrpc_parse(rpc_t *rpc, struct mg_str const *json)
     jsmn_init(&p);
     r = jsmn_parse(&p, json->p, json->len, t, sizeof(t) / sizeof(t[0]));
     if (r < 0) {
-        printf("Failed to parse JSON: %d\n", r);
+        print_logf(LOG_WARNING, __func__, "Failed to parse JSON: %d", r);
         return -1;
     }
 
     /* Assume the top-level element is an object */
     if (r < 1 || t[0].type != JSMN_OBJECT) {
-        printf("Object expected\n");
+        print_log(LOG_WARNING, __func__, "Object expected");
         return -1;
     }
 
@@ -496,7 +497,7 @@ static int jsonrpc_parse(rpc_t *rpc, struct mg_str const *json)
             i += t[i + 1].size + 1;
         }
         else {
-            printf("Unexpected key: %.*s\n", t[i].end - t[i].start, json->p + t[i].start);
+            print_logf(LOG_WARNING, __func__, "Unexpected key: %.*s", t[i].end - t[i].start, json->p + t[i].start);
         }
     }
 
@@ -1127,7 +1128,7 @@ static struct http_server_context *http_server_start(struct mg_mgr *mgr, char co
 
     ctx->conn = mg_bind_opt(mgr, address, ev_handler, bind_opts);
     if (ctx->conn == NULL) {
-        fprintf(stderr, "Error starting server on address %s: %s\n", address,
+        print_logf(LOG_ERROR, __func__, "Error starting server on address %s: %s", address,
                 *bind_opts.error_string);
         free(ctx);
         return NULL;
@@ -1137,7 +1138,7 @@ static struct http_server_context *http_server_start(struct mg_mgr *mgr, char co
     ctx->server_opts.document_root            = "."; // Serve current directory
     ctx->server_opts.enable_directory_listing = "yes";
 
-    printf("Starting HTTP server on address %s, serving %s\n", address,
+    print_logf(LOG_NOTICE, "HTTP server", "Serving HTTP-API on address %s, serving %s", address,
             ctx->server_opts.document_root);
 
     return ctx;
@@ -1241,6 +1242,7 @@ struct data_output *data_output_http_create(struct mg_mgr *mgr, char const *host
         return NULL;
     }
 
+    http->output.log_level    = LOG_TRACE; // sensible default, not parsed from args
     http->output.print_data   = print_http_data;
     http->output.output_free  = data_output_http_free;
 
