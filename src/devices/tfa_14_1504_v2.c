@@ -52,9 +52,7 @@ Example payloads (excluding preamble):
 static int tfa_14_1504_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble[] = {
-            0xaa,
-            0xaa,
-            0x5c,
+            0xaa, 0xaa, 0x5c,
     };
 
     if (bitbuffer->num_rows != 1) {
@@ -105,7 +103,7 @@ static int tfa_14_1504_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // we discard the last 2 bits as those are always zero
     uint16_t raw_temp_c = ((data[0] & 0xf) << 6) + (data[1] >> 2);
     unsigned is_probe_connected = (raw_temp_c != 0x1c0);
-    double temp_c = ((int)raw_temp_c) - 532;
+    float temp_c = ((int)raw_temp_c) - 532;
 
     /* clang-format off */
     data_t *output = data_make(

@@ -314,6 +314,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [229]* WEC-2103 temperature/humidity sensor
     [230]  Vauno EN8822C
     [231]  Govee Water Leak Detector H5054
+    [232]  TFA Dostmann 14.1504.V2 Radio-controlled grill and meat thermometer
 
 * Disabled by default, use -R n or a conf file to enable
 
