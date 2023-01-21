@@ -308,6 +308,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [223]  Badger ORION water meter, 100kbps (-f 916450000 -s 1200000)
     [224]  GEO minim+ energy monitor
     [225]  TyreGuard 400 TPMS
+    [226]  Kia TPMS (-s 1M)
 
 * Disabled by default, use -R n or a conf file to enable
 
