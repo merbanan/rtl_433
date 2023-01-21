@@ -233,6 +233,7 @@
     DECL(badger_orion) \
     DECL(geo_minim) \
     DECL(tpms_tyreguard400) \
+    DECL(tpms_kia) \
 
     /* Add new decoders here. */
 
