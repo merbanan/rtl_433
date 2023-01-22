@@ -234,6 +234,7 @@ add_library(r_433 STATIC
     devices/ts_ft002.c
     devices/ttx201.c
     devices/vaillant_vrt340f.c
+    devices/vauno_en8822c.c
     devices/visonic_powercode.c
     devices/waveman.c
     devices/wec2103.c

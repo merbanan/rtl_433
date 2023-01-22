@@ -237,6 +237,7 @@
     DECL(srsmith_pool_srs_2c_tx) \
     DECL(neptune_r900) \
     DECL(wec2103) \
+    DECL(vauno_en8822c) \
 
     /* Add new decoders here. */
 
