@@ -16,6 +16,7 @@ Wireless M-Bus protocol. Will return a data string (including the CI byte)
 for further processing by an Application layer (outside this program).
 */
 #include "decoder.h"
+#include <math.h>
 
 #define BLOCK1A_SIZE 12     // Size of Block 1, format A
 #define BLOCK1B_SIZE 10     // Size of Block 1, format B
@@ -275,11 +276,6 @@ static char *unit_names[][3] = {
         /*25 */ {"opertime_d", "OperTime", "days"},
 };
 
-// exponent                    -3     -2    -1    0  1   2    3     4
-// index                        0      1     2    3  4   5    6     7
-static double pow10_table[8] = { 0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000 };
-
-
 static data_t *append_str(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn,
     char const *key_extra, char const *pretty_extra, char const *value)
 {
@@ -305,41 +301,71 @@ static data_t *append_str(data_t *data, enum UnitType unit_type, uint8_t value_t
 
 }
 
+/**
+ * @brief append measure value
+ *
+ * @param data
+ * @param unit_type
+ * @param value_type
+ * @param sn
+ * @param key_extra
+ * @param pretty_extra
+ * @param val           value is not in base units (can be kW, etc)
+ * @param exp           exponent of the value. Says if value is in base unit (0), or kilo (3) etc
+ * @return data_t*
+ */
 static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn,
     char const *key_extra, char const *pretty_extra, int64_t val, int exp)
 {
     char const *prefix = "";
     char buffer_val[256] = {0};
+    int pretty_exp = exp;
 
     if (exp < -6) {
-        exp += 6;
+        pretty_exp += 6;
         prefix = "u";
     } else if (exp < -3) {
-        exp += 3;
+        pretty_exp += 3;
         prefix = "m";
     } else if (exp <= 0) {
         prefix = "";
     } else if (exp <= 3) {
-        exp -= 3;
+        pretty_exp -= 3;
         prefix = "k";
     } else if (exp <= 6) {
-        exp -= 6;
+        pretty_exp -= 6;
         prefix = "M";
     } else if (exp <= 9) {
-        exp -= 9;
+        pretty_exp -= 9;
         prefix = "G";
     }
-    // adapt for table index
-    exp += 3;
-    if (exp < 0 || exp > 7) {
-        fprintf(stderr, "M-Bus: Program error, exp (%d) is out of bounds", exp);
-        return data;
+
+    double pretty_value = val * exp10(pretty_exp);
+    double real_value = val * exp10(exp);
+
+    char key[100] = {0};
+    char pretty_key[100] = {0};
+    char pretty_str_value[100] = {0};
+
+    value_type &= 0x3;
+
+    if (!key_extra || !*key_extra) {
+        snprintf(key, sizeof(key), "%s_%s_%d", value_types_tab[value_type][0], unit_names[unit_type][0], sn);
+    } else {
+        snprintf(key, sizeof(key), "%s_%s_%s_%d", value_types_tab[value_type][0], unit_names[unit_type][0], key_extra, sn);
     }
-    double fvalue = val * pow10_table[exp];
 
-    snprintf(buffer_val, sizeof(buffer_val), "%.03f %s%s", fvalue, prefix, unit_names[unit_type][2]);
+    if (!pretty_extra || !*pretty_extra) {
+        snprintf(pretty_key, sizeof(pretty_key), "%s %s[%d]", value_types_tab[value_type][1], unit_names[unit_type][1], sn);
+    } else {
+        snprintf(pretty_key, sizeof(pretty_key), "%s %s %s", value_types_tab[value_type][1], unit_names[unit_type][1], pretty_extra);
+    }
 
-    return append_str(data, unit_type, value_type, sn, key_extra, pretty_extra, buffer_val);
+    snprintf(pretty_str_value, sizeof(buffer_val), "%.03f %s%s", pretty_value, prefix, unit_names[unit_type][2]);
+
+    return data_append(data,
+            key, pretty_key, DATA_FORMAT, pretty_str_value, DATA_DOUBLE, real_value, NULL);
+
 }
 
 static size_t m_bus_tm_decode(const uint8_t *data, size_t data_size, char *output, size_t output_size)
