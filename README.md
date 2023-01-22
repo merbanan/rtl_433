@@ -186,9 +186,9 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [101]* Dish remote 6.3
     [102]  SimpliSafe Home Security System (May require disabling automatic gain for KeyPad decodes)
     [103]  Sensible Living Mini-Plant Moisture Sensor
-    [104]  Wireless M-Bus, Mode C&T, 100kbps (-f 868950000 -s 1200000)
-    [105]  Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)
-    [106]* Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)
+    [104]  Wireless M-Bus, Mode C&T, 100kbps (-f 868.95M -s 1200k)
+    [105]  Wireless M-Bus, Mode S, 32.768kbps (-f 868.3M -s 1000k)
+    [106]* Wireless M-Bus, Mode R, 4.8kbps (-f 868.33M)
     [107]* Wireless M-Bus, Mode F, 2.4kbps
     [108]  Hyundai WS SENZOR Remote Temperature Sensor
     [109]  WT0124 Pool Thermometer
@@ -305,11 +305,12 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [220]  Maverick XR-30 BBQ Sensor
     [221]  Fine Offset Electronics WN34 temperature sensor
     [222]  Rubicson Pool Thermometer 48942
-    [223]  Badger ORION water meter, 100kbps (-f 916450000 -s 1200000)
+    [223]  Badger ORION water meter, 100kbps (-f 916.45M -s 1200k)
     [224]  GEO minim+ energy monitor
     [225]  TyreGuard 400 TPMS
-    [226]  Kia TPMS (-s 1M)
-    [227]  SRSmith Pool Light Remote Control SRS-2C-TX (-f 915000000)
+    [226]  Kia TPMS (-s 1000k)
+    [227]  SRSmith Pool Light Remote Control SRS-2C-TX (-f 915M)
+    [228]  Neptune R900 flow meters
 
 * Disabled by default, use -R n or a conf file to enable
 

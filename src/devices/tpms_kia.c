@@ -145,7 +145,7 @@ static char *output_fields[] = {
 };
 
 r_device tpms_kia = {
-        .name        = "Kia TPMS (-s 1M)",
+        .name        = "Kia TPMS (-s 1000k)",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 50,
         .long_width  = 50,

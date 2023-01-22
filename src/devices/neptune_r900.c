@@ -1,4 +1,7 @@
 /** @file
+    Neptune R900 flow meter decoder.
+
+    Copyright (C) 2022 Jeffrey S. Ruby
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -6,8 +9,10 @@
     (at your option) any later version.
  */
 
-/** @fn int r900_decode(r_device *decoder, bitbuffer_t * bitbuffer)
-Neptune r900 flow meter decoder.
+#include "decoder.h"
+
+/** @fn int neptune_r900_decode(r_device *decoder, bitbuffer_t * bitbuffer)
+Neptune R900 flow meter decoder.
 
 The product site lists E-CODER R900 amd MACH10 R900. Not sure if this decodes both.
 
@@ -58,11 +63,10 @@ Data layout:
 - E: 24-bit extra data????
 */
 
-#include "decoder.h"
-
 int const map16to6[16] = { -1, -1, -1, 0, -1, 1, 2, -1, -1, 5, 4, -1, 3, -1, -1, -1 };
 
-static void decode_5to8(bitbuffer_t *bytes, uint8_t *base6_dec) {
+static void decode_5to8(bitbuffer_t *bytes, uint8_t *base6_dec)
+{
     // is there a better way to convert groups of 5 bits to groups of 8 bits?
     for (int i=0; i < 21; i++) {
         uint8_t data = base6_dec[i];
@@ -74,30 +78,21 @@ static void decode_5to8(bitbuffer_t *bytes, uint8_t *base6_dec) {
     }
 }
 
-static int r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-{   // partial preamble and sync word shifted by 1 bit
+static int neptune_r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    // partial preamble and sync word shifted by 1 bit
     uint8_t const preamble[] = {0x55, 0x55, 0x55, 0xa9, 0x66, 0x69, 0x65};
-    uint16_t preamble_bits = sizeof(preamble) * 8;
-
-    uint32_t meter_id;
-    uint8_t Unkn1;
-    uint8_t Unkn2;
-    uint8_t NoUse;
-    uint8_t BackFlow;
-    uint32_t Consumption;
-    uint8_t Unkn3;
-    uint8_t Leak;
-    uint8_t LeakNow;
+    int const preamble_length = sizeof(preamble) * 8;
 
     if (bitbuffer->num_rows != 1) {
         return DECODE_ABORT_LENGTH;
     }
 
     // Search for preamble and sync-word
-    unsigned start_pos = bitbuffer_search(bitbuffer, 0, 0, preamble, preamble_bits);
+    unsigned start_pos = bitbuffer_search(bitbuffer, 0, 0, preamble, preamble_length);
 
     // check that (bitbuffer->bits_per_row[0]) greater than (start_pos+sizeof(preamble)*8+168)
-    if (start_pos+preamble_bits+168 > bitbuffer->bits_per_row[0])
+    if (start_pos + preamble_length + 168 > bitbuffer->bits_per_row[0])
         return DECODE_ABORT_LENGTH;
 
     // No preamble detected
@@ -108,7 +103,7 @@ static int r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Remove preamble and sync word, keep whole payload
     uint8_t bits[21]; // 168 bits
-    bitbuffer_extract_bytes(bitbuffer, 0, start_pos + preamble_bits, bits, 21 * 8);
+    bitbuffer_extract_bytes(bitbuffer, 0, start_pos + preamble_length, bits, 21 * 8);
 
     uint8_t *bb = bitbuffer->bb[0];
     bitbuffer_t bytes = {0};
@@ -126,7 +121,7 @@ static int r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
      * 1001 -> 5
     */
     // create a pair of char bit array of '0' and '1' for each base6 byte
-    for (uint8_t k = start_pos+preamble_bits; k < start_pos + preamble_bits + 168; k=k+8) {
+    for (uint8_t k = start_pos+preamble_length; k < start_pos + preamble_length + 168; k=k+8) {
         uint8_t byte = bitrow_get_byte(bb, k);
         int highNibble = map16to6[(byte >> 4 & 0xF)];
         int lowNibble = map16to6[(byte & 0xF)];
@@ -148,11 +143,11 @@ static int r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // decode the data
 
     // meter_id 32 bits
-    meter_id = (uint32_t)((b[0] << 24) | (b[1] << 16) | (b[2] << 8) | (b[3]));
+    uint32_t meter_id = ((uint32_t)b[0] << 24) | (b[1] << 16) | (b[2] << 8) | (b[3]);
     //Unkn1 8 bits
-    Unkn1 = b[4];
+    int unkn1 = b[4];
     //Unkn2 3 bits
-    Unkn2 = b[5] >> 5;
+    int unkn2 = b[5] >> 5;
     //NoUse 3 bits
     // 0 = 0 days
     // 1 = 1-2 days
@@ -161,17 +156,17 @@ static int r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // 4 = 15-21 days
     // 5 = 22-34 days
     // 6 = 35+ days
-    NoUse = ((b[5] >> 1)&0x0F) >> 1;
+    int nouse = ((b[5] >> 1)&0x0F) >> 1;
     //BackFlow 2 bits
     // During the last 35 days
     // 0 = none
     // 1 = low
     // 2 = high
-    BackFlow = b[5]&0x03;
+    int backflow = b[5]&0x03;
     //Consumption 24 bits
-    Consumption = (b[6] << 16) | (b[7] << 8) | (b[8]);
+    int consumption = (b[6] << 16) | (b[7] << 8) | (b[8]);
     //Unkn3 2 bits + 1 bit ???
-    Unkn3 = b[9] >> 5;
+    int unkn3 = b[9] >> 5;
     //Leak 3 bits
     // 0 = 0 days
     // 1 = 1-2 days
@@ -180,29 +175,29 @@ static int r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // 4 = 15-21 days
     // 5 = 22-34 days
     // 6 = 35+ days
-    Leak = ((b[9] >> 1)&0x0F) >> 1;
+    int leak = ((b[9] >> 1)&0x0F) >> 1;
     //LeakNow 2 bits
     // During the last 24 hours
     // 0 = none
     // 1 = low (intermittent leak) water used for at least 50 of the 96 15-minute intervals
     // 2 = high (continuous leak) water use in every 15-min interval for the last 24 hours
-    LeakNow = b[9]&0x03;
+    int leaknow = b[9]&0x03;
     // extra 24 bits ???
     char extra[7];
     sprintf(extra,"%02x%02x%02x", b[10], b[11], b[12]);
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",       "",    DATA_STRING, "R900",
+            "model",       "",    DATA_STRING, "Neptune-R900",
             "id",          "",    DATA_INT,    meter_id,
-            "unkn1",       "",    DATA_INT,    Unkn1,
-            "unkn2",       "",    DATA_INT,    Unkn2,
-            "nouse",       "",    DATA_INT,    NoUse,
-            "backflow",    "",    DATA_INT,    BackFlow,
-            "consumption", "",    DATA_INT,    Consumption,
-            "unkn3",       "",    DATA_INT,    Unkn3,
-            "leak",        "",    DATA_INT,    Leak,
-            "leaknow",     "",    DATA_INT,    LeakNow,
+            "unkn1",       "",    DATA_INT,    unkn1,
+            "unkn2",       "",    DATA_INT,    unkn2,
+            "nouse",       "",    DATA_INT,    nouse,
+            "backflow",    "",    DATA_INT,    backflow,
+            "consumption", "",    DATA_INT,    consumption,
+            "unkn3",       "",    DATA_INT,    unkn3,
+            "leak",        "",    DATA_INT,    leak,
+            "leaknow",     "",    DATA_INT,    leaknow,
             "extra",       "",    DATA_STRING, extra,
             NULL);
     /* clang-format on */
@@ -244,7 +239,6 @@ r_device neptune_r900 = {
         .short_width = 30,
         .long_width  = 30,
         .reset_limit = 320, // a bit longer than packet gap
-        .decode_fn   = &r900_decode,
-        .disabled    = 0,
+        .decode_fn   = &neptune_r900_decode,
         .fields      = output_fields,
 };
