@@ -162,6 +162,7 @@ add_library(r_433 STATIC
     devices/mebus.c
     devices/megacode.c
     devices/missil_ml0757.c
+    devices/neptune_r900.c
     devices/new_template.c
     devices/newkaku.c
     devices/nexa.c
