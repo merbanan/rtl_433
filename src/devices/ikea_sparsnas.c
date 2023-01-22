@@ -138,7 +138,7 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if ((bitbuffer->bits_per_row[0] < IKEA_SPARSNAS_MESSAGE_BITLEN) || (bitbuffer->bits_per_row[0] > IKEA_SPARSNAS_MESSAGE_BITLEN_MAX)) {
         if (decoder->verbose > 1) {
-            decoder_output_bitbufferf(decoder, bitbuffer, "%s: ", __func__);
+            decoder_log_bitbuffer(decoder, 2, __func__, bitbuffer, "");
             decoder_logf(decoder, 2, __func__, "Too short or too long packet received. Expected %d, received %d", IKEA_SPARSNAS_MESSAGE_BITLEN, bitbuffer->bits_per_row[0]);
         }
         return DECODE_ABORT_LENGTH;
@@ -149,7 +149,7 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if ((bitbuffer->bits_per_row[0] == bitpos) || (bitpos + IKEA_SPARSNAS_MESSAGE_BITLEN > bitbuffer->bits_per_row[0])) {
         if (decoder->verbose > 1) {
-            decoder_output_bitbufferf(decoder, bitbuffer, "%s: ", __func__);
+            decoder_log_bitbuffer(decoder, 2, __func__, bitbuffer, "");
             decoder_log(decoder, 2, __func__, "malformed package, preamble not found. (Expected 0xAAAAD201)");
         }
         return DECODE_ABORT_EARLY;
@@ -160,8 +160,8 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, 0, bitpos + IKEA_SPARSNAS_PREAMBLE_BITLEN, buffer, IKEA_SPARSNAS_MESSAGE_BITLEN);
 
     if (decoder->verbose > 1) {
-        decoder_output_bitbufferf(decoder, bitbuffer, "%s: ", __func__);
-        decoder_output_bitrowf(decoder, buffer, IKEA_SPARSNAS_MESSAGE_BITLEN, "Encrypted message");
+        decoder_log_bitbuffer(decoder, 2, __func__, bitbuffer, "");
+        decoder_log_bitrow(decoder, 2, __func__, buffer, IKEA_SPARSNAS_MESSAGE_BITLEN, "Encrypted message");
     }
     // CRC check
     uint16_t crc_calculated = crc16(buffer, IKEA_SPARSNAS_MESSAGE_BYTELEN - 2, IKEA_SPARSNAS_CRC_POLY, IKEA_SPARSNAS_CRC_INIT);
@@ -207,7 +207,7 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (decoder->verbose > 1) {
         decoder_logf(decoder, 2, __func__, "CRC OK (%X == %X)", crc_calculated, crc_received);
         decoder_logf(decoder, 2, __func__, "Encryption key: 0x%X%X%X%X%X", key[0], key[1], key[2], key[3], key[4]);
-        decoder_output_bitrowf(decoder, decrypted, 18 * 8, "Decrypted");
+        decoder_log_bitrow(decoder, 2, __func__, decrypted, 18 * 8, "Decrypted");
         decoder_logf(decoder, 2, __func__, "Received sensor id: %06u", rcv_sensor_id);
     }
 
@@ -230,12 +230,12 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (decrypted[0] != 0x11) {
-        decoder_output_bitrowf(decoder, decrypted + 5, 13 * 8,  "Message malformed");
+        decoder_log_bitrow(decoder, 2, __func__, decrypted + 5, 13 * 8, "Message malformed");
         decoder_logf(decoder, 2, __func__, "Message malformed (byte0=%X expected %X)", decrypted[0], 0x11);
         return DECODE_FAIL_SANITY;
     }
     if (decrypted[3] != 0x07) {
-        decoder_output_bitrowf(decoder, decrypted + 5, 13 * 8,  "Message malformed");
+        decoder_log_bitrow(decoder, 2, __func__, decrypted + 5, 13 * 8, "Message malformed");
         decoder_logf(decoder, 2, __func__, "Message malformed (byte3=%X expected %X)", decrypted[0], 0x07);
         return DECODE_FAIL_SANITY;
     }

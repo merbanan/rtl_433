@@ -19,6 +19,7 @@
 #include "sdr.h"
 #include "r_util.h"
 #include "optparse.h"
+#include "logger.h"
 #include "fatal.h"
 #ifdef RTLSDR
 #include <rtl-sdr.h>
@@ -182,7 +183,7 @@ static int rtltcp_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
     hostport[sizeof(hostport) - 1] = '\0';
     hostport_param(hostport, &host, &port);
 
-    fprintf(stderr, "rtl_tcp input from %s port %s\n", host, port);
+    print_logf(LOG_CRITICAL, "SDR", "rtl_tcp input from %s port %s", host, port);
 
 #ifdef _WIN32
     WSADATA wsa;
@@ -205,7 +206,7 @@ static int rtltcp_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
 
     ret = getaddrinfo(host, port, &hints, &res0);
     if (ret) {
-        fprintf(stderr, "%s\n", gai_strerror(ret));
+        print_log(LOG_ERROR, __func__, gai_strerror(ret));
         return -1;
     }
     sock = INVALID_SOCKET;
@@ -235,12 +236,12 @@ static int rtltcp_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
     struct rtl_tcp_info info;
     ret = recv(sock, (char *)&info, sizeof (info), 0);
     if (ret != 12) {
-        fprintf(stderr, "Bad rtl_tcp header (%d)\n", ret);
+        print_logf(LOG_ERROR, __func__, "Bad rtl_tcp header (%d)", ret);
         return -1;
     }
     if (strncmp(info.magic, "RTL0", 4)) {
         info.tuner_number = 0; // terminate magic
-        fprintf(stderr, "Bad rtl_tcp header magic \"%s\"\n", info.magic);
+        print_logf(LOG_ERROR, __func__, "Bad rtl_tcp header magic \"%s\"", info.magic);
         return -1;
     }
 
@@ -250,7 +251,7 @@ static int rtltcp_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
     char const *tuner_names[] = { "Unknown", "E4000", "FC0012", "FC0013", "FC2580", "R820T", "R828D" };
     char const *tuner_name = tuner_number > sizeof (tuner_names) ? "Invalid" : tuner_names[tuner_number];
 
-    fprintf(stderr, "rtl_tcp connected to %s:%s (Tuner: %s)\n", host, port, tuner_name);
+    print_logf(LOG_CRITICAL, "SDR", "rtl_tcp connected to %s:%s (Tuner: %s)", host, port, tuner_name);
 
     sdr_dev_t *dev = calloc(1, sizeof(sdr_dev_t));
     if (!dev) {
@@ -317,7 +318,7 @@ static int rtltcp_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32
         //fprintf(stderr, "readStream ret=%d (read %u)\n", r, n_read);
 
         if (r < 0) {
-            fprintf(stderr, "WARNING: sync read failed. %d\n", r);
+            print_logf(LOG_WARNING, __func__, "sync read failed. %d", r);
         }
         if (n_read == 0) {
             perror("rtl_tcp");
@@ -380,12 +381,12 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, char const *dev_query, int verbose)
 {
     uint32_t device_count = rtlsdr_get_device_count();
     if (!device_count) {
-        fprintf(stderr, "No supported devices found.\n");
+        print_log(LOG_CRITICAL, "SDR", "No supported devices found.");
         return -1;
     }
 
     if (verbose)
-        fprintf(stderr, "Found %u device(s)\n\n", device_count);
+        print_logf(LOG_CRITICAL, "SDR", "Found %u device(s)", device_count);
 
     int dev_index = 0;
     // select rtlsdr device by serial (-d :<serial>)
@@ -393,7 +394,7 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, char const *dev_query, int verbose)
         dev_index = rtlsdr_get_index_by_serial(&dev_query[1]);
         if (dev_index < 0) {
             if (verbose)
-                fprintf(stderr, "Could not find device with serial '%s' (err %d)",
+                print_logf(LOG_ERROR, "SDR", "Could not find device with serial '%s' (err %d)",
                         &dev_query[1], dev_index);
             return -1;
         }
@@ -425,17 +426,17 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, char const *dev_query, int verbose)
         rtlsdr_get_device_usb_strings(i, vendor, product, serial);
 
         if (verbose)
-            fprintf(stderr, "trying device  %u:  %s, %s, SN: %s\n",
+            print_logf(LOG_CRITICAL, "SDR", "trying device  %u:  %s, %s, SN: %s",
                     i, vendor, product, serial);
 
         r = rtlsdr_open(&dev->rtlsdr_dev, i);
         if (r < 0) {
             if (verbose)
-                fprintf(stderr, "Failed to open rtlsdr device #%u.\n\n", i);
+                print_logf(LOG_ERROR, __func__, "Failed to open rtlsdr device #%u.", i);
         }
         else {
             if (verbose)
-                fprintf(stderr, "Using device %u: %s\n",
+                print_logf(LOG_CRITICAL, "SDR", "Using device %u: %s",
                         i, rtlsdr_get_device_name(i));
             dev->sample_size = sizeof(uint8_t) * 2; // CU8
             dev->sample_signed = 0;
@@ -452,7 +453,7 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, char const *dev_query, int verbose)
     if (r < 0) {
         free(dev);
         if (verbose)
-            fprintf(stderr, "Unable to open a device\n");
+            print_log(LOG_ERROR, __func__, "Unable to open a device");
     }
     else {
         *out_dev = dev;
@@ -466,12 +467,12 @@ static int rtlsdr_find_tuner_gain(sdr_dev_t *dev, int centigain, int verbose)
     int gains_count = rtlsdr_get_tuner_gains(dev->rtlsdr_dev, NULL);
     if (gains_count < 0) {
         if (verbose)
-            fprintf(stderr, "Unable to get exact gains\n");
+            print_log(LOG_WARNING, __func__, "Unable to get exact gains");
         return centigain;
     }
     if (gains_count < 1) {
         if (verbose)
-            fprintf(stderr, "No exact gains\n");
+            print_log(LOG_WARNING, __func__, "No exact gains");
         return centigain;
     }
     int *gains = calloc(gains_count, sizeof(int));
@@ -550,12 +551,12 @@ static int rtlsdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32
         // We can safely assume it's an libusb error.
         if (r < 0) {
 #ifdef LIBUSB1
-            fprintf(stderr, "\n%s: %s!\n"
-                            "Check your RTL-SDR dongle, USB cables, and power supply.\n\n",
+            print_logf(LOG_ERROR, __func__, "%s: %s!"
+                            "Check your RTL-SDR dongle, USB cables, and power supply.",
                     libusb_error_name(r), libusb_strerror(r));
 #else
-            fprintf(stderr, "\nLIBUSB_ERROR: %d\n"
-                            "Check your RTL-SDR dongle, USB cables, and power supply.\n\n",
+            print_logf(LOG_ERROR, __func__, "LIBUSB_ERROR: %d"
+                            "Check your RTL-SDR dongle, USB cables, and power supply.",
                     r);
 #endif
             dev->running = 0;
@@ -580,17 +581,17 @@ static int soapysdr_set_bandwidth(SoapySDRDevice *dev, uint32_t bandwidth)
     r = (int)SoapySDRDevice_setBandwidth(dev, SOAPY_SDR_RX, 0, (double)bandwidth);
     uint32_t applied_bw = 0;
     if (r != 0) {
-        fprintf(stderr, "WARNING: Failed to set bandwidth.\n");
+        print_log(LOG_WARNING, "SDR", "Failed to set bandwidth.");
     }
     else if (bandwidth > 0) {
         applied_bw = (uint32_t)SoapySDRDevice_getBandwidth(dev, SOAPY_SDR_RX, 0);
         if (applied_bw)
-            fprintf(stderr, "Bandwidth parameter %u Hz resulted in %u Hz.\n", bandwidth, applied_bw);
+            print_logf(LOG_NOTICE, "SDR", "Bandwidth parameter %u Hz resulted in %u Hz.", bandwidth, applied_bw);
         else
-            fprintf(stderr, "Set bandwidth parameter %u Hz.\n", bandwidth);
+            print_logf(LOG_NOTICE, "SDR", "Set bandwidth parameter %u Hz.", bandwidth);
     }
     else {
-        fprintf(stderr, "Bandwidth set to automatic resulted in %u Hz.\n", applied_bw);
+        print_logf(LOG_NOTICE, "SDR", "Bandwidth set to automatic resulted in %u Hz.", applied_bw);
     }
     return r;
 }
@@ -611,18 +612,18 @@ static int soapysdr_direct_sampling(SoapySDRDevice *dev, int on)
     char *set_value = SoapySDRDevice_readSetting(dev, "direct_samp");
 
     if (set_value == NULL) {
-        fprintf(stderr, "WARNING: Failed to set direct sampling mode.\n");
+        print_log(LOG_ERROR, __func__, "Failed to set direct sampling moden");
         return r;
     }
     int set_num = atoi(set_value);
     if (set_num == 0) {
-        fprintf(stderr, "Direct sampling mode disabled.\n");}
+        print_log(LOG_CRITICAL, "SDR", "Direct sampling mode disabled.");}
     else if (set_num == 1) {
-        fprintf(stderr, "Enabled direct sampling mode, input 1/I.\n");}
+        print_log(LOG_CRITICAL, "SDR", "Enabled direct sampling mode, input 1/I.");}
     else if (set_num == 2) {
-        fprintf(stderr, "Enabled direct sampling mode, input 2/Q.\n");}
+        print_log(LOG_CRITICAL, "SDR", "Enabled direct sampling mode, input 2/Q.");}
     else if (set_num == 3) {
-        fprintf(stderr, "Enabled no-mod direct sampling mode.\n");}
+        print_log(LOG_CRITICAL, "SDR", "Enabled no-mod direct sampling mode.");}
     SoapySDR_free(set_value);
     return r;
 }
@@ -636,15 +637,15 @@ static int soapysdr_offset_tuning(SoapySDRDevice *dev)
     if (strcmp(set_value, "true") != 0) {
         /* TODO: detection of failure modes
         if ( r == -2 )
-            fprintf(stderr, "WARNING: Failed to set offset tuning: tuner doesn't support offset tuning!\n");
+            print_log(LOG_WARNING, __func__, "Failed to set offset tuning: tuner doesn't support offset tuning!");
         else if ( r == -3 )
-            fprintf(stderr, "WARNING: Failed to set offset tuning: direct sampling not combinable with offset tuning!\n");
+            print_log(LOG_WARNING, __func__, "Failed to set offset tuning: direct sampling not combinable with offset tuning!");
         else
         */
-            fprintf(stderr, "WARNING: Failed to set offset tuning.\n");
+            print_log(LOG_WARNING, __func__, "Failed to set offset tuning.");
     }
     else {
-        fprintf(stderr, "Offset tuning mode enabled.\n");
+        print_log(LOG_CRITICAL, "SDR", "Offset tuning mode enabled.");
     }
     SoapySDR_free(set_value);
     return r;
@@ -658,11 +659,11 @@ static int soapysdr_auto_gain(SoapySDRDevice *dev, int verbose)
     if (r) {
         r = SoapySDRDevice_setGainMode(dev, SOAPY_SDR_RX, 0, 1);
         if (r != 0) {
-            fprintf(stderr, "WARNING: Failed to enable automatic gain.\n");
+            print_log(LOG_WARNING, __func__, "Failed to enable automatic gain.");
         }
         else {
             if (verbose)
-                fprintf(stderr, "Tuner set to automatic gain.\n");
+                print_log(LOG_CRITICAL, "SDR", "Tuner set to automatic gain.");
         }
     }
 
@@ -675,15 +676,15 @@ static int soapysdr_auto_gain(SoapySDRDevice *dev, int verbose)
         // TODO: generic means to set all gains, of any SDR? string parsing LNA=#,VGA=#,AMP=#?
         r = SoapySDRDevice_setGainElement(dev, SOAPY_SDR_RX, 0, "LNA", 40.); // max 40
         if (r != 0) {
-            fprintf(stderr, "WARNING: Failed to set LNA tuner gain.\n");
+            print_log(LOG_WARNING, __func__, "Failed to set LNA tuner gain.");
         }
         r = SoapySDRDevice_setGainElement(dev, SOAPY_SDR_RX, 0, "VGA", 20.); // max 65
         if (r != 0) {
-            fprintf(stderr, "WARNING: Failed to set VGA tuner gain.\n");
+            print_log(LOG_WARNING, __func__, "Failed to set VGA tuner gain.");
         }
         r = SoapySDRDevice_setGainElement(dev, SOAPY_SDR_RX, 0, "AMP", 0.); // on or off
         if (r != 0) {
-            fprintf(stderr, "WARNING: Failed to set AMP tuner gain.\n");
+            print_log(LOG_WARNING, __func__, "Failed to set AMP tuner gain.");
         }
 
     }
@@ -705,11 +706,11 @@ static int soapysdr_gain_str_set(SoapySDRDevice *dev, char const *gain_str, int 
     if (r) {
         r = SoapySDRDevice_setGainMode(dev, SOAPY_SDR_RX, 0, 0);
         if (r != 0) {
-            fprintf(stderr, "WARNING: Failed to disable automatic gain.\n");
+            print_log(LOG_WARNING, __func__, "Failed to disable automatic gain.");
         }
         else {
             if (verbose)
-                fprintf(stderr, "Tuner set to manual gain.\n");
+                print_log(LOG_NOTICE, "SDR", "Tuner set to manual gain.");
         }
     }
 
@@ -724,10 +725,10 @@ static int soapysdr_gain_str_set(SoapySDRDevice *dev, char const *gain_str, int 
         while (getkwargs(&gain_p, &name, &value)) {
             double num = atof(value);
             if (verbose)
-                fprintf(stderr, "Setting gain element %s: %f dB\n", name, num);
+                print_logf(LOG_NOTICE, "SDR", "Setting gain element %s: %f dB", name, num);
             r = SoapySDRDevice_setGainElement(dev, SOAPY_SDR_RX, 0, name, num);
             if (r != 0) {
-                fprintf(stderr, "WARNING: setGainElement(%s, %f) failed: %d\n", name, num, r);
+                print_logf(LOG_WARNING, __func__, "setGainElement(%s, %f) failed: %d", name, num, r);
             }
         }
     }
@@ -736,11 +737,11 @@ static int soapysdr_gain_str_set(SoapySDRDevice *dev, char const *gain_str, int 
         double value = atof(gain_str);
         r = SoapySDRDevice_setGain(dev, SOAPY_SDR_RX, 0, value);
         if (r != 0) {
-            fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
+            print_log(LOG_WARNING, __func__, "Failed to set tuner gain.");
         }
         else {
             if (verbose)
-                fprintf(stderr, "Tuner gain set to %0.2f dB.\n", value);
+                print_logf(LOG_NOTICE, __func__, "Tuner gain set to %0.2f dB.", value);
         }
         // read back and print each individual gain element
         if (verbose) {
@@ -870,7 +871,7 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, char const *dev_query, int verbos
     dev->soapy_dev = SoapySDRDevice_makeStrArgs(dev_query);
     if (!dev->soapy_dev) {
         if (verbose)
-            fprintf(stderr, "Failed to open sdr device matching '%s'.\n", dev_query);
+            print_logf(LOG_ERROR, __func__, "Failed to open sdr device matching '%s'.", dev_query);
         free(dev);
         return -1;
     }
@@ -938,7 +939,7 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, char const *dev_query, int verbos
 #endif
     if (r != 0) {
         if (verbose)
-            fprintf(stderr, "Failed to setup sdr device\n");
+            print_log(LOG_ERROR, __func__, "Failed to setup sdr device");
         free(dev);
         return -3;
     }
@@ -992,7 +993,7 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint
                 fflush(stderr);
                 continue;
             }
-            fprintf(stderr, "WARNING: sync read failed. %d\n", r);
+            print_logf(LOG_WARNING, __func__, "sync read failed. %d", r);
         }
 
         // convert to CS16 or CU8 if needed
@@ -1039,7 +1040,7 @@ int sdr_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
 
 #if !defined(RTLSDR) && !defined(SOAPYSDR)
     if (verbose)
-        fprintf(stderr, "No input drivers (RTL-SDR or SoapySDR) compiled in.\n");
+        print_log(LOG_ERROR, __func__, "No input drivers (RTL-SDR or SoapySDR) compiled in.");
     return -1;
 #endif
 
@@ -1048,7 +1049,7 @@ int sdr_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
 #ifdef RTLSDR
         return sdr_open_rtl(out_dev, dev_query, verbose);
 #else
-        fprintf(stderr, "No input driver for RTL-SDR compiled in.\n");
+        print_log(LOG_ERROR, __func__, "No input driver for RTL-SDR compiled in.");
         return -1;
 #endif
     }
@@ -1061,7 +1062,7 @@ int sdr_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
     /* Open SoapySDR otherwise, if available */
     return sdr_open_soapy(out_dev, dev_query, verbose);
 #endif
-    fprintf(stderr, "No input driver for SoapySDR compiled in.\n");
+    print_log(LOG_ERROR, __func__, "No input driver for SoapySDR compiled in.");
 
     return -1;
 }
@@ -1152,9 +1153,9 @@ int sdr_set_center_freq(sdr_dev_t *dev, uint32_t freq, int verbose)
 
     if (verbose) {
         if (r < 0)
-            fprintf(stderr, "WARNING: Failed to set center freq.\n");
+            print_log(LOG_WARNING, __func__, "Failed to set center freq.");
         else
-            fprintf(stderr, "Tuned to %s.\n", nice_freq(sdr_get_center_freq(dev)));
+            print_logf(LOG_NOTICE, "SDR", "Tuned to %s.", nice_freq(sdr_get_center_freq(dev)));
     }
     return r;
 }
@@ -1215,9 +1216,9 @@ int sdr_set_freq_correction(sdr_dev_t *dev, int ppm, int verbose)
 
     if (verbose) {
         if (r < 0)
-            fprintf(stderr, "WARNING: Failed to set frequency correction.\n");
+            print_log(LOG_WARNING, __func__, "Failed to set frequency correction.");
         else
-            fprintf(stderr, "Frequency correction set to %d ppm.\n", ppm);
+            print_logf(LOG_NOTICE, "SDR", "Frequency correction set to %d ppm.", ppm);
     }
     return r;
 }
@@ -1255,9 +1256,9 @@ int sdr_set_auto_gain(sdr_dev_t *dev, int verbose)
 
     if (verbose) {
         if (r < 0)
-            fprintf(stderr, "WARNING: Failed to enable automatic gain.\n");
+            print_log(LOG_WARNING, __func__, "Failed to enable automatic gain.");
         else
-            fprintf(stderr, "Tuner gain set to Auto.\n");
+            print_log(LOG_NOTICE, "SDR", "Tuner gain set to Auto.");
     }
     return r;
 }
@@ -1314,16 +1315,16 @@ int sdr_set_tuner_gain(sdr_dev_t *dev, char const *gain_str, int verbose)
     r = rtlsdr_set_tuner_gain_mode(dev->rtlsdr_dev, 1);
     if (verbose)
         if (r < 0)
-            fprintf(stderr, "WARNING: Failed to enable manual gain.\n");
+            print_log(LOG_WARNING, __func__, "Failed to enable manual gain.");
 
     /* Set the tuner gain */
     gain = rtlsdr_find_tuner_gain(dev, gain, verbose);
     r = rtlsdr_set_tuner_gain(dev->rtlsdr_dev, gain);
     if (verbose) {
         if (r < 0)
-            fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
+            print_log(LOG_WARNING, __func__, "Failed to set tuner gain.");
         else
-            fprintf(stderr, "Tuner gain set to %f dB.\n", gain / 10.0);
+            print_logf(LOG_NOTICE, "SDR", "Tuner gain set to %f dB.", gain / 10.0);
     }
 #endif
 
@@ -1347,11 +1348,11 @@ int sdr_set_antenna(sdr_dev_t *dev, char const *antenna_str, int verbose)
 
         if (verbose) {
             if (r < 0)
-                fprintf(stderr, "WARNING: Failed to set antenna.\n");
+                print_log(LOG_WARNING, __func__, "Failed to set antenna.");
 
             // report the antenna that is actually used
             char *antenna = SoapySDRDevice_getAntenna(dev->soapy_dev, SOAPY_SDR_RX, 0);
-            fprintf(stderr, "Antenna set to '%s'.\n", antenna);
+            print_logf(LOG_NOTICE, "SDR", "Antenna set to '%s'.", antenna);
             free(antenna);
         }
         return r;
@@ -1359,7 +1360,7 @@ int sdr_set_antenna(sdr_dev_t *dev, char const *antenna_str, int verbose)
 #endif
 
   // currently only SoapySDR supports devices with multiple antennas
-  fprintf(stderr, "WARNING: Antenna selection only available for SoapySDR devices\n");
+  print_log(LOG_WARNING, __func__, "Antenna selection only available for SoapySDR devices");
 
   return r;
 }
@@ -1398,9 +1399,9 @@ int sdr_set_sample_rate(sdr_dev_t *dev, uint32_t rate, int verbose)
 
     if (verbose) {
         if (r < 0)
-            fprintf(stderr, "WARNING: Failed to set sample rate.\n");
+            print_log(LOG_WARNING, __func__, "Failed to set sample rate.");
         else
-            fprintf(stderr, "Sample rate set to %u S/s.\n", sdr_get_sample_rate(dev)); // Unfortunately, doesn't return real rate
+            print_logf(LOG_NOTICE, "SDR", "Sample rate set to %u S/s.", sdr_get_sample_rate(dev)); // Unfortunately, doesn't return real rate
     }
     return r;
 }
@@ -1458,7 +1459,7 @@ int sdr_apply_settings(sdr_dev_t *dev, char const *sdr_settings, int verbose)
                 r = rtltcp_command(dev, RTLTCP_SET_BIAS_TEE, biastee);
             }
             else {
-                fprintf(stderr, "Unknown rtl_tcp setting: %s\n", sdr_settings);
+                print_logf(LOG_ERROR, __func__, "Unknown rtl_tcp setting: %s", sdr_settings);
                 return -1;
             }
             sdr_settings = kwargs_skip(sdr_settings);
@@ -1473,24 +1474,24 @@ int sdr_apply_settings(sdr_dev_t *dev, char const *sdr_settings, int verbose)
             const char *key   = settings.keys[i];
             const char *value = settings.vals[i];
             if (verbose)
-                fprintf(stderr, "Setting %s to %s\n", key, value);
+                print_logf(LOG_NOTICE, "SDR", "Setting %s to %s", key, value);
             if (!strcmp(key, "antenna")) {
                 if (SoapySDRDevice_setAntenna(dev->soapy_dev, SOAPY_SDR_RX, 0, value) != 0) {
                     r = -1;
-                    fprintf(stderr, "WARNING: Antenna setting failed: %s\n", SoapySDRDevice_lastError());
+                    print_logf(LOG_WARNING, __func__, "Antenna setting failed: %s", SoapySDRDevice_lastError());
                 }
             }
             else if (!strcmp(key, "bandwidth")) {
                 uint32_t f_value = atouint32_metric(value, "-t bandwidth= ");
                 if (SoapySDRDevice_setBandwidth(dev->soapy_dev, SOAPY_SDR_RX, 0, (double)f_value) != 0) {
                     r = -1;
-                    fprintf(stderr, "WARNING: Bandwidth setting failed: %s\n", SoapySDRDevice_lastError());
+                    print_logf(LOG_WARNING, __func__, "Bandwidth setting failed: %s", SoapySDRDevice_lastError());
                 }
             }
             else {
                 if (SoapySDRDevice_writeSetting(dev->soapy_dev, key, value) != 0) {
                     r = -1;
-                    fprintf(stderr, "WARNING: sdr setting failed: %s\n", SoapySDRDevice_lastError());
+                    print_logf(LOG_WARNING, __func__, "sdr setting failed: %s", SoapySDRDevice_lastError());
                 }
             }
         }
@@ -1520,7 +1521,7 @@ int sdr_apply_settings(sdr_dev_t *dev, char const *sdr_settings, int verbose)
 #if defined(__linux__) && (defined(__GNUC__) || defined(__clang__))
                 // check weak link for Linux with older rtlsdr
                 if (!rtlsdr_set_bias_tee) {
-                    fprintf(stderr, "This librtlsdr version does not support biastee setting\n");
+                    print_log(LOG_ERROR, __func__, "This librtlsdr version does not support biastee setting");
                     return -1;
                 }
 #endif
@@ -1528,7 +1529,7 @@ int sdr_apply_settings(sdr_dev_t *dev, char const *sdr_settings, int verbose)
                 r = rtlsdr_set_bias_tee(dev->rtlsdr_dev, biastee);
             }
             else {
-                fprintf(stderr, "Unknown RTLSDR setting: %s\n", sdr_settings);
+                print_logf(LOG_ERROR, __func__, "Unknown RTLSDR setting: %s", sdr_settings);
                 return -1;
             }
             sdr_settings = kwargs_skip(sdr_settings);
@@ -1537,7 +1538,7 @@ int sdr_apply_settings(sdr_dev_t *dev, char const *sdr_settings, int verbose)
     }
 #endif
 
-    fprintf(stderr, "WARNING: sdr settings not available.\n"); // no open device
+    print_log(LOG_WARNING, __func__, "sdr settings not available."); // no open device
 
     return -1;
 }
@@ -1550,7 +1551,7 @@ int sdr_activate(sdr_dev_t *dev)
 #ifdef SOAPYSDR
     if (dev->soapy_dev) {
         if (SoapySDRDevice_activateStream(dev->soapy_dev, dev->soapy_stream, 0, 0, 0) != 0) {
-            fprintf(stderr, "Failed to activate stream\n");
+            print_log(LOG_ERROR, __func__, "Failed to activate stream");
             exit(1);
         }
     }
@@ -1588,7 +1589,7 @@ int sdr_reset(sdr_dev_t *dev, int verbose)
 
     if (verbose) {
         if (r < 0)
-            fprintf(stderr, "WARNING: Failed to reset buffers.\n");
+            print_log(LOG_WARNING, __func__, "Failed to reset buffers.");
     }
     return r;
 }
@@ -1644,4 +1645,19 @@ int sdr_stop(sdr_dev_t *dev)
 #endif
 
     return -1;
+}
+
+#ifdef SOAPYSDR
+static void soapysdr_log_handler(const SoapySDRLogLevel level, const char *message)
+{
+    // Our log levels are compatible with SoapySDR.
+    print_log((log_level_t)level, "SoapySDR", message);
+}
+#endif
+
+void sdr_redirect_logging(void)
+{
+#ifdef SOAPYSDR
+    SoapySDR_registerLogHandler(soapysdr_log_handler);
+#endif
 }

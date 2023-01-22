@@ -50,21 +50,23 @@ static float get_os_temperature(unsigned char *message)
 {
     float temp_c = 0;
     temp_c = (((message[5] >> 4) * 100) + ((message[4] & 0x0f) * 10) + ((message[4] >> 4) & 0x0f)) / 10.0F;
-    if (message[5] & 0x0f)
+    // Correct 0x0f to 0x08:
+    if (message[5] & 0x08) {
         temp_c = -temp_c;
+    }
     return temp_c;
 }
 
 static float get_os_rain_rate(unsigned char *message)
 {
-    float rain_rate = 0; // Nibbles 11..8 rain rate, LSD = 0.01 inches per hour
-    rain_rate = (((message[5] & 0x0f) * 1000) + ((message[5] >> 4) * 100) + ((message[4] & 0x0f) * 10) + ((message[4] >> 4) & 0x0f)) / 100.0F;
+    // Nibbles 11..8 rain rate, LSD = 0.1 units per hour, 4321 = 123.4 units per hour
+    float rain_rate = (((message[5] & 0x0f) * 1000) + ((message[5] >> 4) * 100) + ((message[4] & 0x0f) * 10) + (message[4] >> 4)) / 100.0F;
     return rain_rate;
 }
 
 static float get_os_total_rain(unsigned char *message)
 {
-    float total_rain = 0.0F; // Nibbles 17..12 Total rain, LSD = 0.001, 543210 = 012.345 inches
+    float total_rain = 0.0F; // Nibbles 17..12 Total rain, LSD = 0.001, 654321 = 123.456
     total_rain = (message[8] & 0x0f) * 100.0F
             + ((message[8] >> 4) & 0x0f) * 10.0F + (message[7] & 0x0f)
             + ((message[7] >> 4) & 0x0f) / 10.0F + (message[6] & 0x0f) / 100.0F
@@ -380,7 +382,18 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
     else if (sensor_id == ID_THN132N && msg_bits == 64) {
         if (validate_os_v2_message(decoder, msg, 64, msg_bits, 12) != 0)
             return 0;
+        // Sanity check BCD digits
+        if ( ((msg[5] >> 4) & 0x0F) > 9 || (msg[4] & 0x0F) > 9 || ((msg[4] >> 4) & 0x0F) > 9 ) {
+            decoder_log(decoder, 1, __func__, "THN132N Message failed BCD sanity check.");
+            return DECODE_FAIL_SANITY;
+        }
         float temp_c = get_os_temperature(msg);
+        // Sanity check value
+        if (temp_c > 70 || temp_c < -50) {
+            decoder_logf(decoder, 1, __func__, "THN132N Message failed values sanity check: temperature_C %3.1fC.", temp_c);
+            return DECODE_FAIL_SANITY;
+        }
+
         /* clang-format off */
         data = data_make(
                 "model",                 "",                        DATA_STRING, "Oregon-THN132N",
@@ -519,7 +532,18 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
     else if (sensor_id == ID_UVR128 && msg_bits == 148) {
         if (validate_os_v2_message(decoder, msg, 148, msg_bits, 12) != 0)
             return 0;
+        // Sanity check BCD digits
+        if ( ((msg[4] >> 4) & 0x0F) > 9 || (msg[4] & 0x0F) > 9 ) {
+            decoder_log(decoder, 1, __func__, "UVR128 Message failed BCD sanity check.");
+            return DECODE_FAIL_SANITY;
+        }
         int uvidx = get_os_uv(msg);
+        // Sanity check value
+        if (uvidx < 0 || uvidx > 25) {
+            decoder_logf(decoder, 1, __func__, "UVR128 Message failed values sanity check: uv %u.", uvidx);
+            return DECODE_FAIL_SANITY;
+        }
+
         /* clang-format off */
         data = data_make(
                 "model",                    "",                     DATA_STRING, "Oregon-UVR128",
@@ -634,8 +658,18 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     if (sensor_id == ID_THGR810 || sensor_id == ID_THGR810a) {
         if (validate_os_checksum(decoder, msg, 15) != 0)
             return DECODE_FAIL_MIC;
+        // Sanity check BCD digits
+        if ( ((msg[5] >> 4) & 0x0F) > 9 || (msg[4] & 0x0F) > 9 || ((msg[4] >> 4) & 0x0F) > 9 || (msg[6] & 0x0F) > 9 || ((msg[6] >> 4) & 0x0F) > 9 ) {
+            decoder_log(decoder, 1, __func__, "THGR810 Message failed BCD sanity check.");
+            return DECODE_FAIL_SANITY;
+        }
         float temp_c = get_os_temperature(msg);
         int humidity = get_os_humidity(msg);
+        // Sanity check values
+        if (temp_c > 70 || temp_c < -50 || humidity < 0 || humidity > 98) {
+            decoder_logf(decoder, 1, __func__, "THGR810 Message failed values sanity check: temperature_C %3.1fC humidity %d%%.", temp_c, humidity);
+            return DECODE_FAIL_SANITY;
+        }
         /* clang-format off */
         data = data_make(
                 "model",                    "",                     DATA_STRING, "Oregon-THGR810",
@@ -684,16 +718,23 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     else if (sensor_id == ID_PCR800) {
         if (validate_os_checksum(decoder, msg, 18) != 0)
             return DECODE_FAIL_MIC;
+        // Sanity check BCD digits
+        if ( (msg[8] & 0x0F) > 9 || ((msg[8] >> 4) & 0x0F) > 9 || (msg[7] & 0x0F) > 9 || ((msg[7] >> 4) & 0x0F) > 9 || (msg[6] & 0x0F) > 9 || ((msg[6] >> 4) & 0x0F) > 9 || (msg[5] & 0x0F) > 9 || ((msg[5] >> 4) & 0x0F) > 9 || (msg[4] & 0x0F) > 9 || ((msg[4] >> 4) & 0x0F) > 9 ) {
+            decoder_log(decoder, 1, __func__, "PCR800 Message failed BCD sanity check.");
+            return DECODE_FAIL_SANITY;
+        }
+
         float rain_rate = get_os_rain_rate(msg);
         float total_rain = get_os_total_rain(msg);
+
         /* clang-format off */
         data = data_make(
                 "model",            "",                     DATA_STRING, "Oregon-PCR800",
                 "id",                 "House Code", DATA_INT,        get_os_rollingcode(msg),
                 "channel",        "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
                 "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
-                "rain_rate_in_h",    "Rain Rate",    DATA_FORMAT, "%3.1f in/h", DATA_DOUBLE, rain_rate,
-                "rain_in", "Total Rain", DATA_FORMAT, "%3.1f in", DATA_DOUBLE, total_rain,
+                "rain_rate_in_h",    "Rain Rate",    DATA_FORMAT, "%5.1f in/h", DATA_DOUBLE, rain_rate,
+                "rain_in", "Total Rain", DATA_FORMAT, "%7.3f in", DATA_DOUBLE, total_rain,
                 NULL);
         /* clang-format on */
         decoder_output_data(decoder, data);
@@ -720,9 +761,22 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     else if (sensor_id == ID_WGR800 || sensor_id == ID_WGR800a) {
         if (validate_os_checksum(decoder, msg, 17) != 0)
             return DECODE_FAIL_MIC;
+        // Sanity check BCD digits
+        if ( (msg[5] & 0x0F) > 9 || ((msg[6] >> 4) & 0x0F) > 9 || (msg[6] & 0x0F) > 9 || ((msg[7] >> 4) & 0x0F) > 9 || (msg[7] & 0x0F) > 9 || ((msg[8] >> 4) & 0x0F) > 9 ) {
+            decoder_log(decoder, 1, __func__, "WGR800 Message failed BCD sanity check.");
+            return DECODE_FAIL_SANITY;
+        }
+
         float gustWindspeed = (msg[5]&0x0f) /10.0F + ((msg[6]>>4)&0x0f) *1.0F + (msg[6]&0x0f) * 10.0F;
         float avgWindspeed = ((msg[7]>>4)&0x0f) / 10.0F + (msg[7]&0x0f) *1.0F + ((msg[8]>>4)&0x0f) * 10.0F;
         float quadrant = (0x0f&(msg[4]>>4))*22.5F;
+
+        // Sanity check values
+        if (gustWindspeed < 0 || gustWindspeed > 56 || avgWindspeed < 0 || avgWindspeed > 56 || quadrant < 0 || quadrant > 337.5) {
+            decoder_logf(decoder, 1, __func__, "WGR800 Message failed values sanity check: wind_max_m_s %2.1f wind_avg_m_s %2.1f wind_dir_deg %3.1f.", gustWindspeed, avgWindspeed, quadrant);
+            return DECODE_FAIL_SANITY;
+        }
+
         /* clang-format off */
         data = data_make(
                 "model",            "",                     DATA_STRING,    "Oregon-WGR800",
@@ -878,7 +932,7 @@ static char *output_fields[] = {
 r_device oregon_scientific = {
         .name        = "Oregon Scientific Weather Sensor",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
-        .short_width = 440, // Nominal 1024Hz (488µs), but pulses are shorter than pauses
+        .short_width = 440, // Nominal 1024Hz (488us), but pulses are shorter than pauses
         .long_width  = 0,   // not used
         .reset_limit = 2400,
         .decode_fn   = &oregon_scientific_decode,

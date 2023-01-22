@@ -268,8 +268,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (decoder->verbose) {
-        fprintf(stderr, "%s: ", params->name);
-        bitbuffer_print(bitbuffer);
+        decoder_log_bitbuffer(decoder, 1, params->name, bitbuffer, "");
     }
 
     // discard duplicates

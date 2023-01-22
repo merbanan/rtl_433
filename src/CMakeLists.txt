@@ -20,10 +20,12 @@ add_library(r_433 STATIC
     http_server.c
     jsmn.c
     list.c
+    logger.c
     mongoose.c
     optparse.c
     output_file.c
     output_influx.c
+    output_log.c
     output_mqtt.c
     output_rtltcp.c
     output_trigger.c
@@ -115,6 +117,7 @@ add_library(r_433 STATIC
     devices/generic_motion.c
     devices/generic_remote.c
     devices/generic_temperature_sensor.c
+    devices/geo_minim.c
     devices/govee.c
     devices/gt_tmbbq05.c
     devices/gt_wt_02.c
@@ -200,6 +203,7 @@ add_library(r_433 STATIC
     devices/somfy_iohc.c
     devices/somfy_rts.c
     devices/springfield.c
+    devices/srsmith_pool_srs_2c_tx.c
     devices/steelmate.c
     devices/telldus_ft0385r.c
     devices/tfa_30_3196.c
@@ -219,12 +223,14 @@ add_library(r_433 STATIC
     devices/tpms_hyundai_vdo.c
     devices/tpms_jansite.c
     devices/tpms_jansite_solar.c
+    devices/tpms_kia.c
     devices/tpms_pmv107j.c
     devices/tpms_porsche.c
     devices/tpms_renault.c
     devices/tpms_renault_0435r.c
     devices/tpms_toyota.c
     devices/tpms_truck.c
+    devices/tpms_tyreguard400.c
     devices/ts_ft002.c
     devices/ttx201.c
     devices/vaillant_vrt340f.c

@@ -9,12 +9,12 @@
     (at your option) any later version.
 */
 
-// #include <arpa/inet.h>
 #include "decoder.h"
 
 /**
+ERT SCM+ sensors.
 
-Freq 912600155
+- Freq 912600155
 
 Random information:
 
@@ -99,18 +99,6 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     snprintf(physical_tamper_str, sizeof(physical_tamper_str), "0x%04X", physical_tamper);
 
     snprintf(crc_str, sizeof(crc_str), "0x%04X", crc);
-
-    /*
-    if (decoder->verbose && 0) {
-        fprintf(stderr, "protocol_id = %d %02X\n", protocol_id,protocol_id);
-        fprintf(stderr, "endpoint_type   \t%2d\t%02X\t%02x", endpoint_type, endpoint_type, b[3]);
-        fprintf(stderr, "endpoint_id    \t%2d\t%02X\t%02x %02x %02x %02x", endpoint_id, endpoint_id, b[4], b[5], b[6], b[7]);
-        fprintf(stderr, "consumption_data\t%2d\t%02X\t%02x %02x %02x %02x", consumption_data, consumption_data, b[8], b[9], b[10], b[11]);
-        // fprintf(stderr, "consumption_data = %d %08X\n", consumption_data,consumption_data);
-        fprintf(stderr, "physical_tamper = %d %04X\n", physical_tamper,physical_tamper);
-        fprintf(stderr, "pkt_checksum = %d %04X\n", pkt_checksum,pkt_checksum);
-    }
-    */
 
     // Least significant nibble of endpoint_type is  equivalent to SCM's endpoint type field
     // id info from https://github.com/bemasher/rtlamr/wiki/Compatible-Meters

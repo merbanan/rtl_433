@@ -9,7 +9,9 @@
     (at your option) any later version.
 */
 /**
-Digitech XC-0324 device.
+Decoder for Digitech XC-0324 temperature sensor.
+
+Also AmbientWeather FT005RH.
 
 The encoding is pulse position modulation
 (i.e. gap width contains the modulation information)
@@ -88,9 +90,9 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     // NB : b[0] ^ b[1] ^ b[2] ^ b[3] ^ b[4] ^ b[5] == 0x00 for a clean message
     chksum = xor_bytes(b, 6);
     if (chksum != 0x00) {
-        if (decoder->verbose) {
+        if (decoder->verbose > 1) {
             // Output the "bad" message (only for message level deciphering!)
-            decoder_output_bitrowf(decoder, b, XC0324_MESSAGE_BITLEN,
+            decoder_logf_bitrow(decoder, 2, __func__, b, XC0324_MESSAGE_BITLEN,
                     "chksum = 0x%02X not 0x00 <- XC0324:vv row %d bit %d",
                     chksum, row, bitpos);
         }
@@ -125,15 +127,15 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     }
 
     // Output (simulated) message level deciphering information..
-    if (decoder->verbose) {
-        decoder_output_bitrowf(decoder, b, XC0324_MESSAGE_BITLEN,
+    if (decoder->verbose > 1) {
+        decoder_logf_bitrow(decoder, 2, __func__, b, XC0324_MESSAGE_BITLEN,
                 "Temp was %4.1f <- XC0324:vv row %03d bit %03d",
                 temperature, row, bitpos);
     }
     // Output "finished deciphering" reference values for future regression tests.
     if ((decoder->verbose == 3) & (latest_event == 0)) {
         //info from this first successful message is enough
-        decoder_output_messagef(decoder,
+        decoder_logf(decoder, 3, __func__,
                 "XC0324:vvvv Reference -> Temperature %4.1f C; sensor id %s",
                 temperature, id);
     }
@@ -144,7 +146,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
 Digitech XC-0324 device.
 @sa decode_xc0324_message()
 */
-static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int digitech_xc0324_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble_pattern[] = {0x5F};
 
@@ -157,10 +159,10 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Only for simulating initial package level deciphering / debug.
     if (decoder->verbose > 1) {
         // Verbosely output the bitbuffer
-        decoder_output_bitbufferf(decoder, bitbuffer, "XC0324:vvv hex(/binary) version of bitbuffer");
+        decoder_log_bitbuffer(decoder, 2, __func__, bitbuffer, "XC0324:vvv hex(/binary) version of bitbuffer");
         // And then output each row to csv, json or whatever was specified.
         for (r = 0; r < bitbuffer->num_rows; ++r) {
-            decoder_output_bitrowf(decoder, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
+            decoder_logf_bitrow(decoder, 2, __func__, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
                     "XC0324:vvv row %03d", r);
         }
     }
@@ -172,7 +174,7 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             // bail out of this "too short" row early
             if (decoder->verbose) {
                 // Output the bad row, only for message level debug / deciphering.
-                decoder_output_bitrowf(decoder, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
+                decoder_logf_bitrow(decoder, 1, __func__, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
                         "Bad message need %d bits got %d <- XC0324:vv row %d bit %d",
                         XC0324_MESSAGE_BITLEN, bitbuffer->bits_per_row[r], r, 0);
             }
@@ -200,7 +202,7 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     // (Only) for future regression tests.
     if ((decoder->verbose == 3) & (events == 0)) {
-        decoder_output_messagef(decoder, "XC0324:vvvv Reference -> Bad transmission");
+        decoder_log(decoder, 3, __func__, "XC0324:vvvv Reference -> Bad transmission");
     }
     return events > 0 ? events : ret;
 }
@@ -216,12 +218,11 @@ static char *output_fields[] = {
 };
 
 r_device digitech_xc0324 = {
-        .name        = "Digitech XC-0324 temperature sensor",
+        .name        = "Digitech XC-0324 / AmbientWeather FT005RH temp/hum sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 520,  // = 130 * 4
         .long_width  = 1000, // = 250 * 4
         .reset_limit = 3000,
-        .decode_fn   = &xc0324_callback,
-        .disabled    = 1, // stop debug output from spamming unsuspecting users
+        .decode_fn   = &digitech_xc0324_decode,
         .fields      = output_fields,
 };
