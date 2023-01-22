@@ -311,6 +311,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [226]  Kia TPMS (-s 1000k)
     [227]  SRSmith Pool Light Remote Control SRS-2C-TX (-f 915M)
     [228]  Neptune R900 flow meters
+    [229]* WEC-2103 temperature/humidity sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
