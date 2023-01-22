@@ -1,5 +1,5 @@
 /** @file
-    SRSmith Pool Light Remote Control, Model #SRS-2C-TX
+    SRSmith Pool Light Remote Control, Model #SRS-2C-TX.
 
     Copyright (C) 2022 gcohen55
 
@@ -12,12 +12,13 @@
 #include "decoder.h"
 
 /**
-SRSmith Pool Light Remote Control, Model #SRS-2C-TX
+SRSmith Pool Light Remote Control, Model #SRS-2C-TX.
 
 The SR Smith remote control sends broadcasts of ~144 bits and it comes in shifted (similar to the Maverick XR30 BBQ Sensor)
 - Frequency: 915MHz
 
 Data Layout:
+
     PPPP WWWW S UUUU C B T PP
 
 - P: 32 bit preamble (0xaaaaaaaa; 7 or 8 bits shifted left for analysis)
@@ -30,17 +31,13 @@ Data Layout:
 - P: 16 bit CRC-16, poly 0x8005, init 0xFFFF, of the packet from the size (S) until the CRC-8 (T)
 
 Format String:
+
     PRE:32h SYNC: 32h SIZE: hh UNSURE:32h | UNSURE: 4b | PIN ~^4b |  BTN: hh | CRC-8: hh | CRC-16: hhhh
 
-Capture raw but often misshifted :| data. if you want to work with this data, throw it into bitbench and shift it over until you see A's instead of 5's
-    -f 915000000 -X n=SRSmith,m=FSK_PCM,s=100,l=100,r=4096,match=d391d391
-*/
+Capture raw:
 
-// defines used by decode function follow
-#define PREAMBLE_SYNC_SUBSET \
-    { \
-        0xaa, 0xd3, 0x91, 0xd3, 0x91 \
-    }
+    -f 915M -X n=SRSmith,m=FSK_PCM,s=100,l=100,r=4096,preamble=d391d391
+*/
 
 // size byte + 7 byte message + two byte crc == 10 bytes
 #define TOTAL_PACKET_SIZE_BYTES 10
@@ -51,7 +48,9 @@ Capture raw but often misshifted :| data. if you want to work with this data, th
 
 static int srsmith_pool_srs_2c_tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
+    // part of preamble + sync word
+    uint8_t const preamble[] = {0xaa, 0xd3, 0x91, 0xd3, 0x91};
+    int const preamble_length = sizeof(preamble) * 8;
 
     if (bitbuffer->num_rows != 1)
         return DECODE_ABORT_EARLY;
@@ -61,13 +60,10 @@ static int srsmith_pool_srs_2c_tx_decode(r_device *decoder, bitbuffer_t *bitbuff
     if (bitbuffer->bits_per_row[0] < 120 || bitbuffer->bits_per_row[0] > 144)
         return DECODE_ABORT_LENGTH;
 
-    // going hunting for preamble + sync bits
-    uint8_t const preamble_sync_subset[] = PREAMBLE_SYNC_SUBSET;
-
     // next line does the search for the preamble+sync bits, returns the bit position where the preamble+sync bits START
     // so we shift that by the number of the preamble+sync bits
-    unsigned start_pos = bitbuffer_search(bitbuffer, 0, 0, preamble_sync_subset, sizeof(preamble_sync_subset) * 8) + (sizeof(preamble_sync_subset) * 8);
-    if (start_pos == bitbuffer->bits_per_row[0]) {
+    unsigned start_pos = bitbuffer_search(bitbuffer, 0, 0, preamble, preamble_length) + preamble_length;
+    if (start_pos >= bitbuffer->bits_per_row[0]) {
         return DECODE_ABORT_EARLY; // preamble/sync missing
     }
 
@@ -87,7 +83,7 @@ static int srsmith_pool_srs_2c_tx_decode(r_device *decoder, bitbuffer_t *bitbuff
     uint8_t reversed_pin           = reverse8(inverted_pin_container); // reverse the bits
 
     // convert just the first four bits to string that contains 4 bits that the pin is
-    char pin_string[5] = {'\0'};
+    char pin_string[5] = {0};
     snprintf(pin_string, sizeof(pin_string), "%d%d%d%d",
             (reversed_pin & 0x80 ? 1 : 0),
             (reversed_pin & 0x40 ? 1 : 0),
@@ -138,7 +134,7 @@ static int srsmith_pool_srs_2c_tx_decode(r_device *decoder, bitbuffer_t *bitbuff
     }
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",                  "",                         DATA_STRING, "SRSmith-SRS2CTX",
             "id",                     "Id",                       DATA_INT, reversed_pin, // technically peoples pins should be different on each remote
             "button_press",           "Pushed Button ID",         DATA_FORMAT, "%02x", DATA_INT, button_id,
@@ -163,7 +159,7 @@ static char *output_fields[] = {
 };
 
 r_device srsmith_pool_srs_2c_tx = {
-        .name        = "SRSmith Pool Light Remote Control SRS-2C-TX (-f 915000000)",
+        .name        = "SRSmith Pool Light Remote Control SRS-2C-TX (-f 915M)",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 100,
         .long_width  = 100,
