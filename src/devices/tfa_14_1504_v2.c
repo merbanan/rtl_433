@@ -10,6 +10,8 @@
     (at your option) any later version.
 */
 
+#include "decoder.h"
+
 /**
 Decoder for TFA Dostmann 14.1504.V2 (30.3254.01)
 
@@ -18,29 +20,26 @@ CAUTION: Do not confuse with TFA Dostmann 14.1504 (30.3201) which had a complete
 Payload format:
 - Preamble         {36} 0x7aaaaaa5c (for robustness we only use the tail: {24}0xaaaa5c)
 - Flags            {4}  OR between: 0x2=battery ok, 0x5=resync button
-- Temperature      {12} Raw temperature value. Temperature in ºC = (value/4)-532. Example: 0x8a0 = 20 ºC
+- Temperature      {12} Raw temperature value. Temperature in C = (value/4)-532. Example: 0x8a0 = 20 C
 - Separator        {8}  0xff (differs if resync)
 - Digest           {16} 16-bit LFSR digest + final XOR
 
 To get raw data:
-```
-rtl_433 -R 0 -X 'n=TFA-141504v2,m=FSK_PCM,s=360,l=360,r=4096,preamble={24}aaaa5c'
-```
+
+    rtl_433 -R 0 -X 'n=TFA-141504v2,m=FSK_PCM,s=360,l=360,r=4096,preamble={24}aaaa5c'
 
 Example payloads (excluding preamble):
 - Resync   = 7052f9cee3 (encoding differs from temperature readings => not handled)
 - No probe = 2700ffb791 (just like a temperature reading => in this case we report the appropriate probe status and no temperature reading)
 - ...
-- 20 ºC    = 28a0ffce69
-- 21 ºC    = 28a4ffa0f5
+- 20 C    = 28a0ffce69
+- 21 C    = 28a4ffa0f5
 - ...
-- 24 ºC    = 28b0ff6438
+- 24 C    = 28b0ff6438
 - ...
-- 44 ºC    = 2900ff8c9d
+- 44 C    = 2900ff8c9d
 - ...
 */
-
-#include "decoder.h"
 
 #define NUM_BITS_PREAMBLE 24
 #define NUM_BYTES_DATA    5
@@ -49,11 +48,9 @@ Example payloads (excluding preamble):
 #define NUM_BITS_TOTAL    (NUM_BITS_PREAMBLE + NUM_BITS_DATA)
 #define NUM_BITS_MAX      (NUM_BITS_TOTAL + 12)
 
-static int tfa_14_1504_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int tfa_14_1504_v2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const preamble[] = {
-            0xaa, 0xaa, 0x5c,
-    };
+    uint8_t const preamble[] = {0xaa, 0xaa, 0x5c};
 
     if (bitbuffer->num_rows != 1) {
         return DECODE_ABORT_EARLY;
@@ -66,10 +63,10 @@ static int tfa_14_1504_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Sync on preamble
-    unsigned start_pos = bitbuffer_search(bitbuffer, row, 0, preamble, NUM_BITS_PREAMBLE);
+    unsigned start_pos = bitbuffer_search(bitbuffer, row, 0, preamble, NUM_BITS_PREAMBLE) + NUM_BITS_PREAMBLE;
 
-    if (start_pos == bitbuffer->bits_per_row[row]) {
-        return DECODE_ABORT_EARLY; // no preamble detected
+    if (start_pos >= bitbuffer->bits_per_row[row]) {
+        return DECODE_ABORT_EARLY; // no preamble found
     }
 
     const unsigned available_bits = bitbuffer->bits_per_row[row] - start_pos;
@@ -81,7 +78,7 @@ static int tfa_14_1504_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     uint8_t data[NUM_BYTES_DATA];
-    bitbuffer_extract_bytes(bitbuffer, row, start_pos + NUM_BITS_PREAMBLE, data, NUM_BITS_DATA);
+    bitbuffer_extract_bytes(bitbuffer, row, start_pos, data, NUM_BITS_DATA);
 
     uint8_t flags = data[0] >> 4;
     // ignore resync button
@@ -101,9 +98,9 @@ static int tfa_14_1504_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // we discard the last 2 bits as those are always zero
-    uint16_t raw_temp_c = ((data[0] & 0xf) << 6) + (data[1] >> 2);
+    uint16_t raw_temp_c         = ((data[0] & 0xf) << 6) + (data[1] >> 2);
     unsigned is_probe_connected = (raw_temp_c != 0x1c0);
-    float temp_c = ((int)raw_temp_c) - 532;
+    float temp_c                = ((int)raw_temp_c) - 532;
 
     /* clang-format off */
     data_t *output = data_make(
@@ -134,6 +131,6 @@ r_device tfa_14_1504_v2 = {
         .short_width = 360,
         .long_width  = 360,
         .reset_limit = 4096,
-        .decode_fn   = &tfa_14_1504_v2_callback,
+        .decode_fn   = &tfa_14_1504_v2_decode,
         .fields      = output_fields,
 };
