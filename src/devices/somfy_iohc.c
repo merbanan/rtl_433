@@ -1,5 +1,5 @@
 /** @file
-    Somfy io-homecontrol.
+    Somfy io-homecontrol devices.
 
     Copyright (C) 2021 Christian W. Zuckschwerdt <zany@triq.net>
 
@@ -8,6 +8,8 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
+
+#include "decoder.h"
 
 /**
 Somfy io-homecontrol devices.
@@ -89,52 +91,19 @@ Example packets:
 
 */
 
-#include "decoder.h"
-
-struct iohc_msg {
-    /* Mandatory fields */
-    /* Control byte 1 */
-    unsigned end_flag : 1;
-    unsigned start_flag : 1;
-    unsigned protocol_mode : 1;
-    unsigned frame_length : 5;
-    /* Control byte 2 */
-    unsigned use_beacon : 1;
-    unsigned is_routed : 1;
-    unsigned low_power_mode : 1;
-    unsigned protocol_version : 3;
-    /* Addresses */
-    unsigned dst_addr : 24;
-    unsigned src_addr : 24;
-    /* Command ID */
-    unsigned cmd_id : 8;
-    char data[31 * 2 + 1]; /* variable length, converted to hex string */
-    unsigned crc : 16;
-
-    /* optional fields */
-    int seq_nr;
-    char mac[13];
-};
-
 static int somfy_iohc_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble_pattern[] = {0x57, 0xfd, 0x99};
-    struct iohc_msg msg = {0};
 
     uint8_t b[1 + 31 + 2]; // Length, payload, CRC
 
     if (bitbuffer->num_rows != 1)
         return DECODE_ABORT_EARLY;
 
-    unsigned offset = bitbuffer_search(bitbuffer, 0, 0, preamble_pattern, 24);
-    if (offset == bitbuffer->bits_per_row[0])
+    unsigned offset = bitbuffer_search(bitbuffer, 0, 0, preamble_pattern, 24) + 24;
+    if (offset >= bitbuffer->bits_per_row[0])
         return DECODE_ABORT_EARLY;
-
-    offset += 24;
-
     int num_bits = bitbuffer->bits_per_row[0] - offset;
-    if (num_bits <= 0)
-        return DECODE_ABORT_EARLY;
 
     num_bits = MIN((size_t)num_bits, sizeof (b) * 8);
 
@@ -142,70 +111,85 @@ static int somfy_iohc_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (len < 11)
         return DECODE_ABORT_LENGTH;
 
-    msg.frame_length = b[0] & 0x1f;
-    if (len < msg.frame_length + 3)
+    // Mandatory fields
+    // Control byte 1
+    // end_flag : 1
+    // start_flag : 1
+    // protocol_mode : 1
+    // frame_length : 5
+    int msg_len = b[0] & 0x1f;
+    if (len < msg_len + 3)
         return DECODE_ABORT_LENGTH;
-    len = msg.frame_length + 3;
+    len = msg_len + 3;
 
-    msg.end_flag = (b[0] & 0x80) >> 7;
-    msg.start_flag = (b[0] & 0x40) >> 6;
-    msg.protocol_mode = (b[0] & 0x20) >> 5;
-    msg.use_beacon = (b[1] & 0x80) >> 7;
-    msg.is_routed = (b[1] & 0x40) >> 6;
-    msg.low_power_mode = (b[1] & 0x20) >> 5;
-    msg.protocol_version = b[1] & 0x03;
-    msg.dst_addr = (b[2] << 16) | (b[3] << 8) | b[4];
-    msg.src_addr = (b[5] << 16) | (b[6] << 8) | b[7];
-    msg.cmd_id = b[8];
+    int msg_end_flag      = (b[0] & 0x80) >> 7;
+    int msg_start_flag    = (b[0] & 0x40) >> 6;
+    int msg_protocol_mode = (b[0] & 0x20) >> 5;
 
-    unsigned int data_length = msg.frame_length - 8;
-    if (msg.protocol_mode == 0 || data_length < 8) {
-        bitrow_snprint(&b[9], data_length * 8, msg.data, sizeof msg.data);
+    // Control byte 2
+    // use_beacon : 1
+    // is_routed : 1
+    // low_power_mode : 1
+    // protocol_version : 3
+    int msg_use_beacon       = (b[1] & 0x80) >> 7;
+    int msg_is_routed        = (b[1] & 0x40) >> 6;
+    int msg_low_power_mode   = (b[1] & 0x20) >> 5;
+    int msg_protocol_version = b[1] & 0x03;
+
+    // Addresses
+    // dst_addr : 24
+    // src_addr : 24
+    int msg_dst_addr = (b[2] << 16) | (b[3] << 8) | b[4];
+    int msg_src_addr = (b[5] << 16) | (b[6] << 8) | b[7];
+
+    // Command ID
+    // cmd_id : 8
+    int msg_cmd_id = b[8];
+
+    // optional fields
+    int msg_seq_nr = 0;
+    char msg_mac[13] = {0};
+
+    char msg_data[31 * 2 + 1]; // variable length, converted to hex string
+    unsigned int data_length = msg_len - 8;
+    if (msg_protocol_mode == 0 || data_length < 8) {
+        bitrow_snprint(&b[9], data_length * 8, msg_data, sizeof (msg_data));
     } else {
         data_length -= 8;
-        bitrow_snprint(&b[9], data_length * 8, msg.data, sizeof msg.data);
-        msg.seq_nr = (b[9 + data_length] << 8) | b[9 + data_length + 1];
-        bitrow_snprint(&b[9 + data_length + 2], 6 * 8, msg.mac, sizeof msg.mac);
+        bitrow_snprint(&b[9], data_length * 8, msg_data, sizeof (msg_data));
+        msg_seq_nr = (b[9 + data_length] << 8) | b[9 + data_length + 1];
+        bitrow_snprint(&b[9 + data_length + 2], 6 * 8, msg_mac, sizeof msg_mac);
     }
 
-    msg.crc = (b[len - 2] << 8) | b[len - 1];
+    // crc : 16;
+    //int msg_crc = (b[len - 2] << 8) | b[len - 1];
 
     // calculate and verify checksum
     if (crc16lsb(b, len, 0x8408, 0x0000) != 0) // unreflected poly 0x1021
         return DECODE_FAIL_MIC;
 
-    decoder_logf_bitrow(decoder, 2, __func__, b, len * 8, "offset %u, num_bits %u, len %d, msg_len %d", offset, num_bits, len, msg.frame_length);
+    decoder_logf_bitrow(decoder, 2, __func__, b, len * 8, "offset %u, num_bits %u, len %d, msg_len %d", offset, num_bits, len, msg_len);
 
     /* clang-format off */
     data_t *data = data_make(
             "model",            "",                 DATA_STRING, "Somfy-IOHC",
-            "id",               "Source",           DATA_FORMAT, "%06x", DATA_INT, msg.src_addr,
-            "dst_id",           "Target",           DATA_FORMAT, "%06x", DATA_INT, msg.dst_addr,
-            "msg_type",         "Command",          DATA_FORMAT, "%02x", DATA_INT, msg.cmd_id,
-            "msg",              "Message",          DATA_STRING, msg.data,
+            "id",               "Source",           DATA_FORMAT, "%06x", DATA_INT, msg_src_addr,
+            "dst_id",           "Target",           DATA_FORMAT, "%06x", DATA_INT, msg_dst_addr,
+            "msg_type",         "Command",          DATA_FORMAT, "%02x", DATA_INT, msg_cmd_id,
+            "msg",              "Message",          DATA_STRING, msg_data,
+            "mode",             "Mode",             DATA_STRING, msg_protocol_mode ? "One-way" : "Two-way",
+            "version",          "Version",          DATA_INT,    msg_protocol_version,
+            "counter",          "Counter",          DATA_COND, msg_protocol_mode == 1, DATA_INT,    msg_seq_nr,
+            "mac",              "MAC",              DATA_COND, msg_protocol_mode == 1, DATA_STRING, msg_mac,
+            "flag_end",         "End flag",         DATA_INT,    msg_end_flag,
+            "flag_start",       "Start flag",       DATA_INT,    msg_start_flag,
+            "flag_mode",        "Mode flag",        DATA_INT,    msg_protocol_mode,
+            "flag_beacon",      "Beacon flag",      DATA_INT,    msg_use_beacon,
+            "flag_routed",      "Routed flag",      DATA_INT,    msg_is_routed,
+            "flag_lpm",         "LPM flag",         DATA_INT,    msg_low_power_mode,
             "mic",              "Integrity",        DATA_STRING, "CRC",
-            "mode",             "Mode",             DATA_STRING, msg.protocol_mode ? "One-way" : "Two-way",
-            "version",          "Version",          DATA_INT, msg.protocol_version,
-            NULL);
-
-    if (msg.protocol_mode == 1)
-        data = data_append(data,
-            "counter",          "Counter",          DATA_INT,    msg.seq_nr,
-            "mac",              "MAC",              DATA_STRING, msg.mac,
             NULL);
     /* clang-format on */
-
-    if (decoder->verbose) {
-        data_t *flags = data_make(
-            "end", "End", DATA_INT, msg.end_flag,
-            "start", "Start", DATA_INT, msg.start_flag,
-            "mode", "Mode", DATA_INT, msg.protocol_mode,
-            "beacon", "Beacon", DATA_INT, msg.use_beacon,
-            "routed", "Routed", DATA_INT, msg.is_routed,
-            "lpm", "LPM", DATA_INT, msg.low_power_mode,
-            NULL);
-        data = data_append(data, "flags", "Flags", DATA_DATA, flags, NULL);
-    }
 
     decoder_output_data(decoder, data);
     return 1;
@@ -217,11 +201,17 @@ static char *output_fields[] = {
         "dst_id",
         "msg_type",
         "msg",
-        "counter",
-        "mac",
-        "mic",
         "mode",
         "version",
+        "counter",
+        "mac",
+        "flag_end",
+        "flag_start",
+        "flag_mode",
+        "flag_beacon",
+        "flag_routed",
+        "flag_lpm",
+        "mic",
         NULL,
 };
 
