@@ -32,12 +32,12 @@ Example payloads (excluding preamble):
 - Resync   = 7052f9cee3 (encoding differs from temperature readings => not handled)
 - No probe = 2700ffb791 (just like a temperature reading => in this case we report the appropriate probe status and no temperature reading)
 - ...
-- 20 C    = 28a0ffce69
-- 21 C    = 28a4ffa0f5
+- 20 C     = 28a0ffce69
+- 21 C     = 28a4ffa0f5
 - ...
-- 24 C    = 28b0ff6438
+- 24 C     = 28b0ff6438
 - ...
-- 44 C    = 2900ff8c9d
+- 44 C     = 2900ff8c9d
 - ...
 */
 
@@ -56,29 +56,29 @@ static int tfa_14_1504_v2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
     }
     unsigned const row = 0;
+    // signed value for safety
+    int available_bits = bitbuffer->bits_per_row[row];
 
-    // Optional optimization: Early exit if row too short
-    if (bitbuffer->bits_per_row[row] < NUM_BITS_TOTAL) {
+    // optional optimization: early exit if row too short
+    if (available_bits < NUM_BITS_TOTAL) {
         return DECODE_ABORT_EARLY; // considered "early" because preamble not checked
     }
 
-    // Sync on preamble
-    unsigned start_pos = bitbuffer_search(bitbuffer, row, 0, preamble, NUM_BITS_PREAMBLE) + NUM_BITS_PREAMBLE;
-
-    if (start_pos >= bitbuffer->bits_per_row[row]) {
+    // sync on preamble
+    unsigned start_pos = bitbuffer_search(bitbuffer, row, 0, preamble, NUM_BITS_PREAMBLE);
+    available_bits -= start_pos;
+    if (available_bits < NUM_BITS_PREAMBLE) {
         return DECODE_ABORT_EARLY; // no preamble found
     }
 
-    const unsigned available_bits = bitbuffer->bits_per_row[row] - start_pos;
-
-    // check min length
+    // check min & max length
     if (available_bits < NUM_BITS_TOTAL ||
             available_bits > NUM_BITS_MAX) {
         return DECODE_ABORT_LENGTH;
     }
 
     uint8_t data[NUM_BYTES_DATA];
-    bitbuffer_extract_bytes(bitbuffer, row, start_pos, data, NUM_BITS_DATA);
+    bitbuffer_extract_bytes(bitbuffer, row, start_pos + NUM_BITS_PREAMBLE, data, NUM_BITS_DATA);
 
     uint8_t flags = data[0] >> 4;
     // ignore resync button
