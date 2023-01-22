@@ -313,6 +313,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [228]  Neptune R900 flow meters
     [229]* WEC-2103 temperature/humidity sensor
     [230]  Vauno EN8822C
+    [231]  Govee Water Leak Detector H5054
 
 * Disabled by default, use -R n or a conf file to enable
 

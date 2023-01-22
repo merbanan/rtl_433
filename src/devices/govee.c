@@ -308,12 +308,6 @@ device.
 
 */
 
-typedef enum {
-    GOVEE_BUTTON_PRESS   = 0,
-    GOVEE_BATTERY_REPORT = 1,
-    GOVEE_WATER_LEAK     = 2,
-} govee_h5054_event_t;
-
 static int govee_h5054_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     if (bitbuffer->num_rows < 3) {
@@ -329,11 +323,11 @@ static int govee_h5054_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
+    bitbuffer_invert(bitbuffer);
+
     uint8_t *b = bitbuffer->bb[r];
 
     char code_str[13];
-
-    bitbuffer_invert(bitbuffer);
     sprintf(code_str, "%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5]);
 
     uint16_t chk = crc16(b, 6, 0x1021, 0x1d0f);
@@ -358,14 +352,14 @@ static int govee_h5054_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int leak_num = -1;
     int battery  = -1;
     switch (event) {
-    case GOVEE_BUTTON_PRESS:
+    case 0x0:
         event_str = "Button Press";
         break;
-    case GOVEE_BATTERY_REPORT:
+    case 0x1:
         event_str = "Battery Report";
         battery   = event_data;
         break;
-    case GOVEE_WATER_LEAK:
+    case 0x2:
         event_str = "Water Leak";
         leak_num  = event_data;
         break;
