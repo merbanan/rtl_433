@@ -1,5 +1,5 @@
 /** @file
-    Vauno EN8822C sensor on 433.92Mhz.
+    Vauno EN8822C sensor on 433.92MHz.
 
     Copyright (C) 2022 Jamie Barron <gumbald@gmail.com>
 
@@ -9,6 +9,8 @@
     (at your option) any later version.
 */
 /**
+Vauno EN8822C sensor on 433.92MHz.
+
 Largely the same as Esperanza EWS, s3318p.
 @sa esperanza_ews.c s3318p.c
 
@@ -31,20 +33,19 @@ Frame structure (42 bits):
 
 Sample Data:
 
-    ```
     [00] {42} af 0f a2 7c 01 c0 : 10101111 00001111 10100010 01111100 00000001 11
-    Sensor ID	= 175 = 0xaf
-    Channel		= 0
-    temp		= -93 = 0x111110100010
-    TemperatureC	= -9.3
-    hum    = 62% = 0x0111110
-    ```
+
+- Sensor ID	= 175 = 0xaf
+- Channel		= 0
+- temp		= -93 = 0x111110100010
+- TemperatureC	= -9.3
+- hum    = 62% = 0x0111110
 
 */
 
 #include "decoder.h"
 
-static int vauno_en8822c_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int vauno_en8822c_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int row = bitbuffer_find_repeated_prefix(bitbuffer, 4, 42);
     if (row < 0) {
@@ -99,6 +100,6 @@ r_device vauno_en8822c = {
         .long_width  = 4000,
         .gap_limit   = 5000,
         .reset_limit = 9500,
-        .decode_fn   = &vauno_en8822c_callback,
+        .decode_fn   = &vauno_en8822c_decode,
         .fields      = output_fields,
 };

@@ -312,7 +312,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [227]  SRSmith Pool Light Remote Control SRS-2C-TX (-f 915M)
     [228]  Neptune R900 flow meters
     [229]* WEC-2103 temperature/humidity sensor
-    [230]  Vauno EN8822C thermometer/hygrometer
+    [230]  Vauno EN8822C
 
 * Disabled by default, use -R n or a conf file to enable
 
