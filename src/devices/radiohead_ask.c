@@ -6,7 +6,7 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/**
+/** @fn int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 RadioHead ASK (generic) protocol.
 
 Default transmitter speed is 2000 bits per second, i.e. 500 us per bit.
@@ -51,6 +51,9 @@ static uint8_t symbol_6to4(uint8_t symbol)
     return 0xFF; // Not found
 }
 
+/**
+Radiohead ASK parser.
+*/
 static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t row, /*OUT*/ uint8_t *payload)
 {
     int len = bitbuffer->bits_per_row[row];
@@ -175,6 +178,11 @@ static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
+/**
+Sensible Living Mini-Plant Moisture Sensor.
+
+@todo Documentation needed.
+*/
 static int sensible_living_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;

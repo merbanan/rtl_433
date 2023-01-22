@@ -14,6 +14,8 @@
 #include "pulse_slicer.h"
 #include "bitbuffer.h"
 #include "util.h"
+#include "logger.h"
+#include "decoder_util.h" // TODO: this should be refactored
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -39,14 +41,21 @@ static int account_event(r_device *device, bitbuffer_t *bits, char const *demod_
         ret = 0;
     }
     else {
-        fprintf(stderr, "Decoder \"%s\" gave invalid return value %d: notify maintainer\n", device->name, ret);
+        print_logf(LOG_ERROR, demod_name, "Decoder \"%s\" gave invalid return value %d: notify maintainer", device->name, ret);
         exit(1);
     }
 
+    // Find longest row
+    unsigned max_bits = 0;
+    for (int row = 0; row < bits->num_rows; ++row) {
+        if (bits->bits_per_row[row] > max_bits) {
+            max_bits = bits->bits_per_row[row];
+        }
+    }
+
     // Debug printout
-    if (!device->decode_fn || (device->verbose && ret > 0) || device->verbose > 1) {
-        fprintf(stderr, "%s(): %s\n", demod_name, device->name);
-        bitbuffer_print(bits);
+    if (!device->decode_fn || (device->verbose && ret > 0) || (device->verbose > 1 && max_bits > 16) || (device->verbose > 2)) {
+        decoder_log_bitbuffer(device, 2, demod_name, bits, device->name);
     }
 
     return ret;
@@ -69,7 +78,7 @@ int pulse_slicer_pcm(const pulse_data_t *pulses, r_device *device)
             || (device->gap_limit > 0 && s_gap <= 0)
             || (device->sync_width > 0 && s_sync <= 0)
             || (device->tolerance > 0 && s_tolerance <= 0)) {
-        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", device->protocol_num, device->name);
+        print_logf(LOG_WARNING, __func__, "sample rate too low for protocol %u \"%s\"", device->protocol_num, device->name);
         return 0;
     }
 
@@ -111,7 +120,7 @@ int pulse_slicer_pcm(const pulse_data_t *pulses, r_device *device)
             preamble_len = count;
             if (device->verbose > 1) {
                 float to_us = 1e6 / pulses->sample_rate;
-                fprintf(stderr, "Exact bit width (in us) is %.2f vs %.2f (pulse width %.2f vs %.2f), %d bit preamble\n",
+                print_logf(LOG_INFO, __func__, "Exact bit width (in us) is %.2f vs %.2f (pulse width %.2f vs %.2f), %d bit preamble",
                         to_us / f_long, to_us * s_long,
                         to_us / f_short, to_us * s_short, count);
             }
@@ -137,7 +146,7 @@ int pulse_slicer_pcm(const pulse_data_t *pulses, r_device *device)
         f_short = (float)rz_count / rzs_width;
         if (device->verbose > 1) {
             float to_us = 1e6 / pulses->sample_rate;
-            fprintf(stderr, "Exact bit width (in us) is %.2f vs %.2f (pulse width %.2f vs %.2f), %d bit measured\n",
+            print_logf(LOG_INFO, __func__, "Exact bit width (in us) is %.2f vs %.2f (pulse width %.2f vs %.2f), %d bit measured",
                     to_us / f_long, to_us * s_long,
                     to_us / f_short, to_us * s_short, rz_count);
         }
@@ -160,7 +169,7 @@ int pulse_slicer_pcm(const pulse_data_t *pulses, r_device *device)
             preamble_len = count;
             if (device->verbose > 1) {
                 float to_us = 1e6 / pulses->sample_rate;
-                fprintf(stderr, "Exact bit width (in us) is %.2f vs %.2f, %d bit preamble\n",
+                print_logf(LOG_INFO, __func__, "Exact bit width (in us) is %.2f vs %.2f, %d bit preamble",
                         to_us / f_short, to_us * s_short, count);
             }
         }
@@ -195,7 +204,7 @@ int pulse_slicer_pcm(const pulse_data_t *pulses, r_device *device)
         f_short = f_long = (float)nrz_count / nrz_width;
         if (device->verbose > 1) {
             float to_us = 1e6 / pulses->sample_rate;
-            fprintf(stderr, "%s: Exact bit width (in us) is %.2f vs %.2f, %d bit measured\n", device->name,
+            print_logf(LOG_INFO, __func__, "%s: Exact bit width (in us) is %.2f vs %.2f, %d bit measured", device->name,
                     to_us / f_short, to_us * s_short, nrz_count);
         }
     }
@@ -223,7 +232,7 @@ int pulse_slicer_pcm(const pulse_data_t *pulses, r_device *device)
 
             // Data is corrupt
             if (device->verbose > 3) {
-                fprintf(stderr, "bitbuffer cleared at %u: pulse %d, gap %d, period %d\n",
+                print_logf(LOG_TRACE, __func__, "bitbuffer cleared at %u: pulse %d, gap %d, period %d",
                         n, pulses->pulse[n], pulses->gap[n],
                         pulses->pulse[n] + pulses->gap[n]);
             }
@@ -264,7 +273,7 @@ int pulse_slicer_ppm(const pulse_data_t *pulses, r_device *device)
             || (device->gap_limit > 0 && s_gap <= 0)
             || (device->sync_width > 0 && s_sync <= 0)
             || (device->tolerance > 0 && s_tolerance <= 0)) {
-        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", device->protocol_num, device->name);
+        print_logf(LOG_WARNING, __func__, "sample rate too low for protocol %u \"%s\"", device->protocol_num, device->name);
         return 0;
     }
 
@@ -343,7 +352,7 @@ int pulse_slicer_pwm(const pulse_data_t *pulses, r_device *device)
             || (device->gap_limit > 0 && s_gap <= 0)
             || (device->sync_width > 0 && s_sync <= 0)
             || (device->tolerance > 0 && s_tolerance <= 0)) {
-        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", device->protocol_num, device->name);
+        print_logf(LOG_WARNING, __func__, "sample rate too low for protocol %u \"%s\"", device->protocol_num, device->name);
         return 0;
     }
 
@@ -456,7 +465,7 @@ int pulse_slicer_manchester_zerobit(const pulse_data_t *pulses, r_device *device
             || (device->gap_limit > 0 && s_gap <= 0)
             || (device->sync_width > 0 && s_sync <= 0)
             || (device->tolerance > 0 && s_tolerance <= 0)) {
-        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", device->protocol_num, device->name);
+        print_logf(LOG_WARNING, __func__, "sample rate too low for protocol %u \"%s\"", device->protocol_num, device->name);
         return 0;
     }
 
@@ -543,7 +552,7 @@ int pulse_slicer_dmc(const pulse_data_t *pulses, r_device *device)
             || (device->gap_limit > 0 && s_gap <= 0)
             || (device->sync_width > 0 && s_sync <= 0)
             || (device->tolerance > 0 && s_tolerance <= 0)) {
-        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", device->protocol_num, device->name);
+        print_logf(LOG_WARNING, __func__, "sample rate too low for protocol %u \"%s\"", device->protocol_num, device->name);
         return 0;
     }
 
@@ -565,7 +574,7 @@ int pulse_slicer_dmc(const pulse_data_t *pulses, r_device *device)
                 else if (bits.num_rows > 0 && bits.bits_per_row[bits.num_rows - 1] > 0) {
                     bitbuffer_add_row(&bits);
 /*
-                    fprintf(stderr, "Detected error during pulse_slicer_dmc(): %s\n",
+                    print_logf(LOG_WARNING, __func__, "Detected error during pulse_slicer_dmc(): %s",
                             device->name);
 */
                 }
@@ -603,7 +612,7 @@ int pulse_slicer_piwm_raw(const pulse_data_t *pulses, r_device *device)
             || (device->gap_limit > 0 && s_gap <= 0)
             || (device->sync_width > 0 && s_sync <= 0)
             || (device->tolerance > 0 && s_tolerance <= 0)) {
-        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", device->protocol_num, device->name);
+        print_logf(LOG_WARNING, __func__, "sample rate too low for protocol %u \"%s\"", device->protocol_num, device->name);
         return 0;
     }
 
@@ -631,7 +640,7 @@ int pulse_slicer_piwm_raw(const pulse_data_t *pulses, r_device *device)
                 && bits.bits_per_row[bits.num_rows - 1] > 0) {
             bitbuffer_add_row(&bits);
 /*
-            fprintf(stderr, "Detected error during pulse_slicer_piwm_raw(): %s\n",
+            print_logf(LOG_WARNING, __func__, "Detected error during pulse_slicer_piwm_raw(): %s",
                     device->name);
 */
         }
@@ -665,7 +674,7 @@ int pulse_slicer_piwm_dc(const pulse_data_t *pulses, r_device *device)
             || (device->gap_limit > 0 && s_gap <= 0)
             || (device->sync_width > 0 && s_sync <= 0)
             || (device->tolerance > 0 && s_tolerance <= 0)) {
-        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", device->protocol_num, device->name);
+        print_logf(LOG_WARNING, __func__, "sample rate too low for protocol %u \"%s\"", device->protocol_num, device->name);
         return 0;
     }
 
@@ -687,7 +696,7 @@ int pulse_slicer_piwm_dc(const pulse_data_t *pulses, r_device *device)
                 && bits.bits_per_row[bits.num_rows - 1] > 0) {
             bitbuffer_add_row(&bits);
 /*
-            fprintf(stderr, "Detected error during pulse_slicer_piwm_dc(): %s\n",
+            print_logf(LOG_WARNING, __func__, "Detected error during pulse_slicer_piwm_dc(): %s",
                     device->name);
 */
         }
@@ -721,7 +730,7 @@ int pulse_slicer_nrzs(const pulse_data_t *pulses, r_device *device)
             || (device->gap_limit > 0 && s_gap <= 0)
             || (device->sync_width > 0 && s_sync <= 0)
             || (device->tolerance > 0 && s_tolerance <= 0)) {
-        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", device->protocol_num, device->name);
+        print_logf(LOG_WARNING, __func__, "sample rate too low for protocol %u \"%s\"", device->protocol_num, device->name);
         return 0;
     }
 
@@ -781,7 +790,7 @@ int pulse_slicer_osv1(const pulse_data_t *pulses, r_device *device)
             || (device->gap_limit > 0 && s_gap <= 0)
             || (device->sync_width > 0 && s_sync <= 0)
             || (device->tolerance > 0 && s_tolerance <= 0)) {
-        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", device->protocol_num, device->name);
+        print_logf(LOG_WARNING, __func__, "sample rate too low for protocol %u \"%s\"", device->protocol_num, device->name);
         return 0;
     }
 
@@ -806,7 +815,7 @@ int pulse_slicer_osv1(const pulse_data_t *pulses, r_device *device)
     }
     if (preamble != 12) {
         if (device->verbose)
-            fprintf(stderr, "preamble %d  %d %d\n", preamble, pulses->pulse[0], pulses->gap[0]);
+            print_logf(LOG_WARNING, __func__, "preamble %d  %d %d", preamble, pulses->pulse[0], pulses->gap[0]);
         return events;
     }
 

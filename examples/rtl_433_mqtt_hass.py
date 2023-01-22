@@ -105,7 +105,7 @@ NAMING_KEYS = [ "type", "model", "subtype", "channel", "id" ]
 
 # Fields that get ignored when publishing to Home Assistant
 # (reduces noise to help spot missing field mappings)
-SKIP_KEYS = NAMING_KEYS + [ "time", "mic", "mod", "freq", "sequence_num",
+SKIP_KEYS = NAMING_KEYS + [ "mic", "mod", "freq", "sequence_num",
                             "message_type", "exception", "raw_msg" ]
 
 
@@ -121,7 +121,7 @@ mappings = {
             "device_class": "temperature",
             "name": "Temperature",
             "unit_of_measurement": "°C",
-            "value_template": "{{ value|float }}",
+            "value_template": "{{ value|float|round(1) }}",
             "state_class": "measurement"
         }
     },
@@ -132,7 +132,7 @@ mappings = {
             "device_class": "temperature",
             "name": "Temperature 1",
             "unit_of_measurement": "°C",
-            "value_template": "{{ value|float }}",
+            "value_template": "{{ value|float|round(1) }}",
             "state_class": "measurement"
         }
     },
@@ -143,7 +143,7 @@ mappings = {
             "device_class": "temperature",
             "name": "Temperature 2",
             "unit_of_measurement": "°C",
-            "value_template": "{{ value|float }}",
+            "value_template": "{{ value|float|round(1) }}",
             "state_class": "measurement"
         }
     },
@@ -154,8 +154,24 @@ mappings = {
             "device_class": "temperature",
             "name": "Temperature",
             "unit_of_measurement": "°F",
-            "value_template": "{{ value|float }}",
+            "value_template": "{{ value|float|round(1) }}",
             "state_class": "measurement"
+        }
+    },
+
+    # This diagnostic sensor is useful to see when a device last sent a value,
+    # even if the value didn't change.
+    # https://community.home-assistant.io/t/send-metrics-to-influxdb-at-regular-intervals/9096
+    # https://github.com/home-assistant/frontend/discussions/13687
+    "time": {
+        "device_type": "sensor",
+        "object_suffix": "UTC",
+        "config": {
+            "device_class": "timestamp",
+            "name": "Timestamp",
+            "entity_category": "diagnostic",
+            "enabled_by_default": False,
+            "icon": "mdi:clock-in"
         }
     },
 
@@ -336,7 +352,7 @@ mappings = {
         "config": {
             "name": "Rain Total",
             "unit_of_measurement": "mm",
-            "value_template": "{{ value|float }}",
+            "value_template": "{{ value|float|round(2) }}",
             "state_class": "total_increasing"
         }
     },
@@ -456,6 +472,42 @@ mappings = {
             "state_class": "measurement"
         }
     },
+  
+    "energy_kWh": {
+        "device_type": "sensor",
+        "object_suffix": "kwh",
+        "config": {
+            "device_class": "power",
+            "name": "Energy",
+            "unit_of_measurement": "kWh",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
+  
+    "current_A": {
+        "device_type": "sensor",
+        "object_suffix": "A",
+        "config": {
+            "device_class": "power",
+            "name": "Current",
+            "unit_of_measurement": "A",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
+  
+    "voltage_V": {
+        "device_type": "sensor",
+        "object_suffix": "V",
+        "config": {
+            "device_class": "power",
+            "name": "Voltage",
+            "unit_of_measurement": "V",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
 
     "light_lux": {
         "device_type": "sensor",
@@ -540,9 +592,67 @@ mappings = {
             "state_class": "total_increasing",
         }
     },
+  
+    "consumption": {
+        "device_type": "sensor",
+        "object_suffix": "consumption",
+        "config": {
+            "name": "SCMplus Consumption Value",
+            "value_template": "{{ value|int }}",
+            "state_class": "total_increasing",
+        }
+    },
+
+    "channel": {
+        "device_type": "device_automation",
+        "object_suffix": "CH",
+        "config": {
+           "automation_type": "trigger",
+           "type": "button_short_release",
+           "subtype": "button_1",
+        }
+    },
+
+    "button": {
+        "device_type": "device_automation",
+        "object_suffix": "BTN",
+        "config": {
+           "automation_type": "trigger",
+           "type": "button_short_release",
+           "subtype": "button_1",
+        }
+    },
 
 }
 
+# Use secret_knock to trigger device automations for Honeywell ActivLink
+# doorbells. We have this outside of mappings as we need to configure two
+# different configuration topics.
+secret_knock_mappings = [
+
+    {
+        "device_type": "device_automation",
+        "object_suffix": "Knock",
+        "config": {
+            "automation_type": "trigger",
+            "type": "button_short_release",
+            "subtype": "button_1",
+            "payload": 0,
+        }
+    },
+
+    {
+        "device_type": "device_automation",
+        "object_suffix": "Secret-Knock",
+        "config": {
+            "automation_type": "trigger",
+            "type": "button_triple_press",
+            "subtype": "button_1",
+            "payload": 1,
+        }
+    },
+
+]
 
 def mqtt_connect(client, userdata, flags, rc):
     """Callback for MQTT connects."""
@@ -597,7 +707,7 @@ def rtl_433_device_topic(data):
     return '/'.join(path_elements)
 
 
-def publish_config(mqttc, topic, model, instance, mapping):
+def publish_config(mqttc, topic, model, instance, mapping, value=None):
     """Publish Home Assistant auto discovery data."""
     global discovery_timeouts
 
@@ -619,10 +729,18 @@ def publish_config(mqttc, topic, model, instance, mapping):
     discovery_timeouts[path] = now + args.discovery_interval
 
     config = mapping["config"].copy()
-    config["name"] = object_name
-    config["state_topic"] = topic
-    config["unique_id"] = object_name
-    config["device"] = { "identifiers": object_id, "name": object_id, "model": model, "manufacturer": "rtl_433" }
+
+    # Device Automation configuration is in a different structure compared to
+    # all other mqtt discovery types.
+    # https://www.home-assistant.io/integrations/device_trigger.mqtt/
+    if device_type == 'device_automation':
+        config["topic"] = topic
+        config["platform"] = 'mqtt'
+    else:
+        config["state_topic"] = topic
+        config["unique_id"] = object_name
+        config["name"] = object_name
+    config["device"] = { "identifiers": [object_id], "name": object_id, "model": model, "manufacturer": "rtl_433" }
 
     if args.force_update:
         config["force_update"] = "true"
@@ -655,7 +773,7 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
         logging.warning("No suitable identifier found for model: ", model)
         return
 
-    if args.ids and data.get("id") not in args.ids:
+    if args.ids and id in data and data.get("id") not in args.ids:
         # not in the safe list
         logging.debug("Device (%s) is not in the desired list of device ids: [%s]" % (data["id"], ids))
         return
@@ -670,6 +788,12 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
         else:
             if key not in SKIP_KEYS:
                 skipped_keys.append(key)
+
+    if "secret_knock" in data.keys():
+        for m in secret_knock_mappings:
+            topic = "/".join([topicprefix,"devices",instance,"secret_knock"])
+            if publish_config(mqttc, topic, model, instance, m):
+                published_keys.append("secret_knock")
 
     if published_keys:
         logging.info("Published %s: %s" % (instance, ", ".join(published_keys)))

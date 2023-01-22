@@ -15,6 +15,7 @@
 #include "output_influx.h"
 #include "optparse.h"
 #include "util.h"
+#include "logger.h"
 #include "fatal.h"
 #include "r_util.h"
 
@@ -36,6 +37,7 @@ typedef struct {
     char hostname[64];
     char url[400];
     char extra_headers[150];
+    tls_opts_t tls_opts;
     int databufidxfill;
     struct mbuf databufs[2];
 
@@ -56,7 +58,7 @@ static void influx_client_event(struct mg_connection *nc, int ev, void *ev_data)
             // Error, print only once
             if (ctx) {
                 if (ctx->prev_status != connect_status)
-                    fprintf(stderr, "InfluxDB connect error: %s\n", strerror(connect_status));
+                    print_logf(LOG_WARNING, "InfluxDB", "InfluxDB connect error: %s", strerror(connect_status));
                 ctx->conn = NULL;
             }
         }
@@ -72,7 +74,7 @@ static void influx_client_event(struct mg_connection *nc, int ev, void *ev_data)
         }
         else {
             if (ctx && ctx->prev_resp_code != hm->resp_code)
-                fprintf(stderr, "InfluxDB replied HTTP code: %d with message:\n%s\n", hm->resp_code, hm->body.p);
+                print_logf(LOG_WARNING, "InfluxDB", "InfluxDB replied HTTP code: %d with message:\n%s", hm->resp_code, hm->body.p);
         }
         if (ctx) {
             ctx->prev_resp_code = hm->resp_code;
@@ -107,9 +109,24 @@ static void influx_client_send(influx_client_t *ctx)
     if (ctx->conn || !buf->len)
         return;
 
-    struct mg_connect_opts opts = {.user_data = ctx};
+    char const *error_string = NULL;
+    struct mg_connect_opts opts = {.user_data = ctx, .error_string = &error_string};
+    if (ctx->tls_opts.tls_ca_cert) {
+#if MG_ENABLE_SSL
+        opts.ssl_cert          = ctx->tls_opts.tls_cert;
+        opts.ssl_key           = ctx->tls_opts.tls_key;
+        opts.ssl_ca_cert       = ctx->tls_opts.tls_ca_cert;
+        opts.ssl_cipher_suites = ctx->tls_opts.tls_cipher_suites;
+        opts.ssl_server_name   = ctx->tls_opts.tls_server_name;
+        opts.ssl_psk_identity  = ctx->tls_opts.tls_psk_identity;
+        opts.ssl_psk_key       = ctx->tls_opts.tls_psk_key;
+#else
+        print_logf(LOG_FATAL, __func__, "influxs (TLS) not available");
+        exit(1);
+#endif
+    }
     if ((ctx->conn = mg_connect_http_opt(ctx->mgr, influx_client_event, opts, ctx->url, ctx->extra_headers, buf->buf)) == NULL) {
-        fprintf(stderr, "Connect to InfluxDB (%s) failed\n", ctx->url);
+        print_logf(LOG_WARNING, "InfluxDB", "Connect to InfluxDB (%s) failed (%s)", ctx->url, error_string);
     }
     else {
         ctx->databufidxfill ^= 1;
@@ -436,14 +453,17 @@ struct data_output *data_output_influx_create(struct mg_mgr *mgr, char *opts)
         url += 2;
         memcpy(url, "http", 4);
     }
+    if (strncmp(url, "https", 5) == 0) {
+        influx->tls_opts.tls_ca_cert = "*"; // TLS is enabled but no cert verification is performed.
+    }
 
     // check if valid URL has been provided
     struct mg_str host, path, query;
     if (mg_parse_uri(mg_mk_str(url), NULL, NULL, &host, NULL, &path,
                 &query, NULL) != 0
             || !host.len || !path.len || !query.len) {
-        fprintf(stderr, "Invalid URL to InfluxDB specified.%s%s%s\n"
-                        "Something like \"influx://<host>/write?org=<org>&bucket=<bucket>\" required at least.\n",
+        print_logf(LOG_FATAL, __func__, "Invalid URL to InfluxDB specified.%s%s%s"
+                        " Something like \"influx://<host>/write?org=<org>&bucket=<bucket>\" required at least.",
                 !host.len ? " No host specified." : "",
                 !path.len ? " No path component specified." : "",
                 !query.len ? " No query parameters specified." : "");
@@ -459,8 +479,11 @@ struct data_output *data_output_influx_create(struct mg_mgr *mgr, char *opts)
             continue;
         else if (!strcasecmp(key, "t") || !strcasecmp(key, "token"))
             token = val;
+        else if (!tls_param(&influx->tls_opts, key, val)) {
+            // ok
+        }
         else {
-            fprintf(stderr, "Invalid key \"%s\" option.\n", key);
+            print_logf(LOG_FATAL, __func__, "Invalid key \"%s\" option.", key);
             exit(1);
         }
     }
@@ -472,7 +495,7 @@ struct data_output *data_output_influx_create(struct mg_mgr *mgr, char *opts)
     influx->output.print_int    = print_influx_int;
     influx->output.output_free  = data_output_influx_free;
 
-    fprintf(stderr, "Publishing data to InfluxDB (%s)\n", url);
+    print_logf(LOG_CRITICAL, "InfluxDB", "Publishing data to InfluxDB (%s)", url);
 
     influx->mgr = mgr;
     influx_client_init(influx, url, token);

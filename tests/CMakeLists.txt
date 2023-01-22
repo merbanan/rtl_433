@@ -7,7 +7,7 @@ target_link_libraries(data-test data)
 
 add_test(data-test data-test)
 
-add_executable(baseband-test baseband-test.c ../src/baseband.c)
+add_executable(baseband-test baseband-test.c ../src/baseband.c ../src/logger.c)
 
 if(UNIX)
 target_link_libraries(baseband-test m)

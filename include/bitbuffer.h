@@ -66,15 +66,19 @@ void bitbuffer_nrzs_decode(bitbuffer_t *bits);
 void bitbuffer_nrzm_decode(bitbuffer_t *bits);
 
 /// Print the content of the bitbuffer.
+/// @deprecated For debug only, use decoder_log_bitbuffer otherwise
 void bitbuffer_print(const bitbuffer_t *bits);
 
 /// Debug the content of the bitbuffer.
+/// @deprecated For debug only, use decoder_log_bitbuffer otherwise
 void bitbuffer_debug(const bitbuffer_t *bits);
 
 /// Print the content of a bit row (byte buffer).
+/// @deprecated For debug only, use decoder_log_bitrow otherwise
 void bitrow_print(uint8_t const *bitrow, unsigned bit_len);
 
 /// Debug the content of a bit row (byte buffer).
+/// @deprecated For debug only, use decoder_log_bitrow otherwise
 void bitrow_debug(uint8_t const *bitrow, unsigned bit_len);
 
 /// Print the content of a bit row (byte buffer) to a string buffer.

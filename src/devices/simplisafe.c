@@ -10,8 +10,12 @@
 
     License: GPL v2+ (or at your choice, any other OSI-approved Open Source license)
 */
-/**
+/** @fn int ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 Protocol of the SimpliSafe Sensors.
+
+@sa ss_sensor_parser()
+@sa ss_pinentry_parser()
+@sa ss_keypad_commands()
 
 The data is sent leveraging a PiWM Encoding where a long is 1, and a short is 0
 
@@ -44,6 +48,9 @@ static void ss_get_id(char *id, uint8_t *b)
     *p = '\0';
 }
 
+/**
+SimpliSafe protocol for sensors.
+*/
 static int ss_sensor_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 {
     data_t *data;
@@ -85,6 +92,9 @@ static int ss_sensor_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
     return 1;
 }
 
+/**
+SimpliSafe protocol for pinentry.
+*/
 static int ss_pinentry_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 {
     data_t *data;
@@ -119,6 +129,9 @@ static int ss_pinentry_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row
     return 1;
 }
 
+/**
+SimpliSafe protocol for keypad commands.
+*/
 static int ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 {
     data_t *data;
@@ -155,10 +168,6 @@ static int ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row
     return 1;
 }
 
-/**
-Protocol of the SimpliSafe Sensors.
-@sa ss_sensor_parser() ss_pinentry_parser() ss_keypad_commands()
-*/
 static int ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // Require two identical rows.

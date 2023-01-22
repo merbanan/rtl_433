@@ -35,6 +35,11 @@ static uint8_t decrypt_esa(uint8_t *b)
     return crc;
 }
 
+/**
+ELV Energy Counter ESA 1000/2000.
+
+@todo Documentation needed.
+*/
 static int esa_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
