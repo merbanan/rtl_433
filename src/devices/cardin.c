@@ -21,7 +21,7 @@ May be useful for other Cardin product too
 
 #include "decoder.h"
 
-static int cardin_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int cardin_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t *b = bitbuffer->bb[0];
     unsigned char dip[10] = {'-','-','-','-','-','-','-','-','-', '\0'};
@@ -37,22 +37,6 @@ static int cardin_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 (b[2] & 0x0f) == 9 ||
                 (b[2] & 0x0f) == 12 ||
                 (b[2] & 0x0f) == 6) ) {
-
-/*
-        fprintf(stderr, "------------------------------\n");
-        fprintf(stderr, "protocol       = Cardin S466\n");
-        fprintf(stderr, "message        = ");
-        for (i=0 ; i<3 ; i++) {
-            for (k = 7; k >= 0; k--) {
-                if (b[i] & 1 << k)
-                    fprintf(stderr, "1");
-                else
-                    fprintf(stderr, "0");
-            }
-            fprintf(stderr, " ");
-        }
-        fprintf(stderr, "\n\n");
-*/
 
         // Dip 1
         if (b[0] & 8) {
@@ -138,6 +122,6 @@ r_device cardin = {
         .sync_width  = 6150,
         .gap_limit   = 1600,
         .reset_limit = 32000,
-        .decode_fn   = &cardin_callback,
+        .decode_fn   = &cardin_decode,
         .fields      = output_fields,
 };

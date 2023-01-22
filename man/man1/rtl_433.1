@@ -44,7 +44,7 @@ Output the version string and exit
 .TP
 [ \fB\-v\fI\fP ]
 Increase verbosity (can be used multiple times).
-       \-v : verbose, \-vv : verbose decoders, \-vvv : debug decoders, \-vvvv : trace decoding).
+       \-v : verbose notice, \-vv : verbose info, \-vvv : debug, \-vvvv : trace.
 .TP
 [ \fB\-c\fI <path>\fP ]
 Read config options from a file
@@ -124,7 +124,7 @@ Save data stream to output file (a '\-' dumps samples to stdout)
 Save data stream to output file, overwrite existing file
 .SS "Data output options"
 .TP
-[ \fB\-F\fI kv | json | csv | mqtt | influx | syslog | trigger | null | help\fP ]
+[ \fB\-F\fI log | kv | json | csv | mqtt | influx | syslog | trigger | null | help\fP ]
 Produce decoded output in given format.
        Append output to file with :<filename> (e.g. \-F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. \-F syslog:127.0.0.1:1514
@@ -299,6 +299,9 @@ reflect : reflect each byte (MSB first to MSB last)
 decode_uart : UART 8n1 (10\-to\-8) decode
 .RE
 .RS
+decode_dm : Differential Manchester decode
+.RE
+.RS
 match=<bits> : only match if the <bits> are found
 .RE
 .RS
@@ -318,10 +321,10 @@ countonly : suppress detailed row output
 E.g. \-X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repeats>=3"
 .SS "Output format option"
 .TP
-[ \fB\-F\fI kv|json|csv|mqtt|influx|syslog|trigger|null\fP ]
+[ \fB\-F\fI log|kv|json|csv|mqtt|influx|syslog|trigger|null\fP ]
 Produce decoded output in given format.
 .RS
-Without this option the default is KV output. Use "\-F null" to remove the default.
+Without this option the default is LOG and KV output. Use "\-F null" to remove the default.
 .RE
 .RS
 Append output to file with :<filename> (e.g. \-F csv:log.csv), defaults to stdout.
@@ -382,7 +385,7 @@ Use "time" to add current date and time meta data (preset for live inputs).
 Use "time:rel" to add sample position meta data (preset for read\-file and stdin).
 .RE
 .RS
-Use "time:unix" to show the seconds since unix epoch as time meta data.
+Use "time:unix" to show the seconds since unix epoch as time meta data. This is always UTC.
 .RE
 .RS
 Use "time:iso" to show the time with ISO\-8601 format (YYYY\-MM\-DD"T"hh:mm:ss).
@@ -403,7 +406,7 @@ Use "time:utc" to output time in UTC.
 	(this may also be accomplished by invocation with TZ environment variable set).
 .RE
 .RS
-	"usec" and "utc" can be combined with other options, eg. "time:unix:utc:usec".
+	"usec" and "utc" can be combined with other options, eg. "time:iso:utc" or "time:unix:usec".
 .RE
 .RS
 Use "replay[:N]" to replay file inputs at (N\-times) realtime.

@@ -203,7 +203,7 @@ static int secplus_v2_decode_v2_half(r_device *decoder, bitbuffer_t *bits, uint8
         roll_array[k++] = (x >> i) & 0x03;
     }
 
-    // bitrow_print(buffy, 8);
+    // decoder_log_bitrow(decoder, 3, __func__, buffy, 8, "")
 
     // assemble binary bits into trinary
     x = p2;
@@ -211,14 +211,14 @@ static int secplus_v2_decode_v2_half(r_device *decoder, bitbuffer_t *bits, uint8
         roll_array[k++] = (x >> i) & 0x03;
     }
 
-    decoder_logf(decoder, 1, __func__, "roll_array : (%d) %d %d %d %d %d %d %d %d %d\n", part_id,
+    decoder_logf(decoder, 1, __func__, "roll_array : (%d) %d %d %d %d %d %d %d %d %d", part_id,
                 roll_array[0], roll_array[1], roll_array[2], roll_array[3],
                 roll_array[4], roll_array[5], roll_array[6], roll_array[7], roll_array[8]);
 
     // SANITY check trinary values, 00/01/10 are valid,  11 is not
     for (int i = 0; i < 9; i++) {
         if (roll_array[i] == 3) {
-            fprintf(stderr, "roll_array val  FAIL\n");
+            decoder_log(decoder, 0, __func__, "roll_array val FAIL");
             return 1; // DECODE_FAIL_SANITY;
         }
     }
