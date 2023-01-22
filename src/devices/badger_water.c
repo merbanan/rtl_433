@@ -45,7 +45,6 @@ Once the data has been decoded with the NRZ 6:4 decoding, it has the following f
 static uint8_t badger_decode_3of6(uint8_t byte)
 {
     uint8_t out = 0xFF; // Error
-    //fprintf(stderr,"Decode %0d\n", byte);
     switch(byte) {
     case 22:    out = 0x0;  break;  // 0x16
     case 13:    out = 0x1;  break;  // 0x0D
@@ -152,7 +151,7 @@ static char *badger_output_fields[] = {
 // Badger ORION water meter,
 // Frequency 916.45 MHz, Bitrate 100 kbps, Modulation NRZ FSK
 r_device badger_orion = {
-        .name        = "Badger ORION water meter, 100kbps (-f 916450000 -s 1200000)", // Minimum samplerate = 1.2 MHz (12 samples of 100kb/s)
+        .name        = "Badger ORION water meter, 100kbps (-f 916.45M -s 1200k)", // Minimum samplerate = 1.2 MHz (12 samples of 100kb/s)
         .modulation  = FSK_PULSE_PCM,
         .short_width = 10,   // Bit rate: 100 kb/s
         .long_width  = 10,   // NRZ encoding (bit width = pulse width)

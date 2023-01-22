@@ -14,6 +14,7 @@
 #include "data.h"
 #include "abuf.h"
 #include "r_util.h"
+#include "logger.h"
 #include "fatal.h"
 
 #include <string.h>
@@ -91,7 +92,7 @@ static int datagram_client_open(datagram_client_t *client, const char *host, con
     hints.ai_flags = AI_ADDRCONFIG;
     error = getaddrinfo(host, port, &hints, &res0);
     if (error) {
-        fprintf(stderr, "%s\n", gai_strerror(error));
+        print_log(LOG_ERROR, __func__, gai_strerror(error));
         return -1;
     }
     sock = INVALID_SOCKET;
@@ -149,9 +150,8 @@ typedef struct {
     char hostname[_POSIX_HOST_NAME_MAX + 1];
 } data_output_syslog_t;
 
-static void R_API_CALLCONV print_syslog_data(data_output_t *output, data_t *data, char const *format)
+static void R_API_CALLCONV data_output_syslog_print(data_output_t *output, data_t *data)
 {
-    UNUSED(format);
     data_output_syslog_t *syslog = (data_output_syslog_t *)output;
 
     // we expect a normal message around 500 bytes
@@ -193,7 +193,7 @@ static void R_API_CALLCONV data_output_syslog_free(data_output_t *output)
     free(syslog);
 }
 
-struct data_output *data_output_syslog_create(const char *host, const char *port)
+struct data_output *data_output_syslog_create(int log_level, const char *host, const char *port)
 {
     data_output_syslog_t *syslog = calloc(1, sizeof(data_output_syslog_t));
     if (!syslog) {
@@ -210,7 +210,8 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
     }
 #endif
 
-    syslog->output.print_data   = print_syslog_data;
+    syslog->output.log_level    = log_level;
+    syslog->output.output_print = data_output_syslog_print;
     syslog->output.output_free  = data_output_syslog_free;
     // Severity 5 "Notice", Facility 20 "local use 4"
     syslog->pri = 20 * 8 + 5;

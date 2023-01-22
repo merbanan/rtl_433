@@ -30,6 +30,7 @@
 #include "list.h"
 #include "optparse.h"
 #include "output_file.h"
+#include "output_log.h"
 #include "output_udp.h"
 #include "output_mqtt.h"
 #include "output_influx.h"
@@ -38,6 +39,7 @@
 #include "write_sigrok.h"
 #include "mongoose.h"
 #include "compat_time.h"
+#include "logger.h"
 #include "fatal.h"
 #include "http_server.h"
 
@@ -146,6 +148,9 @@ void r_init_cfg(r_cfg_t *cfg)
     cfg->samp_rate       = DEFAULT_SAMPLE_RATE;
     cfg->conversion_mode = CONVERT_NATIVE;
     cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_AUTO;
+    // Default log level is to show all LOG_FATAL, LOG_ERROR, LOG_WARNING
+    // abnormal messages and LOG_CRITICAL information.
+    cfg->verbosity = LOG_WARNING;
 
     list_ensure_size(&cfg->in_files, 100);
     list_ensure_size(&cfg->output_handler, 16);
@@ -174,6 +179,8 @@ void r_init_cfg(r_cfg_t *cfg)
     cfg->demod->level_limit = 0.0;
     cfg->demod->min_level = -12.1442;
     cfg->demod->min_snr = 9.0;
+    // Pulse detect will only print LOG_NOTICE and lower.
+    cfg->demod->detect_verbosity = LOG_WARNING;
 
     // note: this should be optional
     cfg->demod->pulse_detect = pulse_detect_create();
@@ -268,15 +275,16 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
         *p = *r_dev; // copy
     }
 
-    p->verbose      = dev_verbose ? dev_verbose : (cfg->verbosity > 0 ? cfg->verbosity - 1 : 0);
+    p->verbose      = dev_verbose ? dev_verbose : (cfg->verbosity > 4 ? cfg->verbosity - 5 : 0);
     p->verbose_bits = cfg->verbose_bits;
+    p->log_fn       = log_device_handler;
 
     p->output_fn  = data_acquired_handler;
     p->output_ctx = cfg;
 
     list_push(&cfg->demod->r_devs, p);
 
-    if (cfg->verbosity) {
+    if (cfg->verbosity >= LOG_INFO) {
         fprintf(stderr, "Registering protocol [%u] \"%s\"\n", r_dev->protocol_num, r_dev->name);
     }
 }
@@ -582,6 +590,44 @@ int run_fsk_demods(list_t *r_devs, pulse_data_t *fsk_pulse_data)
 
 /* handlers */
 
+static void log_handler(log_level_t level, char const *src, char const *msg, void *userdata)
+{
+    r_cfg_t *cfg = userdata;
+
+    if (cfg->verbosity < (int)level) {
+        return;
+    }
+    /* clang-format off */
+    data_t *data = data_make(
+            "src",     "",     DATA_STRING, src,
+            "lvl",      "",     DATA_INT,    level,
+            "msg",      "",     DATA_STRING, msg,
+            NULL);
+    /* clang-format on */
+
+    // prepend "time" if requested
+    if (cfg->report_time != REPORT_TIME_OFF) {
+        char time_str[LOCAL_TIME_BUFLEN];
+        time_pos_str(cfg, 0, time_str);
+        data = data_prepend(data,
+                "time", "", DATA_STRING, time_str,
+                NULL);
+    }
+
+    for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
+        data_output_t *output = cfg->output_handler.elems[i];
+        if (output && output->log_level >= (int)level) {
+            data_output_print(output, data);
+        }
+    }
+    data_free(data);
+}
+
+void r_redirect_logging(r_cfg_t *cfg)
+{
+    r_logger_set_log_handler(log_handler, cfg);
+}
+
 /** Pass the data structure to all output handlers. Frees data afterwards. */
 void event_occurred_handler(r_cfg_t *cfg, data_t *data)
 {
@@ -595,7 +641,31 @@ void event_occurred_handler(r_cfg_t *cfg, data_t *data)
     }
 
     for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
-        data_output_print(cfg->output_handler.elems[i], data);
+        data_output_t *output = cfg->output_handler.elems[i];
+        data_output_print(output, data);
+    }
+    data_free(data);
+}
+
+/** Pass the data structure to all output handlers. Frees data afterwards. */
+void log_device_handler(r_device *r_dev, int level, data_t *data)
+{
+    r_cfg_t *cfg = r_dev->output_ctx;
+
+    // prepend "time" if requested
+    if (cfg->report_time != REPORT_TIME_OFF) {
+        char time_str[LOCAL_TIME_BUFLEN];
+        time_pos_str(cfg, cfg->demod->pulse_data.start_ago, time_str);
+        data = data_prepend(data,
+                "time", "", DATA_STRING, time_str,
+                NULL);
+    }
+
+    for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
+        data_output_t *output = cfg->output_handler.elems[i];
+        if (output && output->log_level >= level) {
+            data_output_print(output, data);
+        }
     }
     data_free(data);
 }
@@ -823,7 +893,8 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
     }
 
     for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
-        data_output_print(cfg->output_handler.elems[i], data);
+        data_output_t *output = cfg->output_handler.elems[i];
+        data_output_print(output, data);
     }
     data_free(data);
 }
@@ -922,10 +993,47 @@ void flush_report_data(r_cfg_t *cfg)
 
 /* setup */
 
+static int lvlarg_param(char **param, int default_verb)
+{
+    if (!param || !*param) {
+        return default_verb;
+    }
+    // parse ", v = %d"
+    char *p = *param;
+    if (*p != ',') {
+        return default_verb;
+    }
+    p++;
+    while (*p == ' ' || *p == '\t')
+        p++;
+    if (*p != 'v') {
+        fprintf(stderr, "Unknown output option \"%s\"\n", *param);
+        exit(1);
+    }
+    p++;
+    while (*p == ' ' || *p == '\t')
+        p++;
+    if (*p != '=') {
+        fprintf(stderr, "Unknown output option \"%s\"\n", *param);
+        exit(1);
+    }
+    p++;
+    while (*p == ' ' || *p == '\t')
+        p++;
+    char *endptr;
+    int val = strtol(p, &endptr, 10);
+    if (p == endptr) {
+        fprintf(stderr, "Invalid output option \"%s\"\n", *param);
+        exit(1);
+    }
+    *param = endptr;
+    return val;
+}
+
 static FILE *fopen_output(char *param)
 {
     FILE *file;
-    if (!param || !*param) {
+    if (!param || !*param || (*param == '-' && param[1] == '\0')) {
         return stdout;
     }
     file = fopen(param, "a");
@@ -938,12 +1046,14 @@ static FILE *fopen_output(char *param)
 
 void add_json_output(r_cfg_t *cfg, char *param)
 {
-    list_push(&cfg->output_handler, data_output_json_create(fopen_output(param)));
+    int log_level = lvlarg_param(&param, 0);
+    list_push(&cfg->output_handler, data_output_json_create(log_level, fopen_output(param)));
 }
 
 void add_csv_output(r_cfg_t *cfg, char *param)
 {
-    list_push(&cfg->output_handler, data_output_csv_create(fopen_output(param)));
+    int log_level = lvlarg_param(&param, 0);
+    list_push(&cfg->output_handler, data_output_csv_create(log_level, fopen_output(param)));
 }
 
 void start_outputs(r_cfg_t *cfg, char const *const *well_known)
@@ -952,15 +1062,23 @@ void start_outputs(r_cfg_t *cfg, char const *const *well_known)
     char const **output_fields = determine_csv_fields(cfg, well_known, &num_output_fields);
 
     for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
-        data_output_start(cfg->output_handler.elems[i], output_fields, num_output_fields);
+        data_output_t *output = cfg->output_handler.elems[i];
+        data_output_start(output, output_fields, num_output_fields);
     }
 
     free((void *)output_fields);
 }
 
+void add_log_output(r_cfg_t *cfg, char *param)
+{
+    int log_level = lvlarg_param(&param, LOG_TRACE);
+    list_push(&cfg->output_handler, data_output_log_create(log_level, fopen_output(param)));
+}
+
 void add_kv_output(r_cfg_t *cfg, char *param)
 {
-    list_push(&cfg->output_handler, data_output_kv_create(fopen_output(param)));
+    int log_level = lvlarg_param(&param, LOG_TRACE);
+    list_push(&cfg->output_handler, data_output_kv_create(log_level, fopen_output(param)));
 }
 
 void add_mqtt_output(r_cfg_t *cfg, char *param)
@@ -975,26 +1093,29 @@ void add_influx_output(r_cfg_t *cfg, char *param)
 
 void add_syslog_output(r_cfg_t *cfg, char *param)
 {
+    int log_level = lvlarg_param(&param, LOG_WARNING);
     char *host = "localhost";
     char *port = "514";
     hostport_param(param, &host, &port);
-    fprintf(stderr, "Syslog UDP datagrams to %s port %s\n", host, port);
+    print_logf(LOG_CRITICAL, "Syslog UDP", "Sending datagrams to %s port %s", host, port);
 
-    list_push(&cfg->output_handler, data_output_syslog_create(host, port));
+    list_push(&cfg->output_handler, data_output_syslog_create(log_level, host, port));
 }
 
 void add_http_output(r_cfg_t *cfg, char *param)
 {
+    // Note: no log_level, the HTTP-API consumes all log levels.
     char *host = "0.0.0.0";
     char *port = "8433";
     hostport_param(param, &host, &port);
-    fprintf(stderr, "HTTP server at %s port %s\n", host, port);
+    print_logf(LOG_CRITICAL, "HTTP server", "Starting HTTP server at %s port %s", host, port);
 
     list_push(&cfg->output_handler, data_output_http_create(get_mgr(cfg), host, port, cfg));
 }
 
 void add_trigger_output(r_cfg_t *cfg, char *param)
 {
+    // Note: no log_level, we never trigger on logs.
     list_push(&cfg->output_handler, data_output_trigger_create(fopen_output(param)));
 }
 
@@ -1009,7 +1130,7 @@ void add_rtltcp_output(r_cfg_t *cfg, char *param)
     char *host = "localhost";
     char *port = "1234";
     hostport_param(param, &host, &port);
-    fprintf(stderr, "rtl_tcp server at %s port %s\n", host, port);
+    print_logf(LOG_CRITICAL, "rtl_tcp server", "Starting rtl_tcp server at %s port %s", host, port);
 
     list_push(&cfg->raw_handler, raw_output_rtltcp_create(host, port, cfg));
 }

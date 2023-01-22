@@ -40,7 +40,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
 		= General options =
   [-V] Output the version string and exit
   [-v] Increase verbosity (can be used multiple times).
-       -v : verbose, -vv : verbose decoders, -vvv : debug decoders, -vvvv : trace decoding).
+       -v : verbose notice, -vv : verbose info, -vvv : debug, -vvvv : trace.
   [-c <path>] Read config options from a file
 		= Tuner options =
   [-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query> | rtl_tcp | help]
@@ -74,7 +74,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-w <filename> | help] Save data stream to output file (a '-' dumps samples to stdout)
   [-W <filename> | help] Save data stream to output file, overwrite existing file
 		= Data output options =
-  [-F kv | json | csv | mqtt | influx | syslog | trigger | null | help] Produce decoded output in given format.
+  [-F log | kv | json | csv | mqtt | influx | syslog | trigger | null | help] Produce decoded output in given format.
        Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
   [-M time[:<options>] | protocol | level | noise[:<secs>] | stats | bits | help] Add various meta data to each output.
@@ -160,7 +160,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
     [76]  LaCrosse TX29IT, TFA Dostmann 30.3159.IT Temperature sensor
     [77]  Vaillant calorMatic VRT340f Central Heating Control
-    [78]  Fine Offset Electronics, WH25, WH32B, WH24, WH65B, HP1000 Temperature/Humidity/Pressure Sensor
+    [78]  Fine Offset Electronics, WH25, WH32B, WH24, WH65B, HP1000, Misol WS2320 Temperature/Humidity/Pressure Sensor
     [79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
     [80]  IBIS beacon
     [81]  Oil Ultrasonic STANDARD FSK
@@ -186,9 +186,9 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [101]* Dish remote 6.3
     [102]  SimpliSafe Home Security System (May require disabling automatic gain for KeyPad decodes)
     [103]  Sensible Living Mini-Plant Moisture Sensor
-    [104]  Wireless M-Bus, Mode C&T, 100kbps (-f 868950000 -s 1200000)
-    [105]  Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)
-    [106]* Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)
+    [104]  Wireless M-Bus, Mode C&T, 100kbps (-f 868.95M -s 1200k)
+    [105]  Wireless M-Bus, Mode S, 32.768kbps (-f 868.3M -s 1000k)
+    [106]* Wireless M-Bus, Mode R, 4.8kbps (-f 868.33M)
     [107]* Wireless M-Bus, Mode F, 2.4kbps
     [108]  Hyundai WS SENZOR Remote Temperature Sensor
     [109]  WT0124 Pool Thermometer
@@ -202,7 +202,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [117]* ESA1000 / ESA2000 Energy Monitor
     [118]* Biltema rain gauge
     [119]  Bresser Weather Center 5-in-1
-    [120]* Digitech XC-0324 temperature sensor
+    [120]  Digitech XC-0324 / AmbientWeather FT005RH temp/hum sensor
     [121]  Opus/Imagintronix XT300 Soil Moisture
     [122]* FS20
     [123]* Jansite TPMS Model TY02S
@@ -305,8 +305,14 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [220]  Maverick XR-30 BBQ Sensor
     [221]  Fine Offset Electronics WN34 temperature sensor
     [222]  Rubicson Pool Thermometer 48942
-    [223]  Badger ORION water meter, 100kbps (-f 916450000 -s 1200000)
-    [224]  Vauno EN8822C thermometer/hygrometer
+    [223]  Badger ORION water meter, 100kbps (-f 916.45M -s 1200k)
+    [224]  GEO minim+ energy monitor
+    [225]  TyreGuard 400 TPMS
+    [226]  Kia TPMS (-s 1000k)
+    [227]  SRSmith Pool Light Remote Control SRS-2C-TX (-f 915M)
+    [228]  Neptune R900 flow meters
+    [229]* WEC-2103 temperature/humidity sensor
+    [230]  Vauno EN8822C thermometer/hygrometer
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -393,8 +399,8 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 
 
 		= Output format option =
-  [-F kv|json|csv|mqtt|influx|syslog|trigger|null] Produce decoded output in given format.
-	Without this option the default is KV output. Use "-F null" to remove the default.
+  [-F log|kv|json|csv|mqtt|influx|syslog|trigger|null] Produce decoded output in given format.
+	Without this option the default is LOG and KV output. Use "-F null" to remove the default.
 	Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"

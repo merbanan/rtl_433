@@ -16,7 +16,7 @@ jobs:
     #runs-on: ubuntu-latest
     runs-on: windows-latest
     steps:
-    - uses: actions/cache@v2
+    - uses: actions/cache@v3
       id: downloads
       with:
         path: ${{ runner.workspace }}/${{ env.pothos-exe }}
@@ -34,7 +34,7 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       release_version: ${{ env.RELEASE_VERSION }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Get Release tag
       run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
     - name: Create Release info
@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build with Mingw-w64 on ${{ matrix.arch }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: "Install Mingw-w64"
       run: |
         sudo apt-get update -q -y
@@ -96,22 +96,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2016, windows-2019]
+        os: [windows-2019, windows-2022]
         platform: [x64, Win32]
         # from https://downloads.myriadrf.org/builds/PothosSDR/
         #pothos-ver: [2021.07.25-vc16]
         include:
-          - os: windows-2016
-            generator: Visual Studio 15 2017
           - os: windows-2019
             generator: Visual Studio 16 2019
+          - os: windows-2022
+            generator: Visual Studio 17 2022
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.generator }} ${{ matrix.platform }} CMake (MSBuild) on ${{ matrix.os }}
     steps:
     - run: choco install openssl
       if: matrix.platform == 'x64'
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
+    - uses: actions/checkout@v3
+    - uses: actions/cache@v3
       id: downloads
       if: matrix.platform == 'x64'
       with:
@@ -129,45 +129,57 @@ jobs:
       run: |
         mkdir -p pothos
         7z x -opothos -y ${{ env.pothos-exe }}
+        echo "POTHOS_PATH=$(pwd)/pothos" >> $GITHUB_ENV
+    - name: Get latest CMake and Ninja
+      uses: lukka/get-cmake@latest
+    # Note: this assumes ${{ runner.workspace }} == ${{ github.workspace }}/..
     - name: CMake+None
-      uses: lukka/run-cmake@v3
+      uses: lukka/run-cmake@v10
       with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        buildDirectory: '${{ runner.workspace }}/b/rtl_433'
-        cmakeAppendedArgs: '-G"${{ matrix.generator }}" -A${{ matrix.platform }} -DENABLE_RTLSDR=OFF -DENABLE_SOAPYSDR=OFF -DENABLE_OPENSSL=OFF'
-        buildWithCMakeArgs: '--config Release'
+        configurePreset: dummy
+        configurePresetCmdString: "[`-B`, `../b/rtl_433`, `-G${{ matrix.generator }}`, `-A${{ matrix.platform }}`, `-DENABLE_RTLSDR=OFF`, `-DENABLE_SOAPYSDR=OFF`, `-DENABLE_OPENSSL=OFF`]"
+        buildPreset: dummy
+        buildPresetCmdString: "[`--build`, `../b/rtl_433`, `--config`, `Release`]"
     - name: CMake+RTLSDR+SOAPYSDR+TLS
-      uses: lukka/run-cmake@v3
+      uses: lukka/run-cmake@v10
+      env:
+        CMAKE_PREFIX_PATH: ${{ runner.workspace }}\pothos
       if: matrix.platform == 'x64'
       with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        buildDirectory: '${{ runner.workspace }}/b/rtl_433-rtlsdr-soapysdr-tls'
-        cmakeAppendedArgs: '-G"${{ matrix.generator }}" -A${{ matrix.platform }} -DCMAKE_PREFIX_PATH=${{ runner.workspace }}/pothos -DENABLE_RTLSDR=ON -DENABLE_SOAPYSDR=ON -DENABLE_OPENSSL=ON'
-        buildWithCMakeArgs: '--config Release'
+        configurePreset: dummy
+        configurePresetCmdString: "[`-B`, `../b/rtl_433-rtlsdr-soapysdr-tls`, `-G${{ matrix.generator }}`, `-A${{ matrix.platform }}`, `-DCMAKE_PREFIX_PATH=${{ env.POTHOS_PATH }}`, `-DENABLE_RTLSDR=ON`, `-DENABLE_SOAPYSDR=ON`, `-DENABLE_OPENSSL=ON`]"
+        buildPreset: dummy
+        buildPresetCmdString: "[`--build`, `../b/rtl_433-rtlsdr-soapysdr-tls`, `--config`, `Release`]"
     - name: CMake+RTLSDR+SOAPYSDR
-      uses: lukka/run-cmake@v3
+      uses: lukka/run-cmake@v10
+      env:
+        CMAKE_PREFIX_PATH: ${{ runner.workspace }}\pothos
       if: matrix.platform == 'x64'
       with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        buildDirectory: '${{ runner.workspace }}/b/rtl_433-rtlsdr-soapysdr'
-        cmakeAppendedArgs: '-G"${{ matrix.generator }}" -A${{ matrix.platform }} -DCMAKE_PREFIX_PATH=${{ runner.workspace }}/pothos -DENABLE_RTLSDR=ON -DENABLE_SOAPYSDR=ON -DENABLE_OPENSSL=OFF'
-        buildWithCMakeArgs: '--config Release'
+        configurePreset: dummy
+        configurePresetCmdString: "[`-B`, `../b/rtl_433-rtlsdr-soapysdr`, `-G${{ matrix.generator }}`, `-A${{ matrix.platform }}`, `-DCMAKE_PREFIX_PATH=${{ env.POTHOS_PATH }}`, `-DENABLE_RTLSDR=ON`, `-DENABLE_SOAPYSDR=ON`, `-DENABLE_OPENSSL=OFF`]"
+        buildPreset: dummy
+        buildPresetCmdString: "[`--build`, `../b/rtl_433-rtlsdr-soapysdr`, `--config`, `Release`]"
     - name: CMake+RTLSDR+TLS
-      uses: lukka/run-cmake@v3
+      uses: lukka/run-cmake@v10
+      env:
+        CMAKE_PREFIX_PATH: ${{ runner.workspace }}\pothos
       if: matrix.platform == 'x64'
       with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        buildDirectory: '${{ runner.workspace }}/b/rtl_433-rtlsdr-tls'
-        cmakeAppendedArgs: '-G"${{ matrix.generator }}" -A${{ matrix.platform }} -DCMAKE_PREFIX_PATH=${{ runner.workspace }}/pothos -DENABLE_RTLSDR=ON -DENABLE_SOAPYSDR=OFF -DENABLE_OPENSSL=ON'
-        buildWithCMakeArgs: '--config Release'
+        configurePreset: dummy
+        configurePresetCmdString: "[`-B`, `../b/rtl_433-rtlsdr-tls`, `-G${{ matrix.generator }}`, `-A${{ matrix.platform }}`, `-DCMAKE_PREFIX_PATH=${{ env.POTHOS_PATH }}`, `-DENABLE_RTLSDR=ON`, `-DENABLE_SOAPYSDR=OFF`, `-DENABLE_OPENSSL=ON`]"
+        buildPreset: dummy
+        buildPresetCmdString: "[`--build`, `../b/rtl_433-rtlsdr-tls`, `--config`, `Release`]"
     - name: CMake+RTLSDR
-      uses: lukka/run-cmake@v3
+      uses: lukka/run-cmake@v10
+      env:
+        CMAKE_PREFIX_PATH: ${{ runner.workspace }}\pothos
       if: matrix.platform == 'x64'
       with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        buildDirectory: '${{ runner.workspace }}/b/rtl_433-rtlsdr'
-        cmakeAppendedArgs: '-G"${{ matrix.generator }}" -A${{ matrix.platform }} -DCMAKE_PREFIX_PATH=${{ runner.workspace }}/pothos -DENABLE_RTLSDR=ON -DENABLE_SOAPYSDR=OFF -DENABLE_OPENSSL=OFF'
-        buildWithCMakeArgs: '--config Release'
+        configurePreset: dummy
+        configurePresetCmdString: "[`-B`, `../b/rtl_433-rtlsdr`, `-G${{ matrix.generator }}`, `-A${{ matrix.platform }}`, `-DCMAKE_PREFIX_PATH=${{ env.POTHOS_PATH }}`, `-DENABLE_RTLSDR=ON`, `-DENABLE_SOAPYSDR=OFF`, `-DENABLE_OPENSSL=OFF`]"
+        buildPreset: dummy
+        buildPresetCmdString: "[`--build`, `../b/rtl_433-rtlsdr`, `--config`, `Release`]"
     - name: Package dist
       if: matrix.platform == 'x64'
       shell: bash
@@ -201,23 +213,27 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Build with CMake on ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Install SDR
       run: |
         sudo apt-get update -q
         sudo apt-get install -y librtlsdr-dev libsoapysdr-dev libssl-dev
+    - name: Get latest CMake and Ninja
+      uses: lukka/get-cmake@latest
     - name: Run CMake+Ninja
-      uses: lukka/run-cmake@v3
+      uses: lukka/run-cmake@v10
       with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        buildDirectory: '${{runner.workspace}}/b/ninja'
-        cmakeAppendedArgs: '-GNinja -DENABLE_RTLSDR=ON -DENABLE_SOAPYSDR=ON -DENABLE_OPENSSL=ON'
+        configurePreset: dummy
+        configurePresetCmdString: "[`-B`, `${{ runner.workspace }}/b/ninja`, `-GNinja`, `-DENABLE_RTLSDR=ON`, `-DENABLE_SOAPYSDR=ON`, `-DENABLE_OPENSSL=ON`]"
+        buildPreset: dummy
+        buildPresetCmdString: "[`--build`, `${{ runner.workspace }}/b/ninja`, `--config`, `Release`]"
     - name: Run CMake+UnixMakefiles
-      uses: lukka/run-cmake@v3
+      uses: lukka/run-cmake@v10
       with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        buildDirectory: '${{runner.workspace}}/b/unixmakefiles'
-        cmakeAppendedArgs: '-G"Unix Makefiles" -DENABLE_RTLSDR=ON -DENABLE_SOAPYSDR=ON -DENABLE_OPENSSL=ON'
+        configurePreset: dummy
+        configurePresetCmdString: "[`-B`, `${{ runner.workspace }}/b/unixmakefiles`, `-GUnix Makefiles`, `-DENABLE_RTLSDR=ON`, `-DENABLE_SOAPYSDR=ON`, `-DENABLE_OPENSSL=ON`]"
+        buildPreset: dummy
+        buildPresetCmdString: "[`--build`, `${{ runner.workspace }}/b/unixmakefiles`, `--config`, `Release`]"
 
   build_arch_job:
     if: ${{ false }}  # disable for now
@@ -244,7 +260,7 @@ jobs:
             distro: buster
     name: Build on ${{ matrix.distro }} ${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: uraimo/run-on-arch-action@v2.0.8
         id: runcmd
         with:

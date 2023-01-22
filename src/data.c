@@ -350,10 +350,12 @@ R_API void data_output_print(data_output_t *output, data_t *data)
 {
     if (!output)
         return;
-    output->print_data(output, data, NULL);
-
-    if (output->output_flush)
-        output->output_flush(output);
+    if (output->output_print) {
+        output->output_print(output, data);
+    }
+    else {
+        output->print_data(output, data, NULL);
+    }
 }
 
 R_API void data_output_start(struct data_output *output, char const *const *fields, int num_fields)
