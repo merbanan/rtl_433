@@ -236,6 +236,7 @@
     DECL(tpms_kia) \
     DECL(srsmith_pool_srs_2c_tx) \
     DECL(neptune_r900) \
+    DECL(wec2103) \
 
     /* Add new decoders here. */
 
