@@ -91,59 +91,121 @@ Example packets:
 
 #include "decoder.h"
 
+struct iohc_msg {
+    /* Mandatory fields */
+    /* Control byte 1 */
+    unsigned end_flag : 1;
+    unsigned start_flag : 1;
+    unsigned protocol_mode : 1;
+    unsigned frame_length : 5;
+    /* Control byte 2 */
+    unsigned use_beacon : 1;
+    unsigned is_routed : 1;
+    unsigned low_power_mode : 1;
+    unsigned protocol_version : 3;
+    /* Addresses */
+    unsigned dst_addr : 24;
+    unsigned src_addr : 24;
+    /* Command ID */
+    unsigned cmd_id : 8;
+    char data[31 * 2 + 1]; /* variable length, converted to hex string */
+    unsigned crc : 16;
+
+    /* optional fields */
+    int seq_nr;
+    char mac[13];
+};
+
 static int somfy_iohc_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble_pattern[] = {0x57, 0xfd, 0x99};
+    struct iohc_msg msg = {0};
 
-    uint8_t b[19 + 15]; // 19 byte + up 15 byte payload
+    uint8_t b[1 + 31 + 2]; // Length, payload, CRC
 
     if (bitbuffer->num_rows != 1)
         return DECODE_ABORT_EARLY;
 
-    unsigned offset = bitbuffer_search(bitbuffer, 0, 0, preamble_pattern, 24) + 24;
-    if (offset + 19 * 10 >= bitbuffer->bits_per_row[0])
+    unsigned offset = bitbuffer_search(bitbuffer, 0, 0, preamble_pattern, 24);
+    if (offset == bitbuffer->bits_per_row[0])
         return DECODE_ABORT_EARLY;
 
-    unsigned num_bits = bitbuffer->bits_per_row[0] - offset;
-    num_bits = MIN(num_bits, sizeof (b) * 8);
+    offset += 24;
+
+    int num_bits = bitbuffer->bits_per_row[0] - offset;
+    if (num_bits <= 0)
+        return DECODE_ABORT_EARLY;
+
+    num_bits = MIN((size_t)num_bits, sizeof (b) * 8);
 
     int len = extract_bytes_uart(bitbuffer->bb[0], offset, num_bits, b);
-    if (len < 19)
+    if (len < 11)
         return DECODE_ABORT_LENGTH;
 
-    if ((b[0] & 0xf0) != 0xf0)
-        return DECODE_ABORT_EARLY;
-
-    int msg_len = b[0] & 0xf; // should be 6 or 8
-    if (len < 19 + msg_len)
+    msg.frame_length = b[0] & 0x1f;
+    if (len < msg.frame_length + 3)
         return DECODE_ABORT_LENGTH;
+    len = msg.frame_length + 3;
+
+    msg.end_flag = (b[0] & 0x80) >> 7;
+    msg.start_flag = (b[0] & 0x40) >> 6;
+    msg.protocol_mode = (b[0] & 0x20) >> 5;
+    msg.use_beacon = (b[1] & 0x80) >> 7;
+    msg.is_routed = (b[1] & 0x40) >> 6;
+    msg.low_power_mode = (b[1] & 0x20) >> 5;
+    msg.protocol_version = b[1] & 0x03;
+    msg.dst_addr = (b[2] << 16) | (b[3] << 8) | b[4];
+    msg.src_addr = (b[5] << 16) | (b[6] << 8) | b[7];
+    msg.cmd_id = b[8];
+
+    unsigned int data_length = msg.frame_length - 8;
+    if (msg.protocol_mode == 0 || data_length < 8) {
+        bitrow_snprint(&b[9], data_length * 8, msg.data, sizeof msg.data);
+    } else {
+        data_length -= 8;
+        bitrow_snprint(&b[9], data_length * 8, msg.data, sizeof msg.data);
+        msg.seq_nr = (b[9 + data_length] << 8) | b[9 + data_length + 1];
+        bitrow_snprint(&b[9 + data_length + 2], 6 * 8, msg.mac, sizeof msg.mac);
+    }
+
+    msg.crc = (b[len - 2] << 8) | b[len - 1];
 
     // calculate and verify checksum
     if (crc16lsb(b, len, 0x8408, 0x0000) != 0) // unreflected poly 0x1021
         return DECODE_FAIL_MIC;
-    decoder_logf_bitrow(decoder, 2, __func__, b, len * 8, "offset %u, num_bits %u, len %d, msg_len %d", offset, num_bits, len, msg_len);
 
-    int msg_type = (b[0]);
-    int dst_id   = ((unsigned)b[4] << 24) | (b[3] << 16) | (b[2] << 8) | (b[1]); // assume Little-Endian
-    int src_id   = ((unsigned)b[8] << 24) | (b[7] << 16) | (b[6] << 8) | (b[5]); // assume Little-Endian
-    int counter  = (b[len - 10] << 8) | (b[len - 9]);
-    char msg_str[15 * 2 + 1];
-    bitrow_snprint(&b[9], msg_len * 8, msg_str, 15 * 2 + 1);
-    char mac_str[13];
-    bitrow_snprint(&b[len - 8], 6 * 8, mac_str, 13);
+    decoder_logf_bitrow(decoder, 2, __func__, b, len * 8, "offset %u, num_bits %u, len %d, msg_len %d", offset, num_bits, len, msg.frame_length);
 
     /* clang-format off */
     data_t *data = data_make(
             "model",            "",                 DATA_STRING, "Somfy-IOHC",
-            "id",               "",                 DATA_FORMAT, "%08x", DATA_INT, src_id,
-            "dst_id",           "Dest ID",          DATA_FORMAT, "%08x", DATA_INT, dst_id,
-            "msg_type",         "Msg type",         DATA_FORMAT, "%02x", DATA_INT, msg_type,
-            "msg",              "Message",          DATA_STRING, msg_str,
-            "counter",          "Counter",          DATA_INT,    counter,
-            "mac",              "MAC",              DATA_STRING, mac_str,
+            "id",               "Source",           DATA_FORMAT, "%06x", DATA_INT, msg.src_addr,
+            "dst_id",           "Target",           DATA_FORMAT, "%06x", DATA_INT, msg.dst_addr,
+            "msg_type",         "Command",          DATA_FORMAT, "%02x", DATA_INT, msg.cmd_id,
+            "msg",              "Message",          DATA_STRING, msg.data,
             "mic",              "Integrity",        DATA_STRING, "CRC",
+            "mode",             "Mode",             DATA_STRING, msg.protocol_mode ? "One-way" : "Two-way",
+            "version",          "Version",          DATA_INT, msg.protocol_version,
+            NULL);
+
+    if (msg.protocol_mode == 1)
+        data = data_append(data,
+            "counter",          "Counter",          DATA_INT,    msg.seq_nr,
+            "mac",              "MAC",              DATA_STRING, msg.mac,
             NULL);
     /* clang-format on */
+
+    if (decoder->verbose) {
+        data_t *flags = data_make(
+            "end", "End", DATA_INT, msg.end_flag,
+            "start", "Start", DATA_INT, msg.start_flag,
+            "mode", "Mode", DATA_INT, msg.protocol_mode,
+            "beacon", "Beacon", DATA_INT, msg.use_beacon,
+            "routed", "Routed", DATA_INT, msg.is_routed,
+            "lpm", "LPM", DATA_INT, msg.low_power_mode,
+            NULL);
+        data = data_append(data, "flags", "Flags", DATA_DATA, flags, NULL);
+    }
 
     decoder_output_data(decoder, data);
     return 1;
@@ -158,6 +220,8 @@ static char *output_fields[] = {
         "counter",
         "mac",
         "mic",
+        "mode",
+        "version",
         NULL,
 };
 
