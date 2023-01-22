@@ -309,6 +309,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [224]  GEO minim+ energy monitor
     [225]  TyreGuard 400 TPMS
     [226]  Kia TPMS (-s 1M)
+    [227]  SRSmith Pool Light Remote Control SRS-2C-TX (-f 915000000)
 
 * Disabled by default, use -R n or a conf file to enable
 

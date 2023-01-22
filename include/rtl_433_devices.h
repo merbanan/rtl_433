@@ -234,6 +234,7 @@
     DECL(geo_minim) \
     DECL(tpms_tyreguard400) \
     DECL(tpms_kia) \
+    DECL(srsmith_pool_srs_2c_tx) \
 
     /* Add new decoders here. */
 
