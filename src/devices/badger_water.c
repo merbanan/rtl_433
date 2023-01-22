@@ -151,7 +151,7 @@ static char *badger_output_fields[] = {
 // Badger ORION water meter,
 // Frequency 916.45 MHz, Bitrate 100 kbps, Modulation NRZ FSK
 r_device badger_orion = {
-        .name        = "Badger ORION water meter, 100kbps (-f 916450000 -s 1200000)", // Minimum samplerate = 1.2 MHz (12 samples of 100kb/s)
+        .name        = "Badger ORION water meter, 100kbps (-f 916.45M -s 1200k)", // Minimum samplerate = 1.2 MHz (12 samples of 100kb/s)
         .modulation  = FSK_PULSE_PCM,
         .short_width = 10,   // Bit rate: 100 kb/s
         .long_width  = 10,   // NRZ encoding (bit width = pulse width)

@@ -58,7 +58,7 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // The transmission is LSB first, big endian.
     uint32_t encrypted = ((unsigned)reverse8(b[3]) << 24) | (reverse8(b[2]) << 16) | (reverse8(b[1]) << 8) | (reverse8(b[0]));
-    int serial         = (reverse8(b[7] & 0xf0) << 20) | (reverse8(b[6]) << 16) | (reverse8(b[5]) << 8) | (reverse8(b[4]));
+    int serial         = (reverse8(b[7] & 0xf0) << 24) | (reverse8(b[6]) << 16) | (reverse8(b[5]) << 8) | (reverse8(b[4]));
     int btn            = (b[7] & 0x0f);
     int btn_num        = (btn & 0x08) | ((btn & 0x01) << 2) | (btn & 0x02) | ((btn & 0x04) >> 2); // S3, S0, S1, S2
     int learn          = (b[7] & 0x0f) == 0x0f;

@@ -231,6 +231,15 @@
     DECL(fineoffset_wn34) \
     DECL(rubicson_pool_48942) \
     DECL(badger_orion) \
+    DECL(geo_minim) \
+    DECL(tpms_tyreguard400) \
+    DECL(tpms_kia) \
+    DECL(srsmith_pool_srs_2c_tx) \
+    DECL(neptune_r900) \
+    DECL(wec2103) \
+    DECL(vauno_en8822c) \
+    DECL(govee_h5054) \
+    DECL(tfa_14_1504_v2) \
 
     /* Add new decoders here. */
 
