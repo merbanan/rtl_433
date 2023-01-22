@@ -15,7 +15,8 @@ Largely the same as Esperanza EWS, s3318p.
 @sa esperanza_ews.c s3318p.c
 
 List of known supported devices:
-- EN8822C-1
+- Vauno EN8822C-1
+- FUZHOU ESUN ELECTRONIC outdoor T21 sensor
 
 Frame structure (42 bits):
 
