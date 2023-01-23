@@ -315,6 +315,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [230]  Vauno EN8822C
     [231]  Govee Water Leak Detector H5054
     [232]  TFA Dostmann 14.1504.V2 Radio-controlled grill and meat thermometer
+    [233]* CED7000 Shot timer
 
 * Disabled by default, use -R n or a conf file to enable
 
