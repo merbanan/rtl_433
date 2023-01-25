@@ -472,6 +472,42 @@ mappings = {
             "state_class": "measurement"
         }
     },
+  
+    "energy_kWh": {
+        "device_type": "sensor",
+        "object_suffix": "kwh",
+        "config": {
+            "device_class": "power",
+            "name": "Energy",
+            "unit_of_measurement": "kWh",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
+  
+    "current_A": {
+        "device_type": "sensor",
+        "object_suffix": "A",
+        "config": {
+            "device_class": "power",
+            "name": "Current",
+            "unit_of_measurement": "A",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
+  
+    "voltage_V": {
+        "device_type": "sensor",
+        "object_suffix": "V",
+        "config": {
+            "device_class": "power",
+            "name": "Voltage",
+            "unit_of_measurement": "V",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
 
     "light_lux": {
         "device_type": "sensor",
@@ -552,6 +588,16 @@ mappings = {
         "object_suffix": "consumption",
         "config": {
             "name": "SCM Consumption Value",
+            "value_template": "{{ value|int }}",
+            "state_class": "total_increasing",
+        }
+    },
+  
+    "consumption": {
+        "device_type": "sensor",
+        "object_suffix": "consumption",
+        "config": {
+            "name": "SCMplus Consumption Value",
             "value_template": "{{ value|int }}",
             "state_class": "total_increasing",
         }
