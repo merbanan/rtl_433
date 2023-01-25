@@ -177,9 +177,11 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             int direction_deg = (((b[9] & 0x0f) - 1) << 8) | (b[10] - 1);
             int rain_raw      = ((b[11] - 1) << 8 ) | (b[12] -1);
             float rain_mm     = rain_raw * 0.2f;
-            int uv_index      = (b[13] & 0x1f) - 1;
-            int lux_multi     = (((b[14] - 1) & 0x80) >> 7);
-            int light_lux     = ((b[14] & 0x7f) - 1) << 8 | (b[15] - 1);
+            uint8_t uv_index  = (b[13] & 0x1f) - 1;
+            uint8_t lux_14    = b[14] - 1;
+            uint8_t lux_15    = b[15] - 1;
+            uint8_t lux_multi = ((lux_14 & 0x80) >> 7);
+            uint32_t light_lux= ((lux_14 & 0x7f) << 8) | (lux_15);
             if (lux_multi == 1) {
                 light_lux = light_lux * 10;
             }
@@ -232,7 +234,6 @@ r_device emax = {
         .modulation  = FSK_PULSE_PCM,
         .short_width = 90,
         .long_width  = 90,
-        .gap_limit   = 1200,
         .reset_limit = 9000,
         .decode_fn   = &emax_decode,
         .fields      = output_fields,
