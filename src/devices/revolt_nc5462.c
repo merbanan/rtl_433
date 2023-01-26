@@ -1,57 +1,68 @@
-/*
- * revolt energy power meter.
- * sends on 433.92 MHz.
- *
- * Pulse Width Modulation with startbit/delimiter
- * Two Modes:
- * Normal data mode:
- * 105 pulses
- * first pulse sync
- * 104 data pulse (11 times 8 bit data + 8 bit checksum + 8 bit unknown)
- * 11 byte data:
-+----------+----------+
-|* data    |byte      |
-+----------+----------+
-|* id      |0,1       |
-+----------+----------+
-|* voltage |2         |
-+----------+----------+
-|* current |3,4       |
-+----------+----------+
-|*         |5         |
-|frequency |          |
-+----------+----------+
-|* power   |6,7       |
-+----------+----------+
-|* power   |8         |
-|factor    |          |
-+----------+----------+
-|* energy  |9,10      |
-+----------+----------+
-|* detect  |first bit |
-|flag      |high      |
-|          |yes/no    |
-+----------+----------+
+/** @file
+    Revolt NC5462 Energy Monitor
 
- * 
- *
- * "Register" mode 
- * (after pushing button on energy meter)
- * same 104 data pulses as in data mode, but first bit high and multiple rows of (the same)
- * data.
- *
- * Pulses
- * sync ~ 10 ms high / 280 us low
- * 1-bit ~ 320 us high / 160 us low
- * 0-bit ~ 180 us high / 160 us low
- * message end 180 us high / 100 ms low
- *
- * rtl_433 demodulation output
- * (normal data)
- * short_limit: 61, long_limit: 1289, reset_limit: 71, demod_arg 2
- * (detect flag)
- * short_limit: 60, long_limit: 1286, reset_limit: 3571, demod_arg 2
- */
+    Copyright (C) 2023 Nicolai Hess
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+*/
+/**
+  revolt energy power meter.
+  sends on 433.92 MHz.
+ 
+  Pulse Width Modulation with startbit/delimiter
+  Two Modes:
+  Normal data mode:
+  105 pulses
+  first pulse sync
+  104 data pulse (11 times 8 bit data + 8 bit checksum + 8 bit unknown)
+  11 byte data:
+   +----------+----------+
+   |* data    |byte      |
+   +----------+----------+
+   |* id      |0,1       |
+   +----------+----------+
+   |* voltage |2         |
+   +----------+----------+
+   |* current |3,4       |
+   +----------+----------+
+   |*         |5         |
+   |frequency |          |
+   +----------+----------+
+   |* power   |6,7       |
+   +----------+----------+
+   |* power   |8         |
+   |factor    |          |
+   +----------+----------+
+   |* energy  |9,10      |
+   +----------+----------+
+   |* detect  |first bit |
+   |flag      |high      |
+   |          |yes/no    |
+   +----------+----------+
+   
+  
+ 
+  "Register" mode 
+  (after pushing button on energy meter)
+  same 104 data pulses as in data mode, but first bit high and multiple rows of (the same)
+  data.
+ 
+  Pulses
+  sync ~ 10 ms high / 280 us low
+  1-bit ~ 320 us high / 160 us low
+  0-bit ~ 180 us high / 160 us low
+  message end 180 us high / 100 ms low
+ 
+  rtl_433 demodulation output
+  (normal data)
+  short_width: 200, long_width: 330, reset_limit: 240, sync_width: 10044
+  (detect flag)
+  short_width: 200, long_width: 330, reset_limit: 240, sync_width: 10044
+*/
 
 #include "decoder.h"
 #include "r_util.h"
@@ -73,7 +84,10 @@ static int check_bitbuffer_row1byte12(bitbuffer_t *bitbuffer)
   return 0;
 }
 
-static int revolt_nc5462_callback(r_device* decoder, bitbuffer_t *bitbuffer) {
+/**
+ decode
+*/
+static int revolt_nc5462_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     data_t *data;
     uint16_t id;
@@ -101,18 +115,18 @@ static int revolt_nc5462_callback(r_device* decoder, bitbuffer_t *bitbuffer) {
       power = bb[0][7] | bb[0][6]<<8;
       pf = bb[0][8];
       energy = bb[0][10] | bb[0][9]<<8;
-      data = data_make("model",         "",            DATA_STRING, "Revolt Energy Monitor",
-		       "id",            "House Code",  DATA_INT, id,
-		       "voltage",            "Voltage",  DATA_INT, voltage,
-		       "current",            "Current ",DATA_FORMAT, "%.02f A ",  DATA_DOUBLE, .01 * current,
-		       "frequency",            "Frequency",  DATA_INT, frequency,
-		       "power",            "Power",  DATA_FORMAT, "%.02f W",DATA_DOUBLE, .1*power,
-		       "power factor",            "power factor",DATA_FORMAT, "%.02f Pf",  DATA_DOUBLE, .01*pf,
-		       "energy",            "energy",DATA_FORMAT, "%.02f kWh",  DATA_DOUBLE, .01*energy,
-		       "detect flag", "Detect Flag", DATA_STRING, detect_flag ? "Yes" : "No",
-		       NULL);
+      data = data_make(
+                "model", "", DATA_STRING, "NC5462",
+                "id", "House Code",  DATA_INT, id,
+                "voltage", "Voltage",  DATA_INT, voltage,
+                "current", "Current ",DATA_FORMAT, "%.02f A ",  DATA_DOUBLE, .01 * current,
+                "frequency", "Frequency",  DATA_INT, frequency,
+                "power", "Power",  DATA_FORMAT, "%.02f W",DATA_DOUBLE, .1*power,
+                "power factor", "power factor",DATA_FORMAT, "%.02f Pf",  DATA_DOUBLE, .01*pf,
+                "energy", "energy",DATA_FORMAT, "%.02f kWh",  DATA_DOUBLE, .01*energy,
+                "detect flag", "Detect Flag", DATA_STRING, detect_flag ? "Yes" : "No",
+                NULL);
       decoder_output_data(decoder, data);
-      //data_acquired_handler(data);
       return 1;
     }
     return 0;
