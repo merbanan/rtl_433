@@ -86,7 +86,8 @@ static int check_bitbuffer_row1byte12(bitbuffer_t *bitbuffer) {
 /**
  decode
 */
-static int revolt_nc5462_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int revolt_nc5462_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     bitrow_t *bb = bitbuffer->bb;
     data_t *data;
     uint16_t id;
