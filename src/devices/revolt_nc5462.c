@@ -67,16 +67,15 @@
 #include "decoder.h"
 #include "r_util.h"
 
-static int check_bitbuffer_row1byte12(bitbuffer_t *bitbuffer)
-{
+static int check_bitbuffer_row1byte12(bitbuffer_t *bitbuffer) {
   uint8_t checksum;
   uint8_t byte12;
   int index;
-  if(bitbuffer->num_rows == 1)
-    if(bitbuffer->bits_per_row[0] == 104) {
+  if (bitbuffer->num_rows == 1)
+    if (bitbuffer->bits_per_row[0] == 104) {
       checksum = 0;
       byte12 = bitbuffer->bb[0][11];
-      for(index=0; index<11;++index) {
+      for (index=0; index<11;++index) {
         checksum+=bitbuffer->bb[0][index];
       }
       return checksum == byte12;
@@ -102,7 +101,7 @@ static int revolt_nc5462_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     if (check_bitbuffer_row1byte12(bitbuffer)) {
       id = (bb[0][0]<<8) | (bb[0][1]);
-      if((id & 0x8000) == 0x8000) {
+      if ((id & 0x8000) == 0x8000) {
         detect_flag = 1;
         id &= ~0x8000;
       } else {
