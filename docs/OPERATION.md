@@ -593,3 +593,47 @@ If you already use the MQTT output, then you can capture the MQTT data, process 
 
 See e.g. [rtl_433_mqtt_hass.py](https://github.com/merbanan/rtl_433/blob/master/examples/rtl_433_mqtt_hass.py)
 for an example of this method.
+
+## Signal Preprocessing
+
+### GNU Radio Companion
+
+GNU Radio can be used to preprocess and display the signal sent to `rtl_433`. This can be helpful when process IQ samples from a HackRF.
+The HackRF has a minimum sample rate (bandwidth) of [2 Msps](https://hackrf.readthedocs.io/en/latest/hackrf_one.html?highlight=supported%20sample%20rates) and has a significant DC offset spike, which seems to cause `rtl_433` to fail to detect weak signals.
+In this case, it is beneficial to preprocess the signal before sending it into `rtl_433`.
+NU Radio can be used for this. The trick is to create a named pipe and set GNU Radio to output to that pipe.
+Then, use the `-r` option in  `rtl_433` to read from that named pipe.
+Because of the behavior of a named pipe, `rtl_433` won't read off the end of the pipe and exit when finished like it would when reading from a file.
+Instead, it will block as it waits for more samples from GNU radio. Moreover, no data is saved to disk with this method.
+The details for how to achieve this are as follows:
+
+1. Create a named pipe as follows. Note that the name is important. The `rtl_433` program will use this name to detect the sample rate and bandwidth. See "[File names](### File names)" for details on how this works.
+   In this example, we use a sample rate of 500 ksps and a center frequency of 433.95 Mhz, with 16-bit signed interleaved IQ samples (`.cs16`).
+   ```bash
+   mkfifo 001_433.95Mhz_500.0ksps.cs16
+   ```
+
+2. Start `rtl_433` with the required options. It seems that `-Y autolevel` is necessary for this method as the noise floor can change significantly depending on how the gain is configured in the GNU Radio.
+   In this example, we also add `-M time:iso` to get an absolute timestamp (instead of a relative count of the number of seconds since the program started).
+   ```bash
+   rtl_433 -r 001_433.95Mhz_500.0ksps.cs16 -Y autolevel -M time:iso
+   ```
+
+3. Add a `Complex To IShort` block and set the scale factor to `32767` (as the docs suggest). This will interleave the IQ samples as 16-bit signed integers, so that we match the file format we specified above.
+   Now, add a `File Sink`. Set the file name to match the name of the pipe created with `mkfifo` above and set the input type to "short".
+
+4. Last, start the flowgraph and `rtl_433` should begin displaying output (showing that the noise level is being adjusted). If a signal is received, the output data will be displayed in the terminal window running `rtl_433`.
+
+*Note: This method has only been tested on Linux.*
+
+### Example Flowgraph
+
+Setting all of this up every time you want to use GNU Radio can be a pain, especially if you adjust the center frequency or bandwidth often - both of which require changing the file name.
+The example GNU Radio companion flowgraph below automatically creates the correctly-named FIFO (named pipe) in the `/tmp/` directory and launches `rtl_433` with the parameters needed to pull from that pipe. On exit, it cleans up the named pipe.
+This means you can change the center frequency or bandwidth and just click the "run" button in GNU Radio companion to start the flowgraph.
+The flowgraph is available here: [rtl_433_connect.grc](../examples/rtl_433_connect.grc)
+
+![Example GNU Radio Companion flowgraph that connects to rtl_433](gnuradio-connect-flowgraph.webp)
+
+A screenshot of this flowgraph running from the terminal is shown below.
+![Example GNU Radio Companion flowgraph while is is running](gnuradio-connect.webp)
