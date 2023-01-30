@@ -96,7 +96,7 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "supervised",   "Supervised",   DATA_INT,    ((0x04 & msg[3]) == 0x04) ? 1 : 0,
             "spidernet",    "Spidernet",    DATA_INT,    ((0x02 & msg[3]) == 0x02) ? 1 : 0,
             "repeater",     "Repeater",     DATA_INT,    ((0x01 & msg[3]) == 0x01) ? 1 : 0,
-            "mic",          "Integrity",    DATA_STRING, "LRC",
+            "mic",          "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 

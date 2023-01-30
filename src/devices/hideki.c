@@ -10,6 +10,8 @@
 /**
 Hideki Temperature, Humidity, Wind, Rain sensor.
 
+Also: Bresser 5CH (Model 7009993)
+
 The received bits are inverted.
 
 Every 8 bits are stuffed with a (even) parity bit.

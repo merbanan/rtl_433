@@ -42,6 +42,18 @@ Guessed data so far:
 - Events 1: trigger, 3: binding, 4: tamper
 - State: Could be battery?
 
+Data table:
+- W/D: Contact opened:              stype: ac state: 1 0 event: 01
+- W/D: Tamper button closed/off:    stype: ac state: 1 0 event: 04
+- W/D: Tamper button released/on:   stype: ac state: 1 2 event: 04
+- W/D: Binding button pressed:      stype: ac state: 1 2 event: 03
+- W/D: Low battery:                 stype: ac state: 1 8 event: 04
+- PIR:  Binding Button:             stype: 15 state: 3 0 event: 03
+- PIR:  Tamper button closed/off:   stype: 15 state: 3 0 event: 04
+- PIR:  Tamper button released/on:  stype: 15 state: 3 2 event: 04
+- PIR:  Movement trigger:           stype: 15 state: 3 0 event: 01
+- PIR:  Low battery:                stype: 15 state: 3 2 event: 01
+
 Get Raw data with:
 
     rtl_433 -R 0 -X 'n=name,m=OOK_PWM,s=850,l=1460,y=5380,r=1500' ~/Desktop/Yale-6010.ook
