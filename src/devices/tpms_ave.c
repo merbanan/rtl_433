@@ -154,7 +154,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_ave = {
+r_device const tpms_ave = {
         .name        = "AVE TPMS",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 100,

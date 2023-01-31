@@ -55,7 +55,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device elro_db286a = {
+r_device const elro_db286a = {
         .name        = "Elro DB286A Doorbell",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 456,

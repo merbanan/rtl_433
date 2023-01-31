@@ -193,7 +193,7 @@ static char *output_fields[] = {
 };
 
 // flex decoder m=FSK_PCM, s=104, l=104, r=9600
-r_device lacrosse_r1 = {
+r_device const lacrosse_r1 = {
         .name        = "LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1/W2 Wind Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 104,

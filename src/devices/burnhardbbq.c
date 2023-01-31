@@ -134,7 +134,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device burnhardbbq = {
+r_device const burnhardbbq = {
         .name        = "Burnhard BBQ thermometer",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 240,

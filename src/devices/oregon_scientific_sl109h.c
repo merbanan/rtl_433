@@ -115,7 +115,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device oregon_scientific_sl109h = {
+r_device const oregon_scientific_sl109h = {
         .name        = "Oregon Scientific SL109H Remote Thermal Hygro Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

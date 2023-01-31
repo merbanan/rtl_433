@@ -106,7 +106,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ert_scm = {
+r_device const ert_scm = {
         .name        = "ERT Standard Consumption Message (SCM)",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 30,

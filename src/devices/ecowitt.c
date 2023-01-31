@@ -115,7 +115,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ecowitt = {
+r_device const ecowitt = {
         .name        = "Ecowitt Wireless Outdoor Thermometer WH53/WH0280/WH0281A",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 500,  // 500 us nominal short pulse

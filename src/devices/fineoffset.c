@@ -15,7 +15,7 @@
 #include "fatal.h"
 #include <stdlib.h>
 
-r_device fineoffset_WH2;
+r_device const fineoffset_WH2;
 
 static r_device *fineoffset_WH2_create(char *arg)
 {
@@ -1007,7 +1007,7 @@ static char *output_fields_WH0530[] = {
         NULL,
 };
 
-r_device fineoffset_WH2 = {
+r_device const fineoffset_WH2 = {
         .name        = "Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 500,  // Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
@@ -1019,7 +1019,7 @@ r_device fineoffset_WH2 = {
         .fields      = output_fields,
 };
 
-r_device fineoffset_WH25 = {
+r_device const fineoffset_WH25 = {
         .name        = "Fine Offset Electronics, WH25, WH32B, WH24, WH65B, HP1000, Misol WS2320 Temperature/Humidity/Pressure Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 58,    // Bit width = 58µs (measured across 580 samples / 40 bits / 250 kHz )
@@ -1029,7 +1029,7 @@ r_device fineoffset_WH25 = {
         .fields      = output_fields_WH25,
 };
 
-r_device fineoffset_WH51 = {
+r_device const fineoffset_WH51 = {
         .name        = "Fine Offset Electronics/ECOWITT WH51, SwitchDoc Labs SM23 Soil Moisture Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 58, // Bit width = 58µs (measured across 580 samples / 40 bits / 250 kHz )
@@ -1039,7 +1039,7 @@ r_device fineoffset_WH51 = {
         .fields      = output_fields_WH51,
 };
 
-r_device fineoffset_WH0530 = {
+r_device const fineoffset_WH0530 = {
         .name        = "Fine Offset Electronics, WH0530 Temperature/Rain Sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 504,  // Short pulse 504µs

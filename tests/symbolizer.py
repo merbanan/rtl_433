@@ -151,7 +151,7 @@ def process_source(path, name):
                 continue
 
             # look for r_device with decode_fn
-            m = re.match(r'\s*r_device\s+([^\*]*?)\s*=', line)
+            m = re.match(r'\s*r_device\s+const\s+([^\*]*?)\s*=', line)
             if m:
                 rName = m.group(1)
                 if rName in links:

@@ -92,7 +92,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device wssensor = {
+r_device const wssensor = {
         .name        = "Hyundai WS SENZOR Remote Temperature Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1000,

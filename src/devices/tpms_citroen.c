@@ -132,7 +132,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_citroen = {
+r_device const tpms_citroen = {
         .name        = "Citroen TPMS",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 52,  // 12-13 samples @250k

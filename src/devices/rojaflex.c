@@ -296,7 +296,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device rojaflex = {
+r_device const rojaflex = {
         .name        = "RojaFlex shutter and remote devices",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 100,

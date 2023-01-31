@@ -233,7 +233,7 @@ static char *output_fields[] = {
 /*
  * r_device - registers device/callback. see rtl_433_devices.h
  */
-r_device neptune_r900 = {
+r_device const neptune_r900 = {
         .name        = "Neptune R900 flow meters",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 30,

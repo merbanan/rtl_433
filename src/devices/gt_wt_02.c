@@ -126,7 +126,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device gt_wt_02 = {
+r_device const gt_wt_02 = {
         .name        = "Globaltronics GT-WT-02 Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2500, // 3ms (old) / 2ms (new)

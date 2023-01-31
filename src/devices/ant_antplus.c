@@ -151,7 +151,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ant_antplus = {
+r_device const ant_antplus = {
         .name        = "ANT and ANT+ devices",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 1,

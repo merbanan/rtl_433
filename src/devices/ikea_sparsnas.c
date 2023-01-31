@@ -288,7 +288,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ikea_sparsnas = {
+r_device const ikea_sparsnas = {
         .name        = "IKEA Sparsnas Energy Meter Monitor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 27,

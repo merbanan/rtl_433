@@ -283,7 +283,7 @@ static char *output_fields[] = {
  * and sort it into src/CMakeLists.txt or run ./maintainer_update.py
  *
  */
-r_device new_template = {
+r_device const new_template = {
         .name        = "Template decoder",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 132,  // short gap is 132 us

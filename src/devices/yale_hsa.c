@@ -131,7 +131,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device yale_hsa = {
+r_device const yale_hsa = {
         .name        = "Yale HSA (Home Security Alarm), YES-Alarmkit",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 850,

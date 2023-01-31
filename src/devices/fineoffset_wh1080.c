@@ -349,7 +349,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device fineoffset_wh1080 = {
+r_device const fineoffset_wh1080 = {
         .name        = "Fine Offset Electronics WH1080/WH3080 Weather Station",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 544,  // Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
@@ -359,7 +359,7 @@ r_device fineoffset_wh1080 = {
         .fields      = output_fields,
 };
 
-r_device fineoffset_wh1080_fsk = {
+r_device const fineoffset_wh1080_fsk = {
         .name        = "Fine Offset Electronics WH1080/WH3080 Weather Station (FSK)",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 58,

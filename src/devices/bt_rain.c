@@ -96,7 +96,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device bt_rain = {
+r_device const bt_rain = {
         .name        = "Biltema rain gauge",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1940,

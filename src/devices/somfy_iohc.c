@@ -216,7 +216,7 @@ static char *output_fields[] = {
 };
 
 // rtl_433 -c 0 -R 0 -g 40 -X "n=uart,m=FSK_PCM,s=26,l=26,r=300,preamble={24}0x57fd99,decode_uart" -f 868.89M
-r_device somfy_iohc = {
+r_device const somfy_iohc = {
         .name        = "Somfy io-homecontrol",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 26,

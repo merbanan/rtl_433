@@ -108,7 +108,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device auriol_ahfl = {
+r_device const auriol_ahfl = {
         .name        = "Auriol AHFL temperature/humidity sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2100,

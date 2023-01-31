@@ -370,7 +370,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device directv = {
+r_device const directv = {
         .name        = "DirecTV RC66RX Remote Control",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 600,  // 150 samples @250k

@@ -166,7 +166,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device fineoffset_wh31l = {
+r_device const fineoffset_wh31l = {
         .name        = "Ambient Weather WH31L (FineOffset WH57) Lightning-Strike sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 56,

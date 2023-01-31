@@ -121,7 +121,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device efergy_e2_classic = {
+r_device const efergy_e2_classic = {
         .name        = "Efergy e2 classic",
         .modulation  = FSK_PULSE_PWM,
         .short_width = 64,

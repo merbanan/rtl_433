@@ -130,7 +130,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_jansite_solar = {
+r_device const tpms_jansite_solar = {
         .name        = "Jansite TPMS Model Solar",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 51,

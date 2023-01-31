@@ -71,7 +71,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ft004b = {
+r_device const ft004b = {
         .name        = "FT-004-B Temperature Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1956,

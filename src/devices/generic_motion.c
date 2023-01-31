@@ -68,7 +68,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device generic_motion = {
+r_device const generic_motion = {
         .name        = "Generic wireless motion sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 888,

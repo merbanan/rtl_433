@@ -182,7 +182,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ecodhome = {
+r_device const ecodhome = {
         .name        = "EcoDHOME Smart Socket and MCEE Solar monitor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 250,

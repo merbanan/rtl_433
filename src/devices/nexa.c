@@ -79,7 +79,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device nexa = {
+r_device const nexa = {
         .name        = "Nexa",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 270,  // 1:1

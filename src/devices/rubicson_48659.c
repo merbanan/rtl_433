@@ -190,7 +190,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device rubicson_48659 = {
+r_device const rubicson_48659 = {
         .name        = "Rubicson 48659 Thermometer",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 940,

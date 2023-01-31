@@ -173,7 +173,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device funkbus_remote = {
+r_device const funkbus_remote = {
         .name        = "Funkbus / Instafunk (Berker, Gira, Jung)",
         .modulation  = OOK_PULSE_DMC,
         .short_width = 500,

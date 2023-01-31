@@ -118,7 +118,7 @@ static char *output_fields[] = {
 };
 
 // Short high and low pulses are quite different in length so we have a high tolerance of 200
-r_device cmr113 = {
+r_device const cmr113 = {
         .name        = "Clipsal CMR113 Cent-a-meter power meter",
         .modulation  = OOK_PULSE_PIWM_DC,
         .short_width = 480,

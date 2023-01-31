@@ -106,7 +106,7 @@ static char *output_fields[] = {
 };
 
 // timings based on samp_rate=1024000
-r_device rubicson = {
+r_device const rubicson = {
         .name        = "Rubicson, TFA 30.3197 or InFactory PT-310 Temperature Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1000, // Gaps:  Short 976us, Long 1940us, Sync 4000us

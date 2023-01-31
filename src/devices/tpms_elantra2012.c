@@ -148,7 +148,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_elantra2012 = {
+r_device const tpms_elantra2012 = {
         .name        = "Elantra2012 TPMS",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 49,  // 12-13 samples @250k

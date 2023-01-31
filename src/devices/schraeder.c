@@ -277,7 +277,7 @@ static char *output_fields_SMD3MA4[] = {
         NULL,
 };
 
-r_device schraeder = {
+r_device const schraeder = {
         .name        = "Schrader TPMS",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 120,
@@ -287,7 +287,7 @@ r_device schraeder = {
         .fields      = output_fields,
 };
 
-r_device schrader_EG53MA4 = {
+r_device const schrader_EG53MA4 = {
         .name        = "Schrader TPMS EG53MA4, PA66GF35",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 123,
@@ -297,7 +297,7 @@ r_device schrader_EG53MA4 = {
         .fields      = output_fields_EG53MA4,
 };
 
-r_device schrader_SMD3MA4 = {
+r_device const schrader_SMD3MA4 = {
         .name        = "Schrader TPMS SMD3MA4 (Subaru)",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 120,

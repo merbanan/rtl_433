@@ -140,7 +140,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device missil_ml0757 = {
+r_device const missil_ml0757 = {
         .name        = "Missil ML0757 weather station",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 975,

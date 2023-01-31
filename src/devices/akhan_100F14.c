@@ -69,7 +69,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device akhan_100F14 = {
+r_device const akhan_100F14 = {
         .name        = "Akhan 100F14 remote keyless entry",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 316,

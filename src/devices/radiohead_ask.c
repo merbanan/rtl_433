@@ -248,7 +248,7 @@ static char *sensible_living_output_fields[] = {
         NULL,
 };
 
-r_device radiohead_ask = {
+r_device const radiohead_ask = {
         .name        = "Radiohead ASK",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 500,
@@ -258,7 +258,7 @@ r_device radiohead_ask = {
         .fields      = radiohead_ask_output_fields,
 };
 
-r_device sensible_living = {
+r_device const sensible_living = {
         .name        = "Sensible Living Mini-Plant Moisture Sensor",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 1000,

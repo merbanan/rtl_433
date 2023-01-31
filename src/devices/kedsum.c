@@ -105,7 +105,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device kedsum = {
+r_device const kedsum = {
         .name        = "Kedsum Temperature & Humidity Sensor, Pearl NC-7415",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

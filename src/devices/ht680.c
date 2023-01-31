@@ -90,7 +90,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ht680 = {
+r_device const ht680 = {
         .name        = "HT680 Remote control",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 200,

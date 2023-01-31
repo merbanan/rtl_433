@@ -337,7 +337,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device geo_minim = {
+r_device const geo_minim = {
         .name           = "GEO minim+ energy monitor",
         .modulation     = FSK_PULSE_PCM,
         .short_width    = 24,

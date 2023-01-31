@@ -237,7 +237,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device interlogix = {
+r_device const interlogix = {
         .name        = "Interlogix GE UTC Security Devices",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 122,

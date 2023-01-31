@@ -1189,7 +1189,7 @@ static char *output_fields[] = {
 
 // Mode C1, C2 (Meter TX), T1, T2 (Meter TX),
 // Frequency 868.95 MHz, Bitrate 100 kbps, Modulation NRZ FSK
-r_device m_bus_mode_c_t = {
+r_device const m_bus_mode_c_t = {
         .name        = "Wireless M-Bus, Mode C&T, 100kbps (-f 868.95M -s 1200k)", // Minimum samplerate = 1.2 MHz (12 samples of 100kb/s)
         .modulation  = FSK_PULSE_PCM,
         .short_width = 10,  // Bit rate: 100 kb/s
@@ -1201,7 +1201,7 @@ r_device m_bus_mode_c_t = {
 
 // Mode S1, S1-m, S2, T2 (Meter RX),    (Meter RX not so interesting)
 // Frequency 868.3 MHz, Bitrate 32.768 kbps, Modulation Manchester FSK
-r_device m_bus_mode_s = {
+r_device const m_bus_mode_s = {
         .name        = "Wireless M-Bus, Mode S, 32.768kbps (-f 868.3M -s 1000k)", // Minimum samplerate = 1 MHz (15 samples of 32kb/s manchester coded)
         .modulation  = FSK_PULSE_PCM,
         .short_width = (1000.0 / 32.768), // ~31 us per bit
@@ -1219,7 +1219,7 @@ r_device m_bus_mode_s = {
 // Frequency 868.33 MHz, Bitrate 4.8 kbps, Modulation Manchester FSK
 //      Preamble {0x55, 0x54, 0x76, 0x96} (Format A) (B not supported)
 // Untested stub!!! (Need samples)
-r_device m_bus_mode_r = {
+r_device const m_bus_mode_r = {
         .name        = "Wireless M-Bus, Mode R, 4.8kbps (-f 868.33M)",
         .modulation  = FSK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = (1000.0f / 4.8f / 2),    // ~208 us per bit -> clock half period ~104 us
@@ -1243,7 +1243,7 @@ r_device m_bus_mode_r = {
 //      Preamble {0x55, 0xF6, 0x8D} (Format A)
 //      Preamble {0x55, 0xF6, 0x72} (Format B)
 // Untested stub!!! (Need samples)
-r_device m_bus_mode_f = {
+r_device const m_bus_mode_f = {
         .name        = "Wireless M-Bus, Mode F, 2.4kbps",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 1000.0f / 2.4f, // ~417 us

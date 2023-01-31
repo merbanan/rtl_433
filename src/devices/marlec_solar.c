@@ -105,7 +105,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device marlec_solar = {
+r_device const marlec_solar = {
         .name        = "Marlec Solar iBoost+ sensors",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 20,

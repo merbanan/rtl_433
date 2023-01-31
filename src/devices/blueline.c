@@ -396,7 +396,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device blueline;
+r_device const blueline;
 
 static r_device *blueline_create(char *arg)
 {
@@ -430,7 +430,7 @@ static r_device *blueline_create(char *arg)
     return r_dev;
 }
 
-r_device blueline = {
+r_device const blueline = {
         .name        = "BlueLine Innovations Power Cost Monitor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 500,

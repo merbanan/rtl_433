@@ -68,7 +68,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device hondaremote = {
+r_device const hondaremote = {
         .name        = "Honda Car Key",
         .modulation  = FSK_PULSE_PWM,
         .short_width = 250,

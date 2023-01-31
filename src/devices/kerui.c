@@ -103,7 +103,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device kerui = {
+r_device const kerui = {
         .name        = "Kerui PIR / Contact Sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 420,

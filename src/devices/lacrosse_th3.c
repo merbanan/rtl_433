@@ -151,7 +151,7 @@ static char *output_fields[] = {
 // flex decoder n=TH3, m=FSK_PCM, s=104, l=104, r=9600
 // flex decoder n=TH2, m=FSK_PCM, s=107, l=107, r=5900
 // TH3 parameters should be good enough for both sensors
-r_device lacrosse_th3 = {
+r_device const lacrosse_th3 = {
         .name        = "LaCrosse Technology View LTV-TH Thermo/Hygro Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 104,

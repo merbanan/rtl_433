@@ -213,7 +213,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device lacrossews = {
+r_device const lacrossews = {
         .name        = "LaCrosse WS-2310 / WS-3600 Weather Station",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 368,

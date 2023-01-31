@@ -185,7 +185,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tfa_drop_303233 = {
+r_device const tfa_drop_303233 = {
         .name        = "TFA Drop Rain Gauge 30.3233.01",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 255,

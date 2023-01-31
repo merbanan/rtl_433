@@ -90,7 +90,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device megacode = {
+r_device const megacode = {
         .name        = "Linear Megacode Garage/Gate Remotes",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 1000,

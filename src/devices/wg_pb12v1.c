@@ -91,7 +91,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device wg_pb12v1 = {
+r_device const wg_pb12v1 = {
         .name        = "WG-PB12V1 Temperature Sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 564,  // Short pulse 564µs, long pulse 1476µs, fixed gap 960µs

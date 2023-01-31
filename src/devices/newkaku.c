@@ -84,7 +84,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device newkaku = {
+r_device const newkaku = {
         .name        = "KlikAanKlikUit Wireless Switch",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 300,  // 1:1

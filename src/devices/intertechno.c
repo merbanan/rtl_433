@@ -61,7 +61,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device intertechno = {
+r_device const intertechno = {
         .name        = "Intertechno 433",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 330,

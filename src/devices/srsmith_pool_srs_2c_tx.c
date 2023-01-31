@@ -158,7 +158,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device srsmith_pool_srs_2c_tx = {
+r_device const srsmith_pool_srs_2c_tx = {
         .name        = "SRSmith Pool Light Remote Control SRS-2C-TX (-f 915M)",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 100,

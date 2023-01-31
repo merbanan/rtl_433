@@ -125,7 +125,7 @@ static char *acurite_01185m_output_fields[] = {
         NULL,
 };
 
-r_device acurite_01185m = {
+r_device const acurite_01185m = {
         .name        = "Acurite Grill/Meat Thermometer 01185M",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 840,  // short pulse is 840 us

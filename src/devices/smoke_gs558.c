@@ -126,7 +126,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device smoke_gs558 = {
+r_device const smoke_gs558 = {
         .name        = "Wireless Smoke and Heat Detector GS 558",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 436,          // Threshold between short and long pulse [us]

@@ -102,7 +102,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ced7000 = {
+r_device const ced7000 = {
         .name        = "CED7000 Shot Timer",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 1300,

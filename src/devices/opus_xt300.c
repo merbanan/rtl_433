@@ -104,7 +104,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device opus_xt300 = {
+r_device const opus_xt300 = {
         .name        = "Opus/Imagintronix XT300 Soil Moisture",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 544,

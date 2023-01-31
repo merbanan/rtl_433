@@ -88,7 +88,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tfa_pool_thermometer = {
+r_device const tfa_pool_thermometer = {
         .name        = "TFA pool temperature sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

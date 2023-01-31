@@ -144,7 +144,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_kia = {
+r_device const tpms_kia = {
         .name        = "Kia TPMS (-s 1000k)",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 50,

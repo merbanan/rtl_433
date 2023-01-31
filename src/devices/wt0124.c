@@ -106,7 +106,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device wt1024 = {
+r_device const wt1024 = {
         .name        = "WT0124 Pool Thermometer",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 680,

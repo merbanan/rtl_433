@@ -142,7 +142,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_hyundai_vdo = {
+r_device const tpms_hyundai_vdo = {
         .name        = "Hyundai TPMS (VDO)",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 52,  // in the FCC test protocol is actually 42us, but works with 52 also

@@ -122,7 +122,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_pmv107j = {
+r_device const tpms_pmv107j = {
         .name        = "PMV-107J (Toyota) TPMS",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 100, // 25 samples @250k

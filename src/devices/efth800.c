@@ -140,7 +140,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device eurochron_efth800 = {
+r_device const eurochron_efth800 = {
         .name        = "Eurochron EFTH-800 temperature and humidity sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 250,

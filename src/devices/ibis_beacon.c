@@ -89,7 +89,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ibis_beacon = {
+r_device const ibis_beacon = {
         .name        = "IBIS beacon",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 30,  // Nominal width of clock half period [us]

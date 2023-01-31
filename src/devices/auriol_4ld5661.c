@@ -86,7 +86,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device auriol_4ld5661 = {
+r_device const auriol_4ld5661 = {
         .name        = "Auriol 4-LD5661 temperature/rain sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1000,

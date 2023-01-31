@@ -199,7 +199,7 @@ static char *output_fields[] = {
 };
 
 /* r_device definition */
-r_device x10_sec = {
+r_device const x10_sec = {
         .name        = "X10 Security",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 562,  // Short gap 562us

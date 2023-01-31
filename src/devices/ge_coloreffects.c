@@ -164,7 +164,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ge_coloreffects = {
+r_device const ge_coloreffects = {
         .name        = "GE Color Effects",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 52,

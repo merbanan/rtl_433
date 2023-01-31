@@ -69,7 +69,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device fordremote = {
+r_device const fordremote = {
         .name        = "Ford Car Key",
         .modulation  = OOK_PULSE_DMC,
         .short_width = 250,  // half-bit width is 250 us
