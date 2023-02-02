@@ -243,6 +243,7 @@
     DECL(ced7000) \
     DECL(oil_watchman_advanced) \
     DECL(oil_smart) \
+    DECL(gasmate_ba1008) \
 
     /* Add new decoders here. */
 

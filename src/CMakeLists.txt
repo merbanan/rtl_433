@@ -114,6 +114,7 @@ add_library(r_433 STATIC
     devices/fs20.c
     devices/ft004b.c
     devices/funkbus.c
+    devices/gasmate_ba1008.c
     devices/ge_coloreffects.c
     devices/generic_motion.c
     devices/generic_remote.c

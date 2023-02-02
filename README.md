@@ -318,6 +318,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [233]* CED7000 Shot Timer
     [234]  Watchman Sonic Advanced / Plus
     [235]  Oil Ultrasonic SMART FSK
+    [236]  Gasmate BA1008 meat thermometer
 
 * Disabled by default, use -R n or a conf file to enable
 
