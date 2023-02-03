@@ -45,20 +45,13 @@ The sensor sends messages at intervals of about 57-58 seconds.
 
 static int eurochron_efth800_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
-    int row;
-    uint8_t *b;
-    int id, channel, temp_raw, humidity, battery_low;
-    float temp_c;
-    char dcf77_str[20]; // "2064-16-32T32:64:64"
-    dcf77_str[0] = 0;
-
     bitbuffer_invert(bitbuffer);
 
     /* Look for clock packet */
-    row = bitbuffer_find_repeated_row(bitbuffer, 2, 65);
+    char dcf77_str[20] = {0}; // "2064-16-32T32:64:64"
+    int row = bitbuffer_find_repeated_row(bitbuffer, 2, 65);
     if (row > 0) {
-        b = bitbuffer->bb[row];
+        uint8_t *b = bitbuffer->bb[row];
 
         // 0         1      2       3       4       5    6         7
         // ?1b CH:3d ID:12d 2b H?6d 2b M:6d 2b S:6d Y?7d D:5d M:4d CHK?8h 1x
@@ -90,7 +83,7 @@ static int eurochron_efth800_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[row] > 49) // 48 bits per row?
         return DECODE_ABORT_LENGTH;
 
-    b = bitbuffer->bb[row];
+    uint8_t *b = bitbuffer->bb[row];
 
     // No need to decode/extract values for simple test
     if (b[0] == 0x00 && b[1] == 0x00 && b[2] == 0x00 && b[4] == 0x00) {
@@ -104,15 +97,15 @@ static int eurochron_efth800_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* Extract data */
-    channel     = (b[0] & 0x70) >> 4;
-    id          = ((b[0] & 0x0f) << 8) | b[1];
-    battery_low = b[2] >> 7;
-    temp_raw    = (int16_t)((b[2] & 0x3f) << 10) | ((b[3] & 0xf0) << 2); // sign-extend
-    temp_c      = (temp_raw >> 6) * 0.1f;
-    humidity    = (b[4] >> 4) * 10 + (b[4] & 0xf); // BCD
+    int channel     = (b[0] & 0x70) >> 4;
+    int id          = ((b[0] & 0x0f) << 8) | b[1];
+    int battery_low = b[2] >> 7;
+    int temp_raw    = (int16_t)((b[2] & 0x3f) << 10) | ((b[3] & 0xf0) << 2); // sign-extend
+    float temp_c    = (temp_raw >> 6) * 0.1f;
+    int humidity    = (b[4] >> 4) * 10 + (b[4] & 0xf); // BCD
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Eurochron-EFTH800",
             "id",               "",             DATA_INT,    id,
             "channel",          "",             DATA_INT,    channel + 1,
@@ -120,7 +113,7 @@ static int eurochron_efth800_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",     DATA_INT,    humidity,
             "mic",              "Integrity",    DATA_STRING, "CRC",
-            "radio_clock",      "Radio Clock",  DATA_STRING, dcf77_str,
+            "radio_clock",      "Radio Clock",  DATA_COND,   *dcf77_str, DATA_STRING, dcf77_str,
             NULL);
     /* clang-format on */
 
