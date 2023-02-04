@@ -245,6 +245,7 @@
     DECL(oil_smart) \
     DECL(gasmate_ba1008) \
     DECL(flowis) \
+    DECL(revolt_nc5462) \
 
     /* Add new decoders here. */
 
