@@ -244,6 +244,7 @@
     DECL(oil_watchman_advanced) \
     DECL(oil_smart) \
     DECL(gasmate_ba1008) \
+    DECL(flowis) \
 
     /* Add new decoders here. */
 
