@@ -60,7 +60,7 @@ static int klimalogg_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (b[7] != 0x6a) // 0x56 bit reflected
         return DECODE_FAIL_SANITY;
 
-    reflect_bytes(b, 11);
+    reflect_bytes(b, 9);
 
     int crc = crc8(b, 9, 0x31, 0);
     if (crc)
