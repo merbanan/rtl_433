@@ -40,6 +40,18 @@ or as follows:
 When paired the display listens for sensor packets and then transmits a
 summary packet using the same protocol.
 
+Packet types:
+
+The first three header bytes are not identified but should be related to
+message type, session ID from pairing. Seen so far:
+
+    3f 06 29 05 // GEO minim+ current sensor
+    fb 06 81 05 // GEO minim+ current sensor
+    ea 01 35 2a // GEO minim+ display
+    da c1 35 2a // GEO minim+ display
+
+Then a byte of packet length 0x05 or 0x2a follows.
+
 The following Flex decoder will capture the raw data:
 
     rtl_433 -f 868.29M -s 1024k -Y classic -X 'n=minim+,m=FSK_PCM,s=24,l=24,r=3000,preamble=0x7bb9'
@@ -56,7 +68,8 @@ Packet layout:
 
 - 24 bit preamble of alternating 0s and 1s
 - 2 sync bytes: 0x7b 0xb9
-- 4 byte header: 0x3f 0x06 0x29 0x05
+- 3 byte header: contents unknown so far
+- 1 byte packet length: 0x05
 - 5 data bytes
 - CRC16
 
@@ -75,14 +88,20 @@ static int geo_minim_ct_sensor_decode(r_device *decoder, bitbuffer_t *bitbuffer,
 {
     (void)bitbuffer;
 
-    if (len != 11) {
+    if (buf[3] != 5) {
         decoder_logf_bitrow(decoder, 1, __func__, buf, 8 * len,
-            "Incorrect length. Expected 11 got %u bytes", len);
+                "Incorrect length. Expected payload of 5 got %u bytes", len);
         return DECODE_ABORT_LENGTH;
     }
 
-    char id[9];
-    snprintf(id, sizeof(id), "%02X%02X%02X%02X", buf[0], buf[1], buf[2], buf[3]);
+    if (len != 11) {
+        decoder_logf_bitrow(decoder, 1, __func__, buf, 8 * len,
+            "Incorrect length. Expected packet 11 got %u bytes", len);
+        return DECODE_ABORT_LENGTH;
+    }
+
+    char id[7];
+    snprintf(id, sizeof(id), "%02X%02X%02X", buf[0], buf[1], buf[2]);
 
     // Uptime in ~8 second intervals
     unsigned uptime_raw = (buf[6] << 16) + (buf[7] << 8) + buf[8];
@@ -121,7 +140,8 @@ Packet layout:
 
 - 24 bit preamble of alternating 0s and 1s
 - 2 sync bytes: 0x7b 0xb9
-- 4 byte header: 0xea 0x01 0x35 0x2a
+- 3 byte header: contents unknown so far
+- 1 byte packet length: 0x2a (=42)
 - 42 data bytes
 - CRC16
 
@@ -144,6 +164,12 @@ static int geo_minim_display_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
     uint8_t const zeroes[8] = { 0 };
     uint8_t const aaes[5] = { 0xaa, 0xaa, 0xaa, 0xaa, 0xaa };
     uint8_t const trailer[12] = { 0xaa, 0xff, 0xff, 0, 0, 0, 0, 0xaa, 0xff, 0xaa, 0xaa, 0 };
+
+    if (buf[3] != 42) {
+        decoder_logf_bitrow(decoder, 1, __func__, buf, 8 * len,
+                "Incorrect length. Expected payload of 42 got %u bytes", len);
+        return DECODE_ABORT_LENGTH;
+    }
 
     if (len != 48) {
         decoder_logf_bitrow(decoder, 1, __func__, buf, 8 * len,
@@ -182,8 +208,8 @@ static int geo_minim_display_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
         //return DECODE_FAIL_SANITY;
     }
 
-    char id[9];
-    snprintf(id, sizeof(id), "%02X%02X%02X%02X", buf[0], buf[1], buf[2], buf[3]);
+    char id[7];
+    snprintf(id, sizeof(id), "%02X%02X%02X", buf[0], buf[1], buf[2]);
 
     // Instantaneous power: 300W => 60: 1 = 5W
     unsigned watts = 5 * (buf[4] + ((buf[5] & 0x7f) << 8));
@@ -230,8 +256,8 @@ static int geo_minim_display_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
 }
 
 // packet type magic numbers
-#define MTYPE_DISPLAY 0xea
-#define MTYPE_CT 0x3f
+#define MLEN_DISPLAY 0x2a
+#define MLEN_CT 0x05
 
 static int minim_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -268,14 +294,9 @@ static int minim_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t buf[128];
     bitbuffer_extract_bytes(bitbuffer, row, bitpos, buf, hdr_bits);
 
-    // Determine frame type. Assume:
-    // buf[0] = message type
-    // buf[1], buf[2] = session ID from pairing
-    // buf[3] = data byte length
-    // e.g. ea 01 35 2a : Display
-    // e.g. 3f 06 29 05 : CT sensor
-    int mtype = buf[0];
-    if (mtype != MTYPE_DISPLAY && mtype != MTYPE_CT) {
+    // Determine frame type based on packet length
+    int data_length = buf[3];
+    if (data_length != MLEN_DISPLAY && data_length != MLEN_CT) {
         decoder_logf(decoder, 1, __func__,
                 "Unknown header %02x%02x%02x%02x",
                 buf[0], buf[1], buf[2], buf[3]);
@@ -311,10 +332,10 @@ static int minim_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    if (mtype == MTYPE_DISPLAY) {
+    if (data_length == MLEN_DISPLAY) {
         return geo_minim_display_decode(decoder, bitbuffer, buf, bytes);
     }
-    if (mtype == MTYPE_CT) {
+    if (data_length == MLEN_CT) {
         return geo_minim_ct_sensor_decode(decoder, bitbuffer, buf, bytes);
     }
 
