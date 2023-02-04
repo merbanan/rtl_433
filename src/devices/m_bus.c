@@ -63,6 +63,9 @@ static int m_bus_decode_3of6_buffer(uint8_t const *bits, unsigned bit_offset, ui
     for (unsigned n=0; n<num_bytes; ++n) {
         uint8_t nibble_h = m_bus_decode_3of6(bitrow_get_byte(bits, n*12+bit_offset) >> 2);
         uint8_t nibble_l = m_bus_decode_3of6(bitrow_get_byte(bits, n*12+bit_offset+6) >> 2);
+        if (nibble_h > 0xf || nibble_l > 0xf) {
+            return -1;
+        }
         output[n] = (nibble_h << 4) | nibble_l;
     }
     return 0;
@@ -984,7 +987,8 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
             bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
             // Decode
-            if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
+            if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))
+                return DECODE_FAIL_SANITY;
         } // Format A
         // Format B
         else if (next_byte == 0x3D) {
@@ -993,8 +997,9 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
             bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
             // Decode
-            if (!m_bus_decode_format_b(decoder, &data_in, &data_out, &block1))    return 0;
-        }   // Format B
+            if (!m_bus_decode_format_b(decoder, &data_in, &data_out, &block1))
+                return DECODE_FAIL_SANITY;
+        } // Format B
         // Unknown Format
         else {
             decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "M-Bus: Mode C, Unknown format: 0x%X", next_byte);
@@ -1014,10 +1019,13 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_logf(decoder, 1, __func__, "MBus telegram length: %u", data_in.length);
         if (m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, data_in.data, data_in.length) < 0) {
             decoder_log(decoder, 1, __func__, "M-Bus: Decoding error");
-            return 0;
+            return DECODE_FAIL_SANITY;
         }
         // Decode
-        if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
+        if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1)) {
+            decoder_log_bitrow(decoder, 1, __func__, data_in.data, data_in.length, "MBus telegram unknown format");
+            return DECODE_FAIL_SANITY;
+        }
     }   // Mode T
 
     m_bus_output_data(decoder, bitbuffer, &data_out, &block1, mode);
@@ -1119,6 +1127,7 @@ Wireless M-Bus, Mode S.
 static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     static const uint8_t PREAMBLE_S[]  = {0x54, 0x76, 0x96};  // Mode S Preamble
+    static const uint8_t PREAMBLE_T_DN[] = {0xaa, 0xab, 0x32};  // Mode T Downlink Preamble
     bitbuffer_t packet_bits = {0};
     m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
     m_bus_data_t    data_out    = {0};  // Data from Data Link layer
@@ -1129,9 +1138,22 @@ static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
+    // Find a Mode T-downlink data package
+    unsigned offset = bitbuffer_search(bitbuffer, 0, 0, PREAMBLE_T_DN, sizeof(PREAMBLE_T_DN) * 8);
+    offset += sizeof(PREAMBLE_T_DN) * 8;
+    if (offset < bitbuffer->bits_per_row[0]) { // Did find a big enough package
+        bitbuffer_invert(bitbuffer);
+        decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "M-Bus: Mode T Downlink");
+        return DECODE_ABORT_EARLY;
+    }
+
     // Find a Mode S data package
     unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, PREAMBLE_S, sizeof(PREAMBLE_S)*8);
-    bitbuffer_manchester_decode(bitbuffer, 0, bit_offset+sizeof(PREAMBLE_S)*8, &packet_bits, 800);
+    bit_offset += sizeof(PREAMBLE_S) * 8;
+    if (bit_offset >= bitbuffer->bits_per_row[0]) { // Did not find a big enough package
+        return DECODE_ABORT_EARLY;
+    }
+    bitbuffer_manchester_decode(bitbuffer, 0, bit_offset, &packet_bits, 800);
     data_in.length = (bitbuffer->bits_per_row[0]);
     bitbuffer_extract_bytes(&packet_bits, 0, 0, data_in.data, data_in.length);
 
@@ -1188,13 +1210,24 @@ static char *output_fields[] = {
 };
 
 // Mode C1, C2 (Meter TX), T1, T2 (Meter TX),
-// Frequency 868.95 MHz, Bitrate 100 kbps, Modulation NRZ FSK
+// Frequency 868.95 MHz, Bitrate 100 kbps (uplink), Modulation NRZ FSK
 r_device const m_bus_mode_c_t = {
         .name        = "Wireless M-Bus, Mode C&T, 100kbps (-f 868.95M -s 1200k)", // Minimum samplerate = 1.2 MHz (12 samples of 100kb/s)
         .modulation  = FSK_PULSE_PCM,
         .short_width = 10,  // Bit rate: 100 kb/s
         .long_width  = 10,  // NRZ encoding (bit width = pulse width)
         .reset_limit = 500, //
+        .decode_fn   = &m_bus_mode_c_t_callback,
+        .fields      = output_fields,
+};
+
+// Mode T communication in downlink direction at 32.768 kbps
+r_device const m_bus_mode_c_t_downlink = {
+        .name        = "Wireless M-Bus, Mode T, 32.768kbps (-f 868.3M -s 1000k)", // Minimum samplerate = 1 MHz (15 samples of 32kb/s manchester coded)
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = (1000.0 / 32.768), // ~31 us per bit
+        .long_width  = (1000.0 / 32.768),
+        .reset_limit = ((1000.0 / 32.768) * 9), // 9 bit periods
         .decode_fn   = &m_bus_mode_c_t_callback,
         .fields      = output_fields,
 };
