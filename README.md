@@ -320,6 +320,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [235]  Oil Ultrasonic SMART FSK
     [236]  Gasmate BA1008 meat thermometer
     [237]  Flowis flow meters
+    [238]  Revolt NC-5642
 
 * Disabled by default, use -R n or a conf file to enable
 
