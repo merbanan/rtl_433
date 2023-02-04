@@ -319,6 +319,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [234]  Watchman Sonic Advanced / Plus
     [235]  Oil Ultrasonic SMART FSK
     [236]  Gasmate BA1008 meat thermometer
+    [237]  Flowis flow meters
 
 * Disabled by default, use -R n or a conf file to enable
 

@@ -110,6 +110,7 @@ add_library(r_433 STATIC
     devices/fineoffset_wn34.c
     devices/fineoffset_ws80.c
     devices/flex.c
+    devices/flowis.c
     devices/fordremote.c
     devices/fs20.c
     devices/ft004b.c
