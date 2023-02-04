@@ -90,11 +90,12 @@ static int oil_smart_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",                "", DATA_STRING, "Oil-Ultrasonic",
-            "id",                   "", DATA_FORMAT, "%04x", DATA_INT, unit_id,
-            "depth_cm",             "", DATA_INT,    depth,
-            "unknown1",             "", DATA_FORMAT, "%02x", DATA_INT, unknown1,
-            "unknown2",             "", DATA_FORMAT, "%02x", DATA_INT, unknown2,
+            "model",            "",             DATA_STRING, "Oil-Ultrasonic",
+            "id",               "",             DATA_FORMAT, "%04x", DATA_INT, unit_id,
+            "depth_cm",         "Depth",        DATA_INT,    depth,
+            "unknown_1",        "Unknown 1",    DATA_FORMAT, "%02x", DATA_INT, unknown1,
+            "unknown_2",        "Unknown 2",    DATA_FORMAT, "%02x", DATA_INT, unknown2,
+            "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -128,8 +129,9 @@ static char *output_fields[] = {
         "model",
         "id",
         "depth_cm",
-        "unknown1",
-        "unknown2",
+        "unknown_1",
+        "unknown_2",
+        "mic",
         NULL,
 };
 
