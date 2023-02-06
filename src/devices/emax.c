@@ -104,31 +104,38 @@ Decoded example:
 
 */
 
+#define EMAX_MESSAGE_BITLEN     264   //33 * 8
+
 static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // full preamble is ffffaaaaaaaaaacaca54
     uint8_t const preamble_pattern[] = {0xaa, 0xaa, 0xca, 0xca, 0x54};
 
-    int ret = 0;
-    for (unsigned row = 0; row < bitbuffer->num_rows; ++row) {
-        unsigned pos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, sizeof(preamble_pattern) * 8);
+    // Because of a gap false positive if LUX at max for weather station, only single row to be analyzed with expected 3 repeats inside the data.
+    if (bitbuffer->num_rows != 1) {
+        return DECODE_ABORT_EARLY;
+    }
 
-        if (pos >= bitbuffer->bits_per_row[row]) {
+    int ret = 0;
+    int pos = 0;
+    while ((pos = bitbuffer_search(bitbuffer, 0, pos, preamble_pattern, sizeof(preamble_pattern) * 8)) + EMAX_MESSAGE_BITLEN <= bitbuffer->bits_per_row[0]) {
+
+        if (pos >= bitbuffer->bits_per_row[0]) {
             decoder_log(decoder, 2, __func__, "Preamble not found");
             ret = DECODE_ABORT_EARLY;
             continue;
         }
-        decoder_logf(decoder, 2, __func__, "Found row: %d", row);
+        decoder_logf(decoder, 2, __func__, "Found Emax preamble pos: %d", pos);
 
         pos += sizeof(preamble_pattern) * 8;
-        // we expect 32 bytes
-        if (pos + 32 * 8 > bitbuffer->bits_per_row[row]) {
+        // we expect at least 32 bytes
+        if (pos + 32 * 8 > bitbuffer->bits_per_row[0]) {
             decoder_log(decoder, 2, __func__, "Length check fail");
             ret = DECODE_ABORT_LENGTH;
             continue;
         }
         uint8_t b[32] = {0};
-        bitbuffer_extract_bytes(bitbuffer, row, pos, b, sizeof(b) * 8);
+        bitbuffer_extract_bytes(bitbuffer, 0, pos, b, sizeof(b) * 8);
 
         // verify checksum
         if ((add_bytes(b, 31) & 0xff) != b[31]) {
@@ -173,13 +180,15 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             float temp_f      = (temp_raw - 900) * 0.1f;
             int humidity      = b[6];
             int wind_raw      = ((b[7] - 1) << 8 ) | (b[8] -1);   // all default is 01 so need to remove 1 from all bytes.
-            float speed_kmh     = wind_raw * 0.2f;
-            int direction_deg = (((b[9] & 0x0f) - 1) << 8) | (b[10] - 1);
+            float speed_kmh   = wind_raw * 0.2f;
+            int direction_deg = (((b[9] - 1) & 0x0f) << 8) | (b[10] - 1);
             int rain_raw      = ((b[11] - 1) << 8 ) | (b[12] -1);
             float rain_mm     = rain_raw * 0.2f;
-            int uv_index      = (b[13] & 0x1f) - 1;
-            int lux_multi     = (((b[14] - 1) & 0x80) >> 7);
-            int light_lux     = ((b[14] & 0x7f) - 1) << 8 | (b[15] - 1);
+            int uv_index      = (b[13] - 1) & 0x1f;
+            int lux_14        = (b[14] - 1) & 0xFF;
+            int lux_15        = (b[15] - 1) & 0xFF;
+            int lux_multi     = ((lux_14 & 0x80) >> 7);
+            int light_lux     = ((lux_14 & 0x7f) << 8) | (lux_15);
             if (lux_multi == 1) {
                 light_lux = light_lux * 10;
             }
@@ -206,6 +215,7 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             return 1;
 
         }
+        pos += EMAX_MESSAGE_BITLEN;
     }
     return ret;
 }
@@ -232,7 +242,6 @@ r_device const emax = {
         .modulation  = FSK_PULSE_PCM,
         .short_width = 90,
         .long_width  = 90,
-        .gap_limit   = 1200,
         .reset_limit = 9000,
         .decode_fn   = &emax_decode,
         .fields      = output_fields,
