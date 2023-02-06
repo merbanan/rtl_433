@@ -117,7 +117,7 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     int ret = 0;
-    uint16_t pos = 0;
+    int pos = 0;
     while ((pos = bitbuffer_search(bitbuffer, 0, pos, preamble_pattern, sizeof(preamble_pattern) * 8)) + EMAX_MESSAGE_BITLEN <= bitbuffer->bits_per_row[0]) {
 
         if (pos >= bitbuffer->bits_per_row[0]) {
@@ -180,15 +180,15 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             float temp_f      = (temp_raw - 900) * 0.1f;
             int humidity      = b[6];
             int wind_raw      = ((b[7] - 1) << 8 ) | (b[8] -1);   // all default is 01 so need to remove 1 from all bytes.
-            float speed_kmh     = wind_raw * 0.2f;
+            float speed_kmh   = wind_raw * 0.2f;
             int direction_deg = (((b[9] - 1) & 0x0f) << 8) | (b[10] - 1);
             int rain_raw      = ((b[11] - 1) << 8 ) | (b[12] -1);
             float rain_mm     = rain_raw * 0.2f;
-            uint8_t uv_index  = ((b[13] - 1) & 0x1f);
-            uint8_t lux_14    = b[14] - 1;
-            uint8_t lux_15    = b[15] - 1;
-            uint8_t lux_multi = ((lux_14 & 0x80) >> 7);
-            uint32_t light_lux= ((lux_14 & 0x7f) << 8) | (lux_15);
+            int uv_index      = (b[13] - 1) & 0x1f;
+            int lux_14        = (b[14] - 1) & 0xFF;
+            int lux_15        = (b[15] - 1) & 0xFF;
+            int lux_multi     = ((lux_14 & 0x80) >> 7);
+            int light_lux     = ((lux_14 & 0x7f) << 8) | (lux_15);
             if (lux_multi == 1) {
                 light_lux = light_lux * 10;
             }
