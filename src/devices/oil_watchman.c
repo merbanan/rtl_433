@@ -16,6 +16,7 @@ Oil tank monitor using Si4320 framed FSK protocol.
 
 Tested devices:
 - Sensor Systems Watchman Sonic
+- Kingspan Watchman Sonic Plus
 */
 static int oil_watchman_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
