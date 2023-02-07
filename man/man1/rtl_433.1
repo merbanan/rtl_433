@@ -54,8 +54,9 @@ Read config options from a file
 [\-g <gain> | help] (default: auto)
 .TP
 [ \fB\-t\fI <settings>\fP ]
-apply a list of keyword=value settings for SoapySDR devices
-       e.g. \-t "antenna=A,bandwidth=4.5M,rfnotch_ctrl=false"
+apply a list of keyword=value settings to the SDR device
+       e.g. for SoapySDR \-t "antenna=A,bandwidth=4.5M,rfnotch_ctrl=false"
+       for RTL\-SDR use "direct_samp[=1]", "offset_tune[=1]", "digital_agc[=1]", "biastee[=1]"
 .TP
 [ \fB\-f\fI <frequency>\fP ]
 Receive frequency(s) (default: 433920000 Hz)
