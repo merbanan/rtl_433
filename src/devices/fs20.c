@@ -1,11 +1,13 @@
 /** @file
     Simple FS20 remote decoder.
 
-    Copyright (C) 2019 Dominik Pusch <dominik.pusch@koeln.de>
+    Copyright (C) 2019 Christian W. Zuckschwerdt <zany@triq.net>
+    original implementation 2019 Dominik Pusch <dominik.pusch@koeln.de>
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 3 as
-    published by the Free Software Foundation.
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 */
 
 /**
