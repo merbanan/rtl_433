@@ -372,13 +372,13 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         raw_output_t *output = *iter;
         raw_output_frame(output, iq_buf, len);
     }
-    
+
     // do the mongoose polling here so that influx output works even in replay mode.
     if (cfg->mgr) {
         int max_polls = 16;
         while (max_polls-- && mg_mgr_poll(cfg->mgr, 0));
     }
-    
+
     if ((cfg->bytes_to_read > 0) && (cfg->bytes_to_read <= len)) {
         len = cfg->bytes_to_read;
         cfg->exit_async = 1;
