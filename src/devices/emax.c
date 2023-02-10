@@ -165,7 +165,7 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "channel",          "Channel",          DATA_INT,    channel,
                     "battery_ok",       "Battery_OK",       DATA_INT,    !battery_low,
                     "temperature_F",    "Temperature_F",    DATA_FORMAT, "%.1f", DATA_DOUBLE, temp_f,
-                    "humidity",         "Humidity",         DATA_FORMAT, "%u", DATA_INT, humidity,
+                    "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
                     "pairing",          "Pairing?",         DATA_COND,   pairing,   DATA_INT,    !!pairing,
                     "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
                     NULL);
@@ -200,7 +200,7 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "channel",          "Channel",          DATA_INT,    channel,
                     "battery_ok",       "Battery_OK",       DATA_INT,    !battery_low,
                     "temperature_F",    "Temperature_F",    DATA_FORMAT, "%.1f", DATA_DOUBLE, temp_f,
-                    "humidity",         "Humidity",         DATA_FORMAT, "%u",   DATA_INT,    humidity,
+                    "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
                     "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
                     "wind_dir_deg",     "Wind Direction",   DATA_INT,    direction_deg,
                     "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",  DATA_DOUBLE, rain_mm,
