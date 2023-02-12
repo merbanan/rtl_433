@@ -191,7 +191,7 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             int rain_raw      = ((b[11] - 1) << 8 ) | (b[12] -1);
             float rain_mm     = rain_raw * 0.2f;
 
-            if ( b[29] == 0x17) {           // with UV/Lux, without Wind Gust
+            if ( b[29] == 0x17) {                               // with UV/Lux, without Wind Gust
                 int uv_index      = (b[13] - 1) & 0x1f;
                 int lux_14        = (b[14] - 1) & 0xFF;
                 int lux_15        = (b[15] - 1) & 0xFF;
@@ -222,11 +222,11 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 decoder_output_data(decoder, data);
                 return 1;
             }
-            else {                          //without UV/Lux with Wind Gust
+            if ( b[29] == 0x16) {                               //without UV/Lux with Wind Gust
                 float gust_kmh = b[16] / 1.5f;
                 /* clang-format off */
                 data_t *data = data_make(
-                        "model",            "",                 DATA_STRING, "Emax-W6",
+                        "model",            "",                 DATA_STRING, "Emax-EM3551H",
                         "id",               "",                 DATA_FORMAT, "%03x", DATA_INT,    id,
                         "channel",          "Channel",          DATA_INT,    channel,
                         "battery_ok",       "Battery_OK",       DATA_INT,    !battery_low,
