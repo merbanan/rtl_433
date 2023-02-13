@@ -458,7 +458,7 @@ static int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
  *
  */
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         // "id",
         // "data",

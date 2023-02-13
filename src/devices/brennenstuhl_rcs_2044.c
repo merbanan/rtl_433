@@ -113,7 +113,7 @@ static int brennenstuhl_rcs_2044_callback(r_device *decoder, bitbuffer_t *bitbuf
     return counter;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "key",

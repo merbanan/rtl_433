@@ -249,7 +249,7 @@ enum UnitType {
     kOperTimeDays,
 };
 
-static char *unit_names[][3] = {
+static char const *unit_names[][3] = {
         /* 0 */ {"energy_wh", "Energy", "Wh"},
         /* 1 */ {"energy_j", "Energy", "J"},
         /* 2 */ {"volume", "Volume", "m3"},
@@ -1165,7 +1165,7 @@ static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 // NOTE: we'd need to add "value_types_tab X unit_names X n" fields
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "mode",
         "id",

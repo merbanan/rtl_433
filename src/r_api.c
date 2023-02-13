@@ -679,7 +679,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
     // check for undeclared csv fields
     for (data_t *d = data; d; d = d->next) {
         int found = 0;
-        for (char **p = r_dev->fields; *p; ++p) {
+        for (char const **p = r_dev->fields; *p; ++p) {
             if (!strcmp(d->key, *p)) {
                 found = 1;
                 break;

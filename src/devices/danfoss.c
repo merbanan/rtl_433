@@ -147,7 +147,7 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return DECODE_ABORT_LENGTH;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "temperature_C",
