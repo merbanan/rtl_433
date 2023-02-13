@@ -66,7 +66,7 @@ Decoded example:
 
 Emax Rain / Wind speed / Wind Direction / Temp / Hum / UV / Lux
 
-Weather Rain/Wind station : hummidity not at same byte position as temp/hum sensor.
+Weather Rain/Wind station : humidity not at same byte position as temp/hum sensor.
 - With UV Lux without Wind Gust
     AA 04 II IB 0T TT HH 0W WW 0D DD RR RR UU LL LL 04 05 06 07 08 09 10 11 12 13 14 15 16 17 xx SS yy
 - Without UV / Lux , with Wind Gust
@@ -191,7 +191,7 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             int rain_raw      = ((b[11] - 1) << 8 ) | (b[12] -1);
             float rain_mm     = rain_raw * 0.2f;
 
-            if ( b[29] == 0x17) {                               // with UV/Lux, without Wind Gust
+            if (b[29] == 0x17) {                               // with UV/Lux, without Wind Gust
                 int uv_index      = (b[13] - 1) & 0x1f;
                 int lux_14        = (b[14] - 1) & 0xFF;
                 int lux_15        = (b[15] - 1) & 0xFF;
@@ -222,7 +222,7 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 decoder_output_data(decoder, data);
                 return 1;
             }
-            if ( b[29] == 0x16) {                               //without UV/Lux with Wind Gust
+            if (b[29] == 0x16) {                               //without UV/Lux with Wind Gust
                 float gust_kmh = b[16] / 1.5f;
                 /* clang-format off */
                 data_t *data = data_make(
