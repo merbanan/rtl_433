@@ -16,7 +16,7 @@ Weather Station, which seems to be a rebranded Fine Offset WH1080 Weather Statio
 Some info and code derived from Kevin Sangelee's page:
 http://www.susa.net/wordpress/2012/08/raspberry-pi-reading-wh1081-weather-sensors-using-an-rfm01-and-rfm12b/ .
 
-See also Frank 'SevenW' page ( https://www.sevenwatt.com/main/wh1080-protocol-v2-fsk/ ) for some other useful info.
+See also Frank 'SevenW' page https://www.sevenwatt.com/main/wh1080-protocol-v2-fsk/ for some other useful info.
 
 For the WH1080 part I mostly have re-elaborated and merged their works. Credits (and kudos) should go to them all
 (and to many others too).

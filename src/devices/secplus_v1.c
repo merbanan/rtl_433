@@ -256,7 +256,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint32_t rolling;          // max 2**32
     uint32_t rolling_temp = 0; // max 2**32
-    uint32_t fixed        = 0; // max 3^20 ( ~32 bits )
+    uint32_t fixed        = 0; // max 3^20 (~32 bits)
 
     uint8_t *res;
     res = result_1;

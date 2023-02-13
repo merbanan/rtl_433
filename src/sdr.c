@@ -636,9 +636,9 @@ static int soapysdr_offset_tuning(SoapySDRDevice *dev)
 
     if (strcmp(set_value, "true") != 0) {
         /* TODO: detection of failure modes
-        if ( r == -2 )
+        if (r == -2)
             print_log(LOG_WARNING, __func__, "Failed to set offset tuning: tuner doesn't support offset tuning!");
-        else if ( r == -3 )
+        else if (r == -3)
             print_log(LOG_WARNING, __func__, "Failed to set offset tuning: direct sampling not combinable with offset tuning!");
         else
         */

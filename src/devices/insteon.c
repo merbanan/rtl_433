@@ -28,7 +28,7 @@ Each byte (X) is encoded as 28 bits:
 
 All values are written in LSB format (Least Significant Bit first)
 
-The first byte is always transmitted with a index of 32 ( 11111 )
+The first byte is always transmitted with a index of 32 (11111)
 all following bytes are transmitted with a decrementing index count with the final byte with index 0
 
     Dat   index dat         LSB index dat     manchester                     '11' + manchester
@@ -148,9 +148,9 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
             "bcast"    = (flag & 0b10000000)
             "mtype"    = (flag & 0b11100000)
 
-        ( we can discard the 5 bit digit )
+        (we can discard the 5 bit digit)
 
-        after this we can index forward 28 bits ( 2 + 10 + 16 )
+        after this we can index forward 28 bits (2 + 10 + 16)
 
     */
 
@@ -161,7 +161,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
     pkt_d                  = reverse8(d_bits.bb[0][0]);
     results[results_len++] = pkt_d;
 
-    if (pkt_i != 31) { // should always be 31 ( 0b11111) in first block of packet
+    if (pkt_i != 31) { // should always be 31 (0b11111) in first block of packet
         return DECODE_ABORT_EARLY;
     }
 

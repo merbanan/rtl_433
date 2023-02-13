@@ -1557,8 +1557,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         decoder_logf(decoder, 2, __func__, "row %u bits %u, bytes %d", brow, bitbuffer->bits_per_row[brow], browlen);
 
-        if (bitbuffer->bits_per_row[brow] < 39 ||
-            bitbuffer->bits_per_row[brow] > 43 ) {
+        if (bitbuffer->bits_per_row[brow] < 39 || bitbuffer->bits_per_row[brow] > 43) {
             if (bitbuffer->bits_per_row[brow] > 16)
                 decoder_log(decoder, 2, __func__,"skipping wrong len");
             result = DECODE_ABORT_LENGTH;

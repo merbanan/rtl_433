@@ -117,7 +117,7 @@ static int schrader_EG53MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // No need to decode/extract values for simple test
     // check serial flags pressure temperature value not zero
-    if ( !b[1] && !b[2] && !b[4] && !b[5] && !b[7] && !b[8] ) {
+    if (!b[1] && !b[2] && !b[4] && !b[5] && !b[7] && !b[8]) {
         decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00");
         return DECODE_FAIL_SANITY;
     }
