@@ -102,7 +102,7 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Least significant nibble of endpoint_type is  equivalent to SCM's endpoint type field
     // id info from https://github.com/bemasher/rtlamr/wiki/Compatible-Meters
-    char *meter_type;
+    char const *meter_type;
 
     switch (b[3] & 0x0f) {
     case 4:

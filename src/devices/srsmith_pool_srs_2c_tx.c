@@ -94,7 +94,7 @@ static int srsmith_pool_srs_2c_tx_decode(r_device *decoder, bitbuffer_t *bitbuff
     uint8_t button_id = b[6];
 
     // get label for the button that was pressed
-    char *button_string;
+    char const *button_string;
 
     switch (button_id) {
     case BUTTON_ID_ONE:

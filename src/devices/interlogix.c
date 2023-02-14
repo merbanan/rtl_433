@@ -104,15 +104,15 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     unsigned int row = 0;
     char device_type_id[2];
-    char *device_type;
+    char const *device_type;
     char device_serial[7];
     char raw_message[7];
     int low_battery;
-    char *f1_latch_state;
-    char *f2_latch_state;
-    char *f3_latch_state;
-    char *f4_latch_state;
-    char *f5_latch_state;
+    char const *f1_latch_state;
+    char const *f2_latch_state;
+    char const *f3_latch_state;
+    char const *f4_latch_state;
+    char const *f5_latch_state;
 
     if (bitbuffer->num_rows != 1) {
         return DECODE_ABORT_EARLY;

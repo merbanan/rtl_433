@@ -321,7 +321,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
     //         (results[0] >> 2) & 0x03);
 
     int pkt_type = (results[0] >> 5) & 0x07;
-    char *messsage_text[8] = {
+    char const *messsage_text[8] = {
             "Direct Message",                         // 000
             "ACK of Direct Message",                  // 001
             "Group Cleanup Direct Message",           // 010
@@ -331,7 +331,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
             "Group Broadcast Message",                // 110
             "NAK of Group Cleanup Direct Message"};   // 111
 
-    char *pkt_type_str = messsage_text[pkt_type];
+    char const *pkt_type_str = messsage_text[pkt_type];
     // decoder_log_bitrow(decoder, 0, __func__, results, 8, "Flag");
     //decoder_logf(decoder, 0, __func__, "pkt_type: %02X", pkt_type);
 

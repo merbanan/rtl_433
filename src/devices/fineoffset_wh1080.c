@@ -247,7 +247,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
 
     // GETTING TIME DATA
     int signal_type       = ((br[2] & 0x0F) == 10);
-    char *signal_type_str = signal_type ? "DCF77" : "WWVB/MSF";
+    char const *signal_type_str = signal_type ? "DCF77" : "WWVB/MSF";
 
     int hours   = ((br[3] & 0x30) >> 4) * 10 + (br[3] & 0x0F);
     int minutes = ((br[4] & 0xF0) >> 4) * 10 + (br[4] & 0x0F);

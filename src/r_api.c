@@ -1094,8 +1094,8 @@ void add_influx_output(r_cfg_t *cfg, char *param)
 void add_syslog_output(r_cfg_t *cfg, char *param)
 {
     int log_level = lvlarg_param(&param, LOG_WARNING);
-    char *host = "localhost";
-    char *port = "514";
+    char const *host = "localhost";
+    char const *port = "514";
     hostport_param(param, &host, &port);
     print_logf(LOG_CRITICAL, "Syslog UDP", "Sending datagrams to %s port %s", host, port);
 
@@ -1105,8 +1105,8 @@ void add_syslog_output(r_cfg_t *cfg, char *param)
 void add_http_output(r_cfg_t *cfg, char *param)
 {
     // Note: no log_level, the HTTP-API consumes all log levels.
-    char *host = "0.0.0.0";
-    char *port = "8433";
+    char const *host = "0.0.0.0";
+    char const *port = "8433";
     hostport_param(param, &host, &port);
     print_logf(LOG_CRITICAL, "HTTP server", "Starting HTTP server at %s port %s", host, port);
 
@@ -1127,8 +1127,8 @@ void add_null_output(r_cfg_t *cfg, char *param)
 
 void add_rtltcp_output(r_cfg_t *cfg, char *param)
 {
-    char *host = "localhost";
-    char *port = "1234";
+    char const *host = "localhost";
+    char const *port = "1234";
     hostport_param(param, &host, &port);
     print_logf(LOG_CRITICAL, "rtl_tcp server", "Starting rtl_tcp server at %s port %s", host, port);
 

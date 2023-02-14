@@ -36,7 +36,7 @@ static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b;
     int id;
     int cmd;
-    char *cmd_str;
+    char const *cmd_str;
 
     if (bitbuffer->bits_per_row[0] != 25)
         return DECODE_ABORT_LENGTH;

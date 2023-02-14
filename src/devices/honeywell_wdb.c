@@ -48,7 +48,7 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *bytes;
     data_t *data;
     unsigned int device, tmp;
-    char *class, *alert;
+    char const *class, *alert;
 
     // The device transmits many rows, check for 4 matching rows.
     row = bitbuffer_find_repeated_row(bitbuffer, 4, 48);

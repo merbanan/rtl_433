@@ -144,7 +144,7 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
-    char *cmd_str = "unknown";
+    char const *cmd_str = "unknown";
     switch (msg[COMMAND_ID_OFFSET]) {
     case COMMAND_ID_STOP:
         cmd_str = "Stop"; break;
