@@ -307,7 +307,7 @@ static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
     if (ipos < num_bits - 8)
     {
       unsigned num_unparsed_bits = (bmsg->bits_per_row[row] - 8) - ipos;
-      msg->unparsed_length = (num_unparsed_bits / 8) + (num_unparsed_bits % 8) ? 1 : 0;
+      msg->unparsed_length = NUM_BYTES(num_unparsed_bits);
       if (msg->unparsed_length != 0)
           bitbuffer_extract_bytes(bmsg, row, ipos, msg->unparsed, num_unparsed_bits);
     }
