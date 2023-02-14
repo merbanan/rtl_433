@@ -57,7 +57,7 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (num_bits < 96)
             return DECODE_ABORT_EARLY;
 
-        for (unsigned i = 0; i < (num_bits + 7) / 8; ++i) {
+        for (unsigned i = 0; i < NUM_BYTES(num_bits); ++i) {
             bytes[i] <<= 1;
             bytes[i] |= (bytes[i + 1] & 0x80) >> 7;
         }

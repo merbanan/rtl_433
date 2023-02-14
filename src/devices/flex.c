@@ -42,7 +42,7 @@ static unsigned long extract_number(uint8_t *data, unsigned bit_offset, unsigned
 {
     unsigned pos = bit_offset / 8;            // the first byte we need
     unsigned shl = bit_offset - pos * 8;      // shift left we need to align
-    unsigned len = (shl + bit_count + 7) / 8; // number of bytes we need
+    unsigned len = NUM_BYTES(shl + bit_count); // number of bytes we need
     unsigned shr = 8 * len - shl - bit_count; // actual shift right
 //    fprintf(stderr, "pos: %d, shl: %d, len: %d, shr: %d\n", pos, shl, len, shr);
     unsigned long val = data[pos];
@@ -105,7 +105,7 @@ static void print_row_bytes(char *row_bytes, uint8_t *bits, int num_bits)
 {
     row_bytes[0] = '\0';
     // print byte-wide
-    for (int col = 0; col < (num_bits + 7) / 8; ++col) {
+    for (int col = 0; col < NUM_BYTES(num_bits); ++col) {
         sprintf(&row_bytes[2 * col], "%02x", bits[col]);
     }
     // remove last nibble if needed
@@ -186,7 +186,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (params->reflect) {
         // TODO: refactor to utils
         for (i = 0; i < bitbuffer->num_rows; ++i) {
-            reflect_bytes(bitbuffer->bb[i], (bitbuffer->bits_per_row[i] + 7) / 8);
+            reflect_bytes(bitbuffer->bb[i], NUM_BYTES(bitbuffer->bits_per_row[i]));
         }
     }
 
@@ -220,7 +220,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 unsigned len = bitbuffer->bits_per_row[i] - pos;
                 bitbuffer_t tmp = {0};
                 bitbuffer_extract_bytes(bitbuffer, i, pos, tmp.bb[0], len);
-                memcpy(bitbuffer->bb[i], tmp.bb[0], (len + 7) / 8);
+                memcpy(bitbuffer->bb[i], tmp.bb[0], NUM_BYTES(len));
                 bitbuffer->bits_per_row[i] = len;
             }
         }
@@ -262,7 +262,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             bitbuffer_t tmp = {0};
             bitbuffer_differential_manchester_decode(bitbuffer, i, 0, &tmp, len);
             len = tmp.bits_per_row[0];
-            memcpy(bitbuffer->bb[i], tmp.bb[0], (len + 7) / 8); // safe to write over: can only be shorter
+            memcpy(bitbuffer->bb[i], tmp.bb[0], NUM_BYTES(len)); // safe to write over: can only be shorter
             bitbuffer->bits_per_row[i] = len;
         }
     }
@@ -473,7 +473,7 @@ static unsigned parse_bits(const char *code, uint8_t *bitrow)
         fprintf(stderr, "Bad flex spec, \"match\", \"preamble\", and getter mask may have up to 1024 bits (%u found)!\n", len);
         usage();
     }
-    memcpy(bitrow, bits.bb[0], (len + 7) / 8);
+    memcpy(bitrow, bits.bb[0], NUM_BYTES(len));
     return len;
 }
 

@@ -41,7 +41,7 @@ static int ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* take the majority of all 46 bits (pattern is sent 3 times) and reverse them */
     msg = bitbuffer->bb[0];
-    for (int i = 0; i < (46 + 7) / 8; i++) {
+    for (int i = 0; i < NUM_BYTES(46); i++) {
         uint8_t a = bitrow_get_byte(msg, i * 8);
         uint8_t b = bitrow_get_byte(msg, i * 8 + 46);
         uint8_t c = bitrow_get_byte(msg, i * 8 + 46 * 2);

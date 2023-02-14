@@ -68,7 +68,7 @@ running this decoder with debug level :
 
 //#define XC0324_DEVICE_BITLEN      148
 #define XC0324_MESSAGE_BITLEN     48
-#define XC0324_MESSAGE_BYTELEN    (XC0324_MESSAGE_BITLEN + 7)/ 8
+#define XC0324_MESSAGE_BYTELEN    NUM_BYTES(XC0324_MESSAGE_BITLEN)
 //#define XC0324_DEVICE_MINREPEATS  3
 
 static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,

@@ -87,8 +87,8 @@ static void bitbuffer_set_width(bitbuffer_t *bits, uint16_t width)
     // clear bits when truncating
     if (bits->bits_per_row[bits->num_rows - 1] > width) {
         uint8_t *b = bits->bb[bits->num_rows - 1];
-        unsigned clr_from = (width + 7) / 8;
-        unsigned clr_end  = (bits->bits_per_row[bits->num_rows - 1] + 7) / 8;
+        unsigned clr_from = NUM_BYTES(width);
+        unsigned clr_end  = NUM_BYTES(bits->bits_per_row[bits->num_rows - 1]);
         memset(&b[clr_from], 0, clr_end - clr_from);
 
         // note that width became strictly smaller, that way we don't overflow
@@ -191,11 +191,11 @@ void bitbuffer_extract_bytes(bitbuffer_t *bitbuffer, unsigned row,
     if (len == 0)
         return;
     if ((pos & 7) == 0) {
-        memcpy(out, bits + (pos / 8), (len + 7) / 8);
+        memcpy(out, bits + (pos / 8), NUM_BYTES(len));
     }
     else {
         unsigned shift = 8 - (pos & 7);
-        unsigned bytes = (len + 7) >> 3;
+        unsigned bytes = NUM_BYTES(len);
         uint8_t *p = out;
         uint16_t word;
         pos = pos >> 3; // Convert to bytes
@@ -325,7 +325,7 @@ static void print_bitrow(uint8_t const *bitrow, unsigned bit_len, unsigned highe
     unsigned row_len = 0;
 
     fprintf(stderr, "{%2u} ", bit_len);
-    for (unsigned col = 0; col < (bit_len + 7) / 8; ++col) {
+    for (unsigned col = 0; col < NUM_BYTES(bit_len); ++col) {
         row_len += fprintf(stderr, "%02x ", bitrow[col]);
     }
     // Print binary values also?
@@ -354,7 +354,7 @@ static void print_bitbuffer(const bitbuffer_t *bits, int always_binary)
      */
     highest_indent = sizeof("[dd] {dd} ") - 1;
     for (row = indent_this_row = 0; row < bits->num_rows; ++row) {
-        for (col = indent_this_col = 0; col < (unsigned)(bits->bits_per_row[row] + 7) / 8; ++col) {
+        for (col = indent_this_col = 0; col < (unsigned)NUM_BYTES(bits->bits_per_row[row]); ++col) {
             indent_this_col += 2 + 1;
         }
         indent_this_row = indent_this_col;
@@ -398,7 +398,7 @@ int bitrow_snprint(uint8_t const *bitrow, unsigned bit_len, char *str, unsigned 
         str[0] = '\0';
     }
     int len = 0;
-    for (unsigned i = 0; size > (unsigned)len && i < (bit_len + 7) / 8; ++i) {
+    for (unsigned i = 0; size > (unsigned)len && i < NUM_BYTES(bit_len); ++i) {
         len += snprintf(str + len, size - len, "%02x", bitrow[i]);
     }
     return len;
@@ -474,7 +474,7 @@ int bitbuffer_compare_rows(bitbuffer_t *bits, unsigned row_a, unsigned row_b, un
         // full compare, no max_bits or rows too short
         return (bits->bits_per_row[row_a] == bits->bits_per_row[row_b]
                 && !memcmp(bits->bb[row_a], bits->bb[row_b],
-                        (bits->bits_per_row[row_a] + 7) / 8));
+                        NUM_BYTES(bits->bits_per_row[row_a])));
     }
     else {
         // prefix-only compare, both rows are at least max_bits long

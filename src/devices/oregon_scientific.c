@@ -637,7 +637,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         return DECODE_ABORT_EARLY;
 
     bitbuffer_extract_bytes(bitbuffer, 0, msg_pos, msg, msg_len);
-    reflect_nibbles(msg, (msg_len + 7) / 8);
+    reflect_nibbles(msg, NUM_BYTES(msg_len));
 
     int sensor_id   = (msg[0] << 8) | msg[1];            // not for CM sensor types
     int channel     = (msg[2] >> 4) & 0x0f;              // not for CM sensor types
