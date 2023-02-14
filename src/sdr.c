@@ -172,8 +172,8 @@ struct rtl_tcp_info {
 static int rtltcp_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
 {
     UNUSED(verbose);
-    char *host = "localhost";
-    char *port = "1234";
+    char const *host = "localhost";
+    char const *port = "1234";
     char hostport[280]; // 253 chars DNS name plus extra chars
 
     char *param = arg_param(dev_query); // strip scheme
