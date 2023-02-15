@@ -99,7 +99,7 @@ static void m_bus_manuf_decode(uint16_t m_field, char *three_letter_code)
 // Decode device type string
 static char const *m_bus_device_type_str(uint8_t devType)
 {
-    char *str = "";
+    char const *str = "";
     switch(devType) {
         case 0x00:  str = "Other";  break;
         case 0x01:  str = "Oil";  break;
@@ -180,25 +180,25 @@ typedef struct {
 static float humidity_factor[2] = { 0.1f, 1.0f };
 
 
-static char *oms_hum[4][4] = {
+static char const *oms_hum[4][4] = {
 {"humidity","average_humidity_1h","average_humidity_24h","error_04", },
 {"maximum_humidity_1h","maximum_humidity_24h","error_13","error_14",},
 {"minimum_humidity_1h","minimum_humidity_24h","error_23","error_24",},
 {"error_31","error_32","error_33","error_34",}
 };
 
-static char *oms_hum_el[4][4] = {
+static char const *oms_hum_el[4][4] = {
 {"Humidity","Average Humidity 1h","Average Humidity 24h","Error [0][4]", },
 {"Maximum Humidity 1h","Maximum Humidity 24h","Error [1][3]","Error [1][4]",},
 {"Minimum Humidity 1h","Minimum Humidity 24h","Error [2][3]","Error [2][4]",},
 {"Error 31","Error 32","Error 33","Error 34",}
 };
 
-static char *history_hours[4] = {
+static char const *history_hours[4] = {
         "1h", "24h", "err[2]", "err[3]",
 };
 
-static char *history_months[12][2] = {
+static char const *history_months[12][2] = {
         {"m1", "of month -1"},
         {"m2", "of month -2"},
         {"m3", "of month -3"},
@@ -213,7 +213,7 @@ static char *history_months[12][2] = {
         {"m12", "of month -12"},
 };
 
-static char *value_types_tab[4][2] = {
+static char const *value_types_tab[4][2] = {
         {"inst", ""},
         {"max", "Max"},
         {"min", "Min"},
@@ -249,7 +249,7 @@ enum UnitType {
     kOperTimeDays,
 };
 
-static char *unit_names[][3] = {
+static char const *unit_names[][3] = {
         /* 0 */ {"energy_wh", "Energy", "Wh"},
         /* 1 */ {"energy_j", "Energy", "J"},
         /* 2 */ {"volume", "Volume", "m3"},
@@ -421,28 +421,28 @@ static int m_bus_decode_val(const uint8_t *b, uint8_t dif_coding, int64_t *out_v
             return -1;
         case 14: // 12 digit BCD
             for (int i=5; i >= 0;--i) {
-                *out_value = (*out_value * 10 ) + (b[i] >> 4);
-                *out_value = (*out_value * 10 ) + (b[i] & 0xF);
+                *out_value = (*out_value * 10) + (b[i] >> 4);
+                *out_value = (*out_value * 10) + (b[i] & 0xF);
             }
             return 6;
         case 13: // variable len
             return -1;
         case 12: // 8 digit BCD
             for (int i=3; i >= 0;--i) {
-                *out_value = (*out_value * 10 ) + (b[i] >> 4);
-                *out_value = (*out_value * 10 ) + (b[i] & 0xF);
+                *out_value = (*out_value * 10) + (b[i] >> 4);
+                *out_value = (*out_value * 10) + (b[i] & 0xF);
             }
             return 4;
         case 11: // 6 digit BCD
             for (int i=2; i >= 0;--i) {
-                *out_value = (*out_value * 10 ) + (b[i] >> 4);
-                *out_value = (*out_value * 10 ) + (b[i] & 0xF);
+                *out_value = (*out_value * 10) + (b[i] >> 4);
+                *out_value = (*out_value * 10) + (b[i] & 0xF);
             }
             return 3;
         case 10: // 4 digit BCD
             for (int i=1; i >= 0;--i) {
-                *out_value = (*out_value * 10 ) + (b[i] >> 4);
-                *out_value = (*out_value * 10 ) + (b[i] & 0xF);
+                *out_value = (*out_value * 10) + (b[i] >> 4);
+                *out_value = (*out_value * 10) + (b[i] & 0xF);
             }
             return 2;
         case 9: // 2 digit BCD
@@ -957,7 +957,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
     m_bus_data_t    data_out    = {0};  // Data from Data Link layer
     m_bus_block1_t  block1      = {0};  // Block1 fields from Data Link layer
-    char *mode = "";
+    char const *mode = "";
 
     // Validate package length
     if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*12)) {  // Min/Max (Preamble + payload)
@@ -1165,7 +1165,7 @@ static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 // NOTE: we'd need to add "value_types_tab X unit_names X n" fields
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "mode",
         "id",

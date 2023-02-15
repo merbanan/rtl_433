@@ -126,6 +126,21 @@ static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, tls_opts_t *tls_opts,
 
     ctx->connect_opts.user_data = ctx;
     if (tls_opts && tls_opts->tls_ca_cert) {
+        print_logf(LOG_INFO, "MQTT", "mqtts (TLS) parameters are: "
+                                       "tls_cert=%s "
+                                       "tls_key=%s "
+                                       "tls_ca_cert=%s "
+                                       "tls_cipher_suites=%s "
+                                       "tls_server_name=%s "
+                                       "tls_psk_identity=%s "
+                                       "tls_psk_key=%s ",
+                tls_opts->tls_cert,
+                tls_opts->tls_key,
+                tls_opts->tls_ca_cert,
+                tls_opts->tls_cipher_suites,
+                tls_opts->tls_server_name,
+                tls_opts->tls_psk_identity,
+                tls_opts->tls_psk_key);
 #if MG_ENABLE_SSL
         ctx->connect_opts.ssl_cert          = tls_opts->tls_cert;
         ctx->connect_opts.ssl_key           = tls_opts->tls_key;
@@ -508,8 +523,8 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
         tls_opts.tls_ca_cert = "*"; // TLS is enabled but no cert verification is performed.
     }
     param      = arg_param(param); // strip scheme
-    char *host = "localhost";
-    char *port = tls_opts.tls_ca_cert ? "8883" : "1883";
+    char const *host = "localhost";
+    char const *port = tls_opts.tls_ca_cert ? "8883" : "1883";
     char *opts = hostport_param(param, &host, &port);
     print_logf(LOG_CRITICAL, "MQTT", "Publishing MQTT data to %s port %s%s", host, port, tls_opts.tls_ca_cert ? " (TLS)" : "");
 

@@ -97,7 +97,7 @@ static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
  * order for this device when using -F csv.
  *
  */
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "channel",

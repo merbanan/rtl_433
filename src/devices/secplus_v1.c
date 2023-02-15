@@ -256,7 +256,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint32_t rolling;          // max 2**32
     uint32_t rolling_temp = 0; // max 2**32
-    uint32_t fixed        = 0; // max 3^20 ( ~32 bits )
+    uint32_t fixed        = 0; // max 3^20 (~32 bits)
 
     uint8_t *res;
     res = result_1;
@@ -306,7 +306,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     char pin_s[24] = {0};
 
     int remote_id = 0;
-    char *button  = "";
+    char const *button  = "";
 
     if (id1 == 0) {
         //  pad_id = (fixed // 3**3) % (3**7)     27  3^72187
@@ -377,7 +377,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "id0",

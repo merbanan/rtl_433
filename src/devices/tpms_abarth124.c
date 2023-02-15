@@ -108,7 +108,7 @@ static int tpms_abarth124_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "type",
         "id",

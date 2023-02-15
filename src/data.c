@@ -91,7 +91,7 @@ static data_meta_type_t dmt[DATA_COUNT] = {
       .value_release            = (value_release_fn) data_array_free },
 };
 
-static bool import_values(void *dst, void *src, int num_values, data_type_t type)
+static bool import_values(void *dst, void const *src, int num_values, data_type_t type)
 {
     int element_size = dmt[type].array_element_size;
     array_elementwise_import_fn import = dmt[type].array_elementwise_import;
@@ -117,7 +117,7 @@ static bool import_values(void *dst, void *src, int num_values, data_type_t type
 
 /* data */
 
-R_API data_array_t *data_array(int num_values, data_type_t type, void *values)
+R_API data_array_t *data_array(int num_values, data_type_t type, void const *values)
 {
     if (num_values < 0) {
       return NULL;

@@ -104,15 +104,15 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     unsigned int row = 0;
     char device_type_id[2];
-    char *device_type;
+    char const *device_type;
     char device_serial[7];
     char raw_message[7];
     int low_battery;
-    char *f1_latch_state;
-    char *f2_latch_state;
-    char *f3_latch_state;
-    char *f4_latch_state;
-    char *f5_latch_state;
+    char const *f1_latch_state;
+    char const *f2_latch_state;
+    char const *f3_latch_state;
+    char const *f4_latch_state;
+    char const *f5_latch_state;
 
     if (bitbuffer->num_rows != 1) {
         return DECODE_ABORT_EARLY;
@@ -165,7 +165,6 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     sprintf(device_type_id, "%01x", (reverse8(message[2]) >> 4));
 
     switch ((reverse8(message[2]) >> 4)) {
-    case 0x2: device_type = "smoke"; break; //switch2 changes from closed to open on trigger and switch2 & switch4 change from closed to open on test
     case 0xa: device_type = "contact"; break;
     case 0xf: device_type = "keyfob"; break;
     case 0x4: device_type = "motion"; break;
@@ -187,14 +186,6 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         f3_latch_state = ((message[3] & 0xe) == 0xc) ? "CLOSED" : "OPEN";
         f4_latch_state = ((message[3] & 0xe) == 0x2) ? "CLOSED" : "OPEN";
         f5_latch_state = ((message[3] & 0xe) == 0xa) ? "CLOSED" : "OPEN";
-    // PET Immune SAW PIR motion sensor logic.
-    } else if ((reverse8(message[2]) >> 4) == 0x4) {
-        low_battery    = (message[3] & 0x10) ? 1 : 0;
-        f1_latch_state = ((message[3] & 0x04) | ((message[3] & 0x08) == 0x8)) ? "OPEN" : "CLOSED";
-        f2_latch_state = (message[3] & 0x01) ? "OPEN" : "CLOSED";
-        f3_latch_state = (message[4] & 0x40) ? "OPEN" : "CLOSED";
-        f4_latch_state = (message[4] & 0x10) ? "OPEN" : "CLOSED";
-        f5_latch_state = (message[4] & 0x04) ? "OPEN" : "CLOSED";
     } else {
         low_battery    = (message[3] & 0x10) ? 1 : 0;
         f1_latch_state = (message[3] & 0x04) ? "OPEN" : "CLOSED";
@@ -223,7 +214,7 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "subtype",
         "id",
