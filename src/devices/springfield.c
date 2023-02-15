@@ -89,7 +89,7 @@ static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return ret;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "channel",

@@ -121,7 +121,7 @@ static int yale_hsa_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 0;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "stype",

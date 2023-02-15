@@ -74,7 +74,7 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp1_c = temp1 - 532.0f;
     float temp2_c = temp2 - 532.0f;
 
-    char *status = "unknown";
+    char const *status = "unknown";
     if (flags == 2)
         status = "default";
     else if (flags == 7)
@@ -103,7 +103,7 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "status",

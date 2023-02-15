@@ -125,7 +125,7 @@ static int oil_smart_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "depth_cm",

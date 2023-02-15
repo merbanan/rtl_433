@@ -128,7 +128,7 @@ R_API data_t *data_prepend(data_t *first, const char *key, const char *pretty_ke
     @return The constructed data array object, typically placed inside a data_t or NULL
             if there was a memory allocation error.
 */
-R_API data_array_t *data_array(int num_values, data_type_t type, void *ptr);
+R_API data_array_t *data_array(int num_values, data_type_t type, void const *ptr);
 
 /** Releases a data array. */
 R_API void data_array_free(data_array_t *array);

@@ -67,7 +67,7 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bit
      * so we can use it for validation of the message:
      * ONLY ONE KEY AT A TIME IS ACCEPTED.
      */
-    char *key = NULL;
+    char const *key = NULL;
     if (control_key == 0x10)
         key = "A";
     else if (control_key == 0x08)
@@ -113,7 +113,7 @@ static int brennenstuhl_rcs_2044_callback(r_device *decoder, bitbuffer_t *bitbuf
     return counter;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "key",
