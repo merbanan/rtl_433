@@ -189,6 +189,7 @@ add_library(r_433 STATIC
     devices/radiohead_ask.c
     devices/rainpoint.c
     devices/regency_fan.c
+    devices/revolt_nc5462.c
     devices/rftech.c
     devices/rojaflex.c
     devices/rubicson.c
