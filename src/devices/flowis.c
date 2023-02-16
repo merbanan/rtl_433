@@ -21,9 +21,9 @@ syncword d391 d391. This is a popular syncword used by the CC110x transceiver
 family.
 
 
-Message layout type 1 (15 bytes of length), 4-bit nibble:
+Message layout type 1 (0x15 bytes of length), 4-bit nibble:
 
-               0  1  2 3 4 5  6  7 8 9 A  B  C  ....... 15
+               0  1  2 3 4 5  6  7 8 9 A  B  C  ....... 0x15
     SSSS SSSS LL YY IIIIIIII ?? TTTTTTTT AA BB ???????? CC
 
 - S 32b: 2 x 16 bit sync words d391 d391 (32 bits)
@@ -112,8 +112,8 @@ static int flowis_decode(r_device *decoder, bitbuffer_t *bitbuffer)
              "type",          "Type",      DATA_INT,    type,
              "volume_m3",     "Volume",    DATA_FORMAT, "%.3f m3", DATA_DOUBLE, volume/1000.0,
              "device_time",   "Device time", DATA_STRING, fts_str,
-             "alarm",         "Alarm",     DATA_INT,    b[11],
-             "backflow",      "Backflow",  DATA_INT,    b[12],
+             "alarm",         "Alarm",     DATA_INT,    b[15],
+             "backflow",      "Backflow",  DATA_INT,    b[14],
              "mic",           "Integrity", DATA_STRING, "CRC",
              NULL);
     /* clang-format on */
