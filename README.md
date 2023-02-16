@@ -251,7 +251,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [165]  TFA Dostmann 30.3221.02 T/H Outdoor Sensor
     [166]  LaCrosse Technology View LTV-WSDTH01 Breeze Pro Wind Sensor
     [167]  Somfy RTS
-    [168]  Schrader TPMS SMD3MA4 (Subaru)
+    [168]  Schrader TPMS SMD3MA4 (Subaru) 3039 (Infiniti, Nissan, Renault)
     [169]* Nice Flor-s remote control for gates
     [170]  LaCrosse Technology View LTV-WR1 Multi Sensor
     [171]  LaCrosse Technology View LTV-TH Thermo/Hygro Sensor
@@ -322,7 +322,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [236]  Gasmate BA1008 meat thermometer
     [237]  Flowis flow meters
     [238]  Wireless M-Bus, Mode T, 32.768kbps (-f 868.3M -s 1000k)
-    [239]  Revolt NC-5642
+    [239]  Revolt NC-5642 Energy Meter
 
 * Disabled by default, use -R n or a conf file to enable
 

@@ -1,5 +1,5 @@
 /** @file
-    Revolt NC5462 Energy Meter.
+    Revolt NC-5462 Energy Meter.
 
     Copyright (C) 2023 Nicolai Hess
 
@@ -9,22 +9,27 @@
     (at your option) any later version.
 
 */
+
+#include "decoder.h"
+
 /**
+Revolt NC-5462 Energy Meter.
 
-Revolt energy meter (NC5462)
-Sends on 433.92 MHz.
-
-Pulse Width Modulation with startbit/delimiter
+- Sends on 433.92 MHz.
+- Pulse Width Modulation with startbit/delimiter
 
 Two Modes:
-Normal data mode:
-105 pulses
-first pulse sync
-104 data pulse (11 times 8 bit data + 8 bit checksum + 8 bit unknown)
-11 byte data:
+
+## Normal data mode:
+
+- 105 pulses
+- first pulse sync
+- 104 data pulse (11 times 8 bit data + 8 bit checksum + 8 bit unknown)
+- 11 byte data:
 
 | data         | byte      |
 |--------------|-----------|
+| detect flag  | first bit |
 | id           | 0,1       |
 | voltage      | 2         |
 | current      | 3,4       |
@@ -32,45 +37,22 @@ first pulse sync
 | power        | 6,7       |
 | power factor | 8         |
 | energy       | 9,10      |
-| detect flag  | first bit |
 
 
-"Register" mode (after pushing button on energy meter):
+## "Register" mode (after pushing button on energy meter):
 
-same 104 data pulses as in data mode, but first bit high and multiple rows of (the same) data.
+Same 104 data pulses as in data mode, but first bit high and multiple rows of (the same) data.
 
 Pulses
- - sync ~ 10 ms high / 280 us low
- - 1-bit ~ 320 us high / 160 us low
- - 0-bit ~ 180 us high / 160 us low
-message end 180 us high / 100 ms low
-
-rtl_433 demodulation output
-(normal data)
-short_width: 200, long_width: 330, reset_limit: 240, sync_width: 10044
-(detect flag)
-short_width: 200, long_width: 330, reset_limit: 240, sync_width: 10044
+- sync ~ 10 ms high / 280 us low
+- 1-bit ~ 320 us high / 160 us low
+- 0-bit ~ 180 us high / 160 us low
+- message end 180 us high / 100 ms low
 
 */
 
-#include "decoder.h"
-
 static int revolt_nc5462_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t *bb = bitbuffer->bb[0];
-    data_t *data;
-    uint16_t id;
-    uint8_t voltage;
-    uint16_t current;
-    uint8_t frequency;
-    uint16_t power;
-    uint8_t pf;
-    uint16_t energy;
-    uint8_t detect_flag;
-    uint8_t checksum;
-    uint8_t byte12;
-    int index;
-
     bitbuffer_invert(bitbuffer);
 
     if (bitbuffer->num_rows != 1) {
@@ -79,48 +61,44 @@ static int revolt_nc5462_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[0] != 104) {
         return DECODE_ABORT_EARLY;
     }
-    checksum = 0;
-    byte12 = bb[11];
-    for (index=0; index<11;++index) {
-        checksum+=bb[index];
-    }
-    if (checksum != byte12) {
+
+    uint8_t *b = bitbuffer->bb[0];
+
+    int sum = add_bytes(b, 11);
+    int chk = b[11];
+    if ((sum & 0xff) != chk) {
         return DECODE_FAIL_MIC;
     }
-    id = (bb[0]<<8) | (bb[1]);
-    if ((id & 0x8000) == 0x8000) {
-        detect_flag = 1;
-        id &= ~0x8000;
-    } 
-    else {
-        detect_flag = 0;
-    }
 
-    voltage = bb[2];
-    current = bb[4] | bb[3]<<8;
-    frequency = bb[5];
-    power = bb[7] | bb[6]<<8;
-    pf = bb[8];
-    energy = bb[10] | bb[9]<<8;
+    int button    = b[0] >> 7;
+    int id        = ((b[0] & 0x7f) << 8) | (b[1]);
+    int voltage   = b[2];
+    int current   = b[4] | b[3] << 8;
+    int frequency = b[5];
+    int power     = b[7] | b[6] << 8;
+    int pf        = b[8];
+    int energy    = b[10] | b[9] << 8;
+
     /* clang-format off */
-    data = data_make(
-            "model",           "",             DATA_STRING, "NC5462",
-            "id",              "House Code",   DATA_INT,    id,
-            "voltage_V",       "Voltage",      DATA_FORMAT, "%d V",      DATA_INT, voltage,
-            "current_A",       "Current",      DATA_FORMAT, "%.02f A",   DATA_DOUBLE, current * 0.01,
-            "frequency_Hz",    "Frequency",    DATA_FORMAT, "%d Hz",     DATA_INT, frequency,
-            "power_W",         "Power",        DATA_FORMAT, "%.02f W",   DATA_DOUBLE, power * 0.1,
-            "power_factor_VA", "Power factor", DATA_FORMAT, "%.02f VA",  DATA_DOUBLE, pf * 0.01,
-            "energy_kWh",      "Energy",       DATA_FORMAT, "%.02f kWh", DATA_DOUBLE, energy * 0.01,
-            "detect_flag",     "Detect Flag",  DATA_STRING, detect_flag ? "Yes" : "No",
-            "mic",             "Integrity",    DATA_STRING, "CHECKSUM",
+    data_t *data = data_make(
+            "model",            "",             DATA_STRING, "Revolt-NC5462",
+            "id",               "House Code",   DATA_INT,    id,
+            "voltage_V",        "Voltage",      DATA_FORMAT, "%d V",        DATA_INT,    voltage,
+            "current_A",        "Current",      DATA_FORMAT, "%.2f A",      DATA_DOUBLE, current * 0.01,
+            "frequency_Hz",     "Frequency",    DATA_FORMAT, "%d Hz",       DATA_INT,    frequency,
+            "power_W",          "Power",        DATA_FORMAT, "%.2f W",      DATA_DOUBLE, power * 0.1,
+            "power_factor_VA",  "Power factor", DATA_FORMAT, "%.2f VA",     DATA_DOUBLE, pf * 0.01,
+            "energy_kWh",       "Energy",       DATA_FORMAT, "%.2f kWh",    DATA_DOUBLE, energy * 0.01,
+            "button",           "Button",       DATA_INT, button,
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
+
     decoder_output_data(decoder, data);
     return 1;
 }
 
-static char* output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "voltage_V",
@@ -129,19 +107,18 @@ static char* output_fields[] = {
         "power_W",
         "power_factor_VA",
         "energy_kWh",
-        "detect_flag",
+        "button",
         "mic",
-        NULL
+        NULL,
 };
 
-
 r_device const revolt_nc5462 = {
-        .name           = "Revolt NC-5642",
-        .modulation     = OOK_PULSE_PWM,
-        .short_width    = 200,
-        .long_width     = 320,
-        .sync_width     = 10024,
-        .reset_limit    = 272,
-        .decode_fn      = &revolt_nc5462_decode,
-        .fields         = output_fields,
+        .name        = "Revolt NC-5642 Energy Meter",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 200,
+        .long_width  = 320,
+        .sync_width  = 10024,
+        .reset_limit = 272,
+        .decode_fn   = &revolt_nc5462_decode,
+        .fields      = output_fields,
 };
