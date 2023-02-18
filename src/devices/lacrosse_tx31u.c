@@ -216,7 +216,7 @@ static char const *output_fields[] = {
 };
 
 // Receiver for the Lacrosse TX31U-IT
-r_device lacrosse_tx31u = {
+r_device const lacrosse_tx31u = {
         .name        = "LaCrosse TX31U-IT, The Weather Channel WS-1910TWC-IT",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 116,
