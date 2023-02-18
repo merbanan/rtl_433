@@ -22,8 +22,8 @@ Message is 44 bits, 11 x 4 bit nybbles:
     [00] [cnt = 10] [type] [addr] [addr + parity] [v1] [v2] [v3] [iv1] [iv2] [check]
 
 Notes:
-- Zero Pulses are longer (1,400 uS High, 1,000 uS Low) = 2,400 uS
-- One Pulses are shorter (  550 uS High, 1,000 uS Low) = 1,600 uS
+- Zero Pulses are longer (1400 uS High, 1000 uS Low) = 2400 uS
+- One Pulses are shorter (550 uS High, 1000 uS Low) = 1600 uS
 - Sensor id changes when the battery is changed
 - Primary Value are BCD with one decimal place: vvv = 12.3
 - Secondary value is integer only intval = 12, seems to be a repeat of primary
@@ -92,9 +92,8 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 parity += bit;
             }
 
-            //decoder_logf(decoder, 0, __func__, "recv: [%d/%d] %d -> msg [%d/%d] %02x, Parity: %d %s", rbyte_no, rbit_no,
-            //        bit, mnybble_no, mbit_no, msg_nybbles[mnybble_no], parity,
-            //        ( mbit_no == 0 ) ? "\n" : "" );
+            //decoder_logf(decoder, 0, __func__, "recv: [%d/%d] %d -> msg [%d/%d] %02x, Parity: %d",
+            //        rbyte_no, rbit_no, bit, mnybble_no, mbit_no, msg_nybbles[mnybble_no], parity);
         }
 
         uint8_t parity_bit = msg_nybbles[4] & 0x01;
@@ -175,7 +174,7 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return result;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "temperature_C",

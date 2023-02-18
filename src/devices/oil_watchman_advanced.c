@@ -83,7 +83,7 @@ static int oil_watchman_advanced_decode(r_device *decoder, bitbuffer_t *bitbuffe
     return events;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "temperature_C",

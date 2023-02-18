@@ -322,9 +322,9 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Validate Checksum
     unsigned checksum_1;
     unsigned checksum_2;
-    checksum_1 = ( (dtv_buf[0] >> 4) + (dtv_buf[0] & 0x0F) + (dtv_buf[1] >> 4) + (dtv_buf[1] & 0x0F) +
-                   (dtv_buf[2] >> 4) + (dtv_buf[2] & 0x0F) + (dtv_buf[3] >> 4) + (dtv_buf[3] & 0x0F) +
-                   (dtv_buf[4] >> 4) ) & 0x0F;
+    checksum_1 = ((dtv_buf[0] >> 4) + (dtv_buf[0] & 0x0F) + (dtv_buf[1] >> 4) + (dtv_buf[1] & 0x0F) +
+            (dtv_buf[2] >> 4) + (dtv_buf[2] & 0x0F) + (dtv_buf[3] >> 4) + (dtv_buf[3] & 0x0F) +
+            (dtv_buf[4] >> 4)) & 0x0F;
     checksum_2 = dtv_buf[4] & 0x0F;
     if (checksum_1 != checksum_2) {
         decoder_logf(decoder, 2, __func__, "Checksum failed: 0x%01X should match 0x%01X", checksum_1, checksum_2);
@@ -360,7 +360,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "button_id",

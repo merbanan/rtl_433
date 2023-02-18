@@ -523,8 +523,8 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
         tls_opts.tls_ca_cert = "*"; // TLS is enabled but no cert verification is performed.
     }
     param      = arg_param(param); // strip scheme
-    char *host = "localhost";
-    char *port = tls_opts.tls_ca_cert ? "8883" : "1883";
+    char const *host = "localhost";
+    char const *port = tls_opts.tls_ca_cert ? "8883" : "1883";
     char *opts = hostport_param(param, &host, &port);
     print_logf(LOG_CRITICAL, "MQTT", "Publishing MQTT data to %s port %s%s", host, port, tls_opts.tls_ca_cert ? " (TLS)" : "");
 

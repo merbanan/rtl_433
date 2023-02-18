@@ -116,7 +116,7 @@ static int tfa_14_1504_v2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "battery_ok",
         "probe_fail",

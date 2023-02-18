@@ -246,6 +246,7 @@
     DECL(gasmate_ba1008) \
     DECL(flowis) \
     DECL(m_bus_mode_c_t_downlink) \
+    DECL(revolt_nc5462) \
 
     /* Add new decoders here. */
 

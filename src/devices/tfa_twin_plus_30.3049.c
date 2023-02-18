@@ -34,7 +34,7 @@ Protocol as reverse engineered by https://github.com/iotzo
 
     [04] {36} e4 4b 70 73 00 : 111001000100 101101110 000 0111001 10000 ---> temp/hum:23.7/50
     temp num-->13-21bit(9bits) in reverse order in this case "011101101"=237
-    positive temps ( with 000 in bits 22-24) : temp=num/10 (in this case 23.7 C)
+    positive temps (with 000 in bits 22-24) : temp=num/10 (in this case 23.7 C)
     negative temps (with 111 in bits 22-24) : temp=(512-num)/10
     negative temps example:
     [03] {36} e4 4c 1f 73 f0 : 111001000100 110000011 111 0111001 11111 temp: -12.4
@@ -89,7 +89,7 @@ static int tfa_twin_plus_303049_callback(r_device *decoder, bitbuffer_t *bitbuff
     int battery_low   = b[1] >> 7;
     int channel       = (b[0]>>2) & 3;
 
-    float tempC = (negative_sign ? -( (1<<9) - temp ) : temp ) * 0.1F;
+    float tempC = (negative_sign ? -((1 << 9) - temp) : temp) * 0.1F;
 
     /* clang-format off */
     data = data_make(
@@ -107,7 +107,7 @@ static int tfa_twin_plus_303049_callback(r_device *decoder, bitbuffer_t *bitbuff
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "channel",

@@ -197,7 +197,7 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Strip off the upper nibble
     event &= 0x0FFF;
 
-    char *event_str;
+    char const *event_str;
     // Figure out what event was triggered
     if (event == 0xafa) {
         event_str = "Button Press";
@@ -238,7 +238,7 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -348,7 +348,7 @@ static int govee_h5054_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_logf(decoder, 1, __func__, "event_data=%02x", event_data);
     decoder_logf(decoder, 1, __func__, "crc_sum=%04x", crc_sum);
 
-    char *event_str;
+    char const *event_str;
     int leak_num = -1;
     int battery  = -1;
     switch (event) {

@@ -60,9 +60,9 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     uint8_t msg[19];
 
-    if ( (bitbuffer->num_rows != 1)
-         || (bitbuffer->bits_per_row[0] < 187)
-          /*|| (bitbuffer->bits_per_row[0] > 14563)*/ ) {
+    if ((bitbuffer->num_rows != 1)
+            || (bitbuffer->bits_per_row[0] < 187)
+            /*|| (bitbuffer->bits_per_row[0] > 14563)*/) {
         decoder_logf(decoder, 2, __func__, "bit_per_row %u out of range", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH; // Unrecognized data
     }
@@ -128,7 +128,7 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "battery",

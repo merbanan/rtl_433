@@ -20,8 +20,8 @@ bytes:
 - Byte 9: sample frequency (15 seconds)
 - Byte 10-11: bytes 0-9 crc16 xmodem XOR with FF
 
-if pulse count <3 then energy =(( pulsecount/impulse-perkwh) * (3600/seconds))
-else  energy= ((pulsecount/n_imp) * (3600/seconds))
+    if pulse count <3 then energy = ((pulsecount/impulse-perkwh) * (3600/seconds))
+    else energy = ((pulsecount/n_imp) * (3600/seconds))
 
 Transmitter can operate in 3 modes (signaled in bytes[3]):
 - red led: information is sent every 30s
@@ -124,7 +124,7 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "pulses",

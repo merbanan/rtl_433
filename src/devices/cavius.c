@@ -81,7 +81,7 @@ static int cavius_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int batt_low       = (b[4] & cavius_battlow) != 0;
     int message        = (b[4] & ~cavius_battlow); // exclude batt_low bit
 
-    char *text = batt_low ? "Battery low" : "Unknown";
+    char const *text = batt_low ? "Battery low" : "Unknown";
     switch (message) {
     case cavius_alarm:
         text = "Fire alarm";
@@ -118,7 +118,7 @@ static int cavius_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "battery_ok",

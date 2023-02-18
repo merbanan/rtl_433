@@ -117,7 +117,7 @@ static int schrader_EG53MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // No need to decode/extract values for simple test
     // check serial flags pressure temperature value not zero
-    if ( !b[1] && !b[2] && !b[4] && !b[5] && !b[7] && !b[8] ) {
+    if (!b[1] && !b[2] && !b[4] && !b[5] && !b[7] && !b[8]) {
         decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00");
         return DECODE_FAIL_SANITY;
     }
@@ -283,7 +283,7 @@ static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "type",
         "id",
@@ -294,7 +294,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-static char *output_fields_EG53MA4[] = {
+static char const *output_fields_EG53MA4[] = {
         "model",
         "type",
         "id",
@@ -305,7 +305,7 @@ static char *output_fields_EG53MA4[] = {
         NULL,
 };
 
-static char *output_fields_SMD3MA4[] = {
+static char const *output_fields_SMD3MA4[] = {
         "model",
         "type",
         "id",

@@ -118,7 +118,7 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // Decode data
         unsigned id = (bytes[1] << 8) | bytes[2];
 
-        char *str_sw;
+        char const *str_sw;
         switch (bytes[3] & 0x0F) {
         case 2: str_sw = "DAY"; break;
         case 4: str_sw = "TIMER"; break;
@@ -147,7 +147,7 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return DECODE_ABORT_LENGTH;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "temperature_C",
