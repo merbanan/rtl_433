@@ -61,14 +61,14 @@ static int hondaremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 0;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "code",
         NULL,
 };
 
-r_device hondaremote = {
+r_device const hondaremote = {
         .name        = "Honda Car Key",
         .modulation  = FSK_PULSE_PWM,
         .short_width = 250,

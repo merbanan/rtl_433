@@ -129,8 +129,11 @@ RevSum input for parity (first 5 bytes, and the parity extracted from the last b
 
 #include "decoder.h"
 
-#define GOVEE_WATER     5054
-#define GOVEE_CONTACT   5023
+#define GOVEE_WATER         5054
+#define GOVEE_CONTACT       5023
+
+#define GOVEE_H5054_BYTELEN 6
+#define GOVEE_H5054_BITLEN  48
 
 static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -194,7 +197,7 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Strip off the upper nibble
     event &= 0x0FFF;
 
-    char *event_str;
+    char const *event_str;
     // Figure out what event was triggered
     if (event == 0xafa) {
         event_str = "Button Press";
@@ -235,7 +238,7 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -246,7 +249,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device govee = {
+r_device const govee = {
         .name        = "Govee Water Leak Detector H5054, Door Contact Sensor B5023",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 440,  // Threshold between short and long pulse [us]
@@ -254,5 +257,145 @@ r_device govee = {
         .gap_limit   = 900,  // Maximum gap size before new row of bits [us]
         .reset_limit = 9000, // Maximum gap size before End Of Message [us]
         .decode_fn   = &govee_decode,
+        .fields      = output_fields,
+};
+
+/**
+Govee Water Leak Detector H5054
+
+This is an updated decoder for devices with board versions dated circa 2021 as originally
+reported in issue #2265.
+
+Data layout:
+
+    II II XE DD CC CC
+
+- I: 16 bit ID, does not change with battery change
+- X: 4 bit, always 0x3 for the sensors evaluated
+- E: 4 bit event type
+- D: 8 bit event data
+- C: CRC-16/AUG-CCITT, poly=0x1021, init=0x1d0f
+
+
+Event Information:
+
+- 0x0 : Button Press
+  - The event data (DD) is always 0x54 for the sensors evaluated. Unknown meaning.
+- 0x1 : Battery Report
+  - The event data (DD) reported for new batteries = 0x64 (decimal 100). When inserting
+    older batteries, this value decreased. Looking at prior versions of the device,
+    this appears to be a battery level percentage.
+- 0x2 = Water Leak
+  - The event data (DD) reported appears to be an incrementing counter for the event
+    number. This value is reset to 00 when new batteries are inserted.
+
+    When the first leak occurs, E=2 D=00. This value is transmitted once very 5 seconds
+    until the leak is cleared (sensor dried off). The next leak events will be:
+
+    E=2, D=01
+    E=2, D=02
+    E=2, D=03
+    etc...
+
+CRC Information:
+
+The CRC was determined by using the tool CRC RevEng: https://reveng.sourceforge.io/:
+
+    ./reveng -w16 -s aaaaaaaaaaaa bbbbbbbbbbbb etc...
+
+where aaaaaaaaaaaa, bbbbbbbbbbbb, etc... were the unique codes collected from the
+device.
+
+*/
+
+static int govee_h5054_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    if (bitbuffer->num_rows < 3) {
+        return DECODE_ABORT_EARLY;
+    }
+
+    int r = bitbuffer_find_repeated_row(bitbuffer, 3, GOVEE_H5054_BITLEN);
+    if (r < 0) {
+        return DECODE_ABORT_EARLY;
+    }
+
+    if (bitbuffer->bits_per_row[r] > GOVEE_H5054_BITLEN) {
+        return DECODE_ABORT_LENGTH;
+    }
+
+    bitbuffer_invert(bitbuffer);
+
+    uint8_t *b = bitbuffer->bb[r];
+
+    char code_str[13];
+    sprintf(code_str, "%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5]);
+
+    uint16_t chk = crc16(b, 6, 0x1021, 0x1d0f);
+    if (chk != 0) {
+        return DECODE_FAIL_MIC;
+    }
+
+    const uint16_t id        = b[0] << 8 | b[1];
+    const uint8_t unk16      = (b[2] & 0xf0) >> 4;
+    const uint8_t event      = b[2] & 0xf;
+    const uint8_t event_data = b[3];
+    const uint16_t crc_sum   = b[4] << 8 | b[5];
+
+    decoder_logf(decoder, 1, __func__, "Original Bytes: %02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5]);
+    decoder_logf(decoder, 1, __func__, "id=%04x", id);
+    decoder_logf(decoder, 1, __func__, "unk16=%x", unk16);
+    decoder_logf(decoder, 1, __func__, "event=%x", event);
+    decoder_logf(decoder, 1, __func__, "event_data=%02x", event_data);
+    decoder_logf(decoder, 1, __func__, "crc_sum=%04x", crc_sum);
+
+    char const *event_str;
+    int leak_num = -1;
+    int battery  = -1;
+    switch (event) {
+    case 0x0:
+        event_str = "Button Press";
+        break;
+    case 0x1:
+        event_str = "Battery Report";
+        battery   = event_data;
+        break;
+    case 0x2:
+        event_str = "Water Leak";
+        leak_num  = event_data;
+        break;
+    default:
+        event_str = "Unknown";
+        break;
+    }
+
+    float battery_level = battery * 0.01f;
+    int battery_mv      = 1800 + 12 * battery;
+
+    /* clang-format off */
+    data_t *data = data_make(
+            "model",        "",                 DATA_STRING, "Govee-Water",
+            "id"   ,        "",                 DATA_INT,    id,
+            "battery_ok",   "Battery level",    DATA_COND,   battery >= 0, DATA_DOUBLE, battery_level,
+            "battery_mV",   "Battery",          DATA_COND,   battery >= 0, DATA_FORMAT, "%d mV", DATA_INT, battery_mv,
+            "event",        "",                 DATA_STRING, event_str,
+            "leak_num",     "Leak Num",         DATA_COND,   leak_num >= 0, DATA_INT, leak_num,
+            "code",         "Raw Code",         DATA_STRING, code_str,
+            "mic",          "Integrity",        DATA_STRING, "CRC",
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+
+    return 1;
+}
+
+r_device const govee_h5054 = {
+        .name        = "Govee Water Leak Detector H5054",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 440,  // Threshold between short and long pulse [us]
+        .long_width  = 940,  // Maximum gap size before new row of bits [us]
+        .gap_limit   = 900,  // Maximum gap size before new row of bits [us]
+        .reset_limit = 9000, // Maximum gap size before End Of Message [us]
+        .decode_fn   = &govee_h5054_decode,
         .fields      = output_fields,
 };

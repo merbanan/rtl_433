@@ -356,7 +356,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return events;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "channel",
@@ -374,7 +374,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ambientweather_wh31e = {
+r_device const ambientweather_wh31e = {
         .name        = "Ambient Weather WH31E Thermo-Hygrometer Sensor, EcoWitt WH40 rain gauge",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 56,

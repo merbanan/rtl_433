@@ -49,7 +49,6 @@ add_library(r_433 STATIC
     devices/acurite_01185m.c
     devices/akhan_100F14.c
     devices/alecto.c
-    devices/altronics_x7064.c
     devices/ambient_weather.c
     devices/ambientweather_tx8300.c
     devices/ambientweather_wh31e.c
@@ -74,6 +73,7 @@ add_library(r_433 STATIC
     devices/calibeur.c
     devices/cardin.c
     devices/cavius.c
+    devices/ced7000.c
     devices/chuango.c
     devices/cmr113.c
     devices/companion_wtr001.c
@@ -91,6 +91,7 @@ add_library(r_433 STATIC
     devices/efth800.c
     devices/elro_db286a.c
     devices/elv.c
+    devices/emax.c
     devices/emontx.c
     devices/emos_e6016.c
     devices/emos_e6016_rain.c
@@ -109,14 +110,17 @@ add_library(r_433 STATIC
     devices/fineoffset_wn34.c
     devices/fineoffset_ws80.c
     devices/flex.c
+    devices/flowis.c
     devices/fordremote.c
     devices/fs20.c
     devices/ft004b.c
     devices/funkbus.c
+    devices/gasmate_ba1008.c
     devices/ge_coloreffects.c
     devices/generic_motion.c
     devices/generic_remote.c
     devices/generic_temperature_sensor.c
+    devices/geo_minim.c
     devices/govee.c
     devices/gt_tmbbq05.c
     devices/gt_wt_02.c
@@ -162,14 +166,17 @@ add_library(r_433 STATIC
     devices/mebus.c
     devices/megacode.c
     devices/missil_ml0757.c
+    devices/neptune_r900.c
     devices/new_template.c
     devices/newkaku.c
     devices/nexa.c
     devices/nexus.c
     devices/nice_flor_s.c
     devices/norgo.c
+    devices/oil_smart.c
     devices/oil_standard.c
     devices/oil_watchman.c
+    devices/oil_watchman_advanced.c
     devices/opus_xt300.c
     devices/oregon_scientific.c
     devices/oregon_scientific_sl109h.c
@@ -183,6 +190,7 @@ add_library(r_433 STATIC
     devices/radiohead_ask.c
     devices/rainpoint.c
     devices/regency_fan.c
+    devices/revolt_nc5462.c
     devices/rftech.c
     devices/rojaflex.c
     devices/rubicson.c
@@ -202,8 +210,10 @@ add_library(r_433 STATIC
     devices/somfy_iohc.c
     devices/somfy_rts.c
     devices/springfield.c
+    devices/srsmith_pool_srs_2c_tx.c
     devices/steelmate.c
     devices/telldus_ft0385r.c
+    devices/tfa_14_1504_v2.c
     devices/tfa_30_3196.c
     devices/tfa_30_3221.c
     devices/tfa_drop_30.3233.c
@@ -221,17 +231,21 @@ add_library(r_433 STATIC
     devices/tpms_hyundai_vdo.c
     devices/tpms_jansite.c
     devices/tpms_jansite_solar.c
+    devices/tpms_kia.c
     devices/tpms_pmv107j.c
     devices/tpms_porsche.c
     devices/tpms_renault.c
     devices/tpms_renault_0435r.c
     devices/tpms_toyota.c
     devices/tpms_truck.c
+    devices/tpms_tyreguard400.c
     devices/ts_ft002.c
     devices/ttx201.c
     devices/vaillant_vrt340f.c
+    devices/vauno_en8822c.c
     devices/visonic_powercode.c
     devices/waveman.c
+    devices/wec2103.c
     devices/wg_pb12v1.c
     devices/ws2032.c
     devices/wssensor.c

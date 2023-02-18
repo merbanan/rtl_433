@@ -172,8 +172,8 @@ struct rtl_tcp_info {
 static int rtltcp_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
 {
     UNUSED(verbose);
-    char *host = "localhost";
-    char *port = "1234";
+    char const *host = "localhost";
+    char const *port = "1234";
     char hostport[280]; // 253 chars DNS name plus extra chars
 
     char *param = arg_param(dev_query); // strip scheme
@@ -636,9 +636,9 @@ static int soapysdr_offset_tuning(SoapySDRDevice *dev)
 
     if (strcmp(set_value, "true") != 0) {
         /* TODO: detection of failure modes
-        if ( r == -2 )
+        if (r == -2)
             print_log(LOG_WARNING, __func__, "Failed to set offset tuning: tuner doesn't support offset tuning!");
-        else if ( r == -3 )
+        else if (r == -3)
             print_log(LOG_WARNING, __func__, "Failed to set offset tuning: direct sampling not combinable with offset tuning!");
         else
         */
