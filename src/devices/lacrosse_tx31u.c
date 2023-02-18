@@ -134,10 +134,10 @@ static int lacrosse_tx31u_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     // what we know from the header
     data_t *data = data_make(
-	    "model",            "",             DATA_STRING, "LaCrosse-TX31U-IT",
-	    "id",               "",             DATA_INT,    sensor_id,
-	    "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-	    NULL);
+            "model",            "",             DATA_STRING, "LaCrosse-TX31UIT",
+            "id",               "",             DATA_INT,    sensor_id,
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
+            NULL);
 
     // decode each measurement we get and append them.
     enum sensor_type { TEMP=0, HUMIDITY, RAIN, WIND_AVG, WIND_MAX };
@@ -147,54 +147,54 @@ static int lacrosse_tx31u_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t nib2 = BF_GET(msg[7+m*2], 4, 4 );
         uint8_t nib3 = BF_GET(msg[7+m*2], 0, 4 );
         switch (type) {
-	    case TEMP: { 
-		float temp_c = 10*nib1 + nib2 + 0.1f*nib3 - 40.0f; // BCD offset 40 deg C
-		data = data_append( data,
-		    "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-		    NULL);
-	    } break;
-	    case HUMIDITY: {
-		int humidity = 100*nib1 + 10*nib2 + nib3; // BCD %
-		data = data_append( data,
-		    "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-		    NULL);
-	    } break;
-	    case RAIN: {
-		int raw_rain = (nib1<<8) + (nib2<<4) + nib3; // count of contact closures
-		if ( !no_ext_sensor && raw_rain > 0) { // most of these do not have rain gauges.  Surpress output if zero.
-		    data = data_append( data,
-			"rain",         "raw_rain",     DATA_FORMAT, "%03x", DATA_INT, raw_rain,
-			NULL);
-		}
-	    } break;
-	    case WIND_AVG: {
-		if ( !no_ext_sensor ) {
-		    float wind_dir = nib1 * 22.5 ; // compass direction in degrees
-		    float wind_avg = ((nib2<<4) + nib3) * 0.1f * 3.6; // wind values are decimal m/sec, convert to km/hr
-		    data = data_append( data,
-			"wind_dir_deg",   "Wind direction",  DATA_FORMAT, "%.1f",       DATA_DOUBLE, wind_dir,
-			"wind_avg_km_h",  "Wind speed",      DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, wind_avg,
-			NULL);
-		}
-	    } break;
-	    case WIND_MAX: {
-                int wind_input_lost = CHECK_BIT(nib1, 0); // a sensor was attched, but now not detected
-		if ( !no_ext_sensor && !wind_input_lost ) {
-		    float wind_max = ((nib2<<4) + nib3) * 0.1f * 3.6; // wind values are decimal m/sec, convert to km/hr
-		    data = data_append( data,
-			"wind_max_km_h",  "Wind gust",    DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, wind_max,
-			NULL);
+            case TEMP: { 
+                float temp_c = 10*nib1 + nib2 + 0.1f*nib3 - 40.0f; // BCD offset 40 deg C
+                data = data_append( data,
+                    "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+                    NULL);
+            } break;
+            case HUMIDITY: {
+                int humidity = 100*nib1 + 10*nib2 + nib3; // BCD %
+                data = data_append( data,
+                    "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
+                    NULL);
+            } break;
+            case RAIN: {
+                int raw_rain = (nib1<<8) + (nib2<<4) + nib3; // count of contact closures
+                if ( !no_ext_sensor && raw_rain > 0) { // most of these do not have rain gauges.  Surpress output if zero.
+                    data = data_append( data,
+                        "rain",         "raw_rain",     DATA_FORMAT, "%03x", DATA_INT, raw_rain,
+                        NULL);
                 }
-	    } break;
-	    default:
-		decoder_logf(decoder, 1, __func__, "LaCrosse TX31U-IT unknown sensor type %d", type);
-	    break;
-	}
+            } break;
+            case WIND_AVG: {
+                if ( !no_ext_sensor ) {
+                    float wind_dir = nib1 * 22.5 ; // compass direction in degrees
+                    float wind_avg = ((nib2<<4) + nib3) * 0.1f * 3.6; // wind values are decimal m/sec, convert to km/hr
+                    data = data_append( data,
+                        "wind_dir_deg",   "Wind direction",  DATA_FORMAT, "%.1f",       DATA_DOUBLE, wind_dir,
+                        "wind_avg_km_h",  "Wind speed",      DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, wind_avg,
+                        NULL);
+                }
+            } break;
+            case WIND_MAX: {
+                int wind_input_lost = CHECK_BIT(nib1, 0); // a sensor was attched, but now not detected
+                if ( !no_ext_sensor && !wind_input_lost ) {
+                    float wind_max = ((nib2<<4) + nib3) * 0.1f * 3.6; // wind values are decimal m/sec, convert to km/hr
+                    data = data_append( data,
+                        "wind_max_km_h",  "Wind gust",    DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, wind_max,
+                        NULL);
+                }
+            } break;
+            default:
+                decoder_logf(decoder, 1, __func__, "LaCrosse TX31U-IT unknown sensor type %d", type);
+            break;
+        }
     }
 
     data = data_append( data,
-	    "mic",              "Integrity",    DATA_STRING, "CRC",
-	    NULL);
+            "mic",              "Integrity",    DATA_STRING, "CRC",
+            NULL);
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -205,8 +205,8 @@ static int lacrosse_tx31u_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *output_fields[] = {
         "model",
         "id",
-        "low_battery",
-        "temperature",
+        "battery_ok",
+        "temperature_C",
         "humidity",
         "wind_avg_km_h",
         "wind_max_km_h",
