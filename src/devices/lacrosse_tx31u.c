@@ -147,7 +147,7 @@ static int lacrosse_tx31u_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t nib2 = BF_GET(msg[7+m*2], 4, 4 );
         uint8_t nib3 = BF_GET(msg[7+m*2], 0, 4 );
         switch (type) {
-            case TEMP: { 
+            case TEMP: {
                 float temp_c = 10*nib1 + nib2 + 0.1f*nib3 - 40.0f; // BCD offset 40 deg C
                 data = data_append( data,
                     "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
