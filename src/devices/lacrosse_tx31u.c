@@ -26,7 +26,7 @@ of 2 bytes each.  The first nibble of each measurement identifies the sensor.
 
     Sensor      Code    Encoding
     TEMP          0       BCD tenths of a degree C plus 400 offset.
-                              EX: 0x0653 is 25.3 degrees C 
+                              EX: 0x0653 is 25.3 degrees C
     HUMID         1       BCD % relative humidity.
                               EX: 0x1068 is 68%
     UNKNOWN       2       This is probably reserved for a rain gauge (TX32U-IT) - NOT TESTED
@@ -41,7 +41,7 @@ of 2 bytes each.  The first nibble of each measurement identifies the sensor.
     1010 1010 1010 1010 0010 1101 1101 0100 1010 0010 1110 0101 0000 0110 0101 0011 1100 0000
     Bytes num :
     ----1---- ----2---- ----3---- ----4---- ----5---- ----6---- ----7---- ----8---- ----N----
-    ~~~~~~~~~~~~~~~~~~~ 2 bytes preamble (0xaaaa) 
+    ~~~~~~~~~~~~~~~~~~~ 2 bytes preamble (0xaaaa)
                         ~~~~~~~~~~~~~~~~~~~ bytes 3 and 4 sync word of 0x2dd4
     sensor model (always 0xa)               ~~~~ 1st nibble of byte 5
     Random device id (6 bits)                    ~~~~ ~~ 2nd nibble of byte 5 and bits 7-6 of byte 6
@@ -52,10 +52,10 @@ of 2 bytes each.  The first nibble of each measurement identifies the sensor.
     sensor code                                                 ~~~~ 1st nibble of byte 7
     sensor reading (meaning varies, see above)                       ~~~~ ~~~~ ~~~~ 2nd nibble of byte 7 and byte 8
     ---
-    --- repeat sensor code:reading as specified in count value above 
+    --- repeat sensor code:reading as specified in count value above
     ---
     crc8 (poly 0x31 init 0x00) of bytes 5 thru (N-1)                                ~~~~ ~~~~ last byte
-                                                                          
+
 ## Developer's comments
 
 The WS-1910TWC-IT does not have a rain gauge or wind direction vane.  The readings output here
@@ -66,14 +66,14 @@ These readings have not been tested.
 
 #include "decoder.h"
 
-#define BIT(pos) ( 1<<(pos) )
-#define CHECK_BIT(y, pos) ( ( 0u == ( (y)&(BIT(pos)) ) ) ? 0u : 1u )
-#define SET_LSBITS(len) ( BIT(len)-1 ) // the first len bits are '1' and the rest are '0'
-#define BF_PREP(y, start, len) ( ((y)&SET_LSBITS(len)) << (start) ) // Prepare a bitmask
-#define BF_GET(y, start, len) ( ((y)>>(start)) & SET_LSBITS(len) )
+#define BIT(pos)               (1 << (pos))
+#define CHECK_BIT(y, pos)      ((0u == ((y) & (BIT(pos)))) ? 0u : 1u)
+#define SET_LSBITS(len)        (BIT(len) - 1)                     // the first len bits are '1' and the rest are '0'
+#define BF_PREP(y, start, len) (((y)&SET_LSBITS(len)) << (start)) // Prepare a bitmask
+#define BF_GET(y, start, len)  (((y) >> (start)) & SET_LSBITS(len))
 
-#define TX31U_MIN_LEN_BYTES 9       // assume at least one measurement
-#define TX31U_MAX_LEN_BYTES 20      // actually shouldn't be more than 18, but we'll be generous
+#define TX31U_MIN_LEN_BYTES    9  // assume at least one measurement
+#define TX31U_MAX_LEN_BYTES    20 // actually shouldn't be more than 18, but we'll be generous
 
 static int lacrosse_tx31u_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -86,49 +86,51 @@ static int lacrosse_tx31u_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // search for expected start sequence
     uint8_t const start_match[] = {0xaa, 0xaa, 0x2d, 0xd4}; // preamble + sync word (32 bits)
-    unsigned int start_pos = bitbuffer_search(bitbuffer, 0, 0, start_match, sizeof(start_match)*8);
+    unsigned int start_pos      = bitbuffer_search(bitbuffer, 0, 0, start_match, sizeof(start_match) * 8);
     if (start_pos >= bitbuffer->bits_per_row[0]) {
         return DECODE_ABORT_EARLY;
     }
-    uint8_t msg_bytes = (bitbuffer->bits_per_row[0] - start_pos)/8;
+    uint8_t msg_bytes = (bitbuffer->bits_per_row[0] - start_pos) / 8;
 
-    if (msg_bytes < TX31U_MIN_LEN_BYTES) { 
+    if (msg_bytes < TX31U_MIN_LEN_BYTES) {
         decoder_logf(decoder, 1, __func__, "Packet too short: %d bytes", msg_bytes);
         return DECODE_ABORT_LENGTH;
-    } else if (msg_bytes > TX31U_MAX_LEN_BYTES) {
+    }
+    else if (msg_bytes > TX31U_MAX_LEN_BYTES) {
         decoder_logf(decoder, 1, __func__, "Packet too long: %d bytes", msg_bytes);
         return DECODE_ABORT_LENGTH;
-    } else {
+    }
+    else {
         decoder_logf(decoder, 2, __func__, "packet length: %d", msg_bytes);
     }
 
     decoder_log(decoder, 1, __func__, "LaCrosse TX31U-IT detected");
 
     uint8_t msg[TX31U_MAX_LEN_BYTES];
-    bitbuffer_extract_bytes(bitbuffer, 0, start_pos, msg, msg_bytes*8);
+    bitbuffer_extract_bytes(bitbuffer, 0, start_pos, msg, msg_bytes * 8);
 
     // int model = BF_GET(msg[4], 4, 4);
     int sensor_id = (BF_GET(msg[4], 0, 4) << 2) | BF_GET(msg[5], 6, 2);
     // int training = CHECK_BIT(msg[5], 5);
-    int no_ext_sensor = CHECK_BIT(msg[5], 4); 
-    int battery_low = CHECK_BIT(msg[5], 3); 
-    int measurements = BF_GET(msg[5], 0, 3);
+    int no_ext_sensor = CHECK_BIT(msg[5], 4);
+    int battery_low   = CHECK_BIT(msg[5], 3);
+    int measurements  = BF_GET(msg[5], 0, 3);
 
-
-    // Check message integrity  
-    int expected_bytes = 6 + measurements*2 + 1;
-    if ( msg_bytes >= expected_bytes ) { // did we get shorted?
-	int r_crc = msg[expected_bytes - 1];
-	int c_crc = crc8(&msg[4], 2 + measurements*2, 0x31, 0x00);
-	if (r_crc != c_crc) {
-	    decoder_logf(decoder, 1, __func__, "LaCrosse TX31U-IT bad CRC: calculated %02x, received %02x", c_crc, r_crc);
-	    return DECODE_FAIL_MIC;
-	}
-    } else {
-        decoder_logf(decoder, 1, __func__, "Packet truncated: received %d bytes, expected %d bytes", msg_bytes, expected_bytes );
+    // Check message integrity
+    int expected_bytes = 6 + measurements * 2 + 1;
+    if (msg_bytes >= expected_bytes) { // did we get shorted?
+        int r_crc = msg[expected_bytes - 1];
+        int c_crc = crc8(&msg[4], 2 + measurements * 2, 0x31, 0x00);
+        if (r_crc != c_crc) {
+            decoder_logf(decoder, 1, __func__, "LaCrosse TX31U-IT bad CRC: calculated %02x, received %02x", c_crc, r_crc);
+            return DECODE_FAIL_MIC;
+        }
+    }
+    else {
+        decoder_logf(decoder, 1, __func__, "Packet truncated: received %d bytes, expected %d bytes", msg_bytes, expected_bytes);
         return DECODE_ABORT_LENGTH;
     }
-    
+
     /* clang-format off */
     // what we know from the header
     data_t *data = data_make(
@@ -213,7 +215,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-// Receiver for the Lacrosse TX31U-IT 
+// Receiver for the Lacrosse TX31U-IT
 r_device lacrosse_tx31u = {
         .name        = "LaCrosse TX31U-IT, The Weather Channel WS-1910TWC-IT",
         .modulation  = FSK_PULSE_PCM,
