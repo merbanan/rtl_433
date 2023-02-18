@@ -129,7 +129,6 @@ static int lacrosse_tx31u_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
     
-
     /* clang-format off */
     // what we know from the header
     data_t *data = data_make(
