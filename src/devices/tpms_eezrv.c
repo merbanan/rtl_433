@@ -1,7 +1,7 @@
 /** @file
     EezTire TPMS.
 
-    Copyright (C) 2023 ProfBoc75 and Gliebig
+    Copyright (C) 2023 Bruno OCTAU (ProfBoc75) and Gliebig
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -23,8 +23,8 @@ Data layout:
 - PRE : FFFF
 - C : 8 bit CheckSum
 - I: 24 bit ID
-- P: 8 bit pressue
-- T: 8 bit temperature
+- P: 8 bit pressure  P * 2.5 = Pressure kPa
+- T: 8 bit temperature   T - 50 = Temperature C
 - F: 8 bit battery (not verified) and deflation pressure (for sure) flags
 
 Raw Data exemple :
@@ -58,19 +58,17 @@ static int tpms_eezrv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_log(decoder, 2, __func__, "Preamble not found");
         return DECODE_ABORT_EARLY;
     }
-    //decoder_logf(decoder, 2, __func__, "Found eezrv preamble pos: %d", pos);
     if (pos + 7 * 8 > bitbuffer->bits_per_row[0]) {
-        decoder_log(decoder, 2, __func__, "Length check fail ");
+        decoder_log(decoder, 2, __func__, "Length check fail");
         return DECODE_ABORT_LENGTH;
     }
     uint8_t b[6] = {0};
     uint8_t cc[1] = {0};
     bitbuffer_extract_bytes(bitbuffer, 0, pos+16, cc, sizeof(cc) * 8);
     bitbuffer_extract_bytes(bitbuffer, 0, pos+24, b, sizeof(b) * 8);
-    //fprintf(stderr, "%s: checksumm %02x bytes %02x:%02x:%02x:%02x:%02x:%02x  \n", __func__, cc[0], b[0], b[1], b[2], b[3], b[4], b[5]);
     // verify checksum
     if ((add_bytes(b, 6) & 0xff) != cc[0]) {
-        decoder_log(decoder, 2, __func__, "Checksum fail,  ");
+        decoder_log(decoder, 2, __func__, "Checksum fail");
         return DECODE_FAIL_MIC;
     }
     char id_str[7];
@@ -82,13 +80,14 @@ static int tpms_eezrv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     sprintf(flags_str, "%x", flags);
     /* clang-format off */
     data_t *data = data_make(
-        "model",                       "",    DATA_STRING, "EezTire TPMS10ATC",
-        "id",                          "",    DATA_STRING, id_str,
-        "temperature_C",    "Temperature",    DATA_FORMAT, "%.1f F", DATA_DOUBLE, (double)temperature_C,
-        "pressure_kPa",        "Pressure",    DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure_kPa,
-        "flags",                  "Flags",    DATA_STRING, flags_str,
-        "mic",                "Integrity",    DATA_STRING, "CHECKSUM",
-        NULL);
+                    "model",                       "",    DATA_STRING, "EEZTire-618E",
+                    "type",                        "",    DATA_STRING, "TPMS",
+                    "id",                          "",    DATA_STRING, id_str,
+                    "pressure_kPa",        "Pressure",    DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure_kPa,
+                    "temperature_C",    "Temperature",    DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temperature_C,
+                    "flags",                  "Flags",    DATA_STRING, flags_str,
+                    "mic",                "Integrity",    DATA_STRING, "CHECKSUM",
+                    NULL);
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -97,6 +96,7 @@ static int tpms_eezrv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char const *output_fields[] = {
         "model",
+        "type",
         "id",
         "temperature_C",
         "pressure_kPa",
@@ -106,7 +106,7 @@ static char const *output_fields[] = {
 };
 
 r_device const tpms_eezrv = {
-        .name        = "EezTire TPMS10ATC (E618)",
+        .name        = "EEZTire TPMS10ATC (E618)",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 50,
         .long_width  = 50,
