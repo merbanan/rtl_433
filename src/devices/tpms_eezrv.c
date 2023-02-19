@@ -29,7 +29,7 @@ Data layout:
 
 Raw Data exemple :
 
-   ffff 8b 0d177e 8f 4a 10 00
+    ffff 8b 0d177e 8f 4a 10 00
 
 Format string:
 
@@ -38,7 +38,7 @@ Format string:
 Decode exemple:
 
    CHECKSUM:8b ID:0d177e KPA:8f TEMP:4a FLAG:10 00
-   
+
 */
 
 #include "decoder.h"
