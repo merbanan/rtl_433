@@ -133,8 +133,10 @@ mv $sysroot64static/usr/bin/rtl_433.exe $sysroot64static/usr/bin/rtl_433_64bit_s
 
 # collect package
 
+cp $source_dir/.deploy/WINDOWS-MINGWW64.txt README.txt
+
 echo Packing rtl_433-win-x32.zip
-zip --junk-paths rtl_433-win-x32.zip sysroot32*/usr/bin/*.dll sysroot32*/usr/bin/rtl_433*.exe
+zip --junk-paths rtl_433-win-x32.zip sysroot32*/usr/bin/*.dll sysroot32*/usr/bin/rtl_433*.exe README.txt
 
 echo Packing rtl_433-win-x64.zip
-zip --junk-paths rtl_433-win-x64.zip sysroot64*/usr/bin/*.dll sysroot64*/usr/bin/rtl_433*.exe
+zip --junk-paths rtl_433-win-x64.zip sysroot64*/usr/bin/*.dll sysroot64*/usr/bin/rtl_433*.exe README.txt
