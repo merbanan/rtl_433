@@ -1,7 +1,7 @@
 /** @file
     EezTire TPMS.
 
-    Copyright (C) 2023 ProfBoc75
+    Copyright (C) 2023 ProfBoc75 and Gliebig
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -14,6 +14,8 @@ EezTire TPMS.
 
 Eez RV supported model TPMS10ATC (E618) : https://eezrvproducts.com/shop/ols/products/tpms10atc
 
+S.a issue #2384
+
 Data layout:
 
     PRE CC IIIIII PP TT FF 00
@@ -25,11 +27,18 @@ Data layout:
 - T: 8 bit temperature
 - F: 8 bit battery (not verified) and deflation pressure (for sure) flags
 
+Raw Data exemple :
+
+   ffff 8b 0d177e 8f 4a 10 00
+
 Format string:
 
     CHECKSUM:8h ID:24h KPA:8d TEMP:8d FLAG:4b 4h8h
 
-...Decoding notes like endianness, signedness
+Decode exemple:
+
+   CHECKSUM:8b ID:0d177e KPA:8f TEMP:4a FLAG:10 00
+   
 */
 
 #include "decoder.h"
