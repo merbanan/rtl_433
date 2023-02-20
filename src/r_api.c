@@ -146,6 +146,7 @@ void r_init_cfg(r_cfg_t *cfg)
 {
     cfg->out_block_size  = DEFAULT_BUF_LENGTH;
     cfg->samp_rate       = DEFAULT_SAMPLE_RATE;
+    cfg->channel         = DEFAULT_CHANNEL;
     cfg->conversion_mode = CONVERT_NATIVE;
     cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_AUTO;
     // Default log level is to show all LOG_FATAL, LOG_ERROR, LOG_WARNING

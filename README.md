@@ -52,6 +52,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-H <seconds>] Hop interval for polling of multiple frequencies (default: 600 seconds)
   [-p <ppm_error>] Correct rtl-sdr tuner frequency offset error (default: 0)
   [-s <sample rate>] Set sample rate (default: 250000 Hz)
+  [-N <channel number>] If the device supports more than one channel, then it may be sellected (default 0)
 		= Demodulator options =
   [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)
        Specify a negative number to disable a device decoding protocol (can be used multiple times)
