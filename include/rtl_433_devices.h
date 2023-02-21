@@ -248,6 +248,7 @@
     DECL(m_bus_mode_c_t_downlink) \
     DECL(revolt_nc5462) \
     DECL(lacrosse_tx31u) \
+    DECL(celsia_czc1) \
 
     /* Add new decoders here. */
 
