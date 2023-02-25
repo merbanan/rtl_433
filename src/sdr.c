@@ -386,7 +386,7 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, char const *dev_query, int verbose)
     }
 
     if (verbose)
-        print_logf(LOG_CRITICAL, "SDR", "Found %u device(s)", device_count);
+        print_logf(LOG_NOTICE, "SDR", "Found %u device(s)", device_count);
 
     int dev_index = 0;
     // select rtlsdr device by serial (-d :<serial>)
@@ -426,7 +426,7 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, char const *dev_query, int verbose)
         rtlsdr_get_device_usb_strings(i, vendor, product, serial);
 
         if (verbose)
-            print_logf(LOG_CRITICAL, "SDR", "trying device  %u:  %s, %s, SN: %s",
+            print_logf(LOG_NOTICE, "SDR", "trying device %u: %s, %s, SN: %s",
                     i, vendor, product, serial);
 
         r = rtlsdr_open(&dev->rtlsdr_dev, i);
@@ -436,8 +436,8 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, char const *dev_query, int verbose)
         }
         else {
             if (verbose)
-                print_logf(LOG_CRITICAL, "SDR", "Using device %u: %s",
-                        i, rtlsdr_get_device_name(i));
+                print_logf(LOG_CRITICAL, "SDR", "Using device %u: %s, %s, SN: %s, \"%s\"",
+                        i, vendor, product, serial, rtlsdr_get_device_name(i));
             dev->sample_size = sizeof(uint8_t) * 2; // CU8
             dev->sample_signed = 0;
 
