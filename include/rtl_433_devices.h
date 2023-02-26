@@ -247,6 +247,7 @@
     DECL(flowis) \
     DECL(m_bus_mode_c_t_downlink) \
     DECL(revolt_nc5462) \
+    DECL(lacrosse_tx31u) \
     DECL(tpms_eezrv) \
 
     /* Add new decoders here. */

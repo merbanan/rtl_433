@@ -881,7 +881,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             /* If the frequency is above 800MHz sample at 1MS/s */
             if ((sr > FSK_PULSE_DETECTOR_LIMIT) && (cfg->samp_rate == DEFAULT_SAMPLE_RATE)) {
                 cfg->samp_rate = 1000000;
-                fprintf(stderr, "\nNew defaults active, use \"-Y classic -s 250k\" for the old defaults!\n\n");
+                fprintf(stderr, "\nNew defaults active, use \"-Y classic -s 250k\" if you need the old defaults\n\n");
             }
             cfg->frequency[cfg->frequencies++] = sr;
         } else
