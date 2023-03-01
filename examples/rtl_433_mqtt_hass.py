@@ -414,6 +414,17 @@ mappings = {
         }
     },
 
+    "closed": {
+        "device_type": "binary_sensor",
+        "object_suffix": "opening",
+        "config": {
+            "device_class": "opening",
+            "force_update": "true",
+            "payload_on": "0",
+            "payload_off": "1"
+        }
+    },
+
     "rssi": {
         "device_type": "sensor",
         "object_suffix": "rssi",
