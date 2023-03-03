@@ -37,8 +37,8 @@ Verb may be one of the following:
 
 ## Supporting Additional Devices and Test Data
 
-Some device protocol decoders are disabled by default. When testing to see if your device
-is decoded by rtl_433, use `-G 4` to enable all device protocols.
+Some device protocol decoders are disabled by default. If you have one of the default-disabled devices
+then enable all needed device protocols with the `-R` option.
 This will likely produce false positives, use with caution.
 
 The first step in decoding new devices is to record the signals using `-S unknown`.
@@ -52,8 +52,8 @@ The signals will be stored individually in files named g**NNN**\_**FFF**M\_**RRR
 
 This file can be played back with `rtl_433 -r gNNN_FFFM_RRRk.cu8`.
 
-These files are vital for understanding the signal format as well as the message data.  Use both analyzers
-`-a` and `-A` to look at the recorded signal and determine the pulse characteristics, e.g. `rtl_433 -r gNNN_FFFM_RRRk.cu8 -a -A`.
+These files are vital for understanding the signal format as well as the message data.  Use the analyzer
+with `-A` to look at the recorded signal and determine the pulse characteristics, e.g. `rtl_433 -r gNNN_FFFM_RRRk.cu8 -A`.
 
 Make sure you have recorded a proper set of test signals representing different conditions together
 with any and all information about the values that the signal should represent. For example, make a
