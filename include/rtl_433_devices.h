@@ -249,6 +249,7 @@
     DECL(revolt_nc5462) \
     DECL(lacrosse_tx31u) \
     DECL(tpms_eezrv) \
+    DECL(baldr_rain) \
 
     /* Add new decoders here. */
 

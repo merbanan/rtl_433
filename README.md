@@ -324,6 +324,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [239]  Revolt NC-5642 Energy Meter
     [240]  LaCrosse TX31U-IT, The Weather Channel WS-1910TWC-IT
     [241]  EezTire E618 (TPMS10ATC)
+    [242]  Baldr / RainPoint rain gauge.
 
 * Disabled by default, use -R n or a conf file to enable
 
