@@ -77,7 +77,7 @@ static int baldr_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",        "",         DATA_STRING, "Baldr-Rain",
             "id",           "",         DATA_FORMAT, "%03x", DATA_INT, id,
             "flags",        "Flags",    DATA_FORMAT, "%x", DATA_INT, flags,
-            "rain_in",      "Rain",     DATA_FORMAT, "%.3f in", DATA_DOUBLE, rain_in,
+            "rain_in",      "Rain",     DATA_FORMAT, "%.3f in", DATA_DOUBLE, rain_in * 0.001,
             NULL);
     /* clang-format on */
 
