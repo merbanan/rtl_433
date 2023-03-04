@@ -315,18 +315,19 @@ static THREAD_RETURN THREAD_CALL accept_thread(void *arg)
                 break;
             }
 
-            // Send frames
+            // Wait for send buffer to clear
             fd_set fds;
             FD_ZERO(&fds);
             FD_SET(sock, &fds);
-            struct timeval timeout = {0};
+            struct timeval timeout = {.tv_usec = 100000}; // Wait at most 100 ms
 
             int ready = select(sock + 1, NULL, &fds, NULL, &timeout);
             if (ready <= 0) {
                 print_log(LOG_ERROR, "rtl_tcp", "send not ready for write?");
-                break;
+                break; // Cancel the connection on network problems
             }
 
+            // Wait for next frame
             pthread_mutex_lock(&srv->lock);
             while (srv->data_cnt == prev_cnt || srv->data_buf == NULL)
                 pthread_cond_wait(&srv->cond, &srv->lock);
@@ -340,6 +341,7 @@ static THREAD_RETURN THREAD_CALL accept_thread(void *arg)
 
             pthread_mutex_unlock(&srv->lock);
 
+            // Send frame
             send_all(sock, data, data_len, MSG_NOSIGNAL); // ignore SIGPIPE
         }
 
