@@ -102,5 +102,5 @@ r_device const baldr_rain = {
         .reset_limit = 5000,
         .decode_fn   = &baldr_rain_decode,
         .fields      = output_fields,
-        .disabled    = 0, // no checksum, disable if we encounter false-positives
+        .disabled    = 1, // no validity, no checksum
 };
