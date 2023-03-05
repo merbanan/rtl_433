@@ -11,7 +11,7 @@
 
 #include "decoder.h"
 
-/** @fn int celsia_czc1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+/**
 Celsia CZC1 Thermostat.
 
 A PID thermostat compatible with various manufacturers' heaters.
@@ -36,7 +36,7 @@ Command packet (5 bytes)
 
 - ID:   {16} ID
 - Type: {8}  type
-- Heat: {8}  heating level 0-255 (little endian unsigned integer)
+- Heat: {8}  heating level 0-255 (bit reflected unsigned integer)
 - CRC:  {8}  CRC-8, poly 0x31, init 0xd7
 
 Pairing packet (4 bytes)
@@ -49,7 +49,6 @@ Pairing packet (4 bytes)
 
 static int celsia_czc1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-
     uint8_t const preamble[] = {0xcc, 0xcc, 0xcc, 0xcc, 0x55, 0x55, 0x55, 0x55};
     // data section in command packet == 160 bits
     // data section in pair packet == 128 bits
@@ -81,63 +80,53 @@ static int celsia_czc1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             break;
         }
         switch (bits[ipos]) {
-            case 0x55:
-                bitbuffer_add_bit(&decoded_bits, 0);
-                bitbuffer_add_bit(&decoded_bits, 0);
-                break;
-            case 0x5a:
-                bitbuffer_add_bit(&decoded_bits, 0);
-                bitbuffer_add_bit(&decoded_bits, 1);
-                break;
-            case 0xa5:
-                bitbuffer_add_bit(&decoded_bits, 1);
-                bitbuffer_add_bit(&decoded_bits, 0);
-                break;
-            case 0xaa:
-                bitbuffer_add_bit(&decoded_bits, 1);
-                bitbuffer_add_bit(&decoded_bits, 1);
-                break;
+        case 0x55:
+            bitbuffer_add_bit(&decoded_bits, 0);
+            bitbuffer_add_bit(&decoded_bits, 0);
+            break;
+        case 0x5a:
+            bitbuffer_add_bit(&decoded_bits, 0);
+            bitbuffer_add_bit(&decoded_bits, 1);
+            break;
+        case 0xa5:
+            bitbuffer_add_bit(&decoded_bits, 1);
+            bitbuffer_add_bit(&decoded_bits, 0);
+            break;
+        case 0xaa:
+            bitbuffer_add_bit(&decoded_bits, 1);
+            bitbuffer_add_bit(&decoded_bits, 1);
+            break;
         }
         ipos++;
     }
 
-
-    decoder_log_bitbuffer(decoder, 2, __func__, &decoded_bits, "Extracted data") ;
+    decoder_log_bitbuffer(decoder, 2, __func__, &decoded_bits, "Extracted data");
     uint8_t *b = decoded_bits.bb[0];
 
     uint8_t crc = crc8(b, 8, 0x31, 0xd7);
     if (crc != 0) {
-        decoder_log(decoder, 2, __func__,"Decode failed: CRC failed");
+        decoder_log(decoder, 2, __func__, "Decode failed: CRC failed");
         return DECODE_FAIL_MIC;
     }
-    int id = (b[0] << 8) | b[1];
 
-    data_t *data;
-    if (b[2] == 0x00) { // pair packet
-        /* clang-format off */
-        data = data_make(
-            "model",    "",               DATA_STRING, "Celsia-CZC1",
-            "id",       "ID",             DATA_FORMAT, "%x", DATA_INT, id,
-            "mic",      "Integrity",      DATA_STRING, "CRC",
-            NULL);
-        /* clang-format on */
-    } else if (b[2] == 0xf0) { // command packet
-        int heat = reverse8(b[3]);
-        if (heat < 0 || 255 < heat) {
-           return DECODE_FAIL_OTHER;
-        }
-
-        /* clang-format off */
-        data = data_make(
-            "model",    "",               DATA_STRING, "Celsia-CZC1",
-            "id",       "ID",             DATA_FORMAT, "%x", DATA_INT, id,
-            "heat",     "Heat",           DATA_INT,    heat,
-            "mic",      "Integrity",      DATA_STRING, "CRC",
-            NULL);
-        /* clang-format on */
-    } else {
+    // Check if a 0x00 pair packet or a 0xf0 command packet
+    if (b[2] != 0x00 && b[2] == 0xf0) {
+        decoder_log(decoder, 1, __func__, "Unknown packet type");
         return DECODE_FAIL_OTHER;
     }
+
+    int id      = (b[0] << 8) | b[1];
+    int heat_ok = b[2] == 0xf0;   // is it a command packet?
+    int heat    = reverse8(b[3]); // command packet only
+
+    /* clang-format off */
+    data_t *data = data_make(
+        "model",    "",             DATA_STRING, "Celsia-CZC1",
+        "id",       "",             DATA_FORMAT, "%x",    DATA_INT, id,
+        "heat",     "Heat",         DATA_COND,   heat_ok, DATA_INT, heat,
+        "mic",      "Integrity",    DATA_STRING, "CRC",
+        NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
@@ -146,7 +135,6 @@ static int celsia_czc1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *output_fields[] = {
         "model",
         "id",
-        "type",
         "heat",
         "mic",
         NULL,
@@ -154,11 +142,11 @@ static char const *output_fields[] = {
 
 //rtl_433 -X n=CZC1,m=OOK_PCM,s=1220,l=1220,r=4880,preamble=cccccccc55555555
 
-r_device const celsia_czc1= {
+r_device const celsia_czc1 = {
         .name        = "Celsia CZC1 Thermostat",
         .modulation  = OOK_PULSE_PCM,
-        .short_width = 1220,   // each pulse is ~1220 us (nominal bit width)
-        .long_width  = 1220,   // each pulse is ~1220 us (nominal bit width)
+        .short_width = 1220, // each pulse is ~1220 us (nominal bit width)
+        .long_width  = 1220, // each pulse is ~1220 us (nominal bit width)
         .reset_limit = 4880, // larger than gap between start pulse and first frame (6644 us = 11 x nominal bit width) to put start pulse and first frame in two rows, but smaller than inter-frame space of 30415 us
         .tolerance   = 20,
         .decode_fn   = &celsia_czc1_decode,
