@@ -8,8 +8,14 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
+
+#include "decoder.h"
+
 /**
 Watchman Sonic Advanced/Plus oil tank level monitor.
+
+Tested devices:
+- Watchman Sonic Advanced
 
 The devices uses GFSK with 500 us long and short pulses.
 Using -Y minmax should be sufficient to get it to work.
@@ -17,62 +23,66 @@ Using -Y minmax should be sufficient to get it to work.
 Total length of message including preamble is 192 bits.
 The format might be most easily summarised in a BitBench string:
 
-PRE: 40b SYNC: 16h MODEL: 24h ID: 24d 8h TEMP: 8h 16h DEPTH: 8d 32h CRC: 16h
+    PRE: 40b SYNC: 16h MODEL: 24h ID: 24d 8h TEMP: 8h 16h DEPTH: 8d 32h CRC: 16h
 
-In more detail:
+Data Layout:
 
 - 40 bits of preamble, i.e. 10101010 etc.
 - 0x2dd4 - 'standard' sync word
+- 1 byte - message length, fixed 0x0e (14)
+- 2 byte - fixed 0x0401 - presumably a model identifier, common at least to the two devices we have tested this on
 - 0x0e0401 - presumably a model identifier, common at least to the two devices we have tested this on
 - 3 byte integer serial number - as printed on a label attached to the device itself
-- 0x80 - so far, this seems to be constant
+- 1 byte status:
+  - 0xC0 - during the first 20ish minutes after sync with the receiver when the device is transmitting once per second
+  - 0x80 - the first one or two transmissions after the sync period when the device seems to be calibrating itself
+  - 0x98 - normal, live value that you'll see on every transmission when the device is up and running
 - 1 byte temperature, in intervals of 0.5 degrees, offset by 0x48
-- two more varying bytes currently of unknown purpose
+- two more varying bytes which could be the raw sensor reading
 - 1 byte integer depth (i.e. the distance between the sensor and the oil in the tank)
-- 0x01050300 - 4 bytes of constant values
-- 2 byte CRC
-
-Tested devices:
-- Watchman Sonic Advanced
+- 0x01050300 - 4 bytes of constant values which could be a version number? (1.5.3.0)
+- 2 byte CRC-16 poly 0x8005 init 0
 */
-#include "decoder.h"
 
 static int oil_watchman_advanced_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    static const uint8_t PREAMBLE_SYNC_LENGTH_BITS = 40;
-    static const uint8_t MODEL_LENGTH_BITS = 24;
-    static const uint8_t BODY_LENGTH_BITS = 128;
+    static uint8_t const PREAMBLE_SYNC_LENGTH_BITS = 40;
+    static uint8_t const HEADER_LENGTH_BITS        = 24;
+    static uint8_t const BODY_LENGTH_BITS          = 128;
     // no need to match all the preamble; 24 bits worth should do
-    uint8_t const match_pattern[8] = {0xaa, 0xaa, 0xaa, 0x2d, 0xd4, 0x0e, 0x04, 0x01};
+    // include part of preamble, sync-word, length, message identifier
+    uint8_t const preamble_pattern[] = {0xaa, 0xaa, 0xaa, 0x2d, 0xd4, 0x0e, 0x04, 0x01};
 
-    unsigned bitpos      = 0;
-    int events           = 0;
+    unsigned bitpos = 0;
+    int events      = 0;
 
-    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, match_pattern, PREAMBLE_SYNC_LENGTH_BITS + MODEL_LENGTH_BITS)) + BODY_LENGTH_BITS <=
+    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, PREAMBLE_SYNC_LENGTH_BITS + HEADER_LENGTH_BITS)) + BODY_LENGTH_BITS <=
             bitbuffer->bits_per_row[0]) {
 
         bitpos += PREAMBLE_SYNC_LENGTH_BITS;
         // get buffer including model ID, as we need this in CRC calculation
         uint8_t msg[19];
-        bitbuffer_extract_bytes(bitbuffer, 0, bitpos, msg, BODY_LENGTH_BITS + MODEL_LENGTH_BITS);
-        bitpos += BODY_LENGTH_BITS + MODEL_LENGTH_BITS;
+        bitbuffer_extract_bytes(bitbuffer, 0, bitpos, msg, BODY_LENGTH_BITS + HEADER_LENGTH_BITS);
+        bitpos += BODY_LENGTH_BITS + HEADER_LENGTH_BITS;
 
         uint8_t *b = msg;
-        if (crc16(b, (BODY_LENGTH_BITS + MODEL_LENGTH_BITS) / 8, 0x8005, 0) != 0) {
-                return DECODE_FAIL_MIC;
+        if (crc16(b, (BODY_LENGTH_BITS + HEADER_LENGTH_BITS) / 8, 0x8005, 0) != 0) {
+            return DECODE_FAIL_MIC;
         }
 
         // as printed on the side of the unit
-        uint32_t serial_number = (b[3] << 16) | (b[4] << 8) | b[5];
+        uint32_t serial   = (b[3] << 16) | (b[4] << 8) | b[5];
+        uint8_t status    = b[6];
         float temperature = (float)(int8_t)(0.5 * (b[7] - 0x48)); // truncate to whole number
-        uint8_t depth = b[10];
+        uint8_t depth     = b[10];
 
         /* clang-format off */
         data_t *data = data_make(
                 "model",                "Model",        DATA_STRING, "Oil-SonicAdv",
-                "id",                   "ID",           DATA_FORMAT, "%08d", DATA_INT, serial_number,
+                "id",                   "ID",           DATA_FORMAT, "%08d", DATA_INT, serial,
                 "temperature_C",        "Temperature",  DATA_DOUBLE, temperature,
                 "depth_cm",             "Depth",        DATA_INT,    depth,
+                "status",               "Status",       DATA_FORMAT, "%02x", DATA_INT, status,
                 "mic",                  "Integrity",    DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
@@ -97,7 +107,7 @@ r_device const oil_watchman_advanced = {
         .modulation  = FSK_PULSE_PCM,
         .short_width = 500,
         .long_width  = 500,
-        .reset_limit = 9000,
+        .reset_limit = 12500, // allow 24 sequential 0-bit's
         .decode_fn   = &oil_watchman_advanced_decode,
         .fields      = output_fields,
 };

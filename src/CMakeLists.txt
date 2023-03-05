@@ -61,6 +61,7 @@ add_library(r_433 STATIC
     devices/auriol_ahfl.c
     devices/auriol_hg02832.c
     devices/badger_water.c
+    devices/baldr_rain.c
     devices/blueline.c
     devices/blyss.c
     devices/brennenstuhl_rcs_2044.c
@@ -227,6 +228,7 @@ add_library(r_433 STATIC
     devices/tpms_abarth124.c
     devices/tpms_ave.c
     devices/tpms_citroen.c
+    devices/tpms_eezrv.c
     devices/tpms_elantra2012.c
     devices/tpms_ford.c
     devices/tpms_hyundai_vdo.c
