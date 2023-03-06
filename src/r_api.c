@@ -227,17 +227,19 @@ void r_free_cfg(r_cfg_t *cfg)
 
     pulse_detect_free(cfg->demod->pulse_detect);
 
-    free(cfg->demod);
-
-    free(cfg->devices);
-
     list_free_elems(&cfg->raw_handler, (list_elem_free_fn)raw_output_free);
+
+    r_logger_set_log_handler(NULL, NULL);
 
     list_free_elems(&cfg->output_handler, (list_elem_free_fn)data_output_free);
 
     list_free_elems(&cfg->data_tags, (list_elem_free_fn)data_tag_free);
 
     list_free_elems(&cfg->in_files, NULL);
+
+    free(cfg->demod);
+
+    free(cfg->devices);
 
     mg_mgr_free(cfg->mgr);
     free(cfg->mgr);

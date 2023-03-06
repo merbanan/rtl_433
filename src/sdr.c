@@ -551,11 +551,11 @@ static int rtlsdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32
         // We can safely assume it's an libusb error.
         if (r < 0) {
 #ifdef LIBUSB1
-            print_logf(LOG_ERROR, __func__, "%s: %s!"
+            print_logf(LOG_ERROR, __func__, "%s: %s! "
                             "Check your RTL-SDR dongle, USB cables, and power supply.",
                     libusb_error_name(r), libusb_strerror(r));
 #else
-            print_logf(LOG_ERROR, __func__, "LIBUSB_ERROR: %d"
+            print_logf(LOG_ERROR, __func__, "LIBUSB_ERROR: %d! "
                             "Check your RTL-SDR dongle, USB cables, and power supply.",
                     r);
 #endif

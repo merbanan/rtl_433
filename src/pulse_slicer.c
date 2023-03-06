@@ -55,7 +55,7 @@ static int account_event(r_device *device, bitbuffer_t *bits, char const *demod_
 
     // Debug printout
     if (!device->decode_fn || (device->verbose && ret > 0) || (device->verbose > 1 && max_bits > 16) || (device->verbose > 2)) {
-        decoder_log_bitbuffer(device, 2, demod_name, bits, device->name);
+        decoder_log_bitbuffer(device, ret > 0 ? 1 : 2, demod_name, bits, device->name);
     }
 
     return ret;
