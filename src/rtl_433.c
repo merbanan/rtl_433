@@ -1276,6 +1276,8 @@ console_handler(int signum)
         write_err("Signal caught, exiting!\n");
         g_cfg.exit_async = 1;
         sdr_stop(g_cfg.dev);
+        // Uninstall handler, next Ctrl-C is a hard abort
+        SetConsoleCtrlHandler((PHANDLER_ROUTINE)console_handler, FALSE);
         return TRUE;
     }
     else if (CTRL_BREAK_EVENT == signum) {
@@ -1323,6 +1325,16 @@ static void sighandler(int signum)
     }
     g_cfg.exit_async = 1;
     sdr_stop(g_cfg.dev);
+
+    // Uninstall handler, next Ctrl-C is a hard abort
+    struct sigaction sigact;
+    sigact.sa_handler = NULL;
+    sigemptyset(&sigact.sa_mask);
+    sigact.sa_flags = 0;
+    sigaction(SIGINT, &sigact, NULL);
+    sigaction(SIGTERM, &sigact, NULL);
+    sigaction(SIGQUIT, &sigact, NULL);
+    sigaction(SIGPIPE, &sigact, NULL);
 }
 #endif
 
