@@ -57,8 +57,13 @@ static int vauno_en8822c_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // checksum is addition
     int chk = ((b[4] & 0x0f) << 2) | (b[5] >> 6);
-    if (((add_nibbles(b, 4) + (b[4] >> 4)) & 0x3f) != chk) {
-        return DECODE_FAIL_MIC; }
+    int sum = add_nibbles(b, 4) + (b[4] >> 4);
+    if (sum == 0) {
+        return DECODE_ABORT_EARLY; // reject all-zeros
+    }
+    if ((sum & 0x3f) != chk) {
+        return DECODE_FAIL_MIC;
+    }
 
     int device_id = b[0];
     int channel   = ((b[1] & 0x30) >> 4) + 1;
@@ -83,7 +88,7 @@ static int vauno_en8822c_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "channel",
@@ -94,11 +99,12 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device vauno_en8822c = {
+r_device const vauno_en8822c = {
         .name        = "Vauno EN8822C",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,
         .long_width  = 4000,
+        .tolerance   = 500,
         .gap_limit   = 5000,
         .reset_limit = 9500,
         .decode_fn   = &vauno_en8822c_decode,

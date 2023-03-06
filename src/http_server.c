@@ -266,7 +266,7 @@ static data_t *protocols_data(r_cfg_t *cfg)
             }
         }
         int fields_len = 0;
-        for (char **iter = dev->fields; iter && *iter; ++iter) {
+        for (char const **iter = dev->fields; iter && *iter; ++iter) {
             fields_len++;
         }
         data_t *data = data_make(
@@ -294,7 +294,7 @@ static data_t *protocols_data(r_cfg_t *cfg)
                 continue;
         }
         int fields_len = 0;
-        for (char **iter2 = dev->fields; iter2 && *iter2; ++iter2) {
+        for (char const **iter2 = dev->fields; iter2 && *iter2; ++iter2) {
             fields_len++;
         }
         data_t *data = data_make(

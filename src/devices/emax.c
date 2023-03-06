@@ -16,7 +16,7 @@
 /**
 Fuzhou Emax Electronic W6 Professional Weather Station.
 Rebrand and devices decoded :
-- Emax W6 / WEC-W6 / 3390TX W6 / EM3390W6
+- Emax W6 / WEC-W6 / 3390TX W6 / EM3390W6 / EM3551H
 - Altronics x7063/4
 - Optex 990040 / 990050 / 990051 / SM-040
 - Infactory FWS-1200
@@ -26,7 +26,7 @@ Rebrand and devices decoded :
 - Protmex PT3390A
 - Jula Marquant 014331 weather station /014332 temp hum sensor
 
-S.a. issue #2000 #2299 #2326  PR #2300
+S.a. issue #2000 #2299 #2326 #2373 PR #2300 #2346 #2374
 
 - Likely a rebranded device, sold by Altronics
 - Data length is 32 bytes with a preamble of 10 bytes (33 bytes for Rain/Wind Station)
@@ -64,10 +64,14 @@ Decoded example:
     aaa CH:1 ID:6e9 FLAGS:0101 TEMP:6b5 HUM:059 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa CHKSUM:d4 000
 
 
-Emax EM3390W6 Rain / Wind speed / Wind Direction / Temp / Hum / UV / Lux
+Emax Rain / Wind speed / Wind Direction / Temp / Hum / UV / Lux
 
-Weather Rain/Wind station : hummidity not at same byte position.
-    AA 04 II IB 0T TT HH 0W WW 0D DD RR RR 0U LL LL 04 05 06 07 08 09 10 11 12 13 14 15 16 17 xx SS yy
+Weather Rain/Wind station : humidity not at same byte position as temp/hum sensor.
+- With UV Lux without Wind Gust
+    AA 04 II IB 0T TT HH 0W WW 0D DD RR RR UU LL LL 04 05 06 07 08 09 10 11 12 13 14 15 16 17 xx SS yy
+- Without UV / Lux , with Wind Gust
+    AA 04 II IB 0T TT HH 0W WW 0D DD RR RR ?0 01 01 GG 04 05 06 07 08 09 10 11 12 13 14 15 16 xx SS yy
+
 
 default empty/null = 0x01 => value = 0
 
@@ -82,6 +86,8 @@ default empty/null = 0x01 => value = 0
 - D: (9 bit) Wind Direction
 - U: (5 bit) UV index
 - L: (1 + 15 bit) Lux value, if first bit = 1 , then x 10 the rest.
+- G: (8 bit) Wind Gust
+- ?: unknown
 - A: (4 bit) fixed values of 0xA
 - 0: (4 bit) fixed values of 0x0
 - xx: incremental value each tx
@@ -104,31 +110,38 @@ Decoded example:
 
 */
 
+#define EMAX_MESSAGE_BITLEN     264   //33 * 8
+
 static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // full preamble is ffffaaaaaaaaaacaca54
     uint8_t const preamble_pattern[] = {0xaa, 0xaa, 0xca, 0xca, 0x54};
 
-    int ret = 0;
-    for (unsigned row = 0; row < bitbuffer->num_rows; ++row) {
-        unsigned pos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, sizeof(preamble_pattern) * 8);
+    // Because of a gap false positive if LUX at max for weather station, only single row to be analyzed with expected 3 repeats inside the data.
+    if (bitbuffer->num_rows != 1) {
+        return DECODE_ABORT_EARLY;
+    }
 
-        if (pos >= bitbuffer->bits_per_row[row]) {
+    int ret = 0;
+    int pos = 0;
+    while ((pos = bitbuffer_search(bitbuffer, 0, pos, preamble_pattern, sizeof(preamble_pattern) * 8)) + EMAX_MESSAGE_BITLEN <= bitbuffer->bits_per_row[0]) {
+
+        if (pos >= bitbuffer->bits_per_row[0]) {
             decoder_log(decoder, 2, __func__, "Preamble not found");
             ret = DECODE_ABORT_EARLY;
             continue;
         }
-        decoder_logf(decoder, 2, __func__, "Found row: %d", row);
+        decoder_logf(decoder, 2, __func__, "Found Emax preamble pos: %d", pos);
 
         pos += sizeof(preamble_pattern) * 8;
-        // we expect 32 bytes
-        if (pos + 32 * 8 > bitbuffer->bits_per_row[row]) {
+        // we expect at least 32 bytes
+        if (pos + 32 * 8 > bitbuffer->bits_per_row[0]) {
             decoder_log(decoder, 2, __func__, "Length check fail");
             ret = DECODE_ABORT_LENGTH;
             continue;
         }
         uint8_t b[32] = {0};
-        bitbuffer_extract_bytes(bitbuffer, row, pos, b, sizeof(b) * 8);
+        bitbuffer_extract_bytes(bitbuffer, 0, pos, b, sizeof(b) * 8);
 
         // verify checksum
         if ((add_bytes(b, 31) & 0xff) != b[31]) {
@@ -157,8 +170,8 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "id",               "",                 DATA_FORMAT, "%03x", DATA_INT,    id,
                     "channel",          "Channel",          DATA_INT,    channel,
                     "battery_ok",       "Battery_OK",       DATA_INT,    !battery_low,
-                    "temperature_F",    "Temperature_F",    DATA_FORMAT, "%.1f", DATA_DOUBLE, temp_f,
-                    "humidity",         "Humidity",         DATA_FORMAT, "%u", DATA_INT, humidity,
+                    "temperature_F",    "Temperature",      DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_f,
+                    "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
                     "pairing",          "Pairing?",         DATA_COND,   pairing,   DATA_INT,    !!pairing,
                     "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
                     NULL);
@@ -173,44 +186,71 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             float temp_f      = (temp_raw - 900) * 0.1f;
             int humidity      = b[6];
             int wind_raw      = ((b[7] - 1) << 8 ) | (b[8] -1);   // all default is 01 so need to remove 1 from all bytes.
-            float speed_kmh     = wind_raw * 0.2f;
-            int direction_deg = (((b[9] & 0x0f) - 1) << 8) | (b[10] - 1);
+            float speed_kmh   = wind_raw * 0.2f;
+            int direction_deg = (((b[9] - 1) & 0x0f) << 8) | (b[10] - 1);
             int rain_raw      = ((b[11] - 1) << 8 ) | (b[12] -1);
             float rain_mm     = rain_raw * 0.2f;
-            int uv_index      = (b[13] & 0x1f) - 1;
-            int lux_multi     = (((b[14] - 1) & 0x80) >> 7);
-            int light_lux     = ((b[14] & 0x7f) - 1) << 8 | (b[15] - 1);
-            if (lux_multi == 1) {
-                light_lux = light_lux * 10;
+
+            if (b[29] == 0x17) {                               // with UV/Lux, without Wind Gust
+                int uv_index      = (b[13] - 1) & 0x1f;
+                int lux_14        = (b[14] - 1) & 0xFF;
+                int lux_15        = (b[15] - 1) & 0xFF;
+                int lux_multi     = ((lux_14 & 0x80) >> 7);
+                int light_lux     = ((lux_14 & 0x7f) << 8) | (lux_15);
+                if (lux_multi == 1) {
+                    light_lux = light_lux * 10;
+                }
+
+                /* clang-format off */
+                data_t *data = data_make(
+                        "model",            "",                 DATA_STRING, "Emax-W6",
+                        "id",               "",                 DATA_FORMAT, "%03x", DATA_INT,    id,
+                        "channel",          "Channel",          DATA_INT,    channel,
+                        "battery_ok",       "Battery_OK",       DATA_INT,    !battery_low,
+                        "temperature_F",    "Temperature",      DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_f,
+                        "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
+                        "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
+                        "wind_dir_deg",     "Wind Direction",   DATA_INT,    direction_deg,
+                        "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",  DATA_DOUBLE, rain_mm,
+                        "uv",               "UV Index",         DATA_FORMAT, "%u",       DATA_INT,    uv_index,
+                        "light_lux",        "Lux",              DATA_FORMAT, "%u",       DATA_INT,    light_lux,
+                        "pairing",          "Pairing?",         DATA_COND,   pairing,    DATA_INT,    !!pairing,
+                        "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
+                        NULL);
+                /* clang-format on */
+
+                decoder_output_data(decoder, data);
+                return 1;
             }
+            if (b[29] == 0x16) {                               //without UV/Lux with Wind Gust
+                float gust_kmh = b[16] / 1.5f;
+                /* clang-format off */
+                data_t *data = data_make(
+                        "model",            "",                 DATA_STRING, "Emax-EM3551H",
+                        "id",               "",                 DATA_FORMAT, "%03x", DATA_INT,    id,
+                        "channel",          "Channel",          DATA_INT,    channel,
+                        "battery_ok",       "Battery_OK",       DATA_INT,    !battery_low,
+                        "temperature_F",    "Temperature",      DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_f,
+                        "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
+                        "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
+                        "wind_max_km_h",    "Wind max speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, gust_kmh,
+                        "wind_dir_deg",     "Wind Direction",   DATA_INT,    direction_deg,
+                        "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",  DATA_DOUBLE, rain_mm,
+                        "pairing",          "Pairing?",         DATA_COND,   pairing,    DATA_INT,    !!pairing,
+                        "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
+                        NULL);
+                /* clang-format on */
 
-            /* clang-format off */
-            data_t *data = data_make(
-                    "model",            "",                 DATA_STRING, "Emax-W6",
-                    "id",               "",                 DATA_FORMAT, "%03x", DATA_INT,    id,
-                    "channel",          "Channel",          DATA_INT,    channel,
-                    "battery_ok",       "Battery_OK",       DATA_INT,    !battery_low,
-                    "temperature_F",    "Temperature_F",    DATA_FORMAT, "%.1f", DATA_DOUBLE, temp_f,
-                    "humidity",         "Humidity",         DATA_FORMAT, "%u",   DATA_INT,    humidity,
-                    "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
-                    "wind_dir_deg",     "Wind Direction",   DATA_INT,    direction_deg,
-                    "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",  DATA_DOUBLE, rain_mm,
-                    "uv",               "UV Index",         DATA_FORMAT, "%u",       DATA_INT,    uv_index,
-                    "light_lux",        "Lux",              DATA_FORMAT, "%u",       DATA_INT,    light_lux,
-                    "pairing",          "Pairing?",         DATA_COND,   pairing,    DATA_INT,    !!pairing,
-                    "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-                    NULL);
-            /* clang-format on */
-
-            decoder_output_data(decoder, data);
-            return 1;
-
+                decoder_output_data(decoder, data);
+                return 1;
+            }
         }
+        pos += EMAX_MESSAGE_BITLEN;
     }
     return ret;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "channel",
@@ -218,6 +258,7 @@ static char *output_fields[] = {
         "temperature_F",
         "humidity",
         "wind_avg_km_h",
+        "wind_max_km_h",
         "rain_mm",
         "wind_dir_deg",
         "uv",
@@ -227,12 +268,11 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device emax = {
+r_device const emax = {
         .name        = "Emax W6, rebrand Altronics x7063/4, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025, Protmex PT3390A, Jula Marquant 014331/32, Weather Station or temperature/humidity sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 90,
         .long_width  = 90,
-        .gap_limit   = 1200,
         .reset_limit = 9000,
         .decode_fn   = &emax_decode,
         .fields      = output_fields,

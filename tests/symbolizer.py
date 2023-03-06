@@ -150,8 +150,13 @@ def process_source(path, name):
                 doc = ''
                 continue
 
+            # look for char * variable = "" declarations that should really be char const *
+            m = re.match(r'(?:static)?\s?char\s?\*\s?[^\*\s]+\s?=\s?(?:{|")', line)
+            if m:
+                err(f"::error file={name},line={i}::char * variable should be char const * when being given a constant value")
+
             # look for r_device with decode_fn
-            m = re.match(r'\s*r_device\s+([^\*]*?)\s*=', line)
+            m = re.match(r'\s*r_device\s+const\s+([^\*]*?)\s*=', line)
             if m:
                 rName = m.group(1)
                 if rName in links:

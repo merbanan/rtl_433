@@ -145,8 +145,9 @@ static void usage(int exit_code)
             "\t\t= Tuner options =\n"
             "  [-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query> | rtl_tcp | help]\n"
             "  [-g <gain> | help] (default: auto)\n"
-            "  [-t <settings>] apply a list of keyword=value settings for SoapySDR devices\n"
-            "       e.g. -t \"antenna=A,bandwidth=4.5M,rfnotch_ctrl=false\"\n"
+            "  [-t <settings>] apply a list of keyword=value settings to the SDR device\n"
+            "       e.g. for SoapySDR -t \"antenna=A,bandwidth=4.5M,rfnotch_ctrl=false\"\n"
+            "       for RTL-SDR use \"direct_samp[=1]\", \"offset_tune[=1]\", \"digital_agc[=1]\", \"biastee[=1]\"\n"
             "  [-f <frequency>] Receive frequency(s) (default: %i Hz)\n"
             "  [-H <seconds>] Hop interval for polling of multiple frequencies (default: %i seconds)\n"
             "  [-p <ppm_error>] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
@@ -163,7 +164,6 @@ static void usage(int exit_code)
             "  [-Y squelch] Skip frames below estimated noise level to reduce cpu load.\n"
             "  [-Y ampest | magest] Choose amplitude or magnitude level estimator.\n"
             "\t\t= Analyze/Debug options =\n"
-            "  [-a] Analyze mode. Print a textual description of the signal.\n"
             "  [-A] Pulse Analyzer. Enable pulse analysis and decode attempt.\n"
             "       Disable all decoders with -R 0 if you want analyzer output only.\n"
             "  [-y <code>] Verify decoding of demodulated test data (e.g. \"{25}fb2dd58\") with enabled devices\n"
@@ -880,7 +880,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             /* If the frequency is above 800MHz sample at 1MS/s */
             if ((sr > FSK_PULSE_DETECTOR_LIMIT) && (cfg->samp_rate == DEFAULT_SAMPLE_RATE)) {
                 cfg->samp_rate = 1000000;
-                fprintf(stderr, "\nNew defaults active, use \"-Y classic -s 250k\" for the old defaults!\n\n");
+                fprintf(stderr, "\nNew defaults active, use \"-Y classic -s 250k\" if you need the old defaults\n\n");
             }
             cfg->frequency[cfg->frequencies++] = sr;
         } else
@@ -925,11 +925,11 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         cfg->bytes_to_read = atouint32_metric(arg, "-n: ") * 2;
         break;
     case 'a':
-        if (atobv(arg, 1) == 4 && !cfg->demod->am_analyze) {
+        if (atobv(arg, 1) == 42 && !cfg->demod->am_analyze) {
             cfg->demod->am_analyze = am_analyze_create();
         }
         else {
-            fprintf(stderr, "\n\tUse -a for testing only. Enable with -a 4 if you really mean it.\n\n");
+            fprintf(stderr, "\n\tUse -a for testing only. Enable if you know how ;)\n\n");
             exit(1);
         }
         break;

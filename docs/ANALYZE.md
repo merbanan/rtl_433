@@ -19,12 +19,12 @@ Use CubicSDR, Gqrx, SigDigger, SDR#, SDRangel or similar SDR UIs to verify you r
 If you have the SDR receiver on a headless machine try `rtl_tcp` to transport data to a GUI.
 
 ::: tip
-A quick substitute for an SDR UI is to record a sample, e.g. `-w file_433.92M_250k.cu -T 60` (adjust for the actual frequency and sample rate).
+A quick substitute for an SDR UI is to record a sample, e.g. `-w file_433.92M_250k.cu8 -T 60` (adjust for the actual frequency and sample rate).
 Now drop that .cu8 sample file on https://triq.org/pdv/ to visually inspect the spectrogram (a sideways view of the common SDR waterfalls).
 :::
 
 ::: warning
-Do not plug the receiver directly in a USB port, avoid noise and use a short usb cable.
+Do not plug the receiver directly in a USB port, avoid noise and use a short USB cable.
 :::
 
 ## Grab a sample

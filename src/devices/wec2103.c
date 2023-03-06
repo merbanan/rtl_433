@@ -73,7 +73,7 @@ static int wec2103_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "channel",
@@ -83,7 +83,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device wec2103 = {
+r_device const wec2103 = {
         .name           = "WEC-2103 temperature/humidity sensor",
         .modulation     = OOK_PULSE_PPM,
         .short_width    = 1900,

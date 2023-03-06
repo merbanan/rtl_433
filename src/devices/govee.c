@@ -197,7 +197,7 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Strip off the upper nibble
     event &= 0x0FFF;
 
-    char *event_str;
+    char const *event_str;
     // Figure out what event was triggered
     if (event == 0xafa) {
         event_str = "Button Press";
@@ -238,7 +238,7 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -249,7 +249,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device govee = {
+r_device const govee = {
         .name        = "Govee Water Leak Detector H5054, Door Contact Sensor B5023",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 440,  // Threshold between short and long pulse [us]
@@ -348,7 +348,7 @@ static int govee_h5054_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_logf(decoder, 1, __func__, "event_data=%02x", event_data);
     decoder_logf(decoder, 1, __func__, "crc_sum=%04x", crc_sum);
 
-    char *event_str;
+    char const *event_str;
     int leak_num = -1;
     int battery  = -1;
     switch (event) {
@@ -389,7 +389,7 @@ static int govee_h5054_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-r_device govee_h5054 = {
+r_device const govee_h5054 = {
         .name        = "Govee Water Leak Detector H5054",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 440,  // Threshold between short and long pulse [us]

@@ -29,7 +29,7 @@
 #endif
 
 /// Create a new r_device, copy from dev_template if not NULL.
-r_device *create_device(r_device *dev_template);
+r_device *create_device(r_device const *dev_template);
 
 /// Output data.
 void decoder_output_data(r_device *decoder, data_t *data);

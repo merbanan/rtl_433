@@ -16,7 +16,7 @@
 
 // create decoder functions
 
-r_device *create_device(r_device *dev_template)
+r_device *create_device(r_device const *dev_template)
 {
     r_device *r_dev = malloc(sizeof (*r_dev));
     if (!r_dev) {

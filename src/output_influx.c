@@ -112,6 +112,22 @@ static void influx_client_send(influx_client_t *ctx)
     char const *error_string = NULL;
     struct mg_connect_opts opts = {.user_data = ctx, .error_string = &error_string};
     if (ctx->tls_opts.tls_ca_cert) {
+        print_logf(LOG_INFO, "InfluxDB", "influxs (TLS) parameters are: "
+                                       "tls_cert=%s "
+                                       "tls_key=%s "
+                                       "tls_ca_cert=%s "
+                                       "tls_cipher_suites=%s "
+                                       "tls_server_name=%s "
+                                       "tls_psk_identity=%s "
+                                       "tls_psk_key=%s ",
+                ctx->tls_opts.tls_cert,
+                ctx->tls_opts.tls_key,
+                ctx->tls_opts.tls_ca_cert,
+                ctx->tls_opts.tls_cipher_suites,
+                ctx->tls_opts.tls_server_name,
+                ctx->tls_opts.tls_psk_identity,
+                ctx->tls_opts.tls_psk_key);
+
 #if MG_ENABLE_SSL
         opts.ssl_cert          = ctx->tls_opts.tls_cert;
         opts.ssl_key           = ctx->tls_opts.tls_key;
@@ -121,7 +137,7 @@ static void influx_client_send(influx_client_t *ctx)
         opts.ssl_psk_identity  = ctx->tls_opts.tls_psk_identity;
         opts.ssl_psk_key       = ctx->tls_opts.tls_psk_key;
 #else
-        print_logf(LOG_FATAL, __func__, "influxs (TLS) not available");
+        print_log(LOG_FATAL, __func__, "influxs (TLS) not available");
         exit(1);
 #endif
     }

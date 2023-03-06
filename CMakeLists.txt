@@ -182,8 +182,9 @@ if(ENABLE_OPENSSL) # AUTO / ON
 
 find_package(OpenSSL)
 # Get actual libs from pkg-config to support edge cases (static on Sparc)
+# This will break Win32 builds, exclude that platform
 pkg_check_modules(PC_OPENSSL QUIET openssl)
-if(PC_OPENSSL_FOUND)
+if(PC_OPENSSL_FOUND AND NOT WIN32)
     set(OPENSSL_LIBRARIES ${PC_OPENSSL_LINK_LIBRARIES})
 endif()
 if(OPENSSL_FOUND)

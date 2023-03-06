@@ -172,8 +172,8 @@ struct rtl_tcp_info {
 static int rtltcp_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
 {
     UNUSED(verbose);
-    char *host = "localhost";
-    char *port = "1234";
+    char const *host = "localhost";
+    char const *port = "1234";
     char hostport[280]; // 253 chars DNS name plus extra chars
 
     char *param = arg_param(dev_query); // strip scheme
@@ -386,7 +386,7 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, char const *dev_query, int verbose)
     }
 
     if (verbose)
-        print_logf(LOG_CRITICAL, "SDR", "Found %u device(s)", device_count);
+        print_logf(LOG_NOTICE, "SDR", "Found %u device(s)", device_count);
 
     int dev_index = 0;
     // select rtlsdr device by serial (-d :<serial>)
@@ -426,7 +426,7 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, char const *dev_query, int verbose)
         rtlsdr_get_device_usb_strings(i, vendor, product, serial);
 
         if (verbose)
-            print_logf(LOG_CRITICAL, "SDR", "trying device  %u:  %s, %s, SN: %s",
+            print_logf(LOG_NOTICE, "SDR", "trying device %u: %s, %s, SN: %s",
                     i, vendor, product, serial);
 
         r = rtlsdr_open(&dev->rtlsdr_dev, i);
@@ -436,8 +436,8 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, char const *dev_query, int verbose)
         }
         else {
             if (verbose)
-                print_logf(LOG_CRITICAL, "SDR", "Using device %u: %s",
-                        i, rtlsdr_get_device_name(i));
+                print_logf(LOG_CRITICAL, "SDR", "Using device %u: %s, %s, SN: %s, \"%s\"",
+                        i, vendor, product, serial, rtlsdr_get_device_name(i));
             dev->sample_size = sizeof(uint8_t) * 2; // CU8
             dev->sample_signed = 0;
 
@@ -636,9 +636,9 @@ static int soapysdr_offset_tuning(SoapySDRDevice *dev)
 
     if (strcmp(set_value, "true") != 0) {
         /* TODO: detection of failure modes
-        if ( r == -2 )
+        if (r == -2)
             print_log(LOG_WARNING, __func__, "Failed to set offset tuning: tuner doesn't support offset tuning!");
-        else if ( r == -3 )
+        else if (r == -3)
             print_log(LOG_WARNING, __func__, "Failed to set offset tuning: direct sampling not combinable with offset tuning!");
         else
         */

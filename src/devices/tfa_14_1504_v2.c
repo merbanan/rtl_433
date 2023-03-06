@@ -116,7 +116,7 @@ static int tfa_14_1504_v2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "battery_ok",
         "probe_fail",
@@ -125,7 +125,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tfa_14_1504_v2 = {
+r_device const tfa_14_1504_v2 = {
         .name        = "TFA Dostmann 14.1504.V2 Radio-controlled grill and meat thermometer",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 360,

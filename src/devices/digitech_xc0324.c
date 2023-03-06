@@ -208,7 +208,7 @@ static int digitech_xc0324_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return events > 0 ? events : ret;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "temperature_C",
@@ -218,7 +218,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device digitech_xc0324 = {
+r_device const digitech_xc0324 = {
         .name        = "Digitech XC-0324 / AmbientWeather FT005TH temp/hum sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 520,  // = 130 * 4

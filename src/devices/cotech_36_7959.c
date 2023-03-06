@@ -133,7 +133,7 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *cotech_36_7959_output_fields[] = {
+static char const *cotech_36_7959_output_fields[] = {
         "model",
         //"subtype",
         "id",
@@ -150,7 +150,7 @@ static char *cotech_36_7959_output_fields[] = {
         NULL,
 };
 
-r_device cotech_36_7959 = {
+r_device const cotech_36_7959 = {
         .name        = "Cotech 36-7959, SwitchDocLabs FT020T wireless weather station with USB",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 500,

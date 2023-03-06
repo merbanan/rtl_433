@@ -9,9 +9,9 @@ pothos_ver=2021.07.25-vc16
 [ "$(uname)" = "Darwin" ] && export tools=/opt/local
 
 # prefer GNU commands
-realpath=$(command -v grealpath)
+realpath=$(command -v grealpath || :)
 realpath="${realpath:-realpath}"
-sed=$(command -v gsed)
+sed=$(command -v gsed || :)
 sed="${sed:-sed}"
 
 # from https://libusb.info/
@@ -133,8 +133,10 @@ mv $sysroot64static/usr/bin/rtl_433.exe $sysroot64static/usr/bin/rtl_433_64bit_s
 
 # collect package
 
+cp $source_dir/.deploy/WINDOWS-MINGWW64.txt README.txt
+
 echo Packing rtl_433-win-x32.zip
-zip --junk-paths rtl_433-win-x32.zip sysroot32*/usr/bin/*.dll sysroot32*/usr/bin/rtl_433*.exe
+zip --junk-paths rtl_433-win-x32.zip sysroot32*/usr/bin/*.dll sysroot32*/usr/bin/rtl_433*.exe README.txt
 
 echo Packing rtl_433-win-x64.zip
-zip --junk-paths rtl_433-win-x64.zip sysroot64*/usr/bin/*.dll sysroot64*/usr/bin/rtl_433*.exe
+zip --junk-paths rtl_433-win-x64.zip sysroot64*/usr/bin/*.dll sysroot64*/usr/bin/rtl_433*.exe README.txt

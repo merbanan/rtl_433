@@ -173,7 +173,7 @@ static int tpms_tyreguard400_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events > 0 ? events : ret;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "type",
         "id",
@@ -191,7 +191,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_tyreguard400 = {
+r_device const tpms_tyreguard400 = {
         .name        = "TyreGuard 400 TPMS",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 100,

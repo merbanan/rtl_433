@@ -383,7 +383,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         if (validate_os_v2_message(decoder, msg, 64, msg_bits, 12) != 0)
             return 0;
         // Sanity check BCD digits
-        if ( ((msg[5] >> 4) & 0x0F) > 9 || (msg[4] & 0x0F) > 9 || ((msg[4] >> 4) & 0x0F) > 9 ) {
+        if (((msg[5] >> 4) & 0x0F) > 9 || (msg[4] & 0x0F) > 9 || ((msg[4] >> 4) & 0x0F) > 9) {
             decoder_log(decoder, 1, __func__, "THN132N Message failed BCD sanity check.");
             return DECODE_FAIL_SANITY;
         }
@@ -533,7 +533,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         if (validate_os_v2_message(decoder, msg, 148, msg_bits, 12) != 0)
             return 0;
         // Sanity check BCD digits
-        if ( ((msg[4] >> 4) & 0x0F) > 9 || (msg[4] & 0x0F) > 9 ) {
+        if (((msg[4] >> 4) & 0x0F) > 9 || (msg[4] & 0x0F) > 9) {
             decoder_log(decoder, 1, __func__, "UVR128 Message failed BCD sanity check.");
             return DECODE_FAIL_SANITY;
         }
@@ -582,7 +582,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
     return 0;
 }
 
-// ceil( (335 + 11) / 8 )
+// ceil((335 + 11) / 8)
 #define EXPECTED_NUM_BYTES 44
 
 /**
@@ -659,7 +659,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         if (validate_os_checksum(decoder, msg, 15) != 0)
             return DECODE_FAIL_MIC;
         // Sanity check BCD digits
-        if ( ((msg[5] >> 4) & 0x0F) > 9 || (msg[4] & 0x0F) > 9 || ((msg[4] >> 4) & 0x0F) > 9 || (msg[6] & 0x0F) > 9 || ((msg[6] >> 4) & 0x0F) > 9 ) {
+        if (((msg[5] >> 4) & 0x0F) > 9 || (msg[4] & 0x0F) > 9 || ((msg[4] >> 4) & 0x0F) > 9 || (msg[6] & 0x0F) > 9 || ((msg[6] >> 4) & 0x0F) > 9) {
             decoder_log(decoder, 1, __func__, "THGR810 Message failed BCD sanity check.");
             return DECODE_FAIL_SANITY;
         }
@@ -719,7 +719,16 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         if (validate_os_checksum(decoder, msg, 18) != 0)
             return DECODE_FAIL_MIC;
         // Sanity check BCD digits
-        if ( (msg[8] & 0x0F) > 9 || ((msg[8] >> 4) & 0x0F) > 9 || (msg[7] & 0x0F) > 9 || ((msg[7] >> 4) & 0x0F) > 9 || (msg[6] & 0x0F) > 9 || ((msg[6] >> 4) & 0x0F) > 9 || (msg[5] & 0x0F) > 9 || ((msg[5] >> 4) & 0x0F) > 9 || (msg[4] & 0x0F) > 9 || ((msg[4] >> 4) & 0x0F) > 9 ) {
+        if ((msg[8] & 0x0F) > 9
+                || ((msg[8] >> 4) & 0x0F) > 9
+                || (msg[7] & 0x0F) > 9
+                || ((msg[7] >> 4) & 0x0F) > 9
+                || (msg[6] & 0x0F) > 9
+                || ((msg[6] >> 4) & 0x0F) > 9
+                || (msg[5] & 0x0F) > 9
+                || ((msg[5] >> 4) & 0x0F) > 9
+                || (msg[4] & 0x0F) > 9
+                || ((msg[4] >> 4) & 0x0F) > 9) {
             decoder_log(decoder, 1, __func__, "PCR800 Message failed BCD sanity check.");
             return DECODE_FAIL_SANITY;
         }
@@ -762,7 +771,12 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         if (validate_os_checksum(decoder, msg, 17) != 0)
             return DECODE_FAIL_MIC;
         // Sanity check BCD digits
-        if ( (msg[5] & 0x0F) > 9 || ((msg[6] >> 4) & 0x0F) > 9 || (msg[6] & 0x0F) > 9 || ((msg[7] >> 4) & 0x0F) > 9 || (msg[7] & 0x0F) > 9 || ((msg[8] >> 4) & 0x0F) > 9 ) {
+        if ((msg[5] & 0x0F) > 9
+                || ((msg[6] >> 4) & 0x0F) > 9
+                || (msg[6] & 0x0F) > 9
+                || ((msg[7] >> 4) & 0x0F) > 9
+                || (msg[7] & 0x0F) > 9
+                || ((msg[8] >> 4) & 0x0F) > 9) {
             decoder_log(decoder, 1, __func__, "WGR800 Message failed BCD sanity check.");
             return DECODE_FAIL_SANITY;
         }
@@ -795,7 +809,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         msg[0] = msg[0] & 0x0f;
         if (validate_os_checksum(decoder, msg, 22) != 0)
             return DECODE_FAIL_MIC;
-        float rawAmp = (msg[4] >> 4 << 8 | (msg[3] & 0x0f )<< 4 | msg[3] >> 4);
+        float rawAmp = (msg[4] >> 4 << 8 | (msg[3] & 0x0f) << 4 | msg[3] >> 4);
         unsigned short int ipower = (rawAmp /(0.27*230)*1000);
         /* clang-format off */
         data = data_make(
@@ -882,7 +896,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         decoder_log_bitrow(decoder, 1, __func__, msg, msg_len, "Message");
         decoder_log_bitrow(decoder, 1, __func__, b, bitbuffer->bits_per_row[0], "Raw");
     }
-    else if (b[3] != 0 ) {
+    else if (b[3] != 0) {
         decoder_log(decoder, 1, __func__, "Possible Oregon Scientific v3 message, but sync nibble wasn't found");
         decoder_log_bitrow(decoder, 1, __func__, b, bitbuffer->bits_per_row[0], "Raw Data");
     }
@@ -901,7 +915,7 @@ static int oregon_scientific_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return ret;
 }
 
-static char *output_fields[] = {
+static char const *output_fields[] = {
         "model",
         "id",
         "channel",
@@ -929,7 +943,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device oregon_scientific = {
+r_device const oregon_scientific = {
         .name        = "Oregon Scientific Weather Sensor",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 440, // Nominal 1024Hz (488us), but pulses are shorter than pauses
