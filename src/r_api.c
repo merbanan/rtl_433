@@ -1098,7 +1098,10 @@ void add_syslog_output(r_cfg_t *cfg, char *param)
     int log_level = lvlarg_param(&param, LOG_WARNING);
     char const *host = "localhost";
     char const *port = "514";
-    hostport_param(param, &host, &port);
+    char const *extra = hostport_param(param, &host, &port);
+    if (extra && *extra) {
+        print_logf(LOG_FATAL, "Syslog UDP", "Unknown parameters \"%s\"", extra);
+    }
     print_logf(LOG_CRITICAL, "Syslog UDP", "Sending datagrams to %s port %s", host, port);
 
     list_push(&cfg->output_handler, data_output_syslog_create(log_level, host, port));
@@ -1109,7 +1112,10 @@ void add_http_output(r_cfg_t *cfg, char *param)
     // Note: no log_level, the HTTP-API consumes all log levels.
     char const *host = "0.0.0.0";
     char const *port = "8433";
-    hostport_param(param, &host, &port);
+    char const *extra = hostport_param(param, &host, &port);
+    if (extra && *extra) {
+        print_logf(LOG_FATAL, "HTTP server", "Unknown parameters \"%s\"", extra);
+    }
     print_logf(LOG_CRITICAL, "HTTP server", "Starting HTTP server at %s port %s", host, port);
 
     list_push(&cfg->output_handler, data_output_http_create(get_mgr(cfg), host, port, cfg));
@@ -1131,7 +1137,10 @@ void add_rtltcp_output(r_cfg_t *cfg, char *param)
 {
     char const *host = "localhost";
     char const *port = "1234";
-    hostport_param(param, &host, &port);
+    char const *extra = hostport_param(param, &host, &port);
+    if (extra && *extra) {
+        print_logf(LOG_FATAL, "rtl_tcp server", "Unknown parameters \"%s\"", extra);
+    }
     print_logf(LOG_CRITICAL, "rtl_tcp server", "Starting rtl_tcp server at %s port %s", host, port);
 
     list_push(&cfg->raw_handler, raw_output_rtltcp_create(host, port, cfg));
