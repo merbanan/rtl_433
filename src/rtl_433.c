@@ -49,7 +49,6 @@
 #include "am_analyze.h"
 #include "confparse.h"
 #include "term_ctl.h"
-#include "compat_alarm.h"
 #include "compat_paths.h"
 #include "logger.h"
 #include "fatal.h"
@@ -361,6 +360,7 @@ static void help_write(void)
 
 static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 {
+    //fprintf(stderr, "sdr_callback... %u\n", len);
     r_cfg_t *cfg = ctx;
     struct dm_state *demod = cfg->demod;
     char time_str[LOCAL_TIME_BUFLEN];
@@ -396,7 +396,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     if (demod->frame_end_ago)
         demod->frame_end_ago += n_samples;
 
-    alarm(3); // require callback to run every 3 second, abort otherwise
+    cfg->watchdog++; // reset the frame acquire watchdog
 
     if (demod->samp_grab) {
         samp_grab_push(demod->samp_grab, iq_buf, len);
@@ -692,7 +692,6 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         cfg->bytes_to_read -= len;
 
     if (cfg->after_successful_events_flag && (d_events > 0)) {
-        alarm(0); // cancel the watchdog timer
         if (cfg->after_successful_events_flag == 1) {
             cfg->exit_async = 1;
         }
@@ -707,11 +706,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     int hop_index = cfg->hop_times > cfg->frequency_index ? cfg->frequency_index : cfg->hop_times - 1;
     if (cfg->hop_times > 0 && cfg->frequencies > 1
             && difftime(rawtime, cfg->hop_start_time) >= cfg->hop_time[hop_index]) {
-        alarm(0); // cancel the watchdog timer
         cfg->hop_now = 1;
     }
     if (cfg->duration > 0 && rawtime >= cfg->stop_time) {
-        alarm(0); // cancel the watchdog timer
         cfg->exit_async = 1;
         print_log(LOG_CRITICAL, __func__, "Time expired, exiting!");
     }
@@ -1275,7 +1272,6 @@ console_handler(int signum)
     if (CTRL_C_EVENT == signum) {
         write_err("Signal caught, exiting!\n");
         g_cfg.exit_async = 1;
-        sdr_stop(g_cfg.dev);
         // Uninstall handler, next Ctrl-C is a hard abort
         SetConsoleCtrlHandler((PHANDLER_ROUTINE)console_handler, FALSE);
         return TRUE;
@@ -1285,21 +1281,7 @@ console_handler(int signum)
         g_cfg.hop_now = 1;
         return TRUE;
     }
-    else if (signum == SIGALRM) {
-        write_err("Async read stalled, exiting!\n");
-        g_cfg.exit_code = 3;
-        g_cfg.exit_async = 1;
-        sdr_stop(g_cfg.dev);
-        return TRUE;
-    }
     return FALSE;
-}
-
-/* Only called for SIGALRM
- */
-static void sighandler(int signum)
-{
-  console_handler(signum);
 }
 
 #else
@@ -1316,15 +1298,10 @@ static void sighandler(int signum)
         g_cfg.hop_now = 1;
         return;
     }
-    else if (signum == SIGALRM) {
-        write_err("Async read stalled, exiting!\n");
-        g_cfg.exit_code = 3;
-    }
     else {
         write_err("Signal caught, exiting!\n");
     }
     g_cfg.exit_async = 1;
-    sdr_stop(g_cfg.dev);
 
     // Uninstall handler, next Ctrl-C is a hard abort
     struct sigaction sigact;
@@ -1338,25 +1315,31 @@ static void sighandler(int signum)
 }
 #endif
 
-static void sdr_handler(sdr_event_t *ev, void *ctx)
+static void sdr_handler(struct mg_connection *nc, int ev_type, void *ev_data)
 {
-    r_cfg_t *cfg = ctx;
+    //fprintf(stderr, "%s: %d, %d, %p, %p\n", __func__, nc->sock, ev_type, nc->user_data, ev_data);
+    // only process for the dummy nc
+    if (nc->sock != INVALID_SOCKET || ev_type != MG_EV_POLL)
+        return;
+    r_cfg_t *cfg     = nc->user_data;
+    sdr_event_t *ev = ev_data;
+    //fprintf(stderr, "sdr_handler...\n");
 
     data_t *data = NULL;
     if (ev->ev & SDR_EV_RATE) {
-        cfg->samp_rate = ev->sample_rate;
+        // cfg->samp_rate = ev->sample_rate;
         data = data_append(data,
                 "sample_rate", "", DATA_INT, ev->sample_rate,
                 NULL);
     }
     if (ev->ev & SDR_EV_CORR) {
-        cfg->ppm_error = ev->freq_correction;
+        // cfg->ppm_error = ev->freq_correction;
         data = data_append(data,
                 "freq_correction", "", DATA_INT, ev->freq_correction,
                 NULL);
     }
     if (ev->ev & SDR_EV_FREQ) {
-        cfg->center_frequency = ev->center_frequency;
+        // cfg->center_frequency = ev->center_frequency;
         data = data_append(data,
                 "center_frequency", "", DATA_INT, ev->center_frequency,
                 "frequencies", "", DATA_COND, cfg->frequencies > 1, DATA_ARRAY, data_array(cfg->frequencies, DATA_INT, cfg->frequency),
@@ -1373,24 +1356,61 @@ static void sdr_handler(sdr_event_t *ev, void *ctx)
     }
 
     if (ev->ev == SDR_EV_DATA) {
-        if (cfg->mgr) {
-            int max_polls = 16;
-            while (max_polls-- && mg_mgr_poll(cfg->mgr, 0));
-        }
-
-        if (!cfg->exit_async)
-            sdr_callback((unsigned char *)ev->buf, ev->len, ctx);
+        sdr_callback((unsigned char *)ev->buf, ev->len, cfg);
     }
 
-    if (cfg->exit_async)
+    if (cfg->exit_async) {
+        if (cfg->verbosity >= 2)
+            print_log(LOG_INFO, "Input", "sdr_handler exit");
         sdr_stop(cfg->dev);
+        cfg->exit_async++;
+    }
+}
+
+// note that this function is called in a different thread
+static void acquire_callback(sdr_event_t *ev, void *ctx)
+{
+    //struct timeval now;
+    //get_time_now(&now);
+    //fprintf(stderr, "%ld.%06ld acquire_callback...\n", (long)now.tv_sec, (long)now.tv_usec);
+
+    struct mg_mgr *mgr = ctx;
+
+    // TODO: We should run the demod here to unblock the event loop
+
+    // thread-safe dispatch, ev_data is the iq buffer pointer and length
+    //fprintf(stderr, "acquire_callback bc send...\n");
+    mg_broadcast(mgr, sdr_handler, (void *)ev, sizeof(*ev));
+    //fprintf(stderr, "acquire_callback bc done...\n");
+}
+
+static void timer_handler(struct mg_connection *nc, int ev, void *ev_data)
+{
+    //fprintf(stderr, "%s: %d, %d, %p, %p\n", __func__, nc->sock, ev, nc->user_data, ev_data);
+    r_cfg_t *cfg = (r_cfg_t *)nc->user_data;
+    switch (ev) {
+    case MG_EV_TIMER: {
+        double now  = *(double *)ev_data;
+        (void) now; // unused
+        double next = mg_time() + 1.5;
+        //fprintf(stderr, "timer event, current time: %.2lf, next timer: %.2lf\n", now, next);
+        mg_set_timer(nc, next); // Send us timer event again after 1.5 seconds
+
+        if (cfg->watchdog == 0) {
+            // We expect a frame at least every 250 ms
+            write_err("Async read stalled, exiting!\n");
+            cfg->exit_code  = 3;
+            cfg->exit_async = 1;
+            sdr_stop(cfg->dev);
+        }
+        cfg->watchdog = 0;
+
+        break;
+    }
+    }
 }
 
 int main(int argc, char **argv) {
-#ifndef _WIN32
-    struct sigaction sigact;
-#endif
-    FILE *in_file;
     int r = 0;
     struct dm_state *demod;
     r_cfg_t *cfg = &g_cfg;
@@ -1652,6 +1672,7 @@ int main(int argc, char **argv) {
             cfg->samp_rate        = demod->load_info.sample_rate ? demod->load_info.sample_rate : sample_rate_0;
             cfg->center_frequency = demod->load_info.center_frequency ? demod->load_info.center_frequency : cfg->frequency[0];
 
+            FILE *in_file;
             if (strcmp(demod->load_info.path, "-") == 0) { // read samples from stdin
                 in_file = stdin;
                 cfg->in_filename = "<stdin>";
@@ -1775,7 +1796,6 @@ int main(int argc, char **argv) {
             }
             demod->sample_file_pos = ((float)n_blocks + 1) * DEFAULT_BUF_LENGTH / cfg->samp_rate / demod->sample_size;
             sdr_callback(test_mode_buf, DEFAULT_BUF_LENGTH, cfg);
-            alarm(0); // cancel the watchdog timer
 
             //Always classify a signal at the end of the file
             if (demod->am_analyze)
@@ -1810,6 +1830,7 @@ int main(int argc, char **argv) {
     //demod->sample_signed = sdr_get_sample_signed(cfg->dev);
 
 #ifndef _WIN32
+    struct sigaction sigact;
     sigact.sa_handler = sighandler;
     sigemptyset(&sigact.sa_mask);
     sigact.sa_flags = 0;
@@ -1845,6 +1866,10 @@ int main(int argc, char **argv) {
     if (cfg->verbosity >= LOG_NOTICE) {
         print_log(LOG_NOTICE, "Input", "Reading samples in async mode...");
     }
+
+    // TODO: remove this before next release
+    print_log(LOG_NOTICE, "Input", "The internals of input handling changed, read about and report problems on PR #1978");
+
     if (cfg->duration > 0) {
         time(&cfg->stop_time);
         cfg->stop_time += cfg->duration;
@@ -1852,17 +1877,31 @@ int main(int argc, char **argv) {
 
     r = sdr_set_center_freq(cfg->dev, cfg->center_frequency, 1); // always verbose
 
-        time(&cfg->hop_start_time);
-        signal(SIGALRM, sighandler);
-        alarm(3); // require callback to run every 3 second, abort otherwise
+    time(&cfg->hop_start_time);
 
-        r = sdr_start(cfg->dev, sdr_handler, (void *)cfg,
-                DEFAULT_ASYNC_BUF_NUMBER, cfg->out_block_size);
-        if (r < 0) {
-            print_logf(LOG_ERROR, "Input", "async read failed (%i).", r);
-        }
+    // add dummy socket to receive broadcasts
+    struct mg_add_sock_opts opts = {.user_data = cfg};
+    struct mg_connection *nc = mg_add_sock_opt(get_mgr(cfg), INVALID_SOCKET, timer_handler, opts);
+    // Send us MG_EV_TIMER event after 2.5 seconds
+    mg_set_timer(nc, mg_time() + 2.5);
 
-        alarm(0); // cancel the watchdog timer
+    r = sdr_start(cfg->dev, acquire_callback, (void *)get_mgr(cfg),
+            DEFAULT_ASYNC_BUF_NUMBER, cfg->out_block_size);
+    if (r < 0) {
+        print_logf(LOG_ERROR, "Input", "async start failed (%i).", r);
+    }
+
+    while (!cfg->exit_async) {
+        mg_mgr_poll(cfg->mgr, 500);
+    }
+    if (cfg->verbosity >= LOG_INFO)
+        print_log(LOG_INFO, "rtl_433", "stopping...");
+    // final polls to drain the broadcast
+    //while (cfg->exit_async < 2) {
+    //    mg_mgr_poll(cfg->mgr, 100);
+    //}
+    sdr_stop(cfg->dev);
+    //print_log(LOG_INFO, "rtl_433", "stopped.");
 
     if (cfg->report_stats > 0) {
         event_occurred_handler(cfg, create_report_data(cfg, cfg->report_stats));

@@ -9,7 +9,6 @@ add_library(r_433 STATIC
     am_analyze.c
     baseband.c
     bitbuffer.c
-    compat_alarm.c
     compat_paths.c
     compat_time.c
     confparse.c
