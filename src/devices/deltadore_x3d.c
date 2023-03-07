@@ -463,7 +463,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device deltadore_x3d = {
+r_device const deltadore_x3d = {
         .name        = "DeltaDore X3D devices",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 25,
