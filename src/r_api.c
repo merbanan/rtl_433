@@ -1143,7 +1143,7 @@ void add_rtltcp_output(r_cfg_t *cfg, char *param)
     }
     print_logf(LOG_CRITICAL, "rtl_tcp server", "Starting rtl_tcp server at %s port %s", host, port);
 
-    list_push(&cfg->raw_handler, raw_output_rtltcp_create(host, port, cfg));
+    list_push(&cfg->raw_handler, raw_output_rtltcp_create(host, port, extra, cfg));
 }
 
 void add_sr_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
