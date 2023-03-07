@@ -334,7 +334,7 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     struct deltadore_x3d_message_header head = {0};
     uint8_t bytes_read = 2; // step over length and FF field
     bytes_read += deltadore_x3d_parse_message_header(&frame[bytes_read], &head);
-    char *class, *wnd_stat;
+    char const *class, *wnd_stat;
 
     switch (head.type) {
         case DELTADORE_X3D_MSGTYPE_SENSOR: class = "Sensor"; break;
