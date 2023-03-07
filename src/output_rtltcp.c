@@ -14,6 +14,7 @@
 #include "rtl_433.h"
 #include "r_api.h"
 #include "r_util.h"
+#include "optparse.h"
 #include "logger.h"
 #include "fatal.h"
 #include "compat_pthread.h"
