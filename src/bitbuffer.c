@@ -19,14 +19,14 @@ void bitbuffer_clear(bitbuffer_t *bits)
     memset(bits, 0, sizeof(*bits));
 }
 
-void bitbuffer_add_bit(bitbuffer_t *bits, int bit)
+int bitbuffer_add_bit(bitbuffer_t *bits, int bit)
 {
     if (bits->num_rows == 0)
         bits->free_row = bits->num_rows = 1; // Add first row automatically
 
     if (bits->bits_per_row[bits->num_rows - 1] == UINT16_MAX) {
         // fprintf(stderr, "%s: Could not add more bits\n", __func__);
-        return;
+        return 1;
     }
     if (bits->bits_per_row[bits->num_rows - 1] == UINT16_MAX - 1) {
         //print_logf(LOG_WARNING, __func__, "Warning: row length limit (%u bits) reached", UINT16_MAX);
@@ -48,7 +48,7 @@ void bitbuffer_add_bit(bitbuffer_t *bits, int bit)
         }
         else {
             // fprintf(stderr, "%s: Could not add more rows\n", __func__);
-            return;
+            return 1;
         }
     }
     uint8_t *b = bits->bb[bits->num_rows - 1];
@@ -69,6 +69,7 @@ void bitbuffer_add_bit(bitbuffer_t *bits, int bit)
         bits->bits_per_row[bits->num_rows - 1] = 30 * 8;
     }
 */
+    return 0;
 }
 
 /// Set the width of the current (last) row by expanding or truncating as needed.

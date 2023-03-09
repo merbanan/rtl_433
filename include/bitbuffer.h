@@ -42,7 +42,7 @@ typedef struct bitbuffer {
 void bitbuffer_clear(bitbuffer_t *bits);
 
 /// Add a single bit at the end of the bitbuffer (MSB first).
-void bitbuffer_add_bit(bitbuffer_t *bits, int bit);
+int bitbuffer_add_bit(bitbuffer_t *bits, int bit);
 
 /// Add a new row to the bitbuffer.
 void bitbuffer_add_row(bitbuffer_t *bits);

@@ -12,6 +12,7 @@
 */
 
 #include "pulse_slicer.h"
+#include "pulse_data.h"
 #include "bitbuffer.h"
 #include "util.h"
 #include "logger.h"
@@ -21,6 +22,16 @@
 #include <stdint.h>
 #include <math.h>
 #include <limits.h>
+
+static int (*bitbuffer_add_bit_orig)(bitbuffer_t *, int) = bitbuffer_add_bit;
+#define bitbuffer_add_bit(b, i) \
+    { \
+        if (bitbuffer_add_bit_orig(b, i)) { \
+            print_logf(LOG_ERROR, __func__, "Bitbuffer overflow on %s", device->name); \
+            pulse_data_dump(stdout, pulses); \
+            return 0; \
+        } \
+    }
 
 static int account_event(r_device *device, bitbuffer_t *bits, char const *demod_name)
 {
