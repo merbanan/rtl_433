@@ -57,20 +57,24 @@ Payload format: With UV Lux sensor
     Fixed Values 0x  : AA AA AA AA AA AA 98 F3 A5
 
     Byte position    : 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18
-    Payload          : II II CC CH HR RR WW DU UL LL BN NN SS 0D 00 00 00 00 0
+    Payload          : II II CC CH HR RR WW |         | NN SS 0D 00 00 00 00 0
+                                +-----------+         +-------------+
+                                |                                   |
+                                |   07       08       09       10   |
+                  bits details : DDDDUUUU ULLLLLLL LLLLLLLL LLBBNNNN
 
-- IIII        station ID (randomised on each battery insertion)
-- CCC         degrees C, signed, in multiples of 0.1 C
-- HH          humidity %
-- RRR         cumulative rain in mm
-- WW          wind speed in km/h
-- D           wind direction (0 = N, 4 = E, 8 = S, 12 = W)
-- UU          Index UV
-- LLLB        Lux
-- B           Batterie
-- NNN         Payload number, increase at each message 000->FFF but not always, strange behavior. no clue
-- SS          XOR bytes checksum, lower nibble properly decoded, not the upper, unknown calcul.
-- D           Previous Wind direction other values
+- I     station ID (randomised on each battery insertion)
+- C     degrees C, signed, in multiples of 0.1 C
+- H     humidity %
+- R     cumulative rain in mm
+- W     wind speed in km/h
+- D     wind direction (0 = N, 4 = E, 8 = S, 12 = W)
+- U     Index UV
+- L     Lux
+- B     Battery
+- N     Payload number, increase at each message 000->FFF but not always, strange behavior. no clue
+- S     XOR bytes checksum, lower nibble properly decoded, not the upper, unknown calcul.
+- D     Previous Wind direction
 - Fixed values to 9 zeros
 
 To get raw data
@@ -146,7 +150,7 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_output_data(decoder, data);
         return 1;
     }
-    else if (bits < 220) {                         // model with UV LUX
+    else if (bits < 221) {                         // model with UV LUX
         float rain_mm    = rain_raw * 1.0f;
         int uv_index     = ((b[7] & 0x07) << 1) | ((b[8] & 0x80) >> 7);
         int light_lux    = ((b[8] & 0x7F) << 10) | (b[9] << 2) | ((b[10] & 0xC0) >> 6);
@@ -171,9 +175,7 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_output_data(decoder, data);
         return 1;
     }
-    else {
-        return 0;
-    }
+    return 0;
 }
 
 static char const *output_fields[] = {
