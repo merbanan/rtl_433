@@ -142,24 +142,9 @@ static unsigned long long cm180i_total(uint8_t const *msg)
     return val;
 }
 
-static unsigned int swap_nibbles(unsigned char byte) {
- return (((byte&0xf)<<4) | (byte>>4));
-}
-
-static unsigned int cm160_power(uint8_t const *msg)
+static uint8_t swap_nibbles(unsigned char byte)
 {
- unsigned int power = swap_nibbles(msg[3]) + (msg[4]<<8);
- return power;
-}
-
-static double cm160_total(uint8_t const *msg)
-{
- double total = ((uint64_t) swap_nibbles(msg[10]) << 36) | ((uint64_t) swap_nibbles(msg[9]) << 28) |
-                   (swap_nibbles(msg[8]) << 20) | (swap_nibbles(msg[7]) << 12) |
-		   (swap_nibbles(msg[6]) << 4) | (msg[5]&0xf);
- 
- //fprintf(stderr, "Raw KWH Total: %x (%d) - %7.4f \n",(int) total, (int) total, total);
- return total;
+    return (((byte&0xf) << 4) | (byte >> 4));
 }
 
 static unsigned short int cm180_power(uint8_t const *msg)
@@ -827,21 +812,30 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     }
     else if ((msg[0] == 0x20) || (msg[0] == 0x21) || (msg[0] == 0x22) || (msg[0] == 0x23) || (msg[0] == 0x24)) { // Owl CM160 Readings
 
-        msg[0] = msg[0] & 0x0f;
+        int channel = msg[0]>>4; //let's grab the channel before we manipulate the msg for checksum validation
+
+        msg[0] = msg[0] & 0x0F;
+
         if (validate_os_checksum(decoder, msg, 22) != 0)
             return DECODE_FAIL_MIC;
 
         //channel add from https://github.com/magellannh/rtl-wx/blob/dbaf3924815903c47b230c65841d18b263421854/src/rtl-433fm-decode.c
-        int channel = msg[0]>>4;
+
         int id = msg[1] & 0x0F;
 
-        //cm160 ipower rework & total energy added from https://github.com/magellannh/rtl-wx/blob/dbaf3924815903c47b230c65841d18b263421854/src/rtl-433fm-decode.c
-        unsigned int raw_ipower = cm160_power(msg); 
-        unsigned int ipower = (raw_ipower / (0.27*230) * 1000); //Assuming device is running in 230V country
-        //Alternate formula = (raw_ipower * 0.07) * 230 - https://github.com/cornetp/eagle-owl/blob/master/src/cm160.c
+        //cm160 current_watts rework & total energy added from https://github.com/magellannh/rtl-wx/blob/dbaf3924815903c47b230c65841d18b263421854/src/rtl-433fm-decode.c
+        unsigned int current_amps = swap_nibbles(msg[3]) + (msg[4]<<8);
 
-        double raw_total_energy = cm160_total(msg);
-        double total_kWh = (raw_total_energy * 230 ) / 3600.0 / 1000.0;  //Assuming device is running in 230V country
+        unsigned int current_watts = (current_amps / (0.27*230) * 1000); //Assuming device is running in 230V country
+        //Alternate formula = (current_amps * 0.07) * 230 - https://github.com/cornetp/eagle-owl/blob/master/src/cm160.c
+
+        double total_amps = ((uint64_t)swap_nibbles(msg[10]) << 36) | ((uint64_t)swap_nibbles(msg[9]) << 28) |
+                    (swap_nibbles(msg[8]) << 20) | (swap_nibbles(msg[7]) << 12) |
+                    (swap_nibbles(msg[6]) << 4) | (msg[5]&0xf);
+
+        //fprintf(stderr, "Raw KWH Total: %x (%d) - %7.4f \n",(int) total, (int) total, total);
+
+        double total_kWh = (total_amps * 230 ) / 3600.0 / 1000.0;  //Assuming device is running in 230V country
         //Not 100% sure about the formula = (amp * volt) / time per hour / kilo
         //(amp * volt) = watt
         // watt / 1 hour time (60 * 60) = Wh
@@ -853,9 +847,9 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
                 "model",            "",                     DATA_STRING,    "Oregon-CM160",
                 "id",               "House Code",           DATA_INT, id,
                 "channel",          "Channel",              DATA_FORMAT,    "%d", DATA_INT, channel, 
-                "raw_power",        "Raw Power",                DATA_FORMAT,    "%d", DATA_INT, raw_ipower,
-                "raw_energy",       "Raw Energy",               DATA_FORMAT,    "%d", DATA_INT, (int)raw_total_energy,
-                "power_W",          "Power",                DATA_FORMAT,  "%d W", DATA_INT, ipower,
+                "current_amps",     "Current Amps",         DATA_FORMAT,    "%d", DATA_INT, current_amps,
+                "total_amps",       "Total Amps",           DATA_FORMAT,    "%d", DATA_INT, (int)total_amps,
+                "power_W",          "Power",                DATA_FORMAT,  "%d W", DATA_INT, current_watts,
                 "energy_kWh",       "Energy",               DATA_FORMAT, "%7.4f kWh",DATA_DOUBLE, total_kWh,
                 NULL);
         /* clang-format on */
