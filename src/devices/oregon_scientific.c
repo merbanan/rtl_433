@@ -142,7 +142,7 @@ static unsigned long long cm180i_total(uint8_t const *msg)
     return val;
 }
 
-static uint8_t swap_nibbles(unsigned char byte)
+static uint8_t swap_nibbles(uint8_t byte)
 {
     return (((byte&0xf) << 4) | (byte >> 4));
 }
@@ -812,22 +812,20 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     }
     else if ((msg[0] == 0x20) || (msg[0] == 0x21) || (msg[0] == 0x22) || (msg[0] == 0x23) || (msg[0] == 0x24)) { // Owl CM160 Readings
 
-        int channel = msg[0]>>4; //let's grab the channel before we manipulate the msg for checksum validation
-
         msg[0] = msg[0] & 0x0F;
 
         if (validate_os_checksum(decoder, msg, 22) != 0)
             return DECODE_FAIL_MIC;
 
         //channel add from https://github.com/magellannh/rtl-wx/blob/dbaf3924815903c47b230c65841d18b263421854/src/rtl-433fm-decode.c
-
+        int channel = msg[0] & 0xF;
         int id = msg[1] & 0x0F;
 
         //cm160 current_watts rework & total energy added from https://github.com/magellannh/rtl-wx/blob/dbaf3924815903c47b230c65841d18b263421854/src/rtl-433fm-decode.c
         unsigned int current_amps = swap_nibbles(msg[3]) + (msg[4]<<8);
-
         unsigned int current_watts = (current_amps / (0.27*230) * 1000); //Assuming device is running in 230V country
         //Alternate formula = (current_amps * 0.07) * 230 - https://github.com/cornetp/eagle-owl/blob/master/src/cm160.c
+        //One Ampere is defined as the current that flows with electric charge of one Coulomb per second.
 
         double total_amps = ((uint64_t)swap_nibbles(msg[10]) << 36) | ((uint64_t)swap_nibbles(msg[9]) << 28) |
                     (swap_nibbles(msg[8]) << 20) | (swap_nibbles(msg[7]) << 12) |
@@ -846,10 +844,10 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         data = data_make(
                 "model",            "",                     DATA_STRING,    "Oregon-CM160",
                 "id",               "House Code",           DATA_INT, id,
-                "channel",          "Channel",              DATA_FORMAT,    "%d", DATA_INT, channel, 
-                "current_amps",     "Current Amps",         DATA_FORMAT,    "%d", DATA_INT, current_amps,
-                "total_amps",       "Total Amps",           DATA_FORMAT,    "%d", DATA_INT, (int)total_amps,
-                "power_W",          "Power",                DATA_FORMAT,  "%d W", DATA_INT, current_watts,
+                "channel",          "Channel",              DATA_FORMAT,     "%d", DATA_INT, channel,
+                "current_A",        "Current Amps",         DATA_FORMAT,   "%d A", DATA_INT, current_amps,
+                "total_A",          "Total Amps",           DATA_FORMAT,   "%d A", DATA_INT, (int)total_amps,
+                "power_W",          "Power",                DATA_FORMAT,   "%d W", DATA_INT, current_watts,
                 "energy_kWh",       "Energy",               DATA_FORMAT, "%7.4f kWh",DATA_DOUBLE, total_kWh,
                 NULL);
         /* clang-format on */
