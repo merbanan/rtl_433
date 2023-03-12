@@ -16,7 +16,7 @@ AOK Electronic Limited weather station.
 Known Rebrand compatible with:
 - Holman iWeather Station ws5029. https://www.holmanindustries.com.au/products/iweather-station/
 - Conrad Renkforce AOK-5056
-- Optex Electronique 99018 SM-018 5056
+- Optex Electronique 990018 SM-018 5056
 
 Appears to be related to the Fine pos WH1080 and Digitech XC0348.
 
@@ -195,7 +195,7 @@ static char const *output_fields[] = {
 };
 
 r_device const holman_ws5029pcm = {
-        .name        = "AOK Weather Station rebrand Holman Industries iWeather WS5029, Conrad AOK-5056, Optex 99018",
+        .name        = "AOK Weather Station rebrand Holman Industries iWeather WS5029, Conrad AOK-5056, Optex 990018",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 100,
         .long_width  = 100,
