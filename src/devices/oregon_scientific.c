@@ -142,6 +142,11 @@ static unsigned long long cm180i_total(uint8_t const *msg)
     return val;
 }
 
+static uint8_t swap_nibbles(uint8_t byte)
+{
+    return (((byte&0xf) << 4) | (byte >> 4));
+}
+
 static unsigned short int cm180_power(uint8_t const *msg)
 {
     unsigned short int val = 0;
@@ -806,16 +811,41 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         return 1;
     }
     else if ((msg[0] == 0x20) || (msg[0] == 0x21) || (msg[0] == 0x22) || (msg[0] == 0x23) || (msg[0] == 0x24)) { // Owl CM160 Readings
-        msg[0] = msg[0] & 0x0f;
+
+        msg[0] = msg[0] & 0x0F;
+
         if (validate_os_checksum(decoder, msg, 22) != 0)
             return DECODE_FAIL_MIC;
-        float rawAmp = (msg[4] >> 4 << 8 | (msg[3] & 0x0f) << 4 | msg[3] >> 4);
-        unsigned short int ipower = (rawAmp /(0.27*230)*1000);
+
+        int id = msg[1] & 0x0F;
+
+        //cm160 current_watts rework & total energy added from https://github.com/magellannh/rtl-wx/blob/dbaf3924815903c47b230c65841d18b263421854/src/rtl-433fm-decode.c
+        unsigned int current_amps = swap_nibbles(msg[3]) + (msg[4]<<8);
+        unsigned int current_watts = (current_amps / (0.27*230) * 1000); //Assuming device is running in 230V country
+        //Alternate formula = (current_amps * 0.07) * 230 - https://github.com/cornetp/eagle-owl/blob/master/src/cm160.c
+        //One Ampere is defined as the current that flows with electric charge of one Coulomb per second.
+
+        double total_amps = ((uint64_t)swap_nibbles(msg[10]) << 36) | ((uint64_t)swap_nibbles(msg[9]) << 28) |
+                    (swap_nibbles(msg[8]) << 20) | (swap_nibbles(msg[7]) << 12) |
+                    (swap_nibbles(msg[6]) << 4) | (msg[5]&0xf);
+
+        //fprintf(stderr, "Raw KWH Total: %x (%d) - %7.4f \n",(int) total, (int) total, total);
+
+        double total_kWh = (total_amps * 230 ) / 3600.0 / 1000.0;  //Assuming device is running in 230V country
+        //Not 100% sure about the formula = (amp * volt) / time per hour / kilo
+        //(amp * volt) = watt
+        // watt / 1 hour time (60 * 60) = Wh
+        // Wh / 1000 = kWh
+        //result compares to municpal box kWh count in Cape Town South Africa
+
         /* clang-format off */
         data = data_make(
-                "model",    "",                     DATA_STRING,    "Oregon-CM160",
-                "id",         "House Code", DATA_INT, msg[1]&0x0F,
-                "power_W", "Power",         DATA_FORMAT,    "%d W", DATA_INT, ipower,
+                "model",            "",                     DATA_STRING,    "Oregon-CM160",
+                "id",               "House Code",           DATA_INT, id,
+ //               "current_A",        "Current Amps",         DATA_FORMAT,   "%d A", DATA_INT, current_amps,
+ //               "total_As",         "Total Amps",           DATA_FORMAT,   "%d As", DATA_INT, (int)total_amps,
+                "power_W",          "Power",                DATA_FORMAT,   "%d W", DATA_INT, current_watts,
+                "energy_kWh",       "Energy",               DATA_FORMAT, "%7.4f kWh",DATA_DOUBLE, total_kWh,
                 NULL);
         /* clang-format on */
         decoder_output_data(decoder, data);
