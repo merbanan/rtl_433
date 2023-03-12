@@ -853,8 +853,8 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
                 "model",            "",                     DATA_STRING,    "Oregon-CM160",
                 "id",               "House Code",           DATA_INT, id,
                 "channel",          "Channel",              DATA_FORMAT,    "%d", DATA_INT, channel, 
-                "raw_power",        "Power",                DATA_FORMAT,    "%d", DATA_INT, raw_ipower,
-                "raw_energy",       "Energy",               DATA_FORMAT,    "%d", DATA_INT, (int)raw_total_energy,
+                "raw_power",        "Raw Power",                DATA_FORMAT,    "%d", DATA_INT, raw_ipower,
+                "raw_energy",       "Raw Energy",               DATA_FORMAT,    "%d", DATA_INT, (int)raw_total_energy,
                 "power_W",          "Power",                DATA_FORMAT,  "%d W", DATA_INT, ipower,
                 "energy_kWh",       "Energy",               DATA_FORMAT, "%7.4f kWh",DATA_DOUBLE, total_kWh,
                 NULL);
