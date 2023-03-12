@@ -817,8 +817,6 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         if (validate_os_checksum(decoder, msg, 22) != 0)
             return DECODE_FAIL_MIC;
 
-        //channel add from https://github.com/magellannh/rtl-wx/blob/dbaf3924815903c47b230c65841d18b263421854/src/rtl-433fm-decode.c
-        int channel = msg[0] & 0xF;
         int id = msg[1] & 0x0F;
 
         //cm160 current_watts rework & total energy added from https://github.com/magellannh/rtl-wx/blob/dbaf3924815903c47b230c65841d18b263421854/src/rtl-433fm-decode.c
@@ -844,7 +842,6 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         data = data_make(
                 "model",            "",                     DATA_STRING,    "Oregon-CM160",
                 "id",               "House Code",           DATA_INT, id,
-                "channel",          "Channel",              DATA_FORMAT,     "%d", DATA_INT, channel,
                 "current_A",        "Current Amps",         DATA_FORMAT,   "%d A", DATA_INT, current_amps,
                 "total_A",          "Total Amps",           DATA_FORMAT,   "%d A", DATA_INT, (int)total_amps,
                 "power_W",          "Power",                DATA_FORMAT,   "%d W", DATA_INT, current_watts,
