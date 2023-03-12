@@ -842,8 +842,8 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         data = data_make(
                 "model",            "",                     DATA_STRING,    "Oregon-CM160",
                 "id",               "House Code",           DATA_INT, id,
-                "current_A",        "Current Amps",         DATA_FORMAT,   "%d A", DATA_INT, current_amps,
-                "total_A",          "Total Amps",           DATA_FORMAT,   "%d A", DATA_INT, (int)total_amps,
+ //               "current_A",        "Current Amps",         DATA_FORMAT,   "%d A", DATA_INT, current_amps,
+ //               "total_As",         "Total Amps",           DATA_FORMAT,   "%d As", DATA_INT, (int)total_amps,
                 "power_W",          "Power",                DATA_FORMAT,   "%d W", DATA_INT, current_watts,
                 "energy_kWh",       "Energy",               DATA_FORMAT, "%7.4f kWh",DATA_DOUBLE, total_kWh,
                 NULL);
