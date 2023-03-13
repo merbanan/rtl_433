@@ -132,7 +132,7 @@ int const acurite_5n1_winddirections[] = {
 //  11 = A
 static char const *acurite_getChannel(uint8_t byte)
 {
-    static char const *channel_strs[] = {"C", "E", "B", "A"}; // 'E' stands for error
+    static char const *const channel_strs[] = {"C", "E", "B", "A"}; // 'E' stands for error
 
     int channel = (byte & 0xC0) >> 6;
     return channel_strs[channel];
@@ -1861,7 +1861,7 @@ static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return result;
 }
 
-static char const *acurite_rain_gauge_output_fields[] = {
+static char const *const acurite_rain_gauge_output_fields[] = {
         "model",
         "id",
         "rain_mm",
@@ -1880,7 +1880,7 @@ r_device const acurite_rain_896 = {
         .fields      = acurite_rain_gauge_output_fields,
 };
 
-static char const *acurite_th_output_fields[] = {
+static char const *const acurite_th_output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -1906,7 +1906,7 @@ r_device const acurite_th = {
  * For Acurite 592 TXR Temp/Humidity, but
  * Should match Acurite 592TX, 5-n-1, etc.
  */
-static char const *acurite_txr_output_fields[] = {
+static char const *const acurite_txr_output_fields[] = {
         "model",
         "message_type", // TODO: remove this
         "id",
@@ -1957,7 +1957,7 @@ r_device const acurite_txr = {
  * A transmission consists of two packets that run into each other.
  * There should be 40 bits of data though. But the last bit can't be detected.
  */
-static char const *acurite_986_output_fields[] = {
+static char const *const acurite_986_output_fields[] = {
         "model",
         "id",
         "channel",
@@ -1986,7 +1986,7 @@ r_device const acurite_986 = {
  *
  */
 
-static char const *acurite_606_output_fields[] = {
+static char const *const acurite_606_output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -1995,7 +1995,7 @@ static char const *acurite_606_output_fields[] = {
         NULL,
 };
 
-static char const *acurite_590_output_fields[] = {
+static char const *const acurite_590_output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -2023,7 +2023,7 @@ r_device const acurite_606 = {
         .fields      = acurite_606_output_fields,
 };
 
-static char const *acurite_00275rm_output_fields[] = {
+static char const *const acurite_00275rm_output_fields[] = {
         "model",
         "subtype",
         "id",

@@ -208,7 +208,7 @@ static int digitech_xc0324_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return events > 0 ? events : ret;
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "temperature_C",
