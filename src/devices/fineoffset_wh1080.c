@@ -326,7 +326,7 @@ static int fineoffset_wh1080_callback_fsk(r_device *decoder, bitbuffer_t *bitbuf
     return fineoffset_wh1080_callback(decoder, bitbuffer, TYPE_FSK);
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "subtype",
         "id",

@@ -104,7 +104,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
     return 0;
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",

@@ -62,7 +62,7 @@ static int generic_motion_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return DECODE_ABORT_EARLY;
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "code",
         NULL,

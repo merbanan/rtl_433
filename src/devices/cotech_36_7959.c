@@ -133,7 +133,7 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char const *cotech_36_7959_output_fields[] = {
+static char const *const cotech_36_7959_output_fields[] = {
         "model",
         //"subtype",
         "id",

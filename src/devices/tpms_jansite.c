@@ -101,7 +101,7 @@ static int tpms_jansite_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events > 0 ? events : ret;
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "type",
         "id",

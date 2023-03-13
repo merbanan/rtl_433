@@ -85,7 +85,7 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
     return ret;
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",

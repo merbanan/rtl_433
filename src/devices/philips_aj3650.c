@@ -134,7 +134,7 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "channel",
         "battery_ok",

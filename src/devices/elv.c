@@ -95,7 +95,7 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char const *elv_em1000_output_fields[] = {
+static char const *const elv_em1000_output_fields[] = {
         "model",
         "id",
         "seq",
@@ -263,7 +263,7 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char const *elv_ws2000_output_fields[] = {
+static char const *const elv_ws2000_output_fields[] = {
         "model",
         "id",
         "subtype",

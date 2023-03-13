@@ -160,7 +160,7 @@ static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return return_code;
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "type",
         "channel",
