@@ -226,7 +226,7 @@ static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b;
     uint16_t temp_raw;
     int id, humidity, wind_dir, battery_low;
-    float temp_c, rain_mm, speed_kmh; 
+    float temp_c, rain_mm, speed_kmh;
 
     // Data is inverted, but all these checks can be performed
     // and validated prior to inverting the buffer. Invert
@@ -254,7 +254,7 @@ static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     temp_c      = (temp_raw >> 4) * 0.1f;                              // Convert sign extended int to float
     humidity    = b[6];                                                // Simple 0-100 RH
     rain_mm     = ((b[7] << 4) + (b[8] >> 4)) * 0.79f;                 // Multiplier tested empirically over 618 pulses
-    speed_kmh   = (float)((b[8] & 0xF) << 4) + (b[9] >> 4);            // In discrete kph
+    speed_kmh   = (float)(((b[8] & 0xF) << 4) + (b[9] >> 4));          // In discrete kph
     wind_dir    = b[9] & 0xF;                                          // 4 bit wind direction, clockwise from North
 
     /* clang-format off */
