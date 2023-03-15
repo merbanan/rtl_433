@@ -129,7 +129,7 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_c      = (temp_raw >> 4) * 0.1f;
     int humidity      = ((b[3] & 0x0f) << 4) | ((b[4] & 0xf0) >> 4);
     int rain_raw      = ((b[4] & 0x0f) << 8) | b[5];
-    int speed_kmh     = b[6];
+    float speed_kmh   = (float)b[6];
     int direction_deg = wind_dir_degr[(b[7] & 0xf0) >> 4];
 
     if (bits < 200) {                 // model without UV LUX
@@ -138,11 +138,11 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format off */
         data = data_make(
                 "model",            "",                 DATA_STRING, "Holman-WS5029",
-                "id",               "StationID",        DATA_FORMAT, "%04X",     DATA_INT,    device_id,
-                "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C",  DATA_DOUBLE, temp_c,
-                "humidity",         "Humidity",         DATA_FORMAT, "%u %%",    DATA_INT,    humidity,
-                "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain_mm,
-                "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%u km/h",  DATA_INT,    speed_kmh,
+                "id",               "StationID",        DATA_FORMAT, "%04X",       DATA_INT,    device_id,
+                "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",     DATA_DOUBLE, temp_c,
+                "humidity",         "Humidity",         DATA_FORMAT, "%u %%",      DATA_INT,    humidity,
+                "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",    DATA_DOUBLE, rain_mm,
+                "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
                 "wind_dir_deg",     "Wind Direction",   DATA_INT, direction_deg,
                 NULL);
         /* clang-format on */
@@ -159,16 +159,16 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format off */
         data = data_make(
                 "model",            "",                 DATA_STRING, "AOK-5056",
-                "id",               "StationID",        DATA_FORMAT, "%04X",     DATA_INT,    device_id,
-                "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C",  DATA_DOUBLE, temp_c,
-                "humidity",         "Humidity",         DATA_FORMAT, "%u %%",    DATA_INT,    humidity,
-                "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",  DATA_DOUBLE, rain_mm,
-                "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%u km/h",  DATA_INT,    speed_kmh,
-                "wind_dir_deg",     "Wind Direction",   DATA_INT,                             direction_deg,
-                "uv",               "UV Index",         DATA_FORMAT, "%u",       DATA_INT,    uv_index,
-                "light_lux",        "Lux",              DATA_FORMAT, "%u",       DATA_INT,    light_lux,
-                "counter",          "Counter",          DATA_FORMAT, "%u",       DATA_INT,    counter,
-                "battery_ok",       "battery",          DATA_FORMAT, "%u",       DATA_INT,    !battery_low,
+                "id",               "StationID",        DATA_FORMAT, "%04X",      DATA_INT,    device_id,
+                "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",    DATA_DOUBLE, temp_c,
+                "humidity",         "Humidity",         DATA_FORMAT, "%u %%",     DATA_INT,    humidity,
+                "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",   DATA_DOUBLE, rain_mm,
+                "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.1f km/h", DATA_DOUBLE, speed_kmh,
+                "wind_dir_deg",     "Wind Direction",   DATA_INT,                              direction_deg,
+                "uv",               "UV Index",         DATA_FORMAT, "%u",        DATA_INT,    uv_index,
+                "light_lux",        "Lux",              DATA_FORMAT, "%u",        DATA_INT,    light_lux,
+                "counter",          "Counter",          DATA_FORMAT, "%u",        DATA_INT,    counter,
+                "battery_ok",       "battery",          DATA_FORMAT, "%u",        DATA_INT,    !battery_low,
                 NULL);
         /* clang-format on */
 
@@ -225,8 +225,8 @@ static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     uint8_t *b;
     uint16_t temp_raw;
-    int id, humidity, speed_kmh, wind_dir, battery_low;
-    float temp_c, rain_mm;
+    int id, humidity, wind_dir, battery_low;
+    float temp_c, rain_mm, speed_kmh; 
 
     // Data is inverted, but all these checks can be performed
     // and validated prior to inverting the buffer. Invert
@@ -253,8 +253,8 @@ static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     temp_raw    = (int16_t)(((b[4] & 0x0f) << 12) | (b[5] << 4));      // uses sign-extend
     temp_c      = (temp_raw >> 4) * 0.1f;                              // Convert sign extended int to float
     humidity    = b[6];                                                // Simple 0-100 RH
-    rain_mm     = ((b[7] << 4) + (b[8] >> 4)) * 0.79f;                  // Multiplier tested empirically over 618 pulses
-    speed_kmh   = ((b[8] & 0xF) << 4) + (b[9] >> 4);                   // In discrete kph
+    rain_mm     = ((b[7] << 4) + (b[8] >> 4)) * 0.79f;                 // Multiplier tested empirically over 618 pulses
+    speed_kmh   = (float)((b[8] & 0xF) << 4) + (b[9] >> 4);            // In discrete kph
     wind_dir    = b[9] & 0xF;                                          // 4 bit wind direction, clockwise from North
 
     /* clang-format off */
@@ -262,10 +262,10 @@ static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",                 DATA_STRING, "Holman-WS5029",
             "id",               "",                 DATA_INT,    id,
             "battery_ok",       "Battery",          DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C",  DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",         DATA_FORMAT, "%u %%",    DATA_INT,    humidity,
-            "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain_mm,
-            "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%u km/h",  DATA_INT,    speed_kmh,
+            "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C",     DATA_DOUBLE, temp_c,
+            "humidity",         "Humidity",         DATA_FORMAT, "%u %%",       DATA_INT,    humidity,
+            "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.01f mm",    DATA_DOUBLE, rain_mm,
+            "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.01f km/h",  DATA_DOUBLE, speed_kmh,
             "wind_dir_deg",     "Wind Direction",   DATA_INT,    (int)(wind_dir * 22.5),
             "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
             NULL);
