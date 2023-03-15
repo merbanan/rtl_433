@@ -35,6 +35,8 @@ Retransmission frames' preamble:
 
     ^^^^____^^^^____^^^^____^^^^____^^^^____^^^^____^^^^____^^^^^^^^_
 
+On some devices (see #2356) the preamble is two bytes shorter apparently?
+
 The data is manchester encoded _^ represents a 1 and ^_ represents a 0. The data section consists of 56 bits that equals
 7 bytes of scrambled data. The data is scrambled by XORing each following byte with the last scrambled byte. After
 descrambling, the 7 bytes have the following meaning conting byte from left to right as in big endian byte order:
@@ -44,6 +46,8 @@ descrambling, the 7 bytes have the following meaning conting byte from left to r
             all nibbles
 - byte 2-3: Replay counter value in big endian byte order
 - byte 4-6: Remote control channel's address
+
+On some devices (see #2356) there are two extra bytes for a total of 80 bits apparently?
 
 ## TEL-FIX wall-mounted remote control for RadioLoop Motor
 
@@ -95,66 +99,75 @@ static int somfy_rts_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "? (15)",
     };
 
-    data_t *data;
-    int is_retransmission = 0;
-    unsigned decode_row = 0;
-    unsigned data_start = 0;
-    uint8_t const *preamble_pattern;
-    unsigned preamble_pattern_bit_length = 0;
-    bitbuffer_t decoded = { 0 };
-    uint8_t *b;
-    int chksum_calc;
-    int chksum;
-    int counter;
-    int address;
-    int control;
-    int seed;
+    // full retransmission pattern is {65}f0f0f0f0f0f0f0ff0
+    // some devices only have 49 bit preamble, don't require the first 16 bit
+    uint8_t const preamble_pattern_long[] = {0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xff, 0x00};
+    uint8_t const preamble_length_long = 49;
+    // alternate pattern if the bitrate wrongly shortens the 8x 1's to 7x.
+    uint8_t const preamble_pattern_rate[] = {0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xfe, 0x00};
+    uint8_t const preamble_length_rate = 48;
+    // full fist transmission pattern after sync is {25}f0f0ff0
+    uint8_t const preamble_pattern_short[] = {0xf0, 0xf0, 0xff, 0x00};
+    uint8_t const preamble_length_short = 25;
 
-    for (int i = 0; i < bitbuffer->num_rows; i++) {
-        if (bitbuffer->bits_per_row[i] > 170) {
+    int is_retransmission = 0;
+    int decode_row = -1;
+    int bitpos = 0;
+
+    for (int row = 0; row < bitbuffer->num_rows; row++) {
+        if (bitbuffer->bits_per_row[row] > 170) {
             is_retransmission = 1;
-            decode_row = i;
-            data_start = 65;
-            preamble_pattern = (uint8_t const *) "\xf0\xf0\xf0\xf0\xf0\xf0\xf0\xff";
-            preamble_pattern_bit_length = 64;
-            break;
-        } else if (bitbuffer->bits_per_row[i] > 130) {
+            bitpos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern_long, preamble_length_long) + preamble_length_long;
+            // Retry for wrong bitrate if needed
+            if (bitpos + 56 * 2 > bitbuffer->bits_per_row[row]) {
+                bitpos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern_rate, preamble_length_rate) + preamble_length_rate;
+            }
+            // Are there at least 56 MC bits in this row?
+            if (bitpos + 56 * 2 <= bitbuffer->bits_per_row[row]) {
+                decode_row = row;
+                break;
+            }
+        }
+        else if (bitbuffer->bits_per_row[row] > 130) {
             is_retransmission = 0;
-            decode_row = i;
-            data_start = 25;
-            preamble_pattern = (uint8_t const *) "\xf0\xf0\xff";
-            preamble_pattern_bit_length = 24;
-            break;
+            bitpos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern_short, preamble_length_short) + preamble_length_short;
+            if (bitpos + 56 * 2 <= bitbuffer->bits_per_row[row]) {
+                decode_row = row;
+                break;
+            }
         }
     }
 
-    if (data_start == 0)
+    if (decode_row < 0)
         return DECODE_ABORT_EARLY;
 
-    if (bitbuffer_search(bitbuffer, decode_row, 0, preamble_pattern, preamble_pattern_bit_length) != 0)
-        return DECODE_ABORT_EARLY;
+    // Are there at least 56 MC bits in this row?
+    if (bitpos + 56 * 2 > bitbuffer->bits_per_row[decode_row])
+        return DECODE_ABORT_LENGTH;
 
-    if (bitbuffer_manchester_decode(bitbuffer, decode_row, data_start, &decoded, 56) - data_start < 56)
-        return DECODE_ABORT_EARLY;
+    bitbuffer_t decoded = {0};
+    bitbuffer_manchester_decode(bitbuffer, decode_row, bitpos, &decoded, 80);
+    if (decoded.num_rows == 0 || decoded.bits_per_row[0] < 56)
+        return DECODE_ABORT_LENGTH;
 
-    b = decoded.bb[0];
+    uint8_t *b = decoded.bb[0];
 
     // descramble
     for (int i = 6; i > 0; i--)
         b[i] = b[i] ^ b[i - 1];
 
     // calculate and verify checksum
-    chksum_calc = xor_bytes(b, 7);
+    int chksum_calc = xor_bytes(b, 7);
     chksum_calc = (chksum_calc & 0xf) ^ (chksum_calc >> 4); // fold to nibble
     if (chksum_calc != 0)
         return DECODE_FAIL_MIC;
 
-    seed    = b[0];
-    control = (b[1] & 0xf0) >> 4;
-    chksum  = b[1] & 0xf;
-    counter = (b[2] << 8) | b[3];
+    int seed    = b[0];
+    int control = (b[1] & 0xf0) >> 4;
+    int chksum  = b[1] & 0xf;
+    int counter = (b[2] << 8) | b[3];
     // assume little endian as multiple addresses used by one remote control increase the address value in little endian byte order.
-    address = (b[6] << 16) | (b[5] << 8) | b[4];
+    int address = (b[6] << 16) | (b[5] << 8) | b[4];
 
     // lookup control
     char const *control_str = control_strs[control];
@@ -166,7 +179,7 @@ static int somfy_rts_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_logf(decoder, 2, __func__, "seed=0x%02x, chksum=0x%x", seed, chksum);
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",          "",               DATA_STRING, "Somfy-RTS",
             "id",             "",               DATA_FORMAT, "%06X", DATA_INT, address,
             "control",        "Control",        DATA_STRING, control_str,
@@ -180,7 +193,7 @@ static int somfy_rts_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "control",
@@ -193,7 +206,7 @@ static char *output_fields[] = {
 // rtl_433 -r g001_433.414M_250k.cu8 -X "n=somfy-test,m=OOK_PCM,s=604,l=604,t=40,r=10000,g=3000,y=2416"
 // Nominal bit width is ~604 us, RZ, short=long
 
-r_device somfy_rts = {
+r_device const somfy_rts = {
         .name        = "Somfy RTS",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 604,   // each pulse is ~604 us (nominal bit width)

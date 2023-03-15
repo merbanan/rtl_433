@@ -54,8 +54,9 @@ Read config options from a file
 [\-g <gain> | help] (default: auto)
 .TP
 [ \fB\-t\fI <settings>\fP ]
-apply a list of keyword=value settings for SoapySDR devices
-       e.g. \-t "antenna=A,bandwidth=4.5M,rfnotch_ctrl=false"
+apply a list of keyword=value settings to the SDR device
+       e.g. for SoapySDR \-t "antenna=A,bandwidth=4.5M,rfnotch_ctrl=false"
+       for RTL\-SDR use "direct_samp[=1]", "offset_tune[=1]", "digital_agc[=1]", "biastee[=1]"
 .TP
 [ \fB\-f\fI <frequency>\fP ]
 Receive frequency(s) (default: 433920000 Hz)
@@ -68,6 +69,9 @@ Correct rtl\-sdr tuner frequency offset error (default: 0)
 .TP
 [ \fB\-s\fI <sample rate>\fP ]
 Set sample rate (default: 250000 Hz)
+.TP
+[ \fB\-D\fI restart | pause | quit | manual\fP ]
+Input device run mode options.
 .SS "Demodulator options"
 .TP
 [ \fB\-R\fI <device> | help\fP ]
@@ -99,9 +103,6 @@ Skip frames below estimated noise level to reduce cpu load.
 Choose amplitude or magnitude level estimator.
 .SS "Analyze/Debug options"
 .TP
-[ \fB\-a\fI\fP ]
-Analyze mode. Print a textual description of the signal.
-.TP
 [ \fB\-A\fI\fP ]
 Pulse Analyzer. Enable pulse analysis and decode attempt.
        Disable all decoders with \-R 0 if you want analyzer output only.
@@ -124,7 +125,7 @@ Save data stream to output file (a '\-' dumps samples to stdout)
 Save data stream to output file, overwrite existing file
 .SS "Data output options"
 .TP
-[ \fB\-F\fI kv | json | csv | mqtt | influx | syslog | trigger | null | help\fP ]
+[ \fB\-F\fI log | kv | json | csv | mqtt | influx | syslog | trigger | null | help\fP ]
 Produce decoded output in given format.
        Append output to file with :<filename> (e.g. \-F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. \-F syslog:127.0.0.1:1514
@@ -321,10 +322,10 @@ countonly : suppress detailed row output
 E.g. \-X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repeats>=3"
 .SS "Output format option"
 .TP
-[ \fB\-F\fI kv|json|csv|mqtt|influx|syslog|trigger|null\fP ]
+[ \fB\-F\fI log|kv|json|csv|mqtt|influx|syslog|trigger|null\fP ]
 Produce decoded output in given format.
 .RS
-Without this option the default is KV output. Use "\-F null" to remove the default.
+Without this option the default is LOG and KV output. Use "\-F null" to remove the default.
 .RE
 .RS
 Append output to file with :<filename> (e.g. \-F csv:log.csv), defaults to stdout.

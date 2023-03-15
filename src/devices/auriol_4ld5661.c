@@ -77,7 +77,7 @@ static int auriol_4ld5661_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return ret;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -86,7 +86,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device auriol_4ld5661 = {
+r_device const auriol_4ld5661 = {
         .name        = "Auriol 4-LD5661 temperature/rain sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1000,

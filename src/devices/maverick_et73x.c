@@ -53,13 +53,13 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
 
     //check for correct preamble (0x55666a)
-    if ((bitbuffer->bb[0][0] != 0x55 ) || bitbuffer->bb[0][1] != 0x66 || bitbuffer->bb[0][2] != 0x6a)
+    if ((bitbuffer->bb[0][0] != 0x55) || bitbuffer->bb[0][1] != 0x66 || bitbuffer->bb[0][2] != 0x6a)
         return DECODE_ABORT_EARLY; // preamble missing
 
     // decode the inner manchester encoding
     bitbuffer_manchester_decode(bitbuffer, 0, 0, &mc, 104);
 
-    // we require 7 bytes 13 nibble rounded up (  b[6] highest referance below )
+    // we require 7 bytes 13 nibble rounded up (b[6] highest referance below)
     if (mc.bits_per_row[0] < 52) {
         return DECODE_FAIL_SANITY; // manchester_decode fail
     }
@@ -74,7 +74,7 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp1_c = temp1 - 532.0f;
     float temp2_c = temp2 - 532.0f;
 
-    char *status = "unknown";
+    char const *status = "unknown";
     if (flags == 2)
         status = "default";
     else if (flags == 7)
@@ -103,7 +103,7 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "status",
@@ -113,7 +113,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device maverick_et73x = {
+r_device const maverick_et73x = {
         .name        = "Maverick ET-732/733 BBQ Sensor",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 230,

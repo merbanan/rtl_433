@@ -14,6 +14,7 @@
 #include "rtl_433.h"
 #include "r_api.h"
 #include "r_util.h"
+#include "optparse.h"
 #include "logger.h"
 #include "fatal.h"
 #include "compat_pthread.h"
@@ -98,6 +99,7 @@ typedef struct rtltcp_server {
     socklen_t addr_len;
     SOCKET sock;
     int client_count; ///< number of connected clients
+    int control;      ///< are clients allowed to change SDR parameters
 
     uint8_t const *data_buf; ///< data buffer with most recent data, NULL otherwise
     uint32_t data_len;       ///< data buffer length in bytes, 0 otherwise
@@ -157,7 +159,7 @@ E.g. initialization from Gqrx:
 - RTLTCP_SET_FREQ  with 433968000
 */
 
-static int parse_command(r_cfg_t *cfg, uint8_t const *buf, int len)
+static int parse_command(r_cfg_t *cfg, int control, uint8_t const *buf, int len)
 {
     UNUSED(cfg);
 
@@ -171,21 +173,28 @@ static int parse_command(r_cfg_t *cfg, uint8_t const *buf, int len)
     switch (cmd) {
     case RTLTCP_SET_FREQ:
         print_logf(LOG_DEBUG, "rtl_tcp", "received command SET_FREQ with %u", arg);
-        // set_center_freq(cfg, arg);
+        if (control)
+            set_center_freq(cfg, arg);
         break;
     case RTLTCP_SET_SAMPLE_RATE:
         print_logf(LOG_DEBUG, "rtl_tcp", "received command SET_SAMPLE_RATE with %u", arg);
-        // set_sample_rate(cfg, arg);
+        if (control)
+            set_sample_rate(cfg, arg);
         break;
     case RTLTCP_SET_GAIN_MODE:
         print_logf(LOG_DEBUG, "rtl_tcp", "received command SET_GAIN_MODE with %u", arg);
+        // if (control)
+        // if (arg == 0 /* =auto */) sdr_set_auto_gain(dev, 0);
         break;
     case RTLTCP_SET_GAIN:
         print_logf(LOG_DEBUG, "rtl_tcp", "received command SET_GAIN with %u", arg);
+        // if (control)
+        // sdr_set_tuner_gain(dev, char const *gain_str, 0)
         break;
     case RTLTCP_SET_FREQ_CORRECTION:
         print_logf(LOG_DEBUG, "rtl_tcp", "received command SET_FREQ_CORRECTION with %u", arg);
-        // set_freq_correction(cfg, (int)arg);
+        if (control)
+            set_freq_correction(cfg, (int)arg);
         break;
     case RTLTCP_SET_IF_TUNER_GAIN:
         print_logf(LOG_DEBUG, "rtl_tcp", "received command SET_IF_TUNER_GAIN with %u", arg);
@@ -195,6 +204,7 @@ static int parse_command(r_cfg_t *cfg, uint8_t const *buf, int len)
         break;
     case RTLTCP_SET_AGC_MODE:
         print_logf(LOG_DEBUG, "rtl_tcp", "received command SET_AGC_MODE with %u", arg);
+        // ...
         break;
     case RTLTCP_SET_DIRECT_SAMPLING:
         print_logf(LOG_DEBUG, "rtl_tcp", "received command SET_DIRECT_SAMPLING with %u", arg);
@@ -253,6 +263,7 @@ static THREAD_RETURN THREAD_CALL accept_thread(void *arg)
         unsigned addr_len = sizeof(addr);
         int sock = accept(srv->sock, (struct sockaddr *)&addr, &addr_len);
 
+        // TODO: ignore ECONNABORTED (Software caused connection abort)
         if (sock < 0) {
             perror("ERROR on accept");
             continue;
@@ -308,25 +319,26 @@ static THREAD_RETURN THREAD_CALL accept_thread(void *arg)
                 }
                 int pos = 0;
                 while (pos + 5 <= len) {
-                    pos += parse_command(srv->cfg, &buf[pos], (int)len - pos);
+                    pos += parse_command(srv->cfg, srv->control, & buf[pos], (int)len - pos);
                 }
             }
             if (abort) {
                 break;
             }
 
-            // Send frames
+            // Wait for send buffer to clear
             fd_set fds;
             FD_ZERO(&fds);
             FD_SET(sock, &fds);
-            struct timeval timeout = {0};
+            struct timeval timeout = {.tv_usec = 100000}; // Wait at most 100 ms
 
             int ready = select(sock + 1, NULL, &fds, NULL, &timeout);
             if (ready <= 0) {
                 print_log(LOG_ERROR, "rtl_tcp", "send not ready for write?");
-                break;
+                break; // Cancel the connection on network problems
             }
 
+            // Wait for next frame
             pthread_mutex_lock(&srv->lock);
             while (srv->data_cnt == prev_cnt || srv->data_buf == NULL)
                 pthread_cond_wait(&srv->cond, &srv->lock);
@@ -340,6 +352,7 @@ static THREAD_RETURN THREAD_CALL accept_thread(void *arg)
 
             pthread_mutex_unlock(&srv->lock);
 
+            // Send frame
             send_all(sock, data, data_len, MSG_NOSIGNAL); // ignore SIGPIPE
         }
 
@@ -485,7 +498,7 @@ static void raw_output_rtltcp_free(raw_output_t *output)
     free(rtltcp);
 }
 
-struct raw_output *raw_output_rtltcp_create(const char *host, const char *port, r_cfg_t *cfg)
+struct raw_output *raw_output_rtltcp_create(const char *host, const char *port, char const *opts, r_cfg_t *cfg)
 {
     raw_output_rtltcp_t *rtltcp = calloc(1, sizeof(raw_output_rtltcp_t));
     if (!rtltcp) {
@@ -501,6 +514,14 @@ struct raw_output *raw_output_rtltcp_create(const char *host, const char *port, 
         return NULL;
     }
 #endif
+
+    // If clients allowed to change SDR parameters
+    if (opts && !strcasecmp(opts, "control"))
+        rtltcp->server.control = 1;
+    else if (opts && *opts) {
+        print_logf(LOG_FATAL, __func__, "Invalid \"%s\" option.", opts);
+        exit(1);
+    }
 
     rtltcp->output.output_frame  = raw_output_rtltcp_frame;
     rtltcp->output.output_free   = raw_output_rtltcp_free;

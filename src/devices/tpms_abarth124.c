@@ -108,7 +108,7 @@ static int tpms_abarth124_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "type",
         "id",
@@ -121,7 +121,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_abarth124 = {
+r_device const tpms_abarth124 = {
         .name        = "Abarth 124 Spider TPMS",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 52,  // 12-13 samples @250k

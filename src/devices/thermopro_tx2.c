@@ -93,7 +93,7 @@ static int thermopro_tx2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "subtype",
         "id",
@@ -105,7 +105,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device thermopro_tx2 = {
+r_device const thermopro_tx2 = {
         .name        = "ThermoPro-TX2 temperature sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

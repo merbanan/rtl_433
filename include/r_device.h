@@ -59,7 +59,7 @@ typedef struct r_device {
     unsigned protocol_num; ///< fixed sequence number, assigned in main().
 
     /* information provided by each decoder */
-    char *name;
+    char const *name;
     unsigned modulation;
     float short_width;
     float long_width;
@@ -71,7 +71,7 @@ typedef struct r_device {
     struct r_device *(*create_fn)(char *args);
     unsigned priority; ///< Run later and only if no previous events were produced
     unsigned disabled; ///< 0: default enabled, 1: default disabled, 2: disabled, 3: disabled and hidden
-    char **fields; ///< List of fields this decoder produces; required for CSV output. NULL-terminated.
+    char const *const *fields; ///< List of fields this decoder produces; required for CSV output. NULL-terminated.
 
     /* public for each decoder */
     int verbose;

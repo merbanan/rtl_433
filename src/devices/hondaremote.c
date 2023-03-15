@@ -18,7 +18,7 @@ Note that this is actually Manchester coded and should be changed.
 */
 #include "decoder.h"
 
-static char const *command_code[] = {"boot", "unlock" , "lock",};
+static char const *const command_code[] = {"boot", "unlock" , "lock",};
 
 static char const *get_command_codes(const uint8_t *bytes)
 {
@@ -61,14 +61,14 @@ static int hondaremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 0;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "code",
         NULL,
 };
 
-r_device hondaremote = {
+r_device const hondaremote = {
         .name        = "Honda Car Key",
         .modulation  = FSK_PULSE_PWM,
         .short_width = 250,

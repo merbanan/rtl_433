@@ -119,7 +119,7 @@ static int atech_ws308_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "temperature_C",
@@ -127,7 +127,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device atech_ws308 = {
+r_device const atech_ws308 = {
         .name        = "Atech-WS308 temperature sensor",
         .modulation  = OOK_PULSE_RZ,
         .short_width = 1600,

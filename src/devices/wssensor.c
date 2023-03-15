@@ -82,7 +82,7 @@ static int wssensor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -92,7 +92,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device wssensor = {
+r_device const wssensor = {
         .name        = "Hyundai WS SENZOR Remote Temperature Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1000,

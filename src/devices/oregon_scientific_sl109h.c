@@ -104,7 +104,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
     return 0;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -115,7 +115,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device oregon_scientific_sl109h = {
+r_device const oregon_scientific_sl109h = {
         .name        = "Oregon Scientific SL109H Remote Thermal Hygro Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

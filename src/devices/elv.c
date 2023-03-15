@@ -95,7 +95,7 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *elv_em1000_output_fields[] = {
+static char const *const elv_em1000_output_fields[] = {
         "model",
         "id",
         "seq",
@@ -105,7 +105,7 @@ static char *elv_em1000_output_fields[] = {
         NULL,
 };
 
-r_device elv_em1000 = {
+r_device const elv_em1000 = {
         .name        = "ELV EM 1000",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 500,  // guessed, no samples available
@@ -175,7 +175,7 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t dec[16]= {0};
     uint8_t nibbles=0;
     uint8_t bit=11; // preamble
-    char *types[]={"!AS3", "AS2000/ASH2000/S2000/S2001A/S2001IA/ASH2200/S300IA", "!S2000R", "!S2000W", "S2001I/S2001ID", "!S2500H", "!Pyrano", "KS200/KS300"};
+    char const *types[]={"!AS3", "AS2000/ASH2000/S2000/S2001A/S2001IA/ASH2200/S300IA", "!S2000R", "!S2000W", "S2001I/S2001ID", "!S2500H", "!Pyrano", "KS200/KS300"};
     uint8_t length[16] = {5, 8, 5, 8, 12, 9, 8, 14, 8};
     uint8_t check_calculated=0, sum_calculated=0;
     uint8_t i;
@@ -219,7 +219,7 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    char *subtype  = (dec[0] <= 7) ? types[dec[0]] : "?";
+    char const *subtype  = (dec[0] <= 7) ? types[dec[0]] : "?";
     int code       = dec[1] & 7;
     float temp     = ((dec[1] & 8) ? -1.0f : 1.0f) * (dec[4] * 10 + dec[3] + dec[2] * 0.1f);
     float humidity = dec[7] * 10 + dec[6] + dec[5] * 0.1f;
@@ -263,7 +263,7 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *elv_ws2000_output_fields[] = {
+static char const *const elv_ws2000_output_fields[] = {
         "model",
         "id",
         "subtype",
@@ -279,7 +279,7 @@ static char *elv_ws2000_output_fields[] = {
         NULL,
 };
 
-r_device elv_ws2000 = {
+r_device const elv_ws2000 = {
         .name        = "ELV WS 2000",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 366,  // 0 => 854us, 1 => 366us according to link in top

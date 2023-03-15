@@ -51,7 +51,7 @@ static int intertechno_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "type",
         "id",
@@ -61,7 +61,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device intertechno = {
+r_device const intertechno = {
         .name        = "Intertechno 433",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 330,

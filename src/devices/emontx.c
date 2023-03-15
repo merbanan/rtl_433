@@ -138,7 +138,7 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "node",
         "ct1",
@@ -157,7 +157,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device emontx = {
+r_device const emontx = {
         .name        = "emonTx OpenEnergyMonitor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 2000000.0f / (49230 + 49261), // 49261kHz for RFM69, 49230kHz for RFM12B

@@ -342,7 +342,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "count",
         "num_rows",
@@ -614,10 +614,11 @@ r_device *flex_create_device(char *spec)
             if (!params->name)
                 FATAL_STRDUP("flex_create_device()");
             int name_size = strlen(val) + 27;
-            dev->name = malloc(name_size);
-            if (!dev->name)
+            char* flex_name = malloc(name_size);
+            if (!flex_name)
                 FATAL_MALLOC("flex_create_device()");
-            snprintf(dev->name, name_size, "General purpose decoder '%s'", val);
+            snprintf(flex_name, name_size, "General purpose decoder '%s'", val);
+            dev->name = flex_name;
         }
 
         else if (!strcasecmp(key, "m") || !strcasecmp(key, "modulation"))
@@ -718,7 +719,7 @@ r_device *flex_create_device(char *spec)
         for (int g = 0; g < GETTER_SLOTS && params->getter[g].name; ++g) {
             params->fields[i++] = params->getter[g].name;
         }
-        dev->fields = (char **)params->fields;
+        dev->fields = params->fields;
     }
 
     // sanity checks

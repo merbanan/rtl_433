@@ -5,7 +5,7 @@
 # from ../include/rtl_433_devices.h
 #     DECL(silvercrest) \
 #
-# static char *output_fields_EG53MA4[] = {
+# static char const *const output_fields_EG53MA4[] = {
 #         "model",
 #         "type",
 #         "id",
@@ -16,7 +16,7 @@
 #         NULL,
 # };
 #
-# r_device schraeder = {
+# r_device const schraeder = {
 #         .name        = "Schrader TPMS",
 #         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
 #         .short_width = 120,
@@ -150,8 +150,18 @@ def process_source(path, name):
                 doc = ''
                 continue
 
+            # look for char * variable = "" declarations that should really be char const *
+            m = re.match(r'(?:static)?\s?char\s?\*\s?[^\*\s]+\s?=\s?(?:{|")', line)
+            if m:
+                err(f"::error file={name},line={i}::char * variable should be char const * when being given a constant value")
+                
+            # look for output fields declarations that must be static char const *const
+            m = re.match(r'static\s?char\s+const\s*\*\s*[^\*\s]+\[\]\s*=\s*\{', line) 
+            if m:
+                err(f"::error file={name},line={i}::output fields static variable should be 'static char const *const'")
+
             # look for r_device with decode_fn
-            m = re.match(r'\s*r_device\s+([^\*]*?)\s*=', line)
+            m = re.match(r'\s*r_device\s+const\s+([^\*]*?)\s*=', line)
             if m:
                 rName = m.group(1)
                 if rName in links:

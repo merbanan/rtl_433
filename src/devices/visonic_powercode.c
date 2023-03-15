@@ -96,7 +96,7 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "supervised",   "Supervised",   DATA_INT,    ((0x04 & msg[3]) == 0x04) ? 1 : 0,
             "spidernet",    "Spidernet",    DATA_INT,    ((0x02 & msg[3]) == 0x02) ? 1 : 0,
             "repeater",     "Repeater",     DATA_INT,    ((0x01 & msg[3]) == 0x01) ? 1 : 0,
-            "mic",          "Integrity",    DATA_STRING, "LRC",
+            "mic",          "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
@@ -105,7 +105,7 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "tamper",
@@ -120,7 +120,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device visonic_powercode = {
+r_device const visonic_powercode = {
         .name        = "Visonic powercode",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 400,

@@ -28,11 +28,11 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bit
     data_t *data;
 
     /* Test bit pattern for every second bit being 1 */
-    if ( 25 != length
-        || (b[0]&0xaa) != 0xaa
-        || (b[1]&0xaa) != 0xaa
-        || (b[2]&0xaa) != 0xaa
-        || (b[3]       != 0x80) )
+    if (25 != length
+            || (b[0]&0xaa) != 0xaa
+            || (b[1]&0xaa) != 0xaa
+            || (b[2]&0xaa) != 0xaa
+            || (b[3] != 0x80))
         return 0; /* something is wrong, exit now */
 
     /* Only odd bits contain information, even bits are set to 1
@@ -47,7 +47,7 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bit
 
     /* extract bits for system code */
     int system_code =
-              (b[0] & 0x40) >> 2
+            (b[0] & 0x40) >> 2
             | (b[0] & 0x10) >> 1
             | (b[0] & 0x04)
             | (b[0] & 0x01) << 1
@@ -55,7 +55,7 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bit
 
     /* extract bits for pressed key row */
     int control_key =
-              (b[1] & 0x10)
+            (b[1] & 0x10)
             | (b[1] & 0x04) << 1
             | (b[1] & 0x01) << 2
             | (b[2] & 0x40) >> 5
@@ -67,7 +67,7 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bit
      * so we can use it for validation of the message:
      * ONLY ONE KEY AT A TIME IS ACCEPTED.
      */
-    char *key = NULL;
+    char const *key = NULL;
     if (control_key == 0x10)
         key = "A";
     else if (control_key == 0x08)
@@ -107,12 +107,13 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bit
 static int brennenstuhl_rcs_2044_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int counter = 0;
-    for (int row = 0; row < bitbuffer->num_rows; row++)
+    for (int row = 0; row < bitbuffer->num_rows; row++) {
         counter += brennenstuhl_rcs_2044_process_row(decoder, bitbuffer, row);
+    }
     return counter;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "key",
@@ -120,7 +121,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device brennenstuhl_rcs_2044 = {
+r_device const brennenstuhl_rcs_2044 = {
         .name        = "Brennenstuhl RCS 2044",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 320,

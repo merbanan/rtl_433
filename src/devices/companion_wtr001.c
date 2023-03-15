@@ -36,7 +36,7 @@ Data layout (14 bits):
 | 12,7,6,11,10,9,8 | TTTTTTT: Temperature in Celsius = (TTTTTTT + ((DDDDD - 10) / 10)) - 41
 | 13               | P: Parity to ensure count of set bits in data is odd.
 
-Temperature in Celsius = (bin2dec(bits 12,7,6,11,10,9,8) + ((bin2dec(bits 4,3,2,1,0) - 10) / 10 ) - 41
+Temperature in Celsius = (bin2dec(bits 12,7,6,11,10,9,8) + ((bin2dec(bits 4,3,2,1,0) - 10) / 10) - 41
 
 Published range of device is -29.9C to 69.9C
 */
@@ -127,14 +127,14 @@ static int companion_wtr001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "temperature_C",
         "mic",
         NULL,
 };
 
-r_device companion_wtr001 = {
+r_device const companion_wtr001 = {
         .name        = "Companion WTR001 Temperature Sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 732,  // 732 us pulse + 2196 us gap is 1 (will be inverted in code)

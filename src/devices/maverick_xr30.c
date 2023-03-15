@@ -67,7 +67,7 @@ static int maverick_xr30_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp1_c = temp1 - 532.0f;
     float temp2_c = temp2 - 532.0f;
 
-    char *status = "unknown";
+    char const *status = "unknown";
     if (flags == 0)
         status = "default";
     else if (flags == 5)
@@ -93,7 +93,7 @@ static int maverick_xr30_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "status",
@@ -103,7 +103,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device maverick_xr30 = {
+r_device const maverick_xr30 = {
         .name        = "Maverick XR-30 BBQ Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 360,

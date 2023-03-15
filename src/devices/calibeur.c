@@ -59,8 +59,8 @@ static int calibeur_rf104_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // row [0] is empty due to sync bit
     // No need to decode/extract values for simple test
     // check for 0x00 and 0xff
-    if ( (!b[0] && !b[1] && !b[2])
-       || (b[0] == 0xff && b[1] == 0xff && b[2] == 0xff)) {
+    if ((!b[0] && !b[1] && !b[2])
+            || (b[0] == 0xff && b[1] == 0xff && b[2] == 0xff)) {
         decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00 or 0xFF");
         return DECODE_FAIL_SANITY;
     }
@@ -116,7 +116,7 @@ static int calibeur_rf104_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "temperature_C",
@@ -125,7 +125,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device calibeur_RF104 = {
+r_device const calibeur_RF104 = {
         .name        = "Calibeur RF-104 Sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 760,  // Short pulse 760µs

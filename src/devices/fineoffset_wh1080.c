@@ -16,7 +16,7 @@ Weather Station, which seems to be a rebranded Fine Offset WH1080 Weather Statio
 Some info and code derived from Kevin Sangelee's page:
 http://www.susa.net/wordpress/2012/08/raspberry-pi-reading-wh1081-weather-sensors-using-an-rfm01-and-rfm12b/ .
 
-See also Frank 'SevenW' page ( https://www.sevenwatt.com/main/wh1080-protocol-v2-fsk/ ) for some other useful info.
+See also Frank 'SevenW' page https://www.sevenwatt.com/main/wh1080-protocol-v2-fsk/ for some other useful info.
 
 For the WH1080 part I mostly have re-elaborated and merged their works. Credits (and kudos) should go to them all
 (and to many others too).
@@ -247,7 +247,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
 
     // GETTING TIME DATA
     int signal_type       = ((br[2] & 0x0F) == 10);
-    char *signal_type_str = signal_type ? "DCF77" : "WWVB/MSF";
+    char const *signal_type_str = signal_type ? "DCF77" : "WWVB/MSF";
 
     int hours   = ((br[3] & 0x30) >> 4) * 10 + (br[3] & 0x0F);
     int minutes = ((br[4] & 0xF0) >> 4) * 10 + (br[4] & 0x0F);
@@ -326,7 +326,7 @@ static int fineoffset_wh1080_callback_fsk(r_device *decoder, bitbuffer_t *bitbuf
     return fineoffset_wh1080_callback(decoder, bitbuffer, TYPE_FSK);
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "subtype",
         "id",
@@ -349,7 +349,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device fineoffset_wh1080 = {
+r_device const fineoffset_wh1080 = {
         .name        = "Fine Offset Electronics WH1080/WH3080 Weather Station",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 544,  // Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
@@ -359,7 +359,7 @@ r_device fineoffset_wh1080 = {
         .fields      = output_fields,
 };
 
-r_device fineoffset_wh1080_fsk = {
+r_device const fineoffset_wh1080_fsk = {
         .name        = "Fine Offset Electronics WH1080/WH3080 Weather Station (FSK)",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 58,

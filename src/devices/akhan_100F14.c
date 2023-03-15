@@ -26,7 +26,7 @@ static int akhan_rke_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b;
     int id;
     int cmd;
-    char *cmd_str;
+    char const *cmd_str;
 
     if (bitbuffer->bits_per_row[0] != 25)
         return DECODE_ABORT_LENGTH;
@@ -62,14 +62,14 @@ static int akhan_rke_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "data",
         NULL,
 };
 
-r_device akhan_100F14 = {
+r_device const akhan_100F14 = {
         .name        = "Akhan 100F14 remote keyless entry",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 316,

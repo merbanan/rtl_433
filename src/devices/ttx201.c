@@ -206,7 +206,7 @@ static int ttx201_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events > 0 ? events : ret;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -216,7 +216,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ttx201 = {
+r_device const ttx201 = {
         .name        = "Emos TTX201 Temperature Sensor",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 510,

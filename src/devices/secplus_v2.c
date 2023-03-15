@@ -29,15 +29,15 @@ Layout:
 
     bits = `AA BB IIII OOOO X*30`
 
-- AA = payload type  ( 2 bits 00 or 01 )
-- BB = FrameID ( 2 bits always 00)
-- IIII = inversion indicator ( 4 bits )
-- OOOO = Order indicator ( 4 bits ).
-- XXXX....  = data ( 30 bits )
+- AA = payload type  (2 bits 00 or 01)
+- BB = FrameID (2 bits always 00)
+- IIII = inversion indicator (4 bits)
+- OOOO = Order indicator (4 bits).
+- XXXX....  = data (30 bits)
 
 ---
 
-data is broken up into 3 parts ( p0 p1 p2 )
+data is broken up into 3 parts (p0 p1 p2)
 eg:
 
 data = `ABCABCABCABCABCABCABCABCABCABC`
@@ -58,7 +58,7 @@ EG:
 `1 0 0 1 1 0 1 0 0 1 1 0=> [1 0] [0 1] [1 0] [1 0] [0 1] [1 0] => 2 1 2 2 1 2`
 
 Returns data in :
-  * roll_array as an array of trinary values ( 0, 1, 2) the value 3 is invalid
+  * roll_array as an array of trinary values  0, 1, 2) the value 3 is invalid
   * fixed_p as an bitbuffer_t with 20 bits of data
 
 
@@ -380,7 +380,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         // Common fields
         "model",
         "id",
@@ -394,7 +394,7 @@ static char *output_fields[] = {
 //      Freq 310.01M
 //  -X "n=vI3,m=OOK_PCM,s=230,l=230,t=40,r=10000,g=7400,match={24}0xaaaa9560"
 
-r_device secplus_v2 = {
+r_device const secplus_v2 = {
         .name        = "Security+ 2.0 (Keyfob)",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 250,

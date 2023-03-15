@@ -250,7 +250,7 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     //if (mode == 1) {     //Note that mode cycles between 0-3 when you first put in the batteries in
     //  watt = ((3600000.0 / ikea_sparsnas_pulses_per_kwh) * 1024.0) / effect;
-    //} else if (mode == 0 ) { // special mode for low power usage
+    //} else if (mode == 0) { // special mode for low power usage
     //  watt = effect * 0.24 / ikea_sparsnas_pulses_per_kwh;
     //}
     float cumulative_kWh = ((float)pulses) / ((float)ikea_sparsnas_pulses_per_kwh);
@@ -274,7 +274,7 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "sequence",
@@ -288,7 +288,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ikea_sparsnas = {
+r_device const ikea_sparsnas = {
         .name        = "IKEA Sparsnas Energy Meter Monitor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 27,

@@ -227,17 +227,19 @@ void r_free_cfg(r_cfg_t *cfg)
 
     pulse_detect_free(cfg->demod->pulse_detect);
 
-    free(cfg->demod);
-
-    free(cfg->devices);
-
     list_free_elems(&cfg->raw_handler, (list_elem_free_fn)raw_output_free);
+
+    r_logger_set_log_handler(NULL, NULL);
 
     list_free_elems(&cfg->output_handler, (list_elem_free_fn)data_output_free);
 
     list_free_elems(&cfg->data_tags, (list_elem_free_fn)data_tag_free);
 
     list_free_elems(&cfg->in_files, NULL);
+
+    free(cfg->demod);
+
+    free(cfg->devices);
 
     mg_mgr_free(cfg->mgr);
     free(cfg->mgr);
@@ -679,7 +681,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
     // check for undeclared csv fields
     for (data_t *d = data; d; d = d->next) {
         int found = 0;
-        for (char **p = r_dev->fields; *p; ++p) {
+        for (char const *const *p = r_dev->fields; *p; ++p) {
             if (!strcmp(d->key, *p)) {
                 found = 1;
                 break;
@@ -1094,9 +1096,12 @@ void add_influx_output(r_cfg_t *cfg, char *param)
 void add_syslog_output(r_cfg_t *cfg, char *param)
 {
     int log_level = lvlarg_param(&param, LOG_WARNING);
-    char *host = "localhost";
-    char *port = "514";
-    hostport_param(param, &host, &port);
+    char const *host = "localhost";
+    char const *port = "514";
+    char const *extra = hostport_param(param, &host, &port);
+    if (extra && *extra) {
+        print_logf(LOG_FATAL, "Syslog UDP", "Unknown parameters \"%s\"", extra);
+    }
     print_logf(LOG_CRITICAL, "Syslog UDP", "Sending datagrams to %s port %s", host, port);
 
     list_push(&cfg->output_handler, data_output_syslog_create(log_level, host, port));
@@ -1105,9 +1110,12 @@ void add_syslog_output(r_cfg_t *cfg, char *param)
 void add_http_output(r_cfg_t *cfg, char *param)
 {
     // Note: no log_level, the HTTP-API consumes all log levels.
-    char *host = "0.0.0.0";
-    char *port = "8433";
-    hostport_param(param, &host, &port);
+    char const *host = "0.0.0.0";
+    char const *port = "8433";
+    char const *extra = hostport_param(param, &host, &port);
+    if (extra && *extra) {
+        print_logf(LOG_FATAL, "HTTP server", "Unknown parameters \"%s\"", extra);
+    }
     print_logf(LOG_CRITICAL, "HTTP server", "Starting HTTP server at %s port %s", host, port);
 
     list_push(&cfg->output_handler, data_output_http_create(get_mgr(cfg), host, port, cfg));
@@ -1127,12 +1135,15 @@ void add_null_output(r_cfg_t *cfg, char *param)
 
 void add_rtltcp_output(r_cfg_t *cfg, char *param)
 {
-    char *host = "localhost";
-    char *port = "1234";
-    hostport_param(param, &host, &port);
+    char const *host = "localhost";
+    char const *port = "1234";
+    char const *extra = hostport_param(param, &host, &port);
+    if (extra && *extra) {
+        print_logf(LOG_FATAL, "rtl_tcp server", "Unknown parameters \"%s\"", extra);
+    }
     print_logf(LOG_CRITICAL, "rtl_tcp server", "Starting rtl_tcp server at %s port %s", host, port);
 
-    list_push(&cfg->raw_handler, raw_output_rtltcp_create(host, port, cfg));
+    list_push(&cfg->raw_handler, raw_output_rtltcp_create(host, port, extra, cfg));
 }
 
 void add_sr_dumper(r_cfg_t *cfg, char const *spec, int overwrite)

@@ -93,7 +93,7 @@ static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -105,7 +105,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device kedsum = {
+r_device const kedsum = {
         .name        = "Kedsum Temperature & Humidity Sensor, Pearl NC-7415",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

@@ -69,7 +69,7 @@ static int nexa_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -79,7 +79,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device nexa = {
+r_device const nexa = {
         .name        = "Nexa",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 270,  // 1:1

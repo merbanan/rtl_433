@@ -186,13 +186,14 @@ int sdr_reset(sdr_dev_t *dev, int verbose);
     Make sure none are in use anymore.
 
     @param dev the device handle
-    @param cb a callback for sdr_event_t messages
-    @param ctx a user context to be passed to @p cb
+    @param async_cb a callback for sdr_event_t messages
+    @param async_ctx a user context to be passed to @p async_cb
     @param buf_num the number of buffers to keep
     @param buf_len the size in bytes of each buffer
     @return 0 on success
 */
-int sdr_start(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len);
+int sdr_start(sdr_dev_t *dev, sdr_event_cb_t async_cb, void *async_ctx, uint32_t buf_num, uint32_t buf_len);
+int sdr_start_sync(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len);
 
 /** Stop the SDR data acquisition.
 
@@ -203,6 +204,7 @@ int sdr_start(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, ui
     @return 0 on success
 */
 int sdr_stop(sdr_dev_t *dev);
+int sdr_stop_sync(sdr_dev_t *dev);
 
 /** Redirect SoapySDR library logging.
 */

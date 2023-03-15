@@ -94,7 +94,7 @@ static int proove_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -104,7 +104,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device proove = {
+r_device const proove = {
         .name        = "Proove / Nexa / KlikAanKlikUit Wireless Switch",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 270,  // 1:1

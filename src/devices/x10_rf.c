@@ -106,7 +106,7 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int state = (b[2] & 0x20) == 0x00;
 
-    char *event_str = "UNKNOWN";         // human-readable event
+    char const *event_str = "UNKNOWN";         // human-readable event
 
     if ((b[2] & 0x80) == 0x80) {         // Special event bit
         bDeviceCode = 0;                 // No device for special events
@@ -149,7 +149,7 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "channel",
         "id",
@@ -159,7 +159,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device X10_RF = {
+r_device const X10_RF = {
         .name        = "X10 RF",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 562,  // Short gap 562.5 µs
