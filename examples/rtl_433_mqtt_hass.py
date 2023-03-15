@@ -61,6 +61,9 @@ recent value even if not changed set -f to append "force_update = true" to
 all configs. This is useful if you're graphing the sensor data or want to
 alert on missing data.
 
+If you have changed the topic structure from the default topics in the rtl433
+configuration use the -T parameter to set the same topic structure here.
+
 Suggestions:
 
 Running this script will cause a number of Home Assistant entities (sensors
@@ -702,6 +705,8 @@ def rtl_433_device_info(data):
     path_elements = []
     id_elements = []
     last_match_end = 0
+    # The default for args.device_topic_suffix is the same topic structure
+    # as set by default in rtl433 config
     for match in re.finditer(TOPIC_PARSE_RE, args.device_topic_suffix):
         path_elements.append(args.device_topic_suffix[last_match_end:match.start()])
         key = match.group(2)
@@ -876,6 +881,7 @@ if __name__ == "__main__":
                         dest="discovery_prefix",
                         default="homeassistant",
                         help="Home Assistant MQTT topic prefix (default: %(default)s)")
+    # This defaults to the rtl433 config default, so we assemble the same topic structure
     parser.add_argument("-T", "--device-topic_suffix", type=str,
                         dest="device_topic_suffix",
                         default="devices[/type][/model][/subtype][/channel][/id]",
