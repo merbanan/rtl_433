@@ -825,8 +825,8 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
                     (swap_nibbles(msg[8]) << 20) | (swap_nibbles(msg[7]) << 12) |
                     (swap_nibbles(msg[6]) << 4) | (msg[5]&0xf);
 
-        double total_kWh = total_amps * 230.0 / 3600.0 / 1000.0; // Assuming device is running in 230V country
-        // result compares to municpal box kWh count in Cape Town South Africa
+        double total_kWh = total_amps * 230.0 / 3600.0 / 1000.0 * 1.12; // Assuming device is running in 230V country
+        //result compares to the CM160 LCD display values when * 1.12 between readings
 
         /* clang-format off */
         data = data_make(
