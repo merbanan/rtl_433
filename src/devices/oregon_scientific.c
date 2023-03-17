@@ -819,7 +819,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         int id = msg[1] & 0x0F;
 
         unsigned int current_amps  = swap_nibbles(msg[3]) | ((msg[4] >> 4) << 8);
-        unsigned int current_watts = current_amps * 0.07 * 230; // Assuming device is running in 230V country
+        unsigned int current_watts = round(current_amps * 0.07 * 230); // Assuming device is running in 230V country
 
         double total_amps = ((uint64_t)swap_nibbles(msg[10]) << 36) | ((uint64_t)swap_nibbles(msg[9]) << 28) |
                     (swap_nibbles(msg[8]) << 20) | (swap_nibbles(msg[7]) << 12) |
