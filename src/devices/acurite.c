@@ -176,7 +176,7 @@ static int acurite_rain_896_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[0] < 24)
         return DECODE_ABORT_LENGTH;
 
-    if (bitbuffer->num_rows < 12) 
+    if (bitbuffer->num_rows < 12)
         return DECODE_ABORT_EARLY; // likely Oregon V1, not AcuRite
 
 
