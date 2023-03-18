@@ -176,9 +176,9 @@ static int acurite_rain_896_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[0] < 24)
         return DECODE_ABORT_LENGTH;
 
+    // The nominal repeat count is 16, require a minimum of 12 rows
     if (bitbuffer->num_rows < 12)
         return DECODE_ABORT_EARLY; // likely Oregon V1, not AcuRite
-
 
     if ((b[0] == 0) || (b[1] == 0) || (b[2] == 0) || (b[3] != 0) || (b[4] != 0))
         return DECODE_ABORT_EARLY;
