@@ -819,7 +819,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         int id = msg[1] & 0x0F;
 
         unsigned int current_amps  = swap_nibbles(msg[3]) | ((msg[4] >> 4) << 8);
-        unsigned int current_watts = current_amps * 0.07 * 230; // Assuming device is running in 230V country
+        double current_watts = current_amps * 0.07 * 230; // Assuming device is running in 230V country
 
         double total_amps = ((uint64_t)swap_nibbles(msg[10]) << 36) | ((uint64_t)swap_nibbles(msg[9]) << 28) |
                     (swap_nibbles(msg[8]) << 20) | (swap_nibbles(msg[7]) << 12) |
@@ -834,7 +834,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
                 "id",               "House Code",           DATA_INT, id,
  //               "current_A",        "Current Amps",         DATA_FORMAT,   "%d A", DATA_INT, current_amps,
  //               "total_As",         "Total Amps",           DATA_FORMAT,   "%d As", DATA_INT, (int)total_amps,
-                "power_W",          "Power",                DATA_FORMAT,   "%d W", DATA_INT, current_watts,
+                "power_W",          "Power",                DATA_FORMAT,   "%7.4f W", DATA_DOUBLE, current_watts,
                 "energy_kWh",       "Energy",               DATA_FORMAT, "%7.4f kWh",DATA_DOUBLE, total_kWh,
                 NULL);
         /* clang-format on */
