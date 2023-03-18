@@ -176,6 +176,10 @@ static int acurite_rain_896_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[0] < 24)
         return DECODE_ABORT_LENGTH;
 
+    if (bitbuffer->num_rows < 12) 
+        return DECODE_ABORT_EARLY; // likely Oregon V1, not AcuRite
+
+
     if ((b[0] == 0) || (b[1] == 0) || (b[2] == 0) || (b[3] != 0) || (b[4] != 0))
         return DECODE_ABORT_EARLY;
 
@@ -1876,7 +1880,7 @@ r_device const acurite_rain_896 = {
         .gap_limit   = 3500,
         .reset_limit = 5000,
         .decode_fn   = &acurite_rain_896_decode,
-        .disabled    = 1, // Disabled by default due to false positives on oregon scientific v1 protocol see issue #353
+        .priority    = 10, // Eliminate false positives by letting oregon scientific v1 protocol go earlier
         .fields      = acurite_rain_gauge_output_fields,
 };
 
