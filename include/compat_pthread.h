@@ -40,6 +40,18 @@ typedef CONDITION_VARIABLE              pthread_cond_t;
 #define THREAD_CALL
 #define THREAD_RETURN                   void*
 
+#define pthread_mutex_lock(mp) \
+    do { \
+        struct timespec abs_timeout; \
+        clock_gettime(CLOCK_REALTIME, &abs_timeout); \
+        abs_timeout.tv_sec += 60; \
+        int lock_ret = pthread_mutex_timedlock(mp, &abs_timeout); \
+        if (lock_ret != 0) { \
+            fprintf(stderr, "%s: mutex lock error: %d\n", __func__, lock_ret); \
+            exit(1); \
+        } \
+    } while (0)
+
 #endif
 
 #endif /* INCLUDE_COMPAT_PTHREAD_H_ */

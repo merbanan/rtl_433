@@ -1730,7 +1730,7 @@ int sdr_stop(sdr_dev_t *dev)
         return -1;
     }
 
-    print_log(LOG_DEBUG, __func__, "EXITING...");
+    print_log(LOG_NOTICE, __func__, "EXITING...");
     pthread_mutex_lock(&dev->lock);
     if (dev->exit_acquire) {
         pthread_mutex_unlock(&dev->lock);
@@ -1741,13 +1741,13 @@ int sdr_stop(sdr_dev_t *dev)
     sdr_stop_sync(dev); // for rtlsdr
     pthread_mutex_unlock(&dev->lock);
 
-    print_log(LOG_DEBUG, __func__, "JOINING...");
+    print_log(LOG_NOTICE, __func__, "JOINING...");
     int r = pthread_join(dev->thread, NULL);
     if (r) {
         fprintf(stderr, "%s: error in pthread_join, rc: %d\n", __func__, r);
     }
 
-    print_log(LOG_DEBUG, __func__, "EXITED.");
+    print_log(LOG_NOTICE, __func__, "EXITED.");
     return r;
 }
 #else
