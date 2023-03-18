@@ -1180,6 +1180,8 @@ static int http_server_stop(struct http_server_context *ctx)
         free((data_t *)*iter);
     ring_list_free(ctx->history);
 
+    free(ctx);
+
     return 0;
 }
 
