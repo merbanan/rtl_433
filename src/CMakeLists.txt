@@ -204,6 +204,7 @@ add_library(r_433 STATIC
     devices/secplus_v2.c
     devices/sharp_spc775.c
     devices/silvercrest.c
+    devices/silvercrest-doorbell-t.c
     devices/simplisafe.c
     devices/simplisafe_gen3.c
     devices/smoke_gs558.c

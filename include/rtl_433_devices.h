@@ -251,7 +251,7 @@
     DECL(tpms_eezrv) \
     DECL(baldr_rain) \
     DECL(celsia_czc1) \
-
+    DECL(silvercrest_doorbell_t) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
