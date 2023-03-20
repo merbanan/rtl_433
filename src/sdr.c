@@ -455,11 +455,13 @@ static int rtlsdr_find_tuner_gain(sdr_dev_t *dev, int centigain, int verbose)
             print_log(LOG_WARNING, __func__, "No exact gains");
         return centigain;
     }
-    int *gains = calloc(gains_count, sizeof(int));
-    if (!gains) {
-        WARN_CALLOC("rtlsdr_find_tuner_gain()");
-        return centigain; // NOTE: just aborts on alloc failure.
+    if (gains_count > 29) {
+        print_log(LOG_ERROR, __func__, "Unexpected gain count, notify maintainers please!");
+        return centigain;
     }
+    // We known the maximum nunmber of gains is 29.
+    // Let's not waste an alloc
+    int gains[29] = {0};
     rtlsdr_get_tuner_gains(dev->rtlsdr_dev, gains);
 
     /* Find allowed gain */
@@ -472,7 +474,6 @@ static int rtlsdr_find_tuner_gain(sdr_dev_t *dev, int centigain, int verbose)
     if (centigain > gains[gains_count - 1]) {
         centigain = gains[gains_count - 1];
     }
-    free(gains);
 
     return centigain;
 }
