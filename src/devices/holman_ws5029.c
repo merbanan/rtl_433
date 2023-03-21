@@ -33,7 +33,7 @@ Package format:
 - Header              {24}0x98F3A5
 - Payload             {96 or 146} see below
 - zeros               {36} 0 with battery ?
-- Checksum/CRC        {8}  xor bytes checksum
+- Checksum/CRC        {8}  xor 12 bytes then reverse Galois algorithm (gen = 0x00, key = 0x31) PR #2419
 - Trailer/postamble   {20} direction (previous ?) and 3 zeros
 
 Payload format: Without UV Lux sensor
@@ -50,7 +50,7 @@ Payload format: Without UV Lux sensor
 - WW          wind speed in km/h
 - D           wind direction (0 = N, 4 = E, 8 = S, 12 = W)
 - xxxxxxxxx   ???, usually zero
-- ss          XOR checksum, lower nibble properly decoded, not the upper, unknown calcul.
+- ss          xor 12 bytes then reverse Galois algorithm (gen = 0x00 , key = 0x31) PR #2419
 
 Payload format: With UV Lux sensor
 
@@ -73,7 +73,7 @@ Payload format: With UV Lux sensor
 - L     Lux
 - B     Battery
 - N     Payload number, increase at each message 000->FFF but not always, strange behavior. no clue
-- S     XOR bytes checksum, lower nibble properly decoded, not the upper, unknown calcul.
+- S     xor 12 bytes then reverse Galois algorithm (gen = 0x00 , key = 0x31) PR #2419
 - D     Previous Wind direction
 - Fixed values to 9 zeros
 
@@ -119,8 +119,12 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_extract_bytes(bitbuffer, 0, pos, b, sizeof(b) * 8);
 
-    if ((xor_bytes(b, 12) & 0x0f) != (b[12] & 0x0f)) {    //lower nibble match xor, upper nibble does not match any crc or checksum
-        decoder_log(decoder, 2, __func__, "Checksum fail");
+    uint8_t chk_digest = b[12];
+    uint8_t chk_calc = xor_bytes(b, 12);
+    // reverse Galois algorithm then (gen = 0x00, key = 0x31) PR #2419
+    int chk_expected = lfsr_digest8_reflect(&chk_calc, 1, 0x00, 0x31);
+
+    if (chk_expected != chk_digest) {
         return DECODE_FAIL_MIC;
     }
 
