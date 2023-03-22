@@ -1,7 +1,8 @@
 /** @file
     AOK Electronic Limited weather station.
 
-    Copyright (C) 2023 Bruno OCTAU (ProfBoc75) (improve and add AOK-5056)
+    Copyright (C) 2023 Bruno OCTAU (ProfBoc75) (improve integrity check for all devices here and add support for AOK-5056 weather station PR #2419)
+    Copyright (C) 2023 Christian W. Zuckschwerdt <zany@triq.net> ( reverse galois and xor_shift_bytes check algorithms PR #2419)
     Copyright (C) 2019 Ryan Mounce <ryan@mounce.com.au> (PCM version)
     Copyright (C) 2018 Brad Campbell (PWM version)
 
@@ -86,6 +87,25 @@ $ rtl_433 -f 917M -X 'name=AOK,modulation=FSK_PCM,short=100,long=100,preamble={4
 
 #include "decoder.h"
 
+// see #2419 for more details about the xor_shift_bytes , used by PWM device
+static uint8_t xor_shift_bytes(uint8_t const message[], unsigned num_bytes, uint8_t shift_up)
+{
+    uint8_t result0 = 0;
+    for (unsigned i = 0; i < num_bytes; i += 2) {
+        result0 ^= message[i];
+    }
+    uint8_t result1 = 0;
+    for (unsigned i = 1; i < num_bytes; i += 2) {
+        result1 ^= message[i];
+    }
+    uint8_t resultx = 0;
+    for (unsigned j = 0; j < 7; ++j) {
+        if (shift_up & (1 << j))
+            resultx ^= result0 << (j + 1);
+    }
+    return result0 ^ result1 ^ resultx;
+}
+
 static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int const wind_dir_degr[] = {0, 23, 45, 68, 90, 113, 135, 158, 180, 203, 225, 248, 270, 293, 315, 338};
@@ -148,6 +168,7 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",    DATA_DOUBLE, rain_mm,
                 "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
                 "wind_dir_deg",     "Wind Direction",   DATA_INT, direction_deg,
+                "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
 
@@ -173,6 +194,7 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "light_lux",        "Lux",              DATA_FORMAT, "%u",        DATA_INT,    light_lux,
                 "counter",          "Counter",          DATA_FORMAT, "%u",        DATA_INT,    counter,
                 "battery_ok",       "battery",          DATA_FORMAT, "%u",        DATA_INT,    !battery_low,
+                "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
 
@@ -211,17 +233,31 @@ r_device const holman_ws5029pcm = {
 /**
 Holman Industries WS5029 weather station using PWM.
 
-- The checksum used is an xor of all 11 bytes.
-- The bottom nybble results in 0. The top does not
-- and I've been unable to figure out why. We only
-- check the bottom nybble therefore.
-- Have tried all permutations of init/poly for lfsr8 & crc8
-- Rain is 0.79mm / count
-  618 counts / 488.2mm - 190113 - Multiplier is exactly 0.79
-- Wind is discrete kph
-- Preamble is 0xaa 0xa5. Device is 0x98
+Package format: (invert)
+- Preamble            {24} 0xAAA598
+- Payload             {56} [ see below ]
+- Checksum/CRC         {8} xor_shift_bytes (key = 0x18) PR #2419
+- Trailer/postamble    {8} 0x00 or 0x80
+
+Payload format:
+
+    Byte position    : 00 01 02[03 04 05 06 07 08 09]10 11
+    Payload          : AA A5 98 II BC CC HH RR RW WD SS 00
+
+- I    station ID
+- B    battery low indicator
+- C    degrees C, signed, in multiples of 0.1 C
+- H    Humidity 0-100 %
+- R    Rain is 0.79mm / count , 618 counts / 488.2mm - 190113 - Multiplier is exactly 0.79
+- W    Wind speed in km/h
+- D    Wind direction, clockwise from North, in multiples of 22.5 deg
+- S    xor_shift_bytes , see PR #2419
+
+To get the raw data :
+$ rtl_433 -f 433.92M -X "n=Holman-WS5029-PWM,m=FSK_PWM,s=488,l=976,g=2000,r=6000,invert"
 
 */
+
 static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble[] = {0x55, 0x5a, 0x67}; // Preamble/Device inverted
@@ -245,12 +281,17 @@ static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (memcmp(b, preamble, 3))
         return DECODE_FAIL_SANITY;
 
-    // Test Checksum.
-    if ((xor_bytes(b, 11) & 0xF) ^ 0xF)
-        return DECODE_FAIL_MIC;
-
     // Invert data for processing
     bitbuffer_invert(bitbuffer);
+
+    uint8_t chk_digest = b[10];
+    // xor_shift_bytes , see PR #2419
+    int chk_calc = xor_shift_bytes(b, 10, 0x18);
+    //fprintf(stderr, "%s: 11th byte %02x chk_calc %02x \n", __func__, chk_digest, chk_calc );
+
+    if (chk_calc != chk_digest) {
+        return DECODE_FAIL_MIC;
+    }
 
     id          = b[3];                                                // changes on each power cycle
     battery_low = (b[4] & 0x80);                                       // High bit is low battery indicator
