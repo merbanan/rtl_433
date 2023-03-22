@@ -11,7 +11,7 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
  */
-/**
+/** int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 AOK Electronic Limited weather station.
 
 Known Rebrand compatible with:
@@ -86,25 +86,6 @@ $ rtl_433 -f 917M -X 'name=AOK,modulation=FSK_PCM,short=100,long=100,preamble={4
 */
 
 #include "decoder.h"
-
-// see #2419 for more details about the xor_shift_bytes , used by PWM device
-static uint8_t xor_shift_bytes(uint8_t const message[], unsigned num_bytes, uint8_t shift_up)
-{
-    uint8_t result0 = 0;
-    for (unsigned i = 0; i < num_bytes; i += 2) {
-        result0 ^= message[i];
-    }
-    uint8_t result1 = 0;
-    for (unsigned i = 1; i < num_bytes; i += 2) {
-        result1 ^= message[i];
-    }
-    uint8_t resultx = 0;
-    for (unsigned j = 0; j < 7; ++j) {
-        if (shift_up & (1 << j))
-            resultx ^= result0 << (j + 1);
-    }
-    return result0 ^ result1 ^ resultx;
-}
 
 static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -230,7 +211,7 @@ r_device const holman_ws5029pcm = {
         .fields      = output_fields,
 };
 
-/**
+/** int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 Holman Industries WS5029 weather station using PWM.
 
 Package format: (invert)
@@ -257,6 +238,24 @@ To get the raw data :
 $ rtl_433 -f 433.92M -X "n=Holman-WS5029-PWM,m=FSK_PWM,s=488,l=976,g=2000,r=6000,invert"
 
 */
+
+static uint8_t xor_shift_bytes(uint8_t const message[], unsigned num_bytes, uint8_t shift_up)   // see #2419 for more details about the xor_shift_bytes , used by PWM device
+{
+    uint8_t result0 = 0;
+    for (unsigned i = 0; i < num_bytes; i += 2) {
+        result0 ^= message[i];
+    }
+    uint8_t result1 = 0;
+    for (unsigned i = 1; i < num_bytes; i += 2) {
+        result1 ^= message[i];
+    }
+    uint8_t resultx = 0;
+    for (unsigned j = 0; j < 7; ++j) {
+        if (shift_up & (1 << j))
+            resultx ^= result0 << (j + 1);
+    }
+    return result0 ^ result1 ^ resultx;
+}
 
 static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
