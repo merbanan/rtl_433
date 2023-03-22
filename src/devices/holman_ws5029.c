@@ -306,10 +306,10 @@ static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",                 DATA_STRING, "Holman-WS5029",
             "id",               "",                 DATA_INT,    id,
             "battery_ok",       "Battery",          DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C",     DATA_DOUBLE, temp_c,
+            "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",     DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%",       DATA_INT,    humidity,
-            "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.01f mm",    DATA_DOUBLE, rain_mm,
-            "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.01f km/h",  DATA_DOUBLE, speed_kmh,
+            "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",    DATA_DOUBLE, rain_mm,
+            "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
             "wind_dir_deg",     "Wind Direction",   DATA_INT,    (int)(wind_dir * 22.5),
             "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
             NULL);
