@@ -18,6 +18,14 @@
 /**
 Fine Offset Electronics WS90 weather station.
 
+The WS90 is a WS80 with the addition of a piezoelectric rain gauge.  
+Data bytes 1-13 are the same between the two models.  The new rain data 
+is in bytes 16-20, with bytes 19 and 20 reporting total rain.  Bytes 
+17 and 18 are affected by rain, but it is unknow what they report.  Byte
+21 reports the voltage of the super cap. And the checksum and CRC
+have been moved to bytes 30 and 31.  What is reported in the other
+bytes is unknown at this time.
+
 Also sold by EcoWitt.
 
 Preamble is aaaa aaaa aaaa, sync word is 2dd4.
