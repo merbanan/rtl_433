@@ -22,7 +22,7 @@
 #define ID_RGR968   0x2d10
 #define ID_THR228N  0xec40
 #define ID_THN132N  0xec40 // same as THR228N but different packet size
-#define ID_AWR129   0xec41 // same as THR228N
+#define ID_AWR129   0xec41 // similar to THR228N, but an extra 100s digit
 #define ID_RTGN318  0x0cc3 // warning: id is from 0x0cc3 and 0xfcc3
 #define ID_RTGN129  0x0cc3 // same as RTGN318 but different packet size
 #define ID_THGR810  0xf824 // This might be ID_THGR81, but what's true is lost in (git) history
@@ -51,7 +51,9 @@ static float get_os_temperature(unsigned char *message)
 {
     float temp_c = 0;
     temp_c = (((message[5] >> 4) * 100) + ((message[4] & 0x0f) * 10) + ((message[4] >> 4) & 0x0f)) / 10.0F;
-    // Correct 0x0f to 0x08:
+    // The AWR129 BBQ thermometer has another digit to represent higher temperatures than what weather stations would observe.
+    temp_c += (message[5] & 0x07) * 100.0F;
+    // 0x08 is the sign bit
     if (message[5] & 0x08) {
         temp_c = -temp_c;
     }
