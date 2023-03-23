@@ -101,8 +101,7 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int supercap_v  = (b[21] & 0x3f);
     char extra[30];
 
-    sprintf(extra, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[17], b[18], b[19], b[20], 
-		b[21], b[22], b[23], b[24], b[25], b[26], b[27], b[28], b[29] );
+    sprintf(extra, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[17], b[18], b[19], b[20], b[21], b[22], b[23], b[24], b[25], b[26], b[27], b[28], b[29] );
 
     /* clang-format off */
     data_t *data = data_make(
@@ -144,9 +143,9 @@ static char const *output_fields[] = {
         "light_lux",
         "flags",
         "unknown",
-	"rain_mm",
+        "rain_mm",
         "supercap_v",
-	"data",
+        "data",
         "mic",
         NULL,
 };
