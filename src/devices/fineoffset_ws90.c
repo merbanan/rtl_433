@@ -95,7 +95,7 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float light_lux = light_raw * 10;        // Lux
     //float light_wm2 = light_raw * 0.078925f; // W/m2
     int battery_mv  = (b[6] * 20);            // mV
-    int battery_lvl = battery_mv < 1400 ? 1 : 0;
+    int battery_lvl = battery_mv < 1400 ? 0 : (battery_mv - 1400) / 16; // 1.4V-3.0V is 0-100
     int flags       = b[7]; // to find the wind msb
     int temp_raw    = ((b[7] & 0x03) << 8) | (b[8]);
     float temp_c    = (temp_raw - 400) * 0.1f;
@@ -109,13 +109,16 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int supercap_V  = (b[21] & 0x3f);
     char extra[30];
 
+    if( battery_lvl > 100) // More then 100%?
+        battery_lvl = 100;
+        
     sprintf(extra, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[17], b[18], b[19], b[20], b[21], b[22], b[23], b[24], b[25], b[26], b[27], b[28], b[29] );
 
     /* clang-format off */
     data_t *data = data_make(
             "model",            "",                 DATA_STRING, "Fineoffset-WS90",
             "id",               "ID",               DATA_FORMAT, "%06x", DATA_INT,    id,
-            "battery_ok",       "Battery",          DATA_INT, battery_lvl,
+            "battery_ok",       "Battery",          DATA_DOUBLE, battery_lvl * 0.01f,
             "battery_mV",       "Battery Voltage",  DATA_FORMAT, "%d mV", DATA_INT,    battery_mv,
             "temperature_C",    "Temperature",      DATA_COND, temp_raw != 0x3ff,   DATA_FORMAT, "%.1f C",   DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",         DATA_COND, humidity != 0xff,    DATA_FORMAT, "%u %%",    DATA_INT, humidity,
