@@ -98,7 +98,7 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int uv_index    = (b[13]);
     int unknown     = (b[14] << 8) | (b[15]);
     int rain_raw    = (b[19] << 8 ) | (b[20]);
-    int supercap_v  = (b[21] & 0x3f);
+    int supercap_V  = (b[21] & 0x3f);
     char extra[30];
 
     sprintf(extra, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[17], b[18], b[19], b[20], b[21], b[22], b[23], b[24], b[25], b[26], b[27], b[28], b[29] );
@@ -119,7 +119,7 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "flags",            "Flags",            DATA_FORMAT, "%02x", DATA_INT, flags,
             "unknown",          "Unknown",          DATA_COND, unknown != 0x3fff, DATA_INT, unknown,
             "rain_mm",          "Total Rain",       DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1f,
-            "supercap_v",       "Supercap Voltage", DATA_COND, supercap_v != 0xff, DATA_FORMAT, "%.1f V", DATA_DOUBLE, supercap_v * 0.1f,
+            "supercap_V",       "Supercap Voltage", DATA_COND, supercap_V != 0xff, DATA_FORMAT, "%.1f V", DATA_DOUBLE, supercap_V * 0.1f,
             "data",             "Extra Data",       DATA_STRING, extra,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
@@ -144,7 +144,7 @@ static char const *const output_fields[] = {
         "flags",
         "unknown",
         "rain_mm",
-        "supercap_v",
+        "supercap_V",
         "data",
         "mic",
         NULL,
