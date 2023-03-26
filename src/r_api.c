@@ -1032,13 +1032,22 @@ static int lvlarg_param(char **param, int default_verb)
     return val;
 }
 
-static FILE *fopen_output(char *param)
+/// Opens the path @p param (or STDOUT if empty or `-`) for append writing, removes leading `,` and `:` from path name.
+static FILE *fopen_output(char const *param)
 {
-    FILE *file;
-    if (!param || !*param || (*param == '-' && param[1] == '\0')) {
-        return stdout;
+    if (!param || !*param) {
+        return stdout; // No path given
     }
-    file = fopen(param, "a");
+    while (*param == ',') {
+        param++; // Skip all leading `,`
+    }
+    if (*param == ':') {
+        param++; // Skip one leading `:`
+    }
+    if (*param == '-' && param[1] == '\0') {
+        return stdout; // STDOUT requested
+    }
+    FILE *file = fopen(param, "a");
     if (!file) {
         fprintf(stderr, "rtl_433: failed to open output file\n");
         exit(1);
