@@ -20,7 +20,8 @@ as device topics by MQTT.
 AP_EPILOG="""
 It is strongly recommended to run rtl_433 with "-C si" and "-M newmodel".
 This script requires rtl_433 to publish both event messages and device
-messages.
+messages. If you've changed the device topic in rtl_433, use the same device
+topic with the "-T" parameter.
 
 MQTT Username and Password can be set via the cmdline or passed in the
 environment: MQTT_USERNAME and MQTT_PASSWORD.
@@ -60,6 +61,9 @@ recent value even if not changed set -f to append "force_update = true" to
 all configs. This is useful if you're graphing the sensor data or want to
 alert on missing data.
 
+If you have changed the topic structure from the default topics in the rtl433
+configuration use the -T parameter to set the same topic structure here.
+
 Suggestions:
 
 Running this script will cause a number of Home Assistant entities (sensors
@@ -96,17 +100,15 @@ import logging
 import time
 import json
 import paho.mqtt.client as mqtt
+import re
 
 
 discovery_timeouts = {}
 
-# Fields used for creating topic names
-NAMING_KEYS = [ "type", "model", "subtype", "channel", "id" ]
-
 # Fields that get ignored when publishing to Home Assistant
 # (reduces noise to help spot missing field mappings)
-SKIP_KEYS = NAMING_KEYS + [ "mic", "mod", "freq", "sequence_num",
-                            "message_type", "exception", "raw_msg" ]
+SKIP_KEYS = [ "type", "model", "subtype", "channel", "id", "mic", "mod",
+                "freq", "sequence_num", "message_type", "exception", "raw_msg" ]
 
 
 # Global mapping of rtl_433 field names to Home Assistant metadata.
@@ -654,6 +656,8 @@ secret_knock_mappings = [
 
 ]
 
+TOPIC_PARSE_RE = re.compile(r'\[(?P<slash>/?)(?P<token>[^\]:]+):?(?P<default>[^\]:]*)\]')
+
 def mqtt_connect(client, userdata, flags, rc):
     """Callback for MQTT connects."""
 
@@ -694,28 +698,41 @@ def sanitize(text):
             .replace(".", "_")
             .replace("&", ""))
 
-def rtl_433_device_topic(data):
-    """Return rtl_433 device topic to subscribe to for a data element"""
+def rtl_433_device_info(data):
+    """Return rtl_433 device topic to subscribe to for a data element, based on the
+    rtl_433 device topic argument, as well as the device identifier"""
 
     path_elements = []
-
-    for key in NAMING_KEYS:
+    id_elements = []
+    last_match_end = 0
+    # The default for args.device_topic_suffix is the same topic structure
+    # as set by default in rtl433 config
+    for match in re.finditer(TOPIC_PARSE_RE, args.device_topic_suffix):
+        path_elements.append(args.device_topic_suffix[last_match_end:match.start()])
+        key = match.group(2)
         if key in data:
+            # If we have this key, prepend a slash if needed
+            if match.group(1):
+                path_elements.append('/')
             element = sanitize(str(data[key]))
             path_elements.append(element)
+            id_elements.append(element)
+        elif match.group(3):
+            path_elements.append(match.group(3))
+        last_match_end = match.end()
 
-    return '/'.join(path_elements)
+    path = ''.join(list(filter(lambda item: item, path_elements)))
+    id = '-'.join(id_elements)
+    return (path, id)
 
 
-def publish_config(mqttc, topic, model, instance, mapping, value=None):
+def publish_config(mqttc, topic, model, object_id, mapping, value=None):
     """Publish Home Assistant auto discovery data."""
     global discovery_timeouts
 
-    instance_no_slash = instance.replace("/", "-")
     device_type = mapping["device_type"]
     object_suffix = mapping["object_suffix"]
-    object_id = instance_no_slash
-    object_name = "-".join([object_id,object_suffix])
+    object_name = "-".join([object_id, object_suffix])
 
     path = "/".join([args.discovery_prefix, device_type, object_id, object_name, "config"])
 
@@ -767,8 +784,8 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
     skipped_keys = []
     published_keys = []
 
-    instance = rtl_433_device_topic(data)
-    if not instance:
+    base_topic, device_id = rtl_433_device_info(data)
+    if not device_id:
         # no unique device identifier
         logging.warning("No suitable identifier found for model: ", model)
         return
@@ -782,8 +799,8 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
     for key in data.keys():
         if key in mappings:
             # topic = "/".join([topicprefix,"devices",model,instance,key])
-            topic = "/".join([topicprefix,"devices",instance,key])
-            if publish_config(mqttc, topic, model, instance, mappings[key]):
+            topic = "/".join([base_topic, key])
+            if publish_config(mqttc, topic, model, device_id, mappings[key]):
                 published_keys.append(key)
         else:
             if key not in SKIP_KEYS:
@@ -791,15 +808,15 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
 
     if "secret_knock" in data.keys():
         for m in secret_knock_mappings:
-            topic = "/".join([topicprefix,"devices",instance,"secret_knock"])
-            if publish_config(mqttc, topic, model, instance, m):
+            topic = "/".join([base_topic, "secret_knock"])
+            if publish_config(mqttc, topic, model, device_id, m):
                 published_keys.append("secret_knock")
 
     if published_keys:
-        logging.info("Published %s: %s" % (instance, ", ".join(published_keys)))
+        logging.info("Published %s: %s" % (device_id, ", ".join(published_keys)))
 
         if skipped_keys:
-            logging.info("Skipped %s: %s" % (instance, ", ".join(skipped_keys)))
+            logging.info("Skipped %s: %s" % (device_id, ", ".join(skipped_keys)))
 
 
 def rtl_433_bridge():
@@ -864,6 +881,11 @@ if __name__ == "__main__":
                         dest="discovery_prefix",
                         default="homeassistant",
                         help="Home Assistant MQTT topic prefix (default: %(default)s)")
+    # This defaults to the rtl433 config default, so we assemble the same topic structure
+    parser.add_argument("-T", "--device-topic_suffix", type=str,
+                        dest="device_topic_suffix",
+                        default="devices[/type][/model][/subtype][/channel][/id]",
+                        help="rtl_433 device topic suffix (default: %(default)s)")
     parser.add_argument("-i", "--interval", type=int,
                         dest="discovery_interval",
                         default=600,
