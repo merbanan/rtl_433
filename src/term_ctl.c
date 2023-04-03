@@ -186,6 +186,11 @@ static void *_term_init(FILE *fp)
         GetConsoleMode(console->hnd, &dwMode);
         dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
         SetConsoleMode(console->hnd, dwMode);
+        // Check if it worked, it will fail for Legacy console-mode
+        GetConsoleMode (console->hnd, &dwMode);
+        if (!(dwMode & ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+            console->ansi = 0;
+        }
     }
 
     _term_set_color(console, FALSE, TERM_COLOR_RESET); /* Set 'console->fg' and 'console->bg' */
