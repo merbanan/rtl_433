@@ -1068,6 +1068,8 @@ int sdr_close(sdr_dev_t *dev)
     if (!dev)
         return -1;
 
+    // XXX temp delete 
+    print_log(LOG_WARNING, __func__, "Calling sdr_stop");
     int ret = sdr_stop(dev);
 
     if (dev->rtl_tcp)
