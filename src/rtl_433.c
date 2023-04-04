@@ -1396,7 +1396,9 @@ static void sdr_handler(struct mg_connection *nc, int ev_type, void *ev_data)
 
     if (cfg->exit_async) {
         if (cfg->verbosity >= 2)
-            print_log(LOG_INFO, "Input", "sdr_handler exit");
+            print_log(LOG_WARNING, "Input", "sdr_handler exit");
+	// XXX temp delete
+	print_log(LOG_WARNING, __func__, "Calling sdr_stop");
         sdr_stop(cfg->dev);
         cfg->exit_async++;
     }
@@ -1519,6 +1521,9 @@ static void timer_handler(struct mg_connection *nc, int ev, void *ev_data)
             }
         }
         cfg->exit_code = 3;
+	// XXX temp delete
+
+	print_log(LOG_WARNING, __func__, "Calling sdr_stop");
         sdr_stop(cfg->dev);
         cfg->dev_state = DEVICE_STATE_STOPPED;
         if (cfg->dev_mode == DEVICE_MODE_QUIT) {
@@ -1992,6 +1997,9 @@ int main(int argc, char **argv) {
     //while (cfg->exit_async < 2) {
     //    mg_mgr_poll(cfg->mgr, 100);
     //}
+
+    // XXX temp delete - since above stopping may not get printed
+    print_log(LOG_WARNING, "rtl_433", "stopping 2...");
     sdr_stop(cfg->dev);
     //print_log(LOG_INFO, "rtl_433", "stopped.");
 
