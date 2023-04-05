@@ -120,20 +120,6 @@ struct sdr_dev {
 #endif
 };
 
-/* internal helpers */
-
-/*
-        pthread_mutex_lock(&dev->lock);
-        sdr_event_t ev = {
-                .ev               = flags,
-                .sample_rate      = dev->sample_rate,
-                .center_frequency = dev->center_frequency,
-        };
-        pthread_mutex_unlock(&dev->lock);
-        if (cb)
-            cb(&ev, ctx);
-*/
-
 /* rtl_tcp helpers */
 
 #pragma pack(push, 1)
@@ -303,12 +289,20 @@ static int rtltcp_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32
             dev->running = 0;
         }
 
+#ifdef THREADS
+        pthread_mutex_lock(&dev->lock);
+#endif
+        uint32_t sample_rate      = dev->sample_rate;
+        uint32_t center_frequency = dev->center_frequency;
+#ifdef THREADS
+        pthread_mutex_unlock(&dev->lock);
+#endif
         sdr_event_t ev = {
-                .ev  = SDR_EV_DATA,
-//                .sample_rate = dev->sample_rate,
-//                .center_frequency = dev->center_frequency,
-                .buf = buffer,
-                .len = n_read,
+                .ev               = SDR_EV_DATA,
+                .sample_rate      = sample_rate,
+                .center_frequency = center_frequency,
+                .buf              = buffer,
+                .len              = n_read,
         };
         if (n_read > 0) // prevent a crash in callback
             cb(&ev, ctx);
@@ -503,12 +497,20 @@ static void rtlsdr_read_cb(unsigned char *iq_buf, uint32_t len, void *ctx)
     // NOTE: we need to copy the buffer, it might go away on cancel_async
     memcpy(buffer, iq_buf, len);
 
+#ifdef THREADS
+    pthread_mutex_lock(&dev->lock);
+#endif
+    uint32_t sample_rate      = dev->sample_rate;
+    uint32_t center_frequency = dev->center_frequency;
+#ifdef THREADS
+    pthread_mutex_unlock(&dev->lock);
+#endif
     sdr_event_t ev = {
-            .ev  = SDR_EV_DATA,
-//            .sample_rate = dev->sample_rate,
-//            .center_frequency = dev->center_frequency,
-            .buf = buffer,
-            .len = len,
+            .ev               = SDR_EV_DATA,
+            .sample_rate      = sample_rate,
+            .center_frequency = center_frequency,
+            .buf              = buffer,
+            .len              = len,
     };
     //fprintf(stderr, "rtlsdr_read_cb cb...\n");
     if (len > 0) // prevent a crash in callback
@@ -1010,12 +1012,20 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint
                 buffer[i] *= upscale;
         }
 
+#ifdef THREADS
+        pthread_mutex_lock(&dev->lock);
+#endif
+        uint32_t sample_rate      = dev->sample_rate;
+        uint32_t center_frequency = dev->center_frequency;
+#ifdef THREADS
+        pthread_mutex_unlock(&dev->lock);
+#endif
         sdr_event_t ev = {
-                .ev  = SDR_EV_DATA,
-//                .sample_rate = dev->sample_rate,
-//                .center_frequency = dev->center_frequency,
-                .buf = buffer,
-                .len = n_read * dev->sample_size,
+                .ev               = SDR_EV_DATA,
+                .sample_rate      = sample_rate,
+                .center_frequency = center_frequency,
+                .buf              = buffer,
+                .len              = n_read * dev->sample_size,
         };
         if (n_read > 0) // prevent a crash in callback
             cb(&ev, ctx);
@@ -1159,7 +1169,9 @@ int sdr_set_center_freq(sdr_dev_t *dev, uint32_t freq, int verbose)
 
 #ifdef THREADS
     pthread_mutex_lock(&dev->lock);
+#endif
     dev->center_frequency = freq;
+#ifdef THREADS
     pthread_mutex_unlock(&dev->lock);
 #endif
 
@@ -1406,7 +1418,9 @@ int sdr_set_sample_rate(sdr_dev_t *dev, uint32_t rate, int verbose)
 
 #ifdef THREADS
     pthread_mutex_lock(&dev->lock);
+#endif
     dev->sample_rate = rate;
+#ifdef THREADS
     pthread_mutex_unlock(&dev->lock);
 #endif
 
