@@ -304,6 +304,14 @@ static int rtltcp_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32
                 .buf              = buffer,
                 .len              = n_read,
         };
+#ifdef THREADS
+        pthread_mutex_lock(&dev->lock);
+        int exit_acquire = dev->exit_acquire;
+        pthread_mutex_unlock(&dev->lock);
+        if (exit_acquire) {
+            break; // do not deliver any more events
+        }
+#endif
         if (n_read > 0) // prevent a crash in callback
             cb(&ev, ctx);
 
@@ -1027,6 +1035,14 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint
                 .buf              = buffer,
                 .len              = n_read * dev->sample_size,
         };
+#ifdef THREADS
+        pthread_mutex_lock(&dev->lock);
+        int exit_acquire = dev->exit_acquire;
+        pthread_mutex_unlock(&dev->lock);
+        if (exit_acquire) {
+            break; // do not deliver any more events
+        }
+#endif
         if (n_read > 0) // prevent a crash in callback
             cb(&ev, ctx);
 

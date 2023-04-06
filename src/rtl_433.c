@@ -1520,9 +1520,12 @@ static void timer_handler(struct mg_connection *nc, int ev, void *ev_data)
                 print_log(LOG_WARNING, "Input", "Async read stalled, pausing!");
             }
         }
-        cfg->exit_code = 3;
-        sdr_stop(cfg->dev);
-        cfg->dev_state = DEVICE_STATE_STOPPED;
+        if (cfg->dev_state != DEVICE_STATE_STOPPED) {
+            cfg->exit_async = 1;
+            cfg->exit_code = 3;
+            sdr_stop(cfg->dev);
+            cfg->dev_state = DEVICE_STATE_STOPPED;
+        }
         if (cfg->dev_mode == DEVICE_MODE_QUIT) {
             cfg->exit_async = 1;
         }
