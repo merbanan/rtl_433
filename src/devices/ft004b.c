@@ -65,13 +65,13 @@ static int ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "temperature_C",
         NULL,
 };
 
-r_device ft004b = {
+r_device const ft004b = {
         .name        = "FT-004-B Temperature Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1956,

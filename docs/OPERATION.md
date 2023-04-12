@@ -256,6 +256,18 @@ E.g. `-X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repe
 - the data needs to contain the `match` of 24 bits `0xa9878c`
 - the data needs to `repeat` at least 3 times
 
+To extract some bits:
+
+Example: `get=battery:@4:{1}:[0:Ok 1:Empty]`
+Using colon separated keys:
+- name (`battery`)
+- at which bit to start (`@4`)
+- how many bits to read (`{1}`)
+- optional mapping (map `0` to `Full`, map `1` to `Empty`)
+- or an optional format specifier (`%x`)
+
+A key starting with `%` is a format specifier for the KV output, in practice it will be something like `%x`, `%X`, `%04x`.
+
 See the [`conf`](https://github.com/merbanan/rtl_433/tree/master/conf) folder for some examples of flex specs.
 
 ## Analysis

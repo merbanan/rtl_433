@@ -36,7 +36,7 @@ http://www.gridinsight.com/community/documentation/itron-ert-technology/
 
 // Least significant nibble of endpoint_type is equivalent to SCM's endpoint type field
 // id info from https://github.com/bemasher/rtlamr/wiki/Compatible-Meters
-static char *get_meter_type_name(uint8_t ERTType)
+static char const *get_meter_type_name(uint8_t ERTType)
 {
     switch (ERTType & 0x0f) {
     case 4:
@@ -244,7 +244,7 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Least significant nibble of endpoint_type is  equivalent to SCM's endpoint type field
     // id info from https://github.com/bemasher/rtlamr/wiki/Compatible-Meters
 
-    char *meter_type = get_meter_type_name(ERTType);
+    char const *meter_type = get_meter_type_name(ERTType);
     // decoder_logf(decoder, 0, __func__, "meter_type = %s", meter_type);
 
     /*
@@ -527,7 +527,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     */
 
-    char *meter_type = get_meter_type_name(ERTType);
+    char const *meter_type = get_meter_type_name(ERTType);
 
     // decoder_logf(decoder, 0, __func__, "meter_type = %s", meter_type);
 
@@ -581,7 +581,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
 
         // Common fields
         "model",
@@ -618,7 +618,7 @@ static char *output_fields[] = {
 //      Freq 912600155
 //     -X n=L58,m=OOK_MC_ZEROBIT,s=30,l=30,g=20000,r=20000,match={24}0x16a31e,preamble={1}0x00
 
-r_device ert_idm = {
+r_device const ert_idm = {
         .name        = "ERT Interval Data Message (IDM)",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 30,
@@ -631,7 +631,7 @@ r_device ert_idm = {
         .fields    = output_fields,
 };
 
-r_device ert_netidm = {
+r_device const ert_netidm = {
         .name        = "ERT Interval Data Message (IDM) for Net Meters",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 30,

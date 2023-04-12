@@ -125,7 +125,7 @@ static int fineoffset_wh31l_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int s_dist     = (b[5] & 0x3f);
     int s_count    = (b[6]);
 
-    char *state_str;
+    char const *state_str;
     if (state == 0)
         state_str = "reset";
     else if (state == 1)
@@ -154,7 +154,7 @@ static int fineoffset_wh31l_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -166,7 +166,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device fineoffset_wh31l = {
+r_device const fineoffset_wh31l = {
         .name        = "Ambient Weather WH31L (FineOffset WH57) Lightning-Strike sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 56,

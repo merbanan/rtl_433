@@ -134,7 +134,7 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "channel",
         "battery_ok",
@@ -142,7 +142,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device philips_aj3650 = {
+r_device const philips_aj3650 = {
         .name        = "Philips outdoor temperature sensor (type AJ3650)",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 2000,

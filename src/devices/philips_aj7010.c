@@ -112,7 +112,7 @@ static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "time",
         "model",
         "channel",
@@ -121,7 +121,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device philips_aj7010 = {
+r_device const philips_aj7010 = {
         .name        = "Philips outdoor temperature sensor (type AJ7010)",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 2000,

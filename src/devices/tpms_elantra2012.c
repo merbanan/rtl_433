@@ -134,7 +134,7 @@ static int tpms_elantra2012_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events > 0 ? events : ret;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "type",
         "id",
@@ -148,7 +148,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_elantra2012 = {
+r_device const tpms_elantra2012 = {
         .name        = "Elantra2012 TPMS",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 49,  // 12-13 samples @250k

@@ -130,7 +130,7 @@ static int missil_ml0757_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -140,7 +140,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device missil_ml0757 = {
+r_device const missil_ml0757 = {
         .name        = "Missil ML0757 weather station",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 975,

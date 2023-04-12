@@ -132,7 +132,7 @@ int const acurite_5n1_winddirections[] = {
 //  11 = A
 static char const *acurite_getChannel(uint8_t byte)
 {
-    static char const *channel_strs[] = {"C", "E", "B", "A"}; // 'E' stands for error
+    static char const *const channel_strs[] = {"C", "E", "B", "A"}; // 'E' stands for error
 
     int channel = (byte & 0xC0) >> 6;
     return channel_strs[channel];
@@ -175,6 +175,10 @@ static int acurite_rain_896_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // This needs more validation to positively identify correct sensor type, but it basically works if message is really from acurite raingauge and it doesn't have any errors
     if (bitbuffer->bits_per_row[0] < 24)
         return DECODE_ABORT_LENGTH;
+
+    // The nominal repeat count is 16, require a minimum of 12 rows
+    if (bitbuffer->num_rows < 12)
+        return DECODE_ABORT_EARLY; // likely Oregon V1, not AcuRite
 
     if ((b[0] == 0) || (b[1] == 0) || (b[2] == 0) || (b[3] != 0) || (b[4] != 0))
         return DECODE_ABORT_EARLY;
@@ -971,7 +975,10 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 }
 
 /**
-Acurite 592TXR Temperature Humidity sensor decoder
+Acurite 592TXR Temperature Humidity sensor decoder.
+
+Also:
+- Acurite 592TX (without humidity sensor)
 
 Message Type 0x04, 7 bytes
 
@@ -1011,8 +1018,8 @@ static int acurite_tower_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8
     // Spec is relative humidity 1-99%
     // Allowing value of 0, very low battery or broken sensor can return 0% or 1%
     int humidity = (bb[3] & 0x7f);
-    if (humidity < 0 || humidity > 100) {
-        decoder_logf(decoder, 1, __func__, "0x%04X Ch %s : Impossible humidity: %d %%rH",
+    if (humidity > 100 && humidity != 127) {
+        decoder_logf(decoder, 1, __func__, "0x%04X Ch %s : invalid humidity: %d %%rH",
                 sensor_id, channel_str, humidity);
         return DECODE_FAIL_SANITY;
     }
@@ -1026,7 +1033,7 @@ static int acurite_tower_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8
     int temp_raw = ((bb[4] & 0x7F) << 7) | (bb[5] & 0x7F);
     float tempc = (temp_raw - 1000) * 0.1f;
     if (tempc < -40 || tempc > 70) {
-        decoder_logf(decoder, 1, __func__, "0x%04X Ch %s : Impossible temperature: %0.2f C",
+        decoder_logf(decoder, 1, __func__, "0x%04X Ch %s : invalid temperature: %0.2f C",
                 sensor_id, channel_str, tempc);
         return DECODE_FAIL_SANITY;
     }
@@ -1044,7 +1051,7 @@ static int acurite_tower_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8
             "channel",              NULL,           DATA_STRING, channel_str,
             "battery_ok",           "Battery",      DATA_INT,    !battery_low,
             "temperature_C",        "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
-            "humidity",             "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,    humidity,
+            "humidity",             "Humidity",     DATA_COND, humidity != 127, DATA_FORMAT, "%u %%", DATA_INT,    humidity,
             "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
@@ -1245,7 +1252,6 @@ static int acurite_txr_check(r_device *decoder, uint8_t const bb[], unsigned bro
     return 0;
 }
 
-
 /**
 Process messages for Acurite weather stations, tower and related sensors
 @sa acurite_1190_decode()
@@ -1259,7 +1265,7 @@ Process messages for Acurite weather stations, tower and related sensors
 
 This callback is used for devices that use a very similar message format:
 
-- 592TXR / 6002RM / 6044m Tower sensor and related temperature/humidity sensors
+- 592TXR / 592TX / 6002RM / 6044m Tower sensor and related temperature/humidity sensors
 - Atlas (7-in-1) Weather Station
 - Iris (5-in-1) weather station
 - Notos (3-in-1) Weather station
@@ -1547,7 +1553,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int8_t tempf; // Raw Temp is 8 bit signed Fahrenheit
     uint16_t sensor_id, valid_cnt = 0;
     char sensor_type;
-    char *channel_str;
+    char const *channel_str;
     int battery_low;
     data_t *data;
 
@@ -1557,8 +1563,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         decoder_logf(decoder, 2, __func__, "row %u bits %u, bytes %d", brow, bitbuffer->bits_per_row[brow], browlen);
 
-        if (bitbuffer->bits_per_row[brow] < 39 ||
-            bitbuffer->bits_per_row[brow] > 43 ) {
+        if (bitbuffer->bits_per_row[brow] < 39 || bitbuffer->bits_per_row[brow] > 43) {
             if (bitbuffer->bits_per_row[brow] > 16)
                 decoder_log(decoder, 2, __func__,"skipping wrong len");
             result = DECODE_ABORT_LENGTH;
@@ -1862,14 +1867,14 @@ static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return result;
 }
 
-static char *acurite_rain_gauge_output_fields[] = {
+static char const *const acurite_rain_gauge_output_fields[] = {
         "model",
         "id",
         "rain_mm",
         NULL,
 };
 
-r_device acurite_rain_896 = {
+r_device const acurite_rain_896 = {
         .name        = "Acurite 896 Rain Gauge",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1000,
@@ -1877,11 +1882,11 @@ r_device acurite_rain_896 = {
         .gap_limit   = 3500,
         .reset_limit = 5000,
         .decode_fn   = &acurite_rain_896_decode,
-        .disabled    = 1, // Disabled by default due to false positives on oregon scientific v1 protocol see issue #353
+        .priority    = 10, // Eliminate false positives by letting oregon scientific v1 protocol go earlier
         .fields      = acurite_rain_gauge_output_fields,
 };
 
-static char *acurite_th_output_fields[] = {
+static char const *const acurite_th_output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -1892,7 +1897,7 @@ static char *acurite_th_output_fields[] = {
         NULL,
 };
 
-r_device acurite_th = {
+r_device const acurite_th = {
         .name        = "Acurite 609TXC Temperature and Humidity Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1000,
@@ -1907,7 +1912,7 @@ r_device acurite_th = {
  * For Acurite 592 TXR Temp/Humidity, but
  * Should match Acurite 592TX, 5-n-1, etc.
  */
-static char *acurite_txr_output_fields[] = {
+static char const *const acurite_txr_output_fields[] = {
         "model",
         "message_type", // TODO: remove this
         "id",
@@ -1936,8 +1941,8 @@ static char *acurite_txr_output_fields[] = {
         NULL,
 };
 
-r_device acurite_txr = {
-        .name        = "Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning, 899 Rain, 3N1, Atlas",
+r_device const acurite_txr = {
+        .name        = "Acurite 592TXR Temp/Humidity, 592TX Temp, 5n1 Weather Station, 6045 Lightning, 899 Rain, 3N1, Atlas",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 220,  // short pulse is 220 us + 392 us gap
         .long_width  = 408,  // long pulse is 408 us + 204 us gap
@@ -1958,7 +1963,7 @@ r_device acurite_txr = {
  * A transmission consists of two packets that run into each other.
  * There should be 40 bits of data though. But the last bit can't be detected.
  */
-static char *acurite_986_output_fields[] = {
+static char const *const acurite_986_output_fields[] = {
         "model",
         "id",
         "channel",
@@ -1969,7 +1974,7 @@ static char *acurite_986_output_fields[] = {
         NULL,
 };
 
-r_device acurite_986 = {
+r_device const acurite_986 = {
         .name        = "Acurite 986 Refrigerator / Freezer Thermometer",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 520,
@@ -1987,7 +1992,7 @@ r_device acurite_986 = {
  *
  */
 
-static char *acurite_606_output_fields[] = {
+static char const *const acurite_606_output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -1996,7 +2001,7 @@ static char *acurite_606_output_fields[] = {
         NULL,
 };
 
-static char *acurite_590_output_fields[] = {
+static char const *const acurite_590_output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -2013,7 +2018,7 @@ static char *acurite_590_output_fields[] = {
 //.long_width     = 1076,
 //.gap_limit      = 1200,
 //.reset_limit    = 12000,
-r_device acurite_606 = {
+r_device const acurite_606 = {
         .name        = "Acurite 606TX Temperature Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,
@@ -2024,7 +2029,7 @@ r_device acurite_606 = {
         .fields      = acurite_606_output_fields,
 };
 
-static char *acurite_00275rm_output_fields[] = {
+static char const *const acurite_00275rm_output_fields[] = {
         "model",
         "subtype",
         "id",
@@ -2038,7 +2043,7 @@ static char *acurite_00275rm_output_fields[] = {
         NULL,
 };
 
-r_device acurite_00275rm = {
+r_device const acurite_00275rm = {
         .name        = "Acurite 00275rm,00276rm Temp/Humidity with optional probe",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 232, // short pulse is 232 us
@@ -2050,7 +2055,7 @@ r_device acurite_00275rm = {
         .fields      = acurite_00275rm_output_fields,
 };
 
-r_device acurite_590tx = {
+r_device const acurite_590tx = {
         .name        = "Acurite 590TX Temperature with optional Humidity",
         .modulation  = OOK_PULSE_PPM, // OOK_PULSE_PWM,
         .short_width = 500,           // short pulse is 232 us

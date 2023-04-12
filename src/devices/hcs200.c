@@ -58,7 +58,7 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // The transmission is LSB first, big endian.
     uint32_t encrypted = ((unsigned)reverse8(b[3]) << 24) | (reverse8(b[2]) << 16) | (reverse8(b[1]) << 8) | (reverse8(b[0]));
-    int serial         = (reverse8(b[7] & 0xf0) << 20) | (reverse8(b[6]) << 16) | (reverse8(b[5]) << 8) | (reverse8(b[4]));
+    int serial         = (reverse8(b[7] & 0xf0) << 24) | (reverse8(b[6]) << 16) | (reverse8(b[5]) << 8) | (reverse8(b[4]));
     int btn            = (b[7] & 0x0f);
     int btn_num        = (btn & 0x08) | ((btn & 0x01) << 2) | (btn & 0x02) | ((btn & 0x04) >> 2); // S3, S0, S1, S2
     int learn          = (b[7] & 0x0f) == 0x0f;
@@ -86,7 +86,7 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -97,7 +97,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device hcs200 = {
+r_device const hcs200 = {
         .name        = "Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 370,
@@ -109,7 +109,7 @@ r_device hcs200 = {
         .fields      = output_fields,
 };
 
-r_device hcs200_fsk = {
+r_device const hcs200_fsk = {
         .name        = "Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes (FSK)",
         .modulation  = FSK_PULSE_PWM,
         .short_width = 370,

@@ -71,7 +71,7 @@ static int generic_remote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "cmd",
@@ -79,7 +79,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device generic_remote = {
+r_device const generic_remote = {
         .name        = "Generic Remote SC226x EV1527",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 464,

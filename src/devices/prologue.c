@@ -86,7 +86,7 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "subtype",
         "id",
@@ -98,7 +98,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device prologue = {
+r_device const prologue = {
         .name        = "Prologue, FreeTec NC-7104, NC-7159-675 temperature sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

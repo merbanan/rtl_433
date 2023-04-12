@@ -98,7 +98,7 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return DECODE_FAIL_SANITY;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "type",
         "model",
         "id",
@@ -109,7 +109,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device steelmate = {
+r_device const steelmate = {
         .name        = "Steelmate TPMS",
         .modulation  = FSK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 12 * 4,

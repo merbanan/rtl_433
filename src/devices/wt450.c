@@ -115,7 +115,7 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -126,7 +126,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device wt450 = {
+r_device const wt450 = {
         .name        = "WT450, WT260H, WT405H",
         .modulation  = OOK_PULSE_DMC,
         .short_width = 976,  // half-bit width 976 us

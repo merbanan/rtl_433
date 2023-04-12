@@ -14,6 +14,7 @@
 #include "data.h"
 #include "term_ctl.h"
 #include "r_util.h"
+#include "logger.h"
 #include "fatal.h"
 
 #include <string.h>
@@ -73,23 +74,23 @@ static void R_API_CALLCONV print_json_string(data_output_t *output, const char *
     }
 
     fprintf(json->file, "\"");
-    while (*str) {
+    for (; *str; ++str) {
         if (*str == '\r') {
             fprintf(json->file, "\\r");
-            continue;
         }
-        if (*str == '\n') {
+        else if (*str == '\n') {
             fprintf(json->file, "\\n");
-            continue;
         }
-        if (*str == '\t') {
+        else if (*str == '\t') {
             fprintf(json->file, "\\t");
-            continue;
         }
-        if (*str == '"' || *str == '\\')
+        else if (*str == '"' || *str == '\\') {
             fputc('\\', json->file);
-        fputc(*str, json->file);
-        ++str;
+            fputc(*str, json->file);
+        }
+        else {
+            fputc(*str, json->file);
+        }
     }
     fprintf(json->file, "\"");
 }
@@ -110,11 +111,12 @@ static void R_API_CALLCONV print_json_int(data_output_t *output, int data, char 
     fprintf(json->file, "%d", data);
 }
 
-static void R_API_CALLCONV print_json_flush(data_output_t *output)
+static void R_API_CALLCONV data_output_json_print(data_output_t *output, data_t *data)
 {
     data_output_json_t *json = (data_output_json_t *)output;
 
     if (json && json->file) {
+        json->output.print_data(output, data, NULL);
         fputc('\n', json->file);
         fflush(json->file);
     }
@@ -128,7 +130,7 @@ static void R_API_CALLCONV data_output_json_free(data_output_t *output)
     free(output);
 }
 
-struct data_output *data_output_json_create(FILE *file)
+struct data_output *data_output_json_create(int log_level, FILE *file)
 {
     data_output_json_t *json = calloc(1, sizeof(data_output_json_t));
     if (!json) {
@@ -136,12 +138,13 @@ struct data_output *data_output_json_create(FILE *file)
         return NULL; // NOTE: returns NULL on alloc failure.
     }
 
+    json->output.log_level    = log_level;
     json->output.print_data   = print_json_data;
     json->output.print_array  = print_json_array;
     json->output.print_string = print_json_string;
     json->output.print_double = print_json_double;
     json->output.print_int    = print_json_int;
-    json->output.output_flush = print_json_flush;
+    json->output.output_print = data_output_json_print;
     json->output.output_free  = data_output_json_free;
     json->file                = file;
 
@@ -205,10 +208,26 @@ static void R_API_CALLCONV print_kv_data(data_output_t *output, data_t *data, ch
 
     int color = kv->color;
     int ring_bell = kv->ring_bell;
+    int is_log = 0;
 
     // top-level: update width and print separator
     if (!kv->data_recursion) {
+        // collect well-known top level keys
+        data_t *data_src = NULL;
+        data_t *data_lvl  = NULL;
+        data_t *data_msg  = NULL;
+        for (data_t *d = data; d; d = d->next) {
+            if (!strcmp(d->key, "src"))
+                data_src = d;
+            else if (!strcmp(d->key, "lvl"))
+                data_lvl = d;
+            else if (!strcmp(d->key, "msg"))
+                data_msg = d;
+        }
+        is_log = data_src && data_lvl && data_msg;
+
         kv->term_width = term_get_columns(kv->term); // update current term width
+        if (!is_log) {
         if (color)
             term_set_fg(kv->term, TERM_COLOR_BLACK);
         if (ring_bell)
@@ -219,6 +238,56 @@ static void R_API_CALLCONV print_kv_data(data_output_t *output, data_t *data, ch
         fprintf(kv->file, "%s\n", sep);
         if (color)
             term_set_fg(kv->term, TERM_COLOR_RESET);
+        }
+
+        // print special log format
+        if (is_log) {
+            int level = 0;
+            if (data_lvl->type == DATA_INT) {
+                level = data_lvl->value.v_int;
+            }
+            term_color_t src_bg = TERM_COLOR_RESET;
+            term_color_t src_fg = TERM_COLOR_RESET;
+            if (level == LOG_FATAL) {
+                src_bg = TERM_COLOR_BRIGHT_BLACK;
+                src_fg = TERM_COLOR_WHITE;
+            } else if (level == LOG_CRITICAL) {
+                src_bg = TERM_COLOR_BRIGHT_GREEN;
+                src_fg = TERM_COLOR_BLACK;
+            } else if (level == LOG_ERROR) {
+                src_bg = TERM_COLOR_BRIGHT_RED;
+                src_fg = TERM_COLOR_WHITE;
+            } else if (level == LOG_WARNING) {
+                src_bg = TERM_COLOR_BRIGHT_YELLOW;
+                src_fg = TERM_COLOR_BLACK;
+            } else if (level == LOG_NOTICE) {
+                src_bg = TERM_COLOR_BRIGHT_CYAN;
+                src_fg = TERM_COLOR_BLACK;
+            } else if (level == LOG_INFO) {
+                src_bg = TERM_COLOR_BRIGHT_BLUE;
+                src_fg = TERM_COLOR_WHITE;
+            } else if (level == LOG_DEBUG) {
+                src_bg = TERM_COLOR_BRIGHT_MAGENTA;
+                src_fg = TERM_COLOR_WHITE;
+            } else if (level == LOG_TRACE) {
+                src_bg = TERM_COLOR_BRIGHT_BLACK;
+                src_fg = TERM_COLOR_WHITE;
+            }
+            term_set_bg(kv->term, src_bg, src_bg); // hides the brackets
+            fprintf(kv->file, "[");
+            term_set_bg(kv->term, 0, src_fg);
+            print_value(output, data_src->type, data_src->value, data_src->format);
+            term_set_bg(kv->term, 0, src_bg); // hides the brackets
+            fprintf(kv->file, "]");
+            term_set_fg(kv->term, TERM_COLOR_RESET);
+            // fprintf(kv->file, " (");
+            // print_value(output, data_lvl->type, data_lvl->value, data_lvl->format);
+            // fprintf(kv->file, ") ");
+            fprintf(kv->file, " ");
+            print_value(output, data_msg->type, data_msg->value, data_msg->format);
+            // force break on next key
+            kv->column = kv->term_width;
+        }
     }
     // nested data object: break before
     else {
@@ -229,7 +298,13 @@ static void R_API_CALLCONV print_kv_data(data_output_t *output, data_t *data, ch
     }
 
     ++kv->data_recursion;
-    while (data) {
+    for (; data; data = data->next) {
+        // skip logging keys
+        if (is_log && (!strcmp(data->key, "time") || !strcmp(data->key, "src") || !strcmp(data->key, "lvl")
+                || !strcmp(data->key, "msg") || !strcmp(data->key, "num_rows"))) {
+            continue;
+        }
+
         // break before some known keys
         if (kv->column > 0 && kv_break_before_key(data->key)) {
             fprintf(kv->file, "\n");
@@ -259,8 +334,6 @@ static void R_API_CALLCONV print_kv_data(data_output_t *output, data_t *data, ch
         if (kv->column > 0 && kv_break_after_key(data->key)) {
             kv->column = kv->term_width; // force break;
         }
-
-        data = data->next;
     }
     --kv->data_recursion;
 
@@ -305,11 +378,12 @@ static void R_API_CALLCONV print_kv_string(data_output_t *output, const char *da
     kv->column += fprintf(kv->file, format ? format : "%s", data);
 }
 
-static void R_API_CALLCONV print_kv_flush(data_output_t *output)
+static void R_API_CALLCONV data_output_kv_print(data_output_t *output, data_t *data)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
     if (kv && kv->file) {
+        kv->output.print_data(output, data, NULL);
         fputc('\n', kv->file);
         fflush(kv->file);
     }
@@ -327,7 +401,7 @@ static void R_API_CALLCONV data_output_kv_free(data_output_t *output)
 
     free(output);
 }
-struct data_output *data_output_kv_create(FILE *file)
+struct data_output *data_output_kv_create(int log_level, FILE *file)
 {
     data_output_kv_t *kv = calloc(1, sizeof(data_output_kv_t));
     if (!kv) {
@@ -335,12 +409,13 @@ struct data_output *data_output_kv_create(FILE *file)
         return NULL; // NOTE: returns NULL on alloc failure.
     }
 
+    kv->output.log_level    = log_level;
     kv->output.print_data   = print_kv_data;
     kv->output.print_array  = print_kv_array;
     kv->output.print_string = print_kv_string;
     kv->output.print_double = print_kv_double;
     kv->output.print_int    = print_kv_int;
-    kv->output.output_flush = print_kv_flush;
+    kv->output.output_print = data_output_kv_print;
     kv->output.output_free  = data_output_kv_free;
     kv->file                = file;
 
@@ -352,13 +427,12 @@ struct data_output *data_output_kv_create(FILE *file)
     return &kv->output;
 }
 
-/* CSV printer; doesn't really support recursive data objects yet */
+/* CSV printer */
 
 typedef struct {
     struct data_output output;
     FILE *file;
     const char **fields;
-    int data_recursion;
     const char *separator;
 } data_output_csv_t;
 
@@ -367,36 +441,16 @@ static void R_API_CALLCONV print_csv_data(data_output_t *output, data_t *data, c
     UNUSED(format);
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
-    const char **fields = csv->fields;
-    int i;
-
-    if (csv->data_recursion)
-        return;
-
-    int regular = 0; // skip "states" output
-    for (data_t *d = data; d; d = d->next) {
-        if (!strcmp(d->key, "msg") || !strcmp(d->key, "codes") || !strcmp(d->key, "model")) {
-            regular = 1;
-            break;
-        }
+    fputc('{', csv->file);
+    for (bool separator = false; data; data = data->next) {
+        if (separator)
+            fprintf(csv->file, "; "); // NOTE: distinct from csv->separator
+        output->print_string(output, data->key, NULL);
+        fprintf(csv->file, ": ");
+        print_value(output, data->type, data->value, data->format);
+        separator = true;
     }
-    if (!regular)
-        return;
-
-    ++csv->data_recursion;
-    for (i = 0; fields[i]; ++i) {
-        const char *key = fields[i];
-        data_t *found = NULL;
-        if (i)
-            fprintf(csv->file, "%s", csv->separator);
-        for (data_t *iter = data; !found && iter; iter = iter->next)
-            if (strcmp(iter->key, key) == 0)
-                found = iter;
-
-        if (found)
-            print_value(output, found->type, found->value, found->format);
-    }
-    --csv->data_recursion;
+    fputc('}', csv->file);
 }
 
 static void R_API_CALLCONV print_csv_array(data_output_t *output, data_array_t *array, char const *format)
@@ -524,14 +578,37 @@ static void R_API_CALLCONV print_csv_int(data_output_t *output, int data, char c
     fprintf(csv->file, "%d", data);
 }
 
-static void R_API_CALLCONV print_csv_flush(data_output_t *output)
+static void R_API_CALLCONV data_output_csv_print(data_output_t *output, data_t *data)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
-    if (csv && csv->file) {
-        fputc('\n', csv->file);
-        fflush(csv->file);
+    const char **fields = csv->fields;
+
+    int regular = 0; // skip "states" output
+    for (data_t *d = data; d; d = d->next) {
+        if (!strcmp(d->key, "msg") || !strcmp(d->key, "codes") || !strcmp(d->key, "model")) {
+            regular = 1;
+            break;
+        }
     }
+    if (!regular)
+        return;
+
+    for (int i = 0; fields[i]; ++i) {
+        const char *key = fields[i];
+        data_t *found   = NULL;
+        if (i)
+            fprintf(csv->file, "%s", csv->separator);
+        for (data_t *iter = data; !found && iter; iter = iter->next)
+            if (strcmp(iter->key, key) == 0)
+                found = iter;
+
+        if (found)
+            print_value(output, found->type, found->value, found->format);
+    }
+
+    fputc('\n', csv->file);
+    fflush(csv->file);
 }
 
 static void R_API_CALLCONV data_output_csv_free(data_output_t *output)
@@ -542,7 +619,7 @@ static void R_API_CALLCONV data_output_csv_free(data_output_t *output)
     free(csv);
 }
 
-struct data_output *data_output_csv_create(FILE *file)
+struct data_output *data_output_csv_create(int log_level, FILE *file)
 {
     data_output_csv_t *csv = calloc(1, sizeof(data_output_csv_t));
     if (!csv) {
@@ -550,13 +627,14 @@ struct data_output *data_output_csv_create(FILE *file)
         return NULL; // NOTE: returns NULL on alloc failure.
     }
 
+    csv->output.log_level    = log_level;
     csv->output.print_data   = print_csv_data;
     csv->output.print_array  = print_csv_array;
     csv->output.print_string = print_csv_string;
     csv->output.print_double = print_csv_double;
     csv->output.print_int    = print_csv_int;
     csv->output.output_start = data_output_csv_start;
-    csv->output.output_flush = print_csv_flush;
+    csv->output.output_print = data_output_csv_print;
     csv->output.output_free  = data_output_csv_free;
     csv->file                = file;
 

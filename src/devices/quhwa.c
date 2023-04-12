@@ -55,13 +55,13 @@ static int quhwa_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         NULL,
 };
 
-r_device quhwa = {
+r_device const quhwa = {
         .name        = "Quhwa",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 360,  // Pulse: Short 360µs, Long 1070µs

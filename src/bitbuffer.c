@@ -29,6 +29,7 @@ void bitbuffer_add_bit(bitbuffer_t *bits, int bit)
         return;
     }
     if (bits->bits_per_row[bits->num_rows - 1] == UINT16_MAX - 1) {
+        //print_logf(LOG_WARNING, __func__, "Warning: row length limit (%u bits) reached", UINT16_MAX);
         fprintf(stderr, "%s: Warning: row length limit (%u bits) reached\n", __func__, UINT16_MAX);
     }
 
@@ -39,6 +40,7 @@ void bitbuffer_add_bit(bitbuffer_t *bits, int bit)
         // spill into next row
         // fprintf(stderr, "%s: row spill [%d] to %d (%d)\n", __func__, bits->num_rows - 1, col_index, bits->free_row);
         if (bits->free_row == BITBUF_ROWS - 1) {
+            //print_logf(LOG_WARNING, __func__, "Warning: row count limit (%d rows) reached", BITBUF_ROWS);
             fprintf(stderr, "%s: Warning: row count limit (%d rows) reached\n", __func__, BITBUF_ROWS);
         }
         if (bits->free_row < BITBUF_ROWS) {

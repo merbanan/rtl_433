@@ -117,7 +117,7 @@ static int rainpoint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -131,7 +131,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device rainpoint = {
+r_device const rainpoint = {
         .name        = "RainPoint soil temperature and moisture sensor",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 500,

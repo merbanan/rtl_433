@@ -128,7 +128,7 @@ static int fineoffset_wh45_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -142,7 +142,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device fineoffset_wh45 = {
+r_device const fineoffset_wh45 = {
         .name        = "Fine Offset Electronics WH45 air quality sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 58,

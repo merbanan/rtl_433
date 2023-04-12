@@ -1,7 +1,8 @@
 /** @file
     GT-WT-02 sensor on 433.92MHz.
 
-    Copyright (C) 2015 Paul Ortyl
+    Copyright (C) 2019 Christian W. Zuckschwerdt <zany@triq.net>
+    original implementation 2015 Paul Ortyl
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -114,7 +115,7 @@ static int gt_wt_02_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return counter;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -126,7 +127,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device gt_wt_02 = {
+r_device const gt_wt_02 = {
         .name        = "Globaltronics GT-WT-02 Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2500, // 3ms (old) / 2ms (new)

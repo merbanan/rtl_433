@@ -18,8 +18,9 @@ Decoder for Bresser Weather Center 6-in-1.
 - also Bresser new 5-in-1 sensors.
 - also Froggit WH6000 sensors.
 - also rebranded as Ventus C8488A (W835)
-- also Bresser 3-in-1 Professional Wind Gauge / Anemometer PN 7002531
-- also Bresser soil temperature and moisture meter PN 7009972
+- also Bresser 3-in-1 Professional Wind Gauge / Anemometer, PN 7002531
+- also Bresser soil temperature and moisture meter, PN 7009972
+- also Bresser Thermo-/Hygro-Sensor 7 Channel 868 MHz, PN 7009999
 
 There are at least two different message types:
 - 24 seconds interval for temperature, hum, uv and rain (alternating messages)
@@ -217,7 +218,7 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -237,7 +238,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device bresser_6in1 = {
+r_device const bresser_6in1 = {
         .name        = "Bresser Weather Center 6-in-1, 7-in-1 indoor, soil, new 5-in-1, 3-in-1 wind gauge, Froggit WH6000, Ventus C8488A",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 124,

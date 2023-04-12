@@ -90,14 +90,14 @@ static int enocean_erp1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "telegram",
         "mic",
         NULL,
 };
 
-r_device enocean_erp1 = {
+r_device const enocean_erp1 = {
         .name        = "EnOcean ERP1",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 8,

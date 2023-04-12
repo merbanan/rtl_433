@@ -8,13 +8,11 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
+
+#include "decoder.h"
+
 /**
 LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1/W2 Wind Sensor.
-
-Note: This is an unfinished decoder.  It is able to read rainfall info
-      from the sensor (raw_rain1 and raw_rain2) but does not calculate
-      rain_mm from these values.  For now, only the raw values are
-      output while work continues to calculate rain_mm.
 
 Product pages:
 https://www.lacrossetechnology.com/products/ltv-r1
@@ -39,21 +37,31 @@ Protocol Specification:
 
 Data bits are NRZ encoded with logical 1 and 0 bits 104us in length.
 
-LTV-R1:
+Checksum is CRC-8 poly 0x31 init 0x00 over 7 (10 for R3) bytes following SYNC.
+
+Note that the rain zero value seems to be `00aa00` with a known byte order of `HH??LL`.
+It's unknown if the 16-bit value would reset or roll over into the middle byte (with whitening)?
+
+## LTV-R1:
+
+Full preamble is `fff00000 aaaaaaaa d2aa2dd4`.
 
     PRE:32h SYNC:32h ID:24h ?:4b SEQ:3d ?:1b RAIN:24h CRC:8h CHK?:8h TRAILER:96h
-
-    CHK is CRC-8 poly 0x31 init 0x00 over 7 bytes following SYNC
 
     {164} 380322  0e  00aa14  6a  93  00...
     {164} 380322  00  00aa1a  60  81  00...
     {162} 380322  06  00aa26  d1  04  00...
 
-LTV-R3:
-does not have the CRC at byte 8 but a second 24 bit value and the check at byte 11.
+## LTV-R3:
 
-    PRE:32h SYNC:32h ID:24h ?:4b SEQ:3d ?:1b RAIN:24h RAIN:24h CRC:8h TRAILER:56h
+Does not have the CRC at byte 8 but a second 24 bit value and the check at byte 11.
+Full preamble is `aaaaaaaaaaaaaa d2aa2dd4`.
 
+    PRE:58h SYNC:32h ID:24h ?:4b SEQ:3d ?:1b RAIN:24h RAIN:24h CRC:8h TRAILER:56h
+
+    {144} 71061d 42 00aa00 00aa00  c6  0000000000000000 [zero]
+    {144} 71061d 08 00aac3 00aab7  01  0000000000000000 [before 8-bit rollover]
+    {144} 71061d 02 01aa03 01aa03  46  0000000000000000 [after 8-bit rollover]
     {145} 70f6a2 00 015402 015401  ae  00...
     {142} 70f6a0 88 015400 015400  24  00...
     {143} 70f6a2 46 00a800 015401  e2  00...
@@ -66,7 +74,9 @@ does not have the CRC at byte 8 but a second 24 bit value and the check at byte 
     {144} 70f6a2 04 00aa0d 00aa0d  89  00...
     {143} 70f6a2 0c 00aa0d 00aa0d  56  00...
 
-LTV-W1 (also LTV-W2):
+## LTV-W1 (also LTV-W2):
+
+Full preamble is `aaaaaaaaaaaaaa d2aa2dd4`.
 
     ID:24h BATTLOW:1b STARTUP:1b ?:2b SEQ:3h ?:1b 8h8h8h WIND:12d 12h CRC:8h TRAILER 8h8h8h8h8h8h8h8h
 
@@ -88,10 +98,11 @@ LTV-W1 (also LTV-W2):
     d2aa2dd4 0fb220 c8 aaaaaa 000 aaa f3 00000000000000 [weak]
     d2aa2dd4 0fb220 8a aaaaaa 000 aaa 4e 00000000000000 [weak]
 */
-#include "decoder.h"
 
 static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    // full preamble (LTV-R1) is `fff00000 aaaaaaaa d2aa2dd4`
+    // full preamble (LTV-R3, LTV-W1) is `aaaaaaaaaaaaaa d2aa2dd4`
     uint8_t const preamble_pattern[] = {0xd2, 0xaa, 0x2d, 0xd4};
 
     uint8_t b[20];
@@ -142,13 +153,15 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     decoder_log_bitrow(decoder, 1, __func__, b, bitbuffer->bits_per_row[0] - offset, "");
 
+    // Note that the rain zero value is 00aa00 with a known byte order of HH??LL.
+    // We just prepend the middle byte and assume whitening. Let's hope we get feedback someday.
     int id        = (b[0] << 16) | (b[1] << 8) | b[2];
     int flags     = (b[3] & 0x31); // masks off knonw bits
     int batt_low  = (b[3] & 0x80) >> 7;
     int startup   = (b[3] & 0x40) >> 6;
     int seq       = (b[3] & 0x0e) >> 1;
-    int raw_rain1 = (b[4] << 16) | (b[5] << 8) | (b[6]);
-    int raw_rain2 = (b[7] << 16) | (b[8] << 8) | (b[9]); // only LTV-R3
+    int raw_rain1 = ((b[5] ^ 0xaa) << 16) | (b[4] << 8) | (b[6]);
+    int raw_rain2 = ((b[8] ^ 0xaa) << 16) | (b[7] << 8) | (b[9]); // only LTV-R3
     int raw_wind  = (b[7] << 4) | (b[8] >> 4); // only LTV-W1/W2
 
     // Seems rain is 0.25mm per tip, not sure what rain2 is
@@ -178,7 +191,7 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -193,7 +206,7 @@ static char *output_fields[] = {
 };
 
 // flex decoder m=FSK_PCM, s=104, l=104, r=9600
-r_device lacrosse_r1 = {
+r_device const lacrosse_r1 = {
         .name        = "LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1/W2 Wind Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 104,

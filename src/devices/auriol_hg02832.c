@@ -89,7 +89,7 @@ static int auriol_hg02832_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -101,7 +101,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device auriol_hg02832 = {
+r_device const auriol_hg02832 = {
         .name        = "Auriol HG02832, HG05124A-DCF, Rubicson 48957 temperature/humidity sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 252,

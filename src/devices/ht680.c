@@ -79,7 +79,7 @@ static int ht680_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 0;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "button1",
@@ -90,7 +90,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ht680 = {
+r_device const ht680 = {
         .name        = "HT680 Remote control",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 200,

@@ -137,7 +137,7 @@ static int proflame2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 0;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "pilot",
@@ -152,7 +152,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device proflame2 = {
+r_device const proflame2 = {
         .name        = "SmartFire Proflame 2 remote control",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 417, // 2400 baud

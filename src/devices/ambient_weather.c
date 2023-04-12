@@ -157,7 +157,7 @@ static int ambient_weather_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return ret;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -168,7 +168,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ambient_weather = {
+r_device const ambient_weather = {
         .name        = "Ambient Weather F007TH, TFA 30.3208.02, SwitchDocLabs F016TH temperature sensor",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 500,

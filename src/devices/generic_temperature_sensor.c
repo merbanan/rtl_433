@@ -60,7 +60,7 @@ static int generic_temperature_sensor_callback(r_device *decoder, bitbuffer_t *b
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -68,7 +68,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device generic_temperature_sensor = {
+r_device const generic_temperature_sensor = {
         .name        = "Generic temperature sensor 1",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

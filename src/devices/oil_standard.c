@@ -1,12 +1,6 @@
 /** @file
     Oil tank monitor using manchester encoded FSK/ASK protocol.
 
-    Tested devices:
-    - APOLLO ULTRASONIC STANDARD (maybe also VISUAL but not SMART, FSK)
-    - Tekelek TEK377E (E: European, A: American version)
-    - Beckett Rocket TEK377A (915MHz, ASK)
-    Should apply to similar Watchman, Beckett, and Apollo devices too.
-
     Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
     based on code Copyright (C) 2015 David Woodhouse
 
@@ -20,6 +14,13 @@
 
 /**
 Oil tank monitor using manchester encoded FSK/ASK protocol.
+
+Tested devices:
+- APOLLO ULTRASONIC STANDARD (maybe also VISUAL but not SMART, FSK)
+- Tekelek TEK377E (E: European, A: American version)
+- Beckett Rocket TEK377A (915MHz, ASK)
+
+Should apply to similar Watchman, Beckett, and Apollo devices too.
 
 The sensor sends a single packet once every hour or twice a second
 for 11 minutes when in pairing/test mode (pairing needs 35 sec).
@@ -41,25 +42,17 @@ Start of frame full preamble is depending on first data bit either
 */
 static int oil_standard_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    data_t *data;
-    uint8_t *b;
-    uint16_t unit_id;
-    uint16_t depth             = 0;
-    uint16_t binding_countdown = 0;
-    uint8_t flags;
-    uint8_t alarm;
     bitbuffer_t databits = {0};
-
-    bitpos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &databits, 41);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, &databits, 41);
 
     if (databits.bits_per_row[0] < 32 || databits.bits_per_row[0] > 40 || (databits.bb[0][4] & 0xfe) != 0)
         return 0; // TODO: fix calling code to handle negative return values
 
-    b = databits.bb[0];
+    uint8_t *b = databits.bb[0];
 
     // The unit ID changes when you rebind by holding a magnet to the
     // sensor for long enough.
-    unit_id = (b[0] << 8) | b[1];
+    uint16_t unit_id = (b[0] << 8) | b[1];
 
     // 0x01: Rebinding (magnet held to sensor)
     // 0x02: High-bit for depth
@@ -69,22 +62,26 @@ static int oil_standard_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     // 0x20: (unknown toggle)
     // 0x40: (unknown toggle)
     // 0x80: (always zero?)
-    flags = b[2] & ~0x0A;
-    alarm = (b[2] & 0x08) >> 3;
+    uint8_t flags = b[2] & ~0x0A;
+    uint8_t alarm = (b[2] & 0x08) >> 3;
 
-    if (flags & 1)
+    uint16_t depth             = 0;
+    uint16_t binding_countdown = 0;
+    if (flags & 1) {
         // When binding, the countdown counts up from 0x40 to 0x4a
         // (as long as you hold the magnet to it for long enough)
         // before the device ID changes. The receiver unit needs
         // to receive this *strongly* in order to change its
         // allegiance.
         binding_countdown = b[3];
-    else
+    }
+    else {
         // A depth reading of zero indicates no reading.
         depth = ((b[2] & 0x02) << 7) | b[3];
+    }
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",                "", DATA_STRING, "Oil-SonicStd",
             "id",                   "", DATA_FORMAT, "%04x", DATA_INT, unit_id,
             "flags",                "", DATA_FORMAT, "%02x", DATA_INT, flags,
@@ -127,7 +124,7 @@ static int oil_standard_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "flags",
@@ -137,7 +134,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device oil_standard = {
+r_device const oil_standard = {
         .name        = "Oil Ultrasonic STANDARD FSK",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 500,
@@ -147,7 +144,7 @@ r_device oil_standard = {
         .fields      = output_fields,
 };
 
-r_device oil_standard_ask = {
+r_device const oil_standard_ask = {
         .name        = "Oil Ultrasonic STANDARD ASK",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 500,

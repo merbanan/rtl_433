@@ -99,7 +99,7 @@ static int emos_e6016_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -109,7 +109,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device emos_e6016_rain = {
+r_device const emos_e6016_rain = {
         .name        = "EMOS E6016 rain gauge",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 300,

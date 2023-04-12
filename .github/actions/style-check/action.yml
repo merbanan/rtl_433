@@ -1,5 +1,5 @@
 name: 'Style Check'
 description: 'Check for common code style warnings'
 runs:
-  using: 'node12'
+  using: 'node16'
   main: 'index.js'

@@ -114,7 +114,7 @@ static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 0;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "subtype",
@@ -125,7 +125,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device current_cost = {
+r_device const current_cost = {
         .name        = "CurrentCost Current Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 250,

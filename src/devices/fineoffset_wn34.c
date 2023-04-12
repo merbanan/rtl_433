@@ -110,7 +110,7 @@ static int fineoffset_wn34_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -120,7 +120,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device fineoffset_wn34 = {
+r_device const fineoffset_wn34 = {
         .name        = "Fine Offset Electronics WN34 temperature sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 58,

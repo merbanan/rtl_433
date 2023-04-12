@@ -26,6 +26,6 @@ struct r_cfg;
     @return The initialized rtltcp output instance.
             You must release this object with raw_output_free once you're done with it.
 */
-struct raw_output *raw_output_rtltcp_create(char const *host, char const *port, struct r_cfg *cfg);
+struct raw_output *raw_output_rtltcp_create(char const *host, char const *port, char const *opts, struct r_cfg *cfg);
 
 #endif /* INCLUDE_OUTPUT_RTLTCP_H_ */

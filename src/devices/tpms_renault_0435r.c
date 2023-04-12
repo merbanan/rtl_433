@@ -160,7 +160,7 @@ static int tpms_renault_0435r_callback(r_device *decoder, bitbuffer_t *bitbuffer
     return events > 0 ? events : ret;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "type",
         "id",
@@ -174,7 +174,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_renault_0435r = {
+r_device const tpms_renault_0435r = {
         .name        = "Renault 0435R TPMS",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 52,  // 12-13 samples @250k

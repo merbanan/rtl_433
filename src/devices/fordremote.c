@@ -62,14 +62,14 @@ static int fordremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return found;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "code",
         NULL,
 };
 
-r_device fordremote = {
+r_device const fordremote = {
         .name        = "Ford Car Key",
         .modulation  = OOK_PULSE_DMC,
         .short_width = 250,  // half-bit width is 250 us

@@ -136,7 +136,7 @@ static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "subunit",
@@ -145,7 +145,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device lightwave_rf = {
+r_device const lightwave_rf = {
         .name        = "LightwaveRF",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 250,  // Short gap 250µs, long gap 1250µs, (Pulse width is 250µs)

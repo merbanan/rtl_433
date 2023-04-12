@@ -152,7 +152,7 @@ static int lacrosse_breezepro_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "seq",
@@ -166,7 +166,7 @@ static char *output_fields[] = {
 };
 
 // flex decoder m=FSK_PCM, s=107, l=107, r=5900
-r_device lacrosse_breezepro = {
+r_device const lacrosse_breezepro = {
         .name        = "LaCrosse Technology View LTV-WSDTH01 Breeze Pro Wind Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 107,

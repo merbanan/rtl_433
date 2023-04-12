@@ -63,7 +63,7 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
     // So less then 0.5% which should be acceptable.
     if ((b[0] == 0 && b[2] == 0 && b[3] == 0)
-            || ( b[0] == 0xff &&  b[2] == 0xff && b[3] == 0xFF)
+            || (b[0] == 0xff &&  b[2] == 0xff && b[3] == 0xFF)
             || rubicson_crc_check(b))
         return DECODE_ABORT_EARLY;
 
@@ -102,7 +102,7 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -112,7 +112,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device nexus = {
+r_device const nexus = {
         .name        = "Nexus, FreeTec NC-7345, NX-3980, Solight TE82S, TFA 30.3209 temperature/humidity sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1000,

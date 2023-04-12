@@ -57,7 +57,11 @@ int run_fsk_demods(struct list *r_devs, struct pulse_data *fsk_pulse_data);
 
 /* handlers */
 
+void r_redirect_logging(struct r_cfg *cfg);
+
 void event_occurred_handler(struct r_cfg *cfg, struct data *data);
+
+void log_device_handler(struct r_device *r_dev, int level, struct data *data);
 
 void data_acquired_handler(struct r_device *r_dev, struct data *data);
 
@@ -70,6 +74,8 @@ void flush_report_data(struct r_cfg *cfg);
 void add_json_output(struct r_cfg *cfg, char *param);
 
 void add_csv_output(struct r_cfg *cfg, char *param);
+
+void add_log_output(struct r_cfg *cfg, char *param);
 
 void add_kv_output(struct r_cfg *cfg, char *param);
 

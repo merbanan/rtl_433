@@ -56,13 +56,13 @@ static int blyss_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return DECODE_FAIL_SANITY;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         NULL,
 };
 
-r_device blyss = {
+r_device const blyss = {
         .name        = "Blyss DC5-UK-WH",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 500,

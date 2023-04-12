@@ -87,7 +87,7 @@ static int tfa_marbella_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "counter",
@@ -96,7 +96,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tfa_marbella = {
+r_device const tfa_marbella = {
         .name        = "TFA Marbella Pool Thermometer",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 105,

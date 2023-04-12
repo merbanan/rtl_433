@@ -95,7 +95,7 @@ static int opus_xt300_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return ret > 0 ? ret : fail_code;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "channel",
         "temperature_C",
@@ -104,7 +104,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device opus_xt300 = {
+r_device const opus_xt300 = {
         .name        = "Opus/Imagintronix XT300 Soil Moisture",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 544,

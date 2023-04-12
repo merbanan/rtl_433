@@ -63,6 +63,9 @@ static int m_bus_decode_3of6_buffer(uint8_t const *bits, unsigned bit_offset, ui
     for (unsigned n=0; n<num_bytes; ++n) {
         uint8_t nibble_h = m_bus_decode_3of6(bitrow_get_byte(bits, n*12+bit_offset) >> 2);
         uint8_t nibble_l = m_bus_decode_3of6(bitrow_get_byte(bits, n*12+bit_offset+6) >> 2);
+        if (nibble_h > 0xf || nibble_l > 0xf) {
+            return -1;
+        }
         output[n] = (nibble_h << 4) | nibble_l;
     }
     return 0;
@@ -96,7 +99,7 @@ static void m_bus_manuf_decode(uint16_t m_field, char *three_letter_code)
 // Decode device type string
 static char const *m_bus_device_type_str(uint8_t devType)
 {
-    char *str = "";
+    char const *str = "";
     switch(devType) {
         case 0x00:  str = "Other";  break;
         case 0x01:  str = "Oil";  break;
@@ -177,25 +180,25 @@ typedef struct {
 static float humidity_factor[2] = { 0.1f, 1.0f };
 
 
-static char *oms_hum[4][4] = {
+static char const *oms_hum[4][4] = {
 {"humidity","average_humidity_1h","average_humidity_24h","error_04", },
 {"maximum_humidity_1h","maximum_humidity_24h","error_13","error_14",},
 {"minimum_humidity_1h","minimum_humidity_24h","error_23","error_24",},
 {"error_31","error_32","error_33","error_34",}
 };
 
-static char *oms_hum_el[4][4] = {
+static char const *oms_hum_el[4][4] = {
 {"Humidity","Average Humidity 1h","Average Humidity 24h","Error [0][4]", },
 {"Maximum Humidity 1h","Maximum Humidity 24h","Error [1][3]","Error [1][4]",},
 {"Minimum Humidity 1h","Minimum Humidity 24h","Error [2][3]","Error [2][4]",},
 {"Error 31","Error 32","Error 33","Error 34",}
 };
 
-static char *history_hours[4] = {
+static char const *history_hours[4] = {
         "1h", "24h", "err[2]", "err[3]",
 };
 
-static char *history_months[12][2] = {
+static char const *history_months[12][2] = {
         {"m1", "of month -1"},
         {"m2", "of month -2"},
         {"m3", "of month -3"},
@@ -210,7 +213,7 @@ static char *history_months[12][2] = {
         {"m12", "of month -12"},
 };
 
-static char *value_types_tab[4][2] = {
+static char const *value_types_tab[4][2] = {
         {"inst", ""},
         {"max", "Max"},
         {"min", "Min"},
@@ -246,7 +249,7 @@ enum UnitType {
     kOperTimeDays,
 };
 
-static char *unit_names[][3] = {
+static char const *unit_names[][3] = {
         /* 0 */ {"energy_wh", "Energy", "Wh"},
         /* 1 */ {"energy_j", "Energy", "J"},
         /* 2 */ {"volume", "Volume", "m3"},
@@ -280,18 +283,24 @@ static char *unit_names[][3] = {
 static double pow10_table[8] = { 0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000 };
 
 
-static data_t *append_str(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, char const *extra, char const *value)
+static data_t *append_str(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn,
+    char const *key_extra, char const *pretty_extra, char const *value)
 {
     char key[100] = {0};
     char pretty[100] = {0};
 
     value_type &= 0x3;
 
-    snprintf(key, sizeof(key), "%s_%s_%d", value_types_tab[value_type][0], unit_names[unit_type][0], sn);
-    if (extra[0] == '\0') {
+    if (!key_extra || !*key_extra) {
+        snprintf(key, sizeof(key), "%s_%s_%d", value_types_tab[value_type][0], unit_names[unit_type][0], sn);
+    } else {
+        snprintf(key, sizeof(key), "%s_%s_%s_%d", value_types_tab[value_type][0], unit_names[unit_type][0], key_extra, sn);
+    }
+
+    if (!pretty_extra || !*pretty_extra) {
         snprintf(pretty, sizeof(pretty), "%s %s[%d]", value_types_tab[value_type][1], unit_names[unit_type][1], sn);
     } else {
-        snprintf(pretty, sizeof(pretty), "%s %s %s", value_types_tab[value_type][1], unit_names[unit_type][1], extra);
+        snprintf(pretty, sizeof(pretty), "%s %s %s", value_types_tab[value_type][1], unit_names[unit_type][1], pretty_extra);
     }
 
     return data_append(data,
@@ -299,7 +308,8 @@ static data_t *append_str(data_t *data, enum UnitType unit_type, uint8_t value_t
 
 }
 
-static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, char const *extra, int64_t val, int exp)
+static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn,
+    char const *key_extra, char const *pretty_extra, int64_t val, int exp)
 {
     char const *prefix = "";
     char buffer_val[256] = {0};
@@ -332,7 +342,7 @@ static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_t
 
     snprintf(buffer_val, sizeof(buffer_val), "%.03f %s%s", fvalue, prefix, unit_names[unit_type][2]);
 
-    return append_str(data, unit_type, value_type, sn, extra, buffer_val);
+    return append_str(data, unit_type, value_type, sn, key_extra, pretty_extra, buffer_val);
 }
 
 static size_t m_bus_tm_decode(const uint8_t *data, size_t data_size, char *output, size_t output_size)
@@ -411,28 +421,28 @@ static int m_bus_decode_val(const uint8_t *b, uint8_t dif_coding, int64_t *out_v
             return -1;
         case 14: // 12 digit BCD
             for (int i=5; i >= 0;--i) {
-                *out_value = (*out_value * 10 ) + (b[i] >> 4);
-                *out_value = (*out_value * 10 ) + (b[i] & 0xF);
+                *out_value = (*out_value * 10) + (b[i] >> 4);
+                *out_value = (*out_value * 10) + (b[i] & 0xF);
             }
             return 6;
         case 13: // variable len
             return -1;
         case 12: // 8 digit BCD
             for (int i=3; i >= 0;--i) {
-                *out_value = (*out_value * 10 ) + (b[i] >> 4);
-                *out_value = (*out_value * 10 ) + (b[i] & 0xF);
+                *out_value = (*out_value * 10) + (b[i] >> 4);
+                *out_value = (*out_value * 10) + (b[i] & 0xF);
             }
             return 4;
         case 11: // 6 digit BCD
             for (int i=2; i >= 0;--i) {
-                *out_value = (*out_value * 10 ) + (b[i] >> 4);
-                *out_value = (*out_value * 10 ) + (b[i] & 0xF);
+                *out_value = (*out_value * 10) + (b[i] >> 4);
+                *out_value = (*out_value * 10) + (b[i] & 0xF);
             }
             return 3;
         case 10: // 4 digit BCD
             for (int i=1; i >= 0;--i) {
-                *out_value = (*out_value * 10 ) + (b[i] >> 4);
-                *out_value = (*out_value * 10 ) + (b[i] & 0xF);
+                *out_value = (*out_value * 10) + (b[i] >> 4);
+                *out_value = (*out_value * 10) + (b[i] & 0xF);
             }
             return 2;
         case 9: // 2 digit BCD
@@ -516,96 +526,97 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
         case 0:
             if ((vif_uam&0xF8) == 0) {
                 // E000 0nnn Energy 10nnn-3 Wh  0.001Wh to 10000Wh
-                data = append_val(data, kEnergy_Wh, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
+                data = append_val(data, kEnergy_Wh, dif_ff, dif_sn, "", "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x08) {
                 // E000 1nnn    Energy  10nnn J 0.001kJ to 10000kJ
-                data = append_val(data, kEnergy_J, dif_ff, dif_sn, "", val, vif_uam&0x7);
+                data = append_val(data, kEnergy_J, dif_ff, dif_sn, "", "", val, vif_uam&0x7);
             } else if ((vif_uam&0xF8) == 0x10) {
                 // E001 0nnn    Volume  10nnn-6 m3  0.001l to 10000l
 
                 if (dif_sn == 0) {
-                    data = append_val(data, kVolume, dif_ff, dif_sn, "", val, -6 + (vif_uam&0x7));
+                    data = append_val(data, kVolume, dif_ff, dif_sn, "", "", val, -6 + (vif_uam&0x7));
                 } else
                 if (dif_sn >= 8 && dif_sn <= 19) {
                     dif_sn -= 8;
-                    data = append_val(data, kVolume, dif_ff, dif_sn, history_months[dif_sn][1], val, -6 + (vif_uam&0x7));
+                    data = append_val(data, kVolume, dif_ff, dif_sn,
+                        history_months[dif_sn][0], history_months[dif_sn][1], val, -6 + (vif_uam&0x7));
                 }
 
             } else if ((vif_uam&0xF8) == 0x18) {
                 // E001 1nnn    Mass    10nnn-3 kg  0.001kg to 10000kg
-                data = append_val(data, kEnergy_J, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
+                data = append_val(data, kEnergy_J, dif_ff, dif_sn, "", "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xFC) == 0x20) {
                 /* E010 00nn    On Time nn = 00 seconds
                                         nn = 01 minutes
                                         nn = 10 hours
                                         nn = 11 days */
                 switch (vif_uam&3) {
-                    case 0: data = append_val(data, kOnTimeSec, dif_ff, dif_sn, "", val, 0); break;
-                    case 1: data = append_val(data, kOnTimeMin, dif_ff, dif_sn, "", val, 0); break;
-                    case 2: data = append_val(data, kOnTimeHours, dif_ff, dif_sn, "", val, 0); break;
-                    case 3: data = append_val(data, kOnTimeDays, dif_ff, dif_sn, "", val, 0); break;
+                    case 0: data = append_val(data, kOnTimeSec, dif_ff, dif_sn, "", "", val, 0); break;
+                    case 1: data = append_val(data, kOnTimeMin, dif_ff, dif_sn, "", "", val, 0); break;
+                    case 2: data = append_val(data, kOnTimeHours, dif_ff, dif_sn, "", "", val, 0); break;
+                    case 3: data = append_val(data, kOnTimeDays, dif_ff, dif_sn, "", "", val, 0); break;
                     default: break;
                 }
             } else if ((vif_uam&0xFC) == 0x24) {
                 // E010 01nn    Operating Time  coded like OnTime
                 switch (vif_uam&3) {
-                    case 0: data = append_val(data, kOperTimeSec, dif_ff, dif_sn, "", val, 0); break;
-                    case 1: data = append_val(data, kOperTimeMin, dif_ff, dif_sn, "", val, 0); break;
-                    case 2: data = append_val(data, kOperTimeHours, dif_ff, dif_sn, "", val, 0); break;
-                    case 3: data = append_val(data, kOperTimeDays, dif_ff, dif_sn, "", val, 0); break;
+                    case 0: data = append_val(data, kOperTimeSec, dif_ff, dif_sn, "", "", val, 0); break;
+                    case 1: data = append_val(data, kOperTimeMin, dif_ff, dif_sn, "", "", val, 0); break;
+                    case 2: data = append_val(data, kOperTimeHours, dif_ff, dif_sn, "", "", val, 0); break;
+                    case 3: data = append_val(data, kOperTimeDays, dif_ff, dif_sn, "", "", val, 0); break;
                     default: break;
                 }
             } else if ((vif_uam&0xF8) == 0x28) {
                 // E010 1nnn    Power  10nnn-3 W    0.001W to 10000W
-                data = append_val(data, kPower_W, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
+                data = append_val(data, kPower_W, dif_ff, dif_sn, "", "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x30) {
                 // E011 0nnn    Power   10nnn J/h   0.001kJ/h to 10000kJ/h
-                data = append_val(data, kPower_Jh, dif_ff, dif_sn, "", val, vif_uam&0x7);
+                data = append_val(data, kPower_Jh, dif_ff, dif_sn, "", "", val, vif_uam&0x7);
             } else if ((vif_uam&0xF8) == 0x38) {
                 // E011 1nnn    Volume Flow 10nnn-6 m3/h   0.001l/h to 10000l/h
-                data = append_val(data, kVolumeFlow_h, dif_ff, dif_sn, "", val, -6 + (vif_uam&0x7));
+                data = append_val(data, kVolumeFlow_h, dif_ff, dif_sn, "", "", val, -6 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x40) {
                 // E100 0nnn    Volume Flow ext.    10nnn-7 m3/min  0.0001l/min to 1000l/min
-                data = append_val(data, kVolumeFlow_min, dif_ff, dif_sn, "", val, -7 + (vif_uam&0x7));
+                data = append_val(data, kVolumeFlow_min, dif_ff, dif_sn, "", "", val, -7 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x48) {
                 // E100 1nnn    Volume Flow ext.   10nnn-9 m³/s    0.001ml/s to 10000ml/s
                 // in litres so exp -3
-                data = append_val(data, kVolumeFlow_s, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
+                data = append_val(data, kVolumeFlow_s, dif_ff, dif_sn, "", "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x50) {
                 // E101 0nnn    Mass flow   10nnn-3 kg/h    0.001kg/h to 10000kg/h
-                data = append_val(data, kMassFlow, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
+                data = append_val(data, kMassFlow, dif_ff, dif_sn, "", "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xFC) == 0x58) {
                 // E101 10nn    Flow Temperature 10nn-3 °C 0.001°C to 1°C
-                data = append_val(data, kTemperatureFlow, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
+                data = append_val(data, kTemperatureFlow, dif_ff, dif_sn, "", "", val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFC) == 0x5C) {
                 // E101 11nn    Return Temperature 10nn-3 °C    0.001°C to 1°C
-                data = append_val(data, kTemperatureReturn, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
+                data = append_val(data, kTemperatureReturn, dif_ff, dif_sn, "", "", val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFC) == 0x60) {
                 // E110 00nn    Temperature Difference  10nn-3 K    1mK to 1000mK
-                data = append_val(data, kTemperatureDiff, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
+                data = append_val(data, kTemperatureDiff, dif_ff, dif_sn, "", "", val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFC) == 0x64) {
                 // E110 01nn    External temperature    10 nn-3 ° C 0.001 ° C to 1 ° C
-                data = append_val(data, kTemperatureExtern, dif_ff, dif_sn, history_hours[dif_sn&0x3], val, -3 + (vif_uam&0x3));
+                data = append_val(data, kTemperatureExtern, dif_ff, dif_sn, "", history_hours[dif_sn&0x3], val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFC) == 0x68) {
                 // E110 10nn    Pressure    10nn-3 bar 1mbar to 1000mbar
-                data = append_val(data, kPressure, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
+                data = append_val(data, kPressure, dif_ff, dif_sn, "", "", val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFE) == 0x6C) {
                 // E110 110n    Time Point  n = 0 date, n = 1 time & date
                 char buff_time[256] = {0};
 
                 if (vif_uam&1) {
                     if (m_bus_tm_decode(b, dif_coding, buff_time, sizeof(buff_time))) {
-                        data = append_str(data, kTimeDate, dif_ff, dif_sn, "", buff_time);
+                        data = append_str(data, kTimeDate, dif_ff, dif_sn, "", "", buff_time);
                     }
                 } else {
                     if (m_bus_tm_decode(b, dif_coding, buff_time, sizeof(buff_time))) {
-                        data = append_str(data, kDate, dif_ff, dif_sn, "", buff_time);
+                        data = append_str(data, kDate, dif_ff, dif_sn, "", "", buff_time);
                     }
                 }
 
             } else if (vif_uam == 0x6E) {
                 // E110 1110    Units for H.C.A.        dimensionless
-                data = append_val(data, kHca, dif_ff, dif_sn, "", val, 0);
+                data = append_val(data, kHca, dif_ff, dif_sn, "", "", val, 0);
             } else if ((vif_uam&0xFC) == 0x70) {
                 // E111 00nn    Averaging Duration coded like OnTime
             } else if ((vif_uam&0xFC) == 0x74) {
@@ -946,7 +957,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
     m_bus_data_t    data_out    = {0};  // Data from Data Link layer
     m_bus_block1_t  block1      = {0};  // Block1 fields from Data Link layer
-    char *mode = "";
+    char const *mode = "";
 
     // Validate package length
     if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*12)) {  // Min/Max (Preamble + payload)
@@ -976,7 +987,8 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
             bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
             // Decode
-            if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
+            if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))
+                return DECODE_FAIL_SANITY;
         } // Format A
         // Format B
         else if (next_byte == 0x3D) {
@@ -985,8 +997,9 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
             bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
             // Decode
-            if (!m_bus_decode_format_b(decoder, &data_in, &data_out, &block1))    return 0;
-        }   // Format B
+            if (!m_bus_decode_format_b(decoder, &data_in, &data_out, &block1))
+                return DECODE_FAIL_SANITY;
+        } // Format B
         // Unknown Format
         else {
             decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "M-Bus: Mode C, Unknown format: 0x%X", next_byte);
@@ -1006,10 +1019,13 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_logf(decoder, 1, __func__, "MBus telegram length: %u", data_in.length);
         if (m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, data_in.data, data_in.length) < 0) {
             decoder_log(decoder, 1, __func__, "M-Bus: Decoding error");
-            return 0;
+            return DECODE_FAIL_SANITY;
         }
         // Decode
-        if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
+        if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1)) {
+            decoder_log_bitrow(decoder, 1, __func__, data_in.data, data_in.length, "MBus telegram unknown format");
+            return DECODE_FAIL_SANITY;
+        }
     }   // Mode T
 
     m_bus_output_data(decoder, bitbuffer, &data_out, &block1, mode);
@@ -1111,6 +1127,7 @@ Wireless M-Bus, Mode S.
 static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     static const uint8_t PREAMBLE_S[]  = {0x54, 0x76, 0x96};  // Mode S Preamble
+    static const uint8_t PREAMBLE_T_DN[] = {0xaa, 0xab, 0x32};  // Mode T Downlink Preamble
     bitbuffer_t packet_bits = {0};
     m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
     m_bus_data_t    data_out    = {0};  // Data from Data Link layer
@@ -1121,9 +1138,22 @@ static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
+    // Find a Mode T-downlink data package
+    unsigned offset = bitbuffer_search(bitbuffer, 0, 0, PREAMBLE_T_DN, sizeof(PREAMBLE_T_DN) * 8);
+    offset += sizeof(PREAMBLE_T_DN) * 8;
+    if (offset < bitbuffer->bits_per_row[0]) { // Did find a big enough package
+        bitbuffer_invert(bitbuffer);
+        decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "M-Bus: Mode T Downlink");
+        return DECODE_ABORT_EARLY;
+    }
+
     // Find a Mode S data package
     unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, PREAMBLE_S, sizeof(PREAMBLE_S)*8);
-    bitbuffer_manchester_decode(bitbuffer, 0, bit_offset+sizeof(PREAMBLE_S)*8, &packet_bits, 800);
+    bit_offset += sizeof(PREAMBLE_S) * 8;
+    if (bit_offset >= bitbuffer->bits_per_row[0]) { // Did not find a big enough package
+        return DECODE_ABORT_EARLY;
+    }
+    bitbuffer_manchester_decode(bitbuffer, 0, bit_offset, &packet_bits, 800);
     data_in.length = (bitbuffer->bits_per_row[0]);
     bitbuffer_extract_bytes(&packet_bits, 0, 0, data_in.data, data_in.length);
 
@@ -1135,7 +1165,7 @@ static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 // NOTE: we'd need to add "value_types_tab X unit_names X n" fields
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "mode",
         "id",
@@ -1180,9 +1210,9 @@ static char *output_fields[] = {
 };
 
 // Mode C1, C2 (Meter TX), T1, T2 (Meter TX),
-// Frequency 868.95 MHz, Bitrate 100 kbps, Modulation NRZ FSK
-r_device m_bus_mode_c_t = {
-        .name        = "Wireless M-Bus, Mode C&T, 100kbps (-f 868950000 -s 1200000)", // Minimum samplerate = 1.2 MHz (12 samples of 100kb/s)
+// Frequency 868.95 MHz, Bitrate 100 kbps (uplink), Modulation NRZ FSK
+r_device const m_bus_mode_c_t = {
+        .name        = "Wireless M-Bus, Mode C&T, 100kbps (-f 868.95M -s 1200k)", // Minimum samplerate = 1.2 MHz (12 samples of 100kb/s)
         .modulation  = FSK_PULSE_PCM,
         .short_width = 10,  // Bit rate: 100 kb/s
         .long_width  = 10,  // NRZ encoding (bit width = pulse width)
@@ -1191,10 +1221,21 @@ r_device m_bus_mode_c_t = {
         .fields      = output_fields,
 };
 
+// Mode T communication in downlink direction at 32.768 kbps
+r_device const m_bus_mode_c_t_downlink = {
+        .name        = "Wireless M-Bus, Mode T, 32.768kbps (-f 868.3M -s 1000k)", // Minimum samplerate = 1 MHz (15 samples of 32kb/s manchester coded)
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = (1000.0 / 32.768), // ~31 us per bit
+        .long_width  = (1000.0 / 32.768),
+        .reset_limit = ((1000.0 / 32.768) * 9), // 9 bit periods
+        .decode_fn   = &m_bus_mode_c_t_callback,
+        .fields      = output_fields,
+};
+
 // Mode S1, S1-m, S2, T2 (Meter RX),    (Meter RX not so interesting)
 // Frequency 868.3 MHz, Bitrate 32.768 kbps, Modulation Manchester FSK
-r_device m_bus_mode_s = {
-        .name        = "Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)", // Minimum samplerate = 1 MHz (15 samples of 32kb/s manchester coded)
+r_device const m_bus_mode_s = {
+        .name        = "Wireless M-Bus, Mode S, 32.768kbps (-f 868.3M -s 1000k)", // Minimum samplerate = 1 MHz (15 samples of 32kb/s manchester coded)
         .modulation  = FSK_PULSE_PCM,
         .short_width = (1000.0 / 32.768), // ~31 us per bit
         .long_width  = (1000.0 / 32.768),
@@ -1211,8 +1252,8 @@ r_device m_bus_mode_s = {
 // Frequency 868.33 MHz, Bitrate 4.8 kbps, Modulation Manchester FSK
 //      Preamble {0x55, 0x54, 0x76, 0x96} (Format A) (B not supported)
 // Untested stub!!! (Need samples)
-r_device m_bus_mode_r = {
-        .name        = "Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)",
+r_device const m_bus_mode_r = {
+        .name        = "Wireless M-Bus, Mode R, 4.8kbps (-f 868.33M)",
         .modulation  = FSK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = (1000.0f / 4.8f / 2),    // ~208 us per bit -> clock half period ~104 us
         .long_width  = 0,                       // Unused
@@ -1235,7 +1276,7 @@ r_device m_bus_mode_r = {
 //      Preamble {0x55, 0xF6, 0x8D} (Format A)
 //      Preamble {0x55, 0xF6, 0x72} (Format B)
 // Untested stub!!! (Need samples)
-r_device m_bus_mode_f = {
+r_device const m_bus_mode_f = {
         .name        = "Wireless M-Bus, Mode F, 2.4kbps",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 1000.0f / 2.4f, // ~417 us

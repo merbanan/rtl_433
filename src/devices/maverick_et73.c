@@ -58,8 +58,8 @@ static int maverick_et73_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     bytes = bitbuffer->bb[row];
-    if ( (!bytes[0] && !bytes[1] && !bytes[2] && !bytes[3])
-    || (bytes[0] == 0xFF && bytes[1] == 0xFF && bytes[2] == 0xFF && bytes[3] == 0xFF))  {
+    if ((!bytes[0] && !bytes[1] && !bytes[2] && !bytes[3])
+            || (bytes[0] == 0xFF && bytes[1] == 0xFF && bytes[2] == 0xFF && bytes[3] == 0xFF))  {
         return DECODE_ABORT_EARLY; // reduce false positives
     }
 
@@ -72,10 +72,10 @@ static int maverick_et73_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Repack the nibbles to form a 12-bit field representing the 2's-complement temperatures,
     //   then right shift by 4 to sign-extend the 12-bit field to a 16-bit integer for float conversion
-    temp1_raw = (int16_t)( bytes[1]<<8 | ( bytes[2] & 0xf0 ) );
-    temp1_c = (temp1_raw>>4) * 0.1f;
-    temp2_raw = (int16_t)( ( (bytes[2] & 0x0f) << 12) | bytes[3]<<4 );
-    temp2_c = (temp2_raw>>4) * 0.1f;
+    temp1_raw = (int16_t)(bytes[1] << 8 | (bytes[2] & 0xf0)); // uses sign-extend
+    temp1_c   = (temp1_raw >> 4) * 0.1f;
+    temp2_raw = (int16_t)(((bytes[2] & 0x0f) << 12) | bytes[3] << 4); // uses sign-extend
+    temp2_c   = (temp2_raw >> 4) * 0.1f;
 
     /* clang-format off */
     data = data_make(
@@ -90,7 +90,7 @@ static int maverick_et73_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "temperature_1_C",
@@ -98,7 +98,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device maverick_et73 = {
+r_device const maverick_et73 = {
         .name        = "Maverick et73",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1050,

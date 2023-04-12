@@ -62,13 +62,13 @@ static int generic_motion_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return DECODE_ABORT_EARLY;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "code",
         NULL,
 };
 
-r_device generic_motion = {
+r_device const generic_motion = {
         .name        = "Generic wireless motion sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 888,

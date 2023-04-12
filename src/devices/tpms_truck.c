@@ -114,7 +114,7 @@ static int tpms_truck_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "type",
         "id",
@@ -127,7 +127,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_truck = {
+r_device const tpms_truck = {
         .name        = "Unbranded SolarTPMS for trucks",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 52,

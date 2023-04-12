@@ -5,18 +5,20 @@
 
 // explicit request for "no threads"
 
-#elif _MSC_VER>=1200
+// no pthreads only on MSC, use compat on all WIN32 anyway
+//#elif _MSC_VER>=1200
+#elif _WIN32
 
 #include <windows.h>
 #include <process.h>
 #define THREAD_CALL                     __stdcall
 #define THREAD_RETURN                   unsigned int
 typedef HANDLE                          pthread_t;
-#define pthread_create(tp, x, p, d)     ((*tp=(HANDLE)_beginthread(p, 0, d)) == NULL ? -1 : 0)
-#define pthread_cancel(th)              TerminateThread(th, 0)
-#define pthread_join(th, p)             WaitForSingleObject(th, INFINITE)
+#define pthread_create(tp, x, p, d)     ((*tp=(HANDLE)_beginthreadex(NULL, 0, p, d, 0, NULL)) == NULL ? -1 : 0)
+#define pthread_cancel(th)              (!TerminateThread(th, 0))
+#define pthread_join(th, p)             (WaitForSingleObject(th, INFINITE))
 #define pthread_equal(a, b)             ((a) == (b))
-#define pthread_self()                  GetCurrentThread()
+#define pthread_self()                  (GetCurrentThread())
 
 typedef HANDLE                          pthread_mutex_t;
 #define pthread_mutex_init(mp, a)       ((*mp = CreateMutex(NULL, FALSE, NULL)) == NULL ? -1 : 0)

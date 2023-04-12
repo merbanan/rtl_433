@@ -13,7 +13,7 @@
 
 #include "compat_paths.h"
 
-char **compat_get_default_conf_paths()
+char **compat_get_default_conf_paths(void)
 {
     static char *paths[5] = { NULL };
     static char buf[256] = "";
@@ -41,7 +41,7 @@ char **compat_get_default_conf_paths()
 
 #include "compat_paths.h"
 
-char **compat_get_default_conf_paths()
+char **compat_get_default_conf_paths(void)
 {
     static char bufs[3][256];
     static char *paths[4] = { NULL };

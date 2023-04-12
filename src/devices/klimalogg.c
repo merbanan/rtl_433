@@ -60,7 +60,7 @@ static int klimalogg_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (b[7] != 0x6a) // 0x56 bit reflected
         return DECODE_FAIL_SANITY;
 
-    reflect_bytes(b, 11);
+    reflect_bytes(b, 9);
 
     int crc = crc8(b, 9, 0x31, 0);
     if (crc)
@@ -90,7 +90,7 @@ static int klimalogg_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -101,7 +101,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device klimalogg = {
+r_device const klimalogg = {
         .name        = "Klimalogg",
         .modulation  = OOK_PULSE_NRZS,
         .short_width = 26,

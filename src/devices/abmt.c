@@ -81,14 +81,14 @@ static int abmt_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "temperature_C",
         NULL,
 };
 
-r_device abmt = {
+r_device const abmt = {
         .name        = "Amazon Basics Meat Thermometer",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 550,

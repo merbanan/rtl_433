@@ -141,7 +141,7 @@ static int tpms_ave_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events > 0 ? events : ret;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "type",
         "id",
@@ -154,7 +154,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_ave = {
+r_device const tpms_ave = {
         .name        = "AVE TPMS",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 100,

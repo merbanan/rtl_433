@@ -244,7 +244,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return result;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "closed",
@@ -262,7 +262,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device dsc_security = {
+r_device const dsc_security = {
         .name        = "DSC Security Contact",
         .modulation  = OOK_PULSE_RZ,
         .short_width = 250,  // Pulse length, 250 µs
@@ -272,7 +272,7 @@ r_device dsc_security = {
         .fields      = output_fields,
 };
 
-r_device dsc_security_ws4945 = {
+r_device const dsc_security_ws4945 = {
         // Used for EV-DW4927, WS4975 and WS4945.
         .name        = "DSC Security Contact (WS4945)",
         .modulation  = OOK_PULSE_RZ,

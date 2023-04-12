@@ -15,6 +15,7 @@
 #include "pulse_data.h"
 #include "baseband.h"
 #include "util.h"
+#include "logger.h"
 #include "fatal.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,7 +53,7 @@ struct pulse_detect {
     pulse_detect_fsk_t pulse_detect_fsk;
 };
 
-pulse_detect_t *pulse_detect_create()
+pulse_detect_t *pulse_detect_create(void)
 {
     pulse_detect_t *pulse_detect = calloc(1, sizeof(pulse_detect_t));
     if (!pulse_detect) {
@@ -201,7 +202,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
     while (s->data_counter < len) {
         // Calculate OOK detection threshold and hysteresis
         int16_t const am_n    = envelope_data[s->data_counter];
-        if (pulse_detect->verbosity) {
+        if (pulse_detect->verbosity >= LOG_NOTICE) {
             int att = pulse_detect->use_mag_est ? mag_to_att(am_n) : amp_to_att(am_n);
             att_hist[att] += 1;
         }
@@ -306,10 +307,10 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                         pulses->end_ago = len - s->data_counter;
                         fsk_pulses->end_ago = len - s->data_counter;
                         s->ook_state = PD_OOK_STATE_IDLE;    // Ensure everything is reset
-                        if (pulse_detect->verbosity > 1) {
+                        if (pulse_detect->verbosity >= LOG_INFO) {
                             print_att_hist("PULSE_DATA_FSK", att_hist);
                         }
-                        if (pulse_detect->verbosity) {
+                        if (pulse_detect->verbosity >= LOG_NOTICE) {
                             fprintf(stderr, "Levels low: -%d dB  high: -%d dB  thres: -%d dB  hyst: (-%d to -%d dB)\n",
                                     mag_to_att(s->ook_low_estimate), mag_to_att(s->ook_high_estimate),
                                     mag_to_att(ook_threshold),
@@ -342,7 +343,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                         pulses->ook_low_estimate = s->ook_low_estimate;
                         pulses->ook_high_estimate = s->ook_high_estimate;
                         pulses->end_ago = len - s->data_counter;
-                        if (pulse_detect->verbosity > 1) {
+                        if (pulse_detect->verbosity >= LOG_INFO) {
                             print_att_hist("PULSE_DATA_OOK MAX_PULSES", att_hist);
                         }
                         return PULSE_DATA_OOK;    // End Of Package!!
@@ -364,10 +365,10 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     pulses->ook_low_estimate = s->ook_low_estimate;
                     pulses->ook_high_estimate = s->ook_high_estimate;
                     pulses->end_ago = len - s->data_counter;
-                    if (pulse_detect->verbosity > 1) {
+                    if (pulse_detect->verbosity >= LOG_INFO) {
                         print_att_hist("PULSE_DATA_OOK EOP", att_hist);
                     }
-                    if (pulse_detect->verbosity) {
+                    if (pulse_detect->verbosity >= LOG_NOTICE) {
                         fprintf(stderr, "Levels low: -%d dB  high: -%d dB  thres: -%d dB  hyst: (-%d to -%d dB)\n",
                                 mag_to_att(s->ook_low_estimate), mag_to_att(s->ook_high_estimate),
                                 mag_to_att(ook_threshold),
@@ -385,7 +386,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
     } // while
 
     s->data_counter = 0;
-    if (pulse_detect->verbosity > 2) {
+    if (pulse_detect->verbosity >= LOG_DEBUG) {
         print_att_hist("Out of data", att_hist);
     }
     return 0;    // Out of data

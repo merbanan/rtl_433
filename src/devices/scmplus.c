@@ -9,12 +9,12 @@
     (at your option) any later version.
 */
 
-// #include <arpa/inet.h>
 #include "decoder.h"
 
 /**
+ERT SCM+ sensors.
 
-Freq 912600155
+- Freq 912600155
 
 Random information:
 
@@ -100,21 +100,9 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     snprintf(crc_str, sizeof(crc_str), "0x%04X", crc);
 
-    /*
-    if (decoder->verbose && 0) {
-        fprintf(stderr, "protocol_id = %d %02X\n", protocol_id,protocol_id);
-        fprintf(stderr, "endpoint_type   \t%2d\t%02X\t%02x", endpoint_type, endpoint_type, b[3]);
-        fprintf(stderr, "endpoint_id    \t%2d\t%02X\t%02x %02x %02x %02x", endpoint_id, endpoint_id, b[4], b[5], b[6], b[7]);
-        fprintf(stderr, "consumption_data\t%2d\t%02X\t%02x %02x %02x %02x", consumption_data, consumption_data, b[8], b[9], b[10], b[11]);
-        // fprintf(stderr, "consumption_data = %d %08X\n", consumption_data,consumption_data);
-        fprintf(stderr, "physical_tamper = %d %04X\n", physical_tamper,physical_tamper);
-        fprintf(stderr, "pkt_checksum = %d %04X\n", pkt_checksum,pkt_checksum);
-    }
-    */
-
     // Least significant nibble of endpoint_type is  equivalent to SCM's endpoint type field
     // id info from https://github.com/bemasher/rtlamr/wiki/Compatible-Meters
-    char *meter_type;
+    char const *meter_type;
 
     switch (b[3] & 0x0f) {
     case 4:
@@ -168,7 +156,7 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "ProtocolID",
@@ -185,7 +173,7 @@ static char *output_fields[] = {
 //      Freq 912600155
 //     -X n=L58,m=OOK_MC_ZEROBIT,s=30,l=30,g=20000,r=20000,match={24}0x16a31e,preamble={1}0x00
 
-r_device scmplus = {
+r_device const scmplus = {
         .name        = "Standard Consumption Message Plus (SCMplus)",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 30,

@@ -83,7 +83,7 @@ static int eurochron_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -93,7 +93,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device eurochron = {
+r_device const eurochron = {
         .name        = "Eurochron temperature and humidity sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1016,

@@ -89,7 +89,7 @@ static int sharp_spc775_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -99,7 +99,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device sharp_spc775 = {
+r_device const sharp_spc775 = {
         .name        = "Sharp SPC775 weather station",
         .modulation  = FSK_PULSE_PWM,
         .short_width = 225,

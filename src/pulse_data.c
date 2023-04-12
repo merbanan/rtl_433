@@ -170,7 +170,7 @@ void pulse_data_print_pulse_header(FILE *file)
     chk_ret(fprintf(file, ";created %s\n", format_time_str(time_str, NULL, 1, 0)));
 }
 
-void pulse_data_dump(FILE *file, pulse_data_t *data)
+void pulse_data_dump(FILE *file, pulse_data_t const *data)
 {
     char time_str[LOCAL_TIME_BUFLEN];
 
@@ -199,7 +199,7 @@ void pulse_data_dump(FILE *file, pulse_data_t *data)
     chk_ret(fprintf(file, ";end\n"));
 }
 
-data_t *pulse_data_print_data(pulse_data_t *data)
+data_t *pulse_data_print_data(pulse_data_t const *data)
 {
     int pulses[2 * PD_MAX_PULSES];
     double to_us = 1e6 / data->sample_rate;

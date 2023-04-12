@@ -122,7 +122,7 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "seq",
@@ -136,7 +136,7 @@ static char *output_fields[] = {
 };
 
 // flex decoder m=FSK_PCM, s=104, l=104, r=9600
-r_device lacrosse_wr1 = {
+r_device const lacrosse_wr1 = {
         .name        = "LaCrosse Technology View LTV-WR1 Multi Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 104,
