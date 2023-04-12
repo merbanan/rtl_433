@@ -18,9 +18,9 @@
 /**
 Fine Offset Electronics WS90 weather station.
 
-The WS90 is a WS80 with the addition of a piezoelectric rain gauge.  
-Data bytes 1-13 are the same between the two models.  The new rain data 
-is in bytes 16-20, with bytes 19 and 20 reporting total rain.  Bytes 
+The WS90 is a WS80 with the addition of a piezoelectric rain gauge.
+Data bytes 1-13 are the same between the two models.  The new rain data
+is in bytes 16-20, with bytes 19 and 20 reporting total rain.  Bytes
 17 and 18 are affected by rain, but it is unknow what they report.  Byte
 21 reports the voltage of the super cap. And the checksum and CRC
 have been moved to bytes 30 and 31.  What is reported in the other
@@ -109,9 +109,9 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int supercap_V  = (b[21] & 0x3f);
     char extra[30];
 
-    if( battery_lvl > 100) // More then 100%?
+    if(battery_lvl > 100) // More then 100%?
         battery_lvl = 100;
-        
+    
     sprintf(extra, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[17], b[18], b[19], b[20], b[21], b[22], b[23], b[24], b[25], b[26], b[27], b[28], b[29] );
 
     /* clang-format off */
