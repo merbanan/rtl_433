@@ -741,7 +741,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         cfg->hop_now = 0;
         time(&cfg->hop_start_time);
         cfg->frequency_index = (cfg->frequency_index + 1) % cfg->frequencies;
-        sdr_set_center_freq(cfg->dev, cfg->frequency[cfg->frequency_index], 0);
+        sdr_set_center_freq(cfg->dev, cfg->frequency[cfg->frequency_index], 1);
     }
 }
 
@@ -1391,6 +1391,8 @@ static void sdr_handler(struct mg_connection *nc, int ev_type, void *ev_data)
     }
 
     if (ev->ev == SDR_EV_DATA) {
+        cfg->samp_rate        = ev->sample_rate;
+        cfg->center_frequency = ev->center_frequency;
         sdr_callback((unsigned char *)ev->buf, ev->len, cfg);
     }
 
@@ -1518,9 +1520,12 @@ static void timer_handler(struct mg_connection *nc, int ev, void *ev_data)
                 print_log(LOG_WARNING, "Input", "Async read stalled, pausing!");
             }
         }
-        cfg->exit_code = 3;
-        sdr_stop(cfg->dev);
-        cfg->dev_state = DEVICE_STATE_STOPPED;
+        if (cfg->dev_state != DEVICE_STATE_STOPPED) {
+            cfg->exit_async = 1;
+            cfg->exit_code = 3;
+            sdr_stop(cfg->dev);
+            cfg->dev_state = DEVICE_STATE_STOPPED;
+        }
         if (cfg->dev_mode == DEVICE_MODE_QUIT) {
             cfg->exit_async = 1;
         }

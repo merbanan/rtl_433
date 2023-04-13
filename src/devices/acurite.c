@@ -975,7 +975,10 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 }
 
 /**
-Acurite 592TXR Temperature Humidity sensor decoder
+Acurite 592TXR Temperature Humidity sensor decoder.
+
+Also:
+- Acurite 592TX (without humidity sensor)
 
 Message Type 0x04, 7 bytes
 
@@ -1015,8 +1018,8 @@ static int acurite_tower_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8
     // Spec is relative humidity 1-99%
     // Allowing value of 0, very low battery or broken sensor can return 0% or 1%
     int humidity = (bb[3] & 0x7f);
-    if (humidity < 0 || humidity > 100) {
-        decoder_logf(decoder, 1, __func__, "0x%04X Ch %s : Impossible humidity: %d %%rH",
+    if (humidity > 100 && humidity != 127) {
+        decoder_logf(decoder, 1, __func__, "0x%04X Ch %s : invalid humidity: %d %%rH",
                 sensor_id, channel_str, humidity);
         return DECODE_FAIL_SANITY;
     }
@@ -1030,7 +1033,7 @@ static int acurite_tower_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8
     int temp_raw = ((bb[4] & 0x7F) << 7) | (bb[5] & 0x7F);
     float tempc = (temp_raw - 1000) * 0.1f;
     if (tempc < -40 || tempc > 70) {
-        decoder_logf(decoder, 1, __func__, "0x%04X Ch %s : Impossible temperature: %0.2f C",
+        decoder_logf(decoder, 1, __func__, "0x%04X Ch %s : invalid temperature: %0.2f C",
                 sensor_id, channel_str, tempc);
         return DECODE_FAIL_SANITY;
     }
@@ -1048,7 +1051,7 @@ static int acurite_tower_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8
             "channel",              NULL,           DATA_STRING, channel_str,
             "battery_ok",           "Battery",      DATA_INT,    !battery_low,
             "temperature_C",        "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
-            "humidity",             "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,    humidity,
+            "humidity",             "Humidity",     DATA_COND, humidity != 127, DATA_FORMAT, "%u %%", DATA_INT,    humidity,
             "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
@@ -1249,7 +1252,6 @@ static int acurite_txr_check(r_device *decoder, uint8_t const bb[], unsigned bro
     return 0;
 }
 
-
 /**
 Process messages for Acurite weather stations, tower and related sensors
 @sa acurite_1190_decode()
@@ -1263,7 +1265,7 @@ Process messages for Acurite weather stations, tower and related sensors
 
 This callback is used for devices that use a very similar message format:
 
-- 592TXR / 6002RM / 6044m Tower sensor and related temperature/humidity sensors
+- 592TXR / 592TX / 6002RM / 6044m Tower sensor and related temperature/humidity sensors
 - Atlas (7-in-1) Weather Station
 - Iris (5-in-1) weather station
 - Notos (3-in-1) Weather station
@@ -1940,7 +1942,7 @@ static char const *const acurite_txr_output_fields[] = {
 };
 
 r_device const acurite_txr = {
-        .name        = "Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning, 899 Rain, 3N1, Atlas",
+        .name        = "Acurite 592TXR Temp/Humidity, 592TX Temp, 5n1 Weather Station, 6045 Lightning, 899 Rain, 3N1, Atlas",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 220,  // short pulse is 220 us + 392 us gap
         .long_width  = 408,  // long pulse is 408 us + 204 us gap
