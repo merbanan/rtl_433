@@ -146,7 +146,7 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format off */
         data = data_make(
                 "model",            "",                 DATA_STRING, "Fineoffset-WH1050",
-                "subtype",          "Msg type",         DATA_INT,    msg_type,
+                "msg_type",         "Msg type",         DATA_INT,    msg_type,
                 "id",               "StationID",        DATA_FORMAT, "%04X",    DATA_INT,    device_id,
                 "battery_ok",       "Battery",          DATA_INT,    !battery_low,
                 "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
@@ -176,7 +176,7 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format off */
         data = data_make(
                 "model",            "",                 DATA_STRING,    "Fineoffset-WH1050",
-                "subtype",          "Msg type",         DATA_INT,       msg_type,
+                "msg_type",         "Msg type",         DATA_INT,       msg_type,
                 "id",               "Station ID",       DATA_INT,       device_id,
                 "battery_ok",       "Battery",          DATA_INT,       !battery_low,
                 "radio_clock",      "Radio Clock",      DATA_STRING,    clock_str,
@@ -192,7 +192,7 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
-        "subtype",
+        "msg_type",
         "battery_ok",
         "temperature_C",
         "humidity",
