@@ -189,7 +189,7 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char const *telldus_ft0385r_output_fields[] = {
+static char const *const telldus_ft0385r_output_fields[] = {
         "model",
         "battery_ok",
         "temperature_F",

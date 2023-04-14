@@ -1165,7 +1165,7 @@ static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 // NOTE: we'd need to add "value_types_tab X unit_names X n" fields
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "mode",
         "id",

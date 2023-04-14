@@ -409,7 +409,9 @@ R_API void print_array_value(data_output_t *output, data_array_t *array, char co
         memcpy(&value, (char *)array->values + element_size * idx, element_size);
         print_value(output, array->type, value, format);
     } else {
-        print_value(output, array->type, *(data_value_t*)((char *)array->values + element_size * idx), format);
+        // Note: on 32-bit data_value_t has different size/alignment than a pointer!
+        value.v_ptr = *(void **)((char *)array->values + element_size * idx);
+        print_value(output, array->type, value, format);
     }
 }
 

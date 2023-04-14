@@ -343,7 +343,7 @@ static int minim_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 // List of fields to appear in the `-F csv` output.
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "power_VA",

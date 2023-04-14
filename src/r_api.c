@@ -111,7 +111,7 @@ void set_center_freq(r_cfg_t *cfg, uint32_t center_freq)
     cfg->frequency_index = 0;
     cfg->frequency[0] = center_freq;
     // cfg->center_frequency = center_freq; // actually applied in the sdr event
-    sdr_set_center_freq(cfg->dev, center_freq, 0);
+    sdr_set_center_freq(cfg->dev, center_freq, 1);
 }
 
 void set_freq_correction(r_cfg_t *cfg, int freq_correction)
@@ -681,7 +681,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
     // check for undeclared csv fields
     for (data_t *d = data; d; d = d->next) {
         int found = 0;
-        for (char const **p = r_dev->fields; *p; ++p) {
+        for (char const *const *p = r_dev->fields; *p; ++p) {
             if (!strcmp(d->key, *p)) {
                 found = 1;
                 break;
@@ -1032,13 +1032,22 @@ static int lvlarg_param(char **param, int default_verb)
     return val;
 }
 
-static FILE *fopen_output(char *param)
+/// Opens the path @p param (or STDOUT if empty or `-`) for append writing, removes leading `,` and `:` from path name.
+static FILE *fopen_output(char const *param)
 {
-    FILE *file;
-    if (!param || !*param || (*param == '-' && param[1] == '\0')) {
-        return stdout;
+    if (!param || !*param) {
+        return stdout; // No path given
     }
-    file = fopen(param, "a");
+    while (*param == ',') {
+        param++; // Skip all leading `,`
+    }
+    if (*param == ':') {
+        param++; // Skip one leading `:`
+    }
+    if (*param == '-' && param[1] == '\0') {
+        return stdout; // STDOUT requested
+    }
+    FILE *file = fopen(param, "a");
     if (!file) {
         fprintf(stderr, "rtl_433: failed to open output file\n");
         exit(1);

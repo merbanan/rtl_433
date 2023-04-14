@@ -58,20 +58,22 @@ typedef struct data_array {
     void        *values;
 } data_array_t;
 
+// Note: Do not unwrap a packed array to data_value_t,
+// on 32-bit the union has different size/alignment than a pointer.
 typedef union data_value {
-    int         v_int;
-    double      v_dbl;
-    void        *v_ptr;
+    int         v_int;  /**< A data value of type int, 4 bytes size/alignment */
+    double      v_dbl;  /**< A data value of type double, 8 bytes size/alignment */
+    void        *v_ptr; /**< A data value pointer, 4/8 bytes size/alignment */
 } data_value_t;
 
 typedef struct data {
+    struct data *next; /**< chaining to the next element in the linked list; NULL indicates end-of-list */
     char        *key;
     char        *pretty_key; /**< the name used for displaying data to user in with a nicer name */
-    data_type_t type;
     char        *format; /**< if not null, contains special formatting string */
     data_value_t value;
+    data_type_t type;
     unsigned    retain; /**< incremented on data_retain, data_free only frees if this is zero */
-    struct data *next; /**< chaining to the next element in the linked list; NULL indicates end-of-list */
 } data_t;
 
 /** Constructs a structured data object.

@@ -138,7 +138,7 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events;
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "node",
         "ct1",

@@ -194,7 +194,7 @@ static int ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 }
 
-static char const *sensor_output_fields[] = {
+static char const *const sensor_output_fields[] = {
         "model",
         "id",
         "seq",

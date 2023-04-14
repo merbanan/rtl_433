@@ -384,7 +384,7 @@ static int blueline_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return ((payloads_decoded > 0) ? payloads_decoded : most_applicable_failure);
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "flags",

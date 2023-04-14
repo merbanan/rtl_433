@@ -120,20 +120,6 @@ struct sdr_dev {
 #endif
 };
 
-/* internal helpers */
-
-/*
-        pthread_mutex_lock(&dev->lock);
-        sdr_event_t ev = {
-                .ev               = flags,
-                .sample_rate      = dev->sample_rate,
-                .center_frequency = dev->center_frequency,
-        };
-        pthread_mutex_unlock(&dev->lock);
-        if (cb)
-            cb(&ev, ctx);
-*/
-
 /* rtl_tcp helpers */
 
 #pragma pack(push, 1)
@@ -303,13 +289,29 @@ static int rtltcp_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32
             dev->running = 0;
         }
 
+#ifdef THREADS
+        pthread_mutex_lock(&dev->lock);
+#endif
+        uint32_t sample_rate      = dev->sample_rate;
+        uint32_t center_frequency = dev->center_frequency;
+#ifdef THREADS
+        pthread_mutex_unlock(&dev->lock);
+#endif
         sdr_event_t ev = {
-                .ev  = SDR_EV_DATA,
-//                .sample_rate = dev->sample_rate,
-//                .center_frequency = dev->center_frequency,
-                .buf = buffer,
-                .len = n_read,
+                .ev               = SDR_EV_DATA,
+                .sample_rate      = sample_rate,
+                .center_frequency = center_frequency,
+                .buf              = buffer,
+                .len              = n_read,
         };
+#ifdef THREADS
+        pthread_mutex_lock(&dev->lock);
+        int exit_acquire = dev->exit_acquire;
+        pthread_mutex_unlock(&dev->lock);
+        if (exit_acquire) {
+            break; // do not deliver any more events
+        }
+#endif
         if (n_read > 0) // prevent a crash in callback
             cb(&ev, ctx);
 
@@ -455,11 +457,13 @@ static int rtlsdr_find_tuner_gain(sdr_dev_t *dev, int centigain, int verbose)
             print_log(LOG_WARNING, __func__, "No exact gains");
         return centigain;
     }
-    int *gains = calloc(gains_count, sizeof(int));
-    if (!gains) {
-        WARN_CALLOC("rtlsdr_find_tuner_gain()");
-        return centigain; // NOTE: just aborts on alloc failure.
+    if (gains_count > 29) {
+        print_log(LOG_ERROR, __func__, "Unexpected gain count, notify maintainers please!");
+        return centigain;
     }
+    // We known the maximum nunmber of gains is 29.
+    // Let's not waste an alloc
+    int gains[29] = {0};
     rtlsdr_get_tuner_gains(dev->rtlsdr_dev, gains);
 
     /* Find allowed gain */
@@ -472,7 +476,6 @@ static int rtlsdr_find_tuner_gain(sdr_dev_t *dev, int centigain, int verbose)
     if (centigain > gains[gains_count - 1]) {
         centigain = gains[gains_count - 1];
     }
-    free(gains);
 
     return centigain;
 }
@@ -502,12 +505,20 @@ static void rtlsdr_read_cb(unsigned char *iq_buf, uint32_t len, void *ctx)
     // NOTE: we need to copy the buffer, it might go away on cancel_async
     memcpy(buffer, iq_buf, len);
 
+#ifdef THREADS
+    pthread_mutex_lock(&dev->lock);
+#endif
+    uint32_t sample_rate      = dev->sample_rate;
+    uint32_t center_frequency = dev->center_frequency;
+#ifdef THREADS
+    pthread_mutex_unlock(&dev->lock);
+#endif
     sdr_event_t ev = {
-            .ev  = SDR_EV_DATA,
-//            .sample_rate = dev->sample_rate,
-//            .center_frequency = dev->center_frequency,
-            .buf = buffer,
-            .len = len,
+            .ev               = SDR_EV_DATA,
+            .sample_rate      = sample_rate,
+            .center_frequency = center_frequency,
+            .buf              = buffer,
+            .len              = len,
     };
     //fprintf(stderr, "rtlsdr_read_cb cb...\n");
     if (len > 0) // prevent a crash in callback
@@ -1009,13 +1020,29 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint
                 buffer[i] *= upscale;
         }
 
+#ifdef THREADS
+        pthread_mutex_lock(&dev->lock);
+#endif
+        uint32_t sample_rate      = dev->sample_rate;
+        uint32_t center_frequency = dev->center_frequency;
+#ifdef THREADS
+        pthread_mutex_unlock(&dev->lock);
+#endif
         sdr_event_t ev = {
-                .ev  = SDR_EV_DATA,
-//                .sample_rate = dev->sample_rate,
-//                .center_frequency = dev->center_frequency,
-                .buf = buffer,
-                .len = n_read * dev->sample_size,
+                .ev               = SDR_EV_DATA,
+                .sample_rate      = sample_rate,
+                .center_frequency = center_frequency,
+                .buf              = buffer,
+                .len              = n_read * dev->sample_size,
         };
+#ifdef THREADS
+        pthread_mutex_lock(&dev->lock);
+        int exit_acquire = dev->exit_acquire;
+        pthread_mutex_unlock(&dev->lock);
+        if (exit_acquire) {
+            break; // do not deliver any more events
+        }
+#endif
         if (n_read > 0) // prevent a crash in callback
             cb(&ev, ctx);
 
@@ -1158,7 +1185,9 @@ int sdr_set_center_freq(sdr_dev_t *dev, uint32_t freq, int verbose)
 
 #ifdef THREADS
     pthread_mutex_lock(&dev->lock);
+#endif
     dev->center_frequency = freq;
+#ifdef THREADS
     pthread_mutex_unlock(&dev->lock);
 #endif
 
@@ -1306,6 +1335,21 @@ int sdr_set_tuner_gain(sdr_dev_t *dev, char const *gain_str, int verbose)
 
     /* Set the tuner gain */
     gain = rtlsdr_find_tuner_gain(dev, gain, verbose);
+
+    /* Fix for FitiPower FC0012: set gain to minimum before desired value */
+    if (rtlsdr_get_tuner_type(dev->rtlsdr_dev) == RTLSDR_TUNER_FC0012) {
+        int minGain = -99;
+        minGain = rtlsdr_find_tuner_gain(dev, minGain, verbose);
+
+        r = rtlsdr_set_tuner_gain(dev->rtlsdr_dev, minGain);
+        if (verbose) {
+            if (r < 0)
+                print_log(LOG_WARNING, __func__, "Failed to set initial gain.");
+            else
+                print_logf(LOG_NOTICE, "SDR", "Set initial gain for FC0012 to %f dB.", minGain / 10.0);
+        }
+    }
+
     r = rtlsdr_set_tuner_gain(dev->rtlsdr_dev, gain);
     if (verbose) {
         if (r < 0)
@@ -1390,7 +1434,9 @@ int sdr_set_sample_rate(sdr_dev_t *dev, uint32_t rate, int verbose)
 
 #ifdef THREADS
     pthread_mutex_lock(&dev->lock);
+#endif
     dev->sample_rate = rate;
+#ifdef THREADS
     pthread_mutex_unlock(&dev->lock);
 #endif
 
