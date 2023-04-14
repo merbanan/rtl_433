@@ -11,7 +11,7 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
  */
-/** int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+/** @fn int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 AOK Electronic Limited weather station.
 
 Known Rebrand compatible with:
@@ -97,7 +97,7 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (bitbuffer->num_rows != 1) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: wrong number of rows (%d)\n", __func__, bitbuffer->num_rows);
+            decoder_logf(decoder, 1, __func__, "Wrong number of rows (%d)\n", bitbuffer->num_rows);
         }
         return DECODE_ABORT_EARLY;
     }
@@ -211,7 +211,7 @@ r_device const holman_ws5029pcm = {
         .fields      = output_fields,
 };
 
-/** int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+/** @fn int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 Holman Industries WS5029 weather station using PWM.
 
 Package format: (invert)
