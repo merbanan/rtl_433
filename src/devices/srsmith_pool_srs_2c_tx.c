@@ -148,7 +148,7 @@ static int srsmith_pool_srs_2c_tx_decode(r_device *decoder, bitbuffer_t *bitbuff
     return 1;
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "mic",
         "id",

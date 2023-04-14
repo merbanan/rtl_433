@@ -71,7 +71,7 @@ typedef struct r_device {
     struct r_device *(*create_fn)(char *args);
     unsigned priority; ///< Run later and only if no previous events were produced
     unsigned disabled; ///< 0: default enabled, 1: default disabled, 2: disabled, 3: disabled and hidden
-    char const **fields; ///< List of fields this decoder produces; required for CSV output. NULL-terminated.
+    char const *const *fields; ///< List of fields this decoder produces; required for CSV output. NULL-terminated.
 
     /* public for each decoder */
     int verbose;

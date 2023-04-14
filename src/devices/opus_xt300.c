@@ -95,7 +95,7 @@ static int opus_xt300_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return ret > 0 ? ret : fail_code;
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "channel",
         "temperature_C",

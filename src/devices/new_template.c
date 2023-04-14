@@ -253,7 +253,7 @@ static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
  * order for this device when using -F csv.
  *
  */
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "data",

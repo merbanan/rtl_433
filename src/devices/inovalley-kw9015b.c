@@ -74,7 +74,7 @@ static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char const *kw9015b_csv_output_fields[] = {
+static char const *const kw9015b_csv_output_fields[] = {
         "model",
         "id",
         "battery_ok",

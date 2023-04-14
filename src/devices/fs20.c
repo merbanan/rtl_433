@@ -33,7 +33,7 @@ Command extensions are also not decoded. feel free to improve!
 
 static int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    static char const *cmd_tab[] = {
+    static char const *const cmd_tab[] = {
             "off",
             "on, 6.25%",
             "on, 12.5%",
@@ -122,7 +122,7 @@ static int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "housecode",
         "address",
