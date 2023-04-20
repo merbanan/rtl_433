@@ -327,6 +327,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [241]  EezTire E618 (TPMS10ATC)
     [242]* Baldr / RainPoint rain gauge.
     [243]  Celsia CZC1 Thermostat
+    [244]  Fine Offset Electronics WS90 weather station
 
 * Disabled by default, use -R n or a conf file to enable
 
