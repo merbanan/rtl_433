@@ -252,6 +252,7 @@
     DECL(baldr_rain) \
     DECL(celsia_czc1) \
     DECL(fineoffset_ws90) \
+    DECL(arexx_ml) \
 
     /* Add new decoders here. */
 
