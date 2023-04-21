@@ -120,7 +120,7 @@ Data layout:
 - Y is a fixed Type Code of 0x40
 - I is a device ID
 - F is perhaps flags, but only seen fixed 0x10 so far
-- V is battery boltage, ( FV & 0x1f ) * 0.1f
+- V is battery voltage, ( FV & 0x1f ) * 0.1f
 - R is the rain bucket tip count, 0.1mm increments
 - X is CRC-8, poly 0x31, init 0x00
 - A is SUM-8
@@ -304,7 +304,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "id" ,              "",             DATA_INT,    id,
                     NULL);
             /* clang-format on */
-            
+
             /*
              * Newer WH40 report battery voltage.
              * On older models the battery volage is
@@ -325,7 +325,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                                "mic",              "Integrity",    DATA_STRING, "CRC",
                                NULL);
             /* clang-format on */
-            
+
             decoder_output_data(decoder, data);
             events++;
         }
