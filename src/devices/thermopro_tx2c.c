@@ -1,5 +1,5 @@
 /** @file
-    Thermopro TX-2C Thermometer.
+    ThermoPro TX-2C Outdoor Thermometer.
 
     Copyright (C) 2023 igor@pele.tech.
 
@@ -8,36 +8,37 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
+
+#include "decoder.h"
+
 /**
-Thermopro TX-2C Thermometer.
+ThermoPro TX-2C Outdoor Thermometer.
 
-normal sequence of bit rows:
+Example data:
 
-        [00] { 7} 00                : 0000000
-        [01] {45} 95 00 ff e0 a0 00 : 10010101 00000000 11111111 11100000 10100000 00000
-        [02] {45} 95 00 ff e0 a0 00 : 10010101 00000000 11111111 11100000 10100000 00000
-        [03] {45} 95 00 ff e0 a0 00 : 10010101 00000000 11111111 11100000 10100000 00000
-        [04] {45} 95 00 ff e0 a0 00 : 10010101 00000000 11111111 11100000 10100000 00000
-        [05] {45} 95 00 ff e0 a0 00 : 10010101 00000000 11111111 11100000 10100000 00000
-        [06] {45} 95 00 ff e0 a0 00 : 10010101 00000000 11111111 11100000 10100000 00000
-        [07] {45} 95 00 ff e0 a0 00 : 10010101 00000000 11111111 11100000 10100000 00000
-        [08] {36} 95 00 ff e0 a0    : 10010101 00000000 11111111 11100000 1010
+    [00] { 7} 00
+    [01] {45} 95 00 ff e0 a0 00
+    [02] {45} 95 00 ff e0 a0 00
+    [03] {45} 95 00 ff e0 a0 00
+    [04] {45} 95 00 ff e0 a0 00
+    [05] {45} 95 00 ff e0 a0 00
+    [06] {45} 95 00 ff e0 a0 00
+    [07] {45} 95 00 ff e0 a0 00
+    [08] {36} 95 00 ff e0 a0
 
 Data layout:
 
     II ZZ TTT UU Z
 
-    - I: 8 bit ID
-    - Z: 8 bit zeros
-    - T: 12 bit temperature (scale 16)
-    - U: 8 bit unknown (constant)
-    - Z: 5 bit zeros
-
+- I: 8 bit ID
+- Z: 8 bit zeros
+- T: 12 bit temperature, scale 10
+- U: 8 bit unknown (constant)
+- Z: 5 bit zeros
 
 */
-#include "decoder.h"
 
-static int thermopro_tx2c_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int thermopro_tx2c_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // Compare first four bytes of rows that have 45 or 36 bits.
     int row = bitbuffer_find_repeated_row(bitbuffer, 4, 36);
@@ -47,7 +48,7 @@ static int thermopro_tx2c_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
 
     if (bitbuffer->bits_per_row[row] > 45)
         return DECODE_ABORT_LENGTH;
-    
+
     // No need to decode/extract values for simple test
     if ((!b[0] && !b[1] && !b[2] && !b[3])
             || (b[0] == 0xff && b[1] == 0xff && b[2] == 0xff && b[3] == 0xff)) {
@@ -56,14 +57,14 @@ static int thermopro_tx2c_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
     }
 
     int device   = (b[0]);
-    int16_t temp_raw = ((b[2] << 8) | b[3]);
-    float temp_c = (temp_raw/16) * 0.1f;
+    int temp_raw = (int16_t)((b[2] << 8) | b[3]); // uses sign-extend
+    float temp_c = (temp_raw >> 4) * 0.1f;
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",         "",            DATA_STRING, "ThermoPro-TX-2C",
+            "model",         "",            DATA_STRING, "Thermopro-TX2C",
             "id",            "Id",          DATA_INT,    device,
-            "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
+            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "mic",           "Integrity",   DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -86,6 +87,7 @@ r_device const thermopro_tx2c = {
         .long_width  = 3825,
         .gap_limit   = 3829,
         .reset_limit = 8643,
-        .decode_fn   = &thermopro_tx2c_sensor_callback,
+        .decode_fn   = &thermopro_tx2c_decode,
         .fields      = output_fields,
+        .disabled    = 1, // default disabled because there is no checksum
 };

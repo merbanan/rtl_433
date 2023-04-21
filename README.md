@@ -328,6 +328,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [242]* Baldr / RainPoint rain gauge.
     [243]  Celsia CZC1 Thermostat
     [244]  Fine Offset Electronics WS90 weather station
+    [245]* ThermoPro TX-2C Thermometer
 
 * Disabled by default, use -R n or a conf file to enable
 
