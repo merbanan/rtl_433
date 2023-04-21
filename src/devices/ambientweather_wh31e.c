@@ -301,8 +301,8 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             data_t *data = data_make(
                     "model",            "",                DATA_STRING, "EcoWitt-WH40",
                     "id" ,              "",                DATA_INT,    id,
-                    "battery_V",        "Battery Voltage", DATA_FORMAT, "%f V", DATA_DOUBLE, battery_v * 0.1f,
-                    "battery_ok",       "Battery",         DATA_DOUBLE, battery_lvl * 0.01f,
+                    "battery_V",        "Battery Voltage", DATA_COND, battery_v != 0, DATA_FORMAT, "%f V", DATA_DOUBLE, battery_v * 0.1f,
+                    "battery_ok",       "Battery",         DATA_COND, battery_v != 0, DATA_DOUBLE, battery_lvl * 0.01f,
                     "rain_mm",          "Total Rain",      DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1,
                     "data",             "Extra Data",      DATA_STRING, extra,
                     "mic",              "Integrity",       DATA_STRING, "CRC",
