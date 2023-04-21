@@ -111,7 +111,7 @@ void set_center_freq(r_cfg_t *cfg, uint32_t center_freq)
     cfg->frequency_index = 0;
     cfg->frequency[0] = center_freq;
     // cfg->center_frequency = center_freq; // actually applied in the sdr event
-    sdr_set_center_freq(cfg->dev, center_freq, 0);
+    sdr_set_center_freq(cfg->dev, center_freq, 1);
 }
 
 void set_freq_correction(r_cfg_t *cfg, int freq_correction)

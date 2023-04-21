@@ -185,10 +185,10 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             int temp_raw      = ((b[4] & 0x0f) << 8) | (b[5]); // weird format
             float temp_f      = (temp_raw - 900) * 0.1f;
             int humidity      = b[6];
-            int wind_raw      = ((b[7] - 1) << 8 ) | (b[8] -1);   // all default is 01 so need to remove 1 from all bytes.
+            int wind_raw      = (((b[7] - 1) & 0xff) << 8) | ((b[8] - 1) & 0xff);   // need to remove 1 from byte , 0x01 - 1 = 0 , 0x02 - 1 = 1 ... 0xff -1 = 254 , 0x00 - 1 = 255.
             float speed_kmh   = wind_raw * 0.2f;
-            int direction_deg = (((b[9] - 1) & 0x0f) << 8) | (b[10] - 1);
-            int rain_raw      = ((b[11] - 1) << 8 ) | (b[12] -1);
+            int direction_deg = (((b[9] - 1) & 0x0f) << 8) | ((b[10] - 1) & 0xff);
+            int rain_raw      = (((b[11] - 1) & 0xff) << 8) | ((b[12] - 1) & 0xff);
             float rain_mm     = rain_raw * 0.2f;
 
             if (b[29] == 0x17) {                               // with UV/Lux, without Wind Gust

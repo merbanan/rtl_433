@@ -9,6 +9,8 @@
     (at your option) any later version.
 */
 
+#include "decoder.h"
+
 /**
 Cotech 36-7959 Weatherstation, 433Mhz.
 
@@ -46,9 +48,6 @@ Message layout
 - P : 8 bit: UV index (1-15)
 - X : 8 bit: CRC, poly 0x31, init 0xc0
 */
-
-#include <stdbool.h>
-#include "decoder.h"
 
 static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -109,7 +108,7 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_c = (temp_raw - 400) * 0.1f;
 
     // On models without a light sensor, the value read for UV index is out of bounds with its top bits set
-    bool light_is_valid = ((uv & 0xf0) == 0);
+    int light_is_valid = ((uv & 0xf0) == 0);
 
     /* clang-format off */
     data = data_make(

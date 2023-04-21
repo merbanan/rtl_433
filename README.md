@@ -217,7 +217,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [131]  Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes
     [132]  TFA Dostmann 30.3196 T/H outdoor sensor
     [133]  Rubicson 48659 Thermometer
-    [134]  Holman Industries iWeather WS5029 weather station (newer PCM)
+    [134]  AOK Weather Station rebrand Holman Industries iWeather WS5029, Conrad AOK-5056, Optex 990018
     [135]  Philips outdoor temperature sensor (type AJ7010)
     [136]  ESIC EMT7110 power meter
     [137]  Globaltronics QUIGG GT-TMBBQ-05
@@ -327,6 +327,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [241]  EezTire E618 (TPMS10ATC)
     [242]* Baldr / RainPoint rain gauge.
     [243]  Celsia CZC1 Thermostat
+    [244]  Fine Offset Electronics WS90 weather station
 
 * Disabled by default, use -R n or a conf file to enable
 
