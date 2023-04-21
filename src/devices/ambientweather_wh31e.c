@@ -290,7 +290,6 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             int id         = (b[2] << 8) | b[3];
             int battery_v  = (b[4] & 0x1f);
             int battery_lvl = battery_v <= 9 ? 0 : ((battery_v - 9) / 6 * 100); // 0.9V-1.5V is 0-100
-            //int channel    = ((b[4] & 0x70) >> 4) + 1;
             int rain_raw   = (b[5] << 8) | b[6];
             char extra[11];
             sprintf(extra, "%02x%02x%02x%02x%02x", b[9], b[10], b[11], b[12], b[13]);
@@ -300,30 +299,14 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
             /* clang-format off */
             data_t *data = data_make(
-                    "model",            "",             DATA_STRING, "EcoWitt-WH40",
-                    "id" ,              "",             DATA_INT,    id,
+                    "model",            "",                DATA_STRING, "EcoWitt-WH40",
+                    "id" ,              "",                DATA_INT,    id,
+                    "battery_V",        "Battery Voltage", DATA_FORMAT, "%f V", DATA_DOUBLE, battery_v * 0.1f,
+                    "battery_ok",       "Battery",         DATA_DOUBLE, battery_lvl * 0.01f,
+                    "rain_mm",          "Total Rain",      DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1,
+                    "data",             "Extra Data",      DATA_STRING, extra,
+                    "mic",              "Integrity",       DATA_STRING, "CRC",
                     NULL);
-            /* clang-format on */
-
-            /*
-             * Newer WH40 report battery voltage.
-             * On older models the battery volage is
-             * always 0.
-             */
-            if (battery_v != 0)
-                /* clang-format off */
-                data = data_append( data,
-                                   "battery_V", "Battery Voltage", DATA_FORMAT, "%f V", DATA_DOUBLE, battery_v * 0.1f,
-                                   "battery_ok","Battery",         DATA_DOUBLE, battery_lvl * 0.01f,
-                                   NULL);
-                /* clang-format on */
-
-            /* clang-format off */
-            data = data_append( data,
-                               "rain_mm",          "Total Rain",   DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1,
-                               "data",             "Extra Data",   DATA_STRING, extra,
-                               "mic",              "Integrity",    DATA_STRING, "CRC",
-                               NULL);
             /* clang-format on */
 
             decoder_output_data(decoder, data);
