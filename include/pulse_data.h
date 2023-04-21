@@ -73,9 +73,9 @@ void pulse_data_load(FILE *file, pulse_data_t *data, uint32_t sample_rate);
 void pulse_data_print_pulse_header(FILE *file);
 
 /// Print the content of a pulse_data_t structure as OOK text.
-void pulse_data_dump(FILE *file, pulse_data_t *data);
+void pulse_data_dump(FILE *file, pulse_data_t const *data);
 
 /// Print the content of a pulse_data_t structure as OOK json.
-data_t *pulse_data_print_data(pulse_data_t *data);
+data_t *pulse_data_print_data(pulse_data_t const *data);
 
 #endif /* INCLUDE_PULSE_DATA_H_ */

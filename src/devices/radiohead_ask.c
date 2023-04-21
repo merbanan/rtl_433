@@ -223,7 +223,7 @@ static int sensible_living_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char const *radiohead_ask_output_fields[] = {
+static char const *const radiohead_ask_output_fields[] = {
         "model",
         "len",
         "to",
@@ -235,7 +235,7 @@ static char const *radiohead_ask_output_fields[] = {
         NULL,
 };
 
-static char const *sensible_living_output_fields[] = {
+static char const *const sensible_living_output_fields[] = {
         "model",
         "house_id",
         "module_id",

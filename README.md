@@ -52,6 +52,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-H <seconds>] Hop interval for polling of multiple frequencies (default: 600 seconds)
   [-p <ppm_error>] Correct rtl-sdr tuner frequency offset error (default: 0)
   [-s <sample rate>] Set sample rate (default: 250000 Hz)
+  [-D restart | pause | quit | manual] Input device run mode options.
 		= Demodulator options =
   [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)
        Specify a negative number to disable a device decoding protocol (can be used multiple times)
@@ -96,7 +97,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [06]* ELV EM 1000
     [07]* ELV WS 2000
     [08]  LaCrosse TX Temperature / Humidity Sensor
-    [10]* Acurite 896 Rain Gauge
+    [10]  Acurite 896 Rain Gauge
     [11]  Acurite 609TXC Temperature and Humidity Sensor
     [12]  Oregon Scientific Weather Sensor
     [13]* Mebus 433
@@ -124,7 +125,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [37]* Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)
     [38]  Generic temperature sensor 1
     [39]  WG-PB12V1 Temperature Sensor
-    [40]  Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning, 899 Rain, 3N1, Atlas
+    [40]  Acurite 592TXR Temp/Humidity, 592TX Temp, 5n1 Weather Station, 6045 Lightning, 899 Rain, 3N1, Atlas
     [41]  Acurite 986 Refrigerator / Freezer Thermometer
     [42]  HIDEKI TS04 Temperature, Humidity, Wind and Rain Sensor
     [43]  Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
@@ -216,7 +217,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [131]  Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes
     [132]  TFA Dostmann 30.3196 T/H outdoor sensor
     [133]  Rubicson 48659 Thermometer
-    [134]  Holman Industries iWeather WS5029 weather station (newer PCM)
+    [134]  AOK Weather Station rebrand Holman Industries iWeather WS5029, Conrad AOK-5056, Optex 990018
     [135]  Philips outdoor temperature sensor (type AJ7010)
     [136]  ESIC EMT7110 power meter
     [137]  Globaltronics QUIGG GT-TMBBQ-05
@@ -326,6 +327,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [241]  EezTire E618 (TPMS10ATC)
     [242]* Baldr / RainPoint rain gauge.
     [243]  Celsia CZC1 Thermostat
+    [244]  Fine Offset Electronics WS90 weather station
 
 * Disabled by default, use -R n or a conf file to enable
 

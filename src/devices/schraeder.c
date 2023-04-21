@@ -283,7 +283,7 @@ static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "type",
         "id",
@@ -294,7 +294,7 @@ static char const *output_fields[] = {
         NULL,
 };
 
-static char const *output_fields_EG53MA4[] = {
+static char const *const output_fields_EG53MA4[] = {
         "model",
         "type",
         "id",
@@ -305,7 +305,7 @@ static char const *output_fields_EG53MA4[] = {
         NULL,
 };
 
-static char const *output_fields_SMD3MA4[] = {
+static char const *const output_fields_SMD3MA4[] = {
         "model",
         "type",
         "id",

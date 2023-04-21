@@ -111,7 +111,7 @@ void set_center_freq(r_cfg_t *cfg, uint32_t center_freq)
     cfg->frequency_index = 0;
     cfg->frequency[0] = center_freq;
     // cfg->center_frequency = center_freq; // actually applied in the sdr event
-    sdr_set_center_freq(cfg->dev, center_freq, 0);
+    sdr_set_center_freq(cfg->dev, center_freq, 1);
 }
 
 void set_freq_correction(r_cfg_t *cfg, int freq_correction)
@@ -227,17 +227,19 @@ void r_free_cfg(r_cfg_t *cfg)
 
     pulse_detect_free(cfg->demod->pulse_detect);
 
-    free(cfg->demod);
-
-    free(cfg->devices);
-
     list_free_elems(&cfg->raw_handler, (list_elem_free_fn)raw_output_free);
+
+    r_logger_set_log_handler(NULL, NULL);
 
     list_free_elems(&cfg->output_handler, (list_elem_free_fn)data_output_free);
 
     list_free_elems(&cfg->data_tags, (list_elem_free_fn)data_tag_free);
 
     list_free_elems(&cfg->in_files, NULL);
+
+    free(cfg->demod);
+
+    free(cfg->devices);
 
     mg_mgr_free(cfg->mgr);
     free(cfg->mgr);
@@ -679,7 +681,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
     // check for undeclared csv fields
     for (data_t *d = data; d; d = d->next) {
         int found = 0;
-        for (char const **p = r_dev->fields; *p; ++p) {
+        for (char const *const *p = r_dev->fields; *p; ++p) {
             if (!strcmp(d->key, *p)) {
                 found = 1;
                 break;
@@ -1030,13 +1032,22 @@ static int lvlarg_param(char **param, int default_verb)
     return val;
 }
 
-static FILE *fopen_output(char *param)
+/// Opens the path @p param (or STDOUT if empty or `-`) for append writing, removes leading `,` and `:` from path name.
+static FILE *fopen_output(char const *param)
 {
-    FILE *file;
-    if (!param || !*param || (*param == '-' && param[1] == '\0')) {
-        return stdout;
+    if (!param || !*param) {
+        return stdout; // No path given
     }
-    file = fopen(param, "a");
+    while (*param == ',') {
+        param++; // Skip all leading `,`
+    }
+    if (*param == ':') {
+        param++; // Skip one leading `:`
+    }
+    if (*param == '-' && param[1] == '\0') {
+        return stdout; // STDOUT requested
+    }
+    FILE *file = fopen(param, "a");
     if (!file) {
         fprintf(stderr, "rtl_433: failed to open output file\n");
         exit(1);
@@ -1096,7 +1107,10 @@ void add_syslog_output(r_cfg_t *cfg, char *param)
     int log_level = lvlarg_param(&param, LOG_WARNING);
     char const *host = "localhost";
     char const *port = "514";
-    hostport_param(param, &host, &port);
+    char const *extra = hostport_param(param, &host, &port);
+    if (extra && *extra) {
+        print_logf(LOG_FATAL, "Syslog UDP", "Unknown parameters \"%s\"", extra);
+    }
     print_logf(LOG_CRITICAL, "Syslog UDP", "Sending datagrams to %s port %s", host, port);
 
     list_push(&cfg->output_handler, data_output_syslog_create(log_level, host, port));
@@ -1107,7 +1121,10 @@ void add_http_output(r_cfg_t *cfg, char *param)
     // Note: no log_level, the HTTP-API consumes all log levels.
     char const *host = "0.0.0.0";
     char const *port = "8433";
-    hostport_param(param, &host, &port);
+    char const *extra = hostport_param(param, &host, &port);
+    if (extra && *extra) {
+        print_logf(LOG_FATAL, "HTTP server", "Unknown parameters \"%s\"", extra);
+    }
     print_logf(LOG_CRITICAL, "HTTP server", "Starting HTTP server at %s port %s", host, port);
 
     list_push(&cfg->output_handler, data_output_http_create(get_mgr(cfg), host, port, cfg));
@@ -1129,10 +1146,13 @@ void add_rtltcp_output(r_cfg_t *cfg, char *param)
 {
     char const *host = "localhost";
     char const *port = "1234";
-    hostport_param(param, &host, &port);
+    char const *extra = hostport_param(param, &host, &port);
+    if (extra && *extra) {
+        print_logf(LOG_FATAL, "rtl_tcp server", "Unknown parameters \"%s\"", extra);
+    }
     print_logf(LOG_CRITICAL, "rtl_tcp server", "Starting rtl_tcp server at %s port %s", host, port);
 
-    list_push(&cfg->raw_handler, raw_output_rtltcp_create(host, port, cfg));
+    list_push(&cfg->raw_handler, raw_output_rtltcp_create(host, port, extra, cfg));
 }
 
 void add_sr_dumper(r_cfg_t *cfg, char const *spec, int overwrite)

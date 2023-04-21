@@ -22,6 +22,7 @@
 #define ID_RGR968   0x2d10
 #define ID_THR228N  0xec40
 #define ID_THN132N  0xec40 // same as THR228N but different packet size
+#define ID_AWR129   0xec41 // similar to THR228N, but an extra 100s digit
 #define ID_RTGN318  0x0cc3 // warning: id is from 0x0cc3 and 0xfcc3
 #define ID_RTGN129  0x0cc3 // same as RTGN318 but different packet size
 #define ID_THGR810  0xf824 // This might be ID_THGR81, but what's true is lost in (git) history
@@ -50,7 +51,9 @@ static float get_os_temperature(unsigned char *message)
 {
     float temp_c = 0;
     temp_c = (((message[5] >> 4) * 100) + ((message[4] & 0x0f) * 10) + ((message[4] >> 4) & 0x0f)) / 10.0F;
-    // Correct 0x0f to 0x08:
+    // The AWR129 BBQ thermometer has another digit to represent higher temperatures than what weather stations would observe.
+    temp_c += (message[5] & 0x07) * 100.0F;
+    // 0x08 is the sign bit
     if (message[5] & 0x08) {
         temp_c = -temp_c;
     }
@@ -140,6 +143,11 @@ static unsigned long long cm180i_total(uint8_t const *msg)
         val += msg[9];
     }
     return val;
+}
+
+static uint8_t swap_nibbles(uint8_t byte)
+{
+    return (((byte&0xf) << 4) | (byte >> 4));
 }
 
 static unsigned short int cm180_power(uint8_t const *msg)
@@ -363,13 +371,14 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         decoder_output_data(decoder, data);
         return 1;
     }
-    else if (sensor_id == ID_THR228N && msg_bits == 76) {
+    else if ((sensor_id == ID_THR228N || sensor_id == ID_AWR129) && msg_bits == 76) {
         if (validate_os_v2_message(decoder, msg, 76, msg_bits, 12) != 0)
             return 0;
         float temp_c = get_os_temperature(msg);
         /* clang-format off */
         data = data_make(
-                "model",                 "",                        DATA_STRING, "Oregon-THR228N",
+                "model", "", DATA_COND, sensor_id == ID_THR228N, DATA_STRING, "Oregon-THR228N",
+                "model", "", DATA_COND, sensor_id == ID_AWR129, DATA_STRING, "Oregon-AWR129",
                 "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg),
                 "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id),
                 "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
@@ -806,16 +815,31 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         return 1;
     }
     else if ((msg[0] == 0x20) || (msg[0] == 0x21) || (msg[0] == 0x22) || (msg[0] == 0x23) || (msg[0] == 0x24)) { // Owl CM160 Readings
-        msg[0] = msg[0] & 0x0f;
+        msg[0] = msg[0] & 0x0F;
+
         if (validate_os_checksum(decoder, msg, 22) != 0)
             return DECODE_FAIL_MIC;
-        float rawAmp = (msg[4] >> 4 << 8 | (msg[3] & 0x0f) << 4 | msg[3] >> 4);
-        unsigned short int ipower = (rawAmp /(0.27*230)*1000);
+
+        int id = msg[1] & 0x0F;
+
+        unsigned int current_amps  = swap_nibbles(msg[3]) | ((msg[4] >> 4) << 8);
+        double current_watts = current_amps * 0.07 * 230; // Assuming device is running in 230V country
+
+        double total_amps = ((uint64_t)swap_nibbles(msg[10]) << 36) | ((uint64_t)swap_nibbles(msg[9]) << 28) |
+                    (swap_nibbles(msg[8]) << 20) | (swap_nibbles(msg[7]) << 12) |
+                    (swap_nibbles(msg[6]) << 4) | (msg[5]&0xf);
+
+        double total_kWh = total_amps * 230.0 / 3600.0 / 1000.0 * 1.12; // Assuming device is running in 230V country
+        //result compares to the CM160 LCD display values when * 1.12 between readings
+
         /* clang-format off */
         data = data_make(
-                "model",    "",                     DATA_STRING,    "Oregon-CM160",
-                "id",         "House Code", DATA_INT, msg[1]&0x0F,
-                "power_W", "Power",         DATA_FORMAT,    "%d W", DATA_INT, ipower,
+                "model",            "",                     DATA_STRING,    "Oregon-CM160",
+                "id",               "House Code",           DATA_INT, id,
+ //               "current_A",        "Current Amps",         DATA_FORMAT,   "%d A", DATA_INT, current_amps,
+ //               "total_As",         "Total Amps",           DATA_FORMAT,   "%d As", DATA_INT, (int)total_amps,
+                "power_W",          "Power",                DATA_FORMAT,   "%7.4f W", DATA_DOUBLE, current_watts,
+                "energy_kWh",       "Energy",               DATA_FORMAT, "%7.4f kWh",DATA_DOUBLE, total_kWh,
                 NULL);
         /* clang-format on */
         decoder_output_data(decoder, data);
@@ -915,7 +939,7 @@ static int oregon_scientific_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return ret;
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",

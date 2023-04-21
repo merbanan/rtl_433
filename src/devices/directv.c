@@ -360,7 +360,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "button_id",

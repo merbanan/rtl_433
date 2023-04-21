@@ -9,7 +9,6 @@ add_library(r_433 STATIC
     am_analyze.c
     baseband.c
     bitbuffer.c
-    compat_alarm.c
     compat_paths.c
     compat_time.c
     confparse.c
@@ -112,6 +111,7 @@ add_library(r_433 STATIC
     devices/fineoffset_wh45.c
     devices/fineoffset_wn34.c
     devices/fineoffset_ws80.c
+    devices/fineoffset_ws90.c
     devices/flex.c
     devices/flowis.c
     devices/fordremote.c

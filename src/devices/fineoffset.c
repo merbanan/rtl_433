@@ -953,7 +953,7 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "temperature_C",
@@ -962,7 +962,7 @@ static char const *output_fields[] = {
         NULL,
 };
 
-static char const *output_fields_WH25[] = {
+static char const *const output_fields_WH25[] = {
         "model",
         "id",
         "battery_ok",
@@ -984,7 +984,7 @@ static char const *output_fields_WH25[] = {
         NULL,
 };
 
-static char const *output_fields_WH51[] = {
+static char const *const output_fields_WH51[] = {
         "model",
         "id",
         "battery_ok",
@@ -996,7 +996,7 @@ static char const *output_fields_WH51[] = {
         NULL,
 };
 
-static char const *output_fields_WH0530[] = {
+static char const *const output_fields_WH0530[] = {
         "model",
         "id",
         "battery_ok",

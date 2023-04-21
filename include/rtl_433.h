@@ -31,7 +31,7 @@ struct mg_mgr;
 typedef enum {
     CONVERT_NATIVE,
     CONVERT_SI,
-    CONVERT_CUSTOMARY
+    CONVERT_CUSTOMARY,
 } conversion_mode_t;
 
 typedef enum {
@@ -43,7 +43,23 @@ typedef enum {
     REPORT_TIME_OFF,
 } time_mode_t;
 
+typedef enum {
+    DEVICE_MODE_QUIT,
+    DEVICE_MODE_RESTART,
+    DEVICE_MODE_PAUSE,
+    DEVICE_MODE_MANUAL,
+} device_mode_t;
+
+typedef enum {
+    DEVICE_STATE_STOPPED,
+    DEVICE_STATE_STARTING,
+    DEVICE_STATE_GRACE,
+    DEVICE_STATE_STARTED,
+} device_state_t;
+
 typedef struct r_cfg {
+    device_mode_t dev_mode; ///< Input device run mode
+    device_state_t dev_state; ///< Input device run state
     char *dev_query;
     char const *dev_info;
     char *gain_str;
@@ -99,6 +115,7 @@ typedef struct r_cfg {
     struct dm_state *demod;
     char const *sr_filename;
     int sr_execopen;
+    int watchdog; ///< SDR acquire stall watchdog
     /* stats*/
     time_t frames_since; ///< stats start time
     unsigned frames_count; ///< stats counter for interval

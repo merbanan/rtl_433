@@ -356,7 +356,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return events;
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",

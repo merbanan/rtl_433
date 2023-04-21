@@ -138,7 +138,7 @@ static int badger_orion_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 // Note: At this time the exact meaning of the flags is not known.
-static char const *badger_output_fields[] = {
+static char const *const badger_output_fields[] = {
         "model",
         "id",
         "flags_1",

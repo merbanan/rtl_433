@@ -251,6 +251,7 @@
     DECL(tpms_eezrv) \
     DECL(baldr_rain) \
     DECL(celsia_czc1) \
+    DECL(fineoffset_ws90) \
     DECL(deltadore_x3d) \
 
     /* Add new decoders here. */

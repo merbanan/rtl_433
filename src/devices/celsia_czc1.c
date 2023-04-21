@@ -110,7 +110,7 @@ static int celsia_czc1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Check if a 0x00 pair packet or a 0xf0 command packet
-    if (b[2] != 0x00 && b[2] == 0xf0) {
+    if (b[2] != 0x00 && b[2] != 0xf0) {
         decoder_log(decoder, 1, __func__, "Unknown packet type");
         return DECODE_FAIL_OTHER;
     }
@@ -132,7 +132,7 @@ static int celsia_czc1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "heat",

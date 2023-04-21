@@ -92,7 +92,7 @@ static int gasmate_ba1008_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char const *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "temperature_C",
         "unknown_1",
