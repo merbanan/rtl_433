@@ -115,11 +115,12 @@ Seems to be the same as Fine Offset WH5360 or Ecowitt WH5360B.
 
 Data layout:
 
-    YY 00 IIII FF RRRR XX AA 00 02 ?? 00 00
+    YY 00 IIII FV RRRR XX AA 00 02 ?? 00 00
 
 - Y is a fixed Type Code of 0x40
 - I is a device ID
 - F is perhaps flags, but only seen fixed 0x10 so far
+- V is battery voltage, ( FV & 0x1f ) * 0.1f
 - R is the rain bucket tip count, 0.1mm increments
 - X is CRC-8, poly 0x31, init 0x00
 - A is SUM-8
@@ -287,23 +288,27 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             }
 
             int id         = (b[2] << 8) | b[3];
-            //int battery_ok = (b[4] >> 7);
-            //int channel    = ((b[4] & 0x70) >> 4) + 1;
+            int battery_v  = (b[4] & 0x1f);
+            int battery_lvl = battery_v <= 9 ? 0 : ((battery_v - 9) / 6 * 100); // 0.9V-1.5V is 0-100
             int rain_raw   = (b[5] << 8) | b[6];
             char extra[11];
             sprintf(extra, "%02x%02x%02x%02x%02x", b[9], b[10], b[11], b[12], b[13]);
 
+            if (battery_lvl > 100)
+                battery_lvl = 100;
+
             /* clang-format off */
             data_t *data = data_make(
-                    "model",            "",             DATA_STRING, "EcoWitt-WH40",
-                    "id" ,              "",             DATA_INT,    id,
-                    //"channel",          "Channel",      DATA_INT,    channel,
-                    //"battery_ok",       "Battery",      DATA_INT,    battery_ok,
-                    "rain_mm",          "Total Rain",   DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1,
-                    "data",             "Extra Data",   DATA_STRING, extra,
-                    "mic",              "Integrity",    DATA_STRING, "CRC",
+                    "model",            "",                DATA_STRING, "EcoWitt-WH40",
+                    "id" ,              "",                DATA_INT,    id,
+                    "battery_V",        "Battery Voltage", DATA_COND, battery_v != 0, DATA_FORMAT, "%f V", DATA_DOUBLE, battery_v * 0.1f,
+                    "battery_ok",       "Battery",         DATA_COND, battery_v != 0, DATA_DOUBLE, battery_lvl * 0.01f,
+                    "rain_mm",          "Total Rain",      DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1,
+                    "data",             "Extra Data",      DATA_STRING, extra,
+                    "mic",              "Integrity",       DATA_STRING, "CRC",
                     NULL);
             /* clang-format on */
+
             decoder_output_data(decoder, data);
             events++;
         }
@@ -361,6 +366,7 @@ static char const *const output_fields[] = {
         "id",
         "channel",
         "battery_ok",
+        "battery_v",
         "temperature_C",
         "humidity",
         "rain_mm",
