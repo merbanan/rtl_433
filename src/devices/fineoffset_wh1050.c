@@ -10,6 +10,9 @@
     (at your option) any later version.
 
  */
+
+#include "decoder.h"
+
 /**
 Fine Offset WH1050 Weather Station.
 
@@ -89,10 +92,7 @@ Time data - Message layout and example:
 - P :  8 bits : CRC, poly 0x31, init 0x00 (excluding preamble)
 
 */
-
-#include "decoder.h"
-
-static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t br[9];
@@ -146,8 +146,8 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format off */
         data = data_make(
                 "model",            "",                 DATA_STRING, "Fineoffset-WH1050",
+                "id",               "Station ID",        DATA_FORMAT, "%04X",    DATA_INT,    device_id,
                 "msg_type",         "Msg type",         DATA_INT,    msg_type,
-                "id",               "StationID",        DATA_FORMAT, "%04X",    DATA_INT,    device_id,
                 "battery_ok",       "Battery",          DATA_INT,    !battery_low,
                 "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                 "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
@@ -176,8 +176,8 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format off */
         data = data_make(
                 "model",            "",                 DATA_STRING,    "Fineoffset-WH1050",
-                "msg_type",         "Msg type",         DATA_INT,       msg_type,
                 "id",               "Station ID",       DATA_INT,       device_id,
+                "msg_type",         "Msg type",         DATA_INT,       msg_type,
                 "battery_ok",       "Battery",          DATA_INT,       !battery_low,
                 "radio_clock",      "Radio Clock",      DATA_STRING,    clock_str,
                 "mic",              "Integrity",        DATA_STRING,    "CRC",
@@ -210,6 +210,6 @@ r_device const fineoffset_wh1050 = {
         .short_width = 544,
         .long_width  = 1524,
         .reset_limit = 10520,
-        .decode_fn   = &fineoffset_wh1050_callback,
+        .decode_fn   = &fineoffset_wh1050_decode,
         .fields      = output_fields,
 };
