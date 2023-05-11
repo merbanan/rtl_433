@@ -556,9 +556,8 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
             retain = atobv(val, 1);
         else if (!strcasecmp(key, "q") || !strcasecmp(key, "qos"))
             qos = atoiv(val, 1);
-        else if (!strcasecmp(key, "online")) {
+        else if (!strcasecmp(key, "online"))
             mqtt->online = mqtt_topic_default(val, base_topic, path_online);
-        }
         // Simple key-topic mapping
         else if (!strcasecmp(key, "d") || !strcasecmp(key, "devices"))
             mqtt->devices = mqtt_topic_default(val, base_topic, path_devices);
@@ -597,6 +596,13 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
         mqtt->devices = mqtt_topic_default(NULL, base_topic, path_devices);
         mqtt->events  = mqtt_topic_default(NULL, base_topic, path_events);
         mqtt->states  = mqtt_topic_default(NULL, base_topic, path_states);
+    }
+    if (!mqtt->online) {
+        mqtt->online = mqtt_topic_default(NULL, base_topic, path_online);
+    }
+    else if (!*mqtt->online) {
+        free(mqtt->online); // remove empty value, disable option
+        mqtt->online = NULL;
     }
     if (mqtt->devices)
         print_logf(LOG_NOTICE, "MQTT", "Publishing device info to MQTT topic \"%s\".", mqtt->devices);
