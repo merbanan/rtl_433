@@ -74,9 +74,9 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
         }
         else {
             print_log(LOG_NOTICE, "MQTT", "MQTT Connection established.");
-            if (ctx->opts.will_topic) {
+            if (ctx->mqtt_opts.will_topic) {
                 ctx->message_id++;
-                mg_mqtt_publish(ctx->conn, ctx->opts.will_topic, ctx->message_id, MG_MQTT_QOS(0) | MG_MQTT_RETAIN, mqtt_lwt_online, strlen(mqtt_lwt_online));
+                mg_mqtt_publish(ctx->conn, ctx->mqtt_opts.will_topic, ctx->message_id, MG_MQTT_QOS(0) | MG_MQTT_RETAIN, mqtt_lwt_online, strlen(mqtt_lwt_online));
             }
         }
         break;
@@ -120,9 +120,9 @@ static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, tls_opts_t *tls_opts,
     ctx->mqtt_opts.will_topic   = will_topic;
     ctx->mqtt_opts.will_message = will_message;
     ctx->mqtt_opts.flags       |= (will_retain ? MG_MQTT_WILL_RETAIN : 0);
-    ctx->publish_flags     = MG_MQTT_QOS(qos) | (retain ? MG_MQTT_RETAIN : 0);
+    ctx->publish_flags          = MG_MQTT_QOS(qos) | (retain ? MG_MQTT_RETAIN : 0);
     // TODO: these should be user configurable options
-    //ctx->opts.keepalive = 60;
+    //ctx->mqtt_opts.keepalive = 60;
     //ctx->timeout = 10000L;
     //ctx->cleansession = 1;
     strncpy(ctx->client_id, client_id, sizeof(ctx->client_id));
