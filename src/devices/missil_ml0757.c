@@ -51,8 +51,8 @@ All packets begin with an empty row in addition to the 9 rows of repeated data.
 
 #include "decoder.h"
 
-#define MISSIL_ML0757_FLAG_RWP  0x04; // Rain+Wind packet flag
-#define MISSIL_ML0757_FLAG_BAT  0x80; // Battery low flag
+#define MISSIL_ML0757_FLAG_RWP  0x04 // Rain+Wind packet flag
+#define MISSIL_ML0757_FLAG_BAT  0x80 // Battery low flag
 
 static int missil_ml0757_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -78,10 +78,10 @@ static int missil_ml0757_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY; // Tail bits not 1111
 
     // Read fields from sensor data
-    id       = b[0];
-    flags    = b[1];
-    f12bit   = (int16_t)((b[2] << 4) | (b[3] >> 4)) & 0xFFF;
-    f8bit    = (((b[3] & 0x0F) << 4) | (b[4] >> 4)) & 0xFF;
+    id     = b[0];
+    flags  = b[1];
+    f12bit = (int16_t)((b[2] << 4) | (b[3] >> 4)) & 0xFFF;
+    f8bit  = (((b[3] & 0x0F) << 4) | (b[4] >> 4)) & 0xFF;
 
     // Parse flags
     flag_bat = flags & MISSIL_ML0757_FLAG_BAT;
@@ -98,18 +98,18 @@ static int missil_ml0757_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Parse wind speed
     switch (f8bit) {
-        case 0x00: wind_kph = 0.0f; break;
-        case 0x80: wind_kph = 1.4f; break;
-        case 0xC0: wind_kph = 2.8f; break;
-        default:   wind_kph = (f8bit + 2) * 1.4f; break;
+    case 0x00: wind_kph = 0.0f; break;
+    case 0x80: wind_kph = 1.4f; break;
+    case 0xC0: wind_kph = 2.8f; break;
+    default: wind_kph = (f8bit + 2) * 1.4f; break;
     }
 
     if (flag_rwp) { // Rainwall and wind
         /* clang-format off */
         data = data_make(
                 "model",            "",             DATA_STRING, "Missil-ML0757",
-                "id",               "ID",           DATA_INT, id,
-                "battery_ok",       "Battery OK",   DATA_INT, !flag_bat,
+                "id",               "ID",           DATA_INT,    id,
+                "battery_ok",       "Battery",      DATA_INT,    !flag_bat,
                 "rain_mm",          "Total rain",   DATA_FORMAT, "%.02f mm", DATA_DOUBLE, rainfall,
                 "wind_avg_km_h",    "Wind speed",   DATA_FORMAT, "%.02f km/h", DATA_DOUBLE, wind_kph,
                 NULL);
@@ -119,8 +119,8 @@ static int missil_ml0757_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format off */
         data = data_make(
                 "model",            "",             DATA_STRING, "Missil-ML0757",
-                "id",               "ID",           DATA_INT, id,
-                "battery_ok",       "Battery OK",   DATA_INT, !flag_bat,
+                "id",               "ID",           DATA_INT,    id,
+                "battery_ok",       "Battery",      DATA_INT,    !flag_bat,
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
                 NULL);
         /* clang-format on */
@@ -130,17 +130,17 @@ static int missil_ml0757_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
-        "battery_ok"
+        "battery_ok",
         "temperature_C",
         "wind_avg_km_h",
         "rain_mm",
         NULL,
 };
 
-r_device missil_ml0757 = {
+r_device const missil_ml0757 = {
         .name        = "Missil ML0757 weather station",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 975,

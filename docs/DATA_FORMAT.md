@@ -1,16 +1,15 @@
 # JSON Data fields
 
 See also the discussion and rationale in https://github.com/merbanan/rtl_433/pull/827
-Note that you can use `-M oldmodel` to still get the legacy names for a short while.
 
 ## Message Data
 These fields are the primary data fields containing the most basic message data and used to identify the specific device.
-For some devices these are the *only* fields contained in the message, as the message itself consitutes an event from this
+For some devices these are the *only* fields contained in the message, as the message itself constitutes an event from this
 particular device model.
 
 * **time** (string) (Required)
-  * Time stamp. String containing date and time of when the message was received. Format is dependent on
-    current locale unless the `-M utc` command line argument is used.
+  * Time stamp. String containing date and time of when the message was received. Format and timezone is dependent on
+    current locale unless options like `-M time:unix` or `-M time:iso` and `-M time:utc` are used.
 
 * **type** (string) (Optional)
   * Classification of the general device type. Currently only used for `"TPMS"`.
@@ -23,21 +22,21 @@ particular device model.
   * Avoid redundant word like "sensor", "wireless" etc. unless it is part of the manufacturers model designation.
   * Avoid adding device type designations like "Switch", "Temperature", "Thermostat", "Weather Station" etc. Device type can
     be inferred from the data content.
-  * Avoid the special characters: `"/&$*#+[]()"`.
+  * Avoid all non-alphanumeric characters, especially: `"/&$*#+[]()"`.
   * Length of *model* string should be less than 32 characters.
 
 * **subtype** (string) (Optional)
   * Device type or function in a common protocol. Examples are various sensors, triggers, keyfob in wireless security.
 
-* **id** (string) (Optional)
+* **id** (integer, rarely string) (Optional)
   * Device identification. Used to differentiate between devices of same *model*.
-    Depending of device model it may be a non-volatile value programmed into the device,
+    Depending on device model it may be a non-volatile value programmed into the device,
     a volatile value that changes at each power on (or battery change), or a value configurable by
     user e.g. by switch or jumpers. No assumptions should be made to the id value other than it contains
     a unique sequence of alphanumeric characters.
   * Length of *id* should be less than 16 characters.
 
-* **channel** (string) (Optional)
+* **channel** (integer, rarely string) (Optional)
   * Secondary device identification. For devices with more than one identification value
     (e.g. both an internal value and a switch).
 
@@ -61,6 +60,8 @@ Various data fields, which are common across devices of different types.
 
 ## Sensor Data
 Due to the large variance in sensor types this list of common values is non-exhaustive. Additional data value fields should follow the form: `<Type>_<Unit>`, where *Unit* should be in sensors native units insofar possible with no conversion.
+Automatic unit conversion can be performed with the `-C si` or `-C customary` option.
+
 Examples:
 
 * **temperature_C** (**temperature_F**) (double) (Optional)
@@ -71,6 +72,9 @@ Examples:
 
 * **humidity** (double) (Optional)
   * Humidity from a hygrometer sensor in % relative humidity
+
+* **moisture** (double) (Optional)
+  * Moisture from a soil probe in % relative saturation
 
 * **wind_dir_deg** (double) (Optional)
   * Wind direction from wind sensor in compass direction degrees.

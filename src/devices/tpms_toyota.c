@@ -51,29 +51,30 @@ static int tpms_toyota_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
         return 0;
     }
 
-    id = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
-    status = (b[4] & 0x80) | (b[6] & 0x7f); // status bit and 0 filler
+    id        = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
+    status    = (b[4] & 0x80) | (b[6] & 0x7f); // status bit and 0 filler
     pressure1 = (b[4] & 0x7f) << 1 | b[5] >> 7;
-    temp = (b[5] & 0x7f) << 1 | b[6] >> 7;
+    temp      = (b[5] & 0x7f) << 1 | b[6] >> 7;
     pressure2 = b[7] ^ 0xff;
 
     if (pressure1 != pressure2) {
-        if (decoder->verbose)
-            fprintf(stderr, "Toyota TPMS pressure check error: %02x vs %02x\n", pressure1, pressure2);
+        decoder_logf(decoder, 1, __func__, "Toyota TPMS pressure check error: %02x vs %02x", pressure1, pressure2);
         return 0;
     }
 
     sprintf(id_str, "%08x", id);
 
+    /* clang-format off */
     data = data_make(
-        "model",            "",     DATA_STRING,    "Toyota",
-        "type",             "",     DATA_STRING,    "TPMS",
-        "id",               "",     DATA_STRING,    id_str,
-        "status",           "",     DATA_INT,       status,
-        "pressure_PSI",     "",     DATA_DOUBLE,    pressure1*0.25-7.0,
-        "temperature_C",    "",     DATA_DOUBLE,    temp-40.0,
-        "mic",              "",     DATA_STRING,    "CRC",
-        NULL);
+            "model",            "",             DATA_STRING,    "Toyota",
+            "type",             "",             DATA_STRING,    "TPMS",
+            "id",               "",             DATA_STRING,    id_str,
+            "status",           "",             DATA_INT,       status,
+            "pressure_PSI",     "",             DATA_DOUBLE,    pressure1*0.25-7.0,
+            "temperature_C",    "",             DATA_DOUBLE,    temp-40.0,
+            "mic",              "Integrity",    DATA_STRING,    "CRC",
+            NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
@@ -102,24 +103,23 @@ static int tpms_toyota_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events > 0 ? events : ret;
 }
 
-static char *output_fields[] = {
-    "model",
-    "type",
-    "id",
-    "status",
-    "pressure_PSI",
-    "temperature_C",
-    "mic",
-    NULL,
+static char const *const output_fields[] = {
+        "model",
+        "type",
+        "id",
+        "status",
+        "pressure_PSI",
+        "temperature_C",
+        "mic",
+        NULL,
 };
 
-r_device tpms_toyota = {
-    .name           = "Toyota TPMS",
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = 52, // 12-13 samples @250k
-    .long_width     = 52, // FSK
-    .reset_limit    = 150, // Maximum gap size before End Of Message [us].
-    .decode_fn      = &tpms_toyota_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+r_device const tpms_toyota = {
+        .name        = "Toyota TPMS",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 52,  // 12-13 samples @250k
+        .long_width  = 52,  // FSK
+        .reset_limit = 150, // Maximum gap size before End Of Message [us].
+        .decode_fn   = &tpms_toyota_callback,
+        .fields      = output_fields,
 };

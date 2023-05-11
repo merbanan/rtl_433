@@ -15,7 +15,30 @@
 #include <limits.h>
 #include <string.h>
 
-int atobv(char *arg, int def)
+int tls_param(tls_opts_t *tls_opts, char const *key, char const *val)
+{
+    if (!tls_opts || !key || !*key)
+        return 1;
+    else if (!strcasecmp(key, "tls_cert"))
+        tls_opts->tls_cert = val;
+    else if (!strcasecmp(key, "tls_key"))
+        tls_opts->tls_key = val;
+    else if (!strcasecmp(key, "tls_ca_cert"))
+        tls_opts->tls_ca_cert = val;
+    else if (!strcasecmp(key, "tls_cipher_suites"))
+        tls_opts->tls_cipher_suites = val;
+    else if (!strcasecmp(key, "tls_server_name"))
+        tls_opts->tls_server_name = val;
+    else if (!strcasecmp(key, "tls_psk_identity"))
+        tls_opts->tls_psk_identity = val;
+    else if (!strcasecmp(key, "tls_psk_key"))
+        tls_opts->tls_psk_key = val;
+    else
+        return 1;
+    return 0;
+}
+
+int atobv(char const *arg, int def)
 {
     if (!arg)
         return def;
@@ -24,7 +47,7 @@ int atobv(char *arg, int def)
     return atoi(arg);
 }
 
-int atoiv(char *arg, int def)
+int atoiv(char const *arg, int def)
 {
     if (!arg)
         return def;
@@ -35,7 +58,7 @@ int atoiv(char *arg, int def)
     return val;
 }
 
-char *arg_param(char *arg)
+char *arg_param(char const *arg)
 {
     if (!arg)
         return NULL;
@@ -49,7 +72,7 @@ char *arg_param(char *arg)
         return p;
 }
 
-double arg_float(const char *str, const char *error_hint)
+double arg_float(char const *str, char const *error_hint)
 {
     if (!str) {
         fprintf(stderr, "%smissing number argument\n", error_hint);
@@ -76,7 +99,7 @@ double arg_float(const char *str, const char *error_hint)
     return val;
 }
 
-char *hostport_param(char *param, char **host, char **port)
+char *hostport_param(char *param, char const **host, char const **port)
 {
     if (param && *param) {
         if (param[0] == '/' && param[1] == '/') {
@@ -110,7 +133,7 @@ char *hostport_param(char *param, char **host, char **port)
     return NULL;
 }
 
-uint32_t atouint32_metric(const char *str, const char *error_hint)
+uint32_t atouint32_metric(char const *str, char const *error_hint)
 {
     if (!str) {
         fprintf(stderr, "%smissing number argument\n", error_hint);
@@ -172,7 +195,7 @@ uint32_t atouint32_metric(const char *str, const char *error_hint)
     return (uint32_t)val;
 }
 
-int atoi_time(const char *str, const char *error_hint)
+int atoi_time(char const *str, char const *error_hint)
 {
     if (!str) {
         fprintf(stderr, "%smissing time argument\n", error_hint);
@@ -208,6 +231,11 @@ int atoi_time(const char *str, const char *error_hint)
                 break;
             }
             // intentional fallthrough
+#if defined __has_attribute
+#if __has_attribute(fallthrough)
+            __attribute__((fallthrough));
+#endif
+#endif
         case ':':
             ++colons;
             if (colons == 1)
@@ -281,6 +309,58 @@ char *asepc(char **stringp, char delim)
     char *p = *stringp;
     *stringp = s;
     return p;
+}
+
+static char *achrb(char *s, int c, int b)
+{
+    for (; s && *s && *s != b; ++s)
+        if (*s == c) return (char *)s;
+    return NULL;
+}
+
+char *asepcb(char **stringp, char delim, char stop)
+{
+    if (!stringp || !*stringp) return NULL;
+    char *s = achrb(*stringp, delim, stop);
+    if (s) *s++ = '\0';
+    char *p = *stringp;
+    *stringp = s;
+    return p;
+}
+
+int kwargs_match(char const *s, char const *key, char const **val)
+{
+    size_t len = strlen(key);
+    // check prefix match
+    if (strncmp(s, key, len)) {
+        return 0; // no match
+    }
+    s += len;
+    // skip whitespace after match
+    while (*s == ' ' || *s == '\t')
+        ++s;
+    if (*s == '\0' || * s == ',') {
+        if (val)
+            *val = NULL;
+        return 1; // match with no arg
+    }
+    if (*s == '=') {
+        if (val)
+            *val = s + 1;
+        return 1; // match with arg
+    }
+    return 0; // no exact match
+}
+
+char const *kwargs_skip(char const *s)
+{
+    // skip to the next comma if possible
+    while (s && *s && *s != ',')
+        ++s;
+    // skip comma and whitespace if possible
+    while (s && *s && (*s == ',' || *s == ' ' || *s == '\t'))
+        ++s;
+    return s;
 }
 
 char *getkwargs(char **s, char **key, char **val)

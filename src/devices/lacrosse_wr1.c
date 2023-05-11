@@ -52,38 +52,31 @@ LTV-WR1
 
 static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const preamble_pattern[] = { 0xd2, 0xaa, 0x2d, 0xd4 };
+    uint8_t const preamble_pattern[] = {0xd2, 0xaa, 0x2d, 0xd4};
 
     data_t *data;
     uint8_t b[11];
     uint32_t id;
     int flags, seq, offset, chk;
     int raw_wind, direction, raw_rain1, raw_rain2;
-    float speed_kmh, rain_mm;
+    float speed_kmh;
+    // float rain_mm;
 
     if (bitbuffer->bits_per_row[0] < 120) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: Packet too short: %d bits\n", __func__, bitbuffer->bits_per_row[0]);
-        }
+        decoder_logf(decoder, 1, __func__, "Packet too short: %d bits", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH;
     } else if (bitbuffer->bits_per_row[0] > 156) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: Packet too long: %d bits\n", __func__, bitbuffer->bits_per_row[0]);
-        }
+        decoder_logf(decoder, 1, __func__, "Packet too long: %d bits", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH;
     } else {
-        if (decoder->verbose) {
-           fprintf(stderr, "%s: packet length: %d\n", __func__, bitbuffer->bits_per_row[0]);
-        }
+        decoder_logf(decoder, 1, __func__, "packet length: %d", bitbuffer->bits_per_row[0]);
     }
 
     offset = bitbuffer_search(bitbuffer, 0, 0,
             preamble_pattern, sizeof(preamble_pattern) * 8);
 
     if (offset >= bitbuffer->bits_per_row[0]) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: Sync word not found\n", __func__);
-        }
+        decoder_log(decoder, 1, __func__, "Sync word not found");
         return DECODE_ABORT_EARLY;
     }
 
@@ -92,14 +85,8 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     chk = crc8(b, 11, 0x31, 0x00);
     if (chk) {
-        if (decoder->verbose) {
-           fprintf(stderr, "%s: CRC failed!\n", __func__);
-        }
+        decoder_log(decoder, 1, __func__, "CRC failed!");
         return DECODE_FAIL_MIC;
-    }
-
-    if (decoder->verbose) {
-        // bitbuffer_debug(bitbuffer);
     }
 
     id        = (b[0] << 16) | (b[1] << 8) | b[2];
@@ -112,7 +99,10 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // base and/or scale adjustments
     speed_kmh = raw_wind * 0.1f;
-    rain_mm   = 0.0;  // dummy until we know what raw_rain1 and raw_rain2 mean
+    if (speed_kmh < 0 || speed_kmh > 200 || direction < 0 || direction > 360)
+        return DECODE_FAIL_SANITY;
+
+    //rain_mm   = 0.0;  // dummy until we know what raw_rain1 and raw_rain2 mean
 
     /* clang-format off */
     data = data_make(
@@ -120,7 +110,7 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "Sensor ID",        DATA_FORMAT, "%06x", DATA_INT, id,
             "seq",              "Sequence",         DATA_INT,     seq,
             "flags",            "unknown",          DATA_INT,     flags,
-            "wind_km_h",        "Wind speed",       DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
+            "wind_avg_km_h",        "Wind speed",       DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
             "wind_dir_deg",     "Wind direction",   DATA_INT,    direction,
             "rain1",            "raw_rain1",        DATA_FORMAT, "%03x", DATA_INT, raw_rain1,
             "rain2",            "raw_rain2",        DATA_FORMAT, "%03x", DATA_INT, raw_rain2,
@@ -132,12 +122,12 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "seq",
         "flags",
-        "wind_km_h",
+        "wind_avg_km_h",
         "wind_dir_deg",
         "rain1",
         "rain2",
@@ -146,7 +136,7 @@ static char *output_fields[] = {
 };
 
 // flex decoder m=FSK_PCM, s=104, l=104, r=9600
-r_device lacrosse_wr1 = {
+r_device const lacrosse_wr1 = {
         .name        = "LaCrosse Technology View LTV-WR1 Multi Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 104,

@@ -42,7 +42,7 @@ static int auriol_hg02832_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     uint8_t *b;
     int id, humidity, batt_low, button, channel;
-    int16_t temp_raw;
+    int temp_raw;
     float temp_c;
 
     if (bitbuffer->num_rows != 2)
@@ -56,7 +56,7 @@ static int auriol_hg02832_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // They tried to implement CRC-8 poly 0x31, but (accidentally?) reset the key every new byte.
     // (equivalent key stream is 7a 3d 86 43 b9 c4 62 31 repeated 4 times.)
-    uint8_t d0 = b[0] ^ b[1] ^ b[2] ^ b[3];
+    uint8_t d0  = b[0] ^ b[1] ^ b[2] ^ b[3];
     uint8_t chk = crc8(&d0, 1, 0x31, 0x53) ^ b[4];
 
     if (chk)
@@ -69,8 +69,8 @@ static int auriol_hg02832_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     button   = (b[2] & 0x40) >> 6;
     channel  = (b[2] & 0x30) >> 4;
 
-    temp_raw = ((b[2] & 0x0f) << 12) | (b[3] << 4); // use sign extend
-    temp_c = (temp_raw >> 4) * 0.1f;
+    temp_raw = (int16_t)(((b[2] & 0x0f) << 12) | (b[3] << 4)); // uses sign extend
+    temp_c   = (temp_raw >> 4) * 0.1f;
 
     /* clang-format off */
     data = data_make(
@@ -89,7 +89,7 @@ static int auriol_hg02832_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -101,7 +101,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device auriol_hg02832 = {
+r_device const auriol_hg02832 = {
         .name        = "Auriol HG02832, HG05124A-DCF, Rubicson 48957 temperature/humidity sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 252,
@@ -110,6 +110,5 @@ r_device auriol_hg02832 = {
         .gap_limit   = 750,
         .reset_limit = 62990, // 61ms packet gap
         .decode_fn   = &auriol_hg02832_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -69,20 +69,16 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // No need to decode/extract values for simple test
     if (!msg[0] && !msg[1] && !msg[2] && !msg[3] && !msg[4]) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00");
         return DECODE_FAIL_SANITY;
     }
 
     lrc = xor_bytes(msg, 5);
     if (((lrc >> 4) ^ (lrc & 0xf)) != 0)
-       return DECODE_FAIL_MIC;
+        return DECODE_FAIL_MIC;
 
     // debug
-    if (decoder->verbose > 1) {
-        fprintf(stderr, "%s: data byte is %02x\n", __func__, msg[3]);
-    }
+    decoder_logf(decoder, 2, __func__, "data byte is %02x", msg[3]);
 
     // format device id
     sprintf(id, "%02x%02x%02x", msg[0], msg[1], msg[2]);
@@ -90,17 +86,17 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // populate data byte fields
     /* clang-format off */
     data = data_make(
-            "model",      "Model"      , DATA_STRING, "Visonic-Powercode",
-            "id",         "ID"         , DATA_STRING, id,
-            "tamper",     "Tamper"     , DATA_INT,    ((0x80 & msg[3]) == 0x80) ? 1 : 0,
-            "alarm",      "Alarm"      , DATA_INT,    ((0x40 & msg[3]) == 0x40) ? 1 : 0,
-            "battery_ok", "Battery OK" , DATA_INT,    ((0x20 & msg[3]) == 0x20) ? 0 : 1,
-            "else",       "Else"       , DATA_INT,    ((0x10 & msg[3]) == 0x10) ? 1 : 0,
-            "restore",    "Restore"    , DATA_INT,    ((0x08 & msg[3]) == 0x08) ? 1 : 0,
-            "supervised", "Supervised" , DATA_INT,    ((0x04 & msg[3]) == 0x04) ? 1 : 0,
-            "spidernet",  "Spidernet"  , DATA_INT,    ((0x02 & msg[3]) == 0x02) ? 1 : 0,
-            "repeater",   "Repeater"   , DATA_INT,    ((0x01 & msg[3]) == 0x01) ? 1 : 0,
-            "mic",        "Integrity"  , DATA_STRING, "LRC",
+            "model",        "Model",        DATA_STRING, "Visonic-Powercode",
+            "id",           "ID",           DATA_STRING, id,
+            "tamper",       "Tamper",       DATA_INT,    ((0x80 & msg[3]) == 0x80) ? 1 : 0,
+            "alarm",        "Alarm",        DATA_INT,    ((0x40 & msg[3]) == 0x40) ? 1 : 0,
+            "battery_ok",   "Battery",      DATA_INT,    ((0x20 & msg[3]) == 0x20) ? 0 : 1,
+            "else",         "Else",         DATA_INT,    ((0x10 & msg[3]) == 0x10) ? 1 : 0,
+            "restore",      "Restore",      DATA_INT,    ((0x08 & msg[3]) == 0x08) ? 1 : 0,
+            "supervised",   "Supervised",   DATA_INT,    ((0x04 & msg[3]) == 0x04) ? 1 : 0,
+            "spidernet",    "Spidernet",    DATA_INT,    ((0x02 & msg[3]) == 0x02) ? 1 : 0,
+            "repeater",     "Repeater",     DATA_INT,    ((0x01 & msg[3]) == 0x01) ? 1 : 0,
+            "mic",          "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
@@ -109,7 +105,7 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "tamper",
@@ -124,7 +120,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device visonic_powercode = {
+r_device const visonic_powercode = {
         .name        = "Visonic powercode",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 400,
@@ -132,6 +128,5 @@ r_device visonic_powercode = {
         .gap_limit   = 900,
         .reset_limit = 5000,
         .decode_fn   = &visonic_powercode_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

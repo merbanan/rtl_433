@@ -3,9 +3,9 @@
 
     Copyright (C) 2019 Christian W. Zuckschwerdt <zany@triq.net>
 
-    This program is free software: you can redistribute it and/or modify
+    This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 2 of the License, or
+    the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
  */
 /**
@@ -21,7 +21,7 @@ WS2032 weather station.
 
 Data format:
 
-    1x PRE:8h ID:16h ?8h DIR:4h TEMP:12d HUM:8d AVG?8d GUST?8d 24h SUM8h CHK8h TRAIL:3b
+    1x PRE:8h ID:16h FLAGS:8h DIR:4h TEMP:12d HUM:8d AVG:8d GUST:8d RAIN:24h SUM:8h CHK:8h TRAIL:3b
 
 OOK with PWM. Long = 1000 us, short = 532 us, gap = 484 us.
 The overlong and very short pulses are sync, see the Pulseview.
@@ -69,30 +69,30 @@ static int fineoffset_ws2032_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // get weather sensor data
     // 1x PRE:8h ID:16h ?8h DIR:4h TEMP:12d HUM:8d AVG?8d GUST?8d 24h SUM8h CHK8h TRAIL:3b
     int device_id     = (b[1] << 8) | (b[2]);
-    int flags         = (b[3]);
-    //int battery_low   = b[3] & 0x80;
+    int flags         = (b[3] & 0xfe);
+    int battery_low   = (b[3] & 0x01);
     float dir         = (b[4] >> 4) * 22.5f;
     int temp_sign     = (b[4] & 0x08) ? -1 : 1;
     int temp_raw      = ((b[4] & 0x07) << 8) | b[5];
     float temperature = temp_sign * temp_raw * 0.1f;
-    int humidity      = b[6];
+    int humidity      = (b[6]);
     float speed       = (b[7] * 0.43f) * 3.6f; // m/s -> km/h
     float gust        = (b[8] * 0.43f) * 3.6f; // m/s -> km/h
-    int rain_raw      = (b[9] << 16) | (b[10] << 8) | b[11]; // maybe?
+    int rain_raw      = (b[9] << 16) | (b[10] << 8) | b[11]; // raw tip count
 
     /* clang-format off */
     data = data_make(
             "model",            "",                 DATA_STRING, "WS2032",
-            "id",               "StationID",        DATA_FORMAT, "%04X",    DATA_INT,    device_id,
-            //"battery_ok",       "Battery",          DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
+            "id",               "Station ID",        DATA_FORMAT, "%04X",    DATA_INT,    device_id,
+            "battery_ok",       "Battery",                                  DATA_INT,    !battery_low,
+            "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temperature,
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
-            _X("wind_dir_deg","direction_deg"),     "Wind Direction",    DATA_FORMAT, "%.01f",   DATA_DOUBLE, dir,
-            "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.01f",   DATA_DOUBLE, speed,
-            "wind_max_km_h",    "Wind gust",        DATA_FORMAT, "%.01f",   DATA_DOUBLE, gust,
-            "maybe_flags",      "Flags?",           DATA_FORMAT, "%02x",    DATA_INT,    flags,
-            "maybe_rain",       "Rain?",            DATA_FORMAT, "%06x",    DATA_INT,    rain_raw,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
+            "wind_dir_deg",     "Wind Direction",   DATA_FORMAT, "%.1f",    DATA_DOUBLE, dir,
+            "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.1f",    DATA_DOUBLE, speed,
+            "wind_max_km_h",    "Wind gust",        DATA_FORMAT, "%.1f",    DATA_DOUBLE, gust,
+            "rain",             "Rain tips",                                DATA_INT,    rain_raw,
+            "flags",            "Flags",            DATA_FORMAT, "%02x",    DATA_INT,    flags,
+            "mic",              "Integrity",                                DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -100,20 +100,22 @@ static int fineoffset_ws2032_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "humidity",
-        "direction_deg", // TODO: remove this
         "wind_dir_deg",
         "wind_avg_km_h",
         "wind_max_km_h",
+        "rain",
+        "flags",
+        "mic",
         NULL,
 };
 
-r_device ws2032 = {
+r_device const ws2032 = {
         .name        = "WS2032 weather station",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 500,
@@ -121,6 +123,5 @@ r_device ws2032 = {
         .gap_limit   = 750,
         .reset_limit = 4000,
         .decode_fn   = &fineoffset_ws2032_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

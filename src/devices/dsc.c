@@ -31,6 +31,7 @@ General Packet Description
 - The last byte is a CRC with nothing after it, no stop/sync bit, so
   if there was a CRC byte of 0, the packet would wind up being short
   by 4 mS and up to 8 bits (48 bits total).
+- Note the WS4945 doubles the length of those timings.
 
 There are 48 bits in the packet including the leading 4 sync 1 bits.
 This makes the packet 48 x 500 uS bits long plus the 2.5 mS preamble
@@ -91,9 +92,13 @@ Notes:
 - The two-way devices wireless keypad and use an entirely different
   modulation. They are supposed to be encrypted. A sampling rate
   greater than 250 khz (1 mhz?) looks to be necessary.
+- Tested on EV-DW4927 door/glass break sensor, WS4975 door sensor,
+  WS4945 door sensor and WS4904P motion sensors.
+- The EV-DW4927 combined door / glass break sensor sends out two
+  separate signals. Glass break uses the original ESN as written on
+  the case and door sensor uses ESN with last digit +1.
 
 */
-
 
 #include "decoder.h"
 
@@ -106,22 +111,19 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int valid_cnt = 0;
     uint8_t bytes[5];
     uint8_t status, crc;
-    int subtype;
+    //int subtype;
     uint32_t esn;
     char status_str[3];
     char esn_str[7];
     int s_closed, s_event, s_tamper, s_battery_low;
     int s_xactivity, s_xtamper1, s_xtamper2, s_exception;
 
-    if (decoder->verbose > 1) {
-        fprintf(stderr,"Possible DSC Contact: ");
-        bitbuffer_print(bitbuffer);
-    }
+    int result = 0;
 
     for (int row = 0; row < bitbuffer->num_rows; row++) {
-        if (decoder->verbose > 1 && bitbuffer->bits_per_row[row] > 0 ) {
-            fprintf(stderr,"row %d bit count %d\n", row,
-                bitbuffer->bits_per_row[row]);
+        if (bitbuffer->bits_per_row[row] > 0) {
+            decoder_logf(decoder, 2, __func__, "row %d bit count %d",
+                    row, bitbuffer->bits_per_row[row]);
         }
 
         // Number of bits in the packet should be 48 but due to the
@@ -133,10 +135,11 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // will need to be changed as there may be more zero bit padding
         if (bitbuffer->bits_per_row[row] < 48 ||
             bitbuffer->bits_per_row[row] > 70) {  // should be 48 at most
-            if (decoder->verbose > 1 && bitbuffer->bits_per_row[row] > 0) {
-                fprintf(stderr,"DSC row %d invalid bit count %d\n",
+            if (bitbuffer->bits_per_row[row] > 0) {
+                decoder_logf(decoder, 2, __func__, "row %d invalid bit count %d",
                         row, bitbuffer->bits_per_row[row]);
             }
+            result = DECODE_ABORT_EARLY;
             continue; // DECODE_ABORT_EARLY
         }
 
@@ -147,9 +150,8 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
               (b[2] & 0x04) &&    // every 8 data bits
               (b[3] & 0x02) &&
               (b[4] & 0x01))) {
-            if (decoder->verbose > 1) {
-                bitrow_printf(b, 40, "DSC Invalid start/sync bits ");
-            }
+            decoder_log_bitrow(decoder, 2, __func__, b, 40, "Invalid start/sync bits ");
+            result = DECODE_ABORT_EARLY;
             continue; // DECODE_ABORT_EARLY
         }
 
@@ -159,19 +161,23 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         bytes[3] = ((b[3] & 0x01) << 7) | ((b[4] & 0xFE) >> 1);
         bytes[4] = ((b[5]));
 
-        if (decoder->verbose) {
-            bitrow_printf(bytes, 40, "DSC Contact Raw Data: ");
+        // prevent false positive of: ff ff ff ff 00
+        if (bytes[0] == 0xff && bytes[1] == 0xff && bytes[2] == 0xff && bytes[3] == 0xff) {
+            result = DECODE_FAIL_SANITY;
+            continue; // DECODE_FAIL_SANITY
         }
 
+        decoder_log_bitrow(decoder, 1, __func__, bytes, 40, "Contact Raw Data");
+
         status = bytes[0];
-        subtype = bytes[1] >> 4;  // @todo needed for detecing keyfob
+        //subtype = bytes[1] >> 4;  // @todo needed for detecting keyfob
         esn = (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
         crc = bytes[4];
 
         if (crc8le(bytes, DSC_CT_MSGLEN, 0xf5, 0x3d) != 0) {
-            if (decoder->verbose)
-                fprintf(stderr,"DSC Contact bad CRC: %06X, Status: %02X, CRC: %02X\n",
+            decoder_logf(decoder, 1, __func__, "Contact bad CRC: %06X, Status: %02X, CRC: %02X",
                         esn, status, crc);
+            result = DECODE_FAIL_MIC;
             continue; // DECODE_FAIL_MIC
         }
 
@@ -205,15 +211,14 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         sprintf(status_str, "%02x", status);
         sprintf(esn_str, "%06x", esn);
 
-
         /* clang-format off */
         data = data_make(
-                "model",        "",             DATA_STRING, _X("DSC-Security","DSC Contact"),
+                "model",        "",             DATA_STRING, "DSC-Security",
                 "id",           "",             DATA_INT,    esn,
                 "closed",       "",             DATA_INT,    s_closed, // @todo make bool
                 "event",        "",             DATA_INT,    s_event, // @todo make bool
                 "tamper",       "",             DATA_INT,    s_tamper, // @todo make bool
-                _X("battery_ok","battery_low"), "", DATA_INT, _X(!s_battery_low,s_battery_low),
+                "battery_ok",   "Battery",      DATA_INT,    !s_battery_low,
                 "xactivity",    "",             DATA_INT,    s_xactivity, // @todo make bool
 
                 // Note: the following may change or be removed
@@ -235,10 +240,11 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
     }
 
-    return 0;
+    // Only returns the latest result, but better than nothing.
+    return result;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "closed",
@@ -256,24 +262,23 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device dsc_security = {
+r_device const dsc_security = {
         .name        = "DSC Security Contact",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_RZ,
         .short_width = 250,  // Pulse length, 250 µs
         .long_width  = 500,  // Bit period, 500 µs
         .reset_limit = 5000, // Max gap,
         .decode_fn   = &dsc_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };
 
-r_device dsc_security_ws4945 = {
+r_device const dsc_security_ws4945 = {
+        // Used for EV-DW4927, WS4975 and WS4945.
         .name        = "DSC Security Contact (WS4945)",
-        .modulation  = OOK_PULSE_PCM_RZ,
+        .modulation  = OOK_PULSE_RZ,
         .short_width = 536,  // Pulse length, 536 µs
         .long_width  = 1072, // Bit period, 1072 µs
-        .reset_limit = 6000, // Max gap,
+        .reset_limit = 9000, // Max gap, based on 8 zero bits between sync bit
         .decode_fn   = &dsc_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

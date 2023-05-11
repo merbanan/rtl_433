@@ -42,10 +42,8 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
 
         // No need to decode/extract values for simple test
         // check id channel temperature humidity value not zero
-        if ( !msg[0] && !msg[1] && !msg[2] && !msg[3] ) {
-            if (decoder->verbose > 1) {
-                fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
-            }
+        if (!msg[0] && !msg[1] && !msg[2] && !msg[3]) {
+            decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00");
             continue; // DECODE_FAIL_SANITY
         }
 
@@ -63,8 +61,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
 
         sum = add_nibbles(b, 5) & 0xf;
         if (sum != chk) {
-            if (decoder->verbose > 1)
-                bitbuffer_printf(bitbuffer, "Checksum error in Oregon Scientific SL109H message.  Expected: %01x  Calculated: %01x\n", chk, sum);
+            decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "Checksum error. Expected: %01x Calculated: %01x", chk, sum);
             continue; // DECODE_FAIL_MIC
         }
 
@@ -74,7 +71,13 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
         humidity = 10 * (b[0] & 0x0f) + (b[1] >> 4);
 
         temp_raw = (int16_t)((b[1] & 0x0f) << 12) | (b[2] << 4); // uses sign-extend
-        temp_c = (temp_raw >> 4) * 0.1f;
+        temp_c   = (temp_raw >> 4) * 0.1f;
+
+        // reduce false positives by checking specified sensor range, this isn't great...
+        if (temp_c < -20 || temp_c > 60) {
+            decoder_logf(decoder, 2, __func__, "temperature sanity check failed: %.1f C", temp_c);
+            return DECODE_FAIL_SANITY;
+        }
 
         // there may be more specific information here; not currently certain what information is encoded here
         status = (b[3] >> 4);
@@ -84,10 +87,10 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
 
         /* clang-format off */
         data = data_make(
-                "model",            "Model",                                DATA_STRING, _X("Oregon-SL109H","Oregon Scientific SL109H"),
+                "model",            "Model",                                DATA_STRING, "Oregon-SL109H",
                 "id",               "Id",                                   DATA_INT,    id,
                 "channel",          "Channel",                              DATA_INT,    channel,
-                "temperature_C",    "Celsius",      DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                "temperature_C",    "Celsius",      DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temp_c,
                 "humidity",         "Humidity",     DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
                 "status",           "Status",                               DATA_INT,    status,
                 "mic",              "Integrity",                            DATA_STRING, "CHECKSUM",
@@ -101,7 +104,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
     return 0;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -112,7 +115,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device oregon_scientific_sl109h = {
+r_device const oregon_scientific_sl109h = {
         .name        = "Oregon Scientific SL109H Remote Thermal Hygro Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,
@@ -120,6 +123,5 @@ r_device oregon_scientific_sl109h = {
         .gap_limit   = 5000,
         .reset_limit = 10000, // packet gap is 8900
         .decode_fn   = &oregon_scientific_sl109h_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

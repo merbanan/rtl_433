@@ -1,14 +1,16 @@
 # Basic rtl_433 operation
 
-A startup rtl_433 will read config files and parse command line arguments, then it will loop through these steps:
+The principle buildings blocks of rtl_433 are: Inputs, Loaders, Processing, Analysis, Decoders, Dumpers, Outputs.
 
-- Inputs
-- Loaders
-- Processing
-- Analysis
-- Decoders
-- Dumper
-- Outputs
+At startup rtl_433 will read config files and parse command line arguments, then it will loop through these steps:
+
+- Inputs: rtl_tcp, RTL-SDR, SoapySDR
+- Loaders: Raw data files (cu8, cs16, ...)
+- Processing: OOK and FSK demod, pulse detector, slicers, coding
+- Analysis: Show statistics on pulses
+- Decoders: Over 200 protocols
+- Dumpers: Raw data files (cu8, cs16, ..., sr, ...)
+- Outputs: Screen (kv), JSON, CSV, MQTT, Influx, UDP (syslog), HTTP
 
 rtl_433 will either acquire a live signal from an input or read a sample file with a loader.
 Then process that signal, analyse it's properties (if enabled) and write the signal with dumpers (if enabled).
@@ -151,26 +153,22 @@ Note that the suffix is metric, the 1024000 Hz sample rate common with RTL-SDR h
 
 ## Decoders
 
-Decoders can be selected with the `-R`, `-G`, and `-X` option:
+Decoders can be selected with the `-R` and `-X` option:
 
 ```
   [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)
        Specify a negative number to disable a device decoding protocol (can be used multiple times)
-  [-G] Enable blacklisted device decoding protocols, for testing only.
   [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)
 ```
 
-By default all non-blacklisted decoders are enabled.
+By default all decoders with proper validity checking are enabled.
 
 You can disable selected decoders with any number of `-R -<number>` options.
 E.g. use `rtl_433 -R -8 -19` to disable the LaCrosse and Nexus decoders.
 
 Some decoders have little validity checking and may share very common signal characteristics.
 This will result in lots of false-positive decodes.
-These decoders are black-listed and you need to explicitly enable them with `-R <number>`.
-
-You can also use `-G` to enable all the blacklisted decoders.
-This is for testing only and strongly discouraged for continuous operation.
+These decoders are not enabled by default and you need to explicitly enable them with `-R <number>`.
 
 You can enable only selected decoders with any number of `-R <number>` options.
 Note that this will override the default and not select any decoder by default.
@@ -258,6 +256,18 @@ E.g. `-X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repe
 - the data needs to contain the `match` of 24 bits `0xa9878c`
 - the data needs to `repeat` at least 3 times
 
+To extract some bits:
+
+Example: `get=battery:@4:{1}:[0:Ok 1:Empty]`
+Using colon separated keys:
+- name (`battery`)
+- at which bit to start (`@4`)
+- how many bits to read (`{1}`)
+- optional mapping (map `0` to `Full`, map `1` to `Empty`)
+- or an optional format specifier (`%x`)
+
+A key starting with `%` is a format specifier for the KV output, in practice it will be something like `%x`, `%X`, `%04x`.
+
 See the [`conf`](https://github.com/merbanan/rtl_433/tree/master/conf) folder for some examples of flex specs.
 
 ## Analysis
@@ -277,7 +287,7 @@ The output might not be too useful, best to use the newer `-A` option.
 
 The `-A` option enables the (new) pulse analyzer.
 Each received transmission will be displayed in a statistical overview.
-A probable coding will be infered and attempted to decode.
+A probable coding will be inferred and attempted to decode.
 
 The "Pulse width distribution", "Gap width distribution", and "Pulse period distribution"
 can tell you about the timing in the `width` column,
@@ -348,7 +358,7 @@ If you are developing or testing a decoder you can skip the device input or samp
 
 ### File names
 
-Samples recorded using the `-S` option will automaticly be given filenames with some meta-data.
+Samples recorded using the `-S` option will automatically be given filenames with some meta-data.
 The signals will be stored individually in files named `g<NNN>_<FFF>M_<RRR>k.cu8` :
 
 | Parameter | Description
@@ -497,7 +507,7 @@ Without any `-F` option the default is KV output. Use `-F null` to remove that d
 ### Meta information
 
 ```
-  [-M time[:<options>]|protocol|level|stats|bits|oldmodel]
+  [-M time[:<options>]|protocol|level|noise[:<secs>]|stats|bits]
     Add various metadata to every output line.
 ```
 - Use `time` to add current date and time meta data (preset for live inputs).
@@ -506,11 +516,14 @@ Without any `-F` option the default is KV output. Use `-F null` to remove that d
 - Use `time:iso` to show the time with ISO-8601 format (`YYYY-MM-DD"T"hh:mm:ss`).
 - Use `time:off` to remove time meta data.
 - Use `time:usec` to add microseconds to date time meta data.
+- Use `time:tz` to output time with timezone offset.
 - Use `time:utc` to output time in UTC.
   (this may also be accomplished by invocation with TZ environment variable set).
   `usec` and `utc` can be combined with other options, eg. `time:unix:utc:usec`.
+- Use `replay[:N]` to replay file inputs at (N-times) realtime.
 - Use `protocol` / `noprotocol` to output the decoder protocol number meta data.
 - Use `level` to add Modulation, Frequency, RSSI, SNR, and Noise meta data.
+- Use `noise[:secs]` to report estimated noise level at intervals (default: 10 seconds).
 - Use `stats[:[<level>][:<interval>]]` to report statistics (default: 600 seconds).
   level 0: no report, 1: report successful devices, 2: report active devices, 3: report all
 - Use `bits` to add bit representation to code outputs (for debug).

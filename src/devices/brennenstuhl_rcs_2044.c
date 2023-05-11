@@ -4,11 +4,12 @@
     Copyright (C) 2015 Paul Ortyl
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 3 as
-    published by the Free Software Foundation.
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 */
 
-/*
+/**
 Brennenstuhl RCS 2044 remote control on 433.92MHz likely x1527.
 
 Receiver for the "RCS 2044 N Comfort Wireless Controller Set" sold under
@@ -27,11 +28,11 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bit
     data_t *data;
 
     /* Test bit pattern for every second bit being 1 */
-    if ( 25 != length
-        || (b[0]&0xaa) != 0xaa
-        || (b[1]&0xaa) != 0xaa
-        || (b[2]&0xaa) != 0xaa
-        || (b[3]       != 0x80) )
+    if (25 != length
+            || (b[0]&0xaa) != 0xaa
+            || (b[1]&0xaa) != 0xaa
+            || (b[2]&0xaa) != 0xaa
+            || (b[3] != 0x80))
         return 0; /* something is wrong, exit now */
 
     /* Only odd bits contain information, even bits are set to 1
@@ -46,7 +47,7 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bit
 
     /* extract bits for system code */
     int system_code =
-              (b[0] & 0x40) >> 2
+            (b[0] & 0x40) >> 2
             | (b[0] & 0x10) >> 1
             | (b[0] & 0x04)
             | (b[0] & 0x01) << 1
@@ -54,7 +55,7 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bit
 
     /* extract bits for pressed key row */
     int control_key =
-              (b[1] & 0x10)
+            (b[1] & 0x10)
             | (b[1] & 0x04) << 1
             | (b[1] & 0x01) << 2
             | (b[2] & 0x40) >> 5
@@ -66,7 +67,7 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bit
      * so we can use it for validation of the message:
      * ONLY ONE KEY AT A TIME IS ACCEPTED.
      */
-    char *key = NULL;
+    char const *key = NULL;
     if (control_key == 0x10)
         key = "A";
     else if (control_key == 0x08)
@@ -77,7 +78,8 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bit
         key = "D";
     else if (control_key == 0x01)
         key = "E"; /* (does not exist on the remote, but can be set and is accepted by receiver) */
-    else return 0;
+    else
+        return 0;
     /* None of the keys has been pressed and we still received a message.
      * Skip it. It happens sometimes as the last code repetition
      */
@@ -88,12 +90,15 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bit
     if (on_off != 0x02 && on_off != 0x01)
         return 0; /* Pressing simultaneously ON and OFF key is not useful either */
 
+    /* clang-format off */
     data = data_make(
-            "model",    "Model",    DATA_STRING, _X("Brennenstuhl-RCS2044","Brennenstuhl RCS 2044"),
+            "model",    "Model",    DATA_STRING, "Brennenstuhl-RCS2044",
             "id",       "id",       DATA_INT, system_code,
             "key",      "key",      DATA_STRING, key,
             "state",    "state",    DATA_STRING, (on_off == 0x02 ? "ON" : "OFF"),
             NULL);
+    /* clang-format on */
+
     decoder_output_data(decoder, data);
     return 1;
 }
@@ -102,27 +107,28 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bit
 static int brennenstuhl_rcs_2044_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int counter = 0;
-    for (int row = 0; row < bitbuffer->num_rows; row++)
+    for (int row = 0; row < bitbuffer->num_rows; row++) {
         counter += brennenstuhl_rcs_2044_process_row(decoder, bitbuffer, row);
+    }
     return counter;
 }
 
-static char *output_fields[] = {
-    "model",
-    "id",
-    "key",
-    "state",
-    NULL,
+static char const *const output_fields[] = {
+        "model",
+        "id",
+        "key",
+        "state",
+        NULL,
 };
 
-r_device brennenstuhl_rcs_2044 = {
-    .name          = "Brennenstuhl RCS 2044",
-    .modulation    = OOK_PULSE_PWM,
-    .short_width   = 320,
-    .long_width    = 968,
-    .gap_limit     = 1500,
-    .reset_limit   = 4000,
-    .decode_fn     = &brennenstuhl_rcs_2044_callback,
-    .disabled      = 1,
-    .fields        = output_fields,
+r_device const brennenstuhl_rcs_2044 = {
+        .name        = "Brennenstuhl RCS 2044",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 320,
+        .long_width  = 968,
+        .gap_limit   = 1500,
+        .reset_limit = 4000,
+        .decode_fn   = &brennenstuhl_rcs_2044_callback,
+        .disabled    = 1,
+        .fields      = output_fields,
 };

@@ -12,74 +12,77 @@
 /**
 WT0124 Pool Thermometer decoder.
 
-    5e       ba       9a       9f       e1       34
-    01011110 10111010 10011010 10011111 11100001 00110100
-    5555RRRR RRRRTTTT TTTTTTTT UUCCFFFF XXXXXXXX ????????
+    5e       ba       9a       9f       e1       34       1
+    01011110 10111010 10011010 10011111 11100001 00110100 1
+    5555RRRR RRRRTTTT TTTTTTTT UUCCFFFF XXXXXXXX SSSSSSSS 1
 
 - 5 = constant 5
 - R = random power on id
-- T = 12 bits of temperature with 0x900 bias and scaled by 10
+- T = 12 bits of temperature with 0x990 bias and scaled by 10
 - U = unk, maybe battery indicator (display is missing one though)
 - C = channel
 - F = constant F
 - X = xor checksum
-- ? = unknown
-
+- S = sum checksum
+- 1 = constant 1
 */
 
 #include "decoder.h"
-
 
 static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t *b; // bits of a row
+    uint16_t sum;
     uint16_t sensor_rid;
-    int16_t value;
     float temp_c;
     uint8_t channel;
 
-    if (bitbuffer->bits_per_row[1] !=49)
+    if (bitbuffer->bits_per_row[1] != 49)
         return DECODE_ABORT_LENGTH;
-
 
     /* select row after preamble */
     b = bitbuffer->bb[1];
 
     /* Validate constant */
-    if (b[0]>>4 != 0x5) {
+    if (b[0] >> 4 != 0x5) {
         return DECODE_ABORT_EARLY;
     }
 
-    /* Validate checksum */
-    if ((b[0]^b[1]^b[2]^b[3]) != b[4])
+    /* Validate xor checksum */
+    if (xor_bytes(b, 4) != b[4])
+        return DECODE_FAIL_MIC;
+
+    /* Validate sum checksum */
+    sum = add_bytes(b, 4);
+    /* Carry bits are added to the sum .. */
+    sum += sum >> 8;
+    /* .. but no carry bit is added to the sum from the last addition */
+    sum += b[4];
+    sum &= 0xFF;
+    if (sum != b[5])
         return DECODE_FAIL_MIC;
 
     /* Get rid */
-    sensor_rid = (b[0]&0x0F)<<4 | (b[1]&0x0F);
+    sensor_rid = (b[0] & 0x0F) << 4 | (b[1] & 0x0F);
 
     /* Get temperature */
     temp_c = ((((b[1] & 0xF) << 8) | b[2]) - 0x990) * 0.1f;
 
     /* Get channel */
-    channel = ((b[3]>>4) & 0x3);
+    channel = (b[3] >> 4) & 0x3;
 
-    /* unk */
-    value = b[5];
+    decoder_log_bitbuffer(decoder, 1, __func__, bitbuffer, "");
 
-    if (decoder->verbose) {
-        fprintf(stderr, "wt1024_callback:");
-        bitbuffer_print(bitbuffer);
-    }
-
+    /* clang-format off */
     data = data_make(
-            "model", "", DATA_STRING, _X("WT0124-Pool","WT0124 Pool Thermometer"),
-            _X("id","rid"),    "Random ID", DATA_INT,    sensor_rid,
-            "channel",       "Channel",     DATA_INT,    channel,
-            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "mic",      "Integrity",      DATA_STRING, "CHECKSUM",
-            "data",  "Data", DATA_INT,    value,
+            "model",            "",             DATA_STRING, "WT0124-Pool",
+            "id",               "Random ID",    DATA_INT,    sensor_rid,
+            "channel",          "Channel",      DATA_INT,    channel,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
 
@@ -94,18 +97,16 @@ static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
  * order for this device when using -F csv.
  *
  */
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
-        "rid", // TODO: delete this
         "id",
         "channel",
         "temperature_C",
         "mic",
-        "data",
         NULL,
 };
 
-r_device wt1024 = {
+r_device const wt1024 = {
         .name        = "WT0124 Pool Thermometer",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 680,
@@ -114,6 +115,5 @@ r_device wt1024 = {
         .gap_limit   = 4000,
         .sync_width  = 10000,
         .decode_fn   = &wt1024_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

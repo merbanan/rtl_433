@@ -47,7 +47,8 @@ Payload looks like this:
 
 #include "decoder.h"
 
-static int infactory_crc_check(uint8_t *b) {
+static int infactory_crc_check(uint8_t *b)
+{
     uint8_t msg_crc, crc, msg[5];
     memcpy(msg, b, 5);
     msg_crc = msg[1] >> 4;
@@ -61,39 +62,32 @@ static int infactory_crc_check(uint8_t *b) {
 
 static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    bitrow_t *bb;
-    data_t *data;
-    uint8_t *b;
-    int id, battery_low, temp_raw, humidity, channel;
-    float temp_f;
-
     if (bitbuffer->bits_per_row[0] != 40)
         return DECODE_ABORT_LENGTH;
 
-    bb = bitbuffer->bb;
-    b = bb[0];
+    uint8_t *b = bitbuffer->bb[0];
 
     /* Check that the last 4 bits of message are not 0 (channel number 1 - 3) */
-    if (!(b[4]&0x0F))
+    if (!(b[4] & 0x0F))
         return DECODE_ABORT_EARLY;
 
     if (!infactory_crc_check(b))
         return DECODE_FAIL_MIC;
 
-    id          = b[0];
-    battery_low = (b[1] >> 2) & 1;
-    temp_raw    = (b[2] << 4) | (b[3] >> 4);
-    humidity    = (b[3] & 0x0F) * 10 + (b[4] >> 4); // BCD, 'A0'=100%rH
-    channel     = b[4] & 0x03;
+    int id          = b[0];
+    int battery_low = (b[1] >> 2) & 1;
+    int temp_raw    = (b[2] << 4) | (b[3] >> 4);
+    int humidity    = (b[3] & 0x0F) * 10 + (b[4] >> 4); // BCD, 'A0'=100%rH
+    int channel     = b[4] & 0x03;
 
-    temp_f      = (float)temp_raw * 0.1 - 90;
+    float temp_f    = (temp_raw - 900) * 0.1f;
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, _X("inFactory-TH","inFactory sensor"),
-            "id",               "ID",           DATA_INT, id,
-            "channel",          "Channel",      DATA_INT, channel,
-            "battery_ok",       "Battery OK",   DATA_INT, !battery_low,
+    data_t *data = data_make(
+            "model",            "",             DATA_STRING, "inFactory-TH",
+            "id",               "ID",           DATA_INT,    id,
+            "channel",          "Channel",      DATA_INT,    channel,
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",              "Integrity",    DATA_STRING, "CRC",
@@ -104,7 +98,7 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -133,18 +127,17 @@ Breakdown:
 - syncPost after dataPtr has a '0' pulse length of ca. 16000us
 
 This analysis is the reason for the new r_device definitions below.
-NB: pulse_demod_ppm does not use .gap_limit if .tolerance is set.
+NB: pulse_slicer_ppm does not use .gap_limit if .tolerance is set.
 */
 
-r_device infactory = {
+r_device const infactory = {
         .name        = "inFactory, nor-tec, FreeTec NC-3982-913 temperature humidity sensor",
         .modulation  = OOK_PULSE_PPM,
-        .sync_width  = 500,   // Sync pulse width (recognized, but not used)
-        .short_width = 2000,  // Width of a '0' gap
-        .long_width  = 4000,  // Width of a '1' gap
-        .reset_limit = 5000,  // Maximum gap size before End Of Message [us]
-        .tolerance   = 750,   // Width interval 0=[1250..2750] 1=[3250..4750], should be quite robust
+        .sync_width  = 500,  // Sync pulse width (recognized, but not used)
+        .short_width = 2000, // Width of a '0' gap
+        .long_width  = 4000, // Width of a '1' gap
+        .reset_limit = 5000, // Maximum gap size before End Of Message [us]
+        .tolerance   = 750,  // Width interval 0=[1250..2750] 1=[3250..4750], should be quite robust
         .decode_fn   = &infactory_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

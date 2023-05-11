@@ -1221,7 +1221,7 @@ void cs_md5_update(cs_md5_ctx *ctx, const unsigned char *buf, size_t len) {
   memcpy(ctx->in, buf, len);
 }
 
-void cs_md5_final(unsigned char digest[16], cs_md5_ctx *ctx) {
+void cs_md5_final(unsigned char *digest, cs_md5_ctx *ctx) {
   unsigned count;
   unsigned char *p;
   uint32_t *a;
@@ -2340,7 +2340,7 @@ size_t mg_match_prefix_n(const struct mg_str pattern, const struct mg_str str) {
         const struct mg_str pstr = {pattern.p + i, pattern.len - i};
         const struct mg_str sstr = {str.p + j + len, str.len - j - len};
         res = mg_match_prefix_n(pstr, sstr);
-      } while (res == 0 && len != 0 && len-- > 0);
+      } while (res == 0 && len != 0 && --len > 0);
       return res == 0 ? 0 : j + res + len;
     } else if (str_util_lowercase(&pattern.p[i]) !=
                str_util_lowercase(&str.p[j])) {
@@ -4965,7 +4965,7 @@ static enum mg_ssl_if_result mg_use_cert(SSL_CTX *ctx, const char *cert,
       DH_free(dh);
     }
 #if OPENSSL_VERSION_NUMBER > 0x10002000L
-    SSL_CTX_set_ecdh_auto(ctx, 1);
+    (void) SSL_CTX_set_ecdh_auto(ctx, 1);
 #endif
 #endif
   }
@@ -5042,8 +5042,7 @@ static enum mg_ssl_if_result mg_ssl_if_ossl_set_psk(struct mg_ssl_if_ctx *ctx,
                                                     const char *identity,
                                                     const char *key_str) {
   (void) ctx;
-  (void) identity;
-  (void) key_str;
+  if (identity == NULL && key_str == NULL) return MG_SSL_OK;
   /* Krypton / LibreSSL does not support PSK. */
   return MG_SSL_ERROR;
 }
@@ -6798,7 +6797,7 @@ static void mg_http_multipart_begin(struct mg_connection *nc,
 
   ct = mg_get_http_header(hm, "Content-Type");
   if (ct == NULL) {
-    /* We need more data - or it isn't multipart mesage */
+    /* We need more data - or it isn't multipart message */
     goto exit_mp;
   }
 
@@ -11039,7 +11038,7 @@ static struct mg_str mg_mqtt_next_topic_component(struct mg_str *topic) {
   return res;
 }
 
-/* Refernce: https://mosquitto.org/man/mqtt-7.html */
+/* Reference: https://mosquitto.org/man/mqtt-7.html */
 int mg_mqtt_match_topic_expression(struct mg_str exp, struct mg_str topic) {
   struct mg_str ec, tc;
   if (exp.len == 0) return 0;
@@ -16597,10 +16596,6 @@ const struct mg_iface_vtable mg_default_iface_vtable = MG_PIC32_IFACE_VTABLE;
  */
 
 #ifdef _WIN32
-
-int rmdir(const char *dirname) {
-  return _rmdir(dirname);
-}
 
 unsigned int sleep(unsigned int seconds) {
   Sleep(seconds * 1000);

@@ -21,7 +21,7 @@ also tested with:
 - Mini Pir P831
 
 Note: simple 24 bit fixed ID protocol (x1527 style) and should be handled by the flex decoder.
-There is a leading sync bit with a wide gap which runs into the preceeding packet, it's ignored as 25th data bit.
+There is a leading sync bit with a wide gap which runs into the preceding packet, it's ignored as 25th data bit.
 
 There are slight timing differences between the older sensors and new ones like Water leak sensor WD51 and Mini Pir P831.
 Long: 860-1016 us, short: 304-560 us, older sync: 480 us, newer sync: 340 us,
@@ -35,9 +35,7 @@ static int kerui_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b;
     int id;
     int cmd;
-    char *cmd_str;
-    char *field_name;
-    int field_value;
+    char const *cmd_str;
 
     int r = bitbuffer_find_repeated_row(bitbuffer, 9, 25); // expected are 25 packets, require 9
     if (r < 0)
@@ -48,10 +46,8 @@ static int kerui_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     b = bitbuffer->bb[r];
 
     // No need to decode/extract values for simple test
-    if ( !b[0] && !b[1] && !b[2] ) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
-        }
+    if (!b[0] && !b[1] && !b[2]) {
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00");
         return DECODE_FAIL_SANITY;
     }
 
@@ -60,34 +56,41 @@ static int kerui_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     b[1] = ~b[1];
     b[2] = ~b[2];
 
-    id = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
+    id  = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
     cmd = b[2] & 0x0F;
     switch (cmd) {
-        case 0xa: cmd_str = "motion";  field_name = "motion";     field_value = 1; break;
-        case 0xe: cmd_str = "open";    field_name = "opened";     field_value = 1; break;
-        case 0x7: cmd_str = "close";   field_name = "opened";     field_value = 0; break;
-        case 0xb: cmd_str = "tamper";  field_name = "tamper";     field_value = 1; break;
-        case 0x5: cmd_str = "water";   field_name = "water";     field_value = 1; break;
-        case 0xf: cmd_str = "battery"; field_name = "battery_ok"; field_value = 0; break;
-        default:  cmd_str = NULL; break;
+    case 0xa: cmd_str = "motion"; break;
+    case 0xe: cmd_str = "open"; break;
+    case 0x7: cmd_str = "close"; break;
+    case 0xb: cmd_str = "tamper"; break;
+    case 0x5: cmd_str = "water"; break;
+    case 0xf: cmd_str = "battery"; break;
+    default: cmd_str = NULL; break;
     }
 
     if (!cmd_str)
         return DECODE_ABORT_EARLY;
 
+    /* clang-format off */
     data = data_make(
-            "model",    "",               DATA_STRING, _X("Kerui-Security","Kerui Security"),
-            "id",       "ID (20bit)",     DATA_FORMAT, "0x%x", DATA_INT, id,
-            "cmd",      "Command (4bit)", DATA_FORMAT, "0x%x", DATA_INT, cmd,
-            field_name, "",               DATA_INT,    field_value,
-            "state",    "State",          DATA_STRING, cmd_str,
+            "model",        "",                 DATA_STRING, "Kerui-Security",
+            "id",           "ID (20bit)",       DATA_FORMAT, "0x%x", DATA_INT, id,
+            "cmd",          "Command (4bit)",   DATA_FORMAT, "0x%x", DATA_INT, cmd,
+            "motion",       "",                 DATA_COND, cmd == 0xa, DATA_INT, 1,
+            "opened",       "",                 DATA_COND, cmd == 0xe, DATA_INT, 1,
+            "opened",       "",                 DATA_COND, cmd == 0x7, DATA_INT, 0,
+            "tamper",       "",                 DATA_COND, cmd == 0xb, DATA_INT, 1,
+            "water",        "",                 DATA_COND, cmd == 0x5, DATA_INT, 1,
+            "battery_ok",   "Battery",          DATA_COND, cmd == 0xf, DATA_INT, 0,
+            "state",        "State",            DATA_STRING, cmd_str,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "cmd",
@@ -100,7 +103,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device kerui = {
+r_device const kerui = {
         .name        = "Kerui PIR / Contact Sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 420,

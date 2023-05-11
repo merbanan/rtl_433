@@ -175,7 +175,7 @@ static const char *dtv_button_label[] = {
     [0x100] = "unknown",
 };
 
-const char *get_dtv_button_label(uint8_t button_id)
+static const char *get_dtv_button_label(uint8_t button_id)
 {
     const char *label = dtv_button_label[button_id];
     if (!label) {
@@ -186,7 +186,7 @@ const char *get_dtv_button_label(uint8_t button_id)
 
 /// Set a single bit in a bitrow at bit_idx position.  Assume success, no bounds checking, so be careful!
 /// Maybe this can graduate to bitbuffer.c someday?
-void bitrow_set_bit(bitrow_t bitrow, unsigned bit_idx, unsigned bit_val)
+static void bitrow_set_bit(uint8_t *bitrow, unsigned bit_idx, unsigned bit_val)
 {
     if (bit_val == 0) {
         bitrow[bit_idx >> 3] &= ~(1 << (7 - (bit_idx & 7)));
@@ -222,8 +222,8 @@ void bitrow_set_bit(bitrow_t bitrow, unsigned bit_idx, unsigned bit_val)
 /// sync_pos.  If desired, call again with bit_len = sync_pos to find this data.
 ///
 /// Maybe this can graduate to bitbuffer.c someday?
-unsigned bitrow_dpwm_decode(bitrow_t const bitrow, unsigned bit_len, unsigned start,
-        bitrow_t bitrow_buf, unsigned *sync_pos, unsigned *sync_len)
+static unsigned bitrow_dpwm_decode(uint8_t const *bitrow, unsigned bit_len, unsigned start,
+        uint8_t *bitrow_buf, unsigned *sync_pos, unsigned *sync_len)
 {
     unsigned bitrow_pos;
     int bitrow_buf_pos          = -1;
@@ -276,9 +276,9 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     int r;                   // a row index
-    bitrow_t bitrow;         // space for a possibly modified bitbuffer row
+    uint8_t bitrow[13];      // space for a possibly modified bitbuffer row, up to 99 bits
     uint8_t bit_len;         // row length is variable, so need to keep track of this
-    bitrow_t dtv_buf= {0};   // A location for our decoded bitrow data
+    uint8_t dtv_buf[13] = {0}; // decoded bitrow data, 40 bits (5 bytes)
     unsigned dtv_bit_len;
     unsigned row_sync_pos;
     unsigned row_sync_len;
@@ -297,9 +297,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bit_len = bitbuffer->bits_per_row[r];
 
     if ((bit_len < ROW_BITLEN_MIN) || (bit_len > ROW_BITLEN_MAX)) {
-        if (decoder->verbose >= 2) {
-            fprintf(stderr, "directv: incorrect number of bits in bitbuffer: %d (expected between %d and %d).\n", bit_len, ROW_BITLEN_MIN, ROW_BITLEN_MAX);
-        }
+        decoder_logf(decoder, 2, __func__, "incorrect number of bits in bitbuffer: %d (expected between %d and %d).", bit_len, ROW_BITLEN_MIN, ROW_BITLEN_MAX);
         return DECODE_FAIL_SANITY;
     }
 
@@ -307,37 +305,29 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Decode the message symbols
     dtv_bit_len = bitrow_dpwm_decode(bitrow, bit_len, 0, dtv_buf, &row_sync_pos, &row_sync_len);
-    if (decoder->verbose >= 2) {
-        bitrow_printf(dtv_buf, dtv_bit_len, "directv: SYNC at pos:%u for %u symbols. DPWM Decoded Message: ", row_sync_pos, row_sync_len);
-    }
+    decoder_logf_bitrow(decoder, 2, __func__, dtv_buf, dtv_bit_len, "SYNC at pos:%u for %u symbols. DPWM Decoded Message", row_sync_pos, row_sync_len);
 
     // Make sure we have exactly 40 bits (DTV_BITLEN_MAX)
     if (dtv_bit_len != DTV_BITLEN_MAX) {
-        if (decoder->verbose >= 2) {
-            fprintf(stderr, "directv: Incorrect number of decoded bits: %u (should be %d).\n", dtv_bit_len, DTV_BITLEN_MAX);
-        }
+        decoder_logf(decoder, 2, __func__, "Incorrect number of decoded bits: %u (should be %d).", dtv_bit_len, DTV_BITLEN_MAX);
         return DECODE_ABORT_LENGTH;
     }
 
     // First byte should be 0x10 (model number?)
     if (dtv_buf[0] != 0x10) {
-        if (decoder->verbose >= 2) {
-            fprintf(stderr, "directv: Incorrect Model ID number: 0x%02X (should be 0x10).\n", dtv_buf[0]);
-        }
+        decoder_logf(decoder, 2, __func__, "Incorrect Model ID number: 0x%02X (should be 0x10).", dtv_buf[0]);
         return DECODE_FAIL_SANITY;
     }
 
     // Validate Checksum
     unsigned checksum_1;
     unsigned checksum_2;
-    checksum_1 = ( (dtv_buf[0] >> 4) + (dtv_buf[0] & 0x0F) + (dtv_buf[1] >> 4) + (dtv_buf[1] & 0x0F) +
-                   (dtv_buf[2] >> 4) + (dtv_buf[2] & 0x0F) + (dtv_buf[3] >> 4) + (dtv_buf[3] & 0x0F) +
-                   (dtv_buf[4] >> 4) ) & 0x0F;
+    checksum_1 = ((dtv_buf[0] >> 4) + (dtv_buf[0] & 0x0F) + (dtv_buf[1] >> 4) + (dtv_buf[1] & 0x0F) +
+            (dtv_buf[2] >> 4) + (dtv_buf[2] & 0x0F) + (dtv_buf[3] >> 4) + (dtv_buf[3] & 0x0F) +
+            (dtv_buf[4] >> 4)) & 0x0F;
     checksum_2 = dtv_buf[4] & 0x0F;
     if (checksum_1 != checksum_2) {
-        if (decoder->verbose >= 2) {
-            fprintf(stderr, "directv: Checksum failed: 0x%01X should match 0x%01X\n", checksum_1, checksum_2);
-        }
+        decoder_logf(decoder, 2, __func__, "Checksum failed: 0x%01X should match 0x%01X", checksum_1, checksum_2);
         return DECODE_FAIL_MIC;
     }
 
@@ -345,9 +335,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned dtv_device_id;
     dtv_device_id = dtv_buf[1] << 12 | dtv_buf[2] << 4 | dtv_buf[3] >> 4;
     if (dtv_device_id > 999999) {
-        if (decoder->verbose >= 2) {
-            fprintf(stderr, "directv: Bad Device ID: %u (should be between 000000 and 999999).\n", dtv_device_id);
-        }
+        decoder_logf(decoder, 2, __func__, "Bad Device ID: %u (should be between 000000 and 999999).", dtv_device_id);
         return DECODE_FAIL_SANITY;
     }
 
@@ -363,7 +351,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "button_id",     "",            DATA_FORMAT, "0x%02X", DATA_INT, dtv_button_id,
             "button_name",   "",            DATA_FORMAT, "[%s]", DATA_STRING, get_dtv_button_label(dtv_button_id),
             "event",         "",            DATA_STRING, row_sync_len > ROW_SYNC_SHORT_LEN ? "INITIAL" : "REPEAT",
-            "mic",           "",            DATA_STRING, "CHECKSUM",
+            "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
@@ -372,7 +360,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "button_id",
@@ -382,7 +370,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device directv = {
+r_device const directv = {
         .name        = "DirecTV RC66RX Remote Control",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 600,  // 150 samples @250k
@@ -391,6 +379,5 @@ r_device directv = {
                               // signal decoder before recognizing row repeats in signal
         .reset_limit = 50000, // maximum gap size before End Of Row [μs]
         .decode_fn   = &directv_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -41,7 +41,7 @@ void abuf_pop(abuf_t *buf, char *end)
     buf->tail = end;
 }
 
-void abuf_cat(abuf_t *buf, const char *str)
+void abuf_cat(abuf_t *buf, char const *str)
 {
     size_t len = strlen(str);
     if (buf->left >= len + 1) {
@@ -51,7 +51,7 @@ void abuf_cat(abuf_t *buf, const char *str)
     }
 }
 
-int abuf_printf(abuf_t *buf, const char *restrict format, ...)
+int abuf_printf(abuf_t *buf, _Printf_format_string_ char const *restrict format, ...)
 {
     va_list ap;
     va_start(ap, format);

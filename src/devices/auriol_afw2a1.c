@@ -60,7 +60,7 @@ static int auriol_afw2a1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int channel;
     int battery_ok;
     int tx_button;
-    int16_t temp_raw;
+    int temp_raw;
     float temp_c;
     int humidity;
 
@@ -71,25 +71,21 @@ static int auriol_afw2a1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     b = bitbuffer->bb[row];
 
-    id          = b[0];
-    battery_ok  = b[1] >> 7;
-    tx_button   = (b[1] & 0x40) >> 6;
-    channel     = (b[1] & 0x30) >> 4;
-    temp_raw    = ((b[1] & 0x0f) << 12) | (b[2] << 4); // use sign extend
-    temp_c      = (temp_raw >> 4) * 0.1f;
+    id         = b[0];
+    battery_ok = b[1] >> 7;
+    tx_button  = (b[1] & 0x40) >> 6;
+    channel    = (b[1] & 0x30) >> 4;
+    temp_raw   = (int16_t)(((b[1] & 0x0f) << 12) | (b[2] << 4)); // uses sign extend
+    temp_c     = (temp_raw >> 4) * 0.1f;
     // 0xa is fixed. If it differs, it is a wrong device. Could anyone confirm that?
     if ((b[3] >> 4) != 0xa) {
-        if (decoder->verbose) {
-            fprintf(stderr, "Not an Auriol-AFW2A1 device\n");
-        }
+        decoder_log(decoder, 1, __func__, "Not an Auriol-AFW2A1 device");
         return DECODE_FAIL_SANITY;
     }
     humidity = (((b[3] & 0x0f) << 4) | (b[4] >> 4));
 
     if ((humidity > 0x64) || (humidity < 0x00) || (temp_c < -51.1) || (temp_c > 76.7)) {
-        if (decoder->verbose) {
-            fprintf(stderr, "Auriol-AFW2A1 data error\n");
-        }
+        decoder_log(decoder, 1, __func__, "Auriol-AFW2A1 data error");
         return DECODE_FAIL_SANITY;
     }
 
@@ -109,7 +105,7 @@ static int auriol_afw2a1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -121,7 +117,7 @@ static char *output_fields[] = {
 };
 
 // ToDo: The timings have come about through trial and error. Audit this against weak signals!
-r_device auriol_afw2a1 = {
+r_device const auriol_afw2a1 = {
         .name        = "Auriol AFW2A1 temperature/humidity sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 576,
@@ -130,6 +126,5 @@ r_device auriol_afw2a1 = {
         .gap_limit   = 2012,
         .reset_limit = 3954,
         .decode_fn   = &auriol_afw2a1_decode,
-        .disabled    = 0, // No side effects known.
         .fields      = output_fields,
 };

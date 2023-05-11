@@ -1,4 +1,4 @@
-/*** @file
+/** @file
     AlectoV1 Weather Sensor protocol.
 
     This program is free software; you can redistribute it and/or modify
@@ -75,35 +75,20 @@ Format for Winddirection & Windgust:
 
 #include "decoder.h"
 
-/* return 1 if the checksum passes and DECODE_FAIL_MIC if it fails */
-int alecto_checksum(r_device *decoder, bitrow_t *bb)
+// return 1 if the checksum passes and 0 if it fails
+static int alecto_checksum(uint8_t *b)
 {
-    int i, csum = 0, csum2 = 0;
-    for (i = 0; i < 4; i++) {
-        uint8_t tmp = reverse8(bb[1][i]);
+    int csum = 0;
+    for (int i = 0; i < 4; i++) {
+        uint8_t tmp = reverse8(b[i]);
         csum += (tmp & 0xf) + ((tmp & 0xf0) >> 4);
-        tmp = reverse8(bb[5][i]);
-        csum2 += (tmp & 0xf) + ((tmp & 0xf0) >> 4);
     }
 
-    csum = ((bb[1][1] & 0x7f) == 0x6c) ? (csum + 0x7) : (0xf - csum);
-    csum2 = ((bb[5][1] & 0x7f) == 0x6c) ? (csum2 + 0x7) : (0xf - csum2);
-
+    csum = ((b[1] & 0x7f) == 0x6c) ? (csum + 0x7) : (0xf - csum);
     csum = reverse8((csum & 0xf) << 4);
-    csum2 = reverse8((csum2 & 0xf) << 4);
-    /* Quit if checksum does not work out */
-    if (csum != (bb[1][4] >> 4) || csum2 != (bb[5][4] >> 4)) {
-        //fprintf(stderr, "\nAlectoV1 CRC error");
-        if (decoder->verbose) {
-            fprintf(stderr, "AlectoV1 Checksum/Parity error\n");
-        }
-        return DECODE_FAIL_MIC;
-    } //Invalid checksum
-    if (decoder->verbose) {
-        fprintf(stderr, "Checksum      = %01x (calculated %01x)\n", bb[1][4] >> 4, csum);
-    }
 
-    return 1;
+    // Test the checksum
+    return (csum == (b[4] >> 4));
 }
 
 static uint8_t bcd_decode8(uint8_t x)
@@ -128,8 +113,10 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             || bb[5][0] == 0 || bb[5][1] == 0)
         return DECODE_ABORT_EARLY;
 
-    if (alecto_checksum(decoder, bb) <= 0)
+    if (!alecto_checksum(bb[1]) || !alecto_checksum(bb[5])) {
+        decoder_log(decoder, 1, __func__, "AlectoV1 Checksum/Parity error");
         return DECODE_FAIL_MIC;
+    }
 
     int battery_low = (b[1] & 0x80) >> 7;
     int msg_type    = (b[1] & 0x60) >> 5;
@@ -140,33 +127,33 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int channel     = (b[0] & 0xc) >> 2;
     int sensor_id   = reverse8(b[0]);
 
-    //fprintf(stderr, "AlectoV1 type : %d rain : %d wind : %d gust : %d\n", msg_type, msg_rain, msg_wind, msg_gust);
+    //decoder_logf(decoder, 0, __func__, "AlectoV1 type : %d rain : %d wind : %d gust : %d", msg_type, msg_rain, msg_wind, msg_gust);
 
     if (msg_type == 0x3 && !msg_rain) {
         // Wind sensor
         int skip = -1;
-        /* Untested code written according to the specification, may not decode correctly  */
-        if ((b[1]&0xe) == 0x8 && b[2] == 0) {
+        // Untested code written according to the specification, may not decode correctly
+        if ((b[1] & 0xe) == 0x8 && b[2] == 0) {
             skip = 0;
         }
-        else if ((b[1]&0xe) == 0xe) {
+        else if ((b[1] & 0xe) == 0xe) {
             skip = 4;
-        } //According to supplied data!
+        } // According to supplied data!
         if (skip >= 0) {
-            double speed = reverse8(bb[1 + skip][3]);
-            double gust = reverse8(bb[5 + skip][3]);
+            double speed  = reverse8(bb[1 + skip][3]);
+            double gust   = reverse8(bb[5 + skip][3]);
             int direction = (reverse8(bb[5 + skip][2]) << 1) | (bb[5 + skip][1] & 0x1);
 
             /* clang-format off */
             data = data_make(
-                    "model",          "",           DATA_STRING, _X("AlectoV1-Wind","AlectoV1 Wind Sensor"),
-                    "id",             "House Code", DATA_INT,    sensor_id,
-                    "channel",        "Channel",    DATA_INT,    channel,
-                    "battery",        "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
-                    _X("wind_avg_m_s","wind_speed"),     "Wind speed", DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, speed * 0.2F,
-                    _X("wind_max_m_s","wind_gust"),      "Wind gust",  DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, gust * 0.2F,
-                    _X("wind_dir_deg","wind_direction"),   "Wind Direction",   DATA_INT, direction,
-                    "mic",           "Integrity",   DATA_STRING,    "CHECKSUM",
+                    "model",            "",                 DATA_STRING, "AlectoV1-Wind",
+                    "id",               "House Code",       DATA_INT,    sensor_id,
+                    "channel",          "Channel",          DATA_INT,    channel,
+                    "battery_ok",       "Battery",          DATA_INT,    !battery_low,
+                    "wind_avg_m_s",     "Wind speed",       DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, speed * 0.2F,
+                    "wind_max_m_s",     "Wind gust",        DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, gust * 0.2F,
+                    "wind_dir_deg",     "Wind Direction",   DATA_INT,    direction,
+                    "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
                     NULL);
             /* clang-format on */
             decoder_output_data(decoder, data);
@@ -180,12 +167,12 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",         "",           DATA_STRING, _X("AlectoV1-Rain","AlectoV1 Rain Sensor"),
-                "id",            "House Code", DATA_INT,    sensor_id,
-                "channel",       "Channel",    DATA_INT,    channel,
-                "battery",       "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
-                _X("rain_mm","rain_total"),    "Total Rain", DATA_FORMAT, "%.02f mm", DATA_DOUBLE, rain_mm,
-                "mic",           "Integrity",  DATA_STRING,    "CHECKSUM",
+                "model",        "",             DATA_STRING, "AlectoV1-Rain",
+                "id",           "House Code",   DATA_INT,    sensor_id,
+                "channel",      "Channel",      DATA_INT,    channel,
+                "battery_ok",   "Battery",      DATA_INT,    !battery_low,
+                "rain_mm",      "Total Rain",   DATA_FORMAT, "%.02f mm", DATA_DOUBLE, rain_mm,
+                "mic",          "Integrity",    DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
         decoder_output_data(decoder, data);
@@ -205,13 +192,13 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",         "",            DATA_STRING, _X("AlectoV1-Temperature","AlectoV1 Temperature Sensor"),
+                "model",         "",            DATA_STRING, "AlectoV1-Temperature",
                 "id",            "House Code",  DATA_INT,    sensor_id,
                 "channel",       "Channel",     DATA_INT,    channel,
-                "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
+                "battery_ok",    "Battery",     DATA_INT,    !battery_low,
                 "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
                 "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT, humidity,
-                "mic",           "Integrity",   DATA_STRING,    "CHECKSUM",
+                "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
         decoder_output_data(decoder, data);
@@ -221,32 +208,28 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return DECODE_FAIL_SANITY;
 }
 
-static char *output_fields[] = {
-    "model",
-    "id",
-    "channel",
-    "battery",
-    "temperature_C",
-    "humidity",
-    "rain_total", // TODO: remove this
-    "rain_mm",
-    "wind_speed", // TODO: remove this
-    "wind_gust", // TODO: remove this
-    "wind_direction", // TODO: remove this
-    "wind_avg_m_s",
-    "wind_max_m_s",
-    "wind_dir_deg",
-    "mic",
-    NULL,
+static char const *const output_fields[] = {
+        "model",
+        "id",
+        "channel",
+        "battery_ok",
+        "temperature_C",
+        "humidity",
+        "rain_mm",
+        "wind_avg_m_s",
+        "wind_max_m_s",
+        "wind_dir_deg",
+        "mic",
+        NULL,
 };
 
-r_device alectov1 = {
-    .name           = "AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 2000,
-    .long_width     = 4000,
-    .gap_limit      = 7000,
-    .reset_limit    = 10000,
-    .decode_fn      = &alectov1_callback,
-    .fields         = output_fields,
+r_device const alectov1 = {
+        .name        = "AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 2000,
+        .long_width  = 4000,
+        .gap_limit   = 7000,
+        .reset_limit = 10000,
+        .decode_fn   = &alectov1_callback,
+        .fields      = output_fields,
 };

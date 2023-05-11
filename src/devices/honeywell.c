@@ -80,8 +80,7 @@ static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY; // Reduce collisions
 
     if (len > 50) { // DW11
-        if (decoder->verbose)
-            bitrow_printf(b, len, "%s: ", __func__);
+        decoder_log_bitrow(decoder, 1, __func__, b, (len > 80 ? 80 : len), "");
     }
 
     if (channel == 0x2 || channel == 0x4 || channel == 0xA) {
@@ -105,17 +104,18 @@ static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",        "", DATA_STRING, _X("Honeywell-Security","Honeywell Door/Window Sensor"),
-            "id",           "", DATA_FORMAT, "%05x", DATA_INT, device_id,
-            "channel",      "", DATA_INT,    channel,
-            "event",        "", DATA_FORMAT, "%02x", DATA_INT, event,
-            "state",        "", DATA_STRING, contact ? "open" : "closed", // Ignore the reed switch legacy.
-            "contact_open", "", DATA_INT,    contact,
-            "reed_open",    "", DATA_INT,    reed,
-            "alarm",        "", DATA_INT,    alarm,
-            "tamper",       "", DATA_INT,    tamper,
-            "battery_ok",   "", DATA_INT,    !battery_low,
-            "heartbeat",    "", DATA_INT,    heartbeat,
+            "model",        "",         DATA_STRING, "Honeywell-Security",
+            "id",           "",         DATA_FORMAT, "%05x", DATA_INT, device_id,
+            "channel",      "",         DATA_INT,    channel,
+            "event",        "",         DATA_FORMAT, "%02x", DATA_INT, event,
+            "state",        "",         DATA_STRING, contact ? "open" : "closed", // Ignore the reed switch legacy.
+            "contact_open", "",         DATA_INT,    contact,
+            "reed_open",    "",         DATA_INT,    reed,
+            "alarm",        "",         DATA_INT,    alarm,
+            "tamper",       "",         DATA_INT,    tamper,
+            "battery_ok",   "Battery",  DATA_INT,    !battery_low,
+            "heartbeat",    "",         DATA_INT,    heartbeat,
+            "mic",          "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -123,7 +123,7 @@ static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -135,16 +135,16 @@ static char *output_fields[] = {
         "tamper",
         "battery_ok",
         "heartbeat",
+        "mic",
         NULL,
 };
 
-r_device honeywell = {
+r_device const honeywell = {
         .name        = "Honeywell Door/Window Sensor, 2Gig DW10/DW11, RE208 repeater",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 156,
         .long_width  = 0,
         .reset_limit = 292,
         .decode_fn   = &honeywell_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

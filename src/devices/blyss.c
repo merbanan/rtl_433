@@ -21,7 +21,7 @@ packet gap is 6964 us
 */
 #include "decoder.h"
 
-static int blyss_callback(r_device *decoder,bitbuffer_t *bitbuffer)
+static int blyss_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t *b;
@@ -42,32 +42,33 @@ static int blyss_callback(r_device *decoder,bitbuffer_t *bitbuffer)
 
         sprintf(id_str, "%02x%02x%02x%02x", b[0], b[1], b[2], b[3]);
 
+        /* clang-format off */
         data = data_make(
                 "model",    "", DATA_STRING, "Blyss-DC5ukwh",
                 "id",       "", DATA_STRING, id_str,
                 NULL);
-        decoder_output_data(decoder, data);
+        /* clang-format on */
 
+        decoder_output_data(decoder, data);
         return 1;
     }
 
     return DECODE_FAIL_SANITY;
 }
 
-static char *output_fields[] = {
-    "model",
-    "id",
-    NULL
+static char const *const output_fields[] = {
+        "model",
+        "id",
+        NULL,
 };
 
-r_device blyss = {
-    .name           = "Blyss DC5-UK-WH",
-    .modulation     = OOK_PULSE_PWM,
-    .short_width    = 500,
-    .long_width     = 1500,
-    .gap_limit      = 2500,
-    .reset_limit    = 8000,
-    .decode_fn      = &blyss_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+r_device const blyss = {
+        .name        = "Blyss DC5-UK-WH",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 500,
+        .long_width  = 1500,
+        .gap_limit   = 2500,
+        .reset_limit = 8000,
+        .decode_fn   = &blyss_callback,
+        .fields      = output_fields,
 };

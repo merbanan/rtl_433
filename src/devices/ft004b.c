@@ -3,9 +3,9 @@
 
     Copyright (C) 2017 George Hopkins <george-hopkins@null.net>
 
-    This program is free software: you can redistribute it and/or modify
+    This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 2 of the License, or
+    the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
 /**
@@ -29,10 +29,9 @@ Aligning at [..] (insert 2 bits) we get:
 
 #include "decoder.h"
 
-static int
-ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t* msg;
+    uint8_t *msg;
     float temperature;
     data_t *data;
 
@@ -46,31 +45,33 @@ ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t a = bitrow_get_byte(msg, i * 8);
         uint8_t b = bitrow_get_byte(msg, i * 8 + 46);
         uint8_t c = bitrow_get_byte(msg, i * 8 + 46 * 2);
-        msg[i] = reverse8((a & b) | (b & c) | (a & c));
+        msg[i]    = reverse8((a & b) | (b & c) | (a & c));
     }
 
     if (msg[0] != 0xf4)
         return DECODE_FAIL_SANITY;
 
     int temp_raw = ((msg[4] & 0x7) << 8) | msg[3];
-    temperature = (temp_raw * 0.05f) - 40.0f;
+    temperature  = (temp_raw * 0.05f) - 40.0f;
 
+    /* clang-format off */
     data = data_make(
-            "model", "", DATA_STRING, _X("FT-004B","FT-004-B Temperature Sensor"),
-            "temperature_C", "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
+            "model",            "",             DATA_STRING, "FT-004B",
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
             NULL);
+    /* clang-format on */
     decoder_output_data(decoder, data);
 
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "temperature_C",
         NULL,
 };
 
-r_device ft004b = {
+r_device const ft004b = {
         .name        = "FT-004-B Temperature Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1956,
@@ -78,6 +79,5 @@ r_device ft004b = {
         .gap_limit   = 4000,
         .reset_limit = 4000,
         .decode_fn   = &ft004b_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

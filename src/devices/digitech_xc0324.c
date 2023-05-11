@@ -8,8 +8,13 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/** @fn static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
-Digitech XC-0324 device.
+
+#include "decoder.h"
+
+/**
+Decoder for Digitech XC-0324 temperature sensor.
+
+Also AmbientWeather FT005TH.
 
 The encoding is pulse position modulation
 (i.e. gap width contains the modulation information)
@@ -33,8 +38,7 @@ A 48 bit message consists of:
     transmitted in least significant bit first order
     in tenths of degree Celsius
     offset from -40.0 degrees C (minimum temp spec of the device)
-- byte 4: constant (in all my data) 0x80
-    _maybe_ a battery status ???
+- byte 4: Humidity in Percentage on newer units.
 - byte 5: a check byte (the XOR of bytes 0-4 inclusive)
     each bit is effectively a parity bit for correspondingly positioned bit
     in the real message
@@ -62,15 +66,10 @@ running this decoder with debug level :
         regression test purposes.
 */
 
-#include "decoder.h"
-
 //#define XC0324_DEVICE_BITLEN      148
 #define XC0324_MESSAGE_BITLEN     48
 #define XC0324_MESSAGE_BYTELEN    (XC0324_MESSAGE_BITLEN + 7)/ 8
-#define XC0324_DEVICE_STARTBYTE   0x5F
 //#define XC0324_DEVICE_MINREPEATS  3
-
-static const uint8_t preamble_pattern[1] = {XC0324_DEVICE_STARTBYTE};
 
 static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
         unsigned row, uint16_t bitpos, const int latest_event, data_t **data)
@@ -78,7 +77,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     uint8_t b[XC0324_MESSAGE_BYTELEN];
     char id[4] = {0};
     double temperature;
-    uint8_t flags;
+    int humidity;
     uint8_t chksum; // == 0x00 for a good message
 
     // Extract the message
@@ -92,10 +91,10 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     // NB : b[0] ^ b[1] ^ b[2] ^ b[3] ^ b[4] ^ b[5] == 0x00 for a clean message
     chksum = xor_bytes(b, 6);
     if (chksum != 0x00) {
-        if (decoder->verbose == 1) {
+        if (decoder->verbose > 1) {
             // Output the "bad" message (only for message level deciphering!)
-            decoder_output_bitrowf(decoder, b, XC0324_MESSAGE_BITLEN,
-                    "chksum = 0x%02X not 0x00 <- XC0324:vv row %d bit %d",
+            decoder_logf_bitrow(decoder, 2, __func__, b, XC0324_MESSAGE_BITLEN,
+                    "chksum = 0x%02X not 0x00, row %d bit %d",
                     chksum, row, bitpos);
         }
         return DECODE_FAIL_MIC; // No message was able to be decoded
@@ -109,56 +108,49 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     int temp = ((uint16_t)(reverse8(b[3]) & 0x0f) << 8) | reverse8(b[2]);
     temperature   = (temp - 400) * 0.1f;
 
-    //Unknown byte, constant as 0x80 in all my data
-    // ??maybe battery status??
-    flags = b[4];
+    // Decode humiddity (b[4]), LSB first order!
+    // Whole Number Integers in Percentage
+    humidity = reverse8(b[4]);
 
     // Create the data structure, ready for the decoder_output_data function.
     // Separate production output (decoder->verbose == 0)
     // from (simulated) deciphering stage output (decoder->verbose > 0)
     if (!decoder->verbose) { // production output
+        /* clang-format off */
         *data = data_make(
-                "model",            "Device Type",      DATA_STRING, _X("Digitech-XC0324","Digitech XC0324"),
+                "model",            "Device Type",      DATA_STRING, "Digitech-XC0324",
                 "id",               "ID",               DATA_STRING, id,
                 "temperature_C",    "Temperature C",    DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
-                "flags",            "Constant ?",       DATA_INT,    flags,
+                "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
                 NULL);
+        /* clang-format on */
     }
 
     // Output (simulated) message level deciphering information..
-    if (decoder->verbose == 1) {
-        decoder_output_bitrowf(decoder, b, XC0324_MESSAGE_BITLEN,
-                "Temp was %4.1f <- XC0324:vv row %03d bit %03d",
+    if (decoder->verbose > 1) {
+        decoder_logf_bitrow(decoder, 2, __func__, b, XC0324_MESSAGE_BITLEN,
+                "Temp was %4.1f, row %03d bit %03d",
                 temperature, row, bitpos);
     }
     // Output "finished deciphering" reference values for future regression tests.
     if ((decoder->verbose == 3) & (latest_event == 0)) {
         //info from this first successful message is enough
-        decoder_output_messagef(decoder,
-                "XC0324:vvvv Reference -> Temperature %4.1f C; sensor id %s",
+        decoder_logf(decoder, 3, __func__,
+                "Temperature %4.1f C; sensor id %s",
                 temperature, id);
     }
     return 1; // Message successfully decoded
 }
 
-// List of fields to appear in the `-F csv` output
-static char *output_fields[] = {
-    "model",
-    "id",
-    "temperature_C",
-    "flags",
-    "mic",
-    "message_num",
-    NULL,
-};
-
 /**
 Digitech XC-0324 device.
 @sa decode_xc0324_message()
 */
-static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int digitech_xc0324_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    uint8_t const preamble_pattern[] = {0x5F};
+
     int r; // a row index
     uint16_t bitpos;
     int ret      = 0;
@@ -166,13 +158,13 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data = NULL;
 
     // Only for simulating initial package level deciphering / debug.
-    if (decoder->verbose == 2) {
+    if (decoder->verbose > 1) {
         // Verbosely output the bitbuffer
-        decoder_output_bitbufferf(decoder, bitbuffer, "XC0324:vvv hex(/binary) version of bitbuffer");
+        decoder_log_bitbuffer(decoder, 2, __func__, bitbuffer, "hex(/binary) version of bitbuffer");
         // And then output each row to csv, json or whatever was specified.
         for (r = 0; r < bitbuffer->num_rows; ++r) {
-            decoder_output_bitrowf(decoder, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
-                    "XC0324:vvv row %03d", r);
+            decoder_logf_bitrow(decoder, 2, __func__, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
+                    "row %03d", r);
         }
     }
     //A clean XC0324 transmission contains 3 repeats of a message in a single row.
@@ -181,10 +173,10 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     for (r = 0; r < bitbuffer->num_rows; ++r) {
         if (bitbuffer->bits_per_row[r] < XC0324_MESSAGE_BITLEN) {
             // bail out of this "too short" row early
-            if (decoder->verbose == 1) {
+            if (decoder->verbose) {
                 // Output the bad row, only for message level debug / deciphering.
-                decoder_output_bitrowf(decoder, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
-                        "Bad message need %d bits got %d <- XC0324:vv row %d bit %d",
+                decoder_logf_bitrow(decoder, 1, __func__, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
+                        "Bad message need %d bits got %d, row %d bit %d",
                         XC0324_MESSAGE_BITLEN, bitbuffer->bits_per_row[r], r, 0);
             }
             continue; // DECODE_ABORT_LENGTH
@@ -192,9 +184,7 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // We have enough bits so search for a message preamble followed by
         // enough bits that it could be a complete message.
         bitpos = 0;
-        while ((bitpos = bitbuffer_search(bitbuffer, r, bitpos,
-                        (const uint8_t *)&preamble_pattern, 8)) +
-                        XC0324_MESSAGE_BITLEN <=
+        while ((bitpos = bitbuffer_search(bitbuffer, r, bitpos, preamble_pattern, 8)) + XC0324_MESSAGE_BITLEN <=
                 bitbuffer->bits_per_row[r]) {
             ret = decode_xc0324_message(decoder, bitbuffer,
                     r, bitpos, events, &data);
@@ -213,18 +203,27 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     // (Only) for future regression tests.
     if ((decoder->verbose == 3) & (events == 0)) {
-        decoder_output_messagef(decoder, "XC0324:vvvv Reference -> Bad transmission");
+        decoder_log(decoder, 3, __func__, "Bad transmission");
     }
     return events > 0 ? events : ret;
 }
 
-r_device digitech_xc0324 = {
-    .name           = "Digitech XC-0324 temperature sensor",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 520, // = 130 * 4
-    .long_width     = 1000, // = 250 * 4
-    .reset_limit    = 3000,
-    .decode_fn      = &xc0324_callback,
-    .disabled       = 1, // stop debug output from spamming unsuspecting users
-    .fields         = output_fields,
+static char const *const output_fields[] = {
+        "model",
+        "id",
+        "temperature_C",
+        "humidity",
+        "mic",
+        "message_num",
+        NULL,
+};
+
+r_device const digitech_xc0324 = {
+        .name        = "Digitech XC-0324 / AmbientWeather FT005TH temp/hum sensor",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 520,  // = 130 * 4
+        .long_width  = 1000, // = 250 * 4
+        .reset_limit = 3000,
+        .decode_fn   = &digitech_xc0324_decode,
+        .fields      = output_fields,
 };

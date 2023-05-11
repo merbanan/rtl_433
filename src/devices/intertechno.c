@@ -21,68 +21,49 @@ There is another type of remotes that have an ID prefix of 0x56 and slightly sho
 
 static int intertechno_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
     bitrow_t *bb = bitbuffer->bb;
     uint8_t *b = bitbuffer->bb[1];
-    char id_str[11];
-    int slave;
-    int master;
-    int command;
 
     if (bb[0][0] != 0 || (bb[1][0] != 0x56 && bb[1][0] != 0x69))
         return DECODE_ABORT_EARLY;
 
-    if (decoder->verbose > 1) {
-        fprintf(stderr, "Switch event:\n");
-        fprintf(stderr, "protocol       = Intertechno\n");
-        fprintf(stderr, "rid            = %x\n", b[0]);
-        fprintf(stderr, "rid            = %x\n", b[1]);
-        fprintf(stderr, "rid            = %x\n", b[2]);
-        fprintf(stderr, "rid            = %x\n", b[3]);
-        fprintf(stderr, "rid            = %x\n", b[4]);
-        fprintf(stderr, "rid            = %x\n", b[5]);
-        fprintf(stderr, "rid            = %x\n", b[6]);
-        fprintf(stderr, "rid            = %x\n", b[7]);
-        fprintf(stderr, "ADDR Slave     = %i\n", b[7] & 0x0f);
-        fprintf(stderr, "ADDR Master    = %i\n",( b[7] & 0xf0) >> 4);
-        fprintf(stderr, "command        = %i\n",( b[6] & 0x07));
-    }
-
+    char id_str[11];
     sprintf(id_str, "%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4]);
-    slave = b[7] & 0x0f;
-    master = (b[7] & 0xf0) >> 4;
-    command = b[6] & 0x07;
+    int slave   = b[7] & 0x0f;
+    int master  = (b[7] & 0xf0) >> 4;
+    int command = b[6] & 0x07;
 
-    data = data_make(
-        "model",            "",     DATA_STRING,    _X("Intertechno-Remote","Intertechno"),
-        "id",               "",     DATA_STRING,    id_str,
-        "slave",            "",     DATA_INT,       slave,
-        "master",           "",     DATA_INT,       master,
-        "command",          "",     DATA_INT,       command,
-        NULL);
+    /* clang-format off */
+    data_t *data = data_make(
+            "model",            "",     DATA_STRING,    "Intertechno-Remote",
+            "id",               "",     DATA_STRING,    id_str,
+            "slave",            "",     DATA_INT,       slave,
+            "master",           "",     DATA_INT,       master,
+            "command",          "",     DATA_INT,       command,
+            NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
 }
 
-static char *output_fields[] = {
-    "model",
-    "type",
-    "id",
-    "slave",
-    "master",
-    "command",
-    NULL,
+static char const *const output_fields[] = {
+        "model",
+        "id",
+        "slave",
+        "master",
+        "command",
+        NULL,
 };
 
-r_device intertechno = {
-    .name           = "Intertechno 433",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 330,
-    .long_width     = 1400,
-    .gap_limit      = 1700,
-    .reset_limit    = 10000,
-    .decode_fn      = &intertechno_callback,
-    .disabled       = 1,
-    .fields         = output_fields,
+r_device const intertechno = {
+        .name        = "Intertechno 433",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 330,
+        .long_width  = 1400,
+        .gap_limit   = 1700,
+        .reset_limit = 10000,
+        .decode_fn   = &intertechno_callback,
+        .disabled    = 1,
+        .fields      = output_fields,
 };

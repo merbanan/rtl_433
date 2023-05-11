@@ -1,18 +1,21 @@
-# - Try to find LibUSB
+# - Try to find LibUSB-1.0
 # Once done this will define
-#  LIBUSB_FOUND - System has LibUSB
-#  LIBUSB_INCLUDE_DIRS - The LibUSB include directories
-#  LIBUSB_LIBRARIES - The libraries needed to use LibUSB
-#  LIBUSB_DEFINITIONS - Compiler switches required for using LibUSB
+#
+#  LibUSB_FOUND - System has libusb
+#  LibUSB_INCLUDE_DIRS - The libusb include directories
+#  LibUSB_LIBRARIES - The libraries needed to use libusb
+#  LibUSB_DEFINITIONS - Compiler switches required for using libusb
+#  LibUSB_VERSION - the libusb version
+#
 
 find_package(PkgConfig)
-pkg_check_modules(LIBUSB_PKG QUIET libusb-1.0)
-set(LIBUSB_DEFINITIONS ${LIBUSB_PKG_CFLAGS_OTHER})
+pkg_check_modules(PC_LibUSB QUIET libusb-1.0)
+set(LibUSB_DEFINITIONS ${PC_LibUSB_CFLAGS_OTHER})
 
-find_path(LIBUSB_INCLUDE_DIR NAMES libusb.h
-          HINTS ${LIBUSB_PKG_INCLUDE_DIRS}
+find_path(LibUSB_INCLUDE_DIR NAMES libusb.h
+          HINTS ${PC_LibUSB_INCLUDE_DIRS}
+          PATH_SUFFIXES libusb-1.0
           PATHS
-          /usr/include/libusb-1.0
           /usr/include
           /usr/local/include )
 
@@ -24,20 +27,28 @@ if((CMAKE_SYSTEM_NAME STREQUAL "FreeBSD") OR (CMAKE_SYSTEM_NAME STREQUAL "kFreeB
     list(APPEND libusb1_library_names usb)
 endif()
 
-find_library(LIBUSB_LIBRARY
+#libusb-1.0 name on Windows (from PothosSDR distribution)
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    list(APPEND libusb1_library_names libusb-1.0)
+endif()
+
+find_library(LibUSB_LIBRARY
              NAMES ${libusb1_library_names}
-             HINTS ${LIBUSB_PKG_LIBRARY_DIRS}
+             HINTS ${PC_LibUSB_LIBRARY_DIRS}
              PATHS
              /usr/lib
              /usr/local/lib )
 
+set(LibUSB_VERSION ${PC_LibUSB_VERSION})
+
 include(FindPackageHandleStandardArgs)
-# handle the QUIETLY and REQUIRED arguments and set LIBUSB_FOUND to TRUE
+# handle the QUIETLY and REQUIRED arguments and set LibUSB_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(LibUSB  DEFAULT_MSG
-                                  LIBUSB_LIBRARY LIBUSB_INCLUDE_DIR)
+find_package_handle_standard_args(LibUSB
+                                  REQUIRED_VARS LibUSB_LIBRARY LibUSB_INCLUDE_DIR
+                                  VERSION_VAR LibUSB_VERSION)
 
-mark_as_advanced(LIBUSB_LIBRARY LIBUSB_INCLUDE_DIR)
+mark_as_advanced(LibUSB_LIBRARY LibUSB_INCLUDE_DIR LibUSB_VERSION)
 
-set(LIBUSB_LIBRARIES ${LIBUSB_LIBRARY} )
-set(LIBUSB_INCLUDE_DIRS ${LIBUSB_INCLUDE_DIR} )
+set(LibUSB_LIBRARIES ${LibUSB_LIBRARY} )
+set(LibUSB_INCLUDE_DIRS ${LibUSB_INCLUDE_DIR} )

@@ -45,7 +45,7 @@ static int tpms_jansite_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
 
     if (packet_bits.bits_per_row[0] < 56) {
         return DECODE_FAIL_SANITY;
-        // fprintf(stderr, "%s packet_bits.bits_per_row = %d\n", __func__, packet_bits.bits_per_row[0]);
+        // decoder_logf(decoder, 3, __func__, "packet_bits.bits_per_row = %d", packet_bits.bits_per_row[0]);
     }
     b = packet_bits.bb[0];
 
@@ -68,7 +68,7 @@ static int tpms_jansite_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
             "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure * 1.7,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature - 50.0,
             "code",             "",             DATA_STRING, code_str,
-            //"mic",              "",             DATA_STRING, "CHECKSUM",
+            //"mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
@@ -101,7 +101,7 @@ static int tpms_jansite_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events > 0 ? events : ret;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "type",
         "id",
@@ -113,7 +113,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_jansite = {
+r_device const tpms_jansite = {
         .name        = "Jansite TPMS Model TY02S",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 52,  // 12-13 samples @250k

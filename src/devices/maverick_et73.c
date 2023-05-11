@@ -43,9 +43,9 @@ Layout appears to be:
 
 #include "decoder.h"
 
-static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int maverick_et73_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int temp1_raw, temp2_raw, row;
+  int temp1_raw, temp2_raw, row;
     float temp1_c, temp2_c;
     uint8_t *bytes;
     unsigned int device;
@@ -58,8 +58,8 @@ static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuff
     }
 
     bytes = bitbuffer->bb[row];
-    if ( (!bytes[0] && !bytes[1] && !bytes[2] && !bytes[3])
-    || (bytes[0] == 0xFF && bytes[1] == 0xFF && bytes[2] == 0xFF && bytes[3] == 0xFF))  {
+    if ((!bytes[0] && !bytes[1] && !bytes[2] && !bytes[3])
+            || (bytes[0] == 0xFF && bytes[1] == 0xFF && bytes[2] == 0xFF && bytes[3] == 0xFF))  {
         return DECODE_ABORT_EARLY; // reduce false positives
     }
 
@@ -68,21 +68,19 @@ static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuff
 
     device = bytes[0];
 
-    if (decoder->verbose) {
-        fprintf(stderr,"maverick_et73_raw_data:");
-        bitrow_print(bytes, 48);
-    }
+    decoder_log_bitrow(decoder, 1, __func__, bytes, 48, "");
 
-    temp1_raw = (bytes[1] << 4) | ((bytes[2] & 0xf0) );
-    temp2_raw = ((bytes[2] & 0x0f) << 8) | bytes[3];
-
-    temp1_c = temp1_raw * 0.1f;
-    temp2_c = temp2_raw * 0.1f;
+    // Repack the nibbles to form a 12-bit field representing the 2's-complement temperatures,
+    //   then right shift by 4 to sign-extend the 12-bit field to a 16-bit integer for float conversion
+    temp1_raw = (int16_t)(bytes[1] << 8 | (bytes[2] & 0xf0)); // uses sign-extend
+    temp1_c   = (temp1_raw >> 4) * 0.1f;
+    temp2_raw = (int16_t)(((bytes[2] & 0x0f) << 12) | bytes[3] << 4); // uses sign-extend
+    temp2_c   = (temp2_raw >> 4) * 0.1f;
 
     /* clang-format off */
     data = data_make(
-            "model",            "",                 DATA_STRING, _X("Maverick-ET73","Maverick ET73"),
-            _X("id","rid"),              "Random Id",        DATA_INT, device,
+            "model",            "",                 DATA_STRING, "Maverick-ET73",
+            "id",               "Random Id",        DATA_INT, device,
             "temperature_1_C",  "Temperature 1",    DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp1_c,
             "temperature_2_C",  "Temperature 2",    DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp2_c,
             NULL);
@@ -92,23 +90,21 @@ static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuff
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
-        "rid", // TODO: delete this
         "id",
         "temperature_1_C",
         "temperature_2_C",
         NULL,
 };
 
-r_device maverick_et73 = {
+r_device const maverick_et73 = {
         .name        = "Maverick et73",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1050,
         .long_width  = 2050,
         .gap_limit   = 2200,
         .reset_limit = 4400, // 4050 us nominal packet gap
-        .decode_fn   = &maverick_et73_sensor_callback,
-        .disabled    = 0,
+        .decode_fn   = &maverick_et73_decode,
         .fields      = output_fields,
 };

@@ -9,7 +9,7 @@
     (at your option) any later version.
 */
 
-/** @fn int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+/** @fn int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int row, unsigned int start_pos)
 Insteon RF decoder.
 
     "Insteon is a home automation (domotics) technology that enables
@@ -28,7 +28,7 @@ Each byte (X) is encoded as 28 bits:
 
 All values are written in LSB format (Least Significant Bit first)
 
-The first byte is always transmitted with a index of 32 ( 11111 )
+The first byte is always transmitted with a index of 32 (11111)
 all following bytes are transmitted with a decrementing index count with the final byte with index 0
 
     Dat   index dat         LSB index dat     manchester                     '11' + manchester
@@ -148,9 +148,9 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
             "bcast"    = (flag & 0b10000000)
             "mtype"    = (flag & 0b11100000)
 
-        ( we can discard the 5 bit digit )
+        (we can discard the 5 bit digit)
 
-        after this we can index forward 28 bits ( 2 + 10 + 16 )
+        after this we can index forward 28 bits (2 + 10 + 16)
 
     */
 
@@ -161,7 +161,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
     pkt_d                  = reverse8(d_bits.bb[0][0]);
     results[results_len++] = pkt_d;
 
-    if (pkt_i != 31) { // should always be 31 ( 0b11111) in first block of packet
+    if (pkt_i != 31) { // should always be 31 (0b11111) in first block of packet
         return DECODE_ABORT_EARLY;
     }
 
@@ -183,15 +183,15 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
     }
 
     if (decoder->verbose) {
-        uint8_t buffy[4];
-        fprintf(stderr, "%s\tstart_pos %u row_length %hu =  %u\n",
-                __func__, start_pos, bits->bits_per_row[row], (bits->bits_per_row[row] - start_pos));
-        fprintf(stderr, "%s\t%s\t%-5s\t%s\t%s\t%s\n",
-                __func__, "pkt_i", "pkt_d", "next", "length", "count");
+        decoder_logf(decoder, 1, __func__, "start_pos %u row_length %hu =  %u",
+                start_pos, bits->bits_per_row[row], (bits->bits_per_row[row] - start_pos));
+        decoder_logf(decoder, 1, __func__, "%s %-5s %s %s %s",
+                "pkt_i", "pkt_d", "next", "length", "count");
 
+        uint8_t buffy[4];
         bitbuffer_extract_bytes(bits, row, start_pos - 2, buffy, 30);
-        bitrow_printf(buffy, 30, "%s\t%2d\t%02X\t%03u\t%u\t%2d\t",
-                __func__, pkt_i, pkt_d, next_pos, (next_pos - start_pos), 0);
+        decoder_logf_bitrow(decoder, 1, __func__, buffy, 30, "%2d %02X %03u %u %2d",
+                pkt_i, pkt_d, next_pos, (next_pos - start_pos), 0);
     }
 
     /*   Is this overkill ??
@@ -202,10 +202,8 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
          l = 278;
      }
      if ((bits->bits_per_row[row] - start_pos)  < l) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s\trow to short for %s packet type\n",
-                __func__, (extended ? "extended" : "regular"));
-        }
+        decoder_logf(decoder, 1, __func__, "row to short for %s packet type",
+                (extended ? "extended" : "regular"));
         return DECODE_ABORT_LENGTH;     // row to short for packet type
      }
      */
@@ -226,8 +224,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
 
         y = (next_pos - start_pos);
         if (y != 26) {
-            if (decoder->verbose)
-                fprintf(stderr, "%s: stop %u != 26\n", __func__, y);
+            decoder_logf(decoder, 1, __func__, "stop %u != 26", y);
             break;
         }
 
@@ -242,9 +239,9 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
         if (decoder->verbose) {
             uint8_t buffy[4];
             bitbuffer_extract_bytes(bits, row, start_pos - 2, buffy, 30);
-            // bitrow_printf(buffy, 30, "%s\t%2d  %02X  %3u\t%d\t%d\t",
-            bitrow_printf(buffy, 30, "%s\t%2d\t%02X\t%03u\t%u\t%2d\t",
-                    __func__, pkt_i, pkt_d, next_pos, (next_pos - start_pos), j);
+            // decoder_logf_bitrow(decoder, 1, __func__, buffy, 30, "%s: %2d  %02X  %3u %d %d",
+            decoder_logf_bitrow(decoder, 1, __func__, buffy, 30, "%2d %02X %03u %u %2d",
+                    pkt_i, pkt_d, next_pos, (next_pos - start_pos), j);
             // parse_insteon_pkt: curr packet (3f) { 1} d6 : 1
         }
 
@@ -256,16 +253,10 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
         }
     }
 
-    // if (decoder->verbose > 1) {
-    //     for (int j=0; j < results_len; j++) {
-    //          fprintf(stderr, "%d:%02X ", j,  results[j]);
-    //     }
-    //     puts("\n");
-    // }
+    // decoder_log_bitrow(decoder, 2, __func__, results, results_len * 8, "results");
 
     if (results_len < min_pkt_len) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "%s: fail: short packet %d < 9\n", __func__, results_len);
+        decoder_logf(decoder, 2, __func__, "fail: short packet %d < 9", results_len);
         return 0;
     }
 
@@ -278,8 +269,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
     }
 
     if (results[min_pkt_len - 1] != crc_val) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "%s: fail: bad CRC %02X != %02X %s\n", __func__, results[min_pkt_len], crc_val,
+        decoder_logf(decoder, 2, __func__, "fail: bad CRC %02X != %02X %s", results[min_pkt_len], crc_val,
                     (extended ? "extended" : ""));
         return DECODE_FAIL_MIC;
     }
@@ -302,9 +292,9 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
         cmd_array[cmd_array_len++] = (int)results[j];
     }
 
-    char payload[INSTEON_PACKET_MIN_EXT * 2 + 1] = {0};
+    char payload[INSTEON_PACKET_MAX_EXT * 2 + 2] = {0};
     p                = payload;
-    for (int j = 0; j < min_pkt_len; j++) {
+    for (int j = 0; j < results_len; j++) {
         p += sprintf(p, "%02X", results[j]);
     }
 
@@ -331,7 +321,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
     //         (results[0] >> 2) & 0x03);
 
     int pkt_type = (results[0] >> 5) & 0x07;
-    char *messsage_text[8] = {
+    char const *messsage_text[8] = {
             "Direct Message",                         // 000
             "ACK of Direct Message",                  // 001
             "Group Cleanup Direct Message",           // 010
@@ -341,17 +331,11 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
             "Group Broadcast Message",                // 110
             "NAK of Group Cleanup Direct Message"};   // 111
 
-    char *pkt_type_str = messsage_text[pkt_type];
-    // bitrow_printf(results, 8, "%s\tFlag", __func__);
-    //fprintf(stderr, "%s: pkt_type: %02X \n", __func__, pkt_type);
+    char const *pkt_type_str = messsage_text[pkt_type];
+    // decoder_log_bitrow(decoder, 0, __func__, results, 8, "Flag");
+    //decoder_logf(decoder, 0, __func__, "pkt_type: %02X", pkt_type);
 
-    if (decoder->verbose > 1) {
-        fprintf(stderr, "type %s\n", pkt_type_str);
-        for (int j = 0; j < min_pkt_len; j++) {
-            fprintf(stderr, "%d:%02X ", j, results[j]);
-        }
-        fprintf(stderr, "\n");
-    }
+    decoder_logf_bitrow(decoder, 2, __func__, results, min_pkt_len * 8, "type %s", pkt_type_str);
 
     // Format data
     /*
@@ -376,7 +360,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
             "hopsmax",   "Hops_Max",        DATA_INT,    hopsmax,
             "hopsleft",  "Hops_Left",       DATA_INT,    hopsleft,
             "formatted", "Packet",          DATA_STRING, pkt_formatted,
-            "mic",       "Integrity",       DATA_STRING, "CRC", // CRC, CHECKSUM, or PARITY
+            "mic",       "Integrity",       DATA_STRING, "CRC",
             "payload",   "Payload",         DATA_STRING, payload,
             "cmd_dat",   "CMD_Data",        DATA_ARRAY,  data_array(cmd_array_len, DATA_INT, cmd_array),
         //  "payload",   "Payload",         DATA_ARRAY,  data_array(min_pkt_len, DATA_INT, data_payload),
@@ -401,13 +385,9 @@ static int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int fail_value         = 0;
     // unsigned int pkt_cnt   = 0;
 
-    // if (decoder->verbose > 2)
-    //    bitbuffer_debug(bitbuffer);
+    // decoder_logf(decoder, 2, __func__, "row complete row / bit_index : %d, %d", row, bit_index);
 
-    // if (decoder->verbose > 1) fprintf(stderr, "row complete row / bit_index : %d, %d\n", row, bit_index);
-
-    if (decoder->verbose > 1)
-        fprintf(stderr, "%s: new buffer %hu rows\n", __func__, bitbuffer->num_rows);
+    decoder_logf(decoder, 2, __func__, "new buffer %hu rows", bitbuffer->num_rows);
 
     bitbuffer_invert(bitbuffer);
 
@@ -419,43 +399,39 @@ static int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // Validate message and reject it as fast as possible : check for preamble
 
         if (bitbuffer->bits_per_row[row] < INSTEON_BITLEN_MIN) {
-            // if (decoder->verbose )
-            //      fprintf(stderr, "%s: short row row=%hu len=%hu\n", __func__, row, bitbuffer->bits_per_row[row]);
+            // decoder_logf(decoder, 1, __func__, "short row row=%hu len=%hu", row, bitbuffer->bits_per_row[row]);
             fail_value = DECODE_ABORT_LENGTH;
             continue;
         }
-        // if (decoder->verbose)
-        //      fprintf(stderr, "%s: New row=%d len=%d\n", __func__,  row, bitbuffer->bits_per_row[row]);
+        // decoder_logf(decoder, 1, __func__, "New row=%d len=%d",  row, bitbuffer->bits_per_row[row]);
 
         while (1) {
             unsigned search_index = bit_index;
             int ret;
 
             if ((bitbuffer->bits_per_row[row] - bit_index) < INSTEON_BITLEN_MIN) {
-                 // fprintf(stderr, "%s: short remainder\n", __func__);
+                 // decoder_log(decoder, 2, __func__, "short remainder");
                  break;
              }
 
-            if (decoder->verbose > 1)
-                 fprintf(stderr, "%s: bitbuffer_search at row / search_index : %d, %u %u (%d)\n",
-                     __func__, row, search_index, bit_index, bitbuffer->bits_per_row[row]);
+            decoder_logf(decoder, 2, __func__, "bitbuffer_search at row / search_index : %d, %u %u (%d)",
+                        row, search_index, bit_index, bitbuffer->bits_per_row[row]);
 
             search_index = bitbuffer_search(bitbuffer, row, search_index, insteon_preamble, INSTEON_PREAMBLE_LEN);
 
             if (search_index >= bitbuffer->bits_per_row[row]) {
-                if (decoder->verbose > 1 && bit_index == 0)
-                    fprintf(stderr, "%s: insteon_preamble not found %u %u %d\n", __func__,
+                if (bit_index == 0)
+                    decoder_logf(decoder, 2, __func__, "insteon_preamble not found %u %u %d",
                         search_index, bit_index, bitbuffer->bits_per_row[row]);
                 break;
             }
 
-            if (decoder->verbose)
-                fprintf(stderr, "%s: parse_insteon_pkt at: row / search_index : %hu, %u (%hu)\n",
-                        __func__, row, search_index, bitbuffer->bits_per_row[row]);
+            decoder_logf(decoder, 1, __func__, "parse_insteon_pkt at: row / search_index : %hu, %u (%hu)",
+                        row, search_index, bitbuffer->bits_per_row[row]);
 
             ret = parse_insteon_pkt(decoder, bitbuffer, row, search_index);
 
-            // if (decoder->verbose) tf(stderr, "%s: parse_insteon_pkt ret value %d\n", __func__,  ret_value);
+            // decoder_logf(decoder, 1, __func__, "parse_insteon_pkt ret value %d", ret_value);
             if (ret > 0) { // preamble good, decode good
                 ret_value += ret;
                 bit_index = search_index + INSTEON_BITLEN_MIN; // move a full packet length
@@ -482,20 +458,20 @@ static int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
  *
  */
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         // "id",
         // "data",
         "from_id",
         "to_id",
         "msg_type",     // packet type at int
-        "msg_type_str",  // packet type as formated string
+        "msg_type_str",  // packet type as formatted string
         // "command",
         "extended",     // 0= short pkt, 1=extended pkt
         "hops_max",     // almost always 3
         "hops_left",    // remaining hops
-        "formatted",   // entire packet as a formated string with hex
-        "mic", // remove if not applicable
+        "formatted",   // entire packet as a formatted string with hex
+        "mic",
         "payload",      // packet as a hex string
         "cmd_dat",      // array of int containing command + data
         "msg_str",
@@ -508,7 +484,7 @@ static char *output_fields[] = {
 
 //     -X 'n=Insteon_F16,m=FSK_PCM,s=110,l=110,t=15,g=20000,r=20000,invert,match={16}0x6666'
 
-r_device insteon = {
+r_device const insteon = {
         .name        = "Insteon",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 110, // short gap is 132 us

@@ -58,7 +58,7 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t a, b, c;
     uint8_t packet[PHILIPS_PACKETLEN];
     uint8_t c_crc;
-    uint8_t channel, battery_status;
+    uint8_t channel, battery_low;
     int temp_raw;
     float temperature;
     data_t *data;
@@ -68,19 +68,13 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* Correct number of rows? */
     if (bitbuffer->num_rows != 1) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: wrong number of rows (%d)\n",
-                    __func__, bitbuffer->num_rows);
-        }
+        decoder_logf(decoder, 2, __func__, "wrong number of rows (%d)", bitbuffer->num_rows);
         return DECODE_ABORT_EARLY;
     }
 
     /* Correct bit length? */
     if (bitbuffer->bits_per_row[0] != PHILIPS_BITLEN) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: wrong number of bits (%d)\n",
-                    __func__, bitbuffer->bits_per_row[0]);
-        }
+        decoder_logf(decoder, 2, __func__, "wrong number of bits (%d)", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH;
     }
 
@@ -88,9 +82,7 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* Correct start sequence? */
     if ((bb[0] >> 4) != PHILIPS_STARTNIBBLE) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: wrong start nibble\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "wrong start nibble");
         return DECODE_ABORT_EARLY;
     }
 
@@ -104,18 +96,12 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* If debug enabled, print the combined majority-wins packet */
-    if (decoder->verbose > 1) {
-        fprintf(stderr, "%s: combined packet = ", __func__);
-        bitrow_print(packet, PHILIPS_PACKETLEN * 8);
-    }
+    decoder_logf_bitrow(decoder, 2, __func__, packet, PHILIPS_PACKETLEN * 8, "combined packet");
 
     /* Correct CRC? */
     c_crc = crc4(packet, PHILIPS_PACKETLEN, 0x9, 1); /* Including the CRC nibble */
     if (0 != c_crc) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: CRC failed, calculated %x\n",
-                    __func__, c_crc);
-        }
+        decoder_logf(decoder, 1, __func__, "CRC failed, calculated %x", c_crc);
         return DECODE_FAIL_MIC;
     }
 
@@ -133,13 +119,13 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     temperature = (temp_raw - 500) * 0.1f;
 
     /* Battery status */
-    battery_status = packet[PHILIPS_PACKETLEN - 1] & 0x40;
+    battery_low = packet[PHILIPS_PACKETLEN - 1] & 0x40;
 
     /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, _X("Philips-Temperature","Philips outdoor temperature sensor"),
+            "model",         "",            DATA_STRING, "Philips-Temperature",
             "channel",       "Channel",     DATA_INT,    channel,
-            "battery",       "Battery",     DATA_STRING, battery_status ? "LOW" : "OK",
+            "battery_ok",    "Battery",     DATA_INT,    !battery_low,
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
             NULL);
     /* clang-format on */
@@ -148,15 +134,15 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "channel",
-        "battery",
+        "battery_ok",
         "temperature_C",
         NULL,
 };
 
-r_device philips_aj3650 = {
+r_device const philips_aj3650 = {
         .name        = "Philips outdoor temperature sensor (type AJ3650)",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 2000,
@@ -164,6 +150,5 @@ r_device philips_aj3650 = {
 //        .gap_limit   = 8000,
         .reset_limit = 30000,
         .decode_fn   = &philips_aj3650_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

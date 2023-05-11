@@ -41,6 +41,26 @@ if(GIT_COMMIT) # is a git repo
 endif()
 
 ########################################################################
+# Fallback to get release version info from Changelog
+########################################################################
+if(NOT GIT_COMMIT AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CHANGELOG.md")
+    # parse the CHANGELOG.md, this is clever, i.e. might go wrong ;)
+    file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/CHANGELOG.md" CHANGELOG LIMIT_COUNT 42)
+    # list(FILTER ...) needs CMake 3.6+
+    foreach(item ${CHANGELOG})
+        string(REGEX MATCH "^## Release (.+)" item ${item})
+        if(CMAKE_MATCH_1)
+            list(APPEND RELEASE_VERSIONS ${CMAKE_MATCH_1})
+        endif()
+    endforeach()
+    if(RELEASE_VERSIONS)
+        list(GET RELEASE_VERSIONS 0 RELEASE_VERSION)
+        message(STATUS "Found Release version: ${RELEASE_VERSION}")
+        ADD_DEFINITIONS(-DGIT_VERSION=${RELEASE_VERSION})
+    endif()
+endif()
+
+########################################################################
 # Compiler specific setup
 ########################################################################
 set(CMAKE_C_EXTENSIONS OFF)
@@ -48,12 +68,19 @@ set(CMAKE_C_STANDARD 99)
 if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang") AND NOT WIN32)
     ADD_DEFINITIONS(-Wall)
     ADD_DEFINITIONS(-Wextra)
+    ADD_DEFINITIONS(-Wvla)
     ADD_DEFINITIONS(-Wsign-compare)
-    ADD_DEFINITIONS(-Wno-unused)
-    ADD_DEFINITIONS(-Wno-unused-parameter)
-    ADD_DEFINITIONS(-Wno-missing-field-initializers)
     ADD_DEFINITIONS(-std=c99)
     ADD_DEFINITIONS(-pedantic)
+    ADD_DEFINITIONS(-Wshadow)
+    ADD_DEFINITIONS(-Wmissing-prototypes)
+    if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang" OR NOT "7.0.0" VERSION_GREATER CMAKE_C_COMPILER_VERSION)
+        ADD_DEFINITIONS(-Wimplicit-fallthrough)
+    endif()
+    #ADD_DEFINITIONS(-Wfloat-equal)
+    #ADD_DEFINITIONS(-Wbad-function-cast)
+    #ADD_DEFINITIONS(-Wdocumentation)
+
     # for strdup, setenv, use either
     #ADD_DEFINITIONS(-D_POSIX_C_SOURCE=200809) # does not work with uClibc
     ADD_DEFINITIONS(-D_GNU_SOURCE)
@@ -77,6 +104,10 @@ if(MSVC)
     ADD_DEFINITIONS(-D_CRT_NONSTDC_NO_DEPRECATE)
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
     ADD_DEFINITIONS(-DNOMINMAX)
+    # don't warn on type truncation
+    add_compile_options("/wd4244")
+    add_compile_options("/wd4267")
+    add_compile_options("/wd4305")
 endif()
 
 # Fix printf %zu
@@ -84,21 +115,118 @@ if(MINGW)
     add_definitions(-D__USE_MINGW_ANSI_STDIO)
 endif()
 
+# Make sure we get M_PI
+if(WIN32)
+    add_definitions(-D_USE_MATH_DEFINES)
+endif()
+
 ########################################################################
-# Find build dependencies
+# Use pkg-config
+########################################################################
+find_package(PkgConfig)
+
+########################################################################
+# Option to force ANSI-colored build output (for Ninja)
+########################################################################
+option(FORCE_COLORED_BUILD "Always produce ANSI-colored build output (GNU/Clang only)." FALSE)
+if(FORCE_COLORED_BUILD)
+    if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+       add_compile_options(-fdiagnostics-color=always)
+    elseif("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+       add_compile_options(-fcolor-diagnostics)
+    endif()
+endif()
+
+########################################################################
+# Enable IPv6 support
+########################################################################
+option(ENABLE_IPV6 "Enable IPv6 support" TRUE)
+if(ENABLE_IPV6)
+    message(STATUS "IPv6 support enabled.")
+    ADD_DEFINITIONS(-DMG_ENABLE_IPV6=1)
+    if(MINGW)
+        # IPv6 requires at least Vista for inet_pton, inet_ntop
+        add_definitions(-D_WIN32_WINNT=0x0600)
+    endif()
+else()
+    message(STATUS "IPv6 support disabled.")
+endif()
+
+########################################################################
+# Find Threads support build dependencies
+########################################################################
+set(ENABLE_THREADS AUTO CACHE STRING "Enable Threads support")
+set_property(CACHE ENABLE_THREADS PROPERTY STRINGS AUTO ON OFF)
+if(ENABLE_THREADS) # AUTO / ON
+
+find_package(Threads)
+if(Threads_FOUND)
+    message(STATUS "Threads support will be compiled.")
+    ADD_DEFINITIONS(-DTHREADS)
+elseif(ENABLE_THREADS STREQUAL "AUTO")
+    message(STATUS "Threads support not found, some features will be disabled.")
+else()
+    message(FATAL_ERROR "Threads support not found.")
+endif()
+
+else()
+    message(STATUS "Threads support disabled.")
+endif()
+
+########################################################################
+# Find OpenSSL build dependencies
+########################################################################
+set(ENABLE_OPENSSL AUTO CACHE STRING "Enable OpenSSL TLS support")
+set_property(CACHE ENABLE_OPENSSL PROPERTY STRINGS AUTO ON OFF)
+if(ENABLE_OPENSSL) # AUTO / ON
+
+find_package(OpenSSL)
+# Get actual libs from pkg-config to support edge cases (static on Sparc)
+# This will break Win32 builds, exclude that platform
+pkg_check_modules(PC_OPENSSL QUIET openssl)
+if(PC_OPENSSL_FOUND AND NOT WIN32)
+    set(OPENSSL_LIBRARIES ${PC_OPENSSL_LINK_LIBRARIES})
+endif()
+if(OPENSSL_FOUND)
+    message(STATUS "OpenSSL TLS support will be compiled. Found version ${OPENSSL_VERSION}")
+    include_directories(${OPENSSL_INCLUDE_DIR})
+    list(APPEND SDR_LIBRARIES ${OPENSSL_LIBRARIES})
+    ADD_DEFINITIONS(-DOPENSSL)
+    ADD_DEFINITIONS(-DMG_ENABLE_SSL)
+elseif(ENABLE_OPENSSL STREQUAL "AUTO")
+    message(STATUS "OpenSSL development files not found, TLS won't be possible.")
+else()
+    message(FATAL_ERROR "OpenSSL development files not found.")
+endif()
+
+else()
+    message(STATUS "OpenSSL TLS disabled.")
+endif()
+
+########################################################################
+# Find LibRTLSDR build dependencies
 ########################################################################
 set(ENABLE_RTLSDR ON CACHE STRING "Enable RTL-SDR (lbrtlsdr) driver support")
 set_property(CACHE ENABLE_RTLSDR PROPERTY STRINGS AUTO ON OFF)
 if(ENABLE_RTLSDR) # AUTO / ON
 
-find_package(PkgConfig)
 find_package(LibRTLSDR)
 find_package(LibUSB)
-if(LIBRTLSDR_FOUND AND LIBUSB_FOUND)
-    message(STATUS "RTL-SDR device input will be compiled.")
-    include_directories(${LIBRTLSDR_INCLUDE_DIRS} ${LIBUSB_INCLUDE_DIRS})
-    list(APPEND SDR_LIBRARIES ${LIBRTLSDR_LIBRARIES} ${LIBUSB_LIBRARIES})
+if(LibRTLSDR_FOUND)
+    message(STATUS "RTL-SDR device input will be compiled. Found version ${LibRTLSDR_VERSION}")
+    include_directories(${LibRTLSDR_INCLUDE_DIRS})
+    list(APPEND SDR_LIBRARIES ${LibRTLSDR_LIBRARIES})
     ADD_DEFINITIONS(-DRTLSDR)
+
+if(LibUSB_FOUND)
+    message(STATUS "libusb-1.0 error messages are available. Found version ${LibUSB_VERSION}")
+    include_directories(${LibUSB_INCLUDE_DIRS})
+    list(APPEND SDR_LIBRARIES ${LibUSB_LIBRARIES})
+    ADD_DEFINITIONS(-DLIBUSB1)
+else()
+    message(STATUS "libusb-1.0 error messages are not available.")
+endif()
+
 elseif(ENABLE_RTLSDR STREQUAL "AUTO")
     message(STATUS "RTL-SDR development files not found, RTL-SDR device input won't be possible.")
 else()
@@ -109,13 +237,16 @@ else()
     message(STATUS "RTL-SDR device input disabled.")
 endif()
 
+########################################################################
+# Find SoapySDR build dependencies
+########################################################################
 set(ENABLE_SOAPYSDR AUTO CACHE STRING "Enable SoapySDR driver support")
 set_property(CACHE ENABLE_SOAPYSDR PROPERTY STRINGS AUTO ON OFF)
 if(ENABLE_SOAPYSDR) # AUTO / ON
 
 find_package(SoapySDR "0.6" NO_MODULE)
 if(SoapySDR_FOUND)
-    message(STATUS "SoapySDR device input will be compiled.")
+    message(STATUS "SoapySDR device input will be compiled. Found version ${SoapySDR_VERSION}")
     include_directories(${SoapySDR_INCLUDE_DIRS})
     list(APPEND SDR_LIBRARIES ${SoapySDR_LIBRARIES})
     ADD_DEFINITIONS(-DSOAPYSDR)
@@ -129,6 +260,9 @@ else()
     message(STATUS "SoapySDR device input disabled.")
 endif()
 
+########################################################################
+# Setup optional Profiling with GPerfTools
+########################################################################
 # cmake -DCMAKE_BUILD_TYPE=Profile ..
 # CPUPROFILE=prof.out ./src/rtl_433 ...
 # pprof -text ./src/rtl_433 prof.out
@@ -144,13 +278,13 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Profile")
     ADD_DEFINITIONS(-fno-builtin-free)
 endif()
 
-if(MINGW OR MSVC)
-list(APPEND NET_LIBRARIES ws2_32 mswsock)
-endif()
-
 ########################################################################
 # Setup the include and linker paths
 ########################################################################
+if(MINGW OR MSVC)
+list(APPEND NET_LIBRARIES ws2_32 mswsock netapi32)
+endif()
+
 include_directories(
     BEFORE
     ${PROJECT_SOURCE_DIR}/include
@@ -210,11 +344,6 @@ analyzer (requires Clang)" OFF)
 # Build tests
 ########################################################################
 include(CTest) # note: this adds a BUILD_TESTING which defaults to ON
-
-########################################################################
-# Configure CI deploy
-########################################################################
-configure_file(${PROJECT_SOURCE_DIR}/.bintray.json ${CMAKE_CURRENT_BINARY_DIR}/bintray.json)
 
 ########################################################################
 # Add subdirectories

@@ -32,7 +32,7 @@ process.exitCode = [
   .reduce((e, f) => e + style_check(f), 0) > 0
 
 function discard_vendor(filename) {
-  return filename.indexOf('/mongoose.') < 0
+  return filename.indexOf('/jsmn.') < 0 && filename.indexOf('/mongoose.') < 0
 }
 
 function glob_dir(dir) {

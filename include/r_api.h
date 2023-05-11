@@ -49,7 +49,7 @@ char *time_pos_str(struct r_cfg *cfg, unsigned samples_ago, char *buf);
 
 char const **well_known_output_fields(struct r_cfg *cfg);
 
-char const **determine_csv_fields(struct r_cfg *cfg, char const **well_known, int *num_fields);
+char const **determine_csv_fields(struct r_cfg *cfg, char const *const *well_known, int *num_fields);
 
 int run_ook_demods(struct list *r_devs, struct pulse_data *pulse_data);
 
@@ -57,7 +57,11 @@ int run_fsk_demods(struct list *r_devs, struct pulse_data *fsk_pulse_data);
 
 /* handlers */
 
+void r_redirect_logging(struct r_cfg *cfg);
+
 void event_occurred_handler(struct r_cfg *cfg, struct data *data);
+
+void log_device_handler(struct r_device *r_dev, int level, struct data *data);
 
 void data_acquired_handler(struct r_device *r_dev, struct data *data);
 
@@ -71,6 +75,8 @@ void add_json_output(struct r_cfg *cfg, char *param);
 
 void add_csv_output(struct r_cfg *cfg, char *param);
 
+void add_log_output(struct r_cfg *cfg, char *param);
+
 void add_kv_output(struct r_cfg *cfg, char *param);
 
 void add_mqtt_output(struct r_cfg *cfg, char *param);
@@ -79,9 +85,15 @@ void add_influx_output(struct r_cfg *cfg, char *param);
 
 void add_syslog_output(struct r_cfg *cfg, char *param);
 
+void add_http_output(struct r_cfg *cfg, char *param);
+
+void add_trigger_output(struct r_cfg *cfg, char *param);
+
 void add_null_output(struct r_cfg *cfg, char *param);
 
-void start_outputs(struct r_cfg *cfg, char const **well_known);
+void add_rtltcp_output(struct r_cfg *cfg, char *param);
+
+void start_outputs(struct r_cfg *cfg, char const *const *well_known);
 
 void add_sr_dumper(struct r_cfg *cfg, char const *spec, int overwrite);
 
@@ -90,6 +102,8 @@ void close_dumpers(struct r_cfg *cfg);
 void add_dumper(struct r_cfg *cfg, char const *spec, int overwrite);
 
 void add_infile(struct r_cfg *cfg, char *in_file);
+
+void add_data_tag(struct r_cfg *cfg, char *param);
 
 /* runtime */
 

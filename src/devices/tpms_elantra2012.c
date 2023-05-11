@@ -52,7 +52,6 @@ Preamble is 111 0001 0101 0101 (0x7155).
 static int tpms_elantra2012_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
-    unsigned start_pos;
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
     uint32_t id;
@@ -63,7 +62,7 @@ static int tpms_elantra2012_decode(r_device *decoder, bitbuffer_t *bitbuffer, un
     int temperature_c;
     int triggered, battery_low, storage;
 
-    start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 64);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 64);
     // require 64 data bits
     if (packet_bits.bits_per_row[0] < 64) {
         return DECODE_ABORT_LENGTH;
@@ -83,9 +82,9 @@ static int tpms_elantra2012_decode(r_device *decoder, bitbuffer_t *bitbuffer, un
     pressure_kpa  = b[0] + 60;
     temperature_c = b[1] - 50;
 
-    storage = (b[6] & 0x04) >> 2;
+    storage     = (b[6] & 0x04) >> 2;
     battery_low = (b[6] & 0x02) >> 1;
-    triggered = (b[6] & 0x01) >> 0;
+    triggered   = (b[6] & 0x01) >> 0;
 
     /* clang-format off */
     data = data_make(
@@ -135,7 +134,7 @@ static int tpms_elantra2012_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events > 0 ? events : ret;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "type",
         "id",
@@ -149,13 +148,12 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_elantra2012 = {
+r_device const tpms_elantra2012 = {
         .name        = "Elantra2012 TPMS",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 49,  // 12-13 samples @250k
         .long_width  = 49,  // FSK
         .reset_limit = 150, // Maximum gap size before End Of Message [us].
         .decode_fn   = &tpms_elantra2012_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

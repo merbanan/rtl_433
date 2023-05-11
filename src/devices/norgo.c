@@ -131,23 +131,20 @@ static int norgo_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             && bitbuffer->bits_per_row[0] != 72
             && bitbuffer->bits_per_row[0] != 55
             && bitbuffer->bits_per_row[0] != 71) {
-        if (decoder->verbose)
-            fprintf(stderr, "%s: wrong size of bit per row %d\n",
-                    __func__, bitbuffer->bits_per_row[0]);
+        decoder_logf(decoder, 1, __func__, "wrong size of bit per row %d",
+                    bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH;
     }
 
     if (b[0] != (uint8_t)~0xFA) {
-        if (decoder->verbose)
-            bitbuffer_printf(bitbuffer, "%s: wrong preamble: ", __func__);
+        decoder_log_bitbuffer(decoder, 1, __func__, bitbuffer, "wrong preamble");
         return DECODE_ABORT_EARLY;
     }
 
     int xor = xor_bytes(b + 1, (bitbuffer->bits_per_row[0] - 15) / 8);
     if (xor != 0xff) { // before invert 0 is ff
-        if (decoder->verbose)
-            bitrow_printf(b, bitbuffer->bits_per_row[0], "%s: XOR fail (%02x): ",
-                    __func__, xor);
+        decoder_logf_bitrow(decoder, 1, __func__, b, bitbuffer->bits_per_row[0], "XOR fail (%02x)",
+                    xor);
         return DECODE_FAIL_MIC;
     }
 
@@ -160,9 +157,8 @@ static int norgo_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         calc_chk = calc_checksum(b, 5 * 8);
         checksum = b[6];
         if (calc_chk != checksum) {
-            if (decoder->verbose)
-                bitbuffer_printf(bitbuffer, "%s: wrong checksum %02X vs. %02X: ",
-                        __func__, calc_chk, checksum);
+            decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "wrong checksum %02X vs. %02X",
+                        calc_chk, checksum);
             return DECODE_FAIL_MIC;
         }
 
@@ -184,9 +180,8 @@ static int norgo_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         calc_chk = calc_checksum(b, 7 * 8);
         checksum = b[8];
         if (calc_chk != checksum) {
-            if (decoder->verbose)
-                bitbuffer_printf(bitbuffer, "%s: wrong checksum %02X vs. %02X: ",
-                        __func__, checksum, calc_chk);
+            decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "wrong checksum %02X vs. %02X",
+                        checksum, calc_chk);
             return DECODE_FAIL_MIC;
         }
         impulses = (b[2] >> 4) | (b[3] << 4) | (b[4] << 12) | (b[5] << 20) | (((uint64_t)b[6] & 0x3F) << 28);
@@ -213,7 +208,7 @@ static int norgo_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -224,7 +219,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device norgo = {
+r_device const norgo = {
         .name        = "Norgo NGE101",
         .modulation  = OOK_PULSE_DMC,
         .short_width = 486,
@@ -233,6 +228,5 @@ r_device norgo = {
         .sync_width  = 0,
         .tolerance   = 120,
         .decode_fn   = &norgo_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

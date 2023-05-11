@@ -150,34 +150,28 @@ battery change for each value
 
 static int rubicson_48659_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int row;
-    bitrow_t *bb = bitbuffer->bb;
-    unsigned int id;
-    float temp_f;
-    data_t *data;
-    uint8_t checksum;
-
     // Compare first four bytes of rows that have 32 or 33 bits.
     // more then 25 repeats are not uncommon
-    row = bitbuffer_find_repeated_row(bitbuffer, 10, 32);
+    int row = bitbuffer_find_repeated_row(bitbuffer, 10, 32);
     if (row < 0)
         return DECODE_ABORT_EARLY;
+    uint8_t *b = bitbuffer->bb[row];
 
     if ((bitbuffer->bits_per_row[row] > 33) || (bitbuffer->bits_per_row[row] < 10))
         return DECODE_ABORT_LENGTH;
 
-    checksum = add_bytes(bb[row], 3) - bb[row][3];
+    uint8_t checksum = add_bytes(b, 3) - b[3];
     if (checksum != 0xa6) {
         return DECODE_FAIL_MIC;
     }
 
-    id = bb[row][0];
+    int id = b[0];
     // 1 sign bit and 10 bits for the value
-    temp_f = ((bb[row][1] & 0x04) >> 2) ? -1 : 1 * (((bb[row][1] & 0x3) << 8) + bb[row][2]);
+    float temp_f = ((b[1] & 0x04) >> 2) ? -1 : 1 * (((b[1] & 0x3) << 8) | b[2]);
 
     /* clang-format off */
-    data = data_make(
-            "model",         "",            DATA_STRING, _X("Rubicson-48659","Rubicson 48659"),
+    data_t *data = data_make(
+            "model",         "",            DATA_STRING, "Rubicson-48659",
             "id",            "Id",          DATA_INT,    id,
             "temperature_F", "Temperature", DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_f,
             "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
@@ -188,7 +182,7 @@ static int rubicson_48659_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "temperature_F",
@@ -196,7 +190,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device rubicson_48659 = {
+r_device const rubicson_48659 = {
         .name        = "Rubicson 48659 Thermometer",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 940,
@@ -204,6 +198,5 @@ r_device rubicson_48659 = {
         .gap_limit   = 2000,
         .reset_limit = 4000,
         .decode_fn   = &rubicson_48659_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

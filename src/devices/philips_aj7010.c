@@ -40,60 +40,44 @@ Data format is:
 
 static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t *b;
-    data_t *data;
-    int channel;
-    int temp_raw;
-    float temp_c;
-
     bitbuffer_invert(bitbuffer);
 
     // Correct number of rows?
     if (bitbuffer->num_rows != 1) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: wrong number of rows (%d)\n",
-                    __func__, bitbuffer->num_rows);
-        }
+        decoder_logf(decoder, 1, __func__, "wrong number of rows (%d)", bitbuffer->num_rows);
         return DECODE_ABORT_LENGTH;
     }
 
     // Correct bit length?
     if (bitbuffer->bits_per_row[0] != 40) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: wrong number of bits (%d)\n",
-                    __func__, bitbuffer->bits_per_row[0]);
+        if (bitbuffer->bits_per_row[0] != 0) {
+            decoder_logf(decoder, 1, __func__, "wrong number of bits (%d)", bitbuffer->bits_per_row[0]);
         }
         return DECODE_ABORT_LENGTH;
     }
 
-    b = bitbuffer->bb[0];
+    uint8_t *b = bitbuffer->bb[0];
 
     // No need to decode/extract values for simple test
     if (!b[0] && !b[2] && !b[3] && !b[4]) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0xff\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0xff");
         return DECODE_FAIL_SANITY;
     }
 
     // Correct start sequence?
     if (b[0] != 0x00) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: wrong start nibble\n", __func__);
-        }
+        decoder_log(decoder, 1, __func__, "wrong start nibble");
         return DECODE_FAIL_SANITY;
     }
 
     // Correct checksum?
     if (xor_bytes(b, 5) && xor_bytes(b, 3) ^ b[4]) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: bad checksum\n", __func__);
-        }
+        decoder_log(decoder, 1, __func__, "bad checksum");
         return DECODE_FAIL_MIC;
     }
 
     // Channel
-    channel = (b[1]);
+    int channel = (b[1]);
     switch (channel) {
     case 0x36:
         channel = 3;
@@ -108,19 +92,15 @@ static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         channel = 0;
         break;
     }
-    if (decoder->verbose) {
-        fprintf(stderr, "channel decoded is %d\n", channel);
-    }
+    decoder_logf(decoder, 1, __func__, "channel decoded is %d", channel);
 
     // Temperature
-    temp_raw = ((b[3] & 0x3f) << 8) | b[2];
-    temp_c   = (temp_raw / 353.0) - 9.2; // TODO: this is very likely wrong
-    if (decoder->verbose) {
-        fprintf(stderr, "\ntemperature: raw: %d\t%08X\tconverted: %.2f\n", temp_raw, temp_raw, temp_c);
-    }
+    int temp_raw = ((b[3] & 0x3f) << 8) | b[2];
+    float temp_c = (temp_raw / 353.0f) - 9.2f; // TODO: this is very likely wrong
+    decoder_logf(decoder, 1, __func__, "temperature: raw: %d %08X converted: %.2f", temp_raw, temp_raw, temp_c);
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Philips-AJ7010",
             "channel",          "Channel",      DATA_INT,    channel,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
@@ -132,7 +112,7 @@ static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "time",
         "model",
         "channel",
@@ -141,7 +121,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device philips_aj7010 = {
+r_device const philips_aj7010 = {
         .name        = "Philips outdoor temperature sensor (type AJ7010)",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 2000,
@@ -149,6 +129,5 @@ r_device philips_aj7010 = {
         .sync_width  = 1000,
         .reset_limit = 30000,
         .decode_fn   = &philips_aj7010_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -1,13 +1,13 @@
 ########################################################################
 # Compile test cases
 ########################################################################
-add_executable(data-test data-test.c)
+add_executable(data-test data-test.c ../src/output_file.c ../src/term_ctl.c)
 
 target_link_libraries(data-test data)
 
 add_test(data-test data-test)
 
-add_executable(baseband-test baseband-test.c ../src/baseband.c)
+add_executable(baseband-test baseband-test.c ../src/baseband.c ../src/logger.c)
 
 if(UNIX)
 target_link_libraries(baseband-test m)
@@ -39,6 +39,8 @@ add_test(rtl_433_help ../src/rtl_433 -h)
 add_executable(style-check style-check.c)
 file(GLOB STYLE_CHECK_FILES  ../include/*.h ../src/*.c ../src/devices/*.c ../CMakeLists.txt ../*/CMakeLists.txt)
 list(REMOVE_ITEM STYLE_CHECK_FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/../include/jsmn.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/jsmn.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../include/mongoose.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/../src/mongoose.c")
 add_test(style-check style-check ${STYLE_CHECK_FILES})
@@ -49,6 +51,8 @@ add_test(style-check style-check ${STYLE_CHECK_FILES})
 if(BUILD_TESTING_ANALYZER)
 file(GLOB ANALYZER_CHECK_FILES  ../include/*.h ../src/*.c ../src/devices/*.c)
 list(REMOVE_ITEM ANALYZER_CHECK_FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/../include/jsmn.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/jsmn.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../include/mongoose.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/../src/mongoose.c")
 add_test(clang-analyzer

@@ -25,7 +25,7 @@ rtl_433 \- Generic RF data receiver and decoder for ISM band devices using RTL-S
 This manual page documents briefly the \fBrtl_433\fP command.
 .sp
 \fBrtl_433\fP is a generic data receiver, mainly for the 433.92 MHz, 868 MHz (SRD),
-315 MHz, and 915 MHz ISM bands. It works with RTL\-SDR and/or SoapySDR. Activly tested
+315 MHz, and 915 MHz ISM bands. It works with RTL\-SDR and/or SoapySDR. Actively tested
 and supported are Realtek RTL2832 based DVB dongles (using RTL\-SDR) and LimeSDR
 (LimeSDR USB and LimeSDR mini engineering samples kindly provided by MyriadRf),
 PlutoSDR, HackRF One (using SoapySDR drivers), as well as SoapyRemote.
@@ -44,7 +44,7 @@ Output the version string and exit
 .TP
 [ \fB\-v\fI\fP ]
 Increase verbosity (can be used multiple times).
-       \-v : verbose, \-vv : verbose decoders, \-vvv : debug decoders, \-vvvv : trace decoding).
+       \-v : verbose notice, \-vv : verbose info, \-vvv : debug, \-vvvv : trace.
 .TP
 [ \fB\-c\fI <path>\fP ]
 Read config options from a file
@@ -54,8 +54,9 @@ Read config options from a file
 [\-g <gain> | help] (default: auto)
 .TP
 [ \fB\-t\fI <settings>\fP ]
-apply a list of keyword=value settings for SoapySDR devices
-       e.g. \-t "antenna=A,bandwidth=4.5M,rfnotch_ctrl=false"
+apply a list of keyword=value settings to the SDR device
+       e.g. for SoapySDR \-t "antenna=A,bandwidth=4.5M,rfnotch_ctrl=false"
+       for RTL\-SDR use "direct_samp[=1]", "offset_tune[=1]", "digital_agc[=1]", "biastee[=1]"
 .TP
 [ \fB\-f\fI <frequency>\fP ]
 Receive frequency(s) (default: 433920000 Hz)
@@ -63,35 +64,44 @@ Receive frequency(s) (default: 433920000 Hz)
 [ \fB\-H\fI <seconds>\fP ]
 Hop interval for polling of multiple frequencies (default: 600 seconds)
 .TP
-[ \fB\-p\fI <ppm_error\fP ]
+[ \fB\-p\fI <ppm_error>\fP ]
 Correct rtl\-sdr tuner frequency offset error (default: 0)
 .TP
 [ \fB\-s\fI <sample rate>\fP ]
 Set sample rate (default: 250000 Hz)
+.TP
+[ \fB\-D\fI restart | pause | quit | manual\fP ]
+Input device run mode options.
 .SS "Demodulator options"
 .TP
 [ \fB\-R\fI <device> | help\fP ]
 Enable only the specified device decoding protocol (can be used multiple times)
        Specify a negative number to disable a device decoding protocol (can be used multiple times)
 .TP
-[ \fB\-G\fI\fP ]
-Enable blacklisted device decoding protocols, for testing only.
-.TP
 [ \fB\-X\fI <spec> | help\fP ]
 Add a general purpose decoder (prepend \-R 0 to disable all decoders)
 .TP
-[ \fB\-Y\fI level=<dB level>\fP ]
-Manual detection level used to determine pulses (\-1.0 to \-30.0) (0=auto)
-.TP
-[ \fB\-n\fI <value>\fP ]
-Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)
-.TP
 [ \fB\-Y\fI auto | classic | minmax\fP ]
 FSK pulse detector mode.
-.SS "Analyze/Debug options"
 .TP
-[ \fB\-a\fI\fP ]
-Analyze mode. Print a textual description of the signal.
+[ \fB\-Y\fI level=<dB level>\fP ]
+Manual detection level used to determine pulses (\-1.0 to \-30.0) (0=auto).
+.TP
+[ \fB\-Y\fI minlevel=<dB level>\fP ]
+Manual minimum detection level used to determine pulses (\-1.0 to \-99.0).
+.TP
+[ \fB\-Y\fI minsnr=<dB level>\fP ]
+Minimum SNR to determine pulses (1.0 to 99.0).
+.TP
+[ \fB\-Y\fI autolevel\fP ]
+Set minlevel automatically based on average estimated noise.
+.TP
+[ \fB\-Y\fI squelch\fP ]
+Skip frames below estimated noise level to reduce cpu load.
+.TP
+[ \fB\-Y\fI ampest | magest\fP ]
+Choose amplitude or magnitude level estimator.
+.SS "Analyze/Debug options"
 .TP
 [ \fB\-A\fI\fP ]
 Pulse Analyzer. Enable pulse analysis and decode attempt.
@@ -115,19 +125,22 @@ Save data stream to output file (a '\-' dumps samples to stdout)
 Save data stream to output file, overwrite existing file
 .SS "Data output options"
 .TP
-[ \fB\-F\fI kv | json | csv | mqtt | influx | syslog | null | help\fP ]
+[ \fB\-F\fI log | kv | json | csv | mqtt | influx | syslog | trigger | null | help\fP ]
 Produce decoded output in given format.
        Append output to file with :<filename> (e.g. \-F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. \-F syslog:127.0.0.1:1514
 .TP
-[ \fB\-M\fI time[:<options>] | protocol | level | stats | bits | help\fP ]
+[ \fB\-M\fI time[:<options>] | protocol | level | noise[:<secs>] | stats | bits | help\fP ]
 Add various meta data to each output.
 .TP
-[ \fB\-K\fI FILE | PATH | <tag> | <key>=<value>\fP ]
+[ \fB\-K\fI FILE | PATH | <tag> | <key>=<tag>\fP ]
 Add an expanded token or fixed tag to every output line.
 .TP
 [ \fB\-C\fI native | si | customary\fP ]
 Convert units in decoded output.
+.TP
+[ \fB\-n\fI <value>\fP ]
+Specify number of samples to take (each sample is an I/Q pair)
 .TP
 [ \fB\-T\fI <seconds>\fP ]
 Specify number of seconds to run, also 12:34 or 1h23m45s
@@ -210,6 +223,9 @@ gap=<gap> (or: g=<gap>)
 .RS
 tolerance=<tolerance> (or: t=<tolerance>)
 .RE
+.RS
+priority=<n> : run decoder only as fallback
+.RE
 where:
 <name> can be any descriptive name tag you need in the output
 <modulation> is one of:
@@ -217,7 +233,10 @@ where:
 OOK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit
 .RE
 .RS
-OOK_PCM :         Pulse Code Modulation (RZ or NRZ)
+OOK_PCM :         Non Return to Zero coding (Pulse Code)
+.RE
+.RS
+OOK_RZ :          Return to Zero coding (Pulse Code)
 .RE
 .RS
 OOK_PPM :         Pulse Position Modulation
@@ -248,7 +267,7 @@ FSK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit
 .RE
 <short>, <long>, <sync> are nominal modulation timings in us,
 <reset>, <gap>, <tolerance> are maximum modulation timings in us:
-PCM     short: Nominal width of pulse [us]
+PCM/RZ  short: Nominal width of pulse [us]
          long: Nominal width of bit period [us]
 PPM     short: Nominal width of '0' gap [us]
          long: Nominal width of '1' gap [us]
@@ -278,6 +297,12 @@ invert : invert all bits
 reflect : reflect each byte (MSB first to MSB last)
 .RE
 .RS
+decode_uart : UART 8n1 (10\-to\-8) decode
+.RE
+.RS
+decode_dm : Differential Manchester decode
+.RE
+.RS
 match=<bits> : only match if the <bits> are found
 .RE
 .RS
@@ -297,10 +322,10 @@ countonly : suppress detailed row output
 E.g. \-X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repeats>=3"
 .SS "Output format option"
 .TP
-[ \fB\-F\fI kv|json|csv|mqtt|influx|syslog|null\fP ]
+[ \fB\-F\fI log|kv|json|csv|mqtt|influx|syslog|trigger|null\fP ]
 Produce decoded output in given format.
 .RS
-Without this option the default is KV output. Use "\-F null" to remove the default.
+Without this option the default is LOG and KV output. Use "\-F null" to remove the default.
 .RE
 .RS
 Append output to file with :<filename> (e.g. \-F csv:log.csv), defaults to stdout.
@@ -352,7 +377,7 @@ Specify host/port for syslog with e.g. \-F syslog:127.0.0.1:1514
 .RE
 .SS "Meta information option"
 .TP
-[ \fB\-M\fI time[:<options>]|protocol|level|stats|bits|oldmodel\fP ]
+[ \fB\-M\fI time[:<options>]|protocol|level|noise[:<secs>]|stats|bits\fP ]
 Add various metadata to every output line.
 .RS
 Use "time" to add current date and time meta data (preset for live inputs).
@@ -361,7 +386,7 @@ Use "time" to add current date and time meta data (preset for live inputs).
 Use "time:rel" to add sample position meta data (preset for read\-file and stdin).
 .RE
 .RS
-Use "time:unix" to show the seconds since unix epoch as time meta data.
+Use "time:unix" to show the seconds since unix epoch as time meta data. This is always UTC.
 .RE
 .RS
 Use "time:iso" to show the time with ISO\-8601 format (YYYY\-MM\-DD"T"hh:mm:ss).
@@ -382,13 +407,19 @@ Use "time:utc" to output time in UTC.
 	(this may also be accomplished by invocation with TZ environment variable set).
 .RE
 .RS
-	"usec" and "utc" can be combined with other options, eg. "time:unix:utc:usec".
+	"usec" and "utc" can be combined with other options, eg. "time:iso:utc" or "time:unix:usec".
+.RE
+.RS
+Use "replay[:N]" to replay file inputs at (N\-times) realtime.
 .RE
 .RS
 Use "protocol" / "noprotocol" to output the decoder protocol number meta data.
 .RE
 .RS
 Use "level" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.
+.RE
+.RS
+Use "noise[:<secs>]" to report estimated noise level at intervals (default: 10 seconds).
 .RE
 .RS
 Use "stats[:[<level>][:<interval>]]" to report statistics (default: 600 seconds).
@@ -398,9 +429,6 @@ Use "stats[:[<level>][:<interval>]]" to report statistics (default: 600 seconds)
 .RE
 .RS
 Use "bits" to add bit representation to code outputs (for debug).
-.RE
-.RS
-Note: You can use "oldmodel" to get the old model keys. This will be removed shortly.
 .RE
 .SS "Read file option"
 .TP
@@ -466,7 +494,7 @@ Parameters are detected from the full path, file name, and extension.
 File content and format are detected as parameters, possible options are:
 .RE
 .RS
- 'cu8', 'cs16', 'cf32' ('IQ' implied),
+ 'cu8', 'cs8', 'cs16', 'cf32' ('IQ' implied),
 .RE
 .RS
  'am.s16', 'am.f32', 'fm.s16', 'fm.f32',

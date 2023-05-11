@@ -60,22 +60,22 @@ Based on code provided by Willi 'wherzig' in issue #30 (2014-04-21)
 static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    uint8_t *b;                          /* bits of a row            */
-    char *event_str = "UNKNOWN";         /* human-readable event     */
-    char x10_id_str[12] = "";            /* string showing hex value */
-    char x10_code_str[5] = "";           /* string showing hex value */
-    int battery_low = 0;                 /* battery indicator        */
-    int delay = 0;                       /* delay setting            */
-    uint8_t tamper = 0;                  /* tamper alarm indicator   */
-    uint8_t parity = 0;                  /* for CRC calculation      */
+    uint8_t *b;                       /* bits of a row            */
+    char const *event_str = "UNKNOWN"; /* human-readable event     */
+    char x10_id_str[12]   = "";        /* string showing hex value */
+    char x10_code_str[5]  = "";        /* string showing hex value */
+    int battery_low       = 0;         /* battery indicator        */
+    int delay             = 0;         /* delay setting            */
+    uint8_t tamper        = 0;         /* tamper alarm indicator   */
+    uint8_t parity        = 0;         /* for CRC calculation      */
 
     if (bitbuffer->num_rows != 2)
         return DECODE_ABORT_EARLY;
 
     /* First row should be sync, second row should be 41 bit message */
     if (bitbuffer->bits_per_row[1] < 41) {
-        if (decoder->verbose)
-            fprintf(stderr, "X10SEC: DECODE_ABORT_LENGTH, Received message length=%i\n", bitbuffer->bits_per_row[1]);
+        if (bitbuffer->bits_per_row[1] != 0)
+            decoder_logf(decoder, 1, __func__, "DECODE_ABORT_LENGTH, Received message length=%i", bitbuffer->bits_per_row[1]);
         return DECODE_ABORT_LENGTH;
     }
 
@@ -83,19 +83,17 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* validate what we received */
     if ((b[0] ^ b[1]) != 0x0f || (b[2] ^ b[3]) != 0xff) {
-        if (decoder->verbose)
-            fprintf(stderr, "X10SEC: DECODE_FAIL_SANITY, b0=%02x b1=%02x b2=%02x b3=%02x\n", b[0], b[1], b[2], b[3]);
+        decoder_logf(decoder, 1, __func__, "DECODE_FAIL_SANITY, b0=%02x b1=%02x b2=%02x b3=%02x", b[0], b[1], b[2], b[3]);
         return DECODE_FAIL_SANITY;
     }
 
     /* Check CRC */
     parity = b[0] ^ b[1] ^ b[2] ^ b[3] ^ b[4] ^ (b[5] & 0x80); // parity as byte
-    parity = (parity >> 4) ^ (parity & 0xf); // fold to nibble
-    parity = (parity >> 2) ^ (parity & 0x3); // fold to 2 bits
-    parity = (parity >> 1) ^ (parity & 0x1); // fold to 1 bit
-    if (parity) { // even parity - parity should be zero
-        if (decoder->verbose)
-            fprintf(stderr, "X10SEC: DECODE_FAIL_MIC CRC Fail, b0=%02x b1=%02x b2=%02x b3=%02x b4=%02x b5-CRC-bit=%02x\n", b[0], b[1], b[2], b[3], b[4], (b[5] & 0x80));
+    parity = (parity >> 4) ^ (parity & 0xf);                   // fold to nibble
+    parity = (parity >> 2) ^ (parity & 0x3);                   // fold to 2 bits
+    parity = (parity >> 1) ^ (parity & 0x1);                   // fold to 1 bit
+    if (parity) {                                              // even parity - parity should be zero
+        decoder_logf(decoder, 1, __func__, "DECODE_FAIL_MIC CRC Fail, b0=%02x b1=%02x b2=%02x b3=%02x b4=%02x b5-CRC-bit=%02x", b[0], b[1], b[2], b[3], b[4], (b[5] & 0x80));
         return DECODE_FAIL_MIC;
     }
 
@@ -105,62 +103,62 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* set event_str based on code received */
     switch (b[2] & 0xfe) {
-        case 0x00: // OPEN
-        case 0x04: // OPEN & Delay
-        case 0x40: // OPEN & Tamper Alarm
-        case 0x44: // OPEN & Tamper Alarm & Delay
-            event_str = "DOOR/WINDOW OPEN";
-            delay = !(b[2] & 0x04);
-            tamper = (b[2] & 0x40) >> 6;
-            break;
-        case 0x80: // CLOSED
-        case 0x84: // CLOSED & Delay
-        case 0xc0: // CLOSED & Tamper Alarm
-        case 0xc4: // CLOSED & Tamper Alarm & Delay
-            event_str = "DOOR/WINDOW CLOSED";
-            delay = !(b[2] & 0x04);
-            tamper = (b[2] & 0x40) >> 6;
-            break;
-        case 0x06:
-            event_str = "KEY-FOB ARM";
-            break;
-        case 0x0c: // MOTION TRIPPED
-        case 0x4c: // MOTION TRIPPED & Tamper Alarm
-            event_str = "MOTION TRIPPED";
-            tamper = (b[2] & 0x40) >> 6;
-            break;
-        case 0x26:
-            event_str = "KR18 PANIC";
-            break;
-        case 0x42:
-            event_str = "KEY-FOB LIGHTS A ON"; // KR18
-            break;
-        case 0x46:
-            event_str = "KEY-FOB LIGHTS B ON"; // KR15 and KR18
-            break;
-        case 0x82:
-            event_str = "SH624 SEC-REMOTE DISARM";
-            break;
-        case 0x86:
-            event_str = "KEY-FOB DISARM";
-            break;
-        case 0x88:
-            event_str = "KR15 PANIC";
-            break;
-        case 0x8c: // MOTION READY
-        case 0xcc: // MOTION READY & Tamper Alarm
-            event_str = "MOTION READY";
-            tamper = (b[2] & 0x40) >> 6;
-            break;
-        case 0x98:
-            event_str = "KR15 PANIC-3SECOND";
-            break;
-        case 0xc2:
-            event_str = "KEY-FOB LIGHTS A OFF"; // KR18
-            break;
-        case 0xc6:
-            event_str = "KEY-FOB LIGHTS B OFF"; // KR15 and KR18
-            break;
+    case 0x00: // OPEN
+    case 0x04: // OPEN & Delay
+    case 0x40: // OPEN & Tamper Alarm
+    case 0x44: // OPEN & Tamper Alarm & Delay
+        event_str = "DOOR/WINDOW OPEN";
+        delay     = !(b[2] & 0x04);
+        tamper    = (b[2] & 0x40) >> 6;
+        break;
+    case 0x80: // CLOSED
+    case 0x84: // CLOSED & Delay
+    case 0xc0: // CLOSED & Tamper Alarm
+    case 0xc4: // CLOSED & Tamper Alarm & Delay
+        event_str = "DOOR/WINDOW CLOSED";
+        delay     = !(b[2] & 0x04);
+        tamper    = (b[2] & 0x40) >> 6;
+        break;
+    case 0x06:
+        event_str = "KEY-FOB ARM";
+        break;
+    case 0x0c: // MOTION TRIPPED
+    case 0x4c: // MOTION TRIPPED & Tamper Alarm
+        event_str = "MOTION TRIPPED";
+        tamper    = (b[2] & 0x40) >> 6;
+        break;
+    case 0x26:
+        event_str = "KR18 PANIC";
+        break;
+    case 0x42:
+        event_str = "KEY-FOB LIGHTS A ON"; // KR18
+        break;
+    case 0x46:
+        event_str = "KEY-FOB LIGHTS B ON"; // KR15 and KR18
+        break;
+    case 0x82:
+        event_str = "SH624 SEC-REMOTE DISARM";
+        break;
+    case 0x86:
+        event_str = "KEY-FOB DISARM";
+        break;
+    case 0x88:
+        event_str = "KR15 PANIC";
+        break;
+    case 0x8c: // MOTION READY
+    case 0xcc: // MOTION READY & Tamper Alarm
+        event_str = "MOTION READY";
+        tamper    = (b[2] & 0x40) >> 6;
+        break;
+    case 0x98:
+        event_str = "KR15 PANIC-3SECOND";
+        break;
+    case 0xc2:
+        event_str = "KEY-FOB LIGHTS A OFF"; // KR18
+        break;
+    case 0xc6:
+        event_str = "KEY-FOB LIGHTS B OFF"; // KR15 and KR18
+        break;
     }
 
     /* get x10_id_str, x10_code_str ready for output */
@@ -168,20 +166,17 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     sprintf(x10_code_str, "%02x", b[2]);
 
     /* debug output */
-    if (decoder->verbose) {
-        fprintf(stderr, "X10SEC: id=%02x%02x code=%02x event_str=%s\n", b[0], b[4], b[2], event_str);
-        bitbuffer_print(bitbuffer);
-    }
+    decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "id=%02x%02x code=%02x event_str=%s", b[0], b[4], b[2], event_str);
 
     /* build and handle data set for normal output */
     /* clang-format off */
     data = data_make(
-            "model",        "",             DATA_STRING, _X("X10-Security","X10 Security"),
+            "model",        "",             DATA_STRING, "X10-Security",
             "id",           "Device ID",    DATA_STRING, x10_id_str,
             "code",         "Code",         DATA_STRING, x10_code_str,
             "event",        "Event",        DATA_STRING, event_str,
             "delay",        "Delay",        DATA_COND,   delay,         DATA_INT, delay,
-            "battery_ok",   "Battery OK",   DATA_COND,   battery_low,   DATA_INT, !battery_low,
+            "battery_ok",   "Battery",      DATA_COND,   battery_low,   DATA_INT, !battery_low,
             "tamper",       "Tamper",       DATA_COND,   tamper,        DATA_INT, tamper,
             "mic",          "Integrity",    DATA_STRING, "CRC",
             NULL);
@@ -191,7 +186,7 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "code",
@@ -204,7 +199,7 @@ static char *output_fields[] = {
 };
 
 /* r_device definition */
-r_device x10_sec = {
+r_device const x10_sec = {
         .name        = "X10 Security",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 562,  // Short gap 562us
@@ -212,6 +207,5 @@ r_device x10_sec = {
         .gap_limit   = 2200, // Gap after sync is 4.5ms (1125)
         .reset_limit = 6000,
         .decode_fn   = &x10_sec_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

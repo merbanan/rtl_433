@@ -156,7 +156,7 @@
     DECL(auriol_afw2a1) \
     DECL(tfa_drop_303233) \
     DECL(dsc_security_ws4945) \
-    DECL(ert_amr) \
+    DECL(ert_scm) \
     DECL(klimalogg) \
     DECL(visonic_powercode) \
     DECL(eurochron_efth800) \
@@ -167,8 +167,8 @@
     DECL(missil_ml0757) \
     DECL(sharp_spc775) \
     DECL(insteon) \
-    DECL(idm) \
-    DECL(netidm) \
+    DECL(ert_idm) \
+    DECL(ert_netidm) \
     DECL(thermopro_tx2) \
     DECL(acurite_590tx) \
     DECL(secplus_v2) \
@@ -181,6 +181,79 @@
     DECL(lacrosse_th3) \
     DECL(bresser_6in1) \
     DECL(bresser_7in1) \
+    DECL(ecodhome) \
+    DECL(lacrosse_r1) \
+    DECL(blueline) \
+    DECL(burnhardbbq) \
+    DECL(secplus_v1) \
+    DECL(cavius) \
+    DECL(tpms_jansite_solar) \
+    DECL(abmt) \
+    DECL(tfa_marbella) \
+    DECL(auriol_ahfl) \
+    DECL(auriol_aft77b2) \
+    DECL(honeywell_cm921) \
+    DECL(tpms_hyundai_vdo) \
+    DECL(rojaflex) \
+    DECL(marlec_solar) \
+    DECL(somfy_iohc) \
+    DECL(fineoffset_wh31l) \
+    DECL(markisol) \
+    DECL(govee) \
+    DECL(cmr113) \
+    DECL(inkbird_ith20r) \
+    DECL(rainpoint) \
+    DECL(atech_ws308) \
+    DECL(acurite_01185m) \
+    DECL(enocean_erp1) \
+    DECL(megacode) \
+    DECL(auriol_4ld5661) \
+    DECL(tpms_truck) \
+    DECL(funkbus_remote) \
+    DECL(tpms_porsche) \
+    DECL(jasco) \
+    DECL(telldus_ft0385r) \
+    DECL(lacrosse_tx34) \
+    DECL(proflame2) \
+    DECL(tpms_ave) \
+    DECL(simplisafe_gen3) \
+    DECL(yale_hsa) \
+    DECL(regency_fan) \
+    DECL(tpms_renault_0435r) \
+    DECL(fineoffset_ws80) \
+    DECL(emos_e6016) \
+    DECL(emax) \
+    DECL(ant_antplus) \
+    DECL(emos_e6016_rain) \
+    DECL(hcs200_fsk) \
+    DECL(fineoffset_wh45) \
+    DECL(maverick_xr30) \
+    DECL(fineoffset_wn34) \
+    DECL(rubicson_pool_48942) \
+    DECL(badger_orion) \
+    DECL(geo_minim) \
+    DECL(tpms_tyreguard400) \
+    DECL(tpms_kia) \
+    DECL(srsmith_pool_srs_2c_tx) \
+    DECL(neptune_r900) \
+    DECL(wec2103) \
+    DECL(vauno_en8822c) \
+    DECL(govee_h5054) \
+    DECL(tfa_14_1504_v2) \
+    DECL(ced7000) \
+    DECL(oil_watchman_advanced) \
+    DECL(oil_smart) \
+    DECL(gasmate_ba1008) \
+    DECL(flowis) \
+    DECL(m_bus_mode_c_t_downlink) \
+    DECL(revolt_nc5462) \
+    DECL(lacrosse_tx31u) \
+    DECL(tpms_eezrv) \
+    DECL(baldr_rain) \
+    DECL(celsia_czc1) \
+    DECL(fineoffset_ws90) \
+    DECL(thermopro_tx2c) \
+
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;

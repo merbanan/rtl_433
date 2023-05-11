@@ -18,19 +18,19 @@ Decoder for devices from the TBH project (https://www.projet-tbh.fr)
 There exist several device types (power, meteo, gaz,...)
 
 Payload format:
-- Synchro           {32} 0xaaaaaaaa
-- Preamble          {32} 0xd391d391
+- Preamble          {32} 0xaaaaaaaa
+- Syncword          {32} 0xd391d391
 - Length            {8}
 - Payload           {n}
 - Checksum          {16} CRC16 poly=0x8005 init=0xffff
 
 To get raw data:
 
-    ./rtl_433 -f 433901000 -X n=tbh,m=FSK_PCM,s=212,l=212,r=3000
+    ./rtl_433 -f 433901000 -X 'n=tbh,m=FSK_PCM,s=212,l=212,r=3000,preamble=aad391d391'
 
 The application data is obfuscated by doing data[n] xor data[n-1] xor info[n%16].
 
-Payload foramt:
+Payload format:
 - Device id         {32}
 - Frame type        {8}
 - Frame Data        {x}
@@ -87,29 +87,24 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, row, start_pos + sizeof (preamble) * 8, &len, 8);
 
     if (len > 60) {
-        if (decoder->verbose)
-            fprintf(stderr, "%s: packet to large (%d bytes), drop it\n", __func__, len);
+        decoder_logf(decoder, 1, __func__, "packet to large (%d bytes), drop it", len);
         return DECODE_ABORT_LENGTH;
     }
 
-    uint8_t frame[63] = {0}; //TODO check max size, I have no idea, arbitrary limit of 60 bytes + 2 bytes crc
+    uint8_t frame[63] = {0}; // TODO check max size, I have no idea, arbitrary limit of 60 bytes + 2 bytes crc
     frame[0] = len;
     // Get frame (len don't include the length byte and the crc16 bytes)
     bitbuffer_extract_bytes(bitbuffer, row,
             start_pos + (sizeof (preamble) + 1) * 8,
             &frame[1], (len + 2) * 8);
 
-    if (decoder->verbose > 1) {
-        bitrow_printf(frame, (len + 1) * 8, "%s: frame data: ", __func__);
-    }
+    decoder_log_bitrow(decoder, 2, __func__, frame, (len + 1) * 8, "frame data");
 
     uint16_t crc = crc16(frame, len + 1, 0x8005, 0xffff);
 
     if ((frame[len + 1] << 8 | frame[len + 2]) != crc) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: CRC invalid %04x != %04x\n", __func__,
-                    frame[len + 1] << 8 | frame[len + 2], crc);
-        }
+        decoder_logf(decoder, 1, __func__, "CRC invalid %04x != %04x",
+                frame[len + 1] << 8 | frame[len + 2], crc);
         return DECODE_FAIL_MIC;
     }
 
@@ -124,28 +119,23 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     for (int i = 1; i < len; ++i) {
         payload[i] = frame[i] ^ frame[i + 1] ^ info[i % sizeof (info)];
     }
-    if (decoder->verbose > 1) {
-        bitrow_printf(payload, len * 8, "%s: frame data: ", __func__);
-    }
+    decoder_log_bitrow(decoder, 2, __func__, payload, len * 8, "frame data");
 
     uint8_t type = payload[4];
     uint32_t id  = payload[0] | payload[1] << 8 | payload[2] << 16 | (uint32_t)(payload[3]) << 24;
 
     if (type == 1) {
         // raw data
-        if (decoder->verbose)
-            fprintf(stderr, "%s: raw data from ID: %08x\n", __func__, id);
+        decoder_logf(decoder, 1, __func__, "raw data from ID: %08x", id);
 
         payload[4] = len - 4; //write len for crc (len - 4b ID)
 
-        if (decoder->verbose > 1) {
-            bitrow_printf(&payload[4], (len - 4) * 8, "%s: data: ", __func__);
-        }
+        decoder_log_bitrow(decoder, 2, __func__, &payload[4], (len - 4) * 8, "data");
 
         uint8_t c = crc8(&payload[4], len - 5, 0x07, 0x00);
 
         if (c != payload[len - 1]) {
-            fprintf(stderr, "%s: crc error\n", __func__);
+            decoder_log(decoder, 1, __func__, "crc error");
             return DECODE_FAIL_MIC;
         }
 
@@ -153,8 +143,7 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int ts       = payload[9] << 16 | payload[10] << 8 | payload[11];
         int maxPower = payload[12] << 8 | payload[13];
 
-        if (decoder->verbose > 1)
-            fprintf(stderr, "%s: index: %d, timestamp: %d, maxPower: %d\n", __func__,
+        decoder_logf(decoder, 2, __func__, "index: %d, timestamp: %d, maxPower: %d",
                     idx, ts, maxPower);
 
         /* clang-format off */
@@ -218,13 +207,12 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
     }
     else {
-        if (decoder->verbose)
-            fprintf(stderr, "%s: unknown frame received\n", __func__);
+        decoder_log(decoder, 1, __func__, "unknown frame received");
         return DECODE_FAIL_SANITY;
     }
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -237,13 +225,12 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device archos_tbh = {
+r_device const archos_tbh = {
         .name        = "TBH weather sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 212,
         .long_width  = 212,
         .reset_limit = 3000,
         .decode_fn   = &archos_tbh_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

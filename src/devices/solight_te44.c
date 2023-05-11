@@ -43,7 +43,8 @@ static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t *b;
-    int id, battery, channel, temp_raw;
+    int id, channel, temp_raw;
+    // int battery;
     float temp_c;
 
     int r = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
@@ -62,17 +63,17 @@ static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
 
     id       = b[0];
-    battery  = (b[1] & 0x80);
+    //battery  = (b[1] & 0x80);
     channel  = ((b[1] & 0x30) >> 4);
     temp_raw = (int16_t)((b[1] << 12) | (b[2] << 4)); // sign-extend
     temp_c   = (temp_raw >> 4) * 0.1f;
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, _X("Solight-TE44","Solight TE44"),
+            "model",            "",             DATA_STRING, "Solight-TE44",
             "id",               "Id",           DATA_INT,    id,
             "channel",          "Channel",      DATA_INT,    channel + 1,
-//            "battery",          "Battery",      DATA_STRING, battery ? "OK" : "LOW",
+//            "battery_ok",       "Battery",      DATA_INT,    !!battery,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
@@ -82,17 +83,17 @@ static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
+        //"battery_ok",
         "temperature_C",
         "mic",
         NULL,
 };
 
-r_device solight_te44 = {
+r_device const solight_te44 = {
         .name        = "Solight TE44/TE66, EMOS E0107T, NX-6876-917",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 972,  // short gap = 972 us

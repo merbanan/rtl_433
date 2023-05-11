@@ -25,6 +25,11 @@ bytes:
 - Byte 8: Checksum
 
 Power calculations come from Nathaniel Elijah's program EfergyRPI_001.
+
+Test codes:
+- Current   4.64 A: {65}0cc055604a41030f8
+- Current 185.16 A: {65}0cc055605c9408798
+
 */
 
 #include "decoder.h"
@@ -55,7 +60,6 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
-
     // Sometimes pulses and gaps are mixed up. If this happens, invert
     // all bytes to get correct interpretation.
     if (bytes[0] & 0xf0) {
@@ -65,13 +69,12 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     int zero_count = 0;
-    for (int i=0; i<8; i++) {
+    for (int i = 0; i < 8; i++) {
         if (bytes[i] == 0)
             zero_count++;
     }
     if (zero_count++ > 5)
-        return DECODE_FAIL_SANITY;  // too many Null bytes
-
+        return DECODE_FAIL_SANITY; // too many Null bytes
 
     unsigned checksum = add_bytes(bytes, 7);
 
@@ -87,19 +90,19 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t interval = (((bytes[3] & 0x30) >> 4) + 1) * 6;
     uint8_t battery  = (bytes[3] & 0x40) >> 6;
     uint8_t fact     = -(int8_t)bytes[6] + 15;
-    if (fact < 9 || fact > 20) // full range unknown so far
+    if (fact < 7 || fact > 20) // full range unknown so far
         return DECODE_FAIL_SANITY; // invalid exponent
     float current_adc = (float)(bytes[4] << 8 | bytes[5]) / (1 << fact);
 
     /* clang-format off */
     data = data_make(
-            "model",    "",                 DATA_STRING, _X("Efergy-e2CT","Efergy e2 CT"),
-            "id",       "Transmitter ID",   DATA_INT,    address,
-            "battery",  "Battery",          DATA_STRING, battery ? "OK" : "LOW",
-            "current",  "Current",          DATA_FORMAT, "%.2f A", DATA_DOUBLE, current_adc,
-            "interval", "Interval",         DATA_FORMAT, "%ds", DATA_INT, interval,
-            "learn",    "Learning",         DATA_STRING, learn ? "YES" : "NO",
-            "mic",      "Integrity",        DATA_STRING, "CHECKSUM",
+            "model",        "",                 DATA_STRING, "Efergy-e2CT",
+            "id",           "Transmitter ID",   DATA_INT,    address,
+            "battery_ok",   "Battery",          DATA_INT,    !!battery,
+            "current",      "Current",          DATA_FORMAT, "%.2f A", DATA_DOUBLE, current_adc,
+            "interval",     "Interval",         DATA_FORMAT, "%ds", DATA_INT, interval,
+            "learn",        "Learning",         DATA_STRING, learn ? "YES" : "NO",
+            "mic",          "Integrity",        DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
@@ -107,10 +110,10 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
-        "battery",
+        "battery_ok",
         "current",
         "interval",
         "learn",
@@ -118,7 +121,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device efergy_e2_classic = {
+r_device const efergy_e2_classic = {
         .name        = "Efergy e2 classic",
         .modulation  = FSK_PULSE_PWM,
         .short_width = 64,
@@ -127,6 +130,5 @@ r_device efergy_e2_classic = {
         .gap_limit   = 200,
         .reset_limit = 400,
         .decode_fn   = &efergy_e2_classic_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

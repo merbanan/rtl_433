@@ -9,11 +9,16 @@
 
 #include "decoder.h"
 
-static int mebus433_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+/**
+Mebus 433.
+
+@todo Documentation needed.
+*/
+static int mebus433_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     bitrow_t *bb = bitbuffer->bb;
     int16_t temp;
-    int8_t  hum;
+    int8_t hum;
     uint8_t address;
     uint8_t channel;
     uint8_t battery;
@@ -30,7 +35,7 @@ static int mebus433_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         channel = ((bb[1][1] & 0x30) >> 4) + 1;
         // Always 0?
         unknown1 = (bb[1][1] & 0x40) >> 6;
-        battery = bb[1][1] & 0x80;
+        battery  = bb[1][1] & 0x80;
 
         // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
         // upper 4 bits of nibble 1 are reserved for other usages.
@@ -38,49 +43,50 @@ static int mebus433_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         temp = temp >> 4;
         // lower 4 bits of nibble 3 and upper 4 bits of nibble 4 contains
         // humidity as decimal value
-        hum  = (bb[1][3] << 4 | bb[1][4] >> 4);
+        hum = (bb[1][3] << 4 | bb[1][4] >> 4);
 
         // Always 0b1111?
         unknown2 = (bb[1][3] & 0xf0) >> 4;
 
+        /* clang-format off */
         data = data_make(
-                "model",         "",            DATA_STRING, _X("Mebus-433","Mebus/433"),
-                "id",            "Address",     DATA_INT, address,
-                "channel",       "Channel",     DATA_INT, channel,
-                "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
-                "unknown1",      "Unknown 1",   DATA_INT, unknown1,
-                "unknown2",      "Unknown 2",   DATA_INT, unknown2,
-                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp * 0.1f,
-                "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, hum,
+                "model",            "",             DATA_STRING, "Mebus-433",
+                "id",               "Address",      DATA_INT,    address,
+                "channel",          "Channel",      DATA_INT,    channel,
+                "battery_ok",       "Battery",      DATA_INT,    !!battery,
+                "unknown1",         "Unknown 1",    DATA_INT,    unknown1,
+                "unknown2",         "Unknown 2",    DATA_INT,    unknown2,
+                "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp * 0.1f,
+                "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, hum,
                 NULL);
+        /* clang-format on */
+
         decoder_output_data(decoder, data);
-
-
         return 1;
     }
     return DECODE_ABORT_EARLY;
 }
 
-static char *output_fields[] = {
-    "model",
-    "id",
-    "channel",
-    "battery",
-    "unknown1",
-    "unknown2",
-    "temperature_C",
-    "humidity",
-    NULL,
+static char const *const output_fields[] = {
+        "model",
+        "id",
+        "channel",
+        "battery_ok",
+        "unknown1",
+        "unknown2",
+        "temperature_C",
+        "humidity",
+        NULL,
 };
 
-r_device mebus433 = {
-    .name           = "Mebus 433",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 800, // guessed, no samples available
-    .long_width     = 1600, // guessed, no samples available
-    .gap_limit      = 2400,
-    .reset_limit    = 6000,
-    .decode_fn      = &mebus433_callback,
-    .disabled       = 1, // add docs, tests, false positive checks and then reenable
-    .fields         = output_fields,
+r_device const mebus433 = {
+        .name        = "Mebus 433",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 800,  // guessed, no samples available
+        .long_width  = 1600, // guessed, no samples available
+        .gap_limit   = 2400,
+        .reset_limit = 6000,
+        .decode_fn   = &mebus433_decode,
+        .disabled    = 1, // add docs, tests, false positive checks and then re-enable
+        .fields      = output_fields,
 };

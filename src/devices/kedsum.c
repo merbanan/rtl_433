@@ -4,9 +4,9 @@
     Copyright (C) 2016 John Lifsey
     Enhanced (C) 2019 Christian W. Zuckschwerdt <zany@triq.net>
 
-    This program is free software: you can redistribute it and/or modify
+    This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 2 of the License, or
+    the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
 /**
@@ -65,52 +65,53 @@ static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (crc != (b[4] & 0xf))
         return DECODE_FAIL_MIC;
 
-    int id       = b[0];
-    int battery  = b[1] >> 6;
+    int id       = (b[0]);
+    int battery  = (b[1] >> 6); // level 0-2
     int channel  = ((b[1] & 0x30) >> 4) + 1;
     int temp_raw = ((b[2] & 0x0f) << 8) | (b[2] & 0xf0) | (b[1] & 0x0f);
     int humidity = ((b[3] & 0x0f) << 4) | ((b[3] & 0xf0) >> 4);
     float temp_f = (temp_raw - 900) * 0.1f;
 
-    char *battery_str = battery == 2 ? "OK" : battery == 1 ? "WEAK" : "LOW";
-
     int flags = (b[1] & 0xc0) | (b[4] >> 4);
 
+    battery = battery == 2 ? 100 : battery * 10; // level 0,1,2 -> 0,10,100
+
+    /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, _X("Kedsum-TH","Kedsum Temperature & Humidity Sensor"),
-            "id",               "ID",           DATA_INT, id,
-            "channel",          "Channel",      DATA_INT, channel,
-            "battery",          "Battery",      DATA_STRING, battery_str,
-            "flags",            "Flags2",       DATA_INT, flags,
-            "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,
-            "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
+            "model",            "",                 DATA_STRING, "Kedsum-TH",
+            "id",               "ID",               DATA_INT,    id,
+            "channel",          "Channel",          DATA_INT,    channel,
+            "battery_ok",       "Battery level",    DATA_DOUBLE, battery * 0.01f,
+            "flags",            "Flags2",           DATA_INT,    flags,
+            "temperature_F",    "Temperature",      DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,
+            "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
 }
 
-static char *output_fields[] = {
-    "model",
-    "id",
-    "channel",
-    "battery",
-    "flags",
-    "temperature_F",
-    "humidity",
-    "mic",
-    NULL,
+static char const *const output_fields[] = {
+        "model",
+        "id",
+        "channel",
+        "battery_ok",
+        "flags",
+        "temperature_F",
+        "humidity",
+        "mic",
+        NULL,
 };
 
-r_device kedsum = {
-    .name           = "Kedsum Temperature & Humidity Sensor, Pearl NC-7415",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 2000,
-    .long_width     = 4000,
-    .gap_limit      = 4400,
-    .reset_limit    = 9400,
-    .decode_fn      = &kedsum_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+r_device const kedsum = {
+        .name        = "Kedsum Temperature & Humidity Sensor, Pearl NC-7415",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 2000,
+        .long_width  = 4000,
+        .gap_limit   = 4400,
+        .reset_limit = 9400,
+        .decode_fn   = &kedsum_callback,
+        .fields      = output_fields,
 };

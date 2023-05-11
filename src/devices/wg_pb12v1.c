@@ -50,14 +50,8 @@ device, see fineoffset.c.
 
 static int wg_pb12v1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
-    uint8_t *b;
-    int id;
-    int temp_raw;
-    float temp_c;
-
     // Validate package
-    b = bitbuffer->bb[0];
+    uint8_t *b = bitbuffer->bb[0];
     if (bitbuffer->bits_per_row[0] < 48)
         return DECODE_ABORT_LENGTH;
     if (b[0] != 0xFF) // Preamble
@@ -70,15 +64,15 @@ static int wg_pb12v1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_OTHER;
 
     // Nibble 7,8 contains id
-    id = b[3] & 0x1F;
+    int id = b[3] & 0x1F;
 
     // Nibble 5,6,7 contains 12 bits of temperature
     // Temperature, scaled by 10, offset by -40 C.
-    temp_raw = ((b[1] & 0x0F) << 8) | b[2];
-    temp_c = ((float)temp_raw * 0.1) - 40;
+    int temp_raw = ((b[1] & 0x0F) << 8) | b[2];
+    float temp_c = (temp_raw - 400) * 0.1f;
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "WG-PB12V1",
             "id",               "ID",           DATA_INT,    id,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
@@ -89,7 +83,7 @@ static int wg_pb12v1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "temperature_C",
@@ -97,13 +91,12 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device wg_pb12v1 = {
+r_device const wg_pb12v1 = {
         .name        = "WG-PB12V1 Temperature Sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 564,  // Short pulse 564µs, long pulse 1476µs, fixed gap 960µs
         .long_width  = 1476, // Maximum pulse period (long pulse + fixed gap)
         .reset_limit = 2500, // We just want 1 package
         .decode_fn   = &wg_pb12v1_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -82,8 +82,7 @@ Data decoded:
 #define MSG_PAD_BITS         ((((MSG_PACKET_BITS / 8) + 1) * 8) - MSG_PACKET_BITS)
 #define MSG_PACKET_LEN       ((MSG_PACKET_BITS + MSG_PAD_BITS) / 8)
 
-static int
-checksum_calculate(uint8_t *b)
+static int checksum_calculate(uint8_t *b)
 {
     int i;
     int sum = 0;
@@ -94,8 +93,7 @@ checksum_calculate(uint8_t *b)
     return sum & 0x3f;
 }
 
-static int
-ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+static int ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     uint8_t b[MSG_PACKET_LEN];
     int bits = bitbuffer->bits_per_row[row];
@@ -113,15 +111,15 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
         if (decoder->verbose > 1) {
             if (row == 0) {
                 if (bits < MSG_PREAMBLE_BITS) {
-                    fprintf(stderr, "Short preamble: %d bits (expected %d)\n",
+                    decoder_logf(decoder, 2, __func__, "Short preamble: %d bits (expected %d)",
                             bits, MSG_PREAMBLE_BITS);
                 }
             } else if (row != (unsigned)bitbuffer->num_rows - 1 && bits == 1) {
-                fprintf(stderr, "Wrong packet #%u length: %d bits (expected %d)\n",
+                decoder_logf(decoder, 2, __func__, "Wrong packet #%u length: %d bits (expected %d)",
                         row, bits, MSG_PACKET_BITS);
             }
         }
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     bitbuffer_extract_bytes(bitbuffer, row, bitpos + MSG_PAD_BITS, b, MSG_PACKET_BITS + MSG_PAD_BITS);
@@ -132,11 +130,11 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
     postmark = b[5];
 
     if (decoder->verbose > 1) {
-        fprintf(stderr, "TTX201 received raw data: ");
-        bitbuffer_print(bitbuffer);
-        fprintf(stderr, "Data decoded:\n" \
+        decoder_log(decoder, 0, __func__, "TTX201 received raw data");
+        decoder_log_bitbuffer(decoder, 0, __func__, bitbuffer, "");
+        decoder_logf(decoder, 0, __func__, "Data decoded:" \
                 " r  cs    K   ID    S   B  C  X    T    M     J\n");
-        fprintf(stderr, "%2u  %2d    %2d  %3d  0x%01x  %1d  %1d  %1d  %4d  0x%02x",
+        decoder_logf(decoder, 0, __func__, "%2u  %2d    %2d  %3d  0x%01x  %1d  %1d  %1d  %4d  0x%02x",
                 row,
                 checksum_calculated,
                 checksum,
@@ -148,22 +146,20 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
                 ((int8_t)((b[3] & 0x0f) << 4) << 4) | b[4], // Temperature
                 postmark);
         if (bits == MSG_PACKET_BITS) {
-            fprintf(stderr, "  0x%01x", b[6] >> 4);         // Packet separator
+            decoder_logf(decoder, 0, __func__, "  0x%01x", b[6] >> 4);         // Packet separator
         }
-        fprintf(stderr, "\n");
+        decoder_log(decoder, 0, __func__, "");
     }
 
     if (postmark != MSG_PACKET_POSTMARK) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "Packet #%u wrong postmark 0x%02x (expected 0x%02x).\n",
+        decoder_logf(decoder, 2, __func__, "Packet #%u wrong postmark 0x%02x (expected 0x%02x).",
                     row, postmark, MSG_PACKET_POSTMARK);
-        return 0;
+        return DECODE_FAIL_SANITY;
     }
 
     if (checksum != checksum_calculated) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "Packet #%u checksum error.\n", row);
-        return 0;
+        decoder_logf(decoder, 2, __func__, "Packet #%u checksum error.", row);
+        return DECODE_FAIL_MIC;
     }
 
     device_id = b[1];
@@ -172,16 +168,18 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
     temperature   = (int16_t)(((b[3] & 0x0f) << 12) | (b[4] << 4)); // uses sign extend
     temperature_c = (temperature >> 4) * 0.1f;
 
+    /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, _X("Emos-TTX201","Emos TTX201"),
-            "id",            "House Code",  DATA_INT,    device_id,
-            "channel",       "Channel",     DATA_INT,    channel,
-            "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
-            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_c,
-            "mic",           "MIC",         DATA_STRING, "CHECKSUM",
+            "model",            "",             DATA_STRING, "Emos-TTX201",
+            "id",               "House Code",   DATA_INT,    device_id,
+            "channel",          "Channel",      DATA_INT,    channel,
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_c,
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
-    decoder_output_data(decoder, data);
+    /* clang-format on */
 
+    decoder_output_data(decoder, data);
     return 1;
 }
 
@@ -189,8 +187,7 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
 Emos TTX201 Thermo Remote Sensor.
 @sa ttx201_decode()
 */
-static int
-ttx201_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int ttx201_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int row;
     int ret    = 0;
@@ -209,17 +206,17 @@ ttx201_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events > 0 ? events : ret;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "mic",
         NULL,
 };
 
-r_device ttx201 = {
+r_device const ttx201 = {
         .name        = "Emos TTX201 Temperature Sensor",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 510,
@@ -227,6 +224,5 @@ r_device ttx201 = {
         .reset_limit = 1700,
         .tolerance   = 250,
         .decode_fn   = &ttx201_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -1,0 +1,356 @@
+name: Release
+on:
+  workflow_dispatch:
+  push:
+    tags:
+    - '*'
+
+env:
+  # from https://downloads.myriadrf.org/builds/PothosSDR/
+  pothos-ver: 2021.07.25-vc16
+  pothos-exe: PothosSDR-2021.07.25-vc16-x64.exe
+
+jobs:
+  downloads_job:
+    name: Downloads
+    #runs-on: ubuntu-latest
+    runs-on: windows-latest
+    steps:
+    - uses: actions/cache@v3
+      id: downloads
+      with:
+        path: ${{ runner.workspace }}/${{ env.pothos-exe }}
+        key: download-${{ env.pothos-ver }}
+    - name: Run Downloads
+      if: steps.downloads.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: ${{ runner.workspace }}
+      run: curl -L -O https://downloads.myriadrf.org/builds/PothosSDR/${{ env.pothos-exe }}
+
+  release_job:
+    name: Create release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      release_version: ${{ env.RELEASE_VERSION }}
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Create Release info
+      # e.g. refs/tags/23.01
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/2')
+      run: |
+        echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+        echo "RELEASE_NAME=Release ${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+        echo "PRERELEASE=false" >> $GITHUB_ENV
+        ./.deploy/gen_release_info.py
+    - name: Create Pre-Release info
+      # e.g. refs/tags/nightly or refs/heads/master
+      if: github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/2')
+      run: |
+        echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+        echo "RELEASE_NAME=Pre-Release ${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+        echo "PRERELEASE=true" >> $GITHUB_ENV
+        ./.deploy/gen_nightly_info.sh
+    - uses: actions/create-release@v1
+      id: create_release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ env.RELEASE_VERSION }}
+        release_name: ${{ env.RELEASE_NAME }}
+        body_path: RELEASEINFO.md
+        #draft: true
+        prerelease: ${{ env.PRERELEASE }}
+
+  build_mingw_job:
+    needs: release_job
+    if: ${{ needs.release_job.result != 'failure' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [i686, x86-64]
+    runs-on: ubuntu-latest
+    name: Build with Mingw-w64 on ${{ matrix.arch }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: "Install Mingw-w64"
+      run: |
+        sudo apt-get update -q -y
+        sudo apt-get install -q -y gcc-mingw-w64-base binutils-mingw-w64-${{ matrix.arch }} gcc-mingw-w64-${{ matrix.arch }} mingw-w64-${{ matrix.arch }}-dev gcc-mingw-w64 gcc-multilib p7zip-full
+    - name: "Build with Mingw-w64"
+      env:
+        RTLSDR: OFF
+        CMAKE_TOOLCHAIN_FILE: cmake/Toolchain-gcc-mingw-w64-${{ matrix.arch }}.cmake
+      run: ./do_build.sh
+    - name: "Sysroot Build with Mingw-w64"
+      run: ./do_sysroot.sh
+    - uses: actions/upload-release-asset@v1
+      if: matrix.arch == 'x86-64'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.release_job.outputs.upload_url }}
+        asset_path: rtl_433-win-x64.zip
+        asset_name: rtl_433-win-x64-${{ needs.release_job.outputs.release_version }}.zip
+        asset_content_type: application/zip
+    - uses: actions/upload-release-asset@v1
+      if: matrix.arch == 'x86-64'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.release_job.outputs.upload_url }}
+        asset_path: rtl_433-win-x32.zip
+        asset_name: rtl_433-win-x32-${{ needs.release_job.outputs.release_version }}.zip
+        asset_content_type: application/zip
+
+  build_msvc_job:
+    needs: [downloads_job, release_job]
+    if: ${{ needs.downloads_job.result != 'failure' && needs.release_job.result != 'failure'  }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2019, windows-2022]
+        platform: [x64, Win32]
+        # from https://downloads.myriadrf.org/builds/PothosSDR/
+        #pothos-ver: [2021.07.25-vc16]
+        include:
+          - os: windows-2019
+            generator: Visual Studio 16 2019
+          - os: windows-2022
+            generator: Visual Studio 17 2022
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.generator }} ${{ matrix.platform }} CMake (MSBuild) on ${{ matrix.os }}
+    steps:
+    - run: choco install openssl
+      if: matrix.platform == 'x64'
+    - uses: actions/checkout@v3
+    - uses: actions/cache@v3
+      id: downloads
+      if: matrix.platform == 'x64'
+      with:
+        path: ${{ runner.workspace }}/${{ env.pothos-exe }}
+        key: download-${{ env.pothos-ver }}
+    - name: Run Downloads
+      if: matrix.platform == 'x64' && steps.downloads.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: ${{ runner.workspace }}
+      run: curl -L -O https://downloads.myriadrf.org/builds/PothosSDR/${{ env.pothos-exe }}
+    - name: Install Deps
+      if: matrix.platform == 'x64'
+      shell: bash
+      working-directory: ${{ runner.workspace }}
+      run: |
+        mkdir -p pothos
+        7z x -opothos -y ${{ env.pothos-exe }}
+        echo "POTHOS_PATH=$(pwd)/pothos" >> $GITHUB_ENV
+    - name: Get latest CMake and Ninja
+      uses: lukka/get-cmake@latest
+    # Note: this assumes ${{ runner.workspace }} == ${{ github.workspace }}/..
+    - name: CMake+None
+      uses: lukka/run-cmake@v10
+      with:
+        configurePreset: dummy
+        configurePresetCmdString: "[`-B`, `../b/rtl_433`, `-G${{ matrix.generator }}`, `-A${{ matrix.platform }}`, `-DENABLE_RTLSDR=OFF`, `-DENABLE_SOAPYSDR=OFF`, `-DENABLE_OPENSSL=OFF`]"
+        buildPreset: dummy
+        buildPresetCmdString: "[`--build`, `../b/rtl_433`, `--config`, `Release`]"
+    - name: CMake+RTLSDR+SOAPYSDR+TLS
+      uses: lukka/run-cmake@v10
+      env:
+        CMAKE_PREFIX_PATH: ${{ runner.workspace }}\pothos
+      if: matrix.platform == 'x64'
+      with:
+        configurePreset: dummy
+        configurePresetCmdString: "[`-B`, `../b/rtl_433-rtlsdr-soapysdr-tls`, `-G${{ matrix.generator }}`, `-A${{ matrix.platform }}`, `-DCMAKE_PREFIX_PATH=${{ env.POTHOS_PATH }}`, `-DENABLE_RTLSDR=ON`, `-DENABLE_SOAPYSDR=ON`, `-DENABLE_OPENSSL=ON`]"
+        buildPreset: dummy
+        buildPresetCmdString: "[`--build`, `../b/rtl_433-rtlsdr-soapysdr-tls`, `--config`, `Release`]"
+    - name: CMake+RTLSDR+SOAPYSDR
+      uses: lukka/run-cmake@v10
+      env:
+        CMAKE_PREFIX_PATH: ${{ runner.workspace }}\pothos
+      if: matrix.platform == 'x64'
+      with:
+        configurePreset: dummy
+        configurePresetCmdString: "[`-B`, `../b/rtl_433-rtlsdr-soapysdr`, `-G${{ matrix.generator }}`, `-A${{ matrix.platform }}`, `-DCMAKE_PREFIX_PATH=${{ env.POTHOS_PATH }}`, `-DENABLE_RTLSDR=ON`, `-DENABLE_SOAPYSDR=ON`, `-DENABLE_OPENSSL=OFF`]"
+        buildPreset: dummy
+        buildPresetCmdString: "[`--build`, `../b/rtl_433-rtlsdr-soapysdr`, `--config`, `Release`]"
+    - name: CMake+RTLSDR+TLS
+      uses: lukka/run-cmake@v10
+      env:
+        CMAKE_PREFIX_PATH: ${{ runner.workspace }}\pothos
+      if: matrix.platform == 'x64'
+      with:
+        configurePreset: dummy
+        configurePresetCmdString: "[`-B`, `../b/rtl_433-rtlsdr-tls`, `-G${{ matrix.generator }}`, `-A${{ matrix.platform }}`, `-DCMAKE_PREFIX_PATH=${{ env.POTHOS_PATH }}`, `-DENABLE_RTLSDR=ON`, `-DENABLE_SOAPYSDR=OFF`, `-DENABLE_OPENSSL=ON`]"
+        buildPreset: dummy
+        buildPresetCmdString: "[`--build`, `../b/rtl_433-rtlsdr-tls`, `--config`, `Release`]"
+    - name: CMake+RTLSDR
+      uses: lukka/run-cmake@v10
+      env:
+        CMAKE_PREFIX_PATH: ${{ runner.workspace }}\pothos
+      if: matrix.platform == 'x64'
+      with:
+        configurePreset: dummy
+        configurePresetCmdString: "[`-B`, `../b/rtl_433-rtlsdr`, `-G${{ matrix.generator }}`, `-A${{ matrix.platform }}`, `-DCMAKE_PREFIX_PATH=${{ env.POTHOS_PATH }}`, `-DENABLE_RTLSDR=ON`, `-DENABLE_SOAPYSDR=OFF`, `-DENABLE_OPENSSL=OFF`]"
+        buildPreset: dummy
+        buildPresetCmdString: "[`--build`, `../b/rtl_433-rtlsdr`, `--config`, `Release`]"
+    - name: Package dist
+      if: matrix.platform == 'x64'
+      shell: bash
+      working-directory: ${{ runner.workspace }}
+      run: |
+        mkdir -p dist
+        cp pothos/bin/{SoapySDR.dll,libusb-1.0.dll,rtlsdr.dll,vcruntime140.dll,vcruntime140_1.dll,pthreadVC2.dll} dist
+        cp b/rtl_433-rtlsdr-soapysdr-tls/src/Release/rtl_433.exe dist/rtl_433-rtlsdr-soapysdr-tls.exe
+        cp b/rtl_433-rtlsdr-soapysdr/src/Release/rtl_433.exe     dist/rtl_433-rtlsdr-soapysdr.exe
+        cp b/rtl_433-rtlsdr-tls/src/Release/rtl_433.exe          dist/rtl_433-rtlsdr-tls.exe
+        cp b/rtl_433-rtlsdr/src/Release/rtl_433.exe              dist/rtl_433-rtlsdr.exe
+        cp b/rtl_433/src/Release/rtl_433.exe                     dist/rtl_433.exe
+        cp rtl_433/.deploy/WINDOWS-MSVC.txt                      dist/README.txt
+        ls -al dist
+        7z a rtl_433-win-msvc-x64.zip ./dist/*
+    - uses: actions/upload-release-asset@v1
+      if: matrix.os == 'windows-2019' && matrix.platform == 'x64'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.release_job.outputs.upload_url }}
+        asset_path: ${{ runner.workspace }}/rtl_433-win-msvc-x64.zip
+        asset_name: rtl_433-win-msvc-x64-${{ needs.release_job.outputs.release_version }}.zip
+        asset_content_type: application/zip
+
+  build_linux_job:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    name: Build with CMake on ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install SDR
+      run: |
+        sudo apt-get update -q
+        sudo apt-get install -y librtlsdr-dev libsoapysdr-dev libssl-dev
+    - name: Get latest CMake and Ninja
+      uses: lukka/get-cmake@latest
+    - name: Run CMake+Ninja
+      uses: lukka/run-cmake@v10
+      with:
+        configurePreset: dummy
+        configurePresetCmdString: "[`-B`, `${{ runner.workspace }}/b/ninja`, `-GNinja`, `-DENABLE_RTLSDR=ON`, `-DENABLE_SOAPYSDR=ON`, `-DENABLE_OPENSSL=ON`]"
+        buildPreset: dummy
+        buildPresetCmdString: "[`--build`, `${{ runner.workspace }}/b/ninja`, `--config`, `Release`]"
+    - name: Run CMake+UnixMakefiles
+      uses: lukka/run-cmake@v10
+      with:
+        configurePreset: dummy
+        configurePresetCmdString: "[`-B`, `${{ runner.workspace }}/b/unixmakefiles`, `-GUnix Makefiles`, `-DENABLE_RTLSDR=ON`, `-DENABLE_SOAPYSDR=ON`, `-DENABLE_OPENSSL=ON`]"
+        buildPreset: dummy
+        buildPresetCmdString: "[`--build`, `${{ runner.workspace }}/b/unixmakefiles`, `--config`, `Release`]"
+
+  build_arch_job:
+    if: ${{ false }}  # disable for now
+    needs: release_job
+    # The host should always be Linux
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # jessie, ubuntu16.04 has no SoapySDR
+      # jessie has trouble linking libusb-1.0
+      # stretch has SoapySDR 0.5 which we don't support
+      # buster has broken librtlsdr pkg-config
+      # fedora_latest packages need to be verified
+      # alpine_latest packages need to be verified
+      matrix:
+        # arch: [armv6, armv7, aarch64, s390x, ppc64le]
+        arch: [armv7, aarch64, ppc64le]
+        # distro: [jessie, stretch, buster, ubuntu16.04, ubuntu18.04, ubuntu20.04, fedora_latest, alpine_latest]
+        distro: [stretch, buster, ubuntu16.04, ubuntu18.04, ubuntu20.04, fedora_latest]
+        include:
+          - arch: armv6
+            distro: stretch
+          - arch: armv6
+            distro: buster
+    name: Build on ${{ matrix.distro }} ${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: uraimo/run-on-arch-action@v2.0.8
+        id: runcmd
+        with:
+          arch: ${{ matrix.arch }}
+          distro: ${{ matrix.distro }}
+
+          # Not required, speed up builds by storing container images in
+          # GitHub package registry.
+          #githubToken: ${{ github.token }}
+
+          # Install dependencies in the cached container.
+          install: |
+            case "${{ matrix.distro }}" in
+              jessie|stretch|ubuntu16.04)
+                apt-get update -q -y
+                apt-get install -q -y lsb-release build-essential libtool pkg-config cmake librtlsdr-dev libssl-dev
+                ;;
+              buster|ubuntu*)
+                apt-get update -q -y
+                apt-get install -q -y lsb-release build-essential libtool pkg-config cmake librtlsdr-dev libsoapysdr-dev libssl-dev
+                ;;
+              fedora*)
+                dnf -y update
+                dnf -y install redhat-lsb make gcc libtool pkg-config cmake rtl-sdr-devel SoapySDR-devel openssl-devel
+                ;;
+              alpine*)
+                apk update
+                apk add lsb-release build-essential libtool pkg-config cmake librtlsdr-dev libsoapysdr-dev libssl-dev
+                ;;
+            esac
+
+          run: |
+            uname -a
+            lsb_release -sc || echo NO lsb_release
+            echo Release ${{ needs.release_job.outputs.release_version }}
+            mkdir build
+            cd build
+            cmake -DCMAKE_INSTALL_PREFIX:PATH=../dist ..
+            cmake --build .
+            cmake --build . --target install
+
+      - name: Install FPM
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y ruby ruby-dev rubygems
+          sudo gem install --no-document fpm
+
+      - name: Package with FPM
+        run: |
+          ls -al "${PWD}/dist"
+          case "${{ matrix.distro }}" in
+            stretch)
+              libsoapy=libsoapysdr0.5-2 ;;
+            buster)
+              libsoapy=libsoapysdr0.6 ;;
+            fedora*)
+              libsoapy=SoapySDR ;;
+            *)
+              libsoapy=libsoapysdr0.7 ;;
+          esac
+          fpm -s dir -t deb -n rtl433 -v ${{ needs.release_job.outputs.release_version }}-1${{ matrix.distro }} -C "${PWD}/dist" \
+            -d libusb-1.0-0 -d libssl1.1 -d librtlsdr0 -d $libsoapy \
+            --deb-suggests soapysdr-module-all \
+            --deb-suggests soapysdr-tools \
+            --architecture ${{ matrix.arch }} \
+            --maintainer zany@triq.net \
+            --description "Program to decode radio transmissions" \
+            --url https://triq.org/
+          ls -al
+          ls -al "${PWD}/dist"
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.release_job.outputs.upload_url }}
+          asset_path: rtl433_${{ needs.release_job.outputs.release_version }}-1${{ matrix.distro }}_${{ matrix.arch }}.deb
+          asset_name: rtl433_${{ needs.release_job.outputs.release_version }}-1${{ matrix.distro }}_${{ matrix.arch }}.deb
+          asset_content_type: application/vnd.debian.binary-package

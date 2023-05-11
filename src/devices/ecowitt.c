@@ -14,7 +14,7 @@ Ecowitt Wireless Outdoor Thermometer WH53/WH0280/WH0281A.
 55-bit one-row data packet format (inclusive ranges, 0-indexed):
 
 |  0-6  | 7-bit header, ignored for checksum, always 1111111
-|  7-14 | Always 01010011
+|  7-14 | Model code, 0x53
 | 15-22 | Sensor ID, randomly reinitialized on boot
 | 23-24 | Always 00
 | 25-26 | 2-bit sensor channel, selectable on back of sensor {00=1, 01=2, 10=3}
@@ -106,7 +106,7 @@ static int ecowitt_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -115,15 +115,14 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ecowitt = {
+r_device const ecowitt = {
         .name        = "Ecowitt Wireless Outdoor Thermometer WH53/WH0280/WH0281A",
         .modulation  = OOK_PULSE_PWM,
-        .short_width = 500,           // 500 us nominal short pulse
-        .long_width  = 1480,          // 1480 us nominal long pulse
-        .gap_limit   = 1500,          // 960 us nominal fixed gap
-        .reset_limit = 2000,          // 31 ms packet distance (too far apart)
+        .short_width = 500,  // 500 us nominal short pulse
+        .long_width  = 1480, // 1480 us nominal long pulse
+        .gap_limit   = 1500, // 960 us nominal fixed gap
+        .reset_limit = 2000, // 31 ms packet distance (too far apart)
         .sync_width  = 0,
         .decode_fn   = &ecowitt_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

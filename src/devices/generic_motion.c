@@ -43,16 +43,18 @@ static int generic_motion_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if ((bitbuffer->bits_per_row[i] != 20)
                 || ((b[1] == 0) && (b[2] == 0))
                 || ((b[1] == 0xff) && (b[2] == 0xff))
-                || count_repeats(bitbuffer, i) < 3)
+                || bitbuffer_count_repeats(bitbuffer, i, 0) < 3)
             continue; // DECODE_ABORT_EARLY
 
         code = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
         sprintf(code_str, "%05x", code);
 
+        /* clang-format off */
         data = data_make(
-                "model",    "",  DATA_STRING, _X("Generic-Motion","Generic motion sensor"),
+                "model",    "",  DATA_STRING, "Generic-Motion",
                 "code",     "",  DATA_STRING, code_str,
                 NULL);
+        /* clang-format on */
 
         decoder_output_data(decoder, data);
         return 1;
@@ -60,13 +62,13 @@ static int generic_motion_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return DECODE_ABORT_EARLY;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "code",
         NULL,
 };
 
-r_device generic_motion = {
+r_device const generic_motion = {
         .name        = "Generic wireless motion sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 888,
@@ -75,6 +77,5 @@ r_device generic_motion = {
         .gap_limit   = 1200,
         .reset_limit = 2724 * 1.5,
         .decode_fn   = &generic_motion_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

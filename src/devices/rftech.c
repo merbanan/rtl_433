@@ -13,75 +13,72 @@ RF-tech decoder (INFRA 217S34).
 
 Also marked INFRA 217S34
 Ewig Industries Macao
+
+Example of message:
+
+    01001001 00011010 00000100
+
+- First byte is unknown, but probably id.
+- Second byte is the integer part of the temperature.
+- Third byte bits 0-3 is the fraction/tenths of the temperature.
+- Third byte bit 7 is 1 with fresh batteries.
+- Third byte bit 6 is 1 on button press.
+
+More sample messages:
+
+    {24} ad 18 09 : 10101101 00011000 00001001
+    {24} 3e 17 09 : 00111110 00010111 00001001
+    {24} 70 17 03 : 01110000 00010111 00000011
+    {24} 09 17 01 : 00001001 00010111 00000001
+
+With fresh batteries and button pressed:
+
+    {24} c5 16 c5 : 11000101 00010110 11000101
+
 */
 
 #include "decoder.h"
 
 static int rftech_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    bitrow_t *bb = bitbuffer->bb;
-    uint16_t sensor_id = 0;
-    uint8_t button;
-    uint8_t battery;
-    double value;
-    data_t *data;
-    int r;
-
-    r = bitbuffer_find_repeated_row(bitbuffer, 3, 24);
+    int r = bitbuffer_find_repeated_row(bitbuffer, 3, 24);
 
     if (r < 0 || bitbuffer->bits_per_row[r] != 24)
         return DECODE_ABORT_LENGTH;
+    uint8_t *b = bitbuffer->bb[r];
 
-    /* Example of message:
-     * 01001001 00011010 00000100
-     *
-     * First byte is unknown, but probably id.
-     * Second byte is the integer part of the temperature.
-     * Third byte bits 0-3 is the fraction/tenths of the temperature.
-     * Third byte bit 7 is 1 with fresh batteries.
-     * Third byte bit 6 is 1 on button press.
-     *
-     * More sample messages:
-     * {24} ad 18 09 : 10101101 00011000 00001001
-     * {24} 3e 17 09 : 00111110 00010111 00001001
-     * {24} 70 17 03 : 01110000 00010111 00000011
-     * {24} 09 17 01 : 00001001 00010111 00000001
-     *
-     * With fresh batteries and button pressed:
-     * {24} c5 16 c5 : 11000101 00010110 11000101
-     *
-     */
-    sensor_id = bb[r][0];
-    value = (bb[r][1] & 0x7f) + (bb[r][2] & 0x0f) / 10.0;
-    if (bb[r][1] & 0x80)
-        value = -value;
+    int sensor_id = b[0];
+    float temp_c  = (b[1] & 0x7f) + (b[2] & 0x0f) * 0.1f;
+    if (b[1] & 0x80)
+        temp_c = -temp_c;
 
-    battery = (bb[r][2] & 0x80) == 0x80;
-    button = (bb[r][2] & 0x60) != 0;
+    int battery = (b[2] & 0x80) == 0x80;
+    int button  = (b[2] & 0x60) != 0;
 
-    data = data_make(
-            "model", "", DATA_STRING, "RF-tech",
-            "id", "Id", DATA_INT, sensor_id,
-            "battery", "Battery", DATA_STRING, battery ? "OK" : "LOW",
-            "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, value,
-            "button", "Button", DATA_INT, button,
+    /* clang-format off */
+    data_t *data = data_make(
+            "model",            "",             DATA_STRING, "RF-tech",
+            "id",               "Id",           DATA_INT,    sensor_id,
+            "battery_ok",       "Battery",      DATA_INT,    battery,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
+            "button",           "Button",       DATA_INT,    button,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
-
     return 1;
 }
 
-static char *csv_output_fields[] = {
+static char const *const csv_output_fields[] = {
         "model",
         "id",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "button",
         NULL,
 };
 
-r_device rftech = {
+r_device const rftech = {
         .name        = "RF-tech",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

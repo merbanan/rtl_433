@@ -70,15 +70,13 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
 
     if (bitbuffer->bits_per_row[0] != 36) {
-        if (decoder->verbose)
-            fprintf(stderr, "wt450_callback: wrong size of bit per row %d\n",
+        decoder_logf(decoder, 1, __func__, "wrong size of bit per row %d",
                     bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH;
     }
 
-    if (b[0]>>4 != 0xC) {
-        if (decoder->verbose)
-            bitbuffer_printf(bitbuffer, "wt450_callback: wrong preamble\n");
+    if (b[0] >> 4 != 0xC) {
+        decoder_log_bitbuffer(decoder, 1, __func__, bitbuffer, "wrong preamble");
         return DECODE_ABORT_EARLY;
     }
 
@@ -88,8 +86,7 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     parity &= 0x3;
 
     if (parity) {
-        if (decoder->verbose)
-            bitbuffer_printf(bitbuffer, "wt450_callback: wrong parity (%x)\n", parity);
+        decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "wrong parity (%x)", parity);
         return DECODE_FAIL_MIC;
     }
 
@@ -99,15 +96,15 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     humidity      = ((b[1] & 0x7) << 4) | (b[2] >> 4);
     temp_whole    = (b[2] << 4) | (b[3] >> 4);
     temp_fraction = (b[3] & 0xF);
-    temp          = (temp_whole - 50) + (temp_fraction / 16.0);
+    temp          = (temp_whole - 50.0f) + (temp_fraction / 16.0f);
     seq           = (b[4] >> 6);
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, _X("WT450-TH","WT450 sensor"),
+            "model",            "",             DATA_STRING, "WT450-TH",
             "id",               "House Code",   DATA_INT,    house_code,
             "channel",          "Channel",      DATA_INT,    channel,
-            "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "seq",              "Sequence",     DATA_INT,    seq,
@@ -118,18 +115,18 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "humidity",
         "seq",
         NULL,
 };
 
-r_device wt450 = {
+r_device const wt450 = {
         .name        = "WT450, WT260H, WT405H",
         .modulation  = OOK_PULSE_DMC,
         .short_width = 976,  // half-bit width 976 us
@@ -137,6 +134,5 @@ r_device wt450 = {
         .reset_limit = 18000,
         .tolerance   = 100, // us
         .decode_fn   = &wt450_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

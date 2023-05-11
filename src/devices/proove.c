@@ -21,6 +21,7 @@ Tested devices:
   - "Nexa"
   - "Intertechno ITLS-16" (OEM model # "ITAPT-821")
   - Nexa - LMST-606
+  - Smartwares SH4-90152
 
 From http://elektronikforumet.com/wiki/index.php/RF_Protokoll_-_Proove_self_learning
 
@@ -61,7 +62,7 @@ static int proove_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_t databits = {0};
     // note: not manchester encoded but actually ternary
-    unsigned pos = bitbuffer_manchester_decode(bitbuffer, 0, 0, &databits, 80);
+    bitbuffer_manchester_decode(bitbuffer, 0, 0, &databits, 80);
 
     /* Reject codes when Manchester decoding fails */
     /* 32 bits or 36 bits with dimmer value */
@@ -80,7 +81,7 @@ static int proove_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, _X("Proove-Security","Proove"),
+            "model",         "",            DATA_STRING, "Proove-Security",
             "id",            "House Code",  DATA_INT,    id,
             "channel",       "Channel",     DATA_INT,    channel,
             "state",         "State",       DATA_STRING, on_bit ? "ON" : "OFF",
@@ -93,7 +94,7 @@ static int proove_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -103,16 +104,15 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device proove = {
+r_device const proove = {
         .name        = "Proove / Nexa / KlikAanKlikUit Wireless Switch",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 270,  // 1:1
         .long_width  = 1300, // 1:5
-        .sync_width  = 2700, // 1:10
+        .sync_width  = 2650, // 1:10, tuned to widely match 2450 to 2850
         .tolerance   = 200,
         .gap_limit   = 1500,
         .reset_limit = 2800,
         .decode_fn   = &proove_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

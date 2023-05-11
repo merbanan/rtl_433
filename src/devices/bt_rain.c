@@ -36,7 +36,7 @@ static int bt_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b;
     int row;
     int id, battery, rain, button, channel;
-    int16_t temp_raw;
+    int temp_raw;
     float temp_c, rainrate;
 
     row = bitbuffer_find_repeated_row(bitbuffer, 4, NUM_BITS);
@@ -51,15 +51,15 @@ static int bt_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (b[0] == 0xff && b[1] == 0xff && b[2] == 0xff && b[3] == 0xff)
         return DECODE_FAIL_SANITY; // prevent false positive checksum
 
-    id       = b[0];
-    battery  = b[1] >> 7;
-    channel  = ((b[1] & 0x30) >> 4) + 1; // either this or the rain top bits could be wrong
-    button = (b[1] & 0x08) >> 3;
+    id      = b[0];
+    battery = b[1] >> 7;
+    channel = ((b[1] & 0x30) >> 4) + 1; // either this or the rain top bits could be wrong
+    button  = (b[1] & 0x08) >> 3;
 
-    temp_raw = ((b[1] & 0x07) << 13) | (b[2] << 5); // use sign extend
-    temp_c = (temp_raw >> 5) * 0.1f;
+    temp_raw = (int16_t)(((b[1] & 0x07) << 13) | (b[2] << 5)); // uses sign extend
+    temp_c   = (temp_raw >> 5) * 0.1f;
 
-    rain = ((b[1] & 0x07) << 4) | b[3]; // either b[1] or the channel above bould be wrong
+    rain     = ((b[1] & 0x07) << 4) | b[3]; // either b[1] or the channel above bould be wrong
     int rest = rain % 25;
     if (rest % 2)
         rain += ((rest / 2) * 2048);
@@ -70,12 +70,12 @@ static int bt_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",            "",                 DATA_STRING, "Biltema-Rain",
-            "id",               "ID",               DATA_INT, id,
-            "channel",          "Channel",          DATA_INT, channel,
-            "battery",          "Battery",          DATA_STRING, battery ? "LOW" : "OK",
+            "id",               "ID",               DATA_INT,    id,
+            "channel",          "Channel",          DATA_INT,    channel,
+            "battery_ok",       "Battery",          DATA_INT,    !battery,
             "transmit",         "Transmit",         DATA_STRING, button ? "MANUAL" : "AUTO", // TODO: delete this
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
-            _X("rain_rate_mm_h","rainrate"),         "Rain per hour",    DATA_FORMAT, "%.02f mm/h", DATA_DOUBLE, rainrate,
+            "rain_rate_mm_h",   "Rain per hour",    DATA_FORMAT, "%.02f mm/h", DATA_DOUBLE, rainrate,
             "button",           "Button",       DATA_INT, button,
             NULL);
     /* clang-format on */
@@ -84,20 +84,19 @@ static int bt_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "transmit", // TODO: delete this
         "temperature_C",
-        "rainrate", // TODO: remove this
         "rain_rate_mm_h",
         "button",
         NULL,
 };
 
-r_device bt_rain = {
+r_device const bt_rain = {
         .name        = "Biltema rain gauge",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1940,

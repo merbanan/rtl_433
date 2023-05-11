@@ -9,20 +9,22 @@
 /**
 Springfield PreciseTemp Wireless Temperature and Soil Moisture Station.
 
+Note: this is a false positive for AlectoV1.
+
 http://www.amazon.com/Springfield-Digital-Moisture-Meter-Freeze/dp/B0037BNHLS
 
-Data is transmitted in the following form:
+Data is transmitted in 9 nibbles
 
-    Nibble
-     0-1   Power On ID
-      2    Flags and Channel - BTCC
-              B - Battery 0 = OK, 1 = LOW
-              T - Transmit 0 = AUTO, 1 = MANUAL (TX Button Pushed)
-             CC - Channel 00 = 1, 01 = 2, 10 = 3
-     3-5   Temperature Celsius X 10 - 3 nibbles 2s complement
-      6    Moisture Level - 0 - 10
-      7    Checksum of nibbles 0 - 6 (simple xor of nibbles)
-      8    Unknown
+    [id0] [id1] [flags] [temp0] [temp1] [temp2] [moist] [chk] [unkn]
+
+- id: 8 bit a random id that is generated when the sensor starts
+- flags(3): Battery low flag, 1 when the battery is low, otherwise 0 (ok)
+- flags(2): TX Button Pushed, 1 when the sensor sends a reading while pressing the button on the sensor
+- flags(1,0): Channel number that can be set by the sensor (1, 2, 3, X)
+- temp: 12 bit Temperature Celsius x10 in 3 nibbles 2s complement
+- moist: 4 bit Moisture Level of 0 - 10
+- chk: 4 bit Checksum of nibbles 0 - 6 (simple xor of nibbles)
+- unkn: 4 bit Unknown
 
 Actually 37 bits for all but last transmission which is 36 bits.
 */
@@ -32,20 +34,13 @@ Actually 37 bits for all but last transmission which is 36 bits.
 static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int ret = 0;
-    int row;
-    int chk;
-    uint8_t *b;
-    int sid, battery, button, channel, temp;
-    float temp_c;
-    int moisture, uk1;
-    data_t *data;
     unsigned tmpData;
     unsigned savData = 0;
 
-    for (row = 0; row < bitbuffer->num_rows; row++) {
+    for (int row = 0; row < bitbuffer->num_rows; row++) {
         if (bitbuffer->bits_per_row[row] != 36 && bitbuffer->bits_per_row[row] != 37)
             continue; // DECODE_ABORT_LENGTH
-        b = bitbuffer->bb[row];
+        uint8_t *b = bitbuffer->bb[row];
         tmpData = ((unsigned)b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
         if (tmpData == 0xffffffff)
             continue; // DECODE_ABORT_EARLY
@@ -53,29 +48,35 @@ static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             continue;
         savData = tmpData;
 
-        chk = xor_bytes(b, 4); // sum nibble 0-7
+        int chk = xor_bytes(b, 4); // sum nibble 0-7
         chk = (chk >> 4) ^ (chk & 0x0f); // fold to nibble
         if (chk != 0)
             continue; // DECODE_FAIL_MIC
 
-        sid      = (b[0]);
-        battery  = (b[1] >> 7) & 1;
-        button   = (b[1] >> 6) & 1;
-        channel  = ((b[1] >> 4) & 0x03) + 1;
-        temp     = (int16_t)(((b[1] & 0x0f) << 12) | (b[2] << 4)); // sign extend
-        temp_c   = (temp >> 4) * 0.1f;
-        moisture = b[3] >> 4;
-        uk1      = b[4] >> 4; /* unknown. */
+        int sid      = (b[0]);
+        int battery  = (b[1] >> 7) & 1;
+        int button   = (b[1] >> 6) & 1;
+        int channel  = ((b[1] >> 4) & 0x03) + 1;
+        int temp     = (int16_t)(((b[1] & 0x0f) << 12) | (b[2] << 4)); // uses sign extend
+        float temp_c = (temp >> 4) * 0.1f;
+        int moisture = (b[3] >> 4) * 10; // Moisture level is 0-10
+        //int uk1      = b[4] >> 4; /* unknown. */
+
+        // reduce false positives by checking specified sensor range, this isn't great...
+        if (temp_c < -30 || temp_c > 70) {
+            decoder_logf(decoder, 2, __func__, "temperature sanity check failed: %.1f C", temp_c);
+            return DECODE_FAIL_SANITY;
+        }
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",             DATA_STRING, _X("Springfield-Soil","Springfield Temperature & Moisture"),
-                _X("id","sid"),              "SID",          DATA_INT,    sid,
+        data_t *data = data_make(
+                "model",            "",             DATA_STRING, "Springfield-Soil",
+                "id",               "SID",          DATA_INT,    sid,
                 "channel",          "Channel",      DATA_INT,    channel,
-                "battery",          "Battery",      DATA_STRING, battery ? "LOW" : "OK",
+                "battery_ok",       "Battery",      DATA_INT,    !battery,
                 "transmit",         "Transmit",     DATA_STRING, button ? "MANUAL" : "AUTO", // TODO: delete this
-                "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
-                "moisture",         "Moisture",     DATA_INT,    moisture,
+                "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+                "moisture",         "Moisture",     DATA_FORMAT, "%d %%", DATA_INT, moisture,
                 "button",           "Button",       DATA_INT,    button,
 //                "uk1",            "uk1",          DATA_INT,    uk1,
                 "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
@@ -88,12 +89,11 @@ static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return ret;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
-        "sid", // TODO: delete this
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "transmit", // TODO: delete this
         "temperature_C",
         "moisture",
@@ -102,7 +102,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device springfield = {
+r_device const springfield = {
         .name        = "Springfield Temperature and Soil Moisture",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,
@@ -110,5 +110,6 @@ r_device springfield = {
         .gap_limit   = 5000,
         .reset_limit = 9200,
         .decode_fn   = &springfield_decode,
-        .disabled    = 0,
-        .fields      = output_fields};
+        .priority    = 10, // Alecto collision, if Alecto checksum is correct it's not Springfield-Soil
+        .fields      = output_fields,
+};

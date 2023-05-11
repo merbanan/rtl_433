@@ -39,7 +39,6 @@ Data layout (nibbles):
 static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
-    unsigned int start_pos;
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
     char id_str[4 * 2 + 1];
@@ -49,12 +48,11 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
     int status;
     int checksum;
 
-
-    start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 72);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 72);
 
     // make sure we decoded the expected number of bits
     if (packet_bits.bits_per_row[0] < 72) {
-        // fprintf(stderr, "bitpos=%u start_pos=%u = %u\n", bitpos, start_pos, (start_pos - bitpos));
+        // decoder_logf(decoder, 0, __func__, "bitpos=%u start_pos=%u = %u", bitpos, start_pos, (start_pos - bitpos));
         return 0; // DECODE_FAIL_SANITY;
     }
 
@@ -63,7 +61,7 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
     // check checksum (checksum8 xor)
     checksum = xor_bytes(b, 9);
     if (checksum != 0) {
-        return 0; //DECODE_FAIL_MIC;
+        return 0; // DECODE_FAIL_MIC;
     }
 
     sprintf(flags, "%02x", b[4]);
@@ -75,14 +73,14 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, "Abarth 124 Spider",
+            "model",            "",             DATA_STRING, "Abarth-124Spider",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,
             "flags",            "",             DATA_STRING, flags,
             "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (float)pressure * 1.38,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (float)temperature - 50.0,
             "status",           "",             DATA_INT, status,
-            "mic",              "",             DATA_STRING, "CHECKSUM",
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
@@ -110,7 +108,7 @@ static int tpms_abarth124_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "type",
         "id",
@@ -123,13 +121,12 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_abarth124 = {
+r_device const tpms_abarth124 = {
         .name        = "Abarth 124 Spider TPMS",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 52,  // 12-13 samples @250k
         .long_width  = 52,  // FSK
         .reset_limit = 150, // Maximum gap size before End Of Message [us].
         .decode_fn   = &tpms_abarth124_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

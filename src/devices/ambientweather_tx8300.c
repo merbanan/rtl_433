@@ -54,7 +54,7 @@ static uint8_t tx8300_chk(uint8_t *b)
         x += (b[i] & 0xF) + ((b[i] & 0xF0) >> 4);
         y += (b[i] & 0x5) + ((b[i] & 0x50) >> 4);
     }
-    uint8_t c0  = (~(x & 0xF)) & 0xF;
+    uint8_t c0 = (~(x & 0xF)) & 0xF;
     uint8_t c1 = (~(y & 0xF)) & 0xF;
     return c0 << 4 | c1;
 }
@@ -66,8 +66,7 @@ static int ambientweather_tx8300_callback(r_device *decoder, bitbuffer_t *bitbuf
 
     /* length check */
     if (74 != bitbuffer->bits_per_row[0]) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "AmbientWeather-TX8300: wrong size (%i bits)\n", bitbuffer->bits_per_row[0]);
+        decoder_logf(decoder, 2, __func__, "AmbientWeather-TX8300: wrong size (%u bits)", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH;
     }
 
@@ -83,8 +82,7 @@ static int ambientweather_tx8300_callback(r_device *decoder, bitbuffer_t *bitbuf
     // restore first MSB
     b[0] = (b[0] & 0x7f) | (b[4] & 0x80);
 
-    if (decoder->verbose > 1)
-        fprintf(stderr, "H: %02x, F:%02x\n", b[0], b[1] & 0xc0);
+    decoder_logf(decoder, 2, __func__, "H: %02x, F:%02x", b[0], b[1] & 0xc0);
 
     // check bit-wise parity
     if (b[0] != b[4] || b[1] != b[5] || b[2] != b[6] || b[3] != b[7])
@@ -107,11 +105,11 @@ static int ambientweather_tx8300_callback(r_device *decoder, bitbuffer_t *bitbuf
     /* clang-format off */
     data = data_make(
             "model",         "",            DATA_STRING, "AmbientWeather-TX8300",
-            "id",            "",            DATA_INT, sensor_id,
-            "channel",       "",            DATA_INT, channel,
-            "battery",       "Battery",     DATA_INT, battery_low, // mapping unknown
+            "id",            "",            DATA_INT,    sensor_id,
+            "channel",       "",            DATA_INT,    channel,
+            "battery",       "Battery",     DATA_INT,    battery_low, // mapping unknown
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "humidity",      "Humidity",    DATA_COND, humidity >= 0, DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "humidity",      "Humidity",    DATA_COND,   humidity >= 0, DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",           "MIC",         DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
@@ -120,7 +118,7 @@ static int ambientweather_tx8300_callback(r_device *decoder, bitbuffer_t *bitbuf
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -131,7 +129,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ambientweather_tx8300 = {
+r_device const ambientweather_tx8300 = {
         .name        = "Ambient Weather TX-8300 Temperature/Humidity Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,
@@ -139,6 +137,5 @@ r_device ambientweather_tx8300 = {
         .gap_limit   = 6500,
         .reset_limit = 8000,
         .decode_fn   = &ambientweather_tx8300_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

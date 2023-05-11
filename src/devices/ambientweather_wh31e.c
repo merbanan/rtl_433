@@ -5,6 +5,7 @@
     based on protocol analysis by James Cuff and Michele Clamp,
     EcoWitt WH40 analysis by Helmut Bachmann,
     Ecowitt WS68 analysis by Tolip Wen.
+    EcoWitt WH31B analysis by Michael Turk.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -27,11 +28,15 @@ Data layout:
 
 - Y is a fixed Type Code of 0x30
 - I is a device ID
-- C is the Channel number (only the lower 3 bits)
-- T is 12bits Temperature in C, scaled by 10, offset 400
+- C is 6 bits Channel number (3 bits) and flags: "1CCC0B"
+- T is 10 bits Temperature in C, scaled by 10, offset 400
 - H is Humidity
 - X is CRC-8, poly 0x31, init 0x00
 - A is SUM-8
+
+Data decoding:
+
+    TYPE:8h ID:8h ?1b CH:3b ?1b BATT:1b TEMP:10d HUM:8d CRC:8h SUM:8h ?8h8h8h8h
 
 Example packets:
 
@@ -110,11 +115,12 @@ Seems to be the same as Fine Offset WH5360 or Ecowitt WH5360B.
 
 Data layout:
 
-    YY 00 IIII FF RRRR XX AA 00 02 ?? 00 00
+    YY 00 IIII FV RRRR XX AA 00 02 ?? 00 00
 
 - Y is a fixed Type Code of 0x40
 - I is a device ID
 - F is perhaps flags, but only seen fixed 0x10 so far
+- V is battery voltage, ( FV & 0x1f ) * 0.1f
 - R is the rain bucket tip count, 0.1mm increments
 - X is CRC-8, poly 0x31, init 0x00
 - A is SUM-8
@@ -170,15 +176,12 @@ Some payloads:
 
 static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
     int events = 0;
     uint8_t b[18]; // actually only 6/9/17.5 bytes, no indication what the last 5 might be
     int row;
     int msg_type;
-    int id, channel, battery_ok, temp_raw;
-    int humidity, rain_raw;
-    float temp_c;
-    char extra[11];
+    uint8_t const wh31e_type_code = 0x30; // 48
+    uint8_t const wh31b_type_code = 0x37; // 55
 
     uint8_t const preamble[] = {0xaa, 0x2d, 0xd4}; // (partial) preamble and sync word
 
@@ -188,42 +191,40 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // no preamble detected, move to the next row
         if (start_pos == bitbuffer->bits_per_row[row])
             continue; // DECODE_ABORT_EARLY
-        if (decoder->verbose)
-            fprintf(stderr, "%s: WH31E/WH40 detected, buffer is %d bits length\n", __func__, bitbuffer->bits_per_row[row]);
+        decoder_logf(decoder, 1, __func__, "WH31E/WH31B/WH40 detected, buffer is %u bits length", bitbuffer->bits_per_row[row]);
 
         // remove preamble, keep whole payload
         bitbuffer_extract_bytes(bitbuffer, row, start_pos + 24, b, 18 * 8);
+        msg_type = b[0];
 
-        if (b[0] == 0x30) {
-            // WH31E
+        if (msg_type == wh31e_type_code || msg_type == wh31b_type_code) {
             uint8_t c_crc = crc8(b, 6, 0x31, 0x00);
             if (c_crc) {
-                if (decoder->verbose)
-                    fprintf(stderr, "%s: WH31E bad CRC\n", __func__);
+                decoder_logf(decoder, 1, __func__, "WH31E/WH31B (%d) bad CRC", msg_type);
                 continue; // DECODE_FAIL_MIC
             }
             uint8_t c_sum = add_bytes(b, 6) - b[6];
             if (c_sum) {
-                if (decoder->verbose)
-                    fprintf(stderr, "%s: WH31E bad SUM\n", __func__);
+                decoder_logf(decoder, 1, __func__, "WH31E/WH31B (%d) bad SUM", msg_type);
                 continue; // DECODE_FAIL_MIC
             }
 
-            msg_type   = b[0]; // fixed 0x30
-            id         = b[1];
-            battery_ok = (b[2] >> 7);
-            channel    = ((b[2] & 0x70) >> 4) + 1;
-            temp_raw   = ((b[2] & 0x0f) << 8) | b[3];
-            temp_c     = temp_raw * 0.1 - 40.0;
-            humidity   = b[4];
+            int id       = b[1];
+            int batt_low = ((b[2] & 0x04) >> 2);
+            int channel  = ((b[2] & 0x70) >> 4) + 1;
+            int temp_raw = ((b[2] & 0x03) << 8) | (b[3]);
+            float temp_c = (temp_raw - 400) * 0.1f;
+            int humidity = b[4];
+            char extra[11];
             sprintf(extra, "%02x%02x%02x%02x%02x", b[6], b[7], b[8], b[9], b[10]);
 
             /* clang-format off */
-            data = data_make(
-                    "model",            "",             DATA_STRING, "AmbientWeather-WH31E",
+            data_t *data = data_make(
+                    "model",            "",             DATA_COND, msg_type == 0x30, DATA_STRING, "AmbientWeather-WH31E",
+                    "model",            "",             DATA_COND, msg_type == 0x37, DATA_STRING, "AmbientWeather-WH31B",
                     "id" ,              "",             DATA_INT,    id,
                     "channel",          "Channel",      DATA_INT,    channel,
-                    "battery",          "Battery",      DATA_STRING, battery_ok ? "OK" : "LOW",
+                    "battery_ok",       "Battery",      DATA_INT,    !batt_low,
                     "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
                     "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
                     "data",             "Extra Data",   DATA_STRING, extra,
@@ -234,23 +235,20 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             events++;
         }
 
-        else if (b[0] == 0x52) {
+        else if (msg_type == 0x52) {
             // WH31E (others?) RCC
             uint8_t c_crc = crc8(b, 10, 0x31, 0x00);
             if (c_crc) {
-                if (decoder->verbose)
-                    fprintf(stderr, "%s: WH31E RCC bad CRC\n", __func__);
+                decoder_log(decoder, 1, __func__, "WH31E RCC bad CRC");
                 continue; // DECODE_FAIL_MIC
             }
             uint8_t c_sum = add_bytes(b, 10) - b[10];
             if (c_sum) {
-                if (decoder->verbose)
-                    fprintf(stderr, "%s: WH31E RCC bad SUM\n", __func__);
+                decoder_log(decoder, 1, __func__, "WH31E RCC bad SUM");
                 continue; // DECODE_FAIL_MIC
             }
 
-            msg_type   = b[0]; // fixed 0x52
-            id         = b[1];
+            int id      = b[1];
             int unknown = b[2];
             int year    = ((b[3] & 0xF0) >> 4) * 10 + (b[3] & 0x0F) + 2000;
             int month   = ((b[4] & 0x10) >> 4) * 10 + (b[4] & 0x0F);
@@ -264,7 +262,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     year, month, day, hours, minutes, seconds);
 
             /* clang-format off */
-            data = data_make(
+            data_t *data = data_make(
                     "model",        "",             DATA_STRING,    "AmbientWeather-WH31E",
                     "id" ,          "Station ID",   DATA_INT,       id,
                     "data",         "Unknown",      DATA_INT,       unknown,
@@ -276,74 +274,74 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             events++;
         }
 
-        else if (b[0] == 0x40) {
+        else if (msg_type == 0x40) {
             // WH40
             uint8_t c_crc = crc8(b, 8, 0x31, 0x00);
             if (c_crc) {
-                if (decoder->verbose)
-                    fprintf(stderr, "%s: WH40 bad CRC\n", __func__);
+                decoder_log(decoder, 1, __func__, "WH40 bad CRC");
                 continue; // DECODE_FAIL_MIC
             }
             uint8_t c_sum = add_bytes(b, 8) - b[8];
             if (c_sum) {
-                if (decoder->verbose)
-                    fprintf(stderr, "%s: WH40 bad SUM\n", __func__);
+                decoder_log(decoder, 1, __func__, "WH40 bad SUM");
                 continue; // DECODE_FAIL_MIC
             }
 
-            msg_type   = b[0]; // fixed 0x40
-            id         = (b[2] << 8) | b[3];
-            battery_ok = (b[4] >> 7);
-            channel    = ((b[4] & 0x70) >> 4) + 1;
-            rain_raw   = (b[5] << 8) | b[6];
+            int id         = (b[2] << 8) | b[3];
+            int battery_v  = (b[4] & 0x1f);
+            int battery_lvl = battery_v <= 9 ? 0 : ((battery_v - 9) / 6 * 100); // 0.9V-1.5V is 0-100
+            int rain_raw   = (b[5] << 8) | b[6];
+            char extra[11];
             sprintf(extra, "%02x%02x%02x%02x%02x", b[9], b[10], b[11], b[12], b[13]);
 
+            if (battery_lvl > 100)
+                battery_lvl = 100;
+
             /* clang-format off */
-            data = data_make(
-                    "model",            "",             DATA_STRING, "EcoWitt-WH40",
-                    "id" ,              "",             DATA_INT,    id,
-                    //"channel",          "Channel",      DATA_INT,    channel,
-                    //"battery",          "Battery",      DATA_STRING, battery_ok ? "OK" : "LOW",
-                    "rain_mm",          "Total Rain",   DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1,
-                    "data",             "Extra Data",   DATA_STRING, extra,
-                    "mic",              "Integrity",    DATA_STRING, "CRC",
+            data_t *data = data_make(
+                    "model",            "",                DATA_STRING, "EcoWitt-WH40",
+                    "id" ,              "",                DATA_INT,    id,
+                    "battery_V",        "Battery Voltage", DATA_COND, battery_v != 0, DATA_FORMAT, "%f V", DATA_DOUBLE, battery_v * 0.1f,
+                    "battery_ok",       "Battery",         DATA_COND, battery_v != 0, DATA_DOUBLE, battery_lvl * 0.01f,
+                    "rain_mm",          "Total Rain",      DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1,
+                    "data",             "Extra Data",      DATA_STRING, extra,
+                    "mic",              "Integrity",       DATA_STRING, "CRC",
                     NULL);
             /* clang-format on */
+
             decoder_output_data(decoder, data);
             events++;
         }
 
-        else if (b[0] == 0x68) {
+        else if (msg_type == 0x68) {
             // WS68
             uint8_t c_crc = crc8(b, 15, 0x31, 0x00);
             if (c_crc) {
-                if (decoder->verbose)
-                    fprintf(stderr, "%s: WH68 bad CRC\n", __func__);
+                decoder_log(decoder, 1, __func__, "WH68 bad CRC");
                 continue; // DECODE_FAIL_MIC
             }
             uint8_t c_sum = add_bytes(b, 15) - b[15];
             if (c_sum) {
-                if (decoder->verbose)
-                    fprintf(stderr, "%s: WH68 bad SUM\n", __func__);
+                decoder_log(decoder, 1, __func__, "WH68 bad SUM");
                 continue; // DECODE_FAIL_MIC
             }
 
-            msg_type   = b[0]; // fixed 0x68
-            id         = (b[2] << 8) | b[3];
-            int lux    = (b[4] << 8) | b[5];
-            int batt   = b[6];
-            battery_ok = batt > 0x30; // wild guess
-            int wspeed = b[10];
-            int wgust  = b[12];
-            int wdir   = ((b[7] & 0x20) >> 5) | b[11];
+            int id      = (b[2] << 8) | b[3];
+            int lux     = (b[4] << 8) | b[5];
+            int batt    = b[6];
+            int batt_ok = batt > 0x30; // wild guess
+            int wspeed  = b[10];
+            int wgust   = b[12];
+            int wdir    = ((b[7] & 0x20) >> 5) | b[11];
+            char extra[7];
             sprintf(extra, "%02x %02x%01x", b[13], b[16], b[17] >> 4);
 
             /* clang-format off */
-            data = data_make(
+            data_t *data = data_make(
                     "model",            "",             DATA_STRING, "EcoWitt-WS68",
                     "id" ,              "",             DATA_INT,    id,
                     "battery_raw",      "Battery Raw",  DATA_INT,    batt,
-                    "battery",          "Battery",      DATA_STRING, battery_ok ? "OK" : "LOW",
+                    "battery_ok",       "Battery",      DATA_INT,    batt_ok,
                     "lux_raw",          "lux",          DATA_INT,    lux,
                     "wind_avg_raw",     "Wind Speed",   DATA_INT,    wspeed,
                     "wind_max_raw",     "Wind Gust",    DATA_INT,    wgust,
@@ -357,18 +355,18 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         else {
-            if (decoder->verbose)
-                fprintf(stderr, "%s: unknown message type %02x (expected 0x30/0x40/0x68)\n", __func__, b[0]);
+            decoder_logf(decoder, 1, __func__, "unknown message type %02x (expected 0x30/0x40/0x68)", msg_type);
         }
     }
     return events;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
+        "battery_ok",
+        "battery_v",
         "temperature_C",
         "humidity",
         "rain_mm",
@@ -382,7 +380,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ambientweather_wh31e = {
+r_device const ambientweather_wh31e = {
         .name        = "Ambient Weather WH31E Thermo-Hygrometer Sensor, EcoWitt WH40 rain gauge",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 56,
@@ -390,6 +388,5 @@ r_device ambientweather_wh31e = {
         .reset_limit = 1500,
         .gap_limit   = 1800,
         .decode_fn   = &ambientweather_whx_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

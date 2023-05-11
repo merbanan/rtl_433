@@ -48,7 +48,7 @@ Protocol Specification:
 
 Data bits are NRZ encoded with logical 1 and 0 bits 106.842us in length.
 
-    SYN:32h ID:24h ?:4b SEQ:3d ?:1b TEMP:12d HUM:12d WSPD:12d WDIR:12d CHK:8h END:32h
+    SYNC:32h ID:24h ?:4b SEQ:3d ?:1b TEMP:12d HUM:12d WSPD:12d WDIR:12d CHK:8h END:32h
 
 Packet length is 264 bits according to inspectrum broken down as follows:
 
@@ -66,7 +66,7 @@ Packet length is 264 bits according to inspectrum broken down as follows:
 - trailer:        32 bytes (0xd2d2d200)
 
 The sensor generates a packet every 'n' seconds but only transmits if one or
-more of the following conditions are satified:
+more of the following conditions are satisfied:
 
 - temp changes +/- 0.8 degrees C
 - humidity changes +/- 1%
@@ -83,7 +83,7 @@ Between -17C and 0C, 'n' is 60.  Below -17C, 'n' is 360.
 
 static int lacrosse_breezepro_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const preamble_pattern[] = { 0xd2, 0xaa, 0x2d, 0xd4 };
+    uint8_t const preamble_pattern[] = {0xd2, 0xaa, 0x2d, 0xd4};
 
     data_t *data;
     uint8_t b[11];
@@ -93,9 +93,7 @@ static int lacrosse_breezepro_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_c, speed_kmh;
 
     if (bitbuffer->bits_per_row[0] < 264) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: Wrong packet length: %d\n", __func__, bitbuffer->bits_per_row[0]);
-        }
+        decoder_logf(decoder, 1, __func__, "Wrong packet length: %d", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH;
     }
 
@@ -103,9 +101,7 @@ static int lacrosse_breezepro_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             preamble_pattern, sizeof(preamble_pattern) * 8);
 
     if (offset >= bitbuffer->bits_per_row[0]) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: Sync word not found\n", __func__);
-        }
+        decoder_log(decoder, 1, __func__, "Sync word not found");
         return DECODE_ABORT_EARLY;
     }
 
@@ -114,15 +110,11 @@ static int lacrosse_breezepro_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     chk = crc8(b, 11, 0x31, 0x00);
     if (chk) {
-        if (decoder->verbose) {
-           fprintf(stderr, "%s: CRC failed!\n", __func__);
-        }
+        decoder_log(decoder, 1, __func__, "CRC failed!");
         return DECODE_FAIL_MIC;
     }
 
-    if (decoder->verbose) {
-        bitbuffer_print(bitbuffer);
-    }
+    decoder_log_bitbuffer(decoder, 1, __func__, bitbuffer, "");
 
     id        = (b[0] << 16) | (b[1] << 8) | b[2];
     flags     = (b[3] & 0xf1); // masks off seq bits
@@ -135,6 +127,12 @@ static int lacrosse_breezepro_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // base and/or scale adjustments
     temp_c = (raw_temp - 400) * 0.1f;
     speed_kmh = raw_speed * 0.1f;
+
+    if (humidity < 0 || humidity > 100
+        || temp_c < -40 || temp_c > 70
+        || direction < 0 || direction > 360
+        || speed_kmh < 0 || speed_kmh > 200)
+      return DECODE_FAIL_SANITY;
 
     /* clang-format off */
     data = data_make(
@@ -154,7 +152,7 @@ static int lacrosse_breezepro_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "seq",
@@ -168,7 +166,7 @@ static char *output_fields[] = {
 };
 
 // flex decoder m=FSK_PCM, s=107, l=107, r=5900
-r_device lacrosse_breezepro = {
+r_device const lacrosse_breezepro = {
         .name        = "LaCrosse Technology View LTV-WSDTH01 Breeze Pro Wind Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 107,
