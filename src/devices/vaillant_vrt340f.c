@@ -137,7 +137,7 @@ static int vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return DECODE_FAIL_SANITY;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "heating",
@@ -147,7 +147,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device vaillant_vrt340f = {
+r_device const vaillant_vrt340f = {
         .name        = "Vaillant calorMatic VRT340f Central Heating Control",
         .modulation  = OOK_PULSE_DMC,
         .short_width = 836,  // half-bit width 836 us

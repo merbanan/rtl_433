@@ -6,7 +6,7 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/**
+/** @fn int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 RadioHead ASK (generic) protocol.
 
 Default transmitter speed is 2000 bits per second, i.e. 500 us per bit.
@@ -51,6 +51,9 @@ static uint8_t symbol_6to4(uint8_t symbol)
     return 0xFF; // Not found
 }
 
+/**
+Radiohead ASK parser.
+*/
 static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t row, /*OUT*/ uint8_t *payload)
 {
     int len = bitbuffer->bits_per_row[row];
@@ -175,6 +178,11 @@ static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
+/**
+Sensible Living Mini-Plant Moisture Sensor.
+
+@todo Documentation needed.
+*/
 static int sensible_living_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
@@ -215,7 +223,7 @@ static int sensible_living_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *radiohead_ask_output_fields[] = {
+static char const *const radiohead_ask_output_fields[] = {
         "model",
         "len",
         "to",
@@ -227,7 +235,7 @@ static char *radiohead_ask_output_fields[] = {
         NULL,
 };
 
-static char *sensible_living_output_fields[] = {
+static char const *const sensible_living_output_fields[] = {
         "model",
         "house_id",
         "module_id",
@@ -240,7 +248,7 @@ static char *sensible_living_output_fields[] = {
         NULL,
 };
 
-r_device radiohead_ask = {
+r_device const radiohead_ask = {
         .name        = "Radiohead ASK",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 500,
@@ -250,7 +258,7 @@ r_device radiohead_ask = {
         .fields      = radiohead_ask_output_fields,
 };
 
-r_device sensible_living = {
+r_device const sensible_living = {
         .name        = "Sensible Living Mini-Plant Moisture Sensor",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 1000,

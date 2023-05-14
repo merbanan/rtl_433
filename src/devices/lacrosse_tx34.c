@@ -46,7 +46,7 @@ Could be merged with existing TX29 decoder... or not.
 
 #define LACROSSE_TX34_ITMODEL 5
 #define LACROSSE_TX34_PAYLOAD_BITS 40
-#define LACROSSE_TX34_RAIN_FACTOR 0.222
+#define LACROSSE_TX34_RAIN_FACTOR 0.222f
 
 static int lacrosse_tx34_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -103,7 +103,7 @@ static int lacrosse_tx34_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -114,7 +114,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device lacrosse_tx34 = {
+r_device const lacrosse_tx34 = {
         .name        = "LaCrosse TX34-IT rain gauge",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 58,

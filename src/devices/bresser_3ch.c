@@ -95,7 +95,7 @@ static int bresser_3ch_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -106,7 +106,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device bresser_3ch = {
+r_device const bresser_3ch = {
         .name        = "Bresser Thermo-/Hygro-Sensor 3CH",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 250,  // short pulse is ~250 us

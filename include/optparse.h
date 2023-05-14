@@ -86,7 +86,7 @@ double arg_float(char const *str, char const *error_hint);
 /// also "//localhost", "//localhost:514", "//:514".
 /// Host or port are terminated at a comma, if found.
 /// @return the remaining options
-char *hostport_param(char *param, char **host, char **port);
+char *hostport_param(char *param, char const **host, char const **port);
 
 /// Convert a string to an unsigned integer, uses strtod() and accepts
 /// metric suffixes of 'k', 'M', and 'G' (also 'K', 'm', and 'g').

@@ -30,7 +30,7 @@ X = unknown, possibly channel
 #define MYDEVICE_BITLEN      16
 #define MYDEVICE_MINREPEATS  3
 
-char *button_map[] = {
+char const *button_map[] = {
 /*  0 */ "Undefined",
 /*  1 */ "Undefined",
 /*  2 */ "Swap",
@@ -103,7 +103,7 @@ static int dish_remote_6_3_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int r; // a row index
     uint8_t *b; // bits of a row
     uint8_t button;
-    char *button_string;
+    char const *button_string;
 
     decoder_log_bitbuffer(decoder, 2, __func__, bitbuffer, "");
 
@@ -133,13 +133,13 @@ static int dish_remote_6_3_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "button",
         NULL,
 };
 
-r_device dish_remote_6_3 = {
+r_device const dish_remote_6_3 = {
         .name        = "Dish remote 6.3",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1692,

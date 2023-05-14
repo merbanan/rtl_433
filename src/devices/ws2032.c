@@ -83,7 +83,7 @@ static int fineoffset_ws2032_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",            "",                 DATA_STRING, "WS2032",
-            "id",               "StationID",        DATA_FORMAT, "%04X",    DATA_INT,    device_id,
+            "id",               "Station ID",        DATA_FORMAT, "%04X",    DATA_INT,    device_id,
             "battery_ok",       "Battery",                                  DATA_INT,    !battery_low,
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temperature,
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
@@ -100,7 +100,7 @@ static int fineoffset_ws2032_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -115,7 +115,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ws2032 = {
+r_device const ws2032 = {
         .name        = "WS2032 weather station",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 500,

@@ -5042,8 +5042,7 @@ static enum mg_ssl_if_result mg_ssl_if_ossl_set_psk(struct mg_ssl_if_ctx *ctx,
                                                     const char *identity,
                                                     const char *key_str) {
   (void) ctx;
-  (void) identity;
-  (void) key_str;
+  if (identity == NULL && key_str == NULL) return MG_SSL_OK;
   /* Krypton / LibreSSL does not support PSK. */
   return MG_SSL_ERROR;
 }
@@ -16597,10 +16596,6 @@ const struct mg_iface_vtable mg_default_iface_vtable = MG_PIC32_IFACE_VTABLE;
  */
 
 #ifdef _WIN32
-
-int rmdir(const char *dirname) {
-  return _rmdir(dirname);
-}
 
 unsigned int sleep(unsigned int seconds) {
   Sleep(seconds * 1000);

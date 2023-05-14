@@ -11,7 +11,7 @@
     Note that Modulation is a term used usually to refer to the analog domain.
     We refer to Modulation for the process of (de-)modulating a digital line code,
     represented as pulses and gaps (OOK) or mark and space (FSK) onto a RF carrier signal.
-    The line code is a coding of the bitstream data and refered to as the Coding of the data.
+    The line code is a coding of the bitstream data and referred to as the Coding of the data.
 
     We however use the well known terms to refer to the combinations of this.
     E.g. the term PWM is well known as anlog or discrete range modulation, but here used
@@ -59,7 +59,7 @@ typedef struct r_device {
     unsigned protocol_num; ///< fixed sequence number, assigned in main().
 
     /* information provided by each decoder */
-    char *name;
+    char const *name;
     unsigned modulation;
     float short_width;
     float long_width;
@@ -71,11 +71,12 @@ typedef struct r_device {
     struct r_device *(*create_fn)(char *args);
     unsigned priority; ///< Run later and only if no previous events were produced
     unsigned disabled; ///< 0: default enabled, 1: default disabled, 2: disabled, 3: disabled and hidden
-    char **fields; ///< List of fields this decoder produces; required for CSV output. NULL-terminated.
+    char const *const *fields; ///< List of fields this decoder produces; required for CSV output. NULL-terminated.
 
     /* public for each decoder */
     int verbose;
     int verbose_bits;
+    void (*log_fn)(struct r_device *decoder, int level, struct data *data);
     void (*output_fn)(struct r_device *decoder, struct data *data);
 
     /* Decoder results / statistics */

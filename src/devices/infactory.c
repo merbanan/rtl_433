@@ -80,7 +80,7 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int humidity    = (b[3] & 0x0F) * 10 + (b[4] >> 4); // BCD, 'A0'=100%rH
     int channel     = b[4] & 0x03;
 
-    float temp_f    = (float)temp_raw * 0.1 - 90;
+    float temp_f    = (temp_raw - 900) * 0.1f;
 
     /* clang-format off */
     data_t *data = data_make(
@@ -98,7 +98,7 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -130,7 +130,7 @@ This analysis is the reason for the new r_device definitions below.
 NB: pulse_slicer_ppm does not use .gap_limit if .tolerance is set.
 */
 
-r_device infactory = {
+r_device const infactory = {
         .name        = "inFactory, nor-tec, FreeTec NC-3982-913 temperature humidity sensor",
         .modulation  = OOK_PULSE_PPM,
         .sync_width  = 500,  // Sync pulse width (recognized, but not used)

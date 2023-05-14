@@ -150,7 +150,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
                     case 0xCB: data = data_append(data, "min_flow_temp", "", DATA_INT, value, NULL); break;
                     case 0xCC: /* Unknown, always 0x01? */ break;
                     default:
-                        decoder_logf(decoder, 1, __func__, "Unknown parameter to 0x1030: %x02d=%04d\n", *p, value);
+                        decoder_logf(decoder, 1, __func__, "Unknown parameter to 0x1030: %x02d=%04d", *p, value);
                 }
             }
             break;
@@ -418,7 +418,7 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "ids",
 #ifdef _DEBUG
@@ -458,7 +458,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device honeywell_cm921 = {
+r_device const honeywell_cm921 = {
         .name        = "Honeywell CM921 Wireless Programmable Room Thermostat",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 26,

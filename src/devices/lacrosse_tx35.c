@@ -111,7 +111,7 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
 
         // message "envelope" has been validated, start parsing data
         int sensor_id   = ((b[0] & 0x0f) << 2) | (b[1] >> 6);
-        float temp_c    = 10.0 * (b[1] & 0x0f) + 1.0 * ((b[2] >> 4) & 0x0f) + 0.1 * (b[2] & 0x0f) - 40.0;
+        float temp_c    = 10 * (b[1] & 0x0f) + 1 * ((b[2] >> 4) & 0x0f) + 0.1f * (b[2] & 0x0f) - 40.0f;
         int new_batt    = (b[1] >> 5) & 1;
         int battery_low = b[3] >> 7;
         int humidity    = b[3] & 0x7f;
@@ -169,7 +169,7 @@ static int lacrossetx35_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return lacrosse_it(decoder, bitbuffer, LACROSSE_TX35_MODEL);
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -181,7 +181,7 @@ static char *output_fields[] = {
 };
 
 // Receiver for the TX29 and TX25U device
-r_device lacrosse_tx29 = {
+r_device const lacrosse_tx29 = {
         .name        = "LaCrosse TX29IT, TFA Dostmann 30.3159.IT Temperature sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 55, // 58 us for TX34-IT
@@ -192,7 +192,7 @@ r_device lacrosse_tx29 = {
 };
 
 // Receiver for the TX35 device
-r_device lacrosse_tx35 = {
+r_device const lacrosse_tx35 = {
         .name        = "LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 105,

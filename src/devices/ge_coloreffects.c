@@ -157,14 +157,14 @@ static int ge_coloreffects_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events > 0 ? events : ret;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "command",
         NULL,
 };
 
-r_device ge_coloreffects = {
+r_device const ge_coloreffects = {
         .name        = "GE Color Effects",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 52,

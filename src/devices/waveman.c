@@ -79,7 +79,7 @@ static int waveman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -88,7 +88,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device waveman = {
+r_device const waveman = {
         .name        = "Waveman Switch Transmitter",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 357,

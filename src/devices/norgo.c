@@ -208,7 +208,7 @@ static int norgo_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -219,7 +219,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device norgo = {
+r_device const norgo = {
         .name        = "Norgo NGE101",
         .modulation  = OOK_PULSE_DMC,
         .short_width = 486,

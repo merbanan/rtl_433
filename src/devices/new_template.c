@@ -253,7 +253,7 @@ static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
  * order for this device when using -F csv.
  *
  */
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "data",
@@ -283,7 +283,7 @@ static char *output_fields[] = {
  * and sort it into src/CMakeLists.txt or run ./maintainer_update.py
  *
  */
-r_device new_template = {
+r_device const new_template = {
         .name        = "Template decoder",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 132,  // short gap is 132 us

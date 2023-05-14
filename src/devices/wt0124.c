@@ -97,7 +97,7 @@ static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
  * order for this device when using -F csv.
  *
  */
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -106,7 +106,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device wt1024 = {
+r_device const wt1024 = {
         .name        = "WT0124 Pool Thermometer",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 680,

@@ -21,18 +21,18 @@ EMOS E6016 weatherstation with DCF77.
 
 Data Layout:
 
-    PP PP PP II BK KK KK KK CT TT HH SS D? XX RR
+    PP PP PP II ?K KK KK KK CT TT HH SS DF XX RR
 
 - P: (24 bit) preamble
 - I: (8 bit) ID
-- B: (2 bit) battery indication
+- ?: (2 bit) unknown
 - K: (32 bit) datetime, fields are 6d-4d-5d 5d:6d:6d
 - C: (2 bit) channel
 - T: (12 bit) temperature, signed, scale 10
 - H: (8 bit) humidity
 - S: (8 bit) wind speed
 - D: (4 bit) wind direction
-- ?: (4 bit) unknown
+- F: (4 bit) flags of (?B??), B is battery good indication
 - X: (8 bit) checksum
 - R: (8 bit) repeat counter
 
@@ -47,11 +47,11 @@ Raw data:
 
 Format string:
 
-    MODEL?:8h8h8h ID?:8d BAT?2b DT:6d-4d-5dT5d:6d:6d CH:2d TEMP:12d HUM?8d WSPEED:8d WINDIR:4d ?4h CHK:8h REPEAT:8h
+    MODEL?:8h8h8h ID?:8d ?2b DT:6d-4d-5dT5d:6d:6d CH:2d TEMP:12d HUM?8d WSPEED:8d WINDIR:4d BAT:4b CHK:8h REPEAT:8h
 
 Decoded example:
 
-    MODEL?:aaa583 ID?:255 BAT?10 DT:21-05-21T07:49:35 CH:0 TEMP:0201 HUM?037 WSPEED:000 WINDIR:10 ?2 CHK:c7 REPEAT:00
+    MODEL?:aaa583 ID?:255 ?10 DT:21-05-21T07:49:35 CH:0 TEMP:0201 HUM?037 WSPEED:000 WINDIR:10 BAT:1101 CHK:c7 REPEAT:00
 
 */
 
@@ -86,7 +86,7 @@ static int emos_e6016_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     int id         = b[3];
-    int battery    = (b[4] >> 6);
+    int battery    = ((b[12] >> 2) & 0x1);
     unsigned dcf77 = ((b[4] & 0x3f) << 26) | (b[5] << 18) | (b[6] << 10) | (b[7] << 2) | (b[8] >> 6);
     int dcf77_sec  = ((dcf77 >> 0) & 0x3f);
     int dcf77_min  = ((dcf77 >> 6) & 0x3f);
@@ -98,7 +98,7 @@ static int emos_e6016_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int temp_raw   = (int16_t)(((b[8] & 0x0f) << 12) | (b[9] << 4)); // use sign extend
     float temp_c   = (temp_raw >> 4) * 0.1f;
     int humidity   = b[10];
-    float speed_ms = b[11];
+    float speed_ms = b[11] * 0.295;
     int dir_raw    = (((b[12] & 0xf0) >> 4));
     float dir_deg  = dir_raw * 22.5f;
 
@@ -110,7 +110,7 @@ static int emos_e6016_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",                 DATA_STRING, "EMOS-E6016",
             "id",               "House Code",       DATA_INT,    id,
             "channel",          "Channel",          DATA_INT,    channel,
-            "battery_ok",       "Battery_OK",       DATA_INT,    !!battery,
+            "battery_ok",       "Battery_OK",       DATA_INT,    battery,
             "temperature_C",    "Temperature_C",    DATA_FORMAT, "%.1f", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",         DATA_FORMAT, "%u", DATA_INT, humidity,
             "wind_avg_m_s",     "WindSpeed m_s",    DATA_FORMAT, "%.1f",  DATA_DOUBLE, speed_ms,
@@ -124,7 +124,7 @@ static int emos_e6016_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -138,13 +138,13 @@ static char *output_fields[] = {
         NULL,
 };
 // n=EMOS-E6016,m=OOK_PWM,s=280,l=796,r=804,g=0,t=0,y=1836,rows>=3,bits=120
-r_device emos_e6016 = {
+r_device const emos_e6016 = {
         .name        = "EMOS E6016 weatherstation with DCF77",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 280,
         .long_width  = 796,
         .gap_limit   = 3000,
-        .reset_limit = 804,
+        .reset_limit = 850,
         .sync_width  = 1836,
         .decode_fn   = &emos_e6016_decode,
         .fields      = output_fields,

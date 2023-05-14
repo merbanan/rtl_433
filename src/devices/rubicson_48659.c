@@ -182,7 +182,7 @@ static int rubicson_48659_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "temperature_F",
@@ -190,7 +190,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device rubicson_48659 = {
+r_device const rubicson_48659 = {
         .name        = "Rubicson 48659 Thermometer",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 940,

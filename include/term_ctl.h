@@ -44,9 +44,18 @@ typedef enum term_color {
     TERM_COLOR_BRIGHT_WHITE   = 97,
 } term_color_t;
 
+/**
+ * Sets the terminal text foreground color.
+ * Always sets the bold font attribute, except for TERM_COLOR_RESET.
+ */
 void term_set_fg(void *ctx, term_color_t color);
 
-void term_set_bg(void *ctx, term_color_t color);
+/**
+ * Sets the terminal background and foreground color.
+ * Both are optional, use `0` to omit a color.
+ * Must not be used for TERM_COLOR_RESET.
+ */
+void term_set_bg(void *ctx, term_color_t bg, term_color_t fg);
 
 /*
  * Defined in newer <sal.h> for MSVC.

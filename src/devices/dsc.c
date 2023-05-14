@@ -31,6 +31,7 @@ General Packet Description
 - The last byte is a CRC with nothing after it, no stop/sync bit, so
   if there was a CRC byte of 0, the packet would wind up being short
   by 4 mS and up to 8 bits (48 bits total).
+- Note the WS4945 doubles the length of those timings.
 
 There are 48 bits in the packet including the leading 4 sync 1 bits.
 This makes the packet 48 x 500 uS bits long plus the 2.5 mS preamble
@@ -91,6 +92,11 @@ Notes:
 - The two-way devices wireless keypad and use an entirely different
   modulation. They are supposed to be encrypted. A sampling rate
   greater than 250 khz (1 mhz?) looks to be necessary.
+- Tested on EV-DW4927 door/glass break sensor, WS4975 door sensor,
+  WS4945 door sensor and WS4904P motion sensors.
+- The EV-DW4927 combined door / glass break sensor sends out two
+  separate signals. Glass break uses the original ESN as written on
+  the case and door sensor uses ESN with last digit +1.
 
 */
 
@@ -238,7 +244,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return result;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "closed",
@@ -256,7 +262,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device dsc_security = {
+r_device const dsc_security = {
         .name        = "DSC Security Contact",
         .modulation  = OOK_PULSE_RZ,
         .short_width = 250,  // Pulse length, 250 µs
@@ -266,12 +272,13 @@ r_device dsc_security = {
         .fields      = output_fields,
 };
 
-r_device dsc_security_ws4945 = {
+r_device const dsc_security_ws4945 = {
+        // Used for EV-DW4927, WS4975 and WS4945.
         .name        = "DSC Security Contact (WS4945)",
         .modulation  = OOK_PULSE_RZ,
         .short_width = 536,  // Pulse length, 536 µs
         .long_width  = 1072, // Bit period, 1072 µs
-        .reset_limit = 6000, // Max gap,
+        .reset_limit = 9000, // Max gap, based on 8 zero bits between sync bit
         .decode_fn   = &dsc_callback,
         .fields      = output_fields,
 };

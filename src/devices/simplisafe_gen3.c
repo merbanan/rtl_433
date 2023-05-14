@@ -86,7 +86,7 @@ static int simplisafe_gen3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "msg_type",
@@ -97,7 +97,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device simplisafe_gen3 = {
+r_device const simplisafe_gen3 = {
         .name        = "SimpliSafe Gen 3 Home Security System",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 208, // 4800 baud

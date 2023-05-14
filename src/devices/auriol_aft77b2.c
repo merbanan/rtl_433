@@ -137,7 +137,7 @@ static int auriol_aft77_b2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "temperature_C",
@@ -145,7 +145,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device auriol_aft77b2 = {
+r_device const auriol_aft77b2 = {
         .name        = "Auriol AFT 77 B2 temperature sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 500,

@@ -112,7 +112,7 @@ static int esperanza_ews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -123,7 +123,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device esperanza_ews = {
+r_device const esperanza_ews = {
         .name        = "Esperanza EWS",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

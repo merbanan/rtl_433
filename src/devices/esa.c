@@ -35,6 +35,11 @@ static uint8_t decrypt_esa(uint8_t *b)
     return crc;
 }
 
+/**
+ELV Energy Counter ESA 1000/2000.
+
+@todo Documentation needed.
+*/
 static int esa_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
@@ -60,8 +65,8 @@ static int esa_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     impulse_constant   = ((b[14] << 8) | b[15]) ^ b[1];
     impulses_total     = ((unsigned)b[5] << 24) | (b[6] << 16) | (b[7] << 8) | b[8];
     impulses_val       = (b[9] << 8) | b[10];
-    energy_total_val   = 1.0 * impulses_total / impulse_constant;
-    energy_impulse_val = 1.0 * impulses_val / impulse_constant;
+    energy_total_val   = 1.0f * impulses_total / impulse_constant;
+    energy_impulse_val = 1.0f * impulses_val / impulse_constant;
 
     /* clang-format off */
     data = data_make(
@@ -82,7 +87,7 @@ static int esa_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "impulses",
@@ -96,7 +101,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device esa_energy = {
+r_device const esa_energy = {
         .name        = "ESA1000 / ESA2000 Energy Monitor",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 260,

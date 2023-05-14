@@ -36,7 +36,7 @@ static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b;
     int id;
     int cmd;
-    char *cmd_str;
+    char const *cmd_str;
 
     if (bitbuffer->bits_per_row[0] != 25)
         return DECODE_ABORT_LENGTH;
@@ -48,7 +48,7 @@ static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Validate package
     if (!(b[3] & 0x80)                           // Last bit (MSB here) is always 1
-            || !b[0] || !b[1] || !(b[2] & 0xF0)) // Reduce false positives. ID 0x00000 not supported
+            || (!b[0] && !b[1] && !(b[2] & 0xF0))) // Reduce false positives. ID 0x00000 not supported
         return DECODE_ABORT_EARLY;
 
     id  = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4); // ID is 20 bits (Ad: "1 Million combinations" :-)
@@ -87,7 +87,7 @@ static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "cmd",
@@ -95,7 +95,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device chuango = {
+r_device const chuango = {
         .name        = "Chuango Security Technology",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 568,  // Pulse: Short 568µs, Long 1704µs

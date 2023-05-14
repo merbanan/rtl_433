@@ -172,8 +172,8 @@ data_tag_t *data_tag_create(char *param, struct mg_mgr *mgr)
     int gpsd_mode = strncmp(tag->val, "gpsd", 4) == 0;
     if (gpsd_mode || strncmp(tag->val, "tcp:", 4) == 0) {
         p          = arg_param(tag->val); // strip scheme
-        char *host = gpsd_mode ? "localhost" : NULL;
-        char *port = gpsd_mode ? "2947" : NULL;
+        char const *host = gpsd_mode ? "localhost" : NULL;
+        char const *port = gpsd_mode ? "2947" : NULL;
         char *opts = hostport_param(p, &host, &port);
         list_t includes = {0};
 
@@ -231,7 +231,7 @@ data_tag_t *data_tag_create(char *param, struct mg_mgr *mgr)
 
 void data_tag_free(data_tag_t *tag)
 {
-    free(tag->includes);
+    free((void *)tag->includes);
     gpsd_client_free(tag->gpsd_client);
 
     free(tag);

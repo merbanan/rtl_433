@@ -40,17 +40,19 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
 		= General options =
   [-V] Output the version string and exit
   [-v] Increase verbosity (can be used multiple times).
-       -v : verbose, -vv : verbose decoders, -vvv : debug decoders, -vvvv : trace decoding).
+       -v : verbose notice, -vv : verbose info, -vvv : debug, -vvvv : trace.
   [-c <path>] Read config options from a file
 		= Tuner options =
   [-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query> | rtl_tcp | help]
   [-g <gain> | help] (default: auto)
-  [-t <settings>] apply a list of keyword=value settings for SoapySDR devices
-       e.g. -t "antenna=A,bandwidth=4.5M,rfnotch_ctrl=false"
+  [-t <settings>] apply a list of keyword=value settings to the SDR device
+       e.g. for SoapySDR -t "antenna=A,bandwidth=4.5M,rfnotch_ctrl=false"
+       for RTL-SDR use "direct_samp[=1]", "offset_tune[=1]", "digital_agc[=1]", "biastee[=1]"
   [-f <frequency>] Receive frequency(s) (default: 433920000 Hz)
   [-H <seconds>] Hop interval for polling of multiple frequencies (default: 600 seconds)
   [-p <ppm_error>] Correct rtl-sdr tuner frequency offset error (default: 0)
   [-s <sample rate>] Set sample rate (default: 250000 Hz)
+  [-D restart | pause | quit | manual] Input device run mode options.
 		= Demodulator options =
   [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)
        Specify a negative number to disable a device decoding protocol (can be used multiple times)
@@ -63,7 +65,6 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-Y squelch] Skip frames below estimated noise level to reduce cpu load.
   [-Y ampest | magest] Choose amplitude or magnitude level estimator.
 		= Analyze/Debug options =
-  [-a] Analyze mode. Print a textual description of the signal.
   [-A] Pulse Analyzer. Enable pulse analysis and decode attempt.
        Disable all decoders with -R 0 if you want analyzer output only.
   [-y <code>] Verify decoding of demodulated test data (e.g. "{25}fb2dd58") with enabled devices
@@ -74,10 +75,10 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-w <filename> | help] Save data stream to output file (a '-' dumps samples to stdout)
   [-W <filename> | help] Save data stream to output file, overwrite existing file
 		= Data output options =
-  [-F kv | json | csv | mqtt | influx | syslog | trigger | null | help] Produce decoded output in given format.
+  [-F log | kv | json | csv | mqtt | influx | syslog | trigger | null | help] Produce decoded output in given format.
        Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
-  [-M time[:<options>] | protocol | level | noise[:secs] | stats | bits | help] Add various meta data to each output.
+  [-M time[:<options>] | protocol | level | noise[:<secs>] | stats | bits | help] Add various meta data to each output.
   [-K FILE | PATH | <tag> | <key>=<tag>] Add an expanded token or fixed tag to every output line.
   [-C native | si | customary] Convert units in decoded output.
   [-n <value>] Specify number of samples to take (each sample is an I/Q pair)
@@ -90,13 +91,13 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
 
 		= Supported device protocols =
     [01]  Silvercrest Remote Control
-    [02]  Rubicson Temperature Sensor
+    [02]  Rubicson, TFA 30.3197 or InFactory PT-310 Temperature Sensor
     [03]  Prologue, FreeTec NC-7104, NC-7159-675 temperature sensor
     [04]  Waveman Switch Transmitter
     [06]* ELV EM 1000
     [07]* ELV WS 2000
     [08]  LaCrosse TX Temperature / Humidity Sensor
-    [10]* Acurite 896 Rain Gauge
+    [10]  Acurite 896 Rain Gauge
     [11]  Acurite 609TXC Temperature and Humidity Sensor
     [12]  Oregon Scientific Weather Sensor
     [13]* Mebus 433
@@ -124,7 +125,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [37]* Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)
     [38]  Generic temperature sensor 1
     [39]  WG-PB12V1 Temperature Sensor
-    [40]  Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning, 3N1, Atlas
+    [40]  Acurite 592TXR Temp/Humidity, 592TX Temp, 5n1 Weather Station, 6045 Lightning, 899 Rain, 3N1, Atlas
     [41]  Acurite 986 Refrigerator / Freezer Thermometer
     [42]  HIDEKI TS04 Temperature, Humidity, Wind and Rain Sensor
     [43]  Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
@@ -155,12 +156,12 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [70]  Honeywell Door/Window Sensor, 2Gig DW10/DW11, RE208 repeater
     [71]  Maverick ET-732/733 BBQ Sensor
     [72]* RF-tech
-    [73]  LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX141W, TX145wsdth sensor
+    [73]  LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX141W, TX145wsdth, (TFA, ORIA) sensor
     [74]  Acurite 00275rm,00276rm Temp/Humidity with optional probe
     [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
     [76]  LaCrosse TX29IT, TFA Dostmann 30.3159.IT Temperature sensor
     [77]  Vaillant calorMatic VRT340f Central Heating Control
-    [78]  Fine Offset Electronics, WH25, WH32B, WH24, WH65B, HP1000 Temperature/Humidity/Pressure Sensor
+    [78]  Fine Offset Electronics, WH25, WH32B, WH24, WH65B, HP1000, Misol WS2320 Temperature/Humidity/Pressure Sensor
     [79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
     [80]  IBIS beacon
     [81]  Oil Ultrasonic STANDARD FSK
@@ -179,16 +180,16 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [94]  Philips outdoor temperature sensor (type AJ3650)
     [95]  Schrader TPMS EG53MA4, PA66GF35
     [96]  Nexa
-    [97]  Thermopro TP08/TP12/TP20 thermometer
+    [97]  ThermoPro TP08/TP12/TP20 thermometer
     [98]  GE Color Effects
     [99]  X10 Security
     [100]  Interlogix GE UTC Security Devices
     [101]* Dish remote 6.3
     [102]  SimpliSafe Home Security System (May require disabling automatic gain for KeyPad decodes)
     [103]  Sensible Living Mini-Plant Moisture Sensor
-    [104]  Wireless M-Bus, Mode C&T, 100kbps (-f 868950000 -s 1200000)
-    [105]  Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)
-    [106]* Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)
+    [104]  Wireless M-Bus, Mode C&T, 100kbps (-f 868.95M -s 1200k)
+    [105]  Wireless M-Bus, Mode S, 32.768kbps (-f 868.3M -s 1000k)
+    [106]* Wireless M-Bus, Mode R, 4.8kbps (-f 868.33M)
     [107]* Wireless M-Bus, Mode F, 2.4kbps
     [108]  Hyundai WS SENZOR Remote Temperature Sensor
     [109]  WT0124 Pool Thermometer
@@ -202,7 +203,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [117]* ESA1000 / ESA2000 Energy Monitor
     [118]* Biltema rain gauge
     [119]  Bresser Weather Center 5-in-1
-    [120]* Digitech XC-0324 temperature sensor
+    [120]  Digitech XC-0324 / AmbientWeather FT005TH temp/hum sensor
     [121]  Opus/Imagintronix XT300 Soil Moisture
     [122]* FS20
     [123]* Jansite TPMS Model TY02S
@@ -216,7 +217,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [131]  Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes
     [132]  TFA Dostmann 30.3196 T/H outdoor sensor
     [133]  Rubicson 48659 Thermometer
-    [134]  Holman Industries iWeather WS5029 weather station (newer PCM)
+    [134]  AOK Weather Station rebrand Holman Industries iWeather WS5029, Conrad AOK-5056, Optex 990018
     [135]  Philips outdoor temperature sensor (type AJ7010)
     [136]  ESIC EMT7110 power meter
     [137]  Globaltronics QUIGG GT-TMBBQ-05
@@ -250,11 +251,11 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [165]  TFA Dostmann 30.3221.02 T/H Outdoor Sensor
     [166]  LaCrosse Technology View LTV-WSDTH01 Breeze Pro Wind Sensor
     [167]  Somfy RTS
-    [168]  Schrader TPMS SMD3MA4 (Subaru)
+    [168]  Schrader TPMS SMD3MA4 (Subaru) 3039 (Infiniti, Nissan, Renault)
     [169]* Nice Flor-s remote control for gates
     [170]  LaCrosse Technology View LTV-WR1 Multi Sensor
     [171]  LaCrosse Technology View LTV-TH Thermo/Hygro Sensor
-    [172]  Bresser Weather Center 6-in-1, 7-in-1 indoor, new 5-in-1, 3-in-1 wind gauge, Froggit WH6000, Ventus C8488A
+    [172]  Bresser Weather Center 6-in-1, 7-in-1 indoor, soil, new 5-in-1, 3-in-1 wind gauge, Froggit WH6000, Ventus C8488A
     [173]  Bresser Weather Center 7-in-1
     [174]  EcoDHOME Smart Socket and MCEE Solar monitor
     [175]  LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1/W2 Wind Sensor
@@ -297,9 +298,37 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [212]  Renault 0435R TPMS
     [213]  Fine Offset Electronics WS80 weather station
     [214]  EMOS E6016 weatherstation with DCF77
-    [215]  Altronics X7064 temperature and humidity sensor
+    [215]  Emax W6, rebrand Altronics x7063/4, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025, Protmex PT3390A, Jula Marquant 014331/32, Weather Station or temperature/humidity sensor
     [216]* ANT and ANT+ devices
     [217]  EMOS E6016 rain gauge
+    [218]  Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes (FSK)
+    [219]  Fine Offset Electronics WH45 air quality sensor
+    [220]  Maverick XR-30 BBQ Sensor
+    [221]  Fine Offset Electronics WN34 temperature sensor
+    [222]  Rubicson Pool Thermometer 48942
+    [223]  Badger ORION water meter, 100kbps (-f 916.45M -s 1200k)
+    [224]  GEO minim+ energy monitor
+    [225]  TyreGuard 400 TPMS
+    [226]  Kia TPMS (-s 1000k)
+    [227]  SRSmith Pool Light Remote Control SRS-2C-TX (-f 915M)
+    [228]  Neptune R900 flow meters
+    [229]* WEC-2103 temperature/humidity sensor
+    [230]  Vauno EN8822C
+    [231]  Govee Water Leak Detector H5054
+    [232]  TFA Dostmann 14.1504.V2 Radio-controlled grill and meat thermometer
+    [233]* CED7000 Shot Timer
+    [234]  Watchman Sonic Advanced / Plus
+    [235]  Oil Ultrasonic SMART FSK
+    [236]  Gasmate BA1008 meat thermometer
+    [237]  Flowis flow meters
+    [238]  Wireless M-Bus, Mode T, 32.768kbps (-f 868.3M -s 1000k)
+    [239]  Revolt NC-5642 Energy Meter
+    [240]  LaCrosse TX31U-IT, The Weather Channel WS-1910TWC-IT
+    [241]  EezTire E618 (TPMS10ATC)
+    [242]* Baldr / RainPoint rain gauge.
+    [243]  Celsia CZC1 Thermostat
+    [244]  Fine Offset Electronics WS90 weather station
+    [245]* ThermoPro TX-2C Thermometer
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -372,6 +401,8 @@ Available options are:
 		use opt>=n to match at least <n> and opt<=n to match at most <n>
 	invert : invert all bits
 	reflect : reflect each byte (MSB first to MSB last)
+	decode_uart : UART 8n1 (10-to-8) decode
+	decode_dm : Differential Manchester decode
 	match=<bits> : only match if the <bits> are found
 	preamble=<bits> : match and align at the <bits> preamble
 		<bits> is a row spec of {<bit count>}<bits as hex number>
@@ -384,8 +415,8 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 
 
 		= Output format option =
-  [-F kv|json|csv|mqtt|influx|syslog|trigger|null] Produce decoded output in given format.
-	Without this option the default is KV output. Use "-F null" to remove the default.
+  [-F log|kv|json|csv|mqtt|influx|syslog|trigger|null] Produce decoded output in given format.
+	Without this option the default is LOG and KV output. Use "-F null" to remove the default.
 	Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"
@@ -408,18 +439,18 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
   [-M time[:<options>]|protocol|level|noise[:<secs>]|stats|bits] Add various metadata to every output line.
 	Use "time" to add current date and time meta data (preset for live inputs).
 	Use "time:rel" to add sample position meta data (preset for read-file and stdin).
-	Use "time:unix" to show the seconds since unix epoch as time meta data.
+	Use "time:unix" to show the seconds since unix epoch as time meta data. This is always UTC.
 	Use "time:iso" to show the time with ISO-8601 format (YYYY-MM-DD"T"hh:mm:ss).
 	Use "time:off" to remove time meta data.
 	Use "time:usec" to add microseconds to date time meta data.
 	Use "time:tz" to output time with timezone offset.
 	Use "time:utc" to output time in UTC.
 		(this may also be accomplished by invocation with TZ environment variable set).
-		"usec" and "utc" can be combined with other options, eg. "time:unix:utc:usec".
+		"usec" and "utc" can be combined with other options, eg. "time:iso:utc" or "time:unix:usec".
 	Use "replay[:N]" to replay file inputs at (N-times) realtime.
 	Use "protocol" / "noprotocol" to output the decoder protocol number meta data.
 	Use "level" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.
-	Use "noise[:secs]" to report estimated noise level at intervals (default: 10 seconds).
+	Use "noise[:<secs>]" to report estimated noise level at intervals (default: 10 seconds).
 	Use "stats[:[<level>][:<interval>]]" to report statistics (default: 600 seconds).
 	  level 0: no report, 1: report successful devices, 2: report active devices, 3: report all
 	Use "bits" to add bit representation to code outputs (for debug).
