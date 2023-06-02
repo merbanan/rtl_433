@@ -33,7 +33,7 @@ Preamble is aaaa aaaa aaaa, sync word is 2dd4.
 Packet layout:
 
      0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-    YY II II II LL LL BB FF TT HH WW DD GG VV UU UU R0 R1 R2 R3 R4 SS UU UU UU UU UU UU UU UU AA XX
+    YY II II II LL LL BB FF TT HH WW DD GG VV UU UU R0 R1 R2 R3 R4 SS UU UU UU UU UU UU UU ZZ AA XX
     90 00 34 2b 00 77 a4 82 62 39 00 3e 00 00 3f ff 20 00 ba 00 00 26 02 00 ff 9f f8 00 00 82 92 4f
 
 - Y = fixed sensor type 0x90
@@ -50,7 +50,8 @@ Packet layout:
 - V = uv index, scale 10
 - U = unknown
 - R = rain total (R3 << 8 | R4) * 0.1 mm
-- SS = super cap voltage, unit of 0.1V, lower 6 bits, mask 0x3f
+- S = super cap voltage, unit of 0.1V, lower 6 bits, mask 0x3f
+- Z = Firmware version. 0x82 = 130 = 1.3.0
 - A = checksum
 - X = CRC
 
@@ -107,12 +108,13 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int unknown     = (b[14] << 8) | (b[15]);
     int rain_raw    = (b[19] << 8 ) | (b[20]);
     int supercap_V  = (b[21] & 0x3f);
+    int firmware    = b[29];
     char extra[30];
 
     if (battery_lvl > 100) // More then 100%?
         battery_lvl = 100;
 
-    sprintf(extra, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[17], b[18], b[19], b[20], b[21], b[22], b[23], b[24], b[25], b[26], b[27], b[28], b[29] );
+    sprintf(extra, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[16], b[18], b[19], b[20], b[21], b[22], b[23], b[24], b[25], b[26], b[27], b[28], b[28] );
 
     /* clang-format off */
     data_t *data = data_make(
@@ -131,6 +133,7 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "unknown",          "Unknown",          DATA_COND, unknown != 0x3fff, DATA_INT, unknown,
             "rain_mm",          "Total Rain",       DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1f,
             "supercap_V",       "Supercap Voltage", DATA_COND, supercap_V != 0xff, DATA_FORMAT, "%.1f V", DATA_DOUBLE, supercap_V * 0.1f,
+            "firmware",         "Firmware Version", DATA_INT, firmware,
             "data",             "Extra Data",       DATA_STRING, extra,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
@@ -156,6 +159,7 @@ static char const *const output_fields[] = {
         "unknown",
         "rain_mm",
         "supercap_V",
+        "firmware",
         "data",
         "mic",
         NULL,
