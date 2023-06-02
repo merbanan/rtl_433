@@ -32,8 +32,8 @@ Preamble is aaaa aaaa aaaa, sync word is 2dd4.
 
 Packet layout:
 
-     0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 ZZ 30 31
-    YY II II II LL LL BB FF TT HH WW DD GG VV UU UU R0 R1 R2 R3 R4 SS UU UU UU UU UU UU UU UU AA XX
+     0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+    YY II II II LL LL BB FF TT HH WW DD GG VV UU UU R0 R1 R2 R3 R4 SS UU UU UU UU UU UU UU ZZ AA XX
     90 00 34 2b 00 77 a4 82 62 39 00 3e 00 00 3f ff 20 00 ba 00 00 26 02 00 ff 9f f8 00 00 82 92 4f
 
 - Y = fixed sensor type 0x90
