@@ -133,7 +133,7 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "unknown",          "Unknown",          DATA_COND, unknown != 0x3fff, DATA_INT, unknown,
             "rain_mm",          "Total Rain",       DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1f,
             "supercap_V",       "Supercap Voltage", DATA_COND, supercap_V != 0xff, DATA_FORMAT, "%.1f V", DATA_DOUBLE, supercap_V * 0.1f,
-            "firmware",         "Firmware Version", DATA_FORMAT, "%d", DATA_INT, firmware,
+            "firmware",         "Firmware Version", DATA_INT, firmware,
             "data",             "Extra Data",       DATA_STRING, extra,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
