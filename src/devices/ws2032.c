@@ -83,7 +83,7 @@ static int fineoffset_ws2032_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",            "",                 DATA_STRING, "WS2032",
-            "id",               "StationID",        DATA_FORMAT, "%04X",    DATA_INT,    device_id,
+            "id",               "Station ID",        DATA_FORMAT, "%04X",    DATA_INT,    device_id,
             "battery_ok",       "Battery",                                  DATA_INT,    !battery_low,
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temperature,
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,

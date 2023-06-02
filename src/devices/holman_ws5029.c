@@ -143,7 +143,7 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format off */
         data = data_make(
                 "model",            "",                 DATA_STRING, "Holman-WS5029",
-                "id",               "StationID",        DATA_FORMAT, "%04X",       DATA_INT,    device_id,
+                "id",               "Station ID",        DATA_FORMAT, "%04X",       DATA_INT,    device_id,
                 "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",     DATA_DOUBLE, temp_c,
                 "humidity",         "Humidity",         DATA_FORMAT, "%u %%",      DATA_INT,    humidity,
                 "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",    DATA_DOUBLE, rain_mm,
@@ -165,7 +165,7 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format off */
         data = data_make(
                 "model",            "",                 DATA_STRING, "AOK-5056",
-                "id",               "StationID",        DATA_FORMAT, "%04X",      DATA_INT,    device_id,
+                "id",               "Station ID",        DATA_FORMAT, "%04X",      DATA_INT,    device_id,
                 "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",    DATA_DOUBLE, temp_c,
                 "humidity",         "Humidity",         DATA_FORMAT, "%u %%",     DATA_INT,    humidity,
                 "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",   DATA_DOUBLE, rain_mm,

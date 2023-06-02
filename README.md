@@ -180,7 +180,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [94]  Philips outdoor temperature sensor (type AJ3650)
     [95]  Schrader TPMS EG53MA4, PA66GF35
     [96]  Nexa
-    [97]  Thermopro TP08/TP12/TP20 thermometer
+    [97]  ThermoPro TP08/TP12/TP20 thermometer
     [98]  GE Color Effects
     [99]  X10 Security
     [100]  Interlogix GE UTC Security Devices
@@ -328,6 +328,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [242]* Baldr / RainPoint rain gauge.
     [243]  Celsia CZC1 Thermostat
     [244]  Fine Offset Electronics WS90 weather station
+    [245]* ThermoPro TX-2C Thermometer
 
 * Disabled by default, use -R n or a conf file to enable
 
