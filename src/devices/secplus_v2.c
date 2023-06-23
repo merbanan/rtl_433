@@ -19,6 +19,8 @@ Security+ 2.0  is described in [US patent application US20110317835A1](https://p
 */
 
 #include "decoder.h"
+#include "fatal.h"
+#include "compat_time.h"
 
 /**
 Security+ 2.0 rolling code.
@@ -67,6 +69,16 @@ Once the above has been run twice the two are merged
 ---
 
 */
+
+struct secplus_v2_stateful_context {
+    bitbuffer_t fixed_1;
+    uint8_t rolling_1[16];
+    struct timeval tv_1;
+
+    bitbuffer_t fixed_2;
+    uint8_t rolling_2[16];
+    struct timeval tv_2;
+};
 
 static int secplus_v2_decode_v2_half(r_device *decoder, bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_p)
 {
@@ -245,15 +257,16 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     unsigned search_index = 0;
     bitbuffer_t bits = {0};
-    // int i            = 0;
 
-    //bitbuffer_t bits_1    = {0};
-    bitbuffer_t fixed_1   = {0};
-    uint8_t rolling_1[16] = {0};
+    struct timeval tv_r1;
+    struct timeval tv_r2;
+    struct timeval tv_now;
 
-    //bitbuffer_t bits_2    = {0};
-    bitbuffer_t fixed_2   = {0};
-    uint8_t rolling_2[16] = {0};
+    struct secplus_v2_stateful_context *context = decoder->decode_ctx;
+    if (context == NULL) {
+        decoder_log(decoder, 1, __func__, "Decoder context is NULL!!");
+        return DECODE_FAIL_OTHER;
+    }
 
     for (uint16_t row = 0; row < bitbuffer->num_rows; ++row) {
         if (bitbuffer->bits_per_row[row] < 110) {
@@ -284,21 +297,31 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // 2nd bit indicates with half of the data
         if (bits.bb[0][0] & 0xC0) {
             decoder_log(decoder, 1, __func__, "Set 2");
-            secplus_v2_decode_v2_half(decoder, &bits, rolling_2, &fixed_2);
+            secplus_v2_decode_v2_half(decoder, &bits, context->rolling_2, &context->fixed_2);
+            gettimeofday(&context->tv_2, NULL);
         }
         else {
             decoder_log(decoder, 1, __func__, "Set 1");
-            secplus_v2_decode_v2_half(decoder, &bits, rolling_1, &fixed_1);
+            secplus_v2_decode_v2_half(decoder, &bits, context->rolling_1, &context->fixed_1);
+            gettimeofday(&context->tv_1, NULL);
         }
 
-        // break if we've received both halves
-        if (fixed_1.bits_per_row[0] > 1 && fixed_2.bits_per_row[0] > 1) {
-            break;
+        // break if we've received both halves.
+        if (context->fixed_1.bits_per_row[0] > 1 && context->fixed_2.bits_per_row[0] > 1) {
+            gettimeofday(&tv_now, NULL);
+            timeval_subtract(&tv_r1, &tv_now, &context->tv_1);
+            timeval_subtract(&tv_r2, &tv_now, &context->tv_2);
+            if (tv_r1.tv_sec < 3 && tv_r2.tv_sec < 3) {
+                break;
+            }
         }
     }
 
-    // Do we have what we need ??
-    if (fixed_1.bits_per_row[0] == 0 || fixed_2.bits_per_row[0] == 0) {
+    // Do we have what we need ??, is it recent data?
+    gettimeofday(&tv_now, NULL);
+    timeval_subtract(&tv_r1, &tv_now, &context->tv_1);
+    timeval_subtract(&tv_r2, &tv_now, &context->tv_2);
+    if (context->fixed_1.bits_per_row[0] == 0 || context->fixed_2.bits_per_row[0] == 0 || tv_r1.tv_sec > 2 || tv_r2.tv_sec > 2) {
         return DECODE_FAIL_SANITY;
     }
 
@@ -307,20 +330,20 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *r;
 
     r    = rolling_digits;
-    *r++ = rolling_2[8];
-    *r++ = rolling_1[8];
+    *r++ = context->rolling_2[8];
+    *r++ = context->rolling_1[8];
     for (int i = 4; i < 8; i++) {
-        *r++ = rolling_2[i];
+        *r++ = context->rolling_2[i];
     }
     for (int i = 4; i < 8; i++) {
-        *r++ = rolling_1[i];
+        *r++ = context->rolling_1[i];
     }
 
     for (int i = 0; i < 4; i++) {
-        *r++ = rolling_2[i];
+        *r++ = context->rolling_2[i];
     }
     for (int i = 0; i < 4; i++) {
-        *r++ = rolling_1[i];
+        *r++ = context->rolling_1[i];
     }
 
     // compute rolling_total from rolling_digits[]
@@ -343,15 +366,17 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Assemble "fixed" data part
     uint64_t fixed_total = 0;
     uint8_t *bb;
-    bb = fixed_1.bb[0];
+    bb = context->fixed_1.bb[0];
     fixed_total ^= ((uint64_t)bb[0]) << 32;
     fixed_total ^= ((uint64_t)bb[1]) << 24;
     fixed_total ^= ((uint64_t)bb[2]) << 16;
 
-    bb = fixed_2.bb[0];
+    bb = context->fixed_2.bb[0];
     fixed_total ^= ((uint64_t)bb[0]) << 12;
     fixed_total ^= ((uint64_t)bb[1]) << 4;
     fixed_total ^= (bb[2] >> 4) & 0x0f;
+
+    memset(context, 0, sizeof(*context));
 
     // int button    = fixed_total >> 32;
     // int remote_id = fixed_total & 0xffffffff;
@@ -394,6 +419,29 @@ static char const *const output_fields[] = {
 //      Freq 310.01M
 //  -X "n=vI3,m=OOK_PCM,s=230,l=230,t=40,r=10000,g=7400,match={24}0xaaaa9560"
 
+r_device const secplus_v2;
+
+static r_device *secplus_v2_create(char *arg)
+{
+    r_device *r_dev = create_device(&secplus_v2);
+    if (!r_dev) {
+        fprintf(stderr, "secplus_v2_create() failed\n");
+        return NULL; // NOTE: returns NULL on alloc failure.
+    }
+
+    struct secplus_v2_stateful_context *context = malloc(sizeof(*context));
+    if (!context) {
+        WARN_MALLOC("secplus_v2_create()");
+        free(r_dev);
+        return NULL; // NOTE: returns NULL on alloc failure.
+    }
+
+    memset(context, 0, sizeof(*context));
+    r_dev->decode_ctx = context;
+
+    return r_dev;
+}
+
 r_device const secplus_v2 = {
         .name        = "Security+ 2.0 (Keyfob)",
         .modulation  = OOK_PULSE_PCM,
@@ -403,5 +451,6 @@ r_device const secplus_v2 = {
         .gap_limit   = 1500,
         .reset_limit = 9000,
         .decode_fn   = &secplus_v2_callback,
+        .create_fn   = &secplus_v2_create,
         .fields      = output_fields,
 };
