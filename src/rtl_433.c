@@ -538,7 +538,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                     event_occurred_handler(cfg, data);
                 }
                 if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
-                    pulse_analyzer(&demod->pulse_data, package_type);
+                    r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
+                    pulse_analyzer(&demod->pulse_data, package_type, &device);
                 }
 
             } else if (package_type == PULSE_DATA_FSK) {
@@ -562,7 +563,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                     event_occurred_handler(cfg, data);
                 }
                 if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0))) {
-                    pulse_analyzer(&demod->fsk_pulse_data, package_type);
+                    r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
+                    pulse_analyzer(&demod->fsk_pulse_data, package_type, &device);
                 }
             } // if (package_type == ...
             d_events += p_events;
@@ -1859,7 +1861,8 @@ int main(int argc, char **argv) {
                         if (cfg->verbosity >= LOG_DEBUG)
                             pulse_data_print(&demod->pulse_data);
                         if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0))) {
-                            pulse_analyzer(&demod->pulse_data, PULSE_DATA_OOK);
+                            r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
+                            pulse_analyzer(&demod->pulse_data, PULSE_DATA_OOK, &device);
                         }
                     }
                 }

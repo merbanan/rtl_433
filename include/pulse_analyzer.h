@@ -14,7 +14,9 @@
 
 #include "pulse_detect.h"
 
+struct r_device;
+
 /// Analyze and print result.
-void pulse_analyzer(pulse_data_t *data, int package_type);
+void pulse_analyzer(pulse_data_t *data, int package_type, struct r_device *device);
 
 #endif /* INCLUDE_PULSE_ANALYZER_H_ */

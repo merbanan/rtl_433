@@ -566,7 +566,7 @@ int pulse_slicer_dmc(pulse_data_t const *pulses, r_device *device)
         if (abs(symbol - s_short) < s_tolerance) {
             // Short - 1
             bitbuffer_add_bit(&bits, 1);
-            symbol = pulse_slicer_get_symbol(pulses, ++n);
+            symbol = n + 1 < pulses->num_pulses * 2 ? pulse_slicer_get_symbol(pulses, ++n) : 0;
             if (abs(symbol - s_short) > s_tolerance) {
                 if (symbol >= s_reset - s_tolerance) {
                     // Don't expect another short gap at end of message
