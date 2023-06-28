@@ -207,7 +207,7 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     unsigned bits = bitbuffer->bits_per_row[0];
     uint8_t preamble_byte = bitbuffer->bb[0][0]; // for OOK
-    uint8_t const preamble_fsk[] = {0xAA, 0x2D, 0xD4}; // part of preamble and sync word for FSK 
+    uint8_t const preamble_fsk[] = {0xAA, 0x2D, 0xD4}; // part of preamble and sync word for FSK
     if (bits == 79 && preamble_byte == 0xfe) {
         fineoffset_wh1050_decode(decoder, bitbuffer, 7, TYPE_OOK);
     } else if (bits == 80 && preamble_byte == 0xff) {
