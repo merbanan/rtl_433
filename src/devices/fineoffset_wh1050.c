@@ -1,8 +1,9 @@
 /** @file
-    Fine Offset WH1050 Weather Station.
+    Fine Offset WH1050 and TFA 30.3151 Weather Station.
 
     2016 Nicola Quiriti ('ovrheat')
     Modifications 2016 by Don More
+    2023 Bruno OCTAU (ProfBoc75) for TFA 30.3151 FSK
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,7 +17,7 @@
 #define TYPE_FSK 2
 
 /** @fn in fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned bitpos, int type)
-Fine Offset WH1050 Weather Station.
+Fine Offset WH1050 and TFA 30.3151 Weather Station.
 
 This module is a cut-down version of the WH1080 decoder.
 The WH1050 sensor unit is like the WH1080 unit except it has no
@@ -45,6 +46,9 @@ This model seems also capable to decode the DCF77 time signal sent by the time s
 around the minute 59 of the even hours the sensor's TX stops sending weather data, probably to receive (and sync with) DCF77 signals.
 After around 3-4 minutes of silence it starts to send just time data for some minute, then it starts again with
 weather data as usual.
+
+TFA 30.3151 Sensor is FSK version and decodes here. See issue #2538
+Preamble is aaaa2dd4 and Temperature is not offset.
 
 To recognize which message is received (weather or time) you can use the 'msg_type' field on json output:
 - msg_type 0 = weather data
@@ -159,7 +163,8 @@ static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
 
         /* clang-format off */
         data = data_make(
-                "model",            "",                 DATA_STRING,    "Fineoffset-WH1050",
+                "model",            "",                 DATA_COND, type == TYPE_OOK, DATA_STRING, "Fineoffset-WH1050",
+                "model",            "",                 DATA_COND, type == TYPE_FSK, DATA_STRING, "TFA-303151",
                 "id",               "Station ID",       DATA_INT,       device_id,
                 "msg_type",         "Msg type",         DATA_INT,       msg_type,
                 "battery_ok",       "Battery",          DATA_INT,       !battery_low,
