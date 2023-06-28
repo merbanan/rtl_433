@@ -12,8 +12,10 @@
  */
 
 #include "decoder.h"
+#define TYPE_OOK 1
+#define TYPE_FSK 2
 
-/**
+/** @fn in fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned bitpos, int type)
 Fine Offset WH1050 Weather Station.
 
 This module is a cut-down version of the WH1080 decoder.
@@ -92,38 +94,14 @@ Time data - Message layout and example:
 - P :  8 bits : CRC, poly 0x31, init 0x00 (excluding preamble)
 
 */
-static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned bitpos, int type)
 {
     data_t *data;
     uint8_t br[9];
+    float temperature;
 
-    if (bitbuffer->num_rows != 1) {
-        return DECODE_ABORT_EARLY;
-    }
+    bitbuffer_extract_bytes(bitbuffer, 0, bitpos, br, 9 * 8);
 
-    /* The normal preamble for WH1050 is 8 1s (0xFF) followed by 4 0s
-       for a total 80 bit message.
-       (The 4 0s is not confirmed to be preamble but seems to be zero on most devices)
-
-       Digitech XC0346 (and possibly other models) only sends 7 1 bits not 8 (0xFE)
-       for some reason (maybe transmitter module is slow to wake up), for a total
-       79 bit message.
-
-       In both cases, we extract the 72 bits after the preamble.
-    */
-    unsigned bits = bitbuffer->bits_per_row[0];
-    uint8_t preamble_byte = bitbuffer->bb[0][0];
-    if (bits == 79 && preamble_byte == 0xfe) {
-        bitbuffer_extract_bytes(bitbuffer, 0, 7, br, 72);
-    } else if (bits == 80 && preamble_byte == 0xff) {
-        bitbuffer_extract_bytes(bitbuffer, 0, 8, br, 72);
-    } else {
-        return DECODE_ABORT_LENGTH;
-    }
-
-    // If you calculate the CRC over all 10 bytes including the preamble
-    // byte (always 0xFF), then CRC_INIT is 0xFF. But we compare the preamble
-    // byte and then discard it.
     if (crc8(br, 9, 0x31, 0x00)) {
         return DECODE_FAIL_MIC; // crc mismatch
     }
@@ -134,7 +112,12 @@ static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (msg_type == 0) {
         // GETTING WEATHER SENSORS DATA
         int temp_raw      = ((br[1] & 0x03) << 8) | br[2];
-        float temperature = (temp_raw - 400) * 0.1f;
+        if (type == TYPE_OOK) {
+            temperature = (temp_raw - 400) * 0.1f;
+        }
+        else {
+            temperature = temp_raw * 0.1f;
+        }
         int humidity      = br[3];
         float speed       = (br[4] * 0.34f) * 3.6f; // m/s -> km/h
         float gust        = (br[5] * 0.34f) * 3.6f; // m/s -> km/h
@@ -145,8 +128,9 @@ static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",            "",                 DATA_STRING, "Fineoffset-WH1050",
-                "id",               "Station ID",        DATA_FORMAT, "%04X",    DATA_INT,    device_id,
+                "model",            "",                 DATA_COND, type == TYPE_OOK, DATA_STRING, "Fineoffset-WH1050",
+                "model",            "",                 DATA_COND, type == TYPE_FSK, DATA_STRING, "TFA-303151",
+                "id",               "Station ID",       DATA_FORMAT, "%04X",    DATA_INT,    device_id,
                 "msg_type",         "Msg type",         DATA_INT,    msg_type,
                 "battery_ok",       "Battery",          DATA_INT,    !battery_low,
                 "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
@@ -189,6 +173,52 @@ static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
+/**
+Fineoffset or TFA OOK/FSK protocol.
+@sa fineoffset_wh1050_decode()
+*/
+static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    unsigned bitpos = 0;
+    int events      = 0;
+
+    if (bitbuffer->num_rows != 1) {
+        return DECODE_ABORT_EARLY;
+    }
+
+    /* The normal preamble for WH1050 is 8 1s (0xFF) followed by 4 0s
+       for a total 80 bit message.
+       (The 4 0s is not confirmed to be preamble but seems to be zero on most devices)
+
+       Digitech XC0346 (and possibly other models) only sends 7 1 bits not 8 (0xFE)
+       for some reason (maybe transmitter module is slow to wake up), for a total
+       79 bit message.
+
+       In both cases, we extract the 72 bits after the preamble.
+
+       For FSK version TFA 30.3151 the preamble is aaaaaa2dd4 and message payload is 6 times repeats (gap, preamble, message, gap, ... ) in one row and 754 bits.
+       gap is 11 bits long, preamble need to be searched into a loop to get the repeated message
+    */
+
+    unsigned bits = bitbuffer->bits_per_row[0];
+    uint8_t preamble_byte = bitbuffer->bb[0][0]; // for OOK
+    uint8_t const preamble_fsk[] = {0xAA, 0x2D, 0xD4}; // part of preamble and sync word for FSK 
+    if (bits == 79 && preamble_byte == 0xfe) {
+        fineoffset_wh1050_decode(decoder, bitbuffer, 7, TYPE_OOK);
+    } else if (bits == 80 && preamble_byte == 0xff) {
+        fineoffset_wh1050_decode(decoder, bitbuffer, 8, TYPE_OOK);
+    } else if (bits > 112 && bits < 760) {
+        while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_fsk, sizeof(preamble_fsk) * 8)) + 72 <=
+                bitbuffer->bits_per_row[0]) {
+            events += fineoffset_wh1050_decode(decoder, bitbuffer, bitpos + sizeof(preamble_fsk) * 8, TYPE_FSK);
+            bitpos += 123;
+        }
+    } else {
+        return DECODE_ABORT_LENGTH;
+    }
+    return events;
+}
+
 static char const *const output_fields[] = {
         "model",
         "id",
@@ -210,6 +240,16 @@ r_device const fineoffset_wh1050 = {
         .short_width = 544,
         .long_width  = 1524,
         .reset_limit = 10520,
-        .decode_fn   = &fineoffset_wh1050_decode,
+        .decode_fn   = &fineoffset_wh1050_callback,
+        .fields      = output_fields,
+};
+
+r_device const tfa_303151 = {
+        .name        = "TFA 30.3151 Weather Station",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 60,
+        .long_width  = 60,
+        .reset_limit = 2500,
+        .decode_fn   = &fineoffset_wh1050_callback,
         .fields      = output_fields,
 };
