@@ -134,7 +134,7 @@ static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
         data = data_make(
                 "model",            "",                 DATA_COND, type == TYPE_OOK, DATA_STRING, "Fineoffset-WH1050",
                 "model",            "",                 DATA_COND, type == TYPE_FSK, DATA_STRING, "TFA-303151",
-                "id",               "Station ID",       DATA_FORMAT, "%04X",    DATA_INT,    device_id,
+                "id",               "Station ID",       DATA_FORMAT, "%02X",    DATA_INT,    device_id,
                 "msg_type",         "Msg type",         DATA_INT,    msg_type,
                 "battery_ok",       "Battery",          DATA_INT,    !battery_low,
                 "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
@@ -165,7 +165,7 @@ static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
         data = data_make(
                 "model",            "",                 DATA_COND, type == TYPE_OOK, DATA_STRING, "Fineoffset-WH1050",
                 "model",            "",                 DATA_COND, type == TYPE_FSK, DATA_STRING, "TFA-303151",
-                "id",               "Station ID",       DATA_FORMAT, "%04X",    DATA_INT,    device_id,
+                "id",               "Station ID",       DATA_FORMAT, "%02X",    DATA_INT,    device_id,
                 "msg_type",         "Msg type",         DATA_INT,       msg_type,
                 "battery_ok",       "Battery",          DATA_INT,       !battery_low,
                 "radio_clock",      "Radio Clock",      DATA_STRING,    clock_str,
