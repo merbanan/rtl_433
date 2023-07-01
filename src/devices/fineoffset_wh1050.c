@@ -47,8 +47,7 @@ around the minute 59 of the even hours the sensor's TX stops sending weather dat
 After around 3-4 minutes of silence it starts to send just time data for some minute, then it starts again with
 weather data as usual.
 
-TFA 30.3151 Sensor is FSK version and decodes here. See issue #2538
-Preamble is aaaa2dd4 and Temperature is not offset.
+TFA 30.3151 Sensor is FSK version and decodes here. See issue #2538: Preamble is aaaa2dd4 and Temperature is not offset and rain gauge is 0.5 mm by pulse.
 
 To recognize which message is received (weather or time) you can use the 'msg_type' field on json output:
 - msg_type 0 = weather data
@@ -56,29 +55,35 @@ To recognize which message is received (weather or time) you can use the 'msg_ty
 
 Weather data - Message layout and example:
 
-         AA BC CD DD EE FF GG HH HH II
-    {80} ff 5f 51 93 48 00 00 12 46 aa
+     Preamble{8}   : 0xFF - OOK Version
+  or Preamble{40}  : 0xAAAAAA2DD4 - FSK Version
 
-- A :  8 bits : Preamble 0xFF
+     Byte Position : 00 01 02 03 04 05 06 07 08
+     Payload{72}   : BC CD DD EE FF GG HH HH II
+     Sample{72}    : 5f 51 93 48 00 00 12 46 aa
+
 - B :  4 bits : ?? - seems to be 0x5 for whether data, 0x6 for time data
 - C :  8 bits : Id, changes when reset (e.g., 0xF5)
 - D :  1 bit  : msg_type - 0, for whether data
 - D :  1 bit  : Battery, 0 = ok, 1 = low (e.g, OK)
-- D : 10 bits : Temperature in Celsius, offset 400, scaled by 10 (e.g., 0.3 degrees C)
+- D : 10 bits : Temperature in Celsius, [offset 400 only for OOK Version], scaled by 10 (e.g., 0.3 degrees C)
 - E :  8 bits : Relative humidity, percent (e.g., 72%)
 - F :  8 bits : Wind speed average in m/s, scaled by 1/0.34 (e.g., 0 m/s)
 - G :  8 bits : Wind speed gust in m/s, scaled by 1/0.34 (e.g., 0 m/s)
-- H : 16 bits : Total rainfall in units of 0.3mm, since reset (e.g., 1403.4 mm)
+- H : 16 bits : Total rainfall in units of 0.3mm (OOK version) or 0.5mm (FSK version), since reset (e.g., 1403.4 mm)
 - I :  8 bits : CRC, poly 0x31, init 0x00 (excluding preamble)
 
 Time data - Message layout and example:
 
-        AA BC CD DE FG HI JK LM NO PP
-   {80} ff 69 0a 96 02 41 23 43 27 df
+     Preamble{8}   : 0xFF - OOK Version
+  or Preamble{40}  : 0xAAAAAA2DD4 - FSK Version
 
-- A :  8 bits : Preamble 0xFF
+     Byte Position : 00 01 02 03 04 05 06 07 08
+     Payload{72}   : BC CD DE FG HI JK LM NO PP
+     Sample{72}    : 69 0a 96 02 41 23 43 27 df
+
 - B :  4 bits : ?? - seems to be 0x5 for whether data, seems 0x6 for time data
-- C :  8 bits : Id, changes when reset (e.g., 0xF5)
+- C :  8 bits : Id, changes when reset (e.g., 0x90)
 - D :  1 bit  : msg_type - 1, for time data
 - D :  1 bit  : Battery, 0 = ok, 1 = low (e.g, OK)
 - D :  4 bits : ??
@@ -102,7 +107,7 @@ static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
 {
     data_t *data;
     uint8_t br[9];
-    float temperature;
+    float temperature, rain;
 
     bitbuffer_extract_bytes(bitbuffer, 0, bitpos, br, 9 * 8);
 
@@ -116,17 +121,18 @@ static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
     if (msg_type == 0) {
         // GETTING WEATHER SENSORS DATA
         int temp_raw      = ((br[1] & 0x03) << 8) | br[2];
+        int rain_raw      = (br[6] << 8) | br[7];
         if (type == TYPE_OOK) {
             temperature = (temp_raw - 400) * 0.1f;
+            rain        = rain_raw * 0.3f;
         }
         else {
             temperature = temp_raw * 0.1f;
+            rain        = rain_raw * 0.5f;
         }
         int humidity      = br[3];
         float speed       = (br[4] * 0.34f) * 3.6f; // m/s -> km/h
         float gust        = (br[5] * 0.34f) * 3.6f; // m/s -> km/h
-        int rain_raw      = (br[6] << 8) | br[7];
-        float rain        = rain_raw * 0.3f;
         int device_id     = (br[0] << 4 & 0xf0) | (br[1] >> 4);
         int battery_low   = br[1] & 0x04;
 
@@ -202,7 +208,7 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
        In both cases, we extract the 72 bits after the preamble.
 
        For FSK version TFA 30.3151 the preamble is aaaaaa2dd4 and message payload is 6 times repeats (gap, preamble, message, gap, ... ) in one row and 754 bits.
-       gap is 11 bits long, preamble need to be searched into a loop to get the repeated message
+       gap is 11 bits long, preamble need to be searched into a while loop to get the repeated message
     */
 
     unsigned bits = bitbuffer->bits_per_row[0];
