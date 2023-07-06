@@ -72,7 +72,7 @@ the topic is republished with an empty config string.  To avoid having to
 do a lot of clean up When running this initially or debugging, set this
 script to publish to a topic other than the one Home Assistant users (homeassistant).
 
-MQTT Explorer (http://http://mqtt-explorer.com/) is a very nice GUI for
+MQTT Explorer (http://mqtt-explorer.com/) is a very nice GUI for
 working with MQTT. It is free, cross platform, and OSS. The structured
 hierarchical view makes it easier to understand what rtl_433 is publishing
 and how this script works with Home Assistant.
