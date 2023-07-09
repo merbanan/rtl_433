@@ -239,7 +239,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [153]  Cotech 36-7959, SwitchDocLabs FT020T wireless weather station with USB
     [154]  Standard Consumption Message Plus (SCMplus)
     [155]  Fine Offset Electronics WH1080/WH3080 Weather Station (FSK)
-    [156]  Abarth 124 Spider TPMS
+    [156]  Abarth 124 Spider and Shenzhen EGQ Q85 TPMS
     [157]  Missil ML0757 weather station
     [158]  Sharp SPC775 weather station
     [159]  Insteon
