@@ -201,6 +201,28 @@ mappings = {
             "state_class": "measurement"
         }
     },
+    "humidity_1": {
+        "device_type": "sensor",
+        "object_suffix": "H1",
+        "config": {
+            "device_class": "humidity",
+            "name": "Humidity 1",
+            "unit_of_measurement": "%",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
+    "humidity_2": {
+        "device_type": "sensor",
+        "object_suffix": "H2",
+        "config": {
+            "device_class": "humidity",
+            "name": "Humidity 2",
+            "unit_of_measurement": "%",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
 
     "moisture": {
         "device_type": "sensor",
