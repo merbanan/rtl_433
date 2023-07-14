@@ -359,7 +359,7 @@ mappings = {
         }
     },
 
-    "rain_mm_h": {
+    "rain_rate_mm_h": {
         "device_type": "sensor",
         "object_suffix": "RR",
         "config": {
