@@ -681,7 +681,7 @@ static int acurite_5n1_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t
         int temp_raw = (bb[4] & 0x0F) << 7 | (bb[5] & 0x7F);
         float tempf = (temp_raw - 400) * 0.1f;
 
-        if (tempf > 158.0) {
+        if (tempf < -40.0 || tempf > 158.0) {
             decoder_logf(decoder, 1, __func__, "5n1 0x%04X Ch %s, invalid temperature: %0.1f F",
                          sensor_id, channel_str, tempf);
             return DECODE_FAIL_SANITY;
@@ -862,7 +862,7 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
             exception++;
 
         tempf = (temp_raw - 400) * 0.1;
-        if (tempf > 158.0) {
+        if (tempf < -40.0 || tempf > 158.0) {
             decoder_logf(decoder, 1, __func__, "Atlas 0x%04X Ch %s, invalid temperature: %0.1f F",
                          sensor_id, channel_str, tempf);
             return DECODE_FAIL_SANITY;
