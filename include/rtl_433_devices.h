@@ -253,6 +253,7 @@
     DECL(celsia_czc1) \
     DECL(fineoffset_ws90) \
     DECL(thermopro_tx2c) \
+    DECL(tfa_303151) \
 
     /* Add new decoders here. */
 
