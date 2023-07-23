@@ -82,7 +82,7 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
     } else if (type == MODEL_Q85) {
         data_len = 96;
     } else {
-        return DECODE_ABORT_LENGTH;
+        return 0; //return 0 instead of DECODE_ABORT_LENGTH, to avoid exit error : gave invalid return value -x: notify maintainer;
     }
 
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, data_len);
@@ -90,7 +90,7 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
     // make sure we decoded the expected number of bits
     if (packet_bits.bits_per_row[0] < data_len) {
         // decoder_logf(decoder, 0, __func__, "bitpos=%u start_pos=%u = %u", bitpos, start_pos, (start_pos - bitpos));
-        return DECODE_FAIL_SANITY;
+        return 0; //DECODE_FAIL_SANITY;
     }
 
     b = packet_bits.bb[0];
@@ -98,7 +98,7 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
     // check checksum (checksum8 xor) same for both type model
     checksum = xor_bytes(b, 9);
     if (checksum != 0) {
-        return DECODE_FAIL_MIC;
+        return 0; //DECODE_FAIL_MIC;
     }
 
     if (type == MODEL_Q85) {
@@ -106,7 +106,7 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
         crc_little_endian = (b[11] << 8 ) | b[10];
         crc_result = crc16(b, 10, 0x1021,0xffff); // CRC-16 CCITT-FALSE
         if (crc_result != crc_little_endian) {
-            return DECODE_FAIL_MIC;
+            return 0; //DECODE_FAIL_MIC;
         }
     }
 
