@@ -21,7 +21,7 @@ Fine Offset Electronics WS90 weather station.
 The WS90 is a WS80 with the addition of a piezoelectric rain gauge.
 Data bytes 1-13 are the same between the two models.  The new rain data
 is in bytes 16-20, with bytes 19 and 20 reporting total rain.  Bytes
-17 and 18 are affected by rain, but it is unknow what they report.  Byte
+17 and 18 are affected by rain, but it is unknown what they report.  Byte
 21 reports the voltage of the super cap. And the checksum and CRC
 have been moved to bytes 30 and 31.  What is reported in the other
 bytes is unknown at this time.
@@ -64,7 +64,7 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Validate package, WS90 nominal size is 330 bit periods
     if (bitbuffer->bits_per_row[0] < 168 || bitbuffer->bits_per_row[0] > 330) {
-        decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "abort lenght" );
+        decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "abort length" );
         return DECODE_ABORT_LENGTH;
     }
 

@@ -29,7 +29,7 @@ Data layout:
 - T: 8 bit temperature   T - 50 = Temperature C
 - F: 8 bit battery (not verified) and deflation pressure (for sure) flags
 
-Raw Data exemple :
+Raw Data example :
 
     ffff 8b 0d177e 8f 4a 10 00
 
@@ -37,7 +37,7 @@ Format string:
 
     CHECKSUM:8h ID:24h KPA:8d TEMP:8d FLAG:4b 4h8h
 
-Decode exemple:
+Decode example:
 
     CHECKSUM:8b ID:0d177e KPA:8f TEMP:4a FLAG:10 00
 

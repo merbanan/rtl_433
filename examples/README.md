@@ -40,7 +40,7 @@ This is in many ways simple, but the programs must be started and
 stopped together, and only one rtl_433 can write to the processing
 script.
 
-There are only two pipe progams, collectd and statsd.
+There are only two pipe programs, collectd and statsd.
 
 ## UDP syslog
 
@@ -66,9 +66,9 @@ This section is speculative.
 Many devices will send a frame multiple times, perhaps 3 or 4, as a
 form of redundancy.  Many devices have non-robust checksums.  If
 displaying a temperature, that is often not a big deal.  If storing it
-in a datbase, bad data is troublesome.  One could process multiple
+in a database, bad data is troublesome.  One could process multiple
 frames that arrive close in time and try to infer which are bad
-decodes and what the consensus data is, and from tha output one good
+decodes and what the consensus data is, and from that output one good
 frame.  One could further reject physically implausible data (temp of
 fridge has been 2C and we just got a 30C reading), but this needs to
 recover from arbitrary situations so that would be tricky code to

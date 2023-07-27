@@ -194,7 +194,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         // Tamper: 0x10 set or 0x01 unset indicate tamper
         // 0x10 Set to tamper message type (more testing needed)
-        // 0x01 Cleared tamper status (seend during hearbeats)
+        // 0x01 Cleared tamper status (seen during heartbeats)
         s_tamper = ((status & 0x01) != 0x01) || ((status & 0x10) == 0x10);
 
         // "experimental" (naming might change)
