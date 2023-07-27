@@ -392,6 +392,8 @@ PPM     short: Nominal width of '0' gap [us]
 PWM     short: Nominal width of '1' pulse [us]
          long: Nominal width of '0' pulse [us]
          sync: Nominal width of sync pulse [us] (optional)
+FSK_MC_ZEROBIT: short: Nominal width of pulse [us]
+         long: always set to same value as short [us]
 common    gap: Maximum gap size before new row of bits [us]
         reset: Maximum gap size before End Of Message [us]
     tolerance: Maximum pulse deviation [us] (optional).
