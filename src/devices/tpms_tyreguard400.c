@@ -39,7 +39,7 @@ Packet layout:
 
 To peer a new sensor to the unit, bit 79 and 80 has to be both to 1.
 
-NOTE: In the datasheet, it is said that the sensor can report low batterie. During my tests/reseach i'm not able to see this behavior. I have fuzzed all bits nothing was reported to the reader.
+NOTE: In the datasheet, it is said that the sensor can report low batterie. During my tests/research i'm not able to see this behavior. I have fuzzed all bits nothing was reported to the reader.
 
 Flex decoder:
 
@@ -130,7 +130,7 @@ static int tpms_tyreguard400_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
 static int tpms_tyreguard400_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     //uint8_t const tyreguard_frame_sync[] = {0xf, 0xd5, 0xfd, 0x5f}
-    uint8_t const tyreguard_frame_sync[] = {0xfd, 0x5f, 0xd5, 0xf0}; // needs to shift sync to align bytes 28x bits usefull
+    uint8_t const tyreguard_frame_sync[] = {0xfd, 0x5f, 0xd5, 0xf0}; // needs to shift sync to align bytes 28x bits useful
 
     int ret    = 0;
     int events = 0;

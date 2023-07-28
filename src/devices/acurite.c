@@ -139,7 +139,7 @@ static char const *acurite_getChannel(uint8_t byte)
 }
 
 // Add exception and raw message bytes to message to enable
-// later analysis of unexpected/possbily undecoded data
+// later analysis of unexpected/possibly undecoded data
 static void data_append_exception(data_t* data, int exception, uint8_t* bb, int browlen)
 {
     char raw_str[31], *rawp;
@@ -497,7 +497,7 @@ Acurite 899 Rain Gauge decoder
 static int acurite_899_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t *bb)
 {
     (void)bitbuffer;
-    // MIC (checkum, parity) validated in calling function
+    // MIC (checksum, parity) validated in calling function
 
     uint16_t sensor_id = ((bb[0] & 0x3f) << 8) | bb[1]; //
     int battery_low = (bb[2] & 0x40) == 0;
@@ -505,7 +505,7 @@ static int acurite_899_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t
     /*
       @todo bug? channel output isn't consistent with the rest of he Acurite
       devices in this family, should output ('A', 'B', or 'C')
-      Currently outputing 00 = A, 01 = B, 10 = C
+      Currently outputting 00 = A, 01 = B, 10 = C
       Leaving as is to maintain compatibility for now
     */
 
@@ -547,7 +547,7 @@ Acurite 3n1 Weather Station decoder
 */
 static int acurite_3n1_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t *bb)
 {
-    // MIC (checkum, parity) validated in calling function
+    // MIC (checksum, parity) validated in calling function
     (void)bitbuffer;
 
     char const* channel_str = acurite_getChannel(bb[0]);
@@ -568,7 +568,7 @@ static int acurite_3n1_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t
       which was copied from 5n1, but existing code 3n1 uses
       14 bits for ID. so these bits are used twice.
 
-      Leaving for compatibility, but probaby sequence_num
+      Leaving for compatibility, but probably sequence_num
       doesn't exist and should be deleted. If the 3n1 did use
       a sequence number, the ID would change on each output.
     */
@@ -631,7 +631,7 @@ XXX todo docs
 */
 static int acurite_5n1_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t* bb)
 {
-    // MIC (checkum, parity) validated in calling function
+    // MIC (checksum, parity) validated in calling function
     (void)bitbuffer;
 
     char const* channel_str = acurite_getChannel(bb[0]);
@@ -832,7 +832,7 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
     wind_speed_mph = ((bb[3] & 0x7F) << 1) | ((bb[4] & 0x40) >> 6);
 
     if (wind_speed_mph > 200) {
-        decoder_logf(decoder, 1, __func__, "Atlas 0x%04X Ch %s, invalid wind spped: %.1f MPH",
+        decoder_logf(decoder, 1, __func__, "Atlas 0x%04X Ch %s, invalid wind speed: %.1f MPH",
                      sensor_id, channel_str, wind_speed_mph);
         return DECODE_FAIL_SANITY;
     }
@@ -1007,7 +1007,7 @@ Notes:
 */
 static int acurite_tower_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t *bb)
 {
-    // MIC (checkum, parity) validated in calling function
+    // MIC (checksum, parity) validated in calling function
 
     (void)bitbuffer;
     int exception = 0;
@@ -1123,7 +1123,7 @@ CCII IIII | IIII IIII | pBMM MMMM | bTTT TTTT | bTTT TTTT | KKKK KKKK
 */
 static int acurite_515_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t *bb)
 {
-    // length, MIC (checkum, parity) validated in calling function
+    // length, MIC (checksum, parity) validated in calling function
 
     (void)bitbuffer;
     int exception = 0;
