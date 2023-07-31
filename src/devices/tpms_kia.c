@@ -26,7 +26,7 @@ Legend:
     z: 16-bit preamble = 0xed71. Must be omitted from Manchester-decoding
     a: Unknown, but 0xf in all my own readings
     p: 8-bit pressure given as PSI * 5
-    t: 8-bit temperature given as Celcius + 50
+    t: 8-bit temperature given as Celsius + 50
     i: 32-bit Sensor ID
     d: Unknown, with different value in each packet
     c: First 5 bits of CRC. We need to append 000 to reach 8 bits. poly=0x07, init=0x76.

@@ -72,7 +72,7 @@ the topic is republished with an empty config string.  To avoid having to
 do a lot of clean up When running this initially or debugging, set this
 script to publish to a topic other than the one Home Assistant users (homeassistant).
 
-MQTT Explorer (http://http://mqtt-explorer.com/) is a very nice GUI for
+MQTT Explorer (http://mqtt-explorer.com/) is a very nice GUI for
 working with MQTT. It is free, cross platform, and OSS. The structured
 hierarchical view makes it easier to understand what rtl_433 is publishing
 and how this script works with Home Assistant.
@@ -196,6 +196,28 @@ mappings = {
         "config": {
             "device_class": "humidity",
             "name": "Humidity",
+            "unit_of_measurement": "%",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
+    "humidity_1": {
+        "device_type": "sensor",
+        "object_suffix": "H1",
+        "config": {
+            "device_class": "humidity",
+            "name": "Humidity 1",
+            "unit_of_measurement": "%",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
+    "humidity_2": {
+        "device_type": "sensor",
+        "object_suffix": "H2",
+        "config": {
+            "device_class": "humidity",
+            "name": "Humidity 2",
             "unit_of_measurement": "%",
             "value_template": "{{ value|float }}",
             "state_class": "measurement"
@@ -359,7 +381,7 @@ mappings = {
         }
     },
 
-    "rain_mm_h": {
+    "rain_rate_mm_h": {
         "device_type": "sensor",
         "object_suffix": "RR",
         "config": {
@@ -855,6 +877,7 @@ def run():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(format='[%(asctime)s] %(levelname)s:%(name)s:%(message)s',datefmt='%Y-%m-%dT%H:%M:%S%z')
     logging.getLogger().setLevel(logging.INFO)
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
