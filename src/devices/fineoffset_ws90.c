@@ -38,7 +38,7 @@ Packet layout:
 
 - Y = fixed sensor type 0x90
 - I = device ID, might be less than 24 bit?
-- L = light value, unit of 10 Klux
+- L = light value, unit of 10 lux
 - B = battery voltage, unit of 20 mV, we assume a range of 3.0V to 1.4V
 - F = flags and MSBs, 0x03: temp MSB, 0x10: wind MSB, 0x20: bearing MSB, 0x40: gust MSB
       0x80 or 0x08: maybe battery good? seems to be always 0x88
