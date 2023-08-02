@@ -105,16 +105,15 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int wind_dir    = ((b[7] & 0x20) << 3) | (b[11]);
     int wind_max    = ((b[7] & 0x40) << 2) | (b[12]);
     int uv_index    = (b[13]);
-    int unknown     = (b[14] << 8) | (b[15]);
     int rain_raw    = (b[19] << 8 ) | (b[20]);
     int supercap_V  = (b[21] & 0x3f);
     int firmware    = b[29];
-    char extra[30];
+    char extra[31];
 
     if (battery_lvl > 100) // More then 100%?
         battery_lvl = 100;
 
-    sprintf(extra, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[16], b[17], b[18], b[19], b[20], b[21], b[22], b[23], b[24], b[25], b[26], b[27], b[28]);
+    sprintf(extra, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[14], b[15], b[16], b[17], b[18], b[19], b[20], b[21], b[22], b[23], b[24], b[25], b[26], b[27], b[28]);
 
     /* clang-format off */
     data_t *data = data_make(
@@ -130,7 +129,6 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "uvi",              "UVI",              DATA_COND, uv_index != 0xff,    DATA_FORMAT, "%.1f",     DATA_DOUBLE, uv_index * 0.1f,
             "light_lux",        "Light",            DATA_COND, light_raw != 0xffff, DATA_FORMAT, "%.1f lux", DATA_DOUBLE, (double)light_lux,
             "flags",            "Flags",            DATA_FORMAT, "%02x", DATA_INT, flags,
-            "unknown",          "Unknown",          DATA_COND, unknown != 0x3fff, DATA_INT, unknown,
             "rain_mm",          "Total Rain",       DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1f,
             "supercap_V",       "Supercap Voltage", DATA_COND, supercap_V != 0xff, DATA_FORMAT, "%.1f V", DATA_DOUBLE, supercap_V * 0.1f,
             "firmware",         "Firmware Version", DATA_INT, firmware,
