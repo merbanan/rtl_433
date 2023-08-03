@@ -38,7 +38,7 @@ Packet layout:
 
 - Y = fixed sensor type 0x90
 - I = device ID, might be less than 24 bit?
-- L = light value, unit of 10 Klux
+- L = light value, unit of 10 lux
 - B = battery voltage, unit of 20 mV, we assume a range of 3.0V to 1.4V
 - F = flags and MSBs, 0x03: temp MSB, 0x10: wind MSB, 0x20: bearing MSB, 0x40: gust MSB
       0x80 or 0x08: maybe battery good? seems to be always 0x88
@@ -48,7 +48,7 @@ Packet layout:
 - D = wind bearing, lowest 8 bits of wind bearing, range 0-359 deg, 0x1ff if invalid
 - G = wind gust, lowest 8 bits of wind gust, m/s, scale 10
 - V = uv index, scale 10
-- U = unknown
+- U = unknown (bytes 14 and 15 appear to be fixed at 3f ff)
 - R = rain total (R3 << 8 | R4) * 0.1 mm
 - S = super cap voltage, unit of 0.1V, lower 6 bits, mask 0x3f
 - Z = Firmware version. 0x82 = 130 = 1.3.0
@@ -105,16 +105,15 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int wind_dir    = ((b[7] & 0x20) << 3) | (b[11]);
     int wind_max    = ((b[7] & 0x40) << 2) | (b[12]);
     int uv_index    = (b[13]);
-    int unknown     = (b[14] << 8) | (b[15]);
     int rain_raw    = (b[19] << 8 ) | (b[20]);
     int supercap_V  = (b[21] & 0x3f);
     int firmware    = b[29];
-    char extra[30];
+    char extra[31];
 
     if (battery_lvl > 100) // More then 100%?
         battery_lvl = 100;
 
-    sprintf(extra, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[16], b[18], b[19], b[20], b[21], b[22], b[23], b[24], b[25], b[26], b[27], b[28], b[28] );
+    sprintf(extra, "%02x%02x%02x%02x%02x------%02x%02x%02x%02x%02x%02x%02x", b[14], b[15], b[16], b[17], b[18], /* b[19,20] is the rain sensor, b[21] is supercap_V */ b[22], b[23], b[24], b[25], b[26], b[27], b[28]);
 
     /* clang-format off */
     data_t *data = data_make(
@@ -130,7 +129,6 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "uvi",              "UVI",              DATA_COND, uv_index != 0xff,    DATA_FORMAT, "%.1f",     DATA_DOUBLE, uv_index * 0.1f,
             "light_lux",        "Light",            DATA_COND, light_raw != 0xffff, DATA_FORMAT, "%.1f lux", DATA_DOUBLE, (double)light_lux,
             "flags",            "Flags",            DATA_FORMAT, "%02x", DATA_INT, flags,
-            "unknown",          "Unknown",          DATA_COND, unknown != 0x3fff, DATA_INT, unknown,
             "rain_mm",          "Total Rain",       DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1f,
             "supercap_V",       "Supercap Voltage", DATA_COND, supercap_V != 0xff, DATA_FORMAT, "%.1f V", DATA_DOUBLE, supercap_V * 0.1f,
             "firmware",         "Firmware Version", DATA_INT, firmware,
