@@ -48,7 +48,7 @@ Packet layout:
 - D = wind bearing, lowest 8 bits of wind bearing, range 0-359 deg, 0x1ff if invalid
 - G = wind gust, lowest 8 bits of wind gust, m/s, scale 10
 - V = uv index, scale 10
-- U = unknown
+- U = unknown (bytes 14 and 15 appear to be fixed at 3f ff)
 - R = rain total (R3 << 8 | R4) * 0.1 mm
 - S = super cap voltage, unit of 0.1V, lower 6 bits, mask 0x3f
 - Z = Firmware version. 0x82 = 130 = 1.3.0
