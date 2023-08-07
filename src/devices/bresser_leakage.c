@@ -17,13 +17,12 @@ Decoder for Bresser Water Leakage outdoor sensor, PN 7009975
 see https://github.com/merbanan/rtl_433/issues/2576
 
 Based on bresser_6in1.c
- 
+
 Preamble: aa aa 2d d4
 
 Data layout:
-    (preferably use one character per bit)
     CCCCCCCC CCCCCCCC IIIIIIII IIIIIIII IIIIIIII IIIIIIII SSSSQHHH ANBBFFFF
-    
+
 - C: 16-bit, presumably checksum, algorithm unknown
 - I: 24-bit little-endian id; changes on power-up/reset
 - S: 4 bit sensor type
@@ -38,13 +37,12 @@ Data layout:
 Examples:
 ---------
 [Bresser Water Leakage Sensor, PN 7009975]
- 
+
 [00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25]
-  
+
  C7 70 35 97 04 08 57 70 00 00 00 00 00 00 00 00 03 FF FF FF FF FF FF FF FF FF [CH7]
  DF 7D 36 49 27 09 56 70 00 00 00 00 00 00 00 00 03 FF FF FF FF FF FF FF FF FF [CH6]
  9E 30 79 84 33 06 55 70 00 00 00 00 00 00 00 00 03 FF FD DF FF BF FF DF FF FF [CH5]
- 37 D8 57 19 73 02 51 70 00 00 00 00 00 00 00 00 03 FF FF FF FF FF BF FF EF FB [set CH4, received CH1 -> switch not positioned correctly]
  E2 C8 68 27 91 24 54 70 00 00 00 00 00 00 00 00 03 FF FF FF FF FF FF FF FF FF [CH4]
  B3 DA 55 57 17 40 53 70 00 00 00 00 00 00 00 00 03 FF FF FF FF FF FF FF FF FB [CH3]
  37 FA 84 73 03 02 52 70 00 00 00 00 00 00 00 00 03 FF FF FF DF FF FF FF FF FF [CH2]
@@ -78,11 +76,11 @@ static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t startup;
     uint8_t battery_ok;
     bool alarm;
-    bool no_alarm
+    bool no_alarm;
     int leakage_alarm;
     bool decode_ok;
     uint8_t null_bytes;
-  
+
     if (bitbuffer->num_rows != 1
             || bitbuffer->bits_per_row[0] < 160
             || bitbuffer->bits_per_row[0] > 440) {
@@ -107,7 +105,7 @@ static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, 0, start_pos, msg, sizeof(msg) * 8);
 
     decoder_log_bitrow(decoder, 2, __func__, msg, sizeof(msg) * 8, "");
-    
+
     // TODO: Find parity/checksum/checksum algorithm
 
     sensor_id     = ((uint32_t)msg[2] << 24) | (msg[3] << 16) | (msg[4] << 8) | (msg[5]);
@@ -118,7 +116,7 @@ static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     alarm         = (msg[7] & 0x80) == 0x80;
     no_alarm      = (msg[7] & 0x40) == 0x40;
     leakage_alarm = (alarm) ? 1 : 0;
-    
+
     null_bytes = msg[7] & 0xF;
 
     for (int i=8; i<=15; i++) {
@@ -129,10 +127,10 @@ static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // We apply some heuristics to validate that the message is really from
     // a water leakage sensor.
     decode_ok = (s_type == SENSOR_TYPE_LEAKAGE) &&
-                (alarm != no_alarm) && 
-                (chan != 0) && 
+                (alarm != no_alarm) &&
+                (chan != 0) &&
                 (null_bytes == 0);
-   
+
    if (!decode_ok)
        return 0;
 
