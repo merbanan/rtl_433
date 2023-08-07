@@ -67,7 +67,7 @@ Examples:
 
 #include "decoder.h"
 
-static int bresser_leakage(r_device *decoder, bitbuffer_t *bitbuffer)
+static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble_pattern[] = {0xaa, 0xaa, 0x2d, 0xd4};
     data_t *data;
@@ -161,7 +161,7 @@ static char const *const output_fields[] = {
     NULL,
 };
 
-r_device const bresser_6in1 = {
+r_device const bresser_leakage = {
     .name        = "Bresser water leakage",
     .modulation  = FSK_PULSE_PCM,
     .short_width = 124,
