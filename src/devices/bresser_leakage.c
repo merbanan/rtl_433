@@ -115,7 +115,6 @@ static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     alarm         = ((msg[7] & 0x80) == 0x80) ? 1 : 0;
     no_alarm      = ((msg[7] & 0x40) == 0x40) ? 1 : 0;
 
-
     null_bytes = msg[7] & 0xF;
 
     for (int i=8; i<=15; i++) {
@@ -126,9 +125,9 @@ static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // We apply some heuristics to validate that the message is really from
     // a water leakage sensor.
     decode_ok = (s_type == SENSOR_TYPE_LEAKAGE) &&
-                (alarm != no_alarm) &&
-                (chan != 0) &&
-                (null_bytes == 0);
+            (alarm != no_alarm) &&
+            (chan != 0) &&
+            (null_bytes == 0);
 
    if (!decode_ok)
        return 0;
@@ -149,21 +148,21 @@ static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char const *const output_fields[] = {
-    "model",
-    "id",
-    "channel",
-    "battery_ok",
-    "startup",
-    "alarm",
-    NULL,
+        "model",
+        "id",
+        "channel",
+        "battery_ok",
+        "startup",
+        "alarm",
+        NULL,
 };
 
 r_device const bresser_leakage = {
-    .name        = "Bresser water leakage",
-    .modulation  = FSK_PULSE_PCM,
-    .short_width = 124,
-    .long_width  = 124,
-    .reset_limit = 25000,
-    .decode_fn   = &bresser_leakage_decode,
-    .fields      = output_fields,
+        .name        = "Bresser water leakage",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 124,
+        .long_width  = 124,
+        .reset_limit = 25000,
+        .decode_fn   = &bresser_leakage_decode,
+        .fields      = output_fields,
 };
