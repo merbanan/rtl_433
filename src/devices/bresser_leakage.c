@@ -139,7 +139,7 @@ static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "",             DATA_FORMAT, "%08x",   DATA_INT,    sensor_id,
             "channel",          "",             DATA_INT,    chan,
             "battery_ok",       "Battery",      DATA_INT,    battery_ok,
-            "alarm",            "Alarm",        DATA_INT,    leakage,
+            "alarm",            "Alarm",        DATA_INT,    alarm,
             "startup",          "Startup",      DATA_COND,   startup,  DATA_INT,    startup,
             NULL);
     /* clang-format on */
