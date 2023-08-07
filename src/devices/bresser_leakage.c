@@ -75,10 +75,9 @@ static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t chan;
     uint8_t startup;
     uint8_t battery_ok;
-    bool alarm;
-    bool no_alarm;
-    int leakage_alarm;
-    bool decode_ok;
+    int alarm;
+    int no_alarm;
+    int decode_ok;
     uint8_t null_bytes;
 
     if (bitbuffer->num_rows != 1
@@ -113,9 +112,9 @@ static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     chan          = (msg[6] & 0x7);
     battery_ok    = ((msg[7] & 0x30) != 0x00) ? 1 : 0;
     startup       = (msg[6] >> 3) & 1;
-    alarm         = (msg[7] & 0x80) == 0x80;
-    no_alarm      = (msg[7] & 0x40) == 0x40;
-    leakage_alarm = (alarm) ? 1 : 0;
+    alarm         = ((msg[7] & 0x80) == 0x80) ? 1 : 0;
+    no_alarm      = ((msg[7] & 0x40) == 0x40) ? 1 : 0;
+
 
     null_bytes = msg[7] & 0xF;
 
@@ -140,7 +139,7 @@ static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "",             DATA_FORMAT, "%08x",   DATA_INT,    sensor_id,
             "channel",          "",             DATA_INT,    chan,
             "battery_ok",       "Battery",      DATA_INT,    battery_ok,
-            "alarm",            "Alarm",        DATA_INT,    leakage_alarm,
+            "alarm",            "Alarm",        DATA_INT,    leakage,
             "startup",          "Startup",      DATA_COND,   startup,  DATA_INT,    startup,
             NULL);
     /* clang-format on */
