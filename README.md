@@ -330,6 +330,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [244]  Fine Offset Electronics WS90 weather station
     [245]* ThermoPro TX-2C Thermometer
     [246]  TFA 30.3151 Weather Station
+    [247]  Bresser water leakage
+
 
 * Disabled by default, use -R n or a conf file to enable
 
