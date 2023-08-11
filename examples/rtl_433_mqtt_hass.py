@@ -720,7 +720,7 @@ def sanitize(text):
             .replace(".", "_")
             .replace("&", ""))
 
-def rtl_433_device_info(data, topic_prefix):
+def rtl_433_device_info(data):
     """Return rtl_433 device topic to subscribe to for a data element, based on the
     rtl_433 device topic argument, as well as the device identifier"""
 
@@ -745,7 +745,7 @@ def rtl_433_device_info(data, topic_prefix):
 
     path = ''.join(list(filter(lambda item: item, path_elements)))
     id = '-'.join(id_elements)
-    return (f"{topic_prefix}/{path}", id)
+    return (path, id)
 
 
 def publish_config(mqttc, topic, model, object_id, mapping, key=None):
@@ -807,7 +807,7 @@ def bridge_event_to_hass(mqttc, topic_prefix, data):
     skipped_keys = []
     published_keys = []
 
-    base_topic, device_id = rtl_433_device_info(data, topic_prefix)
+    base_topic, device_id = rtl_433_device_info(data)
     if not device_id:
         # no unique device identifier
         logging.warning("No suitable identifier found for model: ", model)
