@@ -720,7 +720,7 @@ def sanitize(text):
             .replace(".", "_")
             .replace("&", ""))
 
-def rtl_433_device_info(data):
+def rtl_433_device_info(data, topic_prefix):
     """Return rtl_433 device topic to subscribe to for a data element, based on the
     rtl_433 device topic argument, as well as the device identifier"""
 
@@ -745,10 +745,10 @@ def rtl_433_device_info(data):
 
     path = ''.join(list(filter(lambda item: item, path_elements)))
     id = '-'.join(id_elements)
-    return (path, id)
+    return (f"{topic_prefix}/{path}", id)
 
 
-def publish_config(mqttc, topic, model, object_id, mapping, value=None):
+def publish_config(mqttc, topic, model, object_id, mapping, key=None):
     """Publish Home Assistant auto discovery data."""
     global discovery_timeouts
 
@@ -776,9 +776,10 @@ def publish_config(mqttc, topic, model, object_id, mapping, value=None):
         config["topic"] = topic
         config["platform"] = 'mqtt'
     else:
+        readable_name = mapping["config"]["name"] if "name" in mapping["config"] else key
         config["state_topic"] = topic
         config["unique_id"] = object_name
-        config["name"] = object_name
+        config["name"] = readable_name
     config["device"] = { "identifiers": [object_id], "name": object_id, "model": model, "manufacturer": "rtl_433" }
 
     if args.force_update:
@@ -793,7 +794,7 @@ def publish_config(mqttc, topic, model, object_id, mapping, value=None):
 
     return True
 
-def bridge_event_to_hass(mqttc, topicprefix, data):
+def bridge_event_to_hass(mqttc, topic_prefix, data):
     """Translate some rtl_433 sensor data to Home Assistant auto discovery."""
 
     if "model" not in data:
@@ -806,7 +807,7 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
     skipped_keys = []
     published_keys = []
 
-    base_topic, device_id = rtl_433_device_info(data)
+    base_topic, device_id = rtl_433_device_info(data, topic_prefix)
     if not device_id:
         # no unique device identifier
         logging.warning("No suitable identifier found for model: ", model)
@@ -822,7 +823,7 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
         if key in mappings:
             # topic = "/".join([topicprefix,"devices",model,instance,key])
             topic = "/".join([base_topic, key])
-            if publish_config(mqttc, topic, model, device_id, mappings[key]):
+            if publish_config(mqttc, topic, model, device_id, mappings[key], key):
                 published_keys.append(key)
         else:
             if key not in SKIP_KEYS:
@@ -831,7 +832,7 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
     if "secret_knock" in data.keys():
         for m in secret_knock_mappings:
             topic = "/".join([base_topic, "secret_knock"])
-            if publish_config(mqttc, topic, model, device_id, m):
+            if publish_config(mqttc, topic, model, device_id, m, "secret_knock"):
                 published_keys.append("secret_knock")
 
     if published_keys:
