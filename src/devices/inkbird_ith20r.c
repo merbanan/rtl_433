@@ -131,7 +131,7 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
-        "battery",
+        "battery_ok",
         "sensor_num",
         "temperature_C",
         "temperature_2_C",
