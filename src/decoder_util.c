@@ -56,6 +56,11 @@ static char *bitrow_asprint_code(uint8_t const *bitrow, unsigned bit_len)
     // remove last nibble if needed
     row_bytes[2 * (bit_len + 3) / 8] = '\0';
 
+    // print at least one '0'
+    if (bit_len == 0) {
+        sprintf(row_bytes, "0");
+    }
+
     // a simple bitrow representation
     row_code = malloc(8 + bit_len / 4 + 1); // "{nnnn}..\0"
     if (!row_code) {

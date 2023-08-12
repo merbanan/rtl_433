@@ -27,7 +27,7 @@ Data layout (nibbles):
 - I: 32 bit ID
 - ?: 4 bit unknown (seems to change with status)
 - ?: 4 bit unknown (seems static)
-- P: 8 bit Pressure (multiplyed by 1.38 = kPa)
+- P: 8 bit Pressure (multiplied by 1.38 = kPa)
 - T: 8 bit Temperature (deg. C offset by 50)
 - S: Status? (first nibble seems static, second nibble seems to change with status)
 - C: 8 bit Checksum (Checksum8 XOR on bytes 0 to 8)
