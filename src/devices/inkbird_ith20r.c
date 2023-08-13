@@ -102,7 +102,7 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint32_t subtype = (msg[3] << 24 | msg[2] << 16 | msg[1] << 8 | msg[0]);
     int sensor_num = msg[4];
     uint16_t word56 = (msg[6] << 8 | msg[5]);
-    float battery = msg[7] * 0.01f;
+    float battery_ok = msg[7] * 0.01f;
     uint16_t sensor_id = (msg[9] << 8 | msg[8]);
     float temperature = ((int16_t)(msg[11] << 8 | msg[10])) * 0.1f;
     float temperature_ext = ((int16_t)(msg[13] << 8 | msg[12])) * 0.1f;
@@ -115,7 +115,7 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",            "",             DATA_STRING, "Inkbird-ITH20R",
             "id",               "",             DATA_INT,    sensor_id,
-            "battery_ok",       "Battery",      DATA_FORMAT, "%.1f %%", DATA_DOUBLE, battery,
+            "battery_ok",       "Battery",      DATA_DOUBLE, battery_ok,
             "sensor_num",       "",             DATA_INT,    sensor_num,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
             "temperature_2_C",  "Temperature2", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_ext,
