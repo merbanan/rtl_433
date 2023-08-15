@@ -112,7 +112,7 @@ static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
     bitbuffer_extract_bytes(bitbuffer, 0, bitpos, br, 9 * 8);
 
     if (crc8(br, 9, 0x31, 0x00)) {
-        return DECODE_FAIL_MIC; // crc mismatch
+        return 0; // DECODE_FAIL_MIC;
     }
 
     // GETTING MESSAGE TYPE
