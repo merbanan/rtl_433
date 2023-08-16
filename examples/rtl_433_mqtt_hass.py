@@ -813,7 +813,7 @@ def bridge_event_to_hass(mqttc, topic_prefix, data):
         logging.warning("No suitable identifier found for model: ", model)
         return
 
-    if args.ids and id in data and data.get("id") not in args.ids:
+    if args.ids and "id" in data and data.get("id") not in args.ids:
         # not in the safe list
         logging.debug("Device (%s) is not in the desired list of device ids: [%s]" % (data["id"], ids))
         return
