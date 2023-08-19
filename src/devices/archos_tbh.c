@@ -51,7 +51,7 @@ Raw data frame (power index):
 - Index     {24}
 - Timestamp {34}
 - MaxPower  {16}
-- some additinal data ???
+- some additional data ???
 - CRC8 poly=0x7 the crc includes a length byte at the beginning
 */
 

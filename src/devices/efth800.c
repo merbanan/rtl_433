@@ -54,8 +54,9 @@ static int eurochron_efth800_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t *b = bitbuffer->bb[row];
 
         // 0         1      2       3       4       5    6         7
-        // ?1b CH:3d ID:12d 2b H?6d 2b M:6d 2b S:6d Y?7d D:5d M:4d CHK?8h 1x
-        int dcf77_hour = (b[2] & 0x3f);
+        // ?1b CH:3d ID:12d 3b H?5d 2b M:6d 2b S:6d Y?7d D:5d M:4d CHK?8h 1x
+        // TODO: (b[2] >> 5) may have DST and/or TZ info ?
+        int dcf77_hour = (b[2] & 0x1f);
         int dcf77_min  = (b[3] & 0x3f);
         int dcf77_sec  = (b[4] & 0x3f);
         int dcf77_year = (b[5] >> 1);

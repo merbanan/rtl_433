@@ -96,7 +96,7 @@ static int ant_antplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
-    // ANT and ANT+ packes have either aa or 55 preamble, depending on the first bit of
+    // ANT and ANT+ packets have either aa or 55 preamble, depending on the first bit of
     // the following byte. i.e. 10101010 1xxxxxxx or 01010101 0xxxxxxx
     // the best way to know which is being used, is to verify which one has a valid CRC
     // the following code relies on the fact that 55 is aa shifted right

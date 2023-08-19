@@ -42,7 +42,7 @@ Packet payload without preamble (203 bits):
     ef a1 ff ff 1f ff ef dc ff de df ff 7f 10 5e 00 00 e0 00 10 23 00 21 20 00 80 00 00 (low batt +ve temp)
     ed a1 ff ff 1f ff ef 8f ff d6 df ff 77 12 5e 00 00 e0 00 10 70 00 29 20 00 88 00 00 (low batt -ve temp -7.0C)
     ec 91 ff ff 1f fb ef e7 fe ad ed ff f7 13 6e 00 00 e0 04 10 18 01 52 12 00 08 00 00 (good batt -ve temp)
-    CC CC CC CC CC CC CC CC CC CC CC CC CC uu II SS GG DG WW  W TT  T HH RR RR Bt
+    CC CC CC CC CC CC CC CC CC CC CC CC CC uu II sS GG DG WW  W TT  T HH RR RR Bt
                                               G-MSB ^     ^ W-MSB  (strange but consistent order)
 
 - C = Check, inverted data of 13 byte further
@@ -56,6 +56,7 @@ Packet payload without preamble (203 bits):
 - H = humidity in percent, BCD coded, HH = 23 => 23 %
 - R = rain in mm, BCD coded, RRRR = 1203 => 031.2 mm
 - B = Battery. 0=Ok, 8=Low.
+- s = startup, 0 after power-on/reset / 8 after 1 hour
 - S = sensor type, only low nibble used, 0x9 for Bresser Professional Rain Gauge
 */
 

@@ -65,7 +65,7 @@ static int thermopro_tx2c_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if ((b[4] & 0x0F) != 0x00 || b[5] != 0x00)
         return DECODE_FAIL_SANITY;
 
-    int type     = b[0] >> 4;
+    // int type     = b[0] >> 4;
     int id       = (((b[0] & 0xF) << 4) | (b[1] >> 4));
     int battery  = (b[1] & 0x08) >> 3;
     int button   = (b[1] & 0x04) >> 2;

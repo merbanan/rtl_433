@@ -72,7 +72,7 @@ the topic is republished with an empty config string.  To avoid having to
 do a lot of clean up When running this initially or debugging, set this
 script to publish to a topic other than the one Home Assistant users (homeassistant).
 
-MQTT Explorer (http://http://mqtt-explorer.com/) is a very nice GUI for
+MQTT Explorer (http://mqtt-explorer.com/) is a very nice GUI for
 working with MQTT. It is free, cross platform, and OSS. The structured
 hierarchical view makes it easier to understand what rtl_433 is publishing
 and how this script works with Home Assistant.
@@ -196,6 +196,28 @@ mappings = {
         "config": {
             "device_class": "humidity",
             "name": "Humidity",
+            "unit_of_measurement": "%",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
+    "humidity_1": {
+        "device_type": "sensor",
+        "object_suffix": "H1",
+        "config": {
+            "device_class": "humidity",
+            "name": "Humidity 1",
+            "unit_of_measurement": "%",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
+    "humidity_2": {
+        "device_type": "sensor",
+        "object_suffix": "H2",
+        "config": {
+            "device_class": "humidity",
+            "name": "Humidity 2",
             "unit_of_measurement": "%",
             "value_template": "{{ value|float }}",
             "state_class": "measurement"
@@ -369,7 +391,7 @@ mappings = {
         }
     },
 
-    "rain_mm_h": {
+    "rain_rate_mm_h": {
         "device_type": "sensor",
         "object_suffix": "RR",
         "config": {
@@ -711,7 +733,7 @@ def sanitize(text):
             .replace(".", "_")
             .replace("&", ""))
 
-def rtl_433_device_info(data):
+def rtl_433_device_info(data, topic_prefix):
     """Return rtl_433 device topic to subscribe to for a data element, based on the
     rtl_433 device topic argument, as well as the device identifier"""
 
@@ -736,10 +758,10 @@ def rtl_433_device_info(data):
 
     path = ''.join(list(filter(lambda item: item, path_elements)))
     id = '-'.join(id_elements)
-    return (path, id)
+    return (f"{topic_prefix}/{path}", id)
 
 
-def publish_config(mqttc, topic, model, object_id, mapping, value=None):
+def publish_config(mqttc, topic, model, object_id, mapping, key=None):
     """Publish Home Assistant auto discovery data."""
     global discovery_timeouts
 
@@ -767,9 +789,10 @@ def publish_config(mqttc, topic, model, object_id, mapping, value=None):
         config["topic"] = topic
         config["platform"] = 'mqtt'
     else:
+        readable_name = mapping["config"]["name"] if "name" in mapping["config"] else key
         config["state_topic"] = topic
         config["unique_id"] = object_name
-        config["name"] = object_name
+        config["name"] = readable_name
     config["device"] = { "identifiers": [object_id], "name": object_id, "model": model, "manufacturer": "rtl_433" }
 
     if args.force_update:
@@ -784,7 +807,7 @@ def publish_config(mqttc, topic, model, object_id, mapping, value=None):
 
     return True
 
-def bridge_event_to_hass(mqttc, topicprefix, data):
+def bridge_event_to_hass(mqttc, topic_prefix, data):
     """Translate some rtl_433 sensor data to Home Assistant auto discovery."""
 
     if "model" not in data:
@@ -797,13 +820,13 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
     skipped_keys = []
     published_keys = []
 
-    base_topic, device_id = rtl_433_device_info(data)
+    base_topic, device_id = rtl_433_device_info(data, topic_prefix)
     if not device_id:
         # no unique device identifier
         logging.warning("No suitable identifier found for model: ", model)
         return
 
-    if args.ids and id in data and data.get("id") not in args.ids:
+    if args.ids and "id" in data and data.get("id") not in args.ids:
         # not in the safe list
         logging.debug("Device (%s) is not in the desired list of device ids: [%s]" % (data["id"], ids))
         return
@@ -813,7 +836,7 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
         if key in mappings:
             # topic = "/".join([topicprefix,"devices",model,instance,key])
             topic = "/".join([base_topic, key])
-            if publish_config(mqttc, topic, model, device_id, mappings[key]):
+            if publish_config(mqttc, topic, model, device_id, mappings[key], key):
                 published_keys.append(key)
         else:
             if key not in SKIP_KEYS:
@@ -822,7 +845,7 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
     if "secret_knock" in data.keys():
         for m in secret_knock_mappings:
             topic = "/".join([base_topic, "secret_knock"])
-            if publish_config(mqttc, topic, model, device_id, m):
+            if publish_config(mqttc, topic, model, device_id, m, "secret_knock"):
                 published_keys.append("secret_knock")
 
     if published_keys:
@@ -868,6 +891,7 @@ def run():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(format='[%(asctime)s] %(levelname)s:%(name)s:%(message)s',datefmt='%Y-%m-%dT%H:%M:%S%z')
     logging.getLogger().setLevel(logging.INFO)
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
