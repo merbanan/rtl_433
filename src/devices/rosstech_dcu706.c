@@ -11,6 +11,53 @@
 
 #include "decoder.h"
 
+
+
+// Function to print an 8-bit integer as binary
+void printBinary(uint8_t value) {
+    for (int i = 7; i >= 0; i--) {
+        printf("%c", (value & (1 << i)) ? '1' : '0');
+    }
+}
+
+
+void printParity(char *chunk, int size) {
+
+    int oneCount = 0;
+
+    for(int i = 0; i<size; i++) {
+        if(chunk[i] == '1') {
+            oneCount++;
+        }
+    }
+
+    printf(" %s (Count: %d)", oneCount % 2 == 0 ? "Even" : "Odd", oneCount);
+    
+}
+
+
+void printBinaryWithSpaces(const uint8_t *data, size_t length, size_t bitsPerChunk) {
+    
+    int chunkCount = 0;
+    char currentChunk[bitsPerChunk];
+
+    for (size_t i = 0; i < length; i++) {
+        uint8_t byte = data[i];
+        for (int j = 7; j >= 0; j--) {
+            printf("%c", (byte & (1 << j)) ? '1' : '0');
+            chunkCount++;
+            currentChunk[chunkCount] = (byte & (1 << j)) ? '1' : '0';
+            
+            if (chunkCount % bitsPerChunk == 0) {
+                printParity(currentChunk, bitsPerChunk);
+                printf("\n");
+                chunkCount = 0;
+            }
+        }
+    }
+    printf("\n");
+}
+
 /**
 Rosstech Digital Control Unit DCU-706/Sundance
 
@@ -18,85 +65,80 @@ Rosstech Digital Control Unit DCU-706/Sundance
 
 Data layout:
 
-    IIII F TTT HH CC
+    SS IIII TT CC
 
+- S: 8 bit sync byte and type of transmission
 - I: 16 bit ID
-- F: 4 bit flags
-- T: 12 bit temperature, scale 10
-- H: 8 bit humidity
+- T: 8 bit temp packet in degrees F
 - C: 8 bit CRC-8, poly 0x81
 
-Format string:
-
-    ID:16h FLAGS:4h TEMP:12h HUMI:8h CRC:8h
-
-...Decoding notes like endianness, signedness
+11 bits/byte: 1 start bit, 0 stop bits and odd parity
 
 */
 static int rosstech_dcu706_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    printf("Called!!!!!");
-    decoder_log(decoder, 1, __func__, "CRC error.");
+    printf("bitbuffer_num_rows: %d\n", bitbuffer->num_rows);
+    printf("bitbuffer_bits_per_row[0]: %d\n", bitbuffer->bits_per_row[0]);
+
+    uint8_t msg[10];
+
+
+    if (bitbuffer->num_rows != 1
+            || bitbuffer->bits_per_row[0] < 23
+            || bitbuffer->bits_per_row[0] > 1000) {
+        printf("Aborting!");
+        decoder_logf(decoder, 2, __func__, "bit_per_row %u out of range", bitbuffer->bits_per_row[0]);
+        return DECODE_ABORT_EARLY; // Unrecognized data
+    }
+
+
+    bitbuffer_extract_bytes(bitbuffer, 0, 0, msg, sizeof(msg) * 8);
+
+    for (int i = 0; i< sizeof(msg); i++) {
+        printf("%04x ", msg[i]);
+    }
+    printf("\n");
+
+    size_t msgLength = sizeof(msg) / sizeof(msg[0]);
+    size_t bitsPerChunk = 11;
+
+    printBinaryWithSpaces(msg, msgLength, bitsPerChunk);
+
+
+    // Initialize variables to store extracted values
+    uint8_t syncType;  // S
+    uint16_t id;       // I
+    uint8_t temp;      // T
+    uint8_t crc;       // C
+
+
+    syncType = (msg[1] << 4) | (msg[2] >> 4);
+    id = (uint16_t)(msg[2] << 7 | msg[3] >> 1) << 8 | msg[3] << 6 | msg[4] >> 3;
+    temp = msg[5] << 5 | msg[6] >> 3;
+    crc = msg[7];
+
+    // Convert temperature to degrees Celsius
+    int temp_c = (int)((temp - 32) * 5 / 9);
+    printf("%d", temp_c);
+
+    /* clang-format off */
+    data_t *data = data_make(
+        "model",            "Model",          DATA_STRING,   "Rosstech Digital Control Unit DCU-706/Sundance",
+        "id",               "ID",             DATA_FORMAT,   "%04x",   DATA_INT,    id,
+        "temperature_C",    "Temperature",    DATA_FORMAT,   "%d °C", DATA_INT, temp_c,
+        "mic",              "Integrity",      DATA_STRING,   "CRC",
+        NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
     return 1;
-
-
-    // uint8_t const preamble[] = {0x55, 0x2D, 0xD4};
-
-    // if (bitbuffer->num_rows != 1) {
-    //     return DECODE_ABORT_EARLY;
-    // }
-
-    // unsigned bits = bitbuffer->bits_per_row[0];
-
-    // if (bits < 136 ) {                 // too small
-    //     return DECODE_ABORT_LENGTH;
-    // }
-
-    // unsigned pos = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof (preamble) * 8);
-
-    // if (pos >= bits) {
-    //     return DECODE_ABORT_EARLY;
-    // }
-
-    // data_t *data;
-    // uint8_t b[14];
-
-    // pos += sizeof(preamble) * 8;
-    // bitbuffer_extract_bytes(bitbuffer, 0, pos, b, sizeof(b) * 8);
-
-    // if (b[0] != 0 && b[6] != 1) {
-    //     return DECODE_ABORT_EARLY;
-    // }
-
-    // uint16_t crc_calc = crc16(b, 14, 0x1021, 0x0000);
-
-    // if (crc_calc != 0 ) {
-    //     decoder_log(decoder, 1, __func__, "CRC error.");
-    //     return DECODE_FAIL_MIC;
-    // }
-
-    // char msg0[20], msg1[20];
-    // sprintf(msg0, "%02x%02x%02x%02x%02x", b[1], b[2], b[3], b[4], b[5]);
-    // sprintf(msg1, "%02x%02x%02x%02x%02x", b[7], b[8], b[9], b[10], b[11]);
-
-    // /* clang-format off */
-    // data = data_make(
-    //     "model",   "Model",     DATA_STRING,   "Chamberlain-CWPIRC",
-    //     "msg_0",   "Message 0", DATA_STRING,    msg0,
-    //     "msg_1",   "Message 1", DATA_STRING,    msg1,
-    //     "mic",     "Integrity", DATA_STRING,   "CRC",
-    //     NULL);
-    // /* clang-format on */
-
-    // decoder_output_data(decoder, data);
-    // return 1;
 
 }
 
 static char const *const output_fields[] = {
         "model",
-        "msg_0",
-        "msg_1",
+        "id",
+        "temp",
         "mic",
         NULL,
 };
