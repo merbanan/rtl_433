@@ -12,9 +12,11 @@
 #include "decoder.h"
 
 /**
-Rosstech Digital Control Unit DCU-706/Sundance
+Rosstech Digital Control Unit DCU-706/Sundance/Jacuzzi
 
-...supported models etc.
+Supported Models:
+Sundance DCU-6560-131, SD-880 Series, PN 6560-131
+Jacuzzi DCU-2560-131, Jac-J300/J400 and SD-780 series, PN 6560-132/2560-131
 
 Data layout:
 
@@ -23,82 +25,64 @@ Data layout:
 - S: 8 bit sync byte and type of transmission
 - I: 16 bit ID
 - T: 8 bit temp packet in degrees F
-- C: 8 bit CRC-8, poly 0x81
+- C: 8 bit Checksum: Count 1s for each bit of each element:
+                     Set bit to 1 if number is even 0 if odd
 
 11 bits/byte: 1 start bit, 0 stop bits and odd parity
 
 */
 
+static const char transmissionTypeData[] = "Data Transmission";
+static const char transmissionTypeBond[] = "Bond";
 
 
+static uint8_t calculateChecksum(const uint8_t *data, size_t size) {
+    uint8_t checksum = 0;
 
-// Function to print an 8-bit integer as binary
-static void printBinary(uint8_t value) {
-    for (int i = 7; i >= 0; i--) {
-        printf("%c", (value & (1 << i)) ? '1' : '0');
-    }
-}
+    for (int bit = 0; bit < 8; bit++) {
+        int count = 0;
 
+        for (size_t i = 0; i < size; i++) {
+            count += (data[i] >> bit) & 1;
+        }
 
-static void printParity(char *chunk, int size) {
-
-    int oneCount = 0;
-
-    for(int i = 0; i<size; i++) {
-        if(chunk[i] == '1') {
-            oneCount++;
+        if (count % 2 == 0) {
+            checksum |= (1 << bit);
         }
     }
 
-    printf(" %s (Count: %d)", oneCount % 2 == 0 ? "Even" : "Odd", oneCount);
-    
+    return checksum;
 }
-
-
-static void printBinaryWithSpaces(const uint8_t *data, size_t length, size_t bitsPerChunk) {
-    
-    int chunkCount = 0;
-    char currentChunk[bitsPerChunk];
-
-    for (size_t i = 0; i < length; i++) {
-        uint8_t byte = data[i];
-        for (int j = 7; j >= 0; j--) {
-            printf("%c", (byte & (1 << j)) ? '1' : '0');
-            chunkCount++;
-            currentChunk[chunkCount] = (byte & (1 << j)) ? '1' : '0';
-            
-            if (chunkCount % bitsPerChunk == 0) {
-                printParity(currentChunk, bitsPerChunk);
-                printf("\n");
-                chunkCount = 0;
-            }
-        }
-    }
-    printf("\n");
-}
-
 
 
 
 static int rosstech_dcu706_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
 
+    // We need 55 bits
     uint8_t msg[7];
-
 
     if (bitbuffer->num_rows != 1
             || bitbuffer->bits_per_row[0] < 55
-            || bitbuffer->bits_per_row[0] > 100) {
+            || bitbuffer->bits_per_row[0] > 300) {
         decoder_logf(decoder, 2, __func__, "bit_per_row %u out of range", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_EARLY; // Unrecognized data
     }
 
-    uint8_t const preamble[] = {0xDD, 0x40};
+    uint8_t const preambleDataTransmission[] = {0xDD, 0x40};
 
-    unsigned start_pos = bitbuffer_search(bitbuffer, 0, 0, preamble, 11);
+    unsigned start_pos = bitbuffer_search(bitbuffer, 0, 0, preambleDataTransmission, 11);
 
     if (start_pos == bitbuffer->bits_per_row[0]) {
-        return DECODE_ABORT_LENGTH;
+
+        // The Bond command also contains the temperature
+        uint8_t const preambleBond[] = {0xCD, 0x00};
+
+        start_pos = bitbuffer_search(bitbuffer, 0, 0, preambleBond, 11);
+
+        if (start_pos == bitbuffer->bits_per_row[0]) {
+            return DECODE_ABORT_LENGTH;
+        }
     }
 
     if (start_pos + 55 > bitbuffer->bits_per_row[0]) {
@@ -107,35 +91,36 @@ static int rosstech_dcu706_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_extract_bytes(bitbuffer, 0, start_pos, msg, sizeof(msg) * 8);
 
-    for (size_t i = 0; i< sizeof(msg); i++) {
-        printf("%04x ", msg[i]);
-    }
-    printf("\n");
-
-    size_t msgLength = sizeof(msg) / sizeof(msg[0]);
-    size_t bitsPerChunk = 11;
-
-    printBinaryWithSpaces(msg, msgLength, bitsPerChunk);
-
     uint8_t syncType = (msg[0] << 1) | (msg[1] >> 7); //S
-    uint16_t id = (uint16_t)(msg[1] << 4 | msg[2] >> 4) << 8 | msg[2] << 7 | msg[3] >> 1; // I
+    uint8_t id_high = (msg[1] << 4 | msg[2] >> 4);
+    uint8_t id_low = (msg[2] << 7 | msg[3] >> 1);
+    uint16_t id = (uint16_t)(id_high << 8) | id_low; // I
     uint8_t temp = msg[4] << 2 | msg[5] >> 6; // T
     uint8_t checkSum = msg[5] << 5 | msg[6] >> 3; // C
 
 
-    printBinary(temp);
+    // Create a uint8_t array to hold the extracted values
+    uint8_t extractedData[4];
+    extractedData[0] = syncType;
+    extractedData[1] = id_high;
+    extractedData[2] = id_low;
+    extractedData[3] = temp;
 
-    int temp_int = temp;
+    uint8_t calculatedChecksum = calculateChecksum(extractedData, sizeof(extractedData) / sizeof(extractedData[0]));
+    if (calculatedChecksum != checkSum) {
+        decoder_logf(decoder, 2, __func__, "Sanity Check failed. Expected: %04x, Calculated: %04x. Maybe sanity function calculated wrong!", checkSum, calculatedChecksum);
+        // return DECODE_FAIL_SANITY;
+    }
 
-    printf("Temp:  %du\n", temp_int);
-    printf("Original uint8_t value: 0x%02X\n", temp);
+    uint8_t temp_c = ((temp-32)*5)/9;
 
     /* clang-format off */
     data_t *data = data_make(
-        "model",            "Model",          DATA_STRING,   "Rosstech Digital Control Unit DCU-706/Sundance",
-        "id",               "ID",             DATA_FORMAT,   "%04x",   DATA_INT,    id,
-        "temperature_C",    "Temperature",    DATA_FORMAT,   "%d °F", DATA_INT, (int)temp,
-        "mic",              "Integrity",      DATA_STRING,   "Check Sum",
+        "model",            "Model",              DATA_STRING,   "Rosstech Digital Control Unit DCU-706/Sundance/Jacuzzi",
+        "syncType",         "Transmission Type",  DATA_STRING,   syncType == 0xba ? transmissionTypeData : transmissionTypeBond,    
+        "id",               "ID",                 DATA_FORMAT,   "%04x",   DATA_INT,    id,
+        "temperature_C",    "Temperature",        DATA_FORMAT,   "%d °C",  DATA_INT,     temp_c,
+        "checkSum",         "Integrity",          DATA_STRING,   "Check Sum", 
         NULL);
     /* clang-format on */
 
@@ -153,7 +138,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const rosstech_dcu706 = {
-        .name        = "Rosstech Digital Control Unit DCU-706/Sundance",
+        .name        = "Rosstech Digital Control Unit DCU-706/Sundance/Jacuzzi",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 200,
         .long_width  = 200,
