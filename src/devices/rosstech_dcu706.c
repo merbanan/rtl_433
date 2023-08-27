@@ -11,7 +11,7 @@
 
 #include "decoder.h"
 
-/**
+/** @fn int rosstech_dcu706_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 Rosstech Digital Control Unit DCU-706/Sundance/Jacuzzi
 
 Supported Models:
@@ -32,11 +32,8 @@ Data layout:
 
 */
 
-static const char transmissionTypeData[] = "Data Transmission";
-static const char transmissionTypeBond[] = "Bond";
-
-
-static uint8_t calculateChecksum(const uint8_t *data, size_t size) {
+static uint8_t calculateChecksum(const uint8_t *data, size_t size)
+{
     uint8_t checksum = 0;
 
     for (int bit = 0; bit < 8; bit++) {
@@ -54,10 +51,12 @@ static uint8_t calculateChecksum(const uint8_t *data, size_t size) {
     return checksum;
 }
 
-
-
 static int rosstech_dcu706_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    uint8_t const preambleDataTransmission[] = {0xDD, 0x40};
+    // The Bond command also contains the temperature
+    uint8_t const preambleBond[] = {0xCD, 0x00};
+    int const preamble_length = 11;
 
     // We need 55 bits
     uint8_t msg[7];
@@ -69,16 +68,11 @@ static int rosstech_dcu706_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY; // Unrecognized data
     }
 
-    uint8_t const preambleDataTransmission[] = {0xDD, 0x40};
-
-    unsigned start_pos = bitbuffer_search(bitbuffer, 0, 0, preambleDataTransmission, 11);
+    unsigned start_pos = bitbuffer_search(bitbuffer, 0, 0, preambleDataTransmission, preamble_length);
 
     if (start_pos == bitbuffer->bits_per_row[0]) {
 
-        // The Bond command also contains the temperature
-        uint8_t const preambleBond[] = {0xCD, 0x00};
-
-        start_pos = bitbuffer_search(bitbuffer, 0, 0, preambleBond, 11);
+        start_pos = bitbuffer_search(bitbuffer, 0, 0, preambleBond, preamble_length);
 
         if (start_pos == bitbuffer->bits_per_row[0]) {
             return DECODE_ABORT_LENGTH;
@@ -91,17 +85,16 @@ static int rosstech_dcu706_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_extract_bytes(bitbuffer, 0, start_pos, msg, sizeof(msg) * 8);
 
-    uint8_t syncType = (msg[0] << 1) | (msg[1] >> 7); //S
-    uint8_t id_high = (msg[1] << 4 | msg[2] >> 4);
-    uint8_t id_low = (msg[2] << 7 | msg[3] >> 1);
+    uint8_t transmissionType = (msg[0] << 1) | (msg[1] >> 7); //S
+    uint8_t id_high = (msg[1] << 4) | (msg[2] >> 4);
+    uint8_t id_low = (msg[2] << 7) | (msg[3] >> 1);
     uint16_t id = (uint16_t)(id_high << 8) | id_low; // I
-    uint8_t temp = msg[4] << 2 | msg[5] >> 6; // T
-    uint8_t checkSum = msg[5] << 5 | msg[6] >> 3; // C
-
+    uint8_t temp = (msg[4] << 2) | (msg[5] >> 6); // T
+    uint8_t checkSum = (msg[5] << 5) | (msg[6] >> 3); // C
 
     // Create a uint8_t array to hold the extracted values
     uint8_t extractedData[4];
-    extractedData[0] = syncType;
+    extractedData[0] = transmissionType;
     extractedData[1] = id_high;
     extractedData[2] = id_low;
     extractedData[3] = temp;
@@ -116,23 +109,23 @@ static int rosstech_dcu706_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-        "model",            "Model",              DATA_STRING,   "Rosstech Digital Control Unit DCU-706/Sundance/Jacuzzi",
-        "syncType",         "Transmission Type",  DATA_STRING,   syncType == 0xba ? transmissionTypeData : transmissionTypeBond,    
+        "model",            "Model",              DATA_STRING,   "Rosstech-Spa",
         "id",               "ID",                 DATA_FORMAT,   "%04x",   DATA_INT,    id,
+        "transmissionType", "Transmission Type",  DATA_STRING,   transmissionType == 0xba ? "Data" : "Bond",    
         "temperature_C",    "Temperature",        DATA_FORMAT,   "%d °C",  DATA_INT,     temp_c,
-        "checkSum",         "Integrity",          DATA_STRING,   "Check Sum", 
+        "mic",              "Integrity",          DATA_STRING,   "CHECKSUM", 
         NULL);
     /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
-
 }
 
 static char const *const output_fields[] = {
         "model",
         "id",
-        "temp",
+        "transmissionType",
+        "temperature_C",
         "mic",
         NULL,
 };
@@ -142,7 +135,6 @@ r_device const rosstech_dcu706 = {
         .modulation  = OOK_PULSE_PCM,
         .short_width = 200,
         .long_width  = 200,
-        .sync_width  = 0, // 1:10, tuned to widely match 2450 to 2850
         .reset_limit = 2000,
         .decode_fn   = &rosstech_dcu706_decode,
         .fields      = output_fields,
