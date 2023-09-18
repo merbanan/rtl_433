@@ -550,6 +550,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "lux",
         "config": {
+            "device_class": "illuminance",
             "name": "Outside Luminance",
             "unit_of_measurement": "lux",
             "value_template": "{{ value|int }}",
@@ -560,6 +561,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "lux",
         "config": {
+            "device_class": "illuminance",
             "name": "Outside Luminance",
             "unit_of_measurement": "lux",
             "value_template": "{{ value|int }}",
