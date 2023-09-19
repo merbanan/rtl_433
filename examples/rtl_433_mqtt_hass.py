@@ -526,7 +526,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "A",
         "config": {
-            "device_class": "power",
+            "device_class": "current",
             "name": "Current",
             "unit_of_measurement": "A",
             "value_template": "{{ value|float }}",
