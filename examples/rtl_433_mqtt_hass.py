@@ -18,7 +18,7 @@ as device topics by MQTT.
 """
 
 AP_EPILOG="""
-It is strongly recommended to run rtl_433 with "-C si" and "-M newmodel".
+It is strongly recommended to run rtl_433 with "-C si".
 This script requires rtl_433 to publish both event messages and device
 messages. If you've changed the device topic in rtl_433, use the same device
 topic with the "-T" parameter.
