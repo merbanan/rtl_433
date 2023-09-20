@@ -19,6 +19,7 @@ also TFA 30.3222.02 (a LaCrosse-TX141W).
 also TFA 30.3251.10 (a LaCrosse-TX141W).
 also some rebrand (ORIA WA50B) with a slightly longer timing, s.a. #2088
 also TFA 30.3243.02 (a LaCrosse-TX141Bv3)
+also LaCrosse TX141-Bv4 (seems identical to LaCrosse-TX141Bv3)
 
 LaCrosse Color Forecast Station (model C85845), or other LaCrosse product
 utilizing the remote temperature/humidity sensor TX141TH-Bv2 transmitting

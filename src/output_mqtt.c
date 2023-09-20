@@ -86,9 +86,9 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
     }
     case MG_EV_CLOSE:
         if (!ctx)
-            break; // shuttig down
+            break; // shutting down
         if (ctx->prev_status == 0)
-            print_log(LOG_WARNING, "MQTT", "MQTT Connection failed...");
+            print_log(LOG_WARNING, "MQTT", "MQTT Connection lost, reconnecting...");
         // reconnect
         char const *error_string = NULL;
         ctx->connect_opts.error_string = &error_string;
