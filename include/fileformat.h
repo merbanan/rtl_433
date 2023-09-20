@@ -27,6 +27,7 @@ enum file_type {
     F_FLOAT    = 1 << 1,
     F_1CH      = 1 << 4,
     F_2CH      = 2 << 4,
+    F_W4       = 4 << 8,
     F_W8       = 8 << 8,
     F_W12      = 12 << 8,
     F_W16      = 16 << 8,
@@ -56,6 +57,8 @@ enum file_type {
     F_CS32     = F_2CH | F_SIGNED   | F_INT | F_W32,
     F_F32      = F_1CH | F_SIGNED   | F_FLOAT | F_W32,
     F_CF32     = F_2CH | F_SIGNED   | F_FLOAT | F_W32,
+    F_F64      = F_1CH | F_SIGNED   | F_FLOAT | F_W64,
+    F_CF64     = F_2CH | F_SIGNED   | F_FLOAT | F_W64,
     // compound types
     CU8_IQ     = F_CU8 | F_IQ,
     CS8_IQ     = F_CS8 | F_IQ,
@@ -72,14 +75,21 @@ enum file_type {
     PULSE_OOK  = F_OOK,
 };
 
+enum container_type {
+    FILEFMT_RAW   = 0,
+    FILEFMT_SIGMF = 1,
+};
+
 typedef struct {
     uint32_t format;
     uint32_t raw_format;
+    uint32_t container;
     uint32_t center_frequency;
     uint32_t sample_rate;
     char const *spec;
     char const *path;
     FILE *file;
+    void *file_aux;
 } file_info_t;
 
 /// Clear all file info.
@@ -134,5 +144,11 @@ void file_info_check_write(file_info_t *info);
 /// @param info the file info to check
 /// @return a string describing the format
 char const *file_info_string(file_info_t *info);
+
+/// Return a SigMF datset type string for the format.
+char const *file_info_to_sigmf_type(file_info_t *info);
+
+/// Parse a SigMF datset type string to a format.
+uint32_t file_info_from_sigmf_type(char const *sigmf_datatype);
 
 #endif /* INCLUDE_FILEFORMAT_H_ */

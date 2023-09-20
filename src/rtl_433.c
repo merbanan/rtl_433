@@ -53,6 +53,7 @@
 #include "logger.h"
 #include "fatal.h"
 #include "write_sigrok.h"
+#include "sigmf.h"
 #include "mongoose.h"
 
 #ifdef _WIN32
@@ -999,6 +1000,11 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
     case 'S':
         if (!arg)
             usage(1);
+        int grab_fileformat = 0;
+        if (!strncasecmp(arg, "sigmf", 5)) {
+            grab_fileformat = 1;
+            arg = arg_param(arg);
+        }
         if (strcasecmp(arg, "all") == 0)
             cfg->grab_mode = 1;
         else if (strcasecmp(arg, "unknown") == 0)
@@ -1008,7 +1014,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         else
             cfg->grab_mode = atobv(arg, 1);
         if (cfg->grab_mode && !cfg->demod->samp_grab)
-            cfg->demod->samp_grab = samp_grab_create(SIGNAL_GRABBER_BUFFER);
+            cfg->demod->samp_grab = samp_grab_create(SIGNAL_GRABBER_BUFFER, grab_fileformat);
         break;
     case 'm':
         fprintf(stderr, "sample mode option is deprecated.\n");
@@ -1804,7 +1810,18 @@ int main(int argc, char **argv) {
             cfg->center_frequency = demod->load_info.center_frequency ? demod->load_info.center_frequency : cfg->frequency[0];
 
             FILE *in_file;
-            if (strcmp(demod->load_info.path, "-") == 0) { // read samples from stdin
+            if (demod->load_info.container == FILEFMT_SIGMF) { // unpack tar
+                sigmf_t sigmf = {0};
+                int rc = sigmf_reader_open(&sigmf, cfg->in_filename);
+                // handle errors
+                print_logf(LOG_INFO, "Input", "Opening returned \"%d\"", rc);
+                // copy meta
+                demod->load_info.format = CU8_IQ;
+                cfg->samp_rate          = sigmf.sample_rate;
+                cfg->center_frequency   = sigmf.first_frequency;
+                in_file                 = sigmf.mtar.stream;
+            }
+            else if (strcmp(demod->load_info.path, "-") == 0) { // read samples from stdin
                 in_file = stdin;
                 cfg->in_filename = "<stdin>";
             } else {
