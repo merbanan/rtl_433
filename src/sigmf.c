@@ -372,8 +372,16 @@ int sigmf_reader_open(sigmf_t *sigmf, char const *path)
             }
             else {
                 stream_name = strdup(h.name);
+                if (!stream_name) {
+                    WARN_STRDUP("add_dumper()");
+                }
                 // read meta
                 char *p = calloc(1, h.size + 1);
+                if (!p) {
+                    WARN_MALLOC("sigmf_reader_open()");
+                    free(stream_name);
+                    return -1;
+                }
                 mtar_read_data(&sigmf->mtar, p, h.size);
                 // printf("%s", p);
                 // decode JSON and copy meta
@@ -383,6 +391,7 @@ int sigmf_reader_open(sigmf_t *sigmf, char const *path)
 
             // Continue to read through all tar entries to check for errors
         }
+        free(stream_name);
 
         mtar_next(&sigmf->mtar);
     }
@@ -423,11 +432,11 @@ int sigmf_writer_open(sigmf_t *sigmf, char const *path, int overwrite)
 {
     if (access(path, F_OK) == 0) {
         if (!overwrite) {
-            print_logf(LOG_FATAL, "Input", "SigMF output file %s already exists, exiting", path);
+            print_logf(LOG_FATAL, "Output", "SigMF output file %s already exists, exiting", path);
             exit(1);
         }
         else {
-            print_logf(LOG_NOTICE, "Input", "SigMF output file %s already exists, overwriting", path);
+            print_logf(LOG_NOTICE, "Output", "SigMF output file %s already exists, overwriting", path);
         }
     }
 
@@ -460,9 +469,15 @@ int sigmf_writer_close(sigmf_t *sigmf)
     // Set the file length header if needed
     if (sigmf->data_len != d_len) {
         // Write header again
-        mtar_t tar;
-        int res = fseek(sigmf->mtar.stream, sigmf->data_offset - 512, SEEK_SET);
-        mtar_write_file_header(&sigmf->mtar, "foobar.sigmf-data", d_len);
+        int r = fseek(sigmf->mtar.stream, sigmf->data_offset - 512, SEEK_SET);
+        if (r) {
+            print_logf(LOG_ERROR, "Output", "SigMF output file seek failed");
+        } else {
+            r = mtar_write_file_header(&sigmf->mtar, "foobar.sigmf-data", d_len);
+            if (r) {
+                print_logf(LOG_ERROR, "Output", "SigMF output file header rewrite failed");
+            }
+        }
     }
     // return mtar_close(&sigmf->mtar);
     return fclose(sigmf->mtar.stream);

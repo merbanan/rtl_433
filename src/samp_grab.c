@@ -161,7 +161,7 @@ void samp_grab_write(samp_grab_t *g, unsigned grab_len, unsigned grab_end)
     }
 
     if (g->sg_fileformat) {
-    char *datatype = *g->sample_size == 2 ? "cu8" : "ci16_le";
+    char const *datatype_s = *g->sample_size == 2 ? "cu8" : "ci16_le";
 
     char f_name[64] = {0};
     while (1) {
@@ -173,11 +173,24 @@ void samp_grab_write(samp_grab_t *g, unsigned grab_len, unsigned grab_end)
     }
     fprintf(stderr, "*** Saving signal to file %s (%u samples, %u bytes)\n", f_name, grab_len, signal_bsize);
 
+    char *datatype    = strdup(datatype_s);
+    if (!datatype) {
+        WARN_STRDUP("add_dumper()");
+    }
+    char *recorder    = strdup("rtl_433");
+    if (!recorder) {
+        WARN_STRDUP("add_dumper()");
+    }
+    char *description = strdup("Sample grabbed by rtl_433");
+    if (!description) {
+        WARN_STRDUP("add_dumper()");
+    }
+
     sigmf_t sigmf = {
-            .datatype           = strdup(datatype),
+            .datatype           = datatype,
             .sample_rate        = *g->samp_rate,
-            .recorder           = strdup("rtl_433"),
-            .description        = strdup("Sample grabbed by rtl_433"),
+            .recorder           = recorder,
+            .description        = description,
             .first_sample_start = 0,
             .first_frequency    = *g->frequency,
             .data_len           = signal_bsize,

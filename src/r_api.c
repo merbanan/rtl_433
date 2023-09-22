@@ -1222,10 +1222,23 @@ void add_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
         if (!sigmf)
             FATAL_CALLOC("add_dumper()");
 
-        sigmf->datatype           = strdup(file_info_to_sigmf_type(dumper));
+        char *datatype = strdup(file_info_to_sigmf_type(dumper));
+        if (!datatype) {
+            WARN_STRDUP("add_dumper()");
+        }
+        char *recorder    = strdup("rtl_433");
+        if (!recorder) {
+            WARN_STRDUP("add_dumper()");
+        }
+        char *description = strdup("Sample written by rtl_433");
+        if (!description) {
+            WARN_STRDUP("add_dumper()");
+        }
+
+        sigmf->datatype           = datatype;
         sigmf->sample_rate        = dumper->sample_rate;
-        sigmf->recorder           = strdup("rtl_433");
-        sigmf->description        = strdup("Sample written by rtl_433");
+        sigmf->recorder           = recorder;
+        sigmf->description        = description;
         sigmf->first_sample_start = 0;
         sigmf->first_frequency    = dumper->center_frequency;
         sigmf->data_len           = 0; // Unknown length
