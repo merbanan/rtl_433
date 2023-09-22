@@ -332,7 +332,7 @@ int sigmf_valid_filename(char const *p)
 int sigmf_reader_open(sigmf_t *sigmf, char const *path)
 {
     int is_sigmf = sigmf_valid_filename(path);
-    if (!is_sigmf){
+    if (!is_sigmf) {
         print_logf(LOG_WARNING, "Input", "SigMF input file must have .sigmf extension");
         // return -1;
     }
