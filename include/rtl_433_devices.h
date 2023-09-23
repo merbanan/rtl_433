@@ -207,7 +207,7 @@
     DECL(acurite_01185m) \
     DECL(enocean_erp1) \
     DECL(megacode) \
-    DECL(auriol_4ld5661) \
+    DECL(auriol_4ld) \
     DECL(tpms_truck) \
     DECL(funkbus_remote) \
     DECL(tpms_porsche) \
@@ -254,7 +254,6 @@
     DECL(fineoffset_ws90) \
     DECL(thermopro_tx2c) \
     DECL(tfa_303151) \
-    DECL(auriol_4ld6313) \
 
     /* Add new decoders here. */
 
