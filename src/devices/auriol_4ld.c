@@ -33,6 +33,7 @@ static int auriol_4ld_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     const char *model_4ds5661 = "Auriol-4LD5661";
     const char *model_4ds6313 = "Auriol-4LD6313";
+    const char *model_unknown = "Unknown model";
     char model[16];
     
     int ret = 0;
@@ -55,6 +56,8 @@ static int auriol_4ld_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         case 0x60:
             strncpy (model, model_4ds6313, strlen(model_4ds6313)+1);
             break;
+        default:
+            strncpy (model, model_unknown, strlen(model_unknown)+1);
 	}
 
         if (b[3] != 0xf0 || (b[1] & 0x70) != 0) {
