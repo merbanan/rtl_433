@@ -36,7 +36,6 @@ repos:
         stages: [manual]
       - id: trailing-whitespace
         exclude: .*\.md$
-        stages: [manual]
       - id: check-json
       - id: mixed-line-ending
       - id: check-builtin-literals
