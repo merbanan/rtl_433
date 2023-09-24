@@ -86,7 +86,6 @@ repos:
           - "--template={file}({line}): {severity} ({id}): {message}"
         #exclude: (SevenSegment_defs.h|stm32[^/]*|sysmem\.*)$
       - id: cpplint
-        stages: [manual]
         args:
           [
             "--filter=-build/header_guard,-build/include,-build/include_subdir,-legal/copyright,-readability/braces,-readability/casting,-readability/fn_size,-readability/multiline_comment,-readability/multiline_string,-readability/todo,-whitespace/blank_line,-whitespace/braces,-whitespace/comma,-whitespace/comments,-whitespace/line_length,-whitespace/newline,-whitespace/operators,-whitespace/parens,-whitespace/semicolon,-whitespace/tab,-whitespace/todo",
