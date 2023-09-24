@@ -1,5 +1,5 @@
 /** @file
-    Auriol 4-LD5661 and 4-LD6313 sensors.
+    Auriol 4-LD5661/4-LD5972/4-LD6313 sensors.
 
     Copyright (C) 2021 Balazs H.
     Copyright (C) 2023 Peter Soos
@@ -22,7 +22,7 @@ Data layout:
 
     II B TTT F RRRRRR
 
-- I: id, 8 bit: factory hardcoded random ID
+- I: id, 8 bit: factory (hard)coded random ID
 - B: battery, 4 bit: 0x8 if normal, 0x0 if low
 - T: temperature, 12 bit: 2's complement, scaled by 10
 - F: 4 bit: seems to be 0xf constantly, a separator between temp and rain
@@ -61,8 +61,9 @@ static int auriol_4ld5661_decode(r_device *decoder, bitbuffer_t *bitbuffer)
            rain collection surface diameter is 96mm, 7.5 ml /((9.6 cm/2)^2*pi) ~= 1 mm of rain. Therefore
            we decided to correct this multiplier.
            The rain bucket tips at 7.2 ml for 4-LS6313. The main unit counts 0.242 mm per sensor tips.
-           The physical parameters are same. The calculation
-           and the result is similar: 7.2 ml / ((96 mm / 2)^2 * pi) ~= 1 mm (more exactly 0.995 mm)
+           The physical parameters are same. The calculation and the result is similar:
+               7.2 ml / ((96 mm / 2)^2 * pi) ~= 1 mm (more exactly 0.995 mm).
+           Similar calculation is valid for 4-LD5972 (See PR #2633).
            See also:
                https://github.com/merbanan/rtl_433/issues/1837
                https://github.com/merbanan/rtl_433/pull/2633
@@ -97,7 +98,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const auriol_4ld5661 = {
-        .name        = "Auriol 4-LD5661/4-LD6313 temperature/rain sensors",
+        .name        = "Auriol 4-LD5661/4-LD5972/4-LD6313 temperature/rain sensors",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1000,
         .long_width  = 2000,
