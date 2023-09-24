@@ -22,7 +22,7 @@ Data layout:
 
     II B TTT F RRRRRR
 
-- I: id, 8 bit: what we've seen so far are 1a, c6 for 4-LD5661 and 60 for 4LD6313
+- I: id, 8 bit: factory hardcoded random ID
 - B: battery, 4 bit: 0x8 if normal, 0x0 if low
 - T: temperature, 12 bit: 2's complement, scaled by 10
 - F: 4 bit: seems to be 0xf constantly, a separator between temp and rain
