@@ -11,12 +11,9 @@
 */
 
 /**
-Lidl Auriol 4-LD5661/4-LD6313 sensors.
+Lidl Auriol 4-LD5661/4-LD5972/4-LD6313 sensors.
 
-See also issue #1857 and PR #2633
-
-There are reports about 4-LD5972 is working with this driver.
-See issue #2631
+See also issue #1857, #2631 and PR #2633
 
 Data layout:
 
