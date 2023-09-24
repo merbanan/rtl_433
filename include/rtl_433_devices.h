@@ -207,7 +207,7 @@
     DECL(acurite_01185m) \
     DECL(enocean_erp1) \
     DECL(megacode) \
-    DECL(auriol_4ld) \
+    DECL(auriol_4ld5661) \
     DECL(tpms_truck) \
     DECL(funkbus_remote) \
     DECL(tpms_porsche) \
