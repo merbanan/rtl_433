@@ -1,0 +1,350 @@
+---
+files: ^(.*\.(py|json|md|sh|yaml|txt|h|hpp|c|cpp|conf)|setup.cfg|.*/[^\.]+)$
+exclude: (?x)^(
+  \.cache/.*|
+  .*\.hex
+  )$
+repos:
+  - repo: https://github.com/executablebooks/mdformat
+    # Do this before other tools "fixing" the line endings
+    rev: 0.7.17
+    hooks:
+      - id: mdformat
+        name: Format Markdown
+        exclude: (CHANGELOG.md)$
+        stages: [manual]
+        entry: mdformat # Executable to run, with fixed options
+        language: python
+        types: [markdown]
+        args: [--wrap, "75", --number]
+        additional_dependencies:
+          - mdformat-toc
+          - mdformat-gfm
+          # - mdformat-beautysh
+          # - mdformat-shfmt
+          # - mdformat-tables
+          # - mdformat-config
+          # - mdformat-black
+          # - mdformat-web
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # - id: no-commit-to-branch
+      #  args: [--branch, main]
+      - id: debug-statements
+      - id: end-of-file-fixer
+        stages: [manual]
+      - id: trailing-whitespace
+        exclude: .*\.md$
+        stages: [manual]
+      - id: check-json
+      - id: mixed-line-ending
+      - id: check-builtin-literals
+        args: [--ignore=dict]
+      - id: check-ast
+      - id: check-merge-conflict
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: check-docstring-first
+      - id: fix-byte-order-marker
+      - id: check-case-conflict
+      - id: check-toml
+  - repo: https://github.com/lovesegfault/beautysh.git
+    rev: v6.2.1
+    hooks:
+      - id: beautysh
+        args: [-i=4]
+        additional_dependencies:
+          - setuptools
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.2.6
+    hooks:
+      - id: codespell
+        exclude: (mongoose.*\.[ch]|CR_.*\.md)$
+        args:
+          - --toml
+          - pyproject.toml
+          - --ignore-words-list=mot
+          # - -w  # Correct in-place
+        additional_dependencies:
+          - tomli
+  - repo: https://github.com/pocc/pre-commit-hooks
+    rev: v1.3.5
+    # Install dependencies on windows:
+    #  choco install llvm uncrustify cppcheck
+    hooks:
+      - id: uncrustify
+        stages: [manual]
+        args: [--replace, --no-backup, -c, uncrustify.cfg]
+      - id: cppcheck
+        args:
+          - --check-config
+          - --force
+          #- --std=c99
+          #- --language=c
+          #- -IInc
+          - "--template={file}({line}): {severity} ({id}): {message}"
+        #exclude: (SevenSegment_defs.h|stm32[^/]*|sysmem\.*)$
+      - id: cpplint
+        stages: [manual]
+        args:
+          [
+            "--filter=-build/header_guard,-build/include,-build/include_subdir,-legal/copyright,-readability/braces,-readability/casting,-readability/fn_size,-readability/multiline_comment,-readability/multiline_string,-readability/todo,-whitespace/blank_line,-whitespace/braces,-whitespace/comma,-whitespace/comments,-whitespace/line_length,-whitespace/newline,-whitespace/operators,-whitespace/parens,-whitespace/semicolon,-whitespace/tab,-whitespace/todo",
+          ]
+        exclude: (mongoose.*\.[ch])$
+        additional_dependencies:
+          - cpplint>=1.6.1
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.6
+    hooks:
+      - id: shellcheck
+        files: ^[^\.].*\.sh$
+        args:
+          [
+            -x,
+            -e2086,
+            -e2045,
+            -e2010,
+            -e2027,
+            -e2164,
+            -e2013,
+            -e2035,
+            -e2006,
+            -e2002,
+            -e2196,
+            -e2129,
+            -e2068,
+            -e2046,
+          ]
+  - repo: https://github.com/pocc/pre-commit-hooks
+    rev: v1.3.5
+    hooks:
+      - id: clang-format
+        stages: [manual]
+        # Target added at end of pre-commit because of the long list of exclusions
+        args: [-i]
+        exclude: |
+          (?x)^(
+           include/abuf.h
+          |include/baseband.h
+          |include/bitbuffer.h
+          |include/compat_paths.h
+          |include/compat_pthread.h
+          |include/compat_time.h
+          |include/data.h
+          |include/decoder_util.h
+          |include/fatal.h
+          |include/fileformat.h
+          |include/jsmn.h
+          |include/mongoose.h
+          |include/optparse.h
+          |include/r_device.h
+          |include/r_private.h
+          |include/r_util.h
+          |include/rtl_433.h
+          |include/rtl_433_devices.h
+          |include/sdr.h
+          |include/util.h
+          |src/am_analyze.c
+          |src/baseband.c
+          |src/bitbuffer.c
+          |src/compat_paths.c
+          |src/compat_time.c
+          |src/confparse.c
+          |src/data.c
+          |src/data_tag.c
+          |src/decoder_util.c
+          |src/devices/acurite.c
+          |src/devices/alecto.c
+          |src/devices/ambient_weather.c
+          |src/devices/ambientweather_wh31e.c
+          |src/devices/ant_antplus.c
+          |src/devices/archos_tbh.c
+          |src/devices/atech_ws308.c
+          |src/devices/auriol_4ld5661.c
+          |src/devices/auriol_hg02832.c
+          |src/devices/badger_water.c
+          |src/devices/baldr_rain.c
+          |src/devices/blueline.c
+          |src/devices/blyss.c
+          |src/devices/brennenstuhl_rcs_2044.c
+          |src/devices/bresser_3ch.c
+          |src/devices/bresser_5in1.c
+          |src/devices/bresser_6in1.c
+          |src/devices/bresser_7in1.c
+          |src/devices/bresser_leakage.c
+          |src/devices/calibeur.c
+          |src/devices/cardin.c
+          |src/devices/ced7000.c
+          |src/devices/celsia_czc1.c
+          |src/devices/chuango.c
+          |src/devices/cmr113.c
+          |src/devices/companion_wtr001.c
+          |src/devices/cotech_36_7959.c
+          |src/devices/current_cost.c
+          |src/devices/danfoss.c
+          |src/devices/digitech_xc0324.c
+          |src/devices/directv.c
+          |src/devices/dish_remote_6_3.c
+          |src/devices/dsc.c
+          |src/devices/ecodhome.c
+          |src/devices/ecowitt.c
+          |src/devices/efergy_e2_classic.c
+          |src/devices/efergy_optical.c
+          |src/devices/efth800.c
+          |src/devices/elv.c
+          |src/devices/emax.c
+          |src/devices/emontx.c
+          |src/devices/ert_idm.c
+          |src/devices/ert_scm.c
+          |src/devices/esa.c
+          |src/devices/esic_emt7110.c
+          |src/devices/esperanza_ews.c
+          |src/devices/eurochron.c
+          |src/devices/fineoffset.c
+          |src/devices/fineoffset_wh1050.c
+          |src/devices/fineoffset_wh1080.c
+          |src/devices/fineoffset_wh45.c
+          |src/devices/fineoffset_wn34.c
+          |src/devices/fineoffset_ws80.c
+          |src/devices/fineoffset_ws90.c
+          |src/devices/flex.c
+          |src/devices/flowis.c
+          |src/devices/fordremote.c
+          |src/devices/funkbus.c
+          |src/devices/gasmate_ba1008.c
+          |src/devices/ge_coloreffects.c
+          |src/devices/generic_motion.c
+          |src/devices/generic_remote.c
+          |src/devices/generic_temperature_sensor.c
+          |src/devices/geo_minim.c
+          |src/devices/govee.c
+          |src/devices/gt_wt_02.c
+          |src/devices/gt_wt_03.c
+          |src/devices/hcs200.c
+          |src/devices/hideki.c
+          |src/devices/holman_ws5029.c
+          |src/devices/hondaremote.c
+          |src/devices/honeywell.c
+          |src/devices/honeywell_cm921.c
+          |src/devices/honeywell_wdb.c
+          |src/devices/ht680.c
+          |src/devices/ibis_beacon.c
+          |src/devices/ikea_sparsnas.c
+          |src/devices/infactory.c
+          |src/devices/inkbird_ith20r.c
+          |src/devices/inovalley-kw9015b.c
+          |src/devices/insteon.c
+          |src/devices/interlogix.c
+          |src/devices/intertechno.c
+          |src/devices/jasco.c
+          |src/devices/kedsum.c
+          |src/devices/kerui.c
+          |src/devices/klimalogg.c
+          |src/devices/lacrosse.c
+          |src/devices/lacrosse_breezepro.c
+          |src/devices/lacrosse_r1.c
+          |src/devices/lacrosse_th3.c
+          |src/devices/lacrosse_tx141x.c
+          |src/devices/lacrosse_tx34.c
+          |src/devices/lacrosse_tx35.c
+          |src/devices/lacrosse_wr1.c
+          |src/devices/lacrosse_ws7000.c
+          |src/devices/lacrossews.c
+          |src/devices/lightwave_rf.c
+          |src/devices/m_bus.c
+          |src/devices/markisol.c
+          |src/devices/marlec_solar.c
+          |src/devices/maverick_et73.c
+          |src/devices/maverick_et73x.c
+          |src/devices/maverick_xr30.c
+          |src/devices/mebus.c
+          |src/devices/missil_ml0757.c
+          |src/devices/neptune_r900.c
+          |src/devices/nexus.c
+          |src/devices/nice_flor_s.c
+          |src/devices/norgo.c
+          |src/devices/oil_watchman.c
+          |src/devices/oregon_scientific.c
+          |src/devices/oregon_scientific_sl109h.c
+          |src/devices/oregon_scientific_v1.c
+          |src/devices/philips_aj3650.c
+          |src/devices/proflame2.c
+          |src/devices/quhwa.c
+          |src/devices/radiohead_ask.c
+          |src/devices/rainpoint.c
+          |src/devices/regency_fan.c
+          |src/devices/rojaflex.c
+          |src/devices/rubicson_pool_48942.c
+          |src/devices/schraeder.c
+          |src/devices/secplus_v1.c
+          |src/devices/secplus_v2.c
+          |src/devices/simplisafe.c
+          |src/devices/smoke_gs558.c
+          |src/devices/solight_te44.c
+          |src/devices/somfy_iohc.c
+          |src/devices/somfy_rts.c
+          |src/devices/springfield.c
+          |src/devices/srsmith_pool_srs_2c_tx.c
+          |src/devices/steelmate.c
+          |src/devices/telldus_ft0385r.c
+          |src/devices/tfa_14_1504_v2.c
+          |src/devices/tfa_30_3196.c
+          |src/devices/tfa_drop_30.3233.c
+          |src/devices/tfa_marbella.c
+          |src/devices/tfa_pool_thermometer.c
+          |src/devices/tfa_twin_plus_30.3049.c
+          |src/devices/thermopro_tp11.c
+          |src/devices/thermopro_tx2c.c
+          |src/devices/tpms_eezrv.c
+          |src/devices/tpms_elantra2012.c
+          |src/devices/tpms_ford.c
+          |src/devices/tpms_hyundai_vdo.c
+          |src/devices/tpms_jansite.c
+          |src/devices/tpms_pmv107j.c
+          |src/devices/tpms_renault.c
+          |src/devices/tpms_tyreguard400.c
+          |src/devices/ts_ft002.c
+          |src/devices/ttx201.c
+          |src/devices/vaillant_vrt340f.c
+          |src/devices/vauno_en8822c.c
+          |src/devices/waveman.c
+          |src/devices/wec2103.c
+          |src/devices/ws2032.c
+          |src/devices/wssensor.c
+          |src/devices/wt450.c
+          |src/devices/x10_rf.c
+          |src/devices/x10_sec.c
+          |src/fileformat.c
+          |src/getopt/getopt.c
+          |src/getopt/getopt.h
+          |src/http_server.c
+          |src/jsmn.c
+          |src/list.c
+          |src/logger.c
+          |src/mongoose.c
+          |src/optparse.c
+          |src/output_file.c
+          |src/output_influx.c
+          |src/output_log.c
+          |src/output_mqtt.c
+          |src/output_rtltcp.c
+          |src/output_udp.c
+          |src/pulse_analyzer.c
+          |src/pulse_detect.c
+          |src/pulse_detect_fsk.c
+          |src/pulse_slicer.c
+          |src/r_api.c
+          |src/r_util.c
+          |src/rfraw.c
+          |src/rtl_433.c
+          |src/samp_grab.c
+          |src/sdr.c
+          |src/term_ctl.c
+          |src/util.c
+          |src/write_sigrok.c
+          |tests/baseband-test.c
+          |tests/data-test.c
+          |tests/pulse-eval.c
+          |tests/style-check.c
+          )$
