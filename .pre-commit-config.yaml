@@ -33,7 +33,6 @@ repos:
       #  args: [--branch, main]
       - id: debug-statements
       - id: end-of-file-fixer
-        stages: [manual]
       - id: trailing-whitespace
         exclude: .*\.md$
         stages: [manual]
