@@ -91,6 +91,7 @@ static char const *const output_fields[] = {
         "battery_ok",
         "temperature_C",
         "rain_mm",
+	"rain"
         NULL,
 };
 
