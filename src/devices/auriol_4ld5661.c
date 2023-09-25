@@ -13,7 +13,7 @@
 /**
 Lidl Auriol 4-LD5661/4-LD5972/4-LD6313 sensors.
 
-See also issue #1857, #2631 and PR #2633
+See also issues #1857, #2631 and PR #2633
 
 Data layout:
 
