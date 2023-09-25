@@ -1,0 +1,15 @@
+name: Splint Check
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  analyzer_check_job:
+    runs-on: ubuntu-22.04
+    name: Analyze with 'splint'
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install 'splint'
+      run: |
+        sudo apt-get update -q && sudo apt install splint
+    - name: splint analyzer
+      run: |
+        ./do_splint.sh | tee splint.out
+        grep -q "Finished checking --- no warnings" splint.out

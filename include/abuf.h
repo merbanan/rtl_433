@@ -41,7 +41,10 @@ void abuf_pop(abuf_t *buf, char *end);
 
 void abuf_cat(abuf_t *buf, const char *str);
 
+#ifndef S_SPLINT_S
 int abuf_printf(abuf_t *buf, _Printf_format_string_ char const *restrict format, ...)
+#endif
+
 #if defined(__GNUC__) || defined(__clang__)
         __attribute__((format(printf, 2, 3)))
 #endif
