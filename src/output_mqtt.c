@@ -500,8 +500,10 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
     // generate a short deterministic client_id to identify this input device on restart
     uint16_t host_crc = crc16((uint8_t *)mqtt->hostname, strlen(mqtt->hostname), 0x1021, 0xffff);
     uint16_t devq_crc = crc16((uint8_t *)dev_hint, dev_hint ? strlen(dev_hint) : 0, 0x1021, 0xffff);
-    char client_id[17];
-    snprintf(client_id, sizeof(client_id), "rtl_433-%04x%04x", host_crc, devq_crc);
+    uint16_t parm_crc = crc16((uint8_t *)param, param ? strlen(param) : 0, 0x1021, 0xffff);
+    char client_id[21];
+    /// MQTT 3.1.1 specifies that the broker MUST accept clients id's between 1 and 23 characters
+    snprintf(client_id, sizeof(client_id), "rtl_433-%04x%04x%04x", host_crc, devq_crc, parm_crc);
 
     // default base topic
     char base_topic[8 + sizeof(mqtt->hostname)];
