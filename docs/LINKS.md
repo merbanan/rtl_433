@@ -34,3 +34,6 @@
 
 - [rtl_snr](https://github.com/hdtodd/rtl_snr): 
   snr is a pair of equivalent C and Python programs that catalog and analyze signal-to-noise ratios from devices seen by RTL_SDR dongles and logged in JSON format by rtl_433.
+
+- [rtl_sdr driver](https://f-droid.org/en/packages/marto.rtl_tcp_andro/):
+  rtl_sdr driver is a port of rtl_tcp to Android.  See also the [source code](https://github.com/signalwareltd/rtl_tcp_andro-).
