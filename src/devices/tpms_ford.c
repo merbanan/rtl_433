@@ -142,7 +142,7 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
              * pattern.  Therefore set all of them as the unknown
              * syndrome.
              */
-        unknown |= 0x4c;
+        unknown = (b[6] & 0x4c);
         break;
     }
 
