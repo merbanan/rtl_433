@@ -116,7 +116,6 @@ static int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             ret = DECODE_ABORT_EARLY;
             continue;
         }
-        decoder_logf(decoder, 2, __func__, "Found row: %d", row);
 
         pos += 8;
 
@@ -153,11 +152,11 @@ static int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t chksum = ((id >> 8) + (id & 0xFF) + flags + (temp >> 8) + (temp & 0xFF) + (setp >> 8) + (setp & 0xFF)) & 0xFF;
 
         // verify checksum
-         if (chk != chksum) {
-             decoder_log(decoder, 2, __func__, "Checksum fail");
-             ret = DECODE_FAIL_MIC;
-             continue;
-         }
+        if (chk != chksum) {
+            decoder_log_bitbuffer(decoder, 1, __func__, bitbuffer, "Checksum fail.");
+            ret = DECODE_FAIL_MIC;
+            continue;
+        }
 
         /* clang-format off */
         data_t *data = data_make(
@@ -166,6 +165,8 @@ static int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "pairing",          "Pairing",          DATA_INT,    pairing,
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",      DATA_DOUBLE,  temp * 0.1f,
             "setpoint_C",       "Setpoint",         DATA_FORMAT, "%.1f C",      DATA_DOUBLE,  setp * 0.1f,
+            //"flags",            "Flags",            DATA_INT,     flags,
+            "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
             NULL);
         /* clang-format on */
 
@@ -175,16 +176,18 @@ static int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return ret;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "pairing",
         "temperature_C",
         "setpoint_C",
+        //"flags",
+        "mic",
         NULL,
 };
 
-r_device watts_thermostat = {
+r_device const watts_thermostat = {
         .name        = "Watts WFHT-RF Thermostat",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 260,
