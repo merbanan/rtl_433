@@ -13,10 +13,10 @@
 
 #include "decoder.h"
 /**
-Watts WFHT-RF Thermostat
+Watts WFHT-RF Basic Thermostat
 
-This code is based on a slightly older OEM system created by ADEV in France which 
-later merged with Watts. The closest thing currently available seems to be 
+This code is based on a slightly older OEM system created by ADEV in France which
+later merged with Watts. The closest thing currently available seems to be
 https://wattswater.eu/catalog/regulation-and-control/radio-wfht-thermostats/electronic-room-thermostat-with-rf-control-wfht-rf-basic/,
 but it is not known whether they are protocol compatible.
 
@@ -59,8 +59,8 @@ Data Layout:
     10100101   1011010001110110   1000   100100001   000011000   10101011
     preamble   id                 flags  temp         setpoint   chksum
 
-    All fields need reflection, possibly easier to just reverse the whole 
-    row first. The only flag found is PAIRING (0b0001). Chksum seems to be 
+    All fields need reflection, possibly easier to just reverse the whole
+    row first. The only flag found is PAIRING (0b0001). Chksum seems to be
     additive.
 
 Raw data:
@@ -160,7 +160,7 @@ static int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data_t *data = data_make(
-            "model",            "Model",            DATA_STRING, "Watts WFHT-RF Thermostat",
+            "model",            "Model",            DATA_STRING, "Watts-WFHTRF",
             "id",               "ID",               DATA_INT,    id,
             "pairing",          "Pairing",          DATA_INT,    pairing,
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",      DATA_DOUBLE,  temp * 0.1f,
