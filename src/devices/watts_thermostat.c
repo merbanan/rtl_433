@@ -125,7 +125,7 @@ static int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         pos += 16;
 
-        uint8_t PAIRING = 0b0001;
+        uint8_t PAIRING = 1;
         uint8_t flags   = {0};
         bitbuffer_extract_bytes(bitbuffer, row, pos, &flags, 4);
         flags = reverse8(flags);
