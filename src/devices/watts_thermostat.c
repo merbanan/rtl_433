@@ -87,15 +87,6 @@ Decoded example:
 
 */
 
-void reverse(uint8_t arr[], unsigned n)
-{
-    for (int low = 0, high = n - 1; low < high; low++, high--) {
-        int temp  = arr[low];
-        arr[low]  = arr[high];
-        arr[high] = temp;
-    }
-}
-
 static int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int ret                          = 0;
@@ -172,10 +163,9 @@ static int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data_t *data = data_make(
             "model",            "Model",            DATA_STRING, "Watts WFHT-RF Thermostat",
             "id",               "ID",               DATA_INT,    id,
-            "pairing",          "Pairing",          DATA_COND, pairing,   DATA_INT,    pairing,
-            "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp * 0.1f,
-            "setpoint_C",       "Setpoint",         DATA_FORMAT, "%.1f C", DATA_DOUBLE, setp * 0.1f,
-            "mic",              "Chksum",           DATA_INT,    chk,
+            "pairing",          "Pairing",          DATA_INT,    pairing,
+            "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",      DATA_DOUBLE,  temp * 0.1f,
+            "setpoint_C",       "Setpoint",         DATA_FORMAT, "%.1f C",      DATA_DOUBLE,  setp * 0.1f,
             NULL);
         /* clang-format on */
 
@@ -191,7 +181,6 @@ static char *output_fields[] = {
         "pairing",
         "temperature_C",
         "setpoint_C",
-        "mic",
         NULL,
 };
 
