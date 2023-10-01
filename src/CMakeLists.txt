@@ -195,6 +195,7 @@ add_library(r_433 STATIC
     devices/revolt_nc5462.c
     devices/rftech.c
     devices/rojaflex.c
+    devices/rosstech_dcu706.c
     devices/rubicson.c
     devices/rubicson_48659.c
     devices/rubicson_pool_48942.c
