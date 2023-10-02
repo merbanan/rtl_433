@@ -403,14 +403,17 @@ int term_printf(void *ctx, _Printf_format_string_ char const *format, ...)
     return len;
 }
 
-int term_help_puts(void *ctx, char const *buf)
+int term_help_fputs(void *ctx, char const *buf, FILE *fp)
 {
     char const *p = buf;
     int i, len, buf_len, color, state = 0, set_color = -1, next_color = -1;
-    FILE *fp;
+    if (!fp) {
+        fp = stderr;
+    }
 
-    if (!ctx)
-        return fprintf(stderr, "%s", buf);
+    if (!ctx) {
+        return fprintf(fp, "%s", buf);
+    }
 
 #ifdef _WIN32
     console_t *console = (console_t *)ctx;
@@ -418,9 +421,6 @@ int term_help_puts(void *ctx, char const *buf)
 #else
     fp = (FILE *)ctx;
 #endif
-
-    if (!fp)
-        fp = stderr;
 
     buf_len = (int)strlen(buf);
     for (i = len = 0; *p && i < buf_len; i++, p++) {
@@ -490,7 +490,7 @@ int term_help_puts(void *ctx, char const *buf)
     return len;
 }
 
-int term_help_printf(_Printf_format_string_ char const *format, ...)
+int term_help_fprintf(FILE *fp, _Printf_format_string_ char const *format, ...)
 {
     int len;
     va_list args;
@@ -498,7 +498,7 @@ int term_help_printf(_Printf_format_string_ char const *format, ...)
 
     va_start(args, format);
 
-    void *term = term_init(stderr);
+    void *term = term_init(fp);
     if (!term_has_color(term)) {
         term_free(term);
         term = NULL;
@@ -507,7 +507,7 @@ int term_help_printf(_Printf_format_string_ char const *format, ...)
     // Terminate first in case a buggy '_MSC_VER < 1900' is used.
     buf[sizeof(buf) - 1] = '\0';
     vsnprintf(buf, sizeof(buf) - 1, format, args);
-    len = term_help_puts(term, buf);
+    len = term_help_fputs(term, buf, fp);
 
     term_free(term);
 
