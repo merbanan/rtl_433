@@ -107,7 +107,7 @@ static int datagram_client_open(datagram_client_t *client, const char *host, con
             client->sock = sock;
             memset(&client->addr, 0, sizeof(client->addr));
             memcpy(&client->addr, res->ai_addr, res->ai_addrlen);
-            client->addr_len = res->ai_addrlen;
+            client->addr_len = (socklen_t)res->ai_addrlen;
             break; // success
         }
     }

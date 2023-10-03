@@ -391,7 +391,7 @@ static int rtltcp_server_start(rtltcp_server_t *srv, char const *host, char cons
             srv->sock = sock;
             memset(&srv->addr, 0, sizeof(srv->addr));
             memcpy(&srv->addr, res->ai_addr, res->ai_addrlen);
-            srv->addr_len = res->ai_addrlen;
+            srv->addr_len = (socklen_t)res->ai_addrlen;
             break; // success
         }
     }
