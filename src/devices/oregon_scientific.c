@@ -98,7 +98,7 @@ static unsigned short int cm180i_power(uint8_t const *msg, unsigned int offset)
     val = (msg[4+offset*2] << 8) | (msg[3+offset*2] & 0xF0);
     // tested across situations varying from 700 watt to more than 8000 watt to
     // get same value as showed in physical CM180 panel (exactly equals to 1+1/160)
-    val *= 1.00625;
+    val *= 1.00625f;
     return val;
 }
 
@@ -128,7 +128,7 @@ static unsigned short int cm180_power(uint8_t const *msg)
     val = (msg[4] << 8) | (msg[3] & 0xF0);
     // tested across situations varying from 700 watt to more than 8000 watt to
     // get same value as showed in physical CM180 panel (exactly equals to 1+1/160)
-    val *= 1.00625;
+    val *= 1.00625f;
     return val;
 }
 
@@ -839,7 +839,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
 
         unsigned short int ipower = cm180_power(msg);
         unsigned long long itotal = cm180_total(msg);
-        float total_energy        = itotal / 3600.0 / 1000.0;
+        float total_energy        = itotal / 3600.0f / 1000.0f;
         if (valid == 0) {
             /* clang-format off */
             data = data_make(
@@ -876,7 +876,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         if (msg_len >= 140) itotal= cm180i_total(msg);
 
         // per hour and in kilowat
-        float total_energy        = itotal / 3600.0 / 1000.0;
+        float total_energy        = itotal / 3600.0f / 1000.0f;
 
         if (valid == 0) {
             /* clang-format off */

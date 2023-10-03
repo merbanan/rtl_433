@@ -110,7 +110,7 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (crc != words[13])
             continue; // DECODE_FAIL_MIC
 
-        vrms = (float)words[4] / 100.0;
+        vrms = (float)words[4] / 100.0f;
 
         /* clang-format off */
         data = data_make(

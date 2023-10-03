@@ -61,7 +61,7 @@ pulse_detect_t *pulse_detect_create(void)
         return NULL;
     }
 
-    pulse_detect_set_levels(pulse_detect, 0, 0.0, -12.1442, 9.0, 0);
+    pulse_detect_set_levels(pulse_detect, 0, 0.0f, -12.1442f, 9.0f, 0);
 
     return pulse_detect;
 }

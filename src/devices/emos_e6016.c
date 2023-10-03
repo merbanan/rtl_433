@@ -98,7 +98,7 @@ static int emos_e6016_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int temp_raw   = (int16_t)(((b[8] & 0x0f) << 12) | (b[9] << 4)); // use sign extend
     float temp_c   = (temp_raw >> 4) * 0.1f;
     int humidity   = b[10];
-    float speed_ms = b[11] * 0.295;
+    float speed_ms = b[11] * 0.295f;
     int dir_raw    = (((b[12] & 0xf0) >> 4));
     float dir_deg  = dir_raw * 22.5f;
 
