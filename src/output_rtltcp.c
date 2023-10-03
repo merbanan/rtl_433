@@ -116,7 +116,12 @@ static ssize_t send_all(int sockfd, void const *buf, size_t len, int flags)
 {
     size_t sent = 0;
     while (sent < len) {
-        ssize_t ret = send(sockfd, (uint8_t *)buf + sent, len - sent, flags);
+        ssize_t ret = send(sockfd, (uint8_t *)buf + sent,
+#ifdef _WIN32
+            (int)
+#endif
+            (len - sent), flags);
+
         if (ret < 0)
             return ret;
         sent += (size_t)ret;
