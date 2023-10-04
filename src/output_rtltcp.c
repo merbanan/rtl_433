@@ -536,7 +536,7 @@ struct raw_output *raw_output_rtltcp_create(const char *host, const char *port, 
 
 #else
 
-struct raw_output *raw_output_rtltcp_create(const char *host, const char *port, r_cfg_t *cfg)
+struct raw_output *raw_output_rtltcp_create(const char *host, const char *port, char const *opts, r_cfg_t *cfg)
 {
     UNUSED(host);
     UNUSED(port);

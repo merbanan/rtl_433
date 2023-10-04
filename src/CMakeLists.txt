@@ -20,6 +20,7 @@ add_library(r_433 STATIC
     jsmn.c
     list.c
     logger.c
+    microtar.c
     mongoose.c
     optparse.c
     output_file.c
@@ -40,6 +41,7 @@ add_library(r_433 STATIC
     rfraw.c
     samp_grab.c
     sdr.c
+    sigmf.c
     term_ctl.c
     util.c
     write_sigrok.c

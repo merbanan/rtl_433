@@ -15,6 +15,8 @@
 #include <stdint.h>
 
 typedef struct samp_grab {
+    int sg_fileformat; ///< Signal grabber format: 0=raw, 1=SigMF
+
     uint32_t *frequency;
     uint32_t *samp_rate;
     int *sample_size;
@@ -26,7 +28,7 @@ typedef struct samp_grab {
     unsigned sg_len;
 } samp_grab_t;
 
-samp_grab_t *samp_grab_create(unsigned size);
+samp_grab_t *samp_grab_create(unsigned size, int sg_fileformat);
 
 void samp_grab_free(samp_grab_t *g);
 

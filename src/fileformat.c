@@ -94,6 +94,51 @@ char const *file_info_string(file_info_t *info)
     }
 }
 
+char const *file_info_to_sigmf_type(file_info_t *info)
+{
+    switch (info->format) {
+    case CU8_IQ:    return "cu8";
+    case CS8_IQ:    return "ci8";
+    //case CU16_IQ:   return "cu16_le";
+    case CS16_IQ:   return "ci16_le";
+    //case CU32_IQ:   return "cu32_le";
+    //case CS32_IQ:   return "ci32_le";
+    case CF32_IQ:   return "cf32_le";
+    //case CF64_IQ:   return "cf64_le";
+    //case U8_IQ:    return "ru8";
+    //case S8_IQ:    return "ri8";
+    //case U16_IQ:   return "ru16_le";
+    //case S16_IQ:   return "ri16_le";
+    //case U32_IQ:   return "ru32_le";
+    //case S32_IQ:   return "ri32_le";
+    //case F32_IQ:   return "rf32_le";
+    //case F64_IQ:   return "rf64_le";
+    default:        return "Unknown";
+    }
+}
+
+uint32_t file_info_from_sigmf_type(char const *sigmf_datatype)
+{
+    if (!sigmf_datatype) return 0;
+    else if (!strcmp("cu8", sigmf_datatype)) return F_CU8;
+    else if (!strcmp("ci8", sigmf_datatype)) return F_CS8;
+    else if (!strcmp("cu16_le", sigmf_datatype)) return F_CU16;
+    else if (!strcmp("ci16_le", sigmf_datatype)) return F_CS16;
+    else if (!strcmp("cu32_le", sigmf_datatype)) return F_CU32;
+    else if (!strcmp("ci32_le", sigmf_datatype)) return F_CS32;
+    else if (!strcmp("cf32_le", sigmf_datatype)) return F_CF32;
+    else if (!strcmp("cf64_le", sigmf_datatype)) return F_CF64;
+    else if (!strcmp("ru8", sigmf_datatype)) return F_U8;
+    else if (!strcmp("ri8", sigmf_datatype)) return F_S8;
+    else if (!strcmp("ru16_le", sigmf_datatype)) return F_U16;
+    else if (!strcmp("ri16_le", sigmf_datatype)) return F_S16;
+    else if (!strcmp("ru32_le", sigmf_datatype)) return F_U32;
+    else if (!strcmp("ri32_le", sigmf_datatype)) return F_S32;
+    else if (!strcmp("rf32_le", sigmf_datatype)) return F_F32;
+    else if (!strcmp("rf64_le", sigmf_datatype)) return F_F64;
+    else return 0;
+}
+
 static void file_type_set_format(uint32_t *type, uint32_t val)
 {
     *type = (*type & 0xffff0000) | val;
@@ -203,9 +248,10 @@ static void file_type(char const *filename, file_info_t *info)
             else if (len == 4 && !strncasecmp("cf32", t, 4)) file_type_set_format(&info->format, F_CF32);
             else if (len == 5 && !strncasecmp("cfile", t, 5)) file_type_set_format(&info->format, F_CF32); // compat
             else if (len == 5 && !strncasecmp("logic", t, 5)) file_type_set_content(&info->format, F_LOGIC);
-            else if (len == 3 && !strncasecmp("complex16u", t, 10)) file_type_set_format(&info->format, F_CU8); // compat
-            else if (len == 3 && !strncasecmp("complex16s", t, 10)) file_type_set_format(&info->format, F_CS8); // compat
-            else if (len == 4 && !strncasecmp("complex", t, 7)) file_type_set_format(&info->format, F_CF32); // compat
+            else if (len == 10 && !strncasecmp("complex16u", t, 10)) file_type_set_format(&info->format, F_CU8); // compat
+            else if (len == 10 && !strncasecmp("complex16s", t, 10)) file_type_set_format(&info->format, F_CS8); // compat
+            else if (len == 7 && !strncasecmp("complex", t, 7)) file_type_set_format(&info->format, F_CF32); // compat
+            else if (len == 5 && !strncasecmp("sigmf", t, 5)) info->container = FILEFMT_SIGMF;
             //else fprintf(stderr, "Skipping type (len %ld) %s\n", len, t);
         } else {
             p++; // skip non-alphanum char otherwise
@@ -254,6 +300,11 @@ int file_info_parse_filename(file_info_t *info, char const *filename)
     if (!filename) {
         return 0;
     }
+
+    //if (sigmf_valid_filename(filename)) {
+    //    // just set the container type
+    //    // other info needs to be read later
+    //}
 
     info->spec = filename;
 
