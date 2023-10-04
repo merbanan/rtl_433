@@ -55,16 +55,19 @@ Start of frame full preamble is depending on first data bit either
     0101 0101 0101 0101 0101 0111 01
     0101 0101 0101 0101 0101 1000 10
 */
+#define EXPECTED_NUM_BITS 64
+
 static int oil_smart_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    bitbuffer_t databits = {0};
-    bitbuffer_manchester_decode(bitbuffer, row, bitpos, &databits, 64);
+    uint8_t databits[NUM_BYTES(EXPECTED_NUM_BITS)] = { 0 };
+    uint16_t databits_num_bits = 0;
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, databits, &databits_num_bits, EXPECTED_NUM_BITS);
 
-    if (databits.bits_per_row[0] < 64) {
+    if (databits_num_bits < 64) {
         return 0; // DECODE_ABORT_LENGTH; // TODO: fix calling code to handle negative return values
     }
 
-    uint8_t *b = databits.bb[0];
+    uint8_t *b = databits;
 
     if (b[0] != 0x55 || b[1] != 0x58) {
         decoder_log(decoder, 2, __func__, "Couldn't find preamble");

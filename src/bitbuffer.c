@@ -33,42 +33,7 @@ void bitbuffer_add_bit(bitbuffer_t *bits, int bit)
         fprintf(stderr, "%s: Warning: row length limit (%u bits) reached\n", __func__, UINT16_MAX);
     }
 
-    uint16_t col_index = bits->bits_per_row[bits->num_rows - 1] / 8;
-    uint16_t bit_index = bits->bits_per_row[bits->num_rows - 1] % 8;
-    if (bits->bits_per_row[bits->num_rows - 1] > 0
-            && bits->bits_per_row[bits->num_rows - 1] % (BITBUF_COLS * 8) == 0) {
-        // spill into next row
-        // fprintf(stderr, "%s: row spill [%d] to %d (%d)\n", __func__, bits->num_rows - 1, col_index, bits->free_row);
-        if (bits->free_row == BITBUF_ROWS - 1) {
-            //print_logf(LOG_WARNING, __func__, "Warning: row count limit (%d rows) reached", BITBUF_ROWS);
-            fprintf(stderr, "%s: Warning: row count limit (%d rows) reached\n", __func__, BITBUF_ROWS);
-        }
-        if (bits->free_row < BITBUF_ROWS) {
-            bits->free_row++;
-        }
-        else {
-            // fprintf(stderr, "%s: Could not add more rows\n", __func__);
-            return;
-        }
-    }
-    uint8_t *b = bits->bb[bits->num_rows - 1];
-    b[col_index] |= (bit << (7 - bit_index));
-    bits->bits_per_row[bits->num_rows - 1]++;
-
-/*
-    // preamble compression
-    if (bits->bits_per_row[bits->num_rows - 1] == 60 * 8) {
-        uint8_t *b = bits->bb[bits->num_rows - 1];
-        for (int i = 21; i < 60; ++i) {
-            if (b[20] != b[i]) {
-                return;
-            }
-        }
-        // fprintf(stderr, "%s: preamble compression\n", __func__);
-        memset(&b[30], 0, 30);
-        bits->bits_per_row[bits->num_rows - 1] = 30 * 8;
-    }
-*/
+    bitrow_add_bit_spillable(bits->bb[bits->num_rows - 1], &bits->bits_per_row[bits->num_rows - 1], bit, &bits->free_row, BITBUF_ROWS);
 }
 
 /// Set the width of the current (last) row by expanding or truncating as needed.
@@ -131,16 +96,7 @@ void bitbuffer_add_sync(bitbuffer_t *bits)
 void bitbuffer_invert(bitbuffer_t *bits)
 {
     for (unsigned row = 0; row < bits->num_rows; ++row) {
-        if (bits->bits_per_row[row] > 0) {
-            uint8_t *b = bits->bb[row];
-
-            const unsigned last_col  = (bits->bits_per_row[row] - 1) / 8;
-            const unsigned last_bits = ((bits->bits_per_row[row] - 1) % 8) + 1;
-            for (unsigned col = 0; col <= last_col; ++col) {
-                b[col] = ~b[col]; // Invert
-            }
-            b[last_col] ^= 0xFF >> last_bits; // Re-invert unused bits in last byte
-        }
+        bitrow_invert(bits->bb[row], bits->bits_per_row[row]);
     }
 }
 
@@ -187,29 +143,7 @@ void bitbuffer_nrzm_decode(bitbuffer_t *bits)
 void bitbuffer_extract_bytes(bitbuffer_t *bitbuffer, unsigned row,
         unsigned pos, uint8_t *out, unsigned len)
 {
-    uint8_t *bits = bitbuffer->bb[row];
-    if (len == 0)
-        return;
-    if ((pos & 7) == 0) {
-        memcpy(out, bits + (pos / 8), (len + 7) / 8);
-    }
-    else {
-        unsigned shift = 8 - (pos & 7);
-        unsigned bytes = (len + 7) >> 3;
-        uint8_t *p = out;
-        uint16_t word;
-        pos = pos >> 3; // Convert to bytes
-
-        word = bits[pos];
-
-        while (bytes--) {
-            word <<= 8;
-            word |= bits[++pos];
-            *(p++) = word >> shift;
-        }
-    }
-    if (len & 7)
-        out[(len - 1) / 8] &= 0xff00 >> (len & 7); // mask off bottom bits
+    bitrow_extract_bytes(bitbuffer->bb[row], pos, out, len);
 }
 
 // If we make this an inline function instead of a macro, it means we don't
@@ -246,78 +180,15 @@ unsigned bitbuffer_search(bitbuffer_t *bitbuffer, unsigned row, unsigned start,
 }
 
 unsigned bitbuffer_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned start,
-        bitbuffer_t *outbuf, unsigned max)
+        uint8_t *outrow, uint16_t *outrow_num_bits, unsigned max)
 {
-    uint8_t *bits     = inbuf->bb[row];
-    unsigned int len  = inbuf->bits_per_row[row];
-    unsigned int ipos = start;
-
-    if (max && len > start + (max * 2))
-        len = start + (max * 2);
-
-    while (ipos < len) {
-        uint8_t bit1, bit2;
-
-        bit1 = bit_at(bits, ipos++);
-        bit2 = bit_at(bits, ipos++);
-
-        if (bit1 == bit2)
-            break;
-
-        bitbuffer_add_bit(outbuf, bit2);
-    }
-
-    return ipos;
+    return bitrow_manchester_decode(inbuf->bb[row], inbuf->bits_per_row[row], start, outrow, outrow_num_bits, max);
 }
 
 unsigned bitbuffer_differential_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned start,
-        bitbuffer_t *outbuf, unsigned max)
+        uint8_t *outrow, uint16_t *outrow_num_bits, unsigned max)
 {
-    uint8_t *bits     = inbuf->bb[row];
-    unsigned int len  = inbuf->bits_per_row[row];
-    unsigned int ipos = start;
-    uint8_t bit1, bit2 = 0;
-
-    if (max && len > start + (max * 2))
-        len = start + (max * 2);
-
-    // the first long pulse will determine the clock
-    // if needed skip one short pulse to get in synch
-    while (ipos < len) {
-        bit1 = bit_at(bits, ipos++);
-        bit2 = bit_at(bits, ipos++);
-        uint8_t bit3 = bit_at(bits, ipos);
-
-        if (bit1 != bit2) {
-            if (bit2 != bit3) {
-                bitbuffer_add_bit(outbuf, 0);
-            }
-            else {
-                bit2 = bit1;
-                ipos -= 1;
-                break;
-            }
-        }
-        else {
-            bit2 = 1 - bit1;
-            ipos -= 2;
-            break;
-        }
-    }
-
-    while (ipos < len) {
-        bit1 = bit_at(bits, ipos++);
-        if (bit1 == bit2)
-            break; // clock missing, abort
-        bit2 = bit_at(bits, ipos++);
-
-        if (bit1 == bit2)
-            bitbuffer_add_bit(outbuf, 1);
-        else
-            bitbuffer_add_bit(outbuf, 0);
-    }
-
-    return ipos;
+    return bitrow_differential_manchester_decode(inbuf->bb[row], inbuf->bits_per_row[row], start, outrow, outrow_num_bits, max);
 }
 
 static void print_bitrow(uint8_t const *bitrow, unsigned bit_len, unsigned highest_indent, int always_binary)
@@ -518,6 +389,170 @@ int bitbuffer_find_repeated_prefix(bitbuffer_t *bits, unsigned min_repeats, unsi
         }
     }
     return -1;
+}
+
+void bitrow_clear(uint8_t *bitrow, uint16_t *bitrow_num_bits, uint16_t bitrow_num_bytes)
+{
+    memset(&bitrow[0], 0, bitrow_num_bytes);
+    *bitrow_num_bits = 0;
+}
+
+void bitrow_add_bit_spillable(uint8_t *bitrow, uint16_t *bitrow_num_bits, int bit, uint16_t *free_row, int max_rows)
+{
+    uint16_t col_index = *bitrow_num_bits / 8;
+    uint16_t bit_index = *bitrow_num_bits % 8;
+    if (*bitrow_num_bits > 0 && *bitrow_num_bits % (BITBUF_COLS * 8) == 0) {
+        // spill into next row
+        // fprintf(stderr, "%s: row spill [%d] to %d (%d)\n", __func__, bits->num_rows - 1, col_index, bits->free_row);
+        if (*free_row == max_rows - 1) {
+            //print_logf(LOG_WARNING, __func__, "Warning: row count limit (%d rows) reached", BITBUF_ROWS);
+            fprintf(stderr, "%s: Warning: row count limit (%d rows) reached\n", __func__, BITBUF_ROWS);
+        }
+        if (*free_row < max_rows) {
+            (*free_row)++;
+        }
+        else {
+            // fprintf(stderr, "%s: Could not add more rows\n", __func__);
+            return;
+        }
+    }
+    uint8_t *b = bitrow;
+    b[col_index] |= (bit << (7 - bit_index));
+    (*bitrow_num_bits)++;
+
+/*
+    // preamble compression
+    if (*bitrow_num_bits == 60 * 8) {
+        uint8_t *b = bitrow;
+        for (int i = 21; i < 60; ++i) {
+            if (b[20] != b[i]) {
+                return;
+            }
+        }
+        // fprintf(stderr, "%s: preamble compression\n", __func__);
+        memset(&b[30], 0, 30);
+        (*bitrow_num_bits) = 30 * 8;
+    }
+*/
+}
+
+void bitrow_add_bit(uint8_t *bitrow, uint16_t *bitrow_num_bits, int bit)
+{
+    uint16_t free_row = 0;
+    bitrow_add_bit_spillable(bitrow, bitrow_num_bits, bit, &free_row, 0);
+}
+
+void bitrow_extract_bytes(uint8_t const *const bits, unsigned pos, uint8_t *out, unsigned len)
+{
+    if (len == 0)
+        return;
+    if ((pos & 7) == 0) {
+        memcpy(out, bits + (pos / 8), (len + 7) / 8);
+    }
+    else {
+        unsigned shift = 8 - (pos & 7);
+        unsigned bytes = (len + 7) >> 3;
+        uint8_t *p     = out;
+        uint16_t word;
+        pos = pos >> 3; // Convert to bytes
+
+        word = bits[pos];
+
+        while (bytes--) {
+            word <<= 8;
+            word |= bits[++pos];
+            *(p++) = word >> shift;
+        }
+    }
+    if (len & 7)
+        out[(len - 1) / 8] &= 0xff00 >> (len & 7); // mask off bottom bits
+}
+
+void bitrow_invert(uint8_t *bitrow, uint16_t bitrow_num_bits)
+{
+    if (bitrow_num_bits > 0) {
+        const unsigned last_col  = (bitrow_num_bits - 1) / 8;
+        const unsigned last_bits = ((bitrow_num_bits - 1) % 8) + 1;
+        for (unsigned col = 0; col <= last_col; ++col) {
+            bitrow[col] = ~bitrow[col]; // Invert
+        }
+        bitrow[last_col] ^= 0xFF >> last_bits; // Re-invert unused bits in last byte
+    }
+}
+
+unsigned bitrow_manchester_decode(uint8_t const *inrow, uint16_t inrow_num_bits, unsigned start,
+        uint8_t *outrow, uint16_t *outrow_num_bits, unsigned max)
+{
+    uint8_t const *bits     = inrow;
+    unsigned int len  = inrow_num_bits;
+    unsigned int ipos = start;
+
+    if (max && len > start + (max * 2))
+        len = start + (max * 2);
+
+    while (ipos < len) {
+        uint8_t bit1, bit2;
+
+        bit1 = bit_at(bits, ipos++);
+        bit2 = bit_at(bits, ipos++);
+
+        if (bit1 == bit2)
+            break;
+
+        bitrow_add_bit(outrow, outrow_num_bits, bit2);
+    }
+
+    return ipos;
+}
+
+unsigned bitrow_differential_manchester_decode(uint8_t const *inrow, uint16_t inrow_num_bits, unsigned start,
+        uint8_t *outrow, uint16_t *outrow_num_bits, unsigned max)
+{
+    uint8_t const *bits = inrow;
+    unsigned int len  = inrow_num_bits;
+    unsigned int ipos = start;
+    uint8_t bit1, bit2 = 0;
+
+    if (max && len > start + (max * 2))
+        len = start + (max * 2);
+
+    // the first long pulse will determine the clock
+    // if needed skip one short pulse to get in synch
+    while (ipos < len) {
+        bit1         = bit_at(bits, ipos++);
+        bit2         = bit_at(bits, ipos++);
+        uint8_t bit3 = bit_at(bits, ipos);
+
+        if (bit1 != bit2) {
+            if (bit2 != bit3) {
+                bitrow_add_bit(outrow, outrow_num_bits, 0);
+            }
+            else {
+                bit2 = bit1;
+                ipos -= 1;
+                break;
+            }
+        }
+        else {
+            bit2 = 1 - bit1;
+            ipos -= 2;
+            break;
+        }
+    }
+
+    while (ipos < len) {
+        bit1 = bit_at(bits, ipos++);
+        if (bit1 == bit2)
+            break; // clock missing, abort
+        bit2 = bit_at(bits, ipos++);
+
+        if (bit1 == bit2)
+            bitrow_add_bit(outrow, outrow_num_bits, 1);
+        else
+            bitrow_add_bit(outrow, outrow_num_bits, 0);
+    }
+
+    return ipos;
 }
 
 // Unit testing

@@ -19,6 +19,8 @@ start pulse: 1T high, 10.44T low
 
 #include "decoder.h"
 
+#define EXPECTED_NUM_BITS 80
+
 static int newkaku_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t *b = bitbuffer->bb[0];
@@ -40,16 +42,17 @@ static int newkaku_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         b[6] &= 0xfe; // change DIM to ON to use Manchester
     }
 
-    bitbuffer_t databits = {0};
+    uint8_t databits[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
+    uint16_t databits_num_bits = 0;
     // note: not manchester encoded but actually ternary
-    unsigned pos = bitbuffer_manchester_decode(bitbuffer, 0, 0, &databits, 80);
-    bitbuffer_invert(&databits);
+    unsigned pos = bitbuffer_manchester_decode(bitbuffer, 0, 0, databits, &databits_num_bits, EXPECTED_NUM_BITS);
+    bitrow_invert(databits, databits_num_bits);
 
     /* Reject codes when Manchester decoding fails */
     if (pos != 64 && pos != 72)
         return DECODE_ABORT_LENGTH;
 
-    b = databits.bb[0];
+    b = databits;
 
     uint32_t id        = (b[0] << 18) | (b[1] << 10) | (b[2] << 2) | (b[3] >> 6); // ID 26 bits
     uint32_t group_cmd = (b[3] >> 5) & 1;

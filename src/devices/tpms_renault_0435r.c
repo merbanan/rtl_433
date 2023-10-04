@@ -70,16 +70,19 @@ not fit into 8 bits (that is for speeds above 93 kph on my tires).
 
 #include "decoder.h"
 
+#define EXPECTED_BITS 160
+
 static int tpms_renault_0435r_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    bitbuffer_t packet_bits = {0};
+    uint8_t packet_bits[NUM_BYTES(EXPECTED_BITS)] = {0};
+    uint16_t packet_bits_num_bits = 0;
 
-    bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, EXPECTED_BITS);
     // require 72 data bits
-    if (packet_bits.bits_per_row[0] < 72) {
+    if (packet_bits_num_bits < 72) {
         return DECODE_ABORT_EARLY;
     }
-    uint8_t *b = packet_bits.bb[0];
+    uint8_t *b = &packet_bits[0];
 
     // check checksum (checksum8 xor)
     int chk = xor_bytes(b, 9);

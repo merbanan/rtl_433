@@ -41,10 +41,13 @@ NOTE: You may need to use the "-s 1000000" option of rtl_433 in order to get a c
 
 #include "decoder.h"
 
+#define EXPECTED_NUM_BITS 154
+
 static int tpms_kia_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
-    bitbuffer_t packet_bits = {0};
+    uint8_t packet_bits[NUM_BYTES(EXPECTED_NUM_BITS)] = { 0 };
+    uint16_t packet_bits_num_bits = 0;
     uint8_t *b;
     unsigned id;
     char id_str[9 + 1];
@@ -60,12 +63,12 @@ static int tpms_kia_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned r
     unsigned int start_pos;
     const unsigned int preamble_length = 16;
 
-    start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 154 - preamble_length);
+    start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, 154 - preamble_length);
     if (start_pos - bitpos < 154 - preamble_length) {
         return DECODE_ABORT_LENGTH;
     }
 
-    b = packet_bits.bb[0];
+    b = packet_bits;
 
     unknown1    = b[0] >> 4;
     pressure    = b[0] << 4 | b[1] >> 4;

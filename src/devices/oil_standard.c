@@ -40,15 +40,20 @@ Start of frame full preamble is depending on first data bit either
     01 0101 0101 0101 0101 0111 01
     01 0101 0101 0101 0101 1000 10
 */
+
+#define EXPECTED_NUM_BITS 41
+
 static int oil_standard_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    bitbuffer_t databits = {0};
-    bitbuffer_manchester_decode(bitbuffer, row, bitpos, &databits, 41);
+    uint8_t databits[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
+    uint16_t databits_num_bits = 0;
 
-    if (databits.bits_per_row[0] < 32 || databits.bits_per_row[0] > 40 || (databits.bb[0][4] & 0xfe) != 0)
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, databits, &databits_num_bits, EXPECTED_NUM_BITS);
+
+    if (databits_num_bits < 32 || databits_num_bits > 40 || (databits[4] & 0xfe) != 0)
         return 0; // TODO: fix calling code to handle negative return values
 
-    uint8_t *b = databits.bb[0];
+    uint8_t *b = databits;
 
     // The unit ID changes when you rebind by holding a magnet to the
     // sensor for long enough.

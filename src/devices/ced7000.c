@@ -36,7 +36,8 @@ Data layout:
 
 static int ced7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    bitbuffer_t decoded = { 0 };
+    uint8_t decoded[NUM_BYTES(NUM_BITS_DATA)] = { 0 };
+    uint16_t decoded_num_bits = 0;
     int ret = 0;
     int bitpos = 0;
     uint8_t *b;
@@ -58,7 +59,7 @@ static int ced7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_invert(bitbuffer);
 
     /* Check and decode the Manchester bits */
-    ret = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &decoded, NUM_BITS_DATA);
+    ret = bitbuffer_manchester_decode(bitbuffer, row, bitpos, decoded, &decoded_num_bits, NUM_BITS_DATA);
     if (ret != NUM_BITS_TOTAL + 1) {
         decoder_log(decoder, 2, __func__, "invalid Manchester data");
         return DECODE_FAIL_MIC;
@@ -68,7 +69,7 @@ static int ced7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* IIIIIIII IIIIIIII CCCCCCCC FFFFFFFF FFFFFFFF FFFFSSSS
        SSSSSSSS SSSSSSSS UUUUUUUU UUUUUUUU UUUUxxxx*/
 
-    b = decoded.bb[0];
+    b = decoded;
 
     /* Reverse the bit order per nibble */
     reflect_nibbles(b, ret / 8);

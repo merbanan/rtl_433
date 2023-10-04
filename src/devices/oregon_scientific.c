@@ -192,6 +192,8 @@ Various Oregon Scientific protocols.
 
 @todo Documentation needed.
 */
+#define EXPECTED_NUM_BITS 173
+
 static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t *b = bitbuffer->bb[0];
@@ -206,8 +208,9 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         return DECODE_ABORT_EARLY;
     }
 
-    bitbuffer_t databits = {0};
-    uint8_t *msg = databits.bb[0];
+    uint8_t databits[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
+    uint16_t databits_num_bits = 0;
+    uint8_t *msg = databits;
 
     // Possible    v2.1 Protocol message
     unsigned int sync_test_val = ((unsigned)b[3] << 24) | (b[4] << 16) | (b[5] << 8) | (b[6]);
@@ -228,13 +231,13 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         decoder_logf(decoder, 1, __func__, "OS v2.1 Sync test val %08x found, starting decode at bit %d", sync_test_val, pattern_index);
 
         //decoder_log_bitrow(decoder, 0, __func__, b, bitbuffer->bits_per_row[0], "Raw OSv2 bits");
-        bitbuffer_manchester_decode(bitbuffer, 0, pattern_index + 40, &databits, 173);
-        reflect_nibbles(databits.bb[0], (databits.bits_per_row[0]+7)/8);
+        bitbuffer_manchester_decode(bitbuffer, 0, pattern_index + 40, databits, &databits_num_bits, EXPECTED_NUM_BITS);
+        reflect_nibbles(databits, (databits_num_bits+7)/8);
         //decoder_logf_bitbuffer(decoder, 0, __func__, &databits, "MC OSv2 bits (from %d+40)", pattern_index);
 
         break;
     }
-    int msg_bits = databits.bits_per_row[0];
+    int msg_bits = databits_num_bits;
 
     int sensor_id   = (msg[0] << 8) | msg[1];
     int channel     = (msg[2] >> 4) & 0x0f;

@@ -14,6 +14,9 @@
 
 #include <stdint.h>
 
+// Round up (NUM_BITS / 8)
+#define NUM_BYTES(NUM_BITS) (((NUM_BITS) + 7) >> 3)
+
 // NOTE: Wireless mbus protocol needs at least ((256+16*2+3)*12)/8 => 437 bytes
 //       which fits even if RTL_433_REDUCE_STACK_USE is defined because of row spilling
 #ifdef RTL_433_REDUCE_STACK_USE
@@ -109,20 +112,20 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code);
 unsigned bitbuffer_search(bitbuffer_t *bitbuffer, unsigned row, unsigned start,
         const uint8_t *pattern, unsigned pattern_bits_len);
 
-/// Manchester decoding from one bitbuffer into another, starting at the
+/// Manchester decoding from one bitbuffer into a bitrow, starting at the
 /// specified row and start bit. Decode at most 'max' data bits (i.e. 2*max)
 /// bits from the input buffer). Return the bit position in the input row
-/// (i.e. returns start + 2*outbuf->bits_per_row[0]).
+/// (i.e. returns start + 2 * *outrow_num_bits).
 /// per IEEE 802.3 conventions, i.e. high-low is a 0 bit, low-high is a 1 bit.
 unsigned bitbuffer_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned start,
-        bitbuffer_t *outbuf, unsigned max);
+        uint8_t *outrow, uint16_t *outrow_num_bits, unsigned max);
 
-/// Differential Manchester decoding from one bitbuffer into another, starting at the
+/// Differential Manchester decoding from one bitbuffer into a bitrow, starting at the
 /// specified row and start bit. Decode at most 'max' data bits (i.e. 2*max)
 /// bits from the input buffer). Return the bit position in the input row
-/// (i.e. returns start + 2*outbuf->bits_per_row[0]).
+/// (i.e. returns start + 2 * *outrow_num_bits).
 unsigned bitbuffer_differential_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned start,
-        bitbuffer_t *outbuf, unsigned max);
+        uint8_t *outrow, uint16_t *outrow_num_bits, unsigned max);
 
 /// Compares two given rows of a bitbuffer.
 ///
@@ -157,5 +160,37 @@ static inline uint8_t bitrow_get_byte(uint8_t const *bitrow, unsigned bit_idx)
     return (uint8_t)((bitrow[(bit_idx >> 3)] << (bit_idx & 7)) |
                      (bitrow[(bit_idx >> 3) + 1] >> (8 - (bit_idx & 7))));
 }
+
+/// Clear the content of the bitrow and sets bitrow_num_bits to 0.
+/// bitrow_num_bytes is the number of bytes allocated for the bitrow
+void bitrow_clear(uint8_t *bitrow, uint16_t *bitrow_num_bits, uint16_t bitrow_num_bytes);
+
+/// Add the given bit into the bitrow, at the bit_idx position and increments the position upon return.
+/// free_row and max_rows are used when called via bitbuffer_add_bit to allow row spilling.
+void bitrow_add_bit_spillable(uint8_t *bitrow, uint16_t *bitrow_num_bits, int bit, uint16_t *free_row, int max_rows);
+
+/// Add the given bit into the bitrow, at the bit_idx position and increments the position upon return.
+void bitrow_add_bit(uint8_t *bitrow, uint16_t *bitrow_num_bits, int bit);
+
+/// Extract (potentially unaligned) bytes from the bit row. Len is bits.
+void bitrow_extract_bytes(uint8_t const *bitrow, unsigned pos, uint8_t *out, unsigned len);
+
+/// Invert all bits in the bitrow (do not invert the empty bits).
+void bitrow_invert(uint8_t *bitrow, uint16_t bitrow_num_bits);
+
+/// Manchester decoding from one bitrow into another, starting at the
+/// specified start bit. Decode at most 'max' data bits (i.e. 2*max)
+/// bits from the input buffer). Return the bit position in the input row
+/// (i.e. returns start + 2 * *outrow_num_bits).
+/// per IEEE 802.3 conventions, i.e. high-low is a 0 bit, low-high is a 1 bit.
+unsigned bitrow_manchester_decode(uint8_t const *inrow, uint16_t inrow_num_bits, unsigned start,
+        uint8_t *outrow, uint16_t *outrow_num_bits, unsigned max);
+
+/// Differential Manchester decoding from one bitrow into another, starting at the
+/// specified start bit. Decode at most 'max' data bits (i.e. 2*max)
+/// bits from the input buffer). Return the bit position in the input row
+/// (i.e. returns start + 2 * *outrow_num_bits).
+unsigned bitrow_differential_manchester_decode(uint8_t const *inrow, uint16_t inrow_num_bits, unsigned start,
+        uint8_t *outrow, uint16_t *outrow_num_bits, unsigned max);
 
 #endif /* INCLUDE_BITBUFFER_H_ */

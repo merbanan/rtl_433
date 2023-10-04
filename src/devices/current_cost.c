@@ -11,6 +11,7 @@
 */
 
 #include "decoder.h"
+#define EXPECTED_NUM_BITS 64
 
 /**
 CurrentCost TX, CurrentCost EnviR current sensors.
@@ -20,7 +21,8 @@ CurrentCost TX, CurrentCost EnviR current sensors.
 static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    bitbuffer_t packet = {0};
+    uint8_t packet [NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
+    uint16_t packet_num_bits = 0;
     uint8_t *b;
     int is_envir = 0;
     unsigned int start_pos;
@@ -35,7 +37,7 @@ static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // 1 bit so that the decoder starts with a high bit.
     uint8_t init_pattern_envir[] = {0x55, 0x55, 0x55, 0x55, 0xa4, 0x57};
 
-    start_pos = bitbuffer_search(bitbuffer, 0, 0, init_pattern_envir, 48);
+    start_pos = bitbuffer_search(bitbuffer, 0, 0, init_pattern_envir, EXPECTED_NUM_BITS);
 
     if (start_pos + 47 + 112 <= bitbuffer->bits_per_row[0]) {
         is_envir = 1;
@@ -55,13 +57,13 @@ static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         start_pos += 45;
     }
 
-    start_pos = bitbuffer_manchester_decode(bitbuffer, 0, start_pos, &packet, 0);
+    start_pos = bitbuffer_manchester_decode(bitbuffer, 0, start_pos, packet, &packet_num_bits, EXPECTED_NUM_BITS);
 
-    if (packet.bits_per_row[0] < 64) {
+    if (packet_num_bits < 64) {
         return DECODE_ABORT_EARLY;
     }
 
-    b = packet.bb[0];
+    b = packet;
     // Read data
     // Meter (b[0] = 0000xxxx) bits 5 and 4 are "unknown", but always 0 to date.
     if ((b[0] & 0xf0) == 0) {

@@ -29,10 +29,13 @@ Data layout (nibbles):
 
 #include "decoder.h"
 
+#define EXPECTED_NUM_BITS 56
+
 static int tpms_jansite_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
-    bitbuffer_t packet_bits = {0};
+    uint8_t packet_bits[NUM_BYTES(EXPECTED_NUM_BITS)] = {0};
+    uint16_t packet_bits_num_bits = 0;
     uint8_t *b;
     unsigned id;
     char id_str[7 + 1];
@@ -41,13 +44,13 @@ static int tpms_jansite_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     int temperature;
     char code_str[7 * 2 + 1];
 
-    bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 56);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, EXPECTED_NUM_BITS);
 
-    if (packet_bits.bits_per_row[0] < 56) {
+    if (packet_bits_num_bits < EXPECTED_NUM_BITS) {
         return DECODE_FAIL_SANITY;
         // decoder_logf(decoder, 3, __func__, "packet_bits.bits_per_row = %d", packet_bits.bits_per_row[0]);
     }
-    b = packet_bits.bb[0];
+    b = packet_bits;
 
     // TODO: validate checksum
 
