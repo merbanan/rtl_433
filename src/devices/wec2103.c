@@ -28,7 +28,7 @@ Data:
 - F: Flags
 - T: Temperature
 - H: Humidity
-- Flags: tx-button pressed|?|?|?
+- Flags: tx-button pressed|batt-low|?|?
 
 Example datagram:
 
@@ -39,33 +39,73 @@ Example datagram:
 - Example: 82.4F->824->1724->0x6bc
 */
 
+static uint8_t almost_crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
+{
+    unsigned remainder = init;
+    unsigned poly = polynomial;
+    unsigned bit;
+
+    while (nBytes--) {
+        // In normal CRC, the XOR message goes here.
+        for (bit = 0; bit < 4; bit++) {
+            if (remainder & 0x08) {
+                remainder = (remainder << 1) ^ poly;
+            } else {
+                remainder = (remainder << 1);
+            }
+        }
+        remainder ^= *message++;
+    }
+    return remainder & 0x0f;
+}
+
 static int wec2103_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    if (bitbuffer->num_rows != 6  || bitbuffer->bits_per_row[2] != 42)
+    if (bitbuffer->num_rows != 6 || bitbuffer->bits_per_row[2] != 42) {
         return DECODE_ABORT_LENGTH;
+    }
 
-    uint8_t b[6];
-    bitbuffer_extract_bytes(bitbuffer, 3, 0, b, 42);
+    uint8_t b[5];
+    bitbuffer_extract_bytes(bitbuffer, 3, 0, b, 40);
 
-    int temp_raw  = (b[2] << 4) | ((b[3] & 0xf0) >> 4);
-    int device_id = b[0];
-    int channel   = b[4] & 0x0f;
-    int flags     = b[1] & 0xf;
-    float temp_f  = (temp_raw - 900) * 0.1f;
-    int humidity  = ((b[3] & 0x0f) * 10) + ((b[4] & 0xf0) >> 4);
-    int button    = (b[1] & 0x08) >> 3;
+    uint8_t c[9];
+    c[0] = b[0] >> 4;
+    c[1] = b[0] & 0x0F;
+    c[2] = b[4] & 0x0F; // The last nibble is moved here.
+    c[3] = b[1] & 0x0F;
+    c[4] = b[2] >> 4;
+    c[5] = b[2] & 0x0F;
+    c[6] = b[3] >> 4;
+    c[7] = b[3] & 0x0F;
+    c[8] = b[4] >> 4;
+
+    int crc_calculated = almost_crc4(c, sizeof(c), 3, 0);
+    int crc_received = b[1] >> 4;
+    if (crc_calculated != crc_received) {
+        decoder_logf(decoder, 0, __func__, "CRC check failed (0x%X != 0x%X)", crc_calculated, crc_received);
+        return DECODE_FAIL_MIC;
+    }
+
+    int temp_raw    = (b[2] << 4) | ((b[3] & 0xf0) >> 4);
+    int device_id   = b[0];
+    int channel     = b[4] & 0x0f;
+    int flags       = b[1] & 0xf;
+    float temp_f    = (temp_raw - 900) * 0.1f;
+    int humidity    = ((b[3] & 0x0f) * 10) + ((b[4] & 0xf0) >> 4);
+    int button      = (b[1] & 0x08) >> 3;
+    int battery_low = (b[1] & 0x04) >> 3;
 
     /* clang-format off */
     data_t *data = data_make(
             "model",            "",             DATA_STRING, "WEC-2103",
             "id",               "ID",           DATA_INT,    device_id,
             "channel",          "Channel",      DATA_INT,    channel,
-            //"battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "flags",            "Flags",       DATA_INT,    flags,
+            "flags",            "Flags",        DATA_INT,    flags,
             "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "button",           "Button",       DATA_INT,    button,
-            //"mic",              "Integrity",    DATA_STRING, "CRC",
+            "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -80,6 +120,9 @@ static char const *const output_fields[] = {
         "flags",
         "temperature_F",
         "humidity",
+        "battery_low",
+        "button",
+        "mic",
         NULL,
 };
 
@@ -91,6 +134,5 @@ r_device const wec2103 = {
         .gap_limit      = 4400,
         .reset_limit    = 9400,
         .decode_fn      = &wec2103_decode,
-        .disabled       = 1, // no checksum
         .fields         = output_fields,
 };
