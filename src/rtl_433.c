@@ -127,7 +127,6 @@ r_device *flex_create_device(char *spec); // maybe put this in some header file?
 static void print_version(void)
 {
     fprintf(stderr, "%s\n", version_string());
-    fprintf(stderr, "Use -h for usage help and see https://triq.org/ for documentation.\n");
 }
 
 _Noreturn
@@ -135,7 +134,16 @@ static void usage(int exit_code)
 {
     term_help_fprintf(exit_code ? stderr : stdout,
             "Generic RF data receiver and decoder for ISM band devices using RTL-SDR and SoapySDR.\n"
+            "Full documentation is available at https://triq.org/\n"
             "\nUsage:\n"
+#ifdef _WIN32
+            "  A \"rtl_433.conf\" file is searched in the current dir, %%LocalAppData%%, %%ProgramData%%,\n"
+            "  e.g. \"C:\\Users\\username\\AppData\\Local\\rtl_433\\\", \"C:\\ProgramData\\rtl_433\\\",\n"
+            "  then command line args will be parsed in order.\n"
+#else
+            "  A \"rtl_433.conf\" file is searched in \"./\", XDG_CONFIG_HOME e.g. \"$HOME/.config/rtl_433/\",\n"
+            "  \"/usr/local/etc/rtl_433/\", \"/etc/rtl_433/\", then command line args will be parsed in order.\n"
+#endif
             "\t\t= General options =\n"
             "  [-V] Output the version string and exit\n"
             "  [-v] Increase verbosity (can be used multiple times).\n"
@@ -832,7 +840,7 @@ static void parse_conf_try_default_files(r_cfg_t *cfg)
 {
     char **paths = compat_get_default_conf_paths();
     for (int a = 0; paths[a]; a++) {
-        fprintf(stderr, "Trying conf file at \"%s\"...\n", paths[a]);
+        // fprintf(stderr, "Trying conf file at \"%s\"...\n", paths[a]);
         if (hasconf(paths[a])) {
             fprintf(stderr, "Reading conf from \"%s\".\n", paths[a]);
             parse_conf_file(cfg, paths[a]);
