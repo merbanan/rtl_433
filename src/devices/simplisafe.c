@@ -69,13 +69,15 @@ static int ss_sensor_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
     char id[6];
     ss_get_id(id, b);
 
-    char extradata[30] = "";
+    char extradata[30];
     if (state == 1) {
-        strncpy(extradata, "Contact Open", sizeof(extradata) - 1);
+        snprintf(extradata, sizeof(extradata), "Contact Open");
     } else if (state == 2) {
-        strncpy(extradata, "Contact Closed", sizeof(extradata) - 1);
+        snprintf(extradata, sizeof(extradata), "Contact Closed");
     } else if (state == 3) {
-        strncpy(extradata, "Alarm Off", sizeof(extradata) - 1);
+        snprintf(extradata, sizeof(extradata), "Alarm Off");
+    } else {
+        snprintf(extradata, sizeof(extradata), "");
     }
 
     /* clang-format off */
@@ -139,15 +141,15 @@ static int ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row
     char extradata[30]; // = "Arming: ";
 
     if (b[10] == 0x6a) {
-        strncpy(extradata, "Arm System - Away", sizeof(extradata) - 1);
+        snprintf(extradata, sizeof(extradata), "Arm System - Away");
     } else if (b[10] == 0xca) {
-        strncpy(extradata, "Arm System - Home", sizeof(extradata) - 1);
+        snprintf(extradata, sizeof(extradata), "Arm System - Home");
     } else if (b[10] == 0x3a) {
-        strncpy(extradata, "Arm System - Canceled", sizeof(extradata) - 1);
+        snprintf(extradata, sizeof(extradata), "Arm System - Canceled");
     } else if (b[10] == 0x2a) {
-        strncpy(extradata, "Keypad Panic Button", sizeof(extradata) - 1);
+        snprintf(extradata, sizeof(extradata), "Keypad Panic Button");
     } else if (b[10] == 0x86) {
-        strncpy(extradata, "Keypad Menu Button", sizeof(extradata) - 1);
+        snprintf(extradata, sizeof(extradata), "Keypad Menu Button");
     } else {
         snprintf(extradata, sizeof(extradata), "Unknown Keypad: %02x", b[10]);
     }

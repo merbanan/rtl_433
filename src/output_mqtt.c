@@ -115,8 +115,7 @@ static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, tls_opts_t *tls_opts,
     //ctx->opts.keepalive = 60;
     //ctx->timeout = 10000L;
     //ctx->cleansession = 1;
-    strncpy(ctx->client_id, client_id, sizeof(ctx->client_id));
-    ctx->client_id[sizeof(ctx->client_id) - 1] = '\0';
+    snprintf(ctx->client_id, sizeof(ctx->client_id), "%s", client_id);
 
     // if the host is an IPv6 address it needs quoting
     if (strchr(host, ':'))

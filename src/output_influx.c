@@ -91,8 +91,7 @@ static void influx_client_event(struct mg_connection *nc, int ev, void *ev_data)
 
 static influx_client_t *influx_client_init(influx_client_t *ctx, char const *url, char const *token)
 {
-    strncpy(ctx->url, url, sizeof(ctx->url));
-    ctx->url[sizeof(ctx->url) - 1] = '\0';
+    snprintf(ctx->url, sizeof(ctx->url), "%s", url);
     snprintf(ctx->extra_headers, sizeof (ctx->extra_headers), "Authorization: Token %s\r\n", token);
 
     return ctx;
