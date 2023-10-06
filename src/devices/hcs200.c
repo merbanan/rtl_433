@@ -66,9 +66,9 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int repeat         = (b[8] & 0x40) == 0x40;
 
     char encrypted_str[9];
-    sprintf(encrypted_str, "%08X", encrypted);
+    snprintf(encrypted_str, sizeof(encrypted_str), "%08X", encrypted);
     char serial_str[9];
-    sprintf(serial_str, "%07X", serial);
+    snprintf(serial_str, sizeof(serial_str), "%07X", serial);
 
     /* clang-format off */
     data_t *data = data_make(

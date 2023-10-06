@@ -107,9 +107,9 @@ static data_t *decode_device_ids(const message_t *msg, data_t *data, int style)
 
         char buf[16] = {0};
         if (style == 0)
-            decode_device_id(msg->device_id[i], buf, 16);
+            decode_device_id(msg->device_id[i], buf, sizeof(buf));
         else {
-            sprintf(buf, "%02x%02x%02x",
+            snprintf(buf, sizeof(buf), "%02x%02x%02x",
                     msg->device_id[i][0],
                     msg->device_id[i][1],
                     msg->device_id[i][2]);
@@ -171,7 +171,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
                     uint8_t month = msg->payload[6];
                     uint8_t year[2] = { msg->payload[7],  msg->payload[8] };
                     char time_str[256];
-                    sprintf(time_str, "%02d:%02d:%02d %02d-%02d-%04d", hour, minute, second, day, month, (year[0] << 8) | year[1]);
+                    snprintf(time_str, sizeof(time_str), "%02d:%02d:%02d %02d-%02d-%04d", hour, minute, second, day, month, (year[0] << 8) | year[1]);
                     data = data_append(data, "datetime", "", DATA_STRING, time_str, NULL);
                     break;
                 }

@@ -38,11 +38,8 @@ Data layout (nibbles):
 
 static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    data_t *data;
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
-    char id_str[4 * 2 + 1];
-    char flags[1 * 2 + 1];
     int pressure;
     int temperature;
     int status;
@@ -64,15 +61,18 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
         return 0; // DECODE_FAIL_MIC;
     }
 
-    sprintf(flags, "%02x", b[4]);
     pressure    = b[5];
     temperature = b[6];
     status      = b[7];
     checksum    = b[8];
-    sprintf(id_str, "%02x%02x%02x%02x", b[0], b[1], b[2], b[3]);
+
+    char flags[1 * 2 + 1];
+    snprintf(flags, sizeof(flags), "%02x", b[4]);
+    char id_str[4 * 2 + 1];
+    snprintf(id_str, sizeof(id_str), "%02x%02x%02x%02x", b[0], b[1], b[2], b[3]);
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Abarth-124Spider",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,

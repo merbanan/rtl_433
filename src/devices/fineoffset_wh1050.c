@@ -164,7 +164,7 @@ static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
         int day         = ((br[7] & 0xF0) >> 4) * 10 + (br[7] & 0x0F);
 
         char clock_str[23];
-        sprintf(clock_str, "%04d-%02d-%02dT%02d:%02d:%02d",
+        snprintf(clock_str, sizeof(clock_str), "%04d-%02d-%02dT%02d:%02d:%02d",
                 year, month, day, hours, minutes, seconds);
 
         /* clang-format off */

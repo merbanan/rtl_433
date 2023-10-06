@@ -5800,7 +5800,7 @@ int mg_assemble_uri(const struct mg_str *scheme, const struct mg_str *user_info,
 
   if (port != 0) {
     char port_str[20];
-    int port_str_len = sprintf(port_str, ":%u", port);
+    int port_str_len = snprintf(port_str, sizeof(port_str), ":%u", port);
     mbuf_append(&out, port_str, port_str_len);
   }
 

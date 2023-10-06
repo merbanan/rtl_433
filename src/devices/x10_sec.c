@@ -62,8 +62,6 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     uint8_t *b;                       /* bits of a row            */
     char const *event_str = "UNKNOWN"; /* human-readable event     */
-    char x10_id_str[12]   = "";        /* string showing hex value */
-    char x10_code_str[5]  = "";        /* string showing hex value */
     int battery_low       = 0;         /* battery indicator        */
     int delay             = 0;         /* delay setting            */
     uint8_t tamper        = 0;         /* tamper alarm indicator   */
@@ -162,8 +160,10 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* get x10_id_str, x10_code_str ready for output */
-    sprintf(x10_id_str, "%02x%02x", b[0], b[4]);
-    sprintf(x10_code_str, "%02x", b[2]);
+    char x10_id_str[12];
+    snprintf(x10_id_str, sizeof(x10_id_str), "%02x%02x", b[0], b[4]);
+    char x10_code_str[5];
+    snprintf(x10_code_str, sizeof(x10_code_str), "%02x", b[2]);
 
     /* debug output */
     decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "id=%02x%02x code=%02x event_str=%s", b[0], b[4], b[2], event_str);

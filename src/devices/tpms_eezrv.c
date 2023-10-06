@@ -71,13 +71,15 @@ static int tpms_eezrv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_log(decoder, 2, __func__, "Checksum fail");
         return DECODE_FAIL_MIC;
     }
-    char id_str[7];
-    sprintf(id_str, "%02x%02x%02x", b[0], b[1], b[2]);
     float pressure_kPa = b[3] * 2.5;
     int temperature_C  = b[4] - 50;
     int flags          = b[5];
+
+    char id_str[7];
+    snprintf(id_str, sizeof(id_str), "%02x%02x%02x", b[0], b[1], b[2]);
     char flags_str[3];
-    sprintf(flags_str, "%x", flags);
+    snprintf(flags_str, sizeof(flags_str), "%x", flags);
+
     /* clang-format off */
     data_t *data = data_make(
                     "model",            "",             DATA_STRING, "EezTire-E618",

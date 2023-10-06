@@ -28,7 +28,7 @@ static int intertechno_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
 
     char id_str[11];
-    sprintf(id_str, "%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4]);
+    snprintf(id_str, sizeof(id_str), "%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4]);
     int slave   = b[7] & 0x0f;
     int master  = (b[7] & 0xf0) >> 4;
     int command = b[6] & 0x07;

@@ -58,7 +58,7 @@ static char *bitrow_asprint_code(uint8_t const *bitrow, unsigned bit_len)
 
     // print at least one '0'
     if (bit_len == 0) {
-        sprintf(row_bytes, "0");
+        snprintf(row_bytes, sizeof(row_bytes), "0");
     }
 
     // a simple bitrow representation

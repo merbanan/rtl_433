@@ -156,7 +156,7 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // dump raw input code
     char code_str[13];
-    sprintf(code_str, "%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5]);
+    snprintf(code_str, sizeof(code_str), "%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5]);
 
     bitbuffer_invert(bitbuffer);
 
@@ -339,7 +339,7 @@ static int govee_h5054_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b = bitbuffer->bb[r];
 
     char code_str[13];
-    sprintf(code_str, "%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5]);
+    snprintf(code_str, sizeof(code_str), "%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5]);
 
     uint16_t chk = crc16(b, 6, 0x1021, 0x1d0f);
     if (chk != 0) {

@@ -113,8 +113,6 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t status, crc;
     //int subtype;
     uint32_t esn;
-    char status_str[3];
-    char esn_str[7];
     int s_closed, s_event, s_tamper, s_battery_low;
     int s_xactivity, s_xtamper1, s_xtamper2, s_exception;
 
@@ -208,8 +206,10 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // 0x80 is always set and 0x04 has never been set.
         s_exception = ((status & 0x80) != 0x80) || ((status & 0x04) == 0x04);
 
-        sprintf(status_str, "%02x", status);
-        sprintf(esn_str, "%06x", esn);
+        char status_str[3];
+        snprintf(status_str, sizeof(status_str), "%02x", status);
+        char esn_str[7];
+        snprintf(esn_str, sizeof(esn_str), "%06x", esn);
 
         /* clang-format off */
         data = data_make(
