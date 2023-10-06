@@ -77,7 +77,8 @@ static int ss_sensor_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
     } else if (state == 3) {
         snprintf(extradata, sizeof(extradata), "Alarm Off");
     } else {
-        snprintf(extradata, sizeof(extradata), "");
+        //snprintf(extradata, sizeof(extradata), "");
+        *extradata = '\0';
     }
 
     /* clang-format off */

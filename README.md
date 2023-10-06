@@ -37,6 +37,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
 
 ```
 
+  A "rtl_433.conf" file is searched in "./", XDG_CONFIG_HOME e.g. "$HOME/.config/rtl_433/",
+  "/usr/local/etc/rtl_433/", "/etc/rtl_433/", then command line args will be parsed in order.
 		= General options =
   [-V] Output the version string and exit
   [-v] Increase verbosity (can be used multiple times).
@@ -328,7 +330,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [242]* Baldr / RainPoint rain gauge.
     [243]  Celsia CZC1 Thermostat
     [244]  Fine Offset Electronics WS90 weather station
-    [245]* ThermoPro TX-2C Thermometer
+    [245]* ThermoPro TX-2C Thermometer and Humidity sensor
     [246]  TFA 30.3151 Weather Station
 
 * Disabled by default, use -R n or a conf file to enable
