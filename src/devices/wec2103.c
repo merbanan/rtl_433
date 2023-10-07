@@ -11,8 +11,10 @@
 
 #include "decoder.h"
 
-/**
+/** @fn int wec2103_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 WEC-2103 temperature/humidity sensor.
+
+Circuit board model numbers: TX07Y-THC V1, TX07K-THC V4
 
 Similar to prologue, kedsum, esperanza_ews, s3318p
 Only available information for this device: https://fcc.report/FCC-ID/WEC-2103
@@ -21,25 +23,25 @@ Data:
 
     Byte:      0        1        2        3        4        5
     Nibble:    1   2    3   4    5   6    7   8    9   10   11
-    Type:      IIIIIIII XXXXFFFF TTTTTTTT TTTTHHHH HHHHCCCC ????
+    Type:      IIIIIIII XXXXFFFF TTTTTTTT TTTTHHHH HHHHCCCC SS
 
 - I: random device ID, changes on powercycle
-- X: Checksum?
-- F: Flags
+- X: Checksum: mangled CRC-4, poly 3, init 0.
+- F: Flags: tx-button pressed|batt-low|?|?
 - T: Temperature
 - H: Humidity
-- Flags: tx-button pressed|batt-low|?|?
+- S: Stop bit(s): 0b10
 
 Example datagram:
 
-     f2 90              6b5         96       1       8
-    |ID|Checksum?+Flags|Temperature|Humidity|Channel|unknown
+     f2 90             6b5         96       1       8
+    |ID|Checksum+Flags|Temperature|Humidity|Channel|Stop bits
 
 - Temperature in Fahrenheit*100+900->hex
 - Example: 82.4F->824->1724->0x6bc
 */
 
-static uint8_t almost_crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
+static uint8_t mangled_crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
 {
     unsigned remainder = init;
     unsigned poly = polynomial;
@@ -79,7 +81,7 @@ static int wec2103_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     c[7] = b[3] & 0x0F;
     c[8] = b[4] >> 4;
 
-    int crc_calculated = almost_crc4(c, sizeof(c), 3, 0);
+    int crc_calculated = mangled_crc4(c, sizeof(c), 3, 0);
     int crc_received = b[1] >> 4;
     if (crc_calculated != crc_received) {
         decoder_logf(decoder, 0, __func__, "CRC check failed (0x%X != 0x%X)", crc_calculated, crc_received);
