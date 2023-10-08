@@ -106,7 +106,7 @@ static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_log_bitrow(decoder, 2, __func__, msg, sizeof(msg) * 8, "");
 
     // CRC check
-    uint16_t crc_calculated = crc16(msg[2], 5, 0x1021, 0x0000);
+    uint16_t crc_calculated = crc16(&msg[2], 5, 0x1021, 0x0000);
     uint16_t crc_received = msg[0] << 8 | msg[1];
     decoder_logf(decoder, 2, __func__, "CRC 0x%04X = 0x%04X", crc_calculated, crc_received);
     if (crc_received != crc_calculated) {
