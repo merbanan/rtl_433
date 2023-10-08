@@ -23,7 +23,7 @@ Preamble: aa aa 2d d4
 Data layout:
     CCCCCCCC CCCCCCCC IIIIIIII IIIIIIII IIIIIIII IIIIIIII SSSSQHHH ANBBFFFF
 
-- C: 16-bit, presumably checksum, algorithm unknown
+- C: 16-bit, crc16/xmodem, polynomial: 0x1021, init: 0x0000, range: byte 2...6
 - I: 24-bit little-endian id; changes on power-up/reset
 - S: 4 bit sensor type
 - Q: 1 bit startup; changes from 0 to 1 approx. one hour after power-on/reset
@@ -105,7 +105,14 @@ static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     decoder_log_bitrow(decoder, 2, __func__, msg, sizeof(msg) * 8, "");
 
-    // TODO: Find parity/checksum/checksum algorithm
+    // CRC check
+    uint16_t crc_calculated = crc16(msg[2], 5, 0x1021, 0x0000);
+    uint16_t crc_received = msg[0] << 8 | msg[1];
+    decoder_logf(decoder, 2, __func__, "CRC 0x%04X = 0x%04X", crc_calculated, crc_received);
+    if (crc_received != crc_calculated) {
+        decoder_logf(decoder, 1, __func__, "CRC check failed (0x%04X != 0x%04X)", crc_calculated, crc_received);
+        return DECODE_FAIL_MIC;
+    }
 
     sensor_id     = ((uint32_t)msg[2] << 24) | (msg[3] << 16) | (msg[4] << 8) | (msg[5]);
     s_type        = msg[6] >> 4;
