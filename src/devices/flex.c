@@ -319,7 +319,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         // print at least one '0'
         if (row_bytes[0] == '\0') {
-            sprintf(row_bytes, "0");
+            snprintf(row_bytes, sizeof(row_bytes), "0");
         }
 
         // a simpler representation for csv output

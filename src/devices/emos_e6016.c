@@ -103,7 +103,7 @@ static int emos_e6016_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float dir_deg  = dir_raw * 22.5f;
 
     char dcf77_str[20]; // "2064-16-32T32:64:64"
-    sprintf(dcf77_str, "%4d-%02d-%02dT%02d:%02d:%02d", dcf77_year + 2000, dcf77_mth, dcf77_day, dcf77_hour, dcf77_min, dcf77_sec);
+    snprintf(dcf77_str, sizeof(dcf77_str), "%4d-%02d-%02dT%02d:%02d:%02d", dcf77_year + 2000, dcf77_mth, dcf77_day, dcf77_hour, dcf77_min, dcf77_sec);
 
     /* clang-format off */
     data_t *data = data_make(

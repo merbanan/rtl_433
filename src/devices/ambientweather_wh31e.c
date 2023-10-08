@@ -216,7 +216,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             float temp_c = (temp_raw - 400) * 0.1f;
             int humidity = b[4];
             char extra[11];
-            sprintf(extra, "%02x%02x%02x%02x%02x", b[6], b[7], b[8], b[9], b[10]);
+            snprintf(extra, sizeof(extra), "%02x%02x%02x%02x%02x", b[6], b[7], b[8], b[9], b[10]);
 
             /* clang-format off */
             data_t *data = data_make(
@@ -258,7 +258,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             int seconds = ((b[8] & 0x70) >> 4) * 10 + (b[8] & 0x0F);
 
             char clock_str[23];
-            sprintf(clock_str, "%04d-%02d-%02dT%02d:%02d:%02dZ",
+            snprintf(clock_str, sizeof(clock_str), "%04d-%02d-%02dT%02d:%02d:%02dZ",
                     year, month, day, hours, minutes, seconds);
 
             /* clang-format off */
@@ -292,7 +292,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             int battery_lvl = battery_v <= 9 ? 0 : ((battery_v - 9) / 6 * 100); // 0.9V-1.5V is 0-100
             int rain_raw   = (b[5] << 8) | b[6];
             char extra[11];
-            sprintf(extra, "%02x%02x%02x%02x%02x", b[9], b[10], b[11], b[12], b[13]);
+            snprintf(extra, sizeof(extra), "%02x%02x%02x%02x%02x", b[9], b[10], b[11], b[12], b[13]);
 
             if (battery_lvl > 100)
                 battery_lvl = 100;
@@ -334,7 +334,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             int wgust   = b[12];
             int wdir    = ((b[7] & 0x20) >> 5) | b[11];
             char extra[7];
-            sprintf(extra, "%02x %02x%01x", b[13], b[16], b[17] >> 4);
+            snprintf(extra, sizeof(extra), "%02x %02x%01x", b[13], b[16], b[17] >> 4);
 
             /* clang-format off */
             data_t *data = data_make(

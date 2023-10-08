@@ -102,16 +102,16 @@ static int tpms_renault_0435r_decode(r_device *decoder, bitbuffer_t *bitbuffer, 
     // observed always 0xc0 - FIXME: find possible combinations and reject message with impossible combination
     // to avoid confusion with other FSK manchester 9-byte sensors with 8bit xor checksum.
 
-    char id_str[7];
-    sprintf(id_str, "%02x%02x%02x", b[0], b[1], b[2]);
-
-    char flags_str[3];
-    sprintf(flags_str, "%02x", flags);
-
     int pressure_raw    = b[4];
     double pressure_kpa = pressure_raw / 0.75;
     int temp_c          = (int)b[5] - 50;
     int rad_acc         = (int)b[6] * 5;
+
+    char id_str[7];
+    snprintf(id_str, sizeof(id_str), "%02x%02x%02x", b[0], b[1], b[2]);
+
+    char flags_str[3];
+    snprintf(flags_str, sizeof(flags_str), "%02x", flags);
 
     /* clang-format off */
     data_t *data = data_make(

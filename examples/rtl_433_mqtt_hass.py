@@ -18,7 +18,7 @@ as device topics by MQTT.
 """
 
 AP_EPILOG="""
-It is strongly recommended to run rtl_433 with "-C si" and "-M newmodel".
+It is strongly recommended to run rtl_433 with "-C si".
 This script requires rtl_433 to publish both event messages and device
 messages. If you've changed the device topic in rtl_433, use the same device
 topic with the "-T" parameter.
@@ -264,6 +264,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "WS",
         "config": {
+            "device_class": "wind_speed",
             "name": "Wind Speed",
             "unit_of_measurement": "km/h",
             "value_template": "{{ value|float }}",
@@ -275,6 +276,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "WS",
         "config": {
+            "device_class": "wind_speed",
             "name": "Wind Speed",
             "unit_of_measurement": "km/h",
             "value_template": "{{ value|float }}",
@@ -286,6 +288,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "WS",
         "config": {
+            "device_class": "wind_speed",
             "name": "Wind Speed",
             "unit_of_measurement": "mi/h",
             "value_template": "{{ value|float }}",
@@ -297,6 +300,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "WS",
         "config": {
+            "device_class": "wind_speed",
             "name": "Wind Average",
             "unit_of_measurement": "km/h",
             "value_template": "{{ (float(value|float) * 3.6) | round(2) }}",
@@ -308,6 +312,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "WS",
         "config": {
+            "device_class": "wind_speed",
             "name": "Wind Speed",
             "unit_of_measurement": "km/h",
             "value_template": "{{ float(value|float) * 3.6 }}",
@@ -319,6 +324,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "GS",
         "config": {
+            "device_class": "wind_speed",
             "name": "Gust Speed",
             "unit_of_measurement": "km/h",
             "value_template": "{{ value|float }}",
@@ -330,6 +336,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "GS",
         "config": {
+            "device_class": "wind_speed",
             "name": "Wind max speed",
             "unit_of_measurement": "km/h",
             "value_template": "{{ value|float }}",
@@ -341,6 +348,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "GS",
         "config": {
+            "device_class": "wind_speed",
             "name": "Wind max",
             "unit_of_measurement": "km/h",
             "value_template": "{{ (float(value|float) * 3.6) | round(2) }}",
@@ -352,6 +360,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "GS",
         "config": {
+            "device_class": "wind_speed",
             "name": "Gust Speed",
             "unit_of_measurement": "km/h",
             "value_template": "{{ float(value|float) * 3.6 }}",
@@ -374,6 +383,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "RT",
         "config": {
+            "device_class": "precipitation",
             "name": "Rain Total",
             "unit_of_measurement": "mm",
             "value_template": "{{ value|float|round(2) }}",
@@ -385,6 +395,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "RR",
         "config": {
+            "device_class": "precipitation_intensity",
             "name": "Rain Rate",
             "unit_of_measurement": "mm/h",
             "value_template": "{{ value|float }}",
@@ -396,6 +407,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "RT",
         "config": {
+            "device_class": "precipitation",
             "name": "Rain Total",
             "unit_of_measurement": "mm",
             "value_template": "{{ (float(value|float) * 25.4) | round(2) }}",
@@ -407,6 +419,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "RR",
         "config": {
+            "device_class": "precipitation_intensity",
             "name": "Rain Rate",
             "unit_of_measurement": "mm/h",
             "value_template": "{{ (float(value|float) * 25.4) | round(2) }}",
@@ -513,7 +526,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "A",
         "config": {
-            "device_class": "power",
+            "device_class": "current",
             "name": "Current",
             "unit_of_measurement": "A",
             "value_template": "{{ value|float }}",
@@ -537,8 +550,9 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "lux",
         "config": {
+            "device_class": "illuminance",
             "name": "Outside Luminance",
-            "unit_of_measurement": "lux",
+            "unit_of_measurement": "lx",
             "value_template": "{{ value|int }}",
             "state_class": "measurement"
         }
@@ -547,8 +561,9 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "lux",
         "config": {
+            "device_class": "illuminance",
             "name": "Outside Luminance",
-            "unit_of_measurement": "lux",
+            "unit_of_measurement": "lx",
             "value_template": "{{ value|int }}",
             "state_class": "measurement"
         }
@@ -720,7 +735,7 @@ def sanitize(text):
             .replace(".", "_")
             .replace("&", ""))
 
-def rtl_433_device_info(data):
+def rtl_433_device_info(data, topic_prefix):
     """Return rtl_433 device topic to subscribe to for a data element, based on the
     rtl_433 device topic argument, as well as the device identifier"""
 
@@ -745,10 +760,10 @@ def rtl_433_device_info(data):
 
     path = ''.join(list(filter(lambda item: item, path_elements)))
     id = '-'.join(id_elements)
-    return (path, id)
+    return (f"{topic_prefix}/{path}", id)
 
 
-def publish_config(mqttc, topic, model, object_id, mapping, value=None):
+def publish_config(mqttc, topic, model, object_id, mapping, key=None):
     """Publish Home Assistant auto discovery data."""
     global discovery_timeouts
 
@@ -776,9 +791,10 @@ def publish_config(mqttc, topic, model, object_id, mapping, value=None):
         config["topic"] = topic
         config["platform"] = 'mqtt'
     else:
+        readable_name = mapping["config"]["name"] if "name" in mapping["config"] else key
         config["state_topic"] = topic
         config["unique_id"] = object_name
-        config["name"] = object_name
+        config["name"] = readable_name
     config["device"] = { "identifiers": [object_id], "name": object_id, "model": model, "manufacturer": "rtl_433" }
 
     if args.force_update:
@@ -793,7 +809,7 @@ def publish_config(mqttc, topic, model, object_id, mapping, value=None):
 
     return True
 
-def bridge_event_to_hass(mqttc, topicprefix, data):
+def bridge_event_to_hass(mqttc, topic_prefix, data):
     """Translate some rtl_433 sensor data to Home Assistant auto discovery."""
 
     if "model" not in data:
@@ -806,13 +822,13 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
     skipped_keys = []
     published_keys = []
 
-    base_topic, device_id = rtl_433_device_info(data)
+    base_topic, device_id = rtl_433_device_info(data, topic_prefix)
     if not device_id:
         # no unique device identifier
         logging.warning("No suitable identifier found for model: ", model)
         return
 
-    if args.ids and id in data and data.get("id") not in args.ids:
+    if args.ids and "id" in data and data.get("id") not in args.ids:
         # not in the safe list
         logging.debug("Device (%s) is not in the desired list of device ids: [%s]" % (data["id"], ids))
         return
@@ -822,7 +838,7 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
         if key in mappings:
             # topic = "/".join([topicprefix,"devices",model,instance,key])
             topic = "/".join([base_topic, key])
-            if publish_config(mqttc, topic, model, device_id, mappings[key]):
+            if publish_config(mqttc, topic, model, device_id, mappings[key], key):
                 published_keys.append(key)
         else:
             if key not in SKIP_KEYS:
@@ -831,7 +847,7 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
     if "secret_knock" in data.keys():
         for m in secret_knock_mappings:
             topic = "/".join([base_topic, "secret_knock"])
-            if publish_config(mqttc, topic, model, device_id, m):
+            if publish_config(mqttc, topic, model, device_id, m, "secret_knock"):
                 published_keys.append("secret_knock")
 
     if published_keys:

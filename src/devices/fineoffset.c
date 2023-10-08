@@ -630,7 +630,7 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Decode data
     char id[7];
-    sprintf(id, "%02x%02x%02x", b[1], b[2], b[3]);
+    snprintf(id, sizeof(id), "%02x%02x%02x", b[1], b[2], b[3]);
     int boost           = (b[4] & 0xe0) >> 5;
     int battery_mv      = (b[4] & 0x1f) * 100;
     float battery_level = (battery_mv - 700) / 900.0f; // assume 1.6V (100%) to 0.7V (0%) range
@@ -788,7 +788,7 @@ static int alecto_ws1200v2_dcf_callback(r_device *decoder, bitbuffer_t *bitbuffe
     int time_m      = b[8]; // (b[8] >> 4) * 10 + (b[8] & 0x0f);
     int time_s      = b[9]; // (b[9] >> 4) * 10 + (b[9] & 0x0f);
     char clock_str[32];
-    sprintf(clock_str, "%04x-%02x-%02xT%02x:%02x:%02x",
+    snprintf(clock_str, sizeof(clock_str), "%04x-%02x-%02xT%02x:%02x:%02x",
             date_y, date_m, date_d, time_h, time_m, time_s);
 
     /* clang-format off */

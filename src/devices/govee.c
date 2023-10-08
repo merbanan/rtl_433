@@ -156,7 +156,7 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // dump raw input code
     char code_str[13];
-    sprintf(code_str, "%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5]);
+    snprintf(code_str, sizeof(code_str), "%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5]);
 
     bitbuffer_invert(bitbuffer);
 
@@ -198,12 +198,21 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     event &= 0x0FFF;
 
     char const *event_str;
+    int wet = -1;
     // Figure out what event was triggered
     if (event == 0xafa) {
         event_str = "Button Press";
+        // The H5054 water sensor does not send a message when it transitions from wet to dry nor does it have a
+        // dedicated message to indicate that it is not wet. However, the sensor only sends a "button press" message if
+        // the button is pressed while the device is dry (no button press message is sent if the button is pressed while
+        // the sensor is wet). Since we know the sensor is dry when a "button press" message is received, "detect_wet:0"
+        // is included in the output when the button is pressed as a workaround to allow the user to transition the
+        // device back to the dry state.
+        wet = 0;
     }
     else if (event == 0xbfb) {
         event_str = "Water Leak";
+        wet = 1;
     }
     else if (event_type == 0xc) {
         event_str = "Battery Report";
@@ -227,6 +236,7 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "id"   ,        "",                 DATA_INT,    id,
             "battery_ok",   "Battery level",    DATA_COND,   battery, DATA_DOUBLE, battery_level,
             "battery_mV",   "Battery",          DATA_COND,   battery, DATA_FORMAT, "%d mV", DATA_INT, battery_mv,
+            "detect_wet",   "",                 DATA_COND,   wet >= 0, DATA_INT, wet,
             "event",        "",                 DATA_STRING, event_str,
             "code",         "Raw Code",         DATA_STRING, code_str,
             "mic",          "Integrity",        DATA_STRING, "PARITY",
@@ -243,6 +253,7 @@ static char const *const output_fields[] = {
         "id",
         "battery_ok",
         "battery_mV",
+        "detect_wet",
         "event",
         "code",
         "mic",
@@ -328,7 +339,7 @@ static int govee_h5054_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b = bitbuffer->bb[r];
 
     char code_str[13];
-    sprintf(code_str, "%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5]);
+    snprintf(code_str, sizeof(code_str), "%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5]);
 
     uint16_t chk = crc16(b, 6, 0x1021, 0x1d0f);
     if (chk != 0) {
@@ -349,11 +360,19 @@ static int govee_h5054_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_logf(decoder, 1, __func__, "crc_sum=%04x", crc_sum);
 
     char const *event_str;
+    int wet = -1;
     int leak_num = -1;
     int battery  = -1;
     switch (event) {
     case 0x0:
         event_str = "Button Press";
+        // The H5054 water sensor does not send a message when it transitions from wet to dry nor does it have a
+        // dedicated message to indicate that it is not wet. However, the sensor only sends a "button press" message if
+        // the button is pressed while the device is dry (no button press message is sent if the button is pressed while
+        // the sensor is wet). Since we know the sensor is dry when a "button press" message is received, "detect_wet:0"
+        // is included in the output when the button is pressed as a workaround to allow the user to transition the
+        // device back to the dry state.
+        wet = 0;
         break;
     case 0x1:
         event_str = "Battery Report";
@@ -361,6 +380,7 @@ static int govee_h5054_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         break;
     case 0x2:
         event_str = "Water Leak";
+        wet = 1;
         leak_num  = event_data;
         break;
     default:
@@ -378,6 +398,7 @@ static int govee_h5054_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "battery_ok",   "Battery level",    DATA_COND,   battery >= 0, DATA_DOUBLE, battery_level,
             "battery_mV",   "Battery",          DATA_COND,   battery >= 0, DATA_FORMAT, "%d mV", DATA_INT, battery_mv,
             "event",        "",                 DATA_STRING, event_str,
+            "detect_wet",   "",                 DATA_COND,   wet >= 0, DATA_INT, wet,
             "leak_num",     "Leak Num",         DATA_COND,   leak_num >= 0, DATA_INT, leak_num,
             "code",         "Raw Code",         DATA_STRING, code_str,
             "mic",          "Integrity",        DATA_STRING, "CRC",

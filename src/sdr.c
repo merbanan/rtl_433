@@ -139,9 +139,9 @@ static int rtltcp_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
 
     char *param = arg_param(dev_query); // strip scheme
     hostport[0] = '\0';
-    if (param)
-        strncpy(hostport, param, sizeof(hostport) - 1);
-    hostport[sizeof(hostport) - 1] = '\0';
+    if (param) {
+        snprintf(hostport, sizeof(hostport), "%s", param);
+    }
     hostport_param(hostport, &host, &port);
 
     print_logf(LOG_CRITICAL, "SDR", "rtl_tcp input from %s port %s", host, port);
@@ -720,8 +720,7 @@ static int soapysdr_gain_str_set(SoapySDRDevice *dev, char const *gain_str, int 
 
     if (strchr(gain_str, '=')) {
         char gain_cpy[GAIN_STR_MAX_SIZE];
-        strncpy(gain_cpy, gain_str, GAIN_STR_MAX_SIZE);
-        gain_cpy[GAIN_STR_MAX_SIZE - 1] = '\0';
+        snprintf(gain_cpy, sizeof(gain_cpy), "%s", gain_str);
         char *gain_p = gain_cpy;
         // Set each gain individually (more control)
         char *name;

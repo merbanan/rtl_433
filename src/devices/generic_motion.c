@@ -32,13 +32,8 @@ with a repeat gap of 4 pulse widths, i.e.:
 
 static int generic_motion_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
-    uint8_t *b;
-    int code;
-    char code_str[6];
-
     for (int i = 0; i < bitbuffer->num_rows; ++i) {
-        b = bitbuffer->bb[i];
+        uint8_t *b = bitbuffer->bb[i];
         // strictly validate package as there is no checksum
         if ((bitbuffer->bits_per_row[i] != 20)
                 || ((b[1] == 0) && (b[2] == 0))
@@ -46,11 +41,12 @@ static int generic_motion_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 || bitbuffer_count_repeats(bitbuffer, i, 0) < 3)
             continue; // DECODE_ABORT_EARLY
 
-        code = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
-        sprintf(code_str, "%05x", code);
+        int code = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
+        char code_str[6];
+        snprintf(code_str, sizeof(code_str), "%05x", code);
 
         /* clang-format off */
-        data = data_make(
+        data_t *data = data_make(
                 "model",    "",  DATA_STRING, "Generic-Motion",
                 "code",     "",  DATA_STRING, code_str,
                 NULL);

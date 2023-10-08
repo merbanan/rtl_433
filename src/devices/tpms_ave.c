@@ -32,11 +32,9 @@ Packet nibbles:
 
 static int tpms_ave_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    data_t *data;
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
     unsigned id;
-    char id_str[9 + 1];
     int mode;
     int pressure_raw;
     double pressure;
@@ -89,10 +87,11 @@ static int tpms_ave_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned r
     }
     pressure = ((double)pressure_raw - offset) * ratio;
 
-    sprintf(id_str, "%08x", id);
+    char id_str[9 + 1];
+    snprintf(id_str, sizeof(id_str), "%08x", id);
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "Model",         DATA_STRING, "AVE",
             "type",             "Type",          DATA_STRING, "TPMS",
             "id",               "Id",            DATA_STRING, id_str,

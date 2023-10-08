@@ -37,6 +37,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
 
 ```
 
+  A "rtl_433.conf" file is searched in "./", XDG_CONFIG_HOME e.g. "$HOME/.config/rtl_433/",
+  "/usr/local/etc/rtl_433/", "/etc/rtl_433/", then command line args will be parsed in order.
 		= General options =
   [-V] Output the version string and exit
   [-v] Increase verbosity (can be used multiple times).
@@ -283,7 +285,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [197]  Acurite Grill/Meat Thermometer 01185M
     [198]* EnOcean ERP1
     [199]  Linear Megacode Garage/Gate Remotes
-    [200]* Auriol 4-LD5661 temperature/rain sensor
+    [200]* Auriol 4-LD5661/4-LD5972/4-LD6313 temperature/rain sensors
     [201]  Unbranded SolarTPMS for trucks
     [202]  Funkbus / Instafunk (Berker, Gira, Jung)
     [203]  Porsche Boxster/Cayman TPMS

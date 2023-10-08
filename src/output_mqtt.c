@@ -86,9 +86,9 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
     }
     case MG_EV_CLOSE:
         if (!ctx)
-            break; // shuttig down
+            break; // shutting down
         if (ctx->prev_status == 0)
-            print_log(LOG_WARNING, "MQTT", "MQTT Connection failed...");
+            print_log(LOG_WARNING, "MQTT", "MQTT Connection lost, reconnecting...");
         // reconnect
         char const *error_string = NULL;
         ctx->connect_opts.error_string = &error_string;
@@ -115,8 +115,7 @@ static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, tls_opts_t *tls_opts,
     //ctx->opts.keepalive = 60;
     //ctx->timeout = 10000L;
     //ctx->cleansession = 1;
-    strncpy(ctx->client_id, client_id, sizeof(ctx->client_id));
-    ctx->client_id[sizeof(ctx->client_id) - 1] = '\0';
+    snprintf(ctx->client_id, sizeof(ctx->client_id), "%s", client_id);
 
     // if the host is an IPv6 address it needs quoting
     if (strchr(host, ':'))
@@ -500,8 +499,10 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
     // generate a short deterministic client_id to identify this input device on restart
     uint16_t host_crc = crc16((uint8_t *)mqtt->hostname, strlen(mqtt->hostname), 0x1021, 0xffff);
     uint16_t devq_crc = crc16((uint8_t *)dev_hint, dev_hint ? strlen(dev_hint) : 0, 0x1021, 0xffff);
-    char client_id[17];
-    snprintf(client_id, sizeof(client_id), "rtl_433-%04x%04x", host_crc, devq_crc);
+    uint16_t parm_crc = crc16((uint8_t *)param, param ? strlen(param) : 0, 0x1021, 0xffff);
+    char client_id[21];
+    /// MQTT 3.1.1 specifies that the broker MUST accept clients id's between 1 and 23 characters
+    snprintf(client_id, sizeof(client_id), "rtl_433-%04x%04x%04x", host_crc, devq_crc, parm_crc);
 
     // default base topic
     char base_topic[8 + sizeof(mqtt->hostname)];
@@ -519,7 +520,7 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
 
     // parse host and port
     tls_opts_t tls_opts = {0};
-    if (strncmp(param, "mqtts", 5) == 0) {
+    if (param && strncmp(param, "mqtts", 5) == 0) {
         tls_opts.tls_ca_cert = "*"; // TLS is enabled but no cert verification is performed.
     }
     param      = arg_param(param); // strip scheme

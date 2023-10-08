@@ -101,7 +101,7 @@ void samp_grab_write(samp_grab_t *g, unsigned grab_len, unsigned grab_end)
     double freq_mhz = *g->frequency / 1000000.0;
     double rate_khz = *g->samp_rate / 1000.0;
     while (1) {
-        sprintf(f_name, "g%03u_%gM_%gk.%s", g->sg_counter, freq_mhz, rate_khz, format);
+        snprintf(f_name, sizeof(f_name), "g%03u_%gM_%gk.%s", g->sg_counter, freq_mhz, rate_khz, format);
         g->sg_counter++;
         if (access(f_name, F_OK) == -1) {
             break;
