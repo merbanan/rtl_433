@@ -1,5 +1,5 @@
 /** @file
-    Watts WFHT-RF Thermostat
+    Watts WFHT-RF Thermostat.
 
     Copyright (C) 2022 Ådne Hovda <aadne@hovda.no>
     based on protocol decoding by Christian W. Zuckschwerdt <zany@triq.net>
@@ -13,14 +13,12 @@
 
 #include "decoder.h"
 /**
-Watts WFHT-RF Basic Thermostat
+Watts WFHT-RF Thermostat.
 
 This code is based on a slightly older OEM system created by ADEV in France which
 later merged with Watts. The closest thing currently available seems to be
 https://wattswater.eu/catalog/regulation-and-control/radio-wfht-thermostats/electronic-room-thermostat-with-rf-control-wfht-rf-basic/,
 but it is not known whether they are protocol compatible.
-
-https://github.com/merbanan/rtl_433/issues/2230
 
 Analyzer output:
     Analyzing pulses...
@@ -87,75 +85,81 @@ Decoded example:
 
 */
 
+#define WATTSTHERMO_BITLEN             54
+#define WATTSTHERMO_PREAMBLE           0xa5
+#define WATTSTHERMO_PREAMBLE_BITLEN    8
+#define WATTSTHERMO_ID_BITLEN          16
+#define WATTSTHERMO_FLAGS_BITLEN       4
+#define WATTSTHERMO_TEMPERATURE_BITLEN 9
+#define WATTSTHERMO_SETPOINT_BITLEN    9
+#define WATTSTHERMO_CHKSUM_BITLEN      8
+
+enum WATTSTHERMO_FLAGS {
+    NONE     = 0,
+    PAIRING  = 1,
+    UNKNOWN1 = 2,
+    UNKNOWN2 = 4,
+    UNKNOWN3 = 8,
+};
+
 static int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int ret                          = 0;
+    bitbuffer_invert(bitbuffer);
 
-    if (bitbuffer->num_rows != 1) {
-        decoder_logf(decoder, 2, __func__, "Only expect a single row. num_rows=%d", bitbuffer->num_rows);
-        ret = DECODE_ABORT_EARLY;
-        return ret;
-    }
+    // We're expecting a single row
+    for (uint16_t row = 0; row < bitbuffer->num_rows; ++row) {
 
-    uint8_t const preamble_pattern = 0xa5;
+        uint16_t row_len    = bitbuffer->bits_per_row[row];
+        uint8_t chksum      = 0;
+        uint8_t preamble    = WATTSTHERMO_PREAMBLE;
+        unsigned bitpos     = 0;
 
-    for (unsigned row = 0; row < bitbuffer->num_rows; ++row) {
-        // we expect 54 bits
-        if (bitbuffer->bits_per_row[row] != 54) {
-            decoder_log(decoder, 2, __func__, "Length check fail");
-            ret = DECODE_ABORT_LENGTH;
-            continue;
-        }
-
-        bitbuffer_invert(bitbuffer);
-
-        unsigned pos = bitbuffer_search(bitbuffer, row, 0, &preamble_pattern, 8);
-
-        if (pos >= bitbuffer->bits_per_row[row]) {
+        bitpos = bitbuffer_search(bitbuffer, row, 0, &preamble, WATTSTHERMO_PREAMBLE_BITLEN);
+        if (bitpos >= row_len) {
             decoder_log(decoder, 2, __func__, "Preamble not found");
-            ret = DECODE_ABORT_EARLY;
-            continue;
+            return DECODE_ABORT_EARLY;
         }
 
-        pos += 8;
+        if (row_len < WATTSTHERMO_BITLEN) {
+            decoder_log(decoder, 2, __func__, "Message too short");
+            return DECODE_ABORT_LENGTH;
+        }
+        bitpos += WATTSTHERMO_PREAMBLE_BITLEN;
 
-        uint8_t id_raw[2] = {0};
-        bitbuffer_extract_bytes(bitbuffer, row, pos, id_raw, 16);
-        unsigned id = (reverse8((id_raw[1])) << 8) | reverse8((id_raw[0]));
+        uint8_t id_raw[2];
+        bitbuffer_extract_bytes(bitbuffer, row, bitpos, id_raw, WATTSTHERMO_ID_BITLEN);
+        reflect_bytes(id_raw, 2);
+        chksum += add_bytes(id_raw, 2);
+        uint16_t id  = id_raw[1] << 8 | id_raw[0];
+        bitpos += WATTSTHERMO_ID_BITLEN;
 
-        pos += 16;
+        uint8_t flags[1];
+        bitbuffer_extract_bytes(bitbuffer, row, bitpos, flags, WATTSTHERMO_FLAGS_BITLEN);
+        reflect_bytes(flags, 1);
+        chksum += add_bytes(flags, 1);
+        uint8_t pairing = flags[0] & PAIRING;
+        bitpos += WATTSTHERMO_FLAGS_BITLEN;
 
-        uint8_t PAIRING = 1;
-        uint8_t flags   = {0};
-        bitbuffer_extract_bytes(bitbuffer, row, pos, &flags, 4);
-        flags = reverse8(flags);
-        unsigned pairing = flags & PAIRING;
+        uint8_t temp_raw[2];
+        bitbuffer_extract_bytes(bitbuffer, row, bitpos, temp_raw, WATTSTHERMO_TEMPERATURE_BITLEN);
+        reflect_bytes(temp_raw, 2);
+        chksum += add_bytes(temp_raw, 2);
+        uint16_t temp = temp_raw[1] << 8 | temp_raw[0];
+        bitpos += WATTSTHERMO_TEMPERATURE_BITLEN;
 
-        pos += 4;
+        uint8_t setp_raw[2];
+        bitbuffer_extract_bytes(bitbuffer, row, bitpos, setp_raw, WATTSTHERMO_SETPOINT_BITLEN);
+        reflect_bytes(setp_raw, 2);
+        chksum += add_bytes(setp_raw, 2);
+        uint16_t setp = setp_raw[1] << 8 | setp_raw[0];
+        bitpos += WATTSTHERMO_SETPOINT_BITLEN;
 
-        uint8_t temp_raw[2] = {0};
-        bitbuffer_extract_bytes(bitbuffer, row, pos, temp_raw, 9);
-        unsigned temp = (reverse8((temp_raw[1])) << 8) | reverse8((temp_raw[0]));
-
-        pos += 9;
-
-        uint8_t setp_raw[2] = {0};
-        bitbuffer_extract_bytes(bitbuffer, row, pos, setp_raw, 9);
-        unsigned setp = (reverse8((setp_raw[1])) << 8) | reverse8((setp_raw[0]));
-
-        pos += 9;
-
-        uint8_t chk_raw = {0};
-        bitbuffer_extract_bytes(bitbuffer, row, pos, &chk_raw, 8);
-        unsigned chk = reverse8(chk_raw);
-
-        uint8_t chksum = ((id >> 8) + (id & 0xFF) + flags + (temp >> 8) + (temp & 0xFF) + (setp >> 8) + (setp & 0xFF)) & 0xFF;
-
-        // verify checksum
-        if (chk != chksum) {
+        uint8_t chk[1];
+        bitbuffer_extract_bytes(bitbuffer, row, bitpos, chk, WATTSTHERMO_CHKSUM_BITLEN);
+        reflect_bytes(chk, 1);
+        if (chk[0] != chksum) {
             decoder_log_bitbuffer(decoder, 1, __func__, bitbuffer, "Checksum fail.");
-            ret = DECODE_FAIL_MIC;
-            continue;
+            return DECODE_FAIL_MIC;
         }
 
         /* clang-format off */
@@ -165,7 +169,7 @@ static int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "pairing",          "Pairing",          DATA_INT,    pairing,
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",      DATA_DOUBLE,  temp * 0.1f,
             "setpoint_C",       "Setpoint",         DATA_FORMAT, "%.1f C",      DATA_DOUBLE,  setp * 0.1f,
-            //"flags",            "Flags",            DATA_INT,     flags,
+            "flags",            "Flags",            DATA_INT,     flags,
             "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
             NULL);
         /* clang-format on */
@@ -173,7 +177,7 @@ static int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_output_data(decoder, data);
         return 1;
     }
-    return ret;
+    return 0;
 }
 
 static char const *const output_fields[] = {
@@ -182,7 +186,7 @@ static char const *const output_fields[] = {
         "pairing",
         "temperature_C",
         "setpoint_C",
-        //"flags",
+        "flags",
         "mic",
         NULL,
 };
