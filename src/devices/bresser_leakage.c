@@ -78,7 +78,6 @@ static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int alarm;
     int no_alarm;
     int decode_ok;
-    uint8_t null_bytes;
 
     if (bitbuffer->num_rows != 1
             || bitbuffer->bits_per_row[0] < 160
@@ -122,19 +121,10 @@ static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     alarm         = ((msg[7] & 0x80) == 0x80) ? 1 : 0;
     no_alarm      = ((msg[7] & 0x40) == 0x40) ? 1 : 0;
 
-    null_bytes = msg[7] & 0xF;
-
-    for (int i=8; i<=15; i++) {
-        null_bytes |= msg[i];
-    }
-
-    // The parity/checksum/digest algorithm is currently unknown.
-    // We apply some heuristics to validate that the message is really from
-    // a water leakage sensor.
+    // Sanity checks
     decode_ok = (s_type == SENSOR_TYPE_LEAKAGE) &&
             (alarm != no_alarm) &&
-            (chan != 0) &&
-            (null_bytes == 0);
+            (chan != 0);
 
    if (!decode_ok)
        return 0;
