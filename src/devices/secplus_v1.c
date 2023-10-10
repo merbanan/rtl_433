@@ -206,7 +206,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         gettimeofday(&cur_tv, NULL);
         timeval_subtract(&res_tv, &cur_tv, &cached_tv);
 
-        decoder_logf(decoder, 2, __func__, "res %12ld %8ld", res_tv.tv_sec, (long)res_tv.tv_usec);
+        decoder_logf(decoder, 2, __func__, "res %12ld %8ld", (long)res_tv.tv_sec, (long)res_tv.tv_usec);
 
         // is the data not expired
         if (res_tv.tv_sec == 0 && res_tv.tv_usec < CACHE_MAX_AGE) {
