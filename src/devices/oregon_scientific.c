@@ -12,8 +12,10 @@
 
 #include "decoder.h"
 
-/// Documentation for Oregon Scientific protocols can be found here:
-/// http://wmrx00.sourceforge.net/Arduino/OregonScientific-RF-Protocols.pdf
+// Documentation for Oregon Scientific protocols can be found here:
+// http://wmrx00.sourceforge.net/Arduino/OregonScientific-RF-Protocols.pdf
+//
+// note that at least for THN132N, THGR122N, THGR810 valid channel numbers are 1, 2, 4.
 // Sensors ID
 #define ID_THGR122N 0x1d20
 #define ID_THGR968  0x1d30
