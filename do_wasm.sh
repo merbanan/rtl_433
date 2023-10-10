@@ -11,11 +11,11 @@ cat > wasmapi.c <<-EOF
 uint32_t analyseBuffer[1024];
 int analyse(uint32_t* pulse, int count)
 {
-    r_cfg_t g_cfg;
-    r_cfg_t* cfg = &g_cfg;
-    r_init_cfg(cfg);
-    cfg->report_time = REPORT_TIME_OFF;
-    register_all_protocols(cfg, 0);
+    r_cfg_t cfg;
+    r_init_cfg(&cfg);
+    cfg.report_time = REPORT_TIME_OFF;
+    add_json_output(&cfg, NULL);
+    register_all_protocols(&cfg, 0);
 
     pulse_data_t data = {0};
     data.sample_rate = 1000000;
@@ -27,8 +27,9 @@ int analyse(uint32_t* pulse, int count)
         data.num_pulses++;
     }
 
-    add_json_output(cfg, NULL);
-    return run_ook_demods(&cfg->demod->r_devs, &data);
+    int aux = run_ook_demods(&cfg.demod->r_devs, &data);
+    r_free_cfg(&cfg);
+    return aux;
 }
 EOF
 
