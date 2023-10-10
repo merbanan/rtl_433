@@ -27,7 +27,7 @@ Data layout:
 - I: 24 bit ID
 - P: 8 bit pressure  P * 2.5 = Pressure kPa
 - T: 8 bit temperature   T - 50 = Temperature C
-- F: 16  bit battery (not verified), deflation pressure (for sure), pressure modifier flags
+- F: 16  bit battery (not verified), deflation pressure (for sure), pressure MSB
 
 Raw Data example :
 
@@ -67,39 +67,45 @@ static int tpms_eezrv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, 0, pos + 16, cc, sizeof(cc) * 8);
     bitbuffer_extract_bytes(bitbuffer, 0, pos + 24, b, sizeof(b) * 8);
 
-    // verify checksum
+    // Verify checksum
+    // If the checksum is greater than 0xFF then the MSB is set.
+    // It occurs whether the bit is already set or not and was observed when checksum was in the 0x1FF and the 0x2FF range.
     int computed_checksum = add_bytes(b, sizeof(b));
-    if (computed_checksum > 0xff) 
+    if (computed_checksum > 0xff) {
         computed_checksum |= 0x80;
-    
+    }
+
     if ((computed_checksum & 0xff) != cc[0]) {
         decoder_log(decoder, 2, __func__, "Checksum fail");
         return DECODE_FAIL_MIC;
     }
-    char id_str[7];
-    sprintf(id_str, "%02x%02x%02x", b[0], b[1], b[2]);
+
     int temperature_C      = b[4] - 50;
     int flags1             = b[5];
     int flags2             = b[6];
     int fast_leak_detected = (flags1 & 0x10);
-    int fast_leak_resolved = (flags1 & 0x20); 
+    int fast_leak_resolved = (flags1 & 0x20);
 
     int fast_leak = fast_leak_detected && !fast_leak_resolved;
     float pressure_kPa = (((flags2 & 0x01) << 8) + b[3]) * 2.5;
 
+    char id_str[7];
+    snprintf(id_str, sizeof(id_str), "%02x%02x%02x", b[0], b[1], b[2]);
+
     char flags_str[5];
-    sprintf(flags_str, "%02x%02x", flags1, flags2);
+    snprintf(flags_str, sizeof(flags_str), "%02x%02x", flags1, flags2);
+
     /* clang-format off */
     data_t *data = data_make(
-                    "model",            "",             DATA_STRING, "EezTire-E618",
-                    "type",             "",             DATA_STRING, "TPMS",
-                    "id",               "",             DATA_STRING, id_str,
-                    "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure_kPa,
-                    "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temperature_C,
-                    "fast_leak",        "Fast Leak",    DATA_INT, fast_leak,
-                    "flags",            "Flags",        DATA_STRING, flags_str,
-                    "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-                    NULL);
+            "model",            "",             DATA_STRING, "EezTire-E618",
+            "type",             "",             DATA_STRING, "TPMS",
+            "id",               "",             DATA_STRING, id_str,
+            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure_kPa,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temperature_C,
+            "fast_leak",        "Fast Leak",    DATA_INT,    fast_leak,
+            "flags",            "Flags",        DATA_STRING, flags_str,
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
+            NULL);
     /* clang-format on */
 
     decoder_output_data(decoder, data);
