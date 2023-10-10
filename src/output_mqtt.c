@@ -8,7 +8,7 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-
+#ifdef SERVER
 // note: our unit header includes unistd.h for gethostname() via data.h
 #include "output_mqtt.h"
 #include "optparse.h"
@@ -601,3 +601,4 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
 
     return &mqtt->output;
 }
+#endif

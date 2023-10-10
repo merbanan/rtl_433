@@ -8,7 +8,7 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-
+#ifdef SERVER
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -329,3 +329,4 @@ data_t *data_tag_apply(data_tag_t *tag, data_t *data, char const *filename)
 
     return data;
 }
+#endif

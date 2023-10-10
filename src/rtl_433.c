@@ -1186,6 +1186,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             add_kv_output(cfg, arg_param(arg));
             cfg->has_logout = 1;
         }
+#ifdef SERVER
         else if (strncmp(arg, "mqtt", 4) == 0) {
             add_mqtt_output(cfg, arg);
         }
@@ -1198,6 +1199,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         else if (strncmp(arg, "http", 4) == 0) {
             add_http_output(cfg, arg_param(arg));
         }
+#endif
         else if (strncmp(arg, "trigger", 7) == 0) {
             add_trigger_output(cfg, arg_param(arg));
         }
@@ -1212,11 +1214,13 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             usage(1);
         }
         break;
+#ifdef SERVER
     case 'K':
         if (!arg)
             help_tags();
         add_data_tag(cfg, arg);
         break;
+#endif
     case 'C':
         if (!arg)
             usage(1);
@@ -1416,6 +1420,7 @@ static void sdr_handler(struct mg_connection *nc, int ev_type, void *ev_data)
     }
 }
 
+#ifdef SERVER
 // note that this function is called in a different thread
 static void acquire_callback(sdr_event_t *ev, void *ctx)
 {
@@ -1481,6 +1486,7 @@ static int start_sdr(r_cfg_t *cfg)
     cfg->dev_state = DEVICE_STATE_STARTING;
     return r;
 }
+#endif
 
 static void timer_handler(struct mg_connection *nc, int ev, void *ev_data)
 {
@@ -1542,7 +1548,9 @@ static void timer_handler(struct mg_connection *nc, int ev, void *ev_data)
             cfg->exit_async = 1;
         }
         if (cfg->dev_mode == DEVICE_MODE_RESTART) {
+#ifdef SERVER
             start_sdr(cfg);
+#endif
         }
         // do nothing for DEVICE_MODE_PAUSE or DEVICE_MODE_MANUAL
 
@@ -1982,7 +1990,11 @@ int main(int argc, char **argv) {
     print_log(LOG_NOTICE, "Input", "The internals of input handling changed, read about and report problems on PR #1978");
 
     if (cfg->dev_mode != DEVICE_MODE_MANUAL) {
+#ifdef SERVER
         r = start_sdr(cfg);
+#else
+        r = -1;
+#endif
         if (r < 0) {
             exit(2);
         }
@@ -1995,15 +2007,16 @@ int main(int argc, char **argv) {
 
     time(&cfg->hop_start_time);
 
+#ifdef SERVER
     // add dummy socket to receive broadcasts
     struct mg_add_sock_opts opts = {.user_data = cfg};
     struct mg_connection *nc = mg_add_sock_opt(get_mgr(cfg), INVALID_SOCKET, timer_handler, opts);
     // Send us MG_EV_TIMER event after 2.5 seconds
     mg_set_timer(nc, mg_time() + 2.5);
-
     while (!cfg->exit_async) {
         mg_mgr_poll(cfg->mgr, 500);
     }
+#endif
     if (cfg->verbosity >= LOG_INFO)
         print_log(LOG_INFO, "rtl_433", "stopping...");
     // final polls to drain the broadcast

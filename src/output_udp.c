@@ -8,7 +8,7 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-
+#ifdef SERVER
 #include "output_udp.h"
 
 #include "data.h"
@@ -237,3 +237,4 @@ struct data_output *data_output_syslog_create(int log_level, const char *host, c
 
     return &syslog->output;
 }
+#endif
