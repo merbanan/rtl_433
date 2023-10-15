@@ -118,7 +118,7 @@ static int ambientweather_tx8300_callback(r_device *decoder, bitbuffer_t *bitbuf
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -129,7 +129,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ambientweather_tx8300 = {
+r_device const ambientweather_tx8300 = {
         .name        = "Ambient Weather TX-8300 Temperature/Humidity Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

@@ -85,7 +85,7 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
     return ret;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -95,7 +95,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device oregon_scientific_v1 = {
+r_device const oregon_scientific_v1 = {
         .name        = "OSv1 Temperature Sensor",
         .modulation  = OOK_PULSE_PWM_OSV1,
         .short_width = 1465, // nominal half-bit width

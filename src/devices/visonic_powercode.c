@@ -49,8 +49,6 @@ Protocol cribbed from:
 static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t msg[32];
-    data_t *data;
-    char id[7];
     uint8_t lrc;
 
     // 37 bits expected, 6 packet repetitions, accept 4
@@ -81,13 +79,13 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_logf(decoder, 2, __func__, "data byte is %02x", msg[3]);
 
     // format device id
-    sprintf(id, "%02x%02x%02x", msg[0], msg[1], msg[2]);
+    char id_str[7];
+    snprintf(id_str, sizeof(id_str), "%02x%02x%02x", msg[0], msg[1], msg[2]);
 
-    // populate data byte fields
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",        "Model",        DATA_STRING, "Visonic-Powercode",
-            "id",           "ID",           DATA_STRING, id,
+            "id",           "ID",           DATA_STRING, id_str,
             "tamper",       "Tamper",       DATA_INT,    ((0x80 & msg[3]) == 0x80) ? 1 : 0,
             "alarm",        "Alarm",        DATA_INT,    ((0x40 & msg[3]) == 0x40) ? 1 : 0,
             "battery_ok",   "Battery",      DATA_INT,    ((0x20 & msg[3]) == 0x20) ? 0 : 1,
@@ -96,7 +94,7 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "supervised",   "Supervised",   DATA_INT,    ((0x04 & msg[3]) == 0x04) ? 1 : 0,
             "spidernet",    "Spidernet",    DATA_INT,    ((0x02 & msg[3]) == 0x02) ? 1 : 0,
             "repeater",     "Repeater",     DATA_INT,    ((0x01 & msg[3]) == 0x01) ? 1 : 0,
-            "mic",          "Integrity",    DATA_STRING, "LRC",
+            "mic",          "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
@@ -105,7 +103,7 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "tamper",
@@ -120,7 +118,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device visonic_powercode = {
+r_device const visonic_powercode = {
         .name        = "Visonic powercode",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 400,

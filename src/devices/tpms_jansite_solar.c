@@ -43,15 +43,12 @@ TODO: identify battery bits
 
 static int tpms_jansite_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    data_t *data;
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
     unsigned id;
-    char id_str[7 + 1];
     int flags;
     int pressure;
     int temperature;
-    char code_str[9 * 2 + 1];
 
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 88);
     bitbuffer_invert(&packet_bits);
@@ -77,11 +74,14 @@ static int tpms_jansite_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer, 
     flags       = b[5];
     temperature = b[6];
     pressure    = b[7];
-    sprintf(id_str, "%06x", id);
-    sprintf(code_str, "%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10]);
+
+    char id_str[7 + 1];
+    snprintf(id_str, sizeof(id_str), "%06x", id);
+    char code_str[9 * 2 + 1];
+    snprintf(code_str, sizeof(code_str), "%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10]);
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Jansite-Solar",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,
@@ -118,7 +118,7 @@ static int tpms_jansite_solar_callback(r_device *decoder, bitbuffer_t *bitbuffer
     return events > 0 ? events : ret;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "type",
         "id",
@@ -130,7 +130,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_jansite_solar = {
+r_device const tpms_jansite_solar = {
         .name        = "Jansite TPMS Model Solar",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 51,

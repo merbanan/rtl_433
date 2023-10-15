@@ -134,7 +134,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "temperature_C",
@@ -151,7 +151,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device bresser_7in1 = {
+r_device const bresser_7in1 = {
         .name        = "Bresser Weather Center 7-in-1",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 124,

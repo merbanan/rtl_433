@@ -12,17 +12,18 @@
 /**
 Chuango Security Technology.
 
-likely based on HS1527 or compatible
+Likely based on HS1527 or compatible
 
 Tested devices:
-G5 GSM/SMS/RFID Touch Alarm System (Alarm, Disarm, ...)
-DWC-100 Door sensor (Default: Normal Zone)
-DWC-102 Door sensor (Default: Normal Zone)
-KP-700 Wireless Keypad (Arm, Disarm, Home Mode, Alarm!)
-PIR-900 PIR sensor (Default: Home Mode Zone)
-RC-80 Remote Control (Arm, Disarm, Home Mode, Alarm!)
-SMK-500 Smoke sensor (Default: 24H Zone)
-WI-200 Water sensor (Default: 24H Zone)
+- G5 GSM/SMS/RFID Touch Alarm System (Alarm, Disarm, ...)
+- DWC-100 Door sensor (Default: Normal Zone)
+- DWC-102 Door sensor (Default: Normal Zone)
+- KP-700 Wireless Keypad (Arm, Disarm, Home Mode, Alarm!)
+- PIR-900 PIR sensor (Default: Home Mode Zone)
+- RC-80 Remote Control (Arm, Disarm, Home Mode, Alarm!)
+- SMK-500 Smoke sensor (Default: 24H Zone)
+- WI-200 Water sensor (Default: 24H Zone)
+- newer DWC-102 additionally generates a cmd=12 signal on door/windows being closed
 
 Note: simple 24 bit fixed ID protocol (x1527 style) and should be handled by the flex decoder.
 
@@ -36,7 +37,7 @@ static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b;
     int id;
     int cmd;
-    char *cmd_str;
+    char const *cmd_str;
 
     if (bitbuffer->bits_per_row[0] != 25)
         return DECODE_ABORT_LENGTH;
@@ -48,7 +49,7 @@ static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Validate package
     if (!(b[3] & 0x80)                           // Last bit (MSB here) is always 1
-            || !b[0] || !b[1] || !(b[2] & 0xF0)) // Reduce false positives. ID 0x00000 not supported
+            || (!b[0] && !b[1] && !(b[2] & 0xF0))) // Reduce false positives. ID 0x00000 not supported
         return DECODE_ABORT_EARLY;
 
     id  = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4); // ID is 20 bits (Ad: "1 Million combinations" :-)
@@ -58,7 +59,7 @@ static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     case 0xF: cmd_str = "?"; break;
     case 0xE: cmd_str = "?"; break;
     case 0xD: cmd_str = "Low Battery"; break;
-    case 0xC: cmd_str = "?"; break;
+    case 0xC: cmd_str = "Closing"; break;
     case 0xB: cmd_str = "24H Zone"; break;
     case 0xA: cmd_str = "Single Delay Zone"; break;
     case 0x9: cmd_str = "?"; break;
@@ -87,7 +88,7 @@ static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "cmd",
@@ -95,7 +96,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device chuango = {
+r_device const chuango = {
         .name        = "Chuango Security Technology",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 568,  // Pulse: Short 568µs, Long 1704µs

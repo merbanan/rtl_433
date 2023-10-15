@@ -91,7 +91,7 @@ static data_meta_type_t dmt[DATA_COUNT] = {
       .value_release            = (value_release_fn) data_array_free },
 };
 
-static bool import_values(void *dst, void *src, int num_values, data_type_t type)
+static bool import_values(void *dst, void const *src, int num_values, data_type_t type)
 {
     int element_size = dmt[type].array_element_size;
     array_elementwise_import_fn import = dmt[type].array_elementwise_import;
@@ -117,7 +117,7 @@ static bool import_values(void *dst, void *src, int num_values, data_type_t type
 
 /* data */
 
-R_API data_array_t *data_array(int num_values, data_type_t type, void *values)
+R_API data_array_t *data_array(int num_values, data_type_t type, void const *values)
 {
     if (num_values < 0) {
       return NULL;
@@ -350,10 +350,12 @@ R_API void data_output_print(data_output_t *output, data_t *data)
 {
     if (!output)
         return;
-    output->print_data(output, data, NULL);
-
-    if (output->output_flush)
-        output->output_flush(output);
+    if (output->output_print) {
+        output->output_print(output, data);
+    }
+    else {
+        output->print_data(output, data, NULL);
+    }
 }
 
 R_API void data_output_start(struct data_output *output, char const *const *fields, int num_fields)
@@ -407,7 +409,9 @@ R_API void print_array_value(data_output_t *output, data_array_t *array, char co
         memcpy(&value, (char *)array->values + element_size * idx, element_size);
         print_value(output, array->type, value, format);
     } else {
-        print_value(output, array->type, *(data_value_t*)((char *)array->values + element_size * idx), format);
+        // Note: on 32-bit data_value_t has different size/alignment than a pointer!
+        value.v_ptr = *(void **)((char *)array->values + element_size * idx);
+        print_value(output, array->type, value, format);
     }
 }
 

@@ -69,7 +69,7 @@ static int jasco_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "status",
@@ -77,7 +77,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device jasco = {
+r_device const jasco = {
         .name        = "Jasco/GE Choice Alert Security Devices",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 250,

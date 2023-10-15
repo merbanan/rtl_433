@@ -222,10 +222,38 @@
     DECL(tpms_renault_0435r) \
     DECL(fineoffset_ws80) \
     DECL(emos_e6016) \
-    DECL(altronics_7064) \
+    DECL(emax) \
     DECL(ant_antplus) \
     DECL(emos_e6016_rain) \
     DECL(hcs200_fsk) \
+    DECL(fineoffset_wh45) \
+    DECL(maverick_xr30) \
+    DECL(fineoffset_wn34) \
+    DECL(rubicson_pool_48942) \
+    DECL(badger_orion) \
+    DECL(geo_minim) \
+    DECL(tpms_tyreguard400) \
+    DECL(tpms_kia) \
+    DECL(srsmith_pool_srs_2c_tx) \
+    DECL(neptune_r900) \
+    DECL(wec2103) \
+    DECL(vauno_en8822c) \
+    DECL(govee_h5054) \
+    DECL(tfa_14_1504_v2) \
+    DECL(ced7000) \
+    DECL(oil_watchman_advanced) \
+    DECL(oil_smart) \
+    DECL(gasmate_ba1008) \
+    DECL(flowis) \
+    DECL(m_bus_mode_c_t_downlink) \
+    DECL(revolt_nc5462) \
+    DECL(lacrosse_tx31u) \
+    DECL(tpms_eezrv) \
+    DECL(baldr_rain) \
+    DECL(celsia_czc1) \
+    DECL(fineoffset_ws90) \
+    DECL(thermopro_tx2c) \
+    DECL(tfa_303151) \
 
     /* Add new decoders here. */
 

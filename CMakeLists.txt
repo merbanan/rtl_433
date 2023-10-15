@@ -123,6 +123,11 @@ if(WIN32)
 endif()
 
 ########################################################################
+# Use pkg-config
+########################################################################
+find_package(PkgConfig)
+
+########################################################################
 # Option to force ANSI-colored build output (for Ninja)
 ########################################################################
 option(FORCE_COLORED_BUILD "Always produce ANSI-colored build output (GNU/Clang only)." FALSE)
@@ -178,6 +183,12 @@ set_property(CACHE ENABLE_OPENSSL PROPERTY STRINGS AUTO ON OFF)
 if(ENABLE_OPENSSL) # AUTO / ON
 
 find_package(OpenSSL)
+# Get actual libs from pkg-config to support edge cases (static on Sparc)
+# This will break Win32 builds, exclude that platform
+pkg_check_modules(PC_OPENSSL QUIET openssl)
+if(PC_OPENSSL_FOUND AND NOT WIN32)
+    set(OPENSSL_LIBRARIES ${PC_OPENSSL_LINK_LIBRARIES})
+endif()
 if(OPENSSL_FOUND)
     message(STATUS "OpenSSL TLS support will be compiled. Found version ${OPENSSL_VERSION}")
     include_directories(${OPENSSL_INCLUDE_DIR})
@@ -201,7 +212,6 @@ set(ENABLE_RTLSDR ON CACHE STRING "Enable RTL-SDR (lbrtlsdr) driver support")
 set_property(CACHE ENABLE_RTLSDR PROPERTY STRINGS AUTO ON OFF)
 if(ENABLE_RTLSDR) # AUTO / ON
 
-find_package(PkgConfig)
 find_package(LibRTLSDR)
 find_package(LibUSB)
 if(LibRTLSDR_FOUND)
@@ -274,7 +284,7 @@ endif()
 # Setup the include and linker paths
 ########################################################################
 if(MINGW OR MSVC)
-list(APPEND NET_LIBRARIES ws2_32 mswsock)
+list(APPEND NET_LIBRARIES ws2_32 mswsock netapi32)
 endif()
 
 include_directories(

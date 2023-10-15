@@ -44,9 +44,18 @@ typedef enum term_color {
     TERM_COLOR_BRIGHT_WHITE   = 97,
 } term_color_t;
 
+/**
+ * Sets the terminal text foreground color.
+ * Always sets the bold font attribute, except for TERM_COLOR_RESET.
+ */
 void term_set_fg(void *ctx, term_color_t color);
 
-void term_set_bg(void *ctx, term_color_t color);
+/**
+ * Sets the terminal background and foreground color.
+ * Both are optional, use `0` to omit a color.
+ * Must not be used for TERM_COLOR_RESET.
+ */
+void term_set_bg(void *ctx, term_color_t bg, term_color_t fg);
 
 /*
  * Defined in newer <sal.h> for MSVC.
@@ -86,9 +95,9 @@ int term_printf(void *ctx, _Printf_format_string_ const char *format, ...)
  *   "quoted"
  *   'quoted'
  */
-int term_help_printf(_Printf_format_string_ char const *format, ...)
+int term_help_fprintf(FILE *fp, _Printf_format_string_ char const *format, ...)
 #if defined(__GNUC__) || defined(__clang__)
-        __attribute__((format(printf, 1, 2)))
+        __attribute__((format(printf, 2, 3)))
 #endif
         ;
 
@@ -99,10 +108,10 @@ int term_help_printf(_Printf_format_string_ char const *format, ...)
 int term_puts(void *ctx, const char *buf);
 
 /**
- * Like 'term_help_printf()', but no var-arg format.
+ * Like 'term_help_fprintf()', but no var-arg format.
  * Simply takes a 0-terminated buffer.
  */
-int term_help_puts(void *ctx, const char *buf);
+int term_help_fputs(void *ctx, const char *buf, FILE *fp);
 
 /**
  * Change the default color map.

@@ -10,6 +10,8 @@
 /**
 Hideki Temperature, Humidity, Wind, Rain sensor.
 
+Also: Bresser 5CH (Model 7009993)
+
 The received bits are inverted.
 
 Every 8 bits are stuffed with a (even) parity bit.
@@ -224,7 +226,7 @@ static int hideki_ts04_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return ret;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -240,7 +242,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device hideki_ts04 = {
+r_device const hideki_ts04 = {
         .name        = "HIDEKI TS04 Temperature, Humidity, Wind and Rain Sensor",
         .modulation  = OOK_PULSE_DMC,
         .short_width = 520,  // half-bit width 520 us

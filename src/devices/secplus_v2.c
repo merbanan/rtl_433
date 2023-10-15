@@ -29,15 +29,15 @@ Layout:
 
     bits = `AA BB IIII OOOO X*30`
 
-- AA = payload type  ( 2 bits 00 or 01 )
-- BB = FrameID ( 2 bits always 00)
-- IIII = inversion indicator ( 4 bits )
-- OOOO = Order indicator ( 4 bits ).
-- XXXX....  = data ( 30 bits )
+- AA = payload type  (2 bits 00 or 01)
+- BB = FrameID (2 bits always 00)
+- IIII = inversion indicator (4 bits)
+- OOOO = Order indicator (4 bits).
+- XXXX....  = data (30 bits)
 
 ---
 
-data is broken up into 3 parts ( p0 p1 p2 )
+data is broken up into 3 parts (p0 p1 p2)
 eg:
 
 data = `ABCABCABCABCABCABCABCABCABCABC`
@@ -58,7 +58,7 @@ EG:
 `1 0 0 1 1 0 1 0 0 1 1 0=> [1 0] [0 1] [1 0] [1 0] [0 1] [1 0] => 2 1 2 2 1 2`
 
 Returns data in :
-  * roll_array as an array of trinary values ( 0, 1, 2) the value 3 is invalid
+  * roll_array as an array of trinary values  0, 1, 2) the value 3 is invalid
   * fixed_p as an bitbuffer_t with 20 bits of data
 
 
@@ -203,7 +203,7 @@ static int secplus_v2_decode_v2_half(r_device *decoder, bitbuffer_t *bits, uint8
         roll_array[k++] = (x >> i) & 0x03;
     }
 
-    // bitrow_print(buffy, 8);
+    // decoder_log_bitrow(decoder, 3, __func__, buffy, 8, "")
 
     // assemble binary bits into trinary
     x = p2;
@@ -211,14 +211,14 @@ static int secplus_v2_decode_v2_half(r_device *decoder, bitbuffer_t *bits, uint8
         roll_array[k++] = (x >> i) & 0x03;
     }
 
-    decoder_logf(decoder, 1, __func__, "roll_array : (%d) %d %d %d %d %d %d %d %d %d\n", part_id,
+    decoder_logf(decoder, 1, __func__, "roll_array : (%d) %d %d %d %d %d %d %d %d %d", part_id,
                 roll_array[0], roll_array[1], roll_array[2], roll_array[3],
                 roll_array[4], roll_array[5], roll_array[6], roll_array[7], roll_array[8]);
 
     // SANITY check trinary values, 00/01/10 are valid,  11 is not
     for (int i = 0; i < 9; i++) {
         if (roll_array[i] == 3) {
-            fprintf(stderr, "roll_array val  FAIL\n");
+            decoder_log(decoder, 0, __func__, "roll_array val FAIL");
             return 1; // DECODE_FAIL_SANITY;
         }
     }
@@ -237,6 +237,10 @@ static int secplus_v2_decode_v2_half(r_device *decoder, bitbuffer_t *bits, uint8
 static const uint8_t _preamble[] = {0xaa, 0xaa, 0x95, 0x60};
 unsigned _preamble_len           = 28;
 
+/**
+Security+ 2.0 rolling code.
+@sa secplus_v2_decode_v2_half()
+*/
 static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     unsigned search_index = 0;
@@ -376,7 +380,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         // Common fields
         "model",
         "id",
@@ -390,7 +394,7 @@ static char *output_fields[] = {
 //      Freq 310.01M
 //  -X "n=vI3,m=OOK_PCM,s=230,l=230,t=40,r=10000,g=7400,match={24}0xaaaa9560"
 
-r_device secplus_v2 = {
+r_device const secplus_v2 = {
         .name        = "Security+ 2.0 (Keyfob)",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 250,

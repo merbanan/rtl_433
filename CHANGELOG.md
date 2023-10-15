@@ -1,5 +1,102 @@
 # Changelog
 
+## Release 22.11 (2022-11-19)
+
+### Breaking Changes
+
+- Fixed irregular model names (#1883)
+    - "Inkbird ITH-20R" -> "Inkbird-ITH20R"
+    - "LaCrosse-WS7000-27/28" -> "LaCrosse-WS700027"
+    - "LaCrosse-WS7000-22/25" -> "LaCrosse-WS700022"
+    - "LaCrosse-WS7000-16" -> "LaCrosse-WS700016"
+    - "LaCrosse-WS7000-15" -> "LaCrosse-WS700015"
+    - "LaCrosse-WS7000-20" -> "LaCrosse-WS700020"
+    - "LaCrosse-WS2500-19" -> "LaCrosse-WS250019"
+    - "Abarth 124 Spider" -> "Abarth-124Spider"
+    - "Jansite Solar" -> "Jansite-Solar"
+    - "Klimalogg Pro" -> "Klimalogg-Pro"
+    - "Secplus_v1" -> "Secplus-v1"
+    - "SCM+" -> "SCMplus"
+- Changed light_klx to light_lux in Bresser-7in1 (#2061)
+- Removed VS15 project files
+
+### Highlights
+
+- Added rtl_tcp pass-through output (#1915)
+- Added realtime replay option for file inputs
+- Added support for Badger ORION water meter (#2089)
+- Added support for Rubicson pool thermometer 48942 (#2137)
+- Added support for Fine Offset WN34 temperature sensor (#2122)
+- Added support for KS200/KS300 to ELV WS2000 (#2103)
+- Added support for Maverick XR-30 (#2090)
+- Added support for Fine Offset WH45 air quality sensor
+- Added support for HCS200/HCS300 based remotes with FSK transmitters (#2052)
+- Added support for Emos E6016 Rain Gauge (#2032)
+- Added support for ANT and ANT+ devices (#2004)
+- Added support for Altronics X7064 sensor (#2000)
+- Added support for EMOS 6016 (#1983)
+- Added support for FineOffset WS80 weather station (#1965)
+- Added support for Renault-0435R TPMS (#1924)
+- Added support for AcuRite 01190 Leak Detector (#1953)
+- Added support for Regency ceiling fans (#1948)
+- Added support for Microchip HCS300 KeeLoq remotes BREAKING CHANGE (#1752)
+- Added support for Yale HSA (#1929)
+- Added support for SimpliSafe-Gen3 (#1257)
+- Added support for AVE TPMS (#1909)
+- Added decoder conf for sgooway door detector (#1707)
+- Added decoder conf for ContinentalRemote (#2125)
+- Added decoder conf for Mondeo remote (#1282)
+- Added decoder conf for LeakDetector
+- Added decoder conf for Heatilator-Gas-Log (#1963)
+- Added decoder conf for Honeywell-Fan (#1962)
+- Added decoder conf for DrivewayAlert (#1928)
+- Added decoder conf for GhostControls (#1922)
+- Added Threads if available
+
+### Changed
+
+- Added note regarding WH51 915MHz decoding (#2236)
+- Added publish secret knocks as device automations
+- Added time, channel, and button device automation triggers
+- Improved false positives for acurite_01185m (#2214)
+- Changed rtl_433_mqtt_hass rain value template round to two digits (#2210)
+- Changed rtl_433_mqtt_hass value templates round to one digit (#2209)
+- Fixed Chuango devices with some zeroes in their ID (#2205)
+- Changed Proove/Nexa/Kaku to support Smartwares SH4-90152 (#2174)
+- Changed Acurite TXR decoder to improve validation (#2162)
+- Fixed Efergy-e2CT current above 53 Amp (#2166)
+- Added sanity check to Ambient Weather F007th (#2155)
+- Added decode symbol helper and flex option (#2161)
+- Added InFactory PT-310 support to Rubicson (#2123)
+- Added HTTP API example scripts
+- Changed rain gauge multiplier for Auriol-4LD5661 (#2129)
+- Added CSV names for flex getters with unique mode
+- Added php example script (#2087)
+- Improved Ford TPMS decoder (#2071)
+- Fixed crash when reading a conf file (#2068)
+- Changed SDR data buffers to persist valid
+- Added ERT-SCM consumption data to mqtt hass mappings (#2023)
+- Added id filter to mqtt hass (#1988)
+- Fixed overflow in Acurite-00275rm (#2012)
+- Changed the PCM/NRZ/RZ naming
+- Added cmake option to select IPv6 support
+- Fixed EMOS-6016 checksum, add DCF77
+- Added bitbuffer_find_repeated_prefix function
+- Fixed pulse reset on spurious pulses (#1982)
+- Removed confusing -G register all option
+- Changed hass script duplicate dict key 'light_lux' back to 'lux' for legacy reasons (#1989)
+- Added Honeywell-cm921 Ticker and Heat Demand commands (#1985)
+- Changed most decoder-verbose to log level
+- Changed fprintf in decoders to decoder_log
+- Added decoder log to replace bitbuffer bitrow print
+- Added decoder log to replace fprintf
+- Fixed Digitech-XC0324 humidity readings (FT-005TH Sensor) (#1971)
+- Changed wt0124 to use additional checksum (#1959)
+- Added diagnostic entity category to mqtt hass example (#1952)
+- Removed invalid "weather" device class in HASS script (#1584)
+- Added trigger stream output (#1910)
+- Changed Hideki to accept short sync (#1908)
+
 ## Release 21.12 (2021-12-14)
 
 ### Highlights

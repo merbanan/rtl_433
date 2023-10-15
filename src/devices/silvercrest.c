@@ -11,6 +11,11 @@
 
 #include "decoder.h"
 
+/**
+Silvercrest remote decoder.
+
+@todo Documentation needed.
+*/
 static int silvercrest_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const cmd_lu_tab[16] = {2, 3, 0, 1, 4, 5, 7, 6, 0xC, 0xD, 0xF, 0xE, 8, 9, 0xB, 0xA};
@@ -44,13 +49,13 @@ static int silvercrest_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return DECODE_ABORT_EARLY;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "button",
         NULL,
 };
 
-r_device silvercrest = {
+r_device const silvercrest = {
         .name        = "Silvercrest Remote Control",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 264,

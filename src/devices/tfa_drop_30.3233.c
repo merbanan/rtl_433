@@ -176,7 +176,7 @@ static int tfa_drop_303233_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -185,7 +185,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tfa_drop_303233 = {
+r_device const tfa_drop_303233 = {
         .name        = "TFA Drop Rain Gauge 30.3233.01",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 255,

@@ -60,9 +60,9 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     uint8_t msg[19];
 
-    if ( (bitbuffer->num_rows != 1)
-         || (bitbuffer->bits_per_row[0] < 187)
-          /*|| (bitbuffer->bits_per_row[0] > 14563)*/ ) {
+    if ((bitbuffer->num_rows != 1)
+            || (bitbuffer->bits_per_row[0] < 187)
+            /*|| (bitbuffer->bits_per_row[0] > 14563)*/) {
         decoder_logf(decoder, 2, __func__, "bit_per_row %u out of range", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH; // Unrecognized data
     }
@@ -102,7 +102,7 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint32_t subtype = (msg[3] << 24 | msg[2] << 16 | msg[1] << 8 | msg[0]);
     int sensor_num = msg[4];
     uint16_t word56 = (msg[6] << 8 | msg[5]);
-    int battery = msg[7];
+    float battery_ok = msg[7] * 0.01f;
     uint16_t sensor_id = (msg[9] << 8 | msg[8]);
     float temperature = ((int16_t)(msg[11] << 8 | msg[10])) * 0.1f;
     float temperature_ext = ((int16_t)(msg[13] << 8 | msg[12])) * 0.1f;
@@ -115,12 +115,12 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",            "",             DATA_STRING, "Inkbird-ITH20R",
             "id",               "",             DATA_INT,    sensor_id,
-            "battery",          "Battery",      DATA_INT,    battery,
+            "battery_ok",       "Battery",      DATA_DOUBLE, battery_ok,
             "sensor_num",       "",             DATA_INT,    sensor_num,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-            "temperature2_C",   "Temperature2", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_ext,
+            "temperature_2_C",  "Temperature2", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_ext,
             "humidity",         "Humidity",     DATA_FORMAT, "%.1f %%", DATA_DOUBLE, humidity,
+            "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -128,19 +128,19 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
-        "battery",
+        "battery_ok",
         "sensor_num",
-        "mic",
         "temperature_C",
-        "temperature2_C",
+        "temperature_2_C",
         "humidity",
+        "mic",
         NULL,
 };
 
-r_device inkbird_ith20r = {
+r_device const inkbird_ith20r = {
         .name        = "Inkbird ITH-20R temperature humidity sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 100,  // Width of a '0' gap

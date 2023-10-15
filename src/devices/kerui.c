@@ -35,7 +35,7 @@ static int kerui_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b;
     int id;
     int cmd;
-    char *cmd_str;
+    char const *cmd_str;
 
     int r = bitbuffer_find_repeated_row(bitbuffer, 9, 25); // expected are 25 packets, require 9
     if (r < 0)
@@ -90,7 +90,7 @@ static int kerui_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "cmd",
@@ -103,7 +103,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device kerui = {
+r_device const kerui = {
         .name        = "Kerui PIR / Contact Sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 420,

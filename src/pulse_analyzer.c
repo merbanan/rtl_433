@@ -202,7 +202,7 @@ static void hexstr_print(hexstr_t *h, FILE *out)
 #define TOLERANCE (0.2f) // 20% tolerance should still discern between the pulse widths: 0.33, 0.66, 1.0
 
 /// Analyze the statistics of a pulse data structure and print result
-void pulse_analyzer(pulse_data_t *data, int package_type)
+void pulse_analyzer(pulse_data_t *data, int package_type, r_device* device)
 {
     if (data->num_pulses == 0) {
         fprintf(stderr, "No pulses detected.\n");
@@ -260,7 +260,8 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
             (float)data->fsk_f2_est / INT16_MAX * data->sample_rate / 2.0 / 1000.0);
 
     fprintf(stderr, "Guessing modulation: ");
-    r_device device = {.name = "Analyzer Device", 0};
+    device->name    = "Analyzer Device",
+    device->verbose = 2,
     histogram_sort_mean(&hist_pulses); // Easier to work with sorted data
     histogram_sort_mean(&hist_gaps);
     if (hist_pulses.bins[0].mean == 0) {
@@ -276,43 +277,43 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
     }
     else if (hist_pulses.bins_count == 1 && hist_gaps.bins_count > 1) {
         fprintf(stderr, "Pulse Position Modulation with fixed pulse width\n");
-        device.modulation  = OOK_PULSE_PPM; // TODO: there is not FSK_PULSE_PPM
-        device.short_width = to_us * hist_gaps.bins[0].mean;
-        device.long_width  = to_us * hist_gaps.bins[1].mean;
-        device.gap_limit   = to_us * (hist_gaps.bins[1].max + 1);                        // Set limit above next lower gap
-        device.reset_limit = to_us * (hist_gaps.bins[hist_gaps.bins_count - 1].max + 1); // Set limit above biggest gap
+        device->modulation  = OOK_PULSE_PPM; // TODO: there is not FSK_PULSE_PPM
+        device->short_width = to_us * hist_gaps.bins[0].mean;
+        device->long_width  = to_us * hist_gaps.bins[1].mean;
+        device->gap_limit   = to_us * (hist_gaps.bins[1].max + 1);                        // Set limit above next lower gap
+        device->reset_limit = to_us * (hist_gaps.bins[hist_gaps.bins_count - 1].max + 1); // Set limit above biggest gap
     }
     else if (hist_pulses.bins_count == 2 && hist_gaps.bins_count == 1) {
         fprintf(stderr, "Pulse Width Modulation with fixed gap\n");
-        device.modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PWM : OOK_PULSE_PWM;
-        device.short_width = to_us * hist_pulses.bins[0].mean;
-        device.long_width  = to_us * hist_pulses.bins[1].mean;
-        device.tolerance   = (device.long_width - device.short_width) * 0.4;
-        device.reset_limit = to_us * (hist_gaps.bins[hist_gaps.bins_count - 1].max + 1); // Set limit above biggest gap
+        device->modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PWM : OOK_PULSE_PWM;
+        device->short_width = to_us * hist_pulses.bins[0].mean;
+        device->long_width  = to_us * hist_pulses.bins[1].mean;
+        device->tolerance   = (device->long_width - device->short_width) * 0.4;
+        device->reset_limit = to_us * (hist_gaps.bins[hist_gaps.bins_count - 1].max + 1); // Set limit above biggest gap
     }
     else if (hist_pulses.bins_count == 2 && hist_gaps.bins_count == 2 && hist_periods.bins_count == 1) {
         fprintf(stderr, "Pulse Width Modulation with fixed period\n");
-        device.modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PWM : OOK_PULSE_PWM;
-        device.short_width = to_us * hist_pulses.bins[0].mean;
-        device.long_width  = to_us * hist_pulses.bins[1].mean;
-        device.tolerance   = (device.long_width - device.short_width) * 0.4;
-        device.reset_limit = to_us * (hist_gaps.bins[hist_gaps.bins_count - 1].max + 1); // Set limit above biggest gap
+        device->modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PWM : OOK_PULSE_PWM;
+        device->short_width = to_us * hist_pulses.bins[0].mean;
+        device->long_width  = to_us * hist_pulses.bins[1].mean;
+        device->tolerance   = (device->long_width - device->short_width) * 0.4;
+        device->reset_limit = to_us * (hist_gaps.bins[hist_gaps.bins_count - 1].max + 1); // Set limit above biggest gap
     }
     else if (hist_pulses.bins_count == 2 && hist_gaps.bins_count == 2 && hist_periods.bins_count == 3) {
         fprintf(stderr, "Manchester coding\n");
-        device.modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_MANCHESTER_ZEROBIT : OOK_PULSE_MANCHESTER_ZEROBIT;
-        device.short_width = to_us * MIN(hist_pulses.bins[0].mean, hist_pulses.bins[1].mean); // Assume shortest pulse is half period
-        device.long_width  = 0;                                                               // Not used
-        device.reset_limit = to_us * (hist_gaps.bins[hist_gaps.bins_count - 1].max + 1);      // Set limit above biggest gap
+        device->modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_MANCHESTER_ZEROBIT : OOK_PULSE_MANCHESTER_ZEROBIT;
+        device->short_width = to_us * MIN(hist_pulses.bins[0].mean, hist_pulses.bins[1].mean); // Assume shortest pulse is half period
+        device->long_width  = 0;                                                               // Not used
+        device->reset_limit = to_us * (hist_gaps.bins[hist_gaps.bins_count - 1].max + 1);      // Set limit above biggest gap
     }
     else if (hist_pulses.bins_count == 2 && hist_gaps.bins_count >= 3) {
         fprintf(stderr, "Pulse Width Modulation with multiple packets\n");
-        device.modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PWM : OOK_PULSE_PWM;
-        device.short_width = to_us * hist_pulses.bins[0].mean;
-        device.long_width  = to_us * hist_pulses.bins[1].mean;
-        device.gap_limit   = to_us * (hist_gaps.bins[1].max + 1); // Set limit above second gap
-        device.tolerance   = (device.long_width - device.short_width) * 0.4;
-        device.reset_limit = to_us * (hist_gaps.bins[hist_gaps.bins_count - 1].max + 1); // Set limit above biggest gap
+        device->modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PWM : OOK_PULSE_PWM;
+        device->short_width = to_us * hist_pulses.bins[0].mean;
+        device->long_width  = to_us * hist_pulses.bins[1].mean;
+        device->gap_limit   = to_us * (hist_gaps.bins[1].max + 1); // Set limit above second gap
+        device->tolerance   = (device->long_width - device->short_width) * 0.4;
+        device->reset_limit = to_us * (hist_gaps.bins[hist_gaps.bins_count - 1].max + 1); // Set limit above biggest gap
     }
     else if ((hist_pulses.bins_count >= 3 && hist_gaps.bins_count >= 3)
             && (abs(hist_pulses.bins[1].mean - 2*hist_pulses.bins[0].mean) <= hist_pulses.bins[0].mean/8)    // Pulses are multiples of shortest pulse
@@ -321,10 +322,10 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
             && (abs(hist_gaps.bins[1].mean   - 2*hist_pulses.bins[0].mean) <= hist_pulses.bins[0].mean/8)
             && (abs(hist_gaps.bins[2].mean   - 3*hist_pulses.bins[0].mean) <= hist_pulses.bins[0].mean/8)) {
         fprintf(stderr, "Non Return to Zero coding (Pulse Code)\n");
-        device.modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PCM : OOK_PULSE_PCM;
-        device.short_width = to_us * hist_pulses.bins[0].mean;        // Shortest pulse is bit width
-        device.long_width  = to_us * hist_pulses.bins[0].mean;        // Bit period equal to pulse length (NRZ)
-        device.reset_limit = to_us * hist_pulses.bins[0].mean * 1024; // No limit to run of zeros...
+        device->modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PCM : OOK_PULSE_PCM;
+        device->short_width = to_us * hist_pulses.bins[0].mean;        // Shortest pulse is bit width
+        device->long_width  = to_us * hist_pulses.bins[0].mean;        // Bit period equal to pulse length (NRZ)
+        device->reset_limit = to_us * hist_pulses.bins[0].mean * 1024; // No limit to run of zeros...
     }
     else if (hist_pulses.bins_count == 3) {
         fprintf(stderr, "Pulse Width Modulation with sync/delimiter\n");
@@ -332,11 +333,11 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
         histogram_sort_count(&hist_pulses);
         int p1 = hist_pulses.bins[1].mean;
         int p2 = hist_pulses.bins[2].mean;
-        device.modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PWM : OOK_PULSE_PWM;
-        device.short_width = to_us * (p1 < p2 ? p1 : p2);                                // Set to shorter pulse width
-        device.long_width  = to_us * (p1 < p2 ? p2 : p1);                                // Set to longer pulse width
-        device.sync_width  = to_us * hist_pulses.bins[0].mean;                           // Set to lowest count pulse width
-        device.reset_limit = to_us * (hist_gaps.bins[hist_gaps.bins_count - 1].max + 1); // Set limit above biggest gap
+        device->modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PWM : OOK_PULSE_PWM;
+        device->short_width = to_us * (p1 < p2 ? p1 : p2);                                // Set to shorter pulse width
+        device->long_width  = to_us * (p1 < p2 ? p2 : p1);                                // Set to longer pulse width
+        device->sync_width  = to_us * hist_pulses.bins[0].mean;                           // Set to lowest count pulse width
+        device->reset_limit = to_us * (hist_gaps.bins[hist_gaps.bins_count - 1].max + 1); // Set limit above biggest gap
     }
     else {
         fprintf(stderr, "No clue...\n");
@@ -425,42 +426,42 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
     }
 
     // Demodulate (if detected)
-    if (device.modulation) {
+    if (device->modulation) {
         fprintf(stderr, "Attempting demodulation... short_width: %.0f, long_width: %.0f, reset_limit: %.0f, sync_width: %.0f\n",
-                device.short_width, device.long_width,
-                device.reset_limit, device.sync_width);
-        switch (device.modulation) {
+                device->short_width, device->long_width,
+                device->reset_limit, device->sync_width);
+        switch (device->modulation) {
         case FSK_PULSE_PCM:
             fprintf(stderr, "Use a flex decoder with -X 'n=name,m=FSK_PCM,s=%.0f,l=%.0f,r=%.0f'\n",
-                    device.short_width, device.long_width, device.reset_limit);
-            pulse_slicer_pcm(data, &device);
+                    device->short_width, device->long_width, device->reset_limit);
+            pulse_slicer_pcm(data, device);
             break;
         case OOK_PULSE_PPM:
             fprintf(stderr, "Use a flex decoder with -X 'n=name,m=OOK_PPM,s=%.0f,l=%.0f,g=%.0f,r=%.0f'\n",
-                    device.short_width, device.long_width,
-                    device.gap_limit, device.reset_limit);
-            data->gap[data->num_pulses - 1] = device.reset_limit / to_us + 1; // Be sure to terminate package
-            pulse_slicer_ppm(data, &device);
+                    device->short_width, device->long_width,
+                    device->gap_limit, device->reset_limit);
+            data->gap[data->num_pulses - 1] = device->reset_limit / to_us + 1; // Be sure to terminate package
+            pulse_slicer_ppm(data, device);
             break;
         case OOK_PULSE_PWM:
             fprintf(stderr, "Use a flex decoder with -X 'n=name,m=OOK_PWM,s=%.0f,l=%.0f,r=%.0f,g=%.0f,t=%.0f,y=%.0f'\n",
-                    device.short_width, device.long_width, device.reset_limit,
-                    device.gap_limit, device.tolerance, device.sync_width);
-            data->gap[data->num_pulses - 1] = device.reset_limit / to_us + 1; // Be sure to terminate package
-            pulse_slicer_pwm(data, &device);
+                    device->short_width, device->long_width, device->reset_limit,
+                    device->gap_limit, device->tolerance, device->sync_width);
+            data->gap[data->num_pulses - 1] = device->reset_limit / to_us + 1; // Be sure to terminate package
+            pulse_slicer_pwm(data, device);
             break;
         case FSK_PULSE_PWM:
             fprintf(stderr, "Use a flex decoder with -X 'n=name,m=FSK_PWM,s=%.0f,l=%.0f,r=%.0f,g=%.0f,t=%.0f,y=%.0f'\n",
-                    device.short_width, device.long_width, device.reset_limit,
-                    device.gap_limit, device.tolerance, device.sync_width);
-            data->gap[data->num_pulses - 1] = device.reset_limit / to_us + 1; // Be sure to terminate package
-            pulse_slicer_pwm(data, &device);
+                    device->short_width, device->long_width, device->reset_limit,
+                    device->gap_limit, device->tolerance, device->sync_width);
+            data->gap[data->num_pulses - 1] = device->reset_limit / to_us + 1; // Be sure to terminate package
+            pulse_slicer_pwm(data, device);
             break;
         case OOK_PULSE_MANCHESTER_ZEROBIT:
             fprintf(stderr, "Use a flex decoder with -X 'n=name,m=OOK_MC_ZEROBIT,s=%.0f,l=%.0f,r=%.0f'\n",
-                    device.short_width, device.long_width, device.reset_limit);
-            data->gap[data->num_pulses - 1] = device.reset_limit / to_us + 1; // Be sure to terminate package
-            pulse_slicer_manchester_zerobit(data, &device);
+                    device->short_width, device->long_width, device->reset_limit);
+            data->gap[data->num_pulses - 1] = device->reset_limit / to_us + 1; // Be sure to terminate package
+            pulse_slicer_manchester_zerobit(data, device);
             break;
         default:
             fprintf(stderr, "Unsupported\n");

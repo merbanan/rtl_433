@@ -123,7 +123,7 @@ static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -139,7 +139,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device honeywell = {
+r_device const honeywell = {
         .name        = "Honeywell Door/Window Sensor, 2Gig DW10/DW11, RE208 repeater",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 156,

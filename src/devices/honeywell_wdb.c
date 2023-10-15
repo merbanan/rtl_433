@@ -48,7 +48,7 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *bytes;
     data_t *data;
     unsigned int device, tmp;
-    char *class, *alert;
+    char const *class, *alert;
 
     // The device transmits many rows, check for 4 matching rows.
     row = bitbuffer_find_repeated_row(bitbuffer, 4, 48);
@@ -77,8 +77,8 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    device = bytes[0] << 12 | bytes[1] << 4 | (bytes[2]&0xF);
-    tmp = (bytes[3]&0x30) >> 4;
+    device = bytes[0] << 12 | bytes[1] << 4 | (bytes[2] >> 4);
+    tmp = (bytes[3] & 0x30) >> 4;
     switch (tmp) {
     case 0x1: class = "PIR-Motion"; break;
     case 0x2: class = "Doorbell"; break;
@@ -92,9 +92,9 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     case 0x3: alert = "Full"; break;
     default: alert = "Unknown"; break;
     }
-    secret_knock = (bytes[5]&0x10) >> 4;
-    relay = (bytes[5]&0x8) >> 3;
-    battery = (bytes[5]&0x2) >> 1;
+    secret_knock = (bytes[5] & 0x10) >> 4;
+    relay = (bytes[5] & 0x8) >> 3;
+    battery = (bytes[5] & 0x2) >> 1;
 
     /* clang-format off */
     data = data_make(
@@ -113,7 +113,7 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "subtype",
         "id",
@@ -125,7 +125,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device honeywell_wdb = {
+r_device const honeywell_wdb = {
         .name        = "Honeywell ActivLink, Wireless Doorbell",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 175,
@@ -137,7 +137,7 @@ r_device honeywell_wdb = {
         .fields      = output_fields,
 };
 
-r_device honeywell_wdb_fsk = {
+r_device const honeywell_wdb_fsk = {
         .name        = "Honeywell ActivLink, Wireless Doorbell (FSK)",
         .modulation  = FSK_PULSE_PWM,
         .short_width = 160,

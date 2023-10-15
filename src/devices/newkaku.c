@@ -73,7 +73,7 @@ static int newkaku_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "unit",
@@ -84,12 +84,12 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device newkaku = {
+r_device const newkaku = {
         .name        = "KlikAanKlikUit Wireless Switch",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 300,  // 1:1
         .long_width  = 1400, // 1:5
-        .sync_width  = 2700, // 1:10
+        .sync_width  = 2650, // 1:10, tuned to widely match 2450 to 2850
         .tolerance   = 200,
         .reset_limit = 3200,
         .decode_fn   = &newkaku_callback,

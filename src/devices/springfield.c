@@ -89,7 +89,7 @@ static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return ret;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -102,7 +102,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device springfield = {
+r_device const springfield = {
         .name        = "Springfield Temperature and Soil Moisture",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,

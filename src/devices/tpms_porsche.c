@@ -65,7 +65,7 @@ static int tpms_porsche_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     int temperature_c = temperature - 40;
 
     char id_str[4 * 2 + 1];
-    sprintf(id_str, "%08x", id);
+    snprintf(id_str, sizeof(id_str), "%08x", id);
 
     /* clang-format off */
     data_t *data = data_make(
@@ -102,7 +102,7 @@ static int tpms_porsche_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "type",
         "id",
@@ -113,7 +113,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_porsche = {
+r_device const tpms_porsche = {
         .name        = "Porsche Boxster/Cayman TPMS",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 52,  // 12-13 samples @250k

@@ -108,9 +108,9 @@ static data_t *decode_device_ids(const message_t *msg, data_t *data, int style)
 
         char buf[16] = {0};
         if (style == 0)
-            decode_device_id(msg->device_id[i], buf, 16);
+            decode_device_id(msg->device_id[i], buf, sizeof(buf));
         else {
-            sprintf(buf, "%02x%02x%02x",
+            snprintf(buf, sizeof(buf), "%02x%02x%02x",
                     msg->device_id[i][0],
                     msg->device_id[i][1],
                     msg->device_id[i][2]);
@@ -152,7 +152,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
                     case 0xCB: data = data_append(data, "min_flow_temp", "", DATA_INT, value, NULL); break;
                     case 0xCC: /* Unknown, always 0x01? */ break;
                     default:
-                        decoder_logf(decoder, 1, __func__, "Unknown parameter to 0x1030: %x02d=%04d\n", *p, value);
+                        decoder_logf(decoder, 1, __func__, "Unknown parameter to 0x1030: %x02d=%04d", *p, value);
                 }
             }
             break;
@@ -173,7 +173,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
                     uint8_t month = msg->payload[6];
                     uint8_t year[2] = { msg->payload[7],  msg->payload[8] };
                     char time_str[256];
-                    sprintf(time_str, "%02d:%02d:%02d %02d-%02d-%04d", hour, minute, second, day, month, (year[0] << 8) | year[1]);
+                    snprintf(time_str, sizeof(time_str), "%02d:%02d:%02d %02d-%02d-%04d", hour, minute, second, day, month, (year[0] << 8) | year[1]);
                     data = data_append(data, "datetime", "", DATA_STRING, time_str, NULL);
                     break;
                 }
@@ -183,17 +183,17 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
         case 0x0008: {
             UNKNOWN_IF(msg->payload_length != 2);
             data = data_append(data, "domain_id", "", DATA_INT, msg->payload[0], NULL);
-            data = data_append(data, "demand", "", DATA_DOUBLE, msg->payload[1] / 200.0 /* 0xC8 */, NULL);
+            data = data_append(data, "demand", "", DATA_DOUBLE, msg->payload[1] * (1 / 200.0F) /* 0xC8 */, NULL);
             break;
         }
         case 0x3ef0: {
             UNKNOWN_IF(msg->payload_length != 3 && msg->payload_length != 6);
             switch (msg->payload_length) {
                 case 3:
-                    data = data_append(data, "status", "", DATA_DOUBLE, msg->payload[1] / 200.0 /* 0xC8 */, NULL);
+                    data = data_append(data, "status", "", DATA_DOUBLE, msg->payload[1] * (1 / 200.0F) /* 0xC8 */, NULL);
                     break;
                 case 6:
-                    data = data_append(data, "boiler_modulation_level", "", DATA_DOUBLE, msg->payload[1] / 200.0 /* 0xC8 */, NULL);
+                    data = data_append(data, "boiler_modulation_level", "", DATA_DOUBLE, msg->payload[1] * (1 / 200.0F) /* 0xC8 */, NULL);
                     data = data_append(data, "flame_status", "", DATA_INT, msg->payload[3], NULL);
                     break;
             }
@@ -204,7 +204,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
             if (msg->payload_length == 3) { // for single zone use this message for backward compatibility
                 data = data_append(data, "zone", "", DATA_INT, msg->payload[0], NULL);
                 // Observation: CM921 reports a very high setpoint during binding (0x7eff); packet: 143255c1230903017efff7
-                data = data_append(data, "setpoint", "", DATA_DOUBLE, ((msg->payload[1] << 8) | msg->payload[2]) / 100.0, NULL);
+                data = data_append(data, "setpoint", "", DATA_DOUBLE, ((msg->payload[1] << 8) | msg->payload[2]) * (1 / 100.0F), NULL);
             }
             else
                 for (size_t i=0; i < msg->payload_length; i+=3) {
@@ -218,11 +218,11 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
         case 0x1100: {
             UNKNOWN_IF(msg->payload_length != 5 && msg->payload_length != 8);
             data = data_append(data, "domain_id", "", DATA_INT, msg->payload[0], NULL);
-            data = data_append(data, "cycle_rate", "", DATA_DOUBLE, msg->payload[1] / 4.0, NULL);
-            data = data_append(data, "minimum_on_time", "", DATA_DOUBLE, msg->payload[2] / 4.0, NULL);
-            data = data_append(data, "minimum_off_time", "", DATA_DOUBLE, msg->payload[3] / 4.0, NULL);
+            data = data_append(data, "cycle_rate", "", DATA_DOUBLE, msg->payload[1] * (1 / 4.0F), NULL);
+            data = data_append(data, "minimum_on_time", "", DATA_DOUBLE, msg->payload[2] * (1 / 4.0F), NULL);
+            data = data_append(data, "minimum_off_time", "", DATA_DOUBLE, msg->payload[3] * (1 / 4.0F), NULL);
             if (msg->payload_length == 8)
-                data = data_append(data, "proportional_band_width", "", DATA_DOUBLE, (msg->payload[5] << 8 | msg->payload[6]) / 100.0, NULL);
+                data = data_append(data, "proportional_band_width", "", DATA_DOUBLE, (msg->payload[5] << 8 | msg->payload[6]) * (1 / 100.0F), NULL);
             break;
         }
         case 0x0009: {
@@ -238,18 +238,18 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
         case 0x3B00: {
             UNKNOWN_IF(msg->payload_length != 2);
             data = data_append(data, "domain_id", "", DATA_INT, msg->payload[0], NULL);
-            data = data_append(data, "state", "", DATA_DOUBLE, msg->payload[1] / 200.0 /* 0xC8 */, NULL);
+            data = data_append(data, "state", "", DATA_DOUBLE, msg->payload[1] * (1 / 200.0F) /* 0xC8 */, NULL);
             break;
         }
         case 0x30C9: {
-          size_t num_zones = msg->payload_length/3;
-          for (size_t i=0; i < num_zones; i++) {
-            char name[256];
-            snprintf(name, sizeof(name), "temp (zone %u)", msg->payload[3*i]);
-            int16_t temp = msg->payload[3*i+1] << 8 | msg->payload[3*i+2];
-            data = data_append(data, name, "", DATA_DOUBLE, temp/100.0, NULL);
-          }
-          break;
+            size_t num_zones = msg->payload_length / 3;
+            for (size_t i = 0; i < num_zones; i++) {
+                char name[256];
+                snprintf(name, sizeof(name), "temperature (zone %u)", msg->payload[3 * i]);
+                int16_t temp = msg->payload[3 * i + 1] << 8 | msg->payload[3 * i + 2];
+                data         = data_append(data, name, "", DATA_DOUBLE, temp * (1 / 100.0F), NULL);
+            }
+            break;
         }
         case 0x1fd4: {
             int temp = (msg->payload[1] << 8) | msg->payload[2];
@@ -588,7 +588,7 @@ else
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "ids",
 #ifdef _DEBUG
@@ -628,22 +628,22 @@ static char *output_fields[] = {
         "min_flow_temp",
         "mic",
         "aux_input",
-        "temp (zone 0)",
-        "temp (zone 1)",
-        "temp (zone 2)",
-        "temp (zone 3)",
-        "temp (zone 4)",
-        "temp (zone 5)",
-        "temp (zone 6)",
-        "temp (zone 7)",
-        "temp (zone 8)",
-        "temp (zone 9)",
-        "temp (zone 10)",
-        "temp (zone 11)",
-        "temp (zone 12)",
-        "temp (zone 13)",
-        "temp (zone 14)",
-        "temp (zone 15)",
+        "temperature (zone 0)",
+        "temperature (zone 1)",
+        "temperature (zone 2)",
+        "temperature (zone 3)",
+        "temperature (zone 4)",
+        "temperature (zone 5)",
+        "temperature (zone 6)",
+        "temperature (zone 7)",
+        "temperature (zone 8)",
+        "temperature (zone 9)",
+        "temperature (zone 10)",
+        "temperature (zone 11)",
+        "temperature (zone 12)",
+        "temperature (zone 13)",
+        "temperature (zone 14)",
+        "temperature (zone 15)",
         "setpoint (zone 0)",
         "setpoint (zone 1)",
         "setpoint (zone 2)",
@@ -711,7 +711,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device honeywell_cm921 = {
+r_device const honeywell_cm921 = {
         .name        = "Honeywell CM921 Wireless Programmable Room Thermostat",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 26,

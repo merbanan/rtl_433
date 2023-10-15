@@ -42,7 +42,7 @@ char const filter_nmea[] = "$GPGGA,";
 static void gpsd_client_line(gpsd_client_t *ctx, char *line)
 {
     if (!ctx->filter_str || strncmp(line, ctx->filter_str, strlen(ctx->filter_str)) == 0) {
-        strncpy(ctx->msg, line, sizeof(ctx->msg) - 1);
+        snprintf(ctx->msg, sizeof(ctx->msg), "%s", line);
     }
 }
 
@@ -172,8 +172,8 @@ data_tag_t *data_tag_create(char *param, struct mg_mgr *mgr)
     int gpsd_mode = strncmp(tag->val, "gpsd", 4) == 0;
     if (gpsd_mode || strncmp(tag->val, "tcp:", 4) == 0) {
         p          = arg_param(tag->val); // strip scheme
-        char *host = gpsd_mode ? "localhost" : NULL;
-        char *port = gpsd_mode ? "2947" : NULL;
+        char const *host = gpsd_mode ? "localhost" : NULL;
+        char const *port = gpsd_mode ? "2947" : NULL;
         char *opts = hostport_param(p, &host, &port);
         list_t includes = {0};
 
@@ -263,7 +263,6 @@ static data_t *append_filtered_json(data_t *data, char const *json, char const *
     }
 
     // check all tokens
-    char buf[1024] = {0};
     for (int i = 1; i < toks - 1; ++i) {
         jsmntok_t *k = tok + i;
         jsmntok_t *v = tok + i + 1;
@@ -276,7 +275,10 @@ static data_t *append_filtered_json(data_t *data, char const *json, char const *
         char const *key = find_list_strncmp(includes, json + k->start, k->end - k->start);
         if (key) {
             // append json tag
-            strncpy(buf, json + v->start, v->end - v->start);
+            char buf[1024];
+            int len = MIN(v->end - v->start, (int)sizeof(buf) - 1);
+            memcpy(buf, json + v->start, len);
+            buf[len] = '\0';
             data = data_append(data,
                     key, "", DATA_STRING, buf,
                     NULL);

@@ -213,7 +213,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return DECODE_FAIL_SANITY; // should not be reached
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -230,7 +230,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device lacrosse_ws7000 = {
+r_device const lacrosse_ws7000 = {
         .name        = "LaCrosse/ELV/Conrad WS7000/WS2500 weather sensors",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 400,

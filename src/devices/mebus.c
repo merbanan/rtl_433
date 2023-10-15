@@ -9,7 +9,12 @@
 
 #include "decoder.h"
 
-static int mebus433_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+/**
+Mebus 433.
+
+@todo Documentation needed.
+*/
+static int mebus433_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     bitrow_t *bb = bitbuffer->bb;
     int16_t temp;
@@ -62,7 +67,7 @@ static int mebus433_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return DECODE_ABORT_EARLY;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -74,14 +79,14 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device mebus433 = {
+r_device const mebus433 = {
         .name        = "Mebus 433",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 800,  // guessed, no samples available
         .long_width  = 1600, // guessed, no samples available
         .gap_limit   = 2400,
         .reset_limit = 6000,
-        .decode_fn   = &mebus433_callback,
+        .decode_fn   = &mebus433_decode,
         .disabled    = 1, // add docs, tests, false positive checks and then re-enable
         .fields      = output_fields,
 };

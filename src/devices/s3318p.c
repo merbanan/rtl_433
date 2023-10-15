@@ -112,7 +112,7 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -124,7 +124,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device s3318p = {
+r_device const s3318p = {
         .name        = "Conrad S3318P, FreeTec NC-5849-913 temperature humidity sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1900,

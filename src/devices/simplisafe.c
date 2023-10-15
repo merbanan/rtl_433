@@ -10,8 +10,12 @@
 
     License: GPL v2+ (or at your choice, any other OSI-approved Open Source license)
 */
-/**
+/** @fn int ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 Protocol of the SimpliSafe Sensors.
+
+@sa ss_sensor_parser()
+@sa ss_pinentry_parser()
+@sa ss_keypad_commands()
 
 The data is sent leveraging a PiWM Encoding where a long is 1, and a short is 0
 
@@ -44,12 +48,13 @@ static void ss_get_id(char *id, uint8_t *b)
     *p = '\0';
 }
 
+/**
+SimpliSafe protocol for sensors.
+*/
 static int ss_sensor_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 {
     data_t *data;
     uint8_t *b = bitbuffer->bb[row];
-    char id[6];
-    char extradata[30] = "";
 
     // each row needs to have exactly 92 bits
     if (bitbuffer->bits_per_row[row] != 92)
@@ -61,14 +66,19 @@ static int ss_sensor_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
     if (((seq + state) & 0xff) != csum)
       return DECODE_FAIL_MIC;
 
+    char id[6];
     ss_get_id(id, b);
 
+    char extradata[30];
     if (state == 1) {
-        strcpy(extradata,"Contact Open");
+        snprintf(extradata, sizeof(extradata), "Contact Open");
     } else if (state == 2) {
-        strcpy(extradata,"Contact Closed");
+        snprintf(extradata, sizeof(extradata), "Contact Closed");
     } else if (state == 3) {
-        strcpy(extradata,"Alarm Off");
+        snprintf(extradata, sizeof(extradata), "Alarm Off");
+    } else {
+        //snprintf(extradata, sizeof(extradata), "");
+        *extradata = '\0';
     }
 
     /* clang-format off */
@@ -85,12 +95,13 @@ static int ss_sensor_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
     return 1;
 }
 
+/**
+SimpliSafe protocol for pinentry.
+*/
 static int ss_pinentry_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 {
     data_t *data;
     uint8_t *b = bitbuffer->bb[row];
-    char id[6];
-    char extradata[30];
     // In a keypad message the pin is encoded in bytes 10 and 11 with the the digits each using 4 bits
     // However the bits are low order to high order
     int digits[5];
@@ -102,45 +113,11 @@ static int ss_pinentry_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row
     digits[2] = (pinb & 0xf);
     digits[3] = ((pinb & 0xf0) >> 4);
 
-    ss_get_id(id, b);
-
-    sprintf(extradata, "Disarm Pin: %x%x%x%x", digits[0], digits[1], digits[2], digits[3]);
-
-    /* clang-format off */
-    data = data_make(
-            "model",        "",             DATA_STRING, "SimpliSafe-Keypad",
-            "id",           "Device ID",    DATA_STRING, id,
-            "seq",          "Sequence",     DATA_INT,    b[9],
-            "extradata",    "Extra Data",   DATA_STRING, extradata,
-            NULL);
-    /* clang-format on */
-
-    decoder_output_data(decoder, data);
-    return 1;
-}
-
-static int ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row)
-{
-    data_t *data;
-    uint8_t *b = bitbuffer->bb[row];
     char id[6];
-    char extradata[30]; // = "Arming: ";
-
-    if (b[10] == 0x6a) {
-        strcpy(extradata, "Arm System - Away");
-    } else if (b[10] == 0xca) {
-        strcpy(extradata, "Arm System - Home");
-    } else if (b[10] == 0x3a) {
-        strcpy(extradata, "Arm System - Canceled");
-    } else if (b[10] == 0x2a) {
-        strcpy(extradata, "Keypad Panic Button");
-    } else if (b[10] == 0x86) {
-        strcpy(extradata, "Keypad Menu Button");
-    } else {
-        sprintf(extradata, "Unknown Keypad: %02x", b[10]);
-    }
-
     ss_get_id(id, b);
+
+    char extradata[30];
+    snprintf(extradata, sizeof(extradata), "Disarm Pin: %x%x%x%x", digits[0], digits[1], digits[2], digits[3]);
 
     /* clang-format off */
     data = data_make(
@@ -156,9 +133,44 @@ static int ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row
 }
 
 /**
-Protocol of the SimpliSafe Sensors.
-@sa ss_sensor_parser() ss_pinentry_parser() ss_keypad_commands()
+SimpliSafe protocol for keypad commands.
 */
+static int ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row)
+{
+    data_t *data;
+    uint8_t *b = bitbuffer->bb[row];
+    char extradata[30]; // = "Arming: ";
+
+    if (b[10] == 0x6a) {
+        snprintf(extradata, sizeof(extradata), "Arm System - Away");
+    } else if (b[10] == 0xca) {
+        snprintf(extradata, sizeof(extradata), "Arm System - Home");
+    } else if (b[10] == 0x3a) {
+        snprintf(extradata, sizeof(extradata), "Arm System - Canceled");
+    } else if (b[10] == 0x2a) {
+        snprintf(extradata, sizeof(extradata), "Keypad Panic Button");
+    } else if (b[10] == 0x86) {
+        snprintf(extradata, sizeof(extradata), "Keypad Menu Button");
+    } else {
+        snprintf(extradata, sizeof(extradata), "Unknown Keypad: %02x", b[10]);
+    }
+
+    char id[6];
+    ss_get_id(id, b);
+
+    /* clang-format off */
+    data = data_make(
+            "model",        "",             DATA_STRING, "SimpliSafe-Keypad",
+            "id",           "Device ID",    DATA_STRING, id,
+            "seq",          "Sequence",     DATA_INT,    b[9],
+            "extradata",    "Extra Data",   DATA_STRING, extradata,
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
 static int ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // Require two identical rows.
@@ -185,7 +197,7 @@ static int ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 }
 
-static char *sensor_output_fields[] = {
+static char const *const sensor_output_fields[] = {
         "model",
         "id",
         "seq",
@@ -194,7 +206,7 @@ static char *sensor_output_fields[] = {
         NULL,
 };
 
-r_device ss_sensor = {
+r_device const ss_sensor = {
         .name        = "SimpliSafe Home Security System (May require disabling automatic gain for KeyPad decodes)",
         .modulation  = OOK_PULSE_PIWM_DC,
         .short_width = 500,  // half-bit width 500 us

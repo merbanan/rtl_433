@@ -103,16 +103,13 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     data_t *data;
     unsigned int row = 0;
-    char device_type_id[2];
-    char *device_type;
-    char device_serial[7];
-    char raw_message[7];
+    char const *device_type;
     int low_battery;
-    char *f1_latch_state;
-    char *f2_latch_state;
-    char *f3_latch_state;
-    char *f4_latch_state;
-    char *f5_latch_state;
+    char const *f1_latch_state;
+    char const *f2_latch_state;
+    char const *f3_latch_state;
+    char const *f4_latch_state;
+    char const *f5_latch_state;
 
     if (bitbuffer->num_rows != 1) {
         return DECODE_ABORT_EARLY;
@@ -162,7 +159,8 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    sprintf(device_type_id, "%01x", (reverse8(message[2]) >> 4));
+    char device_type_id[2];
+    snprintf(device_type_id, sizeof(device_type_id), "%01x", (reverse8(message[2]) >> 4));
 
     switch ((reverse8(message[2]) >> 4)) {
     case 0xa: device_type = "contact"; break;
@@ -174,9 +172,11 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     default: device_type = "unknown"; break;
     }
 
-    sprintf(device_serial, "%02x%02x%02x", reverse8(message[2]), reverse8(message[1]), reverse8(message[0]));
+    char device_serial[7];
+    snprintf(device_serial, sizeof(device_serial), "%02x%02x%02x", reverse8(message[2]), reverse8(message[1]), reverse8(message[0]));
 
-    sprintf(raw_message, "%02x%02x%02x", message[3], message[4], message[5]);
+    char raw_message[7];
+    snprintf(raw_message, sizeof(raw_message), "%02x%02x%02x", message[3], message[4], message[5]);
 
     // keyfob logic. see protocol description addendum for protocol exceptions
     if ((reverse8(message[2]) >> 4) == 0xf) {
@@ -214,7 +214,7 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "subtype",
         "id",
@@ -228,7 +228,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device interlogix = {
+r_device const interlogix = {
         .name        = "Interlogix GE UTC Security Devices",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 122,

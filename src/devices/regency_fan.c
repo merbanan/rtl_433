@@ -22,7 +22,7 @@ The packet starts with 576 uS start pulse.
 Transmissions consist of the start bit followed by bursts of 20 bits.
 These packets ar repeated up to 11 times.
 
-As written, the PPM code always interpets a narrow gap as a 1 and a
+As written, the PPM code always interprets a narrow gap as a 1 and a
 long gap as a 0, however the actual data over the air is inverted,
 i.e. a short gap is a 0 and a long gap is a 1. In addition, the data
 is 5 nibbles long and is represented in Little-Endian format. In the
@@ -119,23 +119,23 @@ static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         switch (command) {
         case 1: // 1 is the command to STOP
-            sprintf(value_string, "stop");
+            snprintf(value_string, sizeof(value_string), "stop");
             break;
 
         case 2: // 2 is the command to change fan speed
-            sprintf(value_string, "speed %d", value);
+            snprintf(value_string, sizeof(value_string), "speed %d", value);
             break;
 
         case 4: // 4 is the command to change the light intensity
-            sprintf(value_string, "%d %%", value);
+            snprintf(value_string, sizeof(value_string), "%d %%", value);
             break;
 
         case 5: // 5 is the command to set the light delay
-            sprintf(value_string, "%s", value == 0 ? "off" : "on");
+            snprintf(value_string, sizeof(value_string), "%s", value == 0 ? "off" : "on");
             break;
 
         case 6: // 6 is the command to change fan direction
-            sprintf(value_string, "%s", value == 0x07 ? "clockwise" : "counter-clockwise");
+            snprintf(value_string, sizeof(value_string), "%s", value == 0x07 ? "clockwise" : "counter-clockwise");
             break;
 
         default:
@@ -160,7 +160,7 @@ static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return return_code;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "type",
         "channel",
@@ -170,7 +170,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device regency_fan = {
+r_device const regency_fan = {
         .name        = "Regency Ceiling Fan Remote (-f 303.75M to 303.96M)",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 580,

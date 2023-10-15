@@ -13,7 +13,7 @@
 
 #include "compat_paths.h"
 
-char **compat_get_default_conf_paths()
+char **compat_get_default_conf_paths(void)
 {
     static char *paths[5] = { NULL };
     static char buf[256] = "";
@@ -41,7 +41,7 @@ char **compat_get_default_conf_paths()
 
 #include "compat_paths.h"
 
-char **compat_get_default_conf_paths()
+char **compat_get_default_conf_paths(void)
 {
     static char bufs[3][256];
     static char *paths[4] = { NULL };
@@ -57,7 +57,7 @@ char **compat_get_default_conf_paths()
     else {
         paths[0] = NULL;
     }
-    // Local per user configuration files (e.g. Win7: C:\Users\myusername\AppData\Local\rtl_433\rtl_433.conf)
+    // Local per user configuration files %LocalAppData% (e.g. Win7: C:\Users\myusername\AppData\Local\rtl_433\rtl_433.conf)
     if (SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, bufs[1]) == S_OK) {
         strcat_s(bufs[1], sizeof(bufs[1]), "\\rtl_433\\rtl_433.conf");
         paths[1] = bufs[1];
@@ -65,7 +65,7 @@ char **compat_get_default_conf_paths()
     else {
         paths[1] = NULL;
     }
-    // Per machine configuration data (e.g. Win7: C:\ProgramData\rtl_433\rtl_433.conf)
+    // Per machine configuration data %ProgramData% (e.g. Win7: C:\ProgramData\rtl_433\rtl_433.conf)
     if (SHGetFolderPath(NULL, CSIDL_COMMON_APPDATA, NULL, 0, bufs[2]) == S_OK) {
         strcat_s(bufs[2], sizeof(bufs[2]), "\\rtl_433\\rtl_433.conf");
         paths[2] = bufs[2];

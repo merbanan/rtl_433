@@ -201,7 +201,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "temperature_C",
@@ -213,7 +213,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device lacrossews = {
+r_device const lacrossews = {
         .name        = "LaCrosse WS-2310 / WS-3600 Weather Station",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 368,

@@ -113,7 +113,7 @@ static int fineoffset_ws80_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -131,7 +131,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device fineoffset_ws80 = {
+r_device const fineoffset_ws80 = {
         .name        = "Fine Offset Electronics WS80 weather station",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 58,

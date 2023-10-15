@@ -189,7 +189,7 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *telldus_ft0385r_output_fields[] = {
+static char const *const telldus_ft0385r_output_fields[] = {
         "model",
         "battery_ok",
         "temperature_F",
@@ -206,7 +206,7 @@ static char *telldus_ft0385r_output_fields[] = {
         NULL,
 };
 
-r_device telldus_ft0385r = {
+r_device const telldus_ft0385r = {
         .name        = "Telldus weather station FT0385R sensors",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 500,

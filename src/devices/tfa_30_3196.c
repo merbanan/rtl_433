@@ -103,7 +103,7 @@ static int tfa_303196_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -114,7 +114,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tfa_303196 = {
+r_device const tfa_303196 = {
         .name        = "TFA Dostmann 30.3196 T/H outdoor sensor",
         .modulation  = FSK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 245,

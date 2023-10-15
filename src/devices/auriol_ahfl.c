@@ -96,7 +96,7 @@ static int auriol_ahfl_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -108,7 +108,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device auriol_ahfl = {
+r_device const auriol_ahfl = {
         .name        = "Auriol AHFL temperature/humidity sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2100,

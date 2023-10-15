@@ -12,8 +12,10 @@
 
 #include "decoder.h"
 
-/// Documentation for Oregon Scientific protocols can be found here:
-/// http://wmrx00.sourceforge.net/Arduino/OregonScientific-RF-Protocols.pdf
+// Documentation for Oregon Scientific protocols can be found here:
+// http://wmrx00.sourceforge.net/Arduino/OregonScientific-RF-Protocols.pdf
+//
+// note that at least for THN132N, THGR122N, THGR810 valid channel numbers are 1, 2, 4.
 // Sensors ID
 #define ID_THGR122N 0x1d20
 #define ID_THGR968  0x1d30
@@ -22,6 +24,7 @@
 #define ID_RGR968   0x2d10
 #define ID_THR228N  0xec40
 #define ID_THN132N  0xec40 // same as THR228N but different packet size
+#define ID_AWR129   0xec41 // similar to THR228N, but an extra 100s digit
 #define ID_RTGN318  0x0cc3 // warning: id is from 0x0cc3 and 0xfcc3
 #define ID_RTGN129  0x0cc3 // same as RTGN318 but different packet size
 #define ID_THGR810  0xf824 // This might be ID_THGR81, but what's true is lost in (git) history
@@ -50,21 +53,25 @@ static float get_os_temperature(unsigned char *message)
 {
     float temp_c = 0;
     temp_c = (((message[5] >> 4) * 100) + ((message[4] & 0x0f) * 10) + ((message[4] >> 4) & 0x0f)) / 10.0F;
-    if (message[5] & 0x0f)
+    // The AWR129 BBQ thermometer has another digit to represent higher temperatures than what weather stations would observe.
+    temp_c += (message[5] & 0x07) * 100.0F;
+    // 0x08 is the sign bit
+    if (message[5] & 0x08) {
         temp_c = -temp_c;
+    }
     return temp_c;
 }
 
 static float get_os_rain_rate(unsigned char *message)
 {
-    float rain_rate = 0; // Nibbles 11..8 rain rate, LSD = 0.01 inches per hour
-    rain_rate = (((message[5] & 0x0f) * 1000) + ((message[5] >> 4) * 100) + ((message[4] & 0x0f) * 10) + ((message[4] >> 4) & 0x0f)) / 100.0F;
+    // Nibbles 11..8 rain rate, LSD = 0.1 units per hour, 4321 = 123.4 units per hour
+    float rain_rate = (((message[5] & 0x0f) * 1000) + ((message[5] >> 4) * 100) + ((message[4] & 0x0f) * 10) + (message[4] >> 4)) / 100.0F;
     return rain_rate;
 }
 
 static float get_os_total_rain(unsigned char *message)
 {
-    float total_rain = 0.0F; // Nibbles 17..12 Total rain, LSD = 0.001, 543210 = 012.345 inches
+    float total_rain = 0.0F; // Nibbles 17..12 Total rain, LSD = 0.001, 654321 = 123.456
     total_rain = (message[8] & 0x0f) * 100.0F
             + ((message[8] >> 4) & 0x0f) * 10.0F + (message[7] & 0x0f)
             + ((message[7] >> 4) & 0x0f) / 10.0F + (message[6] & 0x0f) / 100.0F
@@ -84,34 +91,6 @@ static unsigned int get_os_uv(unsigned char *message)
     int uvidx = 0;
     uvidx = ((message[4] & 0x0f) * 10) + (message[4] >> 4);
     return uvidx;
-}
-
-static unsigned int get_os_channel(unsigned char *message, unsigned int sensor_id)
-{
-    // sensor ID included to support sensors with channel in different position
-    int channel = 0;
-    channel = ((message[2] >> 4) & 0x0f);
-    if ((channel == 4)
-            && (sensor_id & 0x0fff) != ID_RTGN318
-            && sensor_id != ID_THGR810
-            && (sensor_id & 0x0fff) != ID_RTHN129
-            && sensor_id != ID_THGR328N)
-        channel = 3; // sensor 3 channel number is 0x04
-    return channel;
-}
-
-static unsigned int get_os_battery(unsigned char *message)
-{
-    int battery_low = 0;
-    battery_low = (message[3] >> 2 & 0x01);
-    return battery_low;
-}
-
-static unsigned int get_os_rollingcode(unsigned char *message)
-{
-    int rc = 0;
-    rc = (message[2] & 0x0F) + (message[3] & 0xF0);
-    return rc;
 }
 
 static unsigned short int cm180i_power(uint8_t const *msg, unsigned int offset)
@@ -138,6 +117,11 @@ static unsigned long long cm180i_total(uint8_t const *msg)
         val += msg[9];
     }
     return val;
+}
+
+static uint8_t swap_nibbles(uint8_t byte)
+{
+    return (((byte&0xf) << 4) | (byte >> 4));
 }
 
 static unsigned short int cm180_power(uint8_t const *msg)
@@ -205,6 +189,11 @@ static int validate_os_v2_message(r_device *decoder, unsigned char *msg, int bit
     return 1;
 }
 
+/**
+Various Oregon Scientific protocols.
+
+@todo Documentation needed.
+*/
 static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t *b = bitbuffer->bb[0];
@@ -249,17 +238,21 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
     }
     int msg_bits = databits.bits_per_row[0];
 
-    int sensor_id = (msg[0] << 8) | msg[1];
-    decoder_logf(decoder, 1, __func__,"Found sensor_id (%08x)",sensor_id);
+    int sensor_id   = (msg[0] << 8) | msg[1];
+    int channel     = (msg[2] >> 4) & 0x0f;
+    int device_id   = (msg[2] & 0x0f) | (msg[3] & 0xf0);
+    int battery_low = (msg[3] >> 2) & 0x01;
+
+    decoder_logf(decoder, 1, __func__,"Found sensor type (%08x)", sensor_id);
     if ((sensor_id == ID_THGR122N) || (sensor_id == ID_THGR968)) {
         if (validate_os_v2_message(decoder, msg, 76, msg_bits, 15) != 0)
             return 0;
         /* clang-format off */
         data = data_make(
                 "model",                 "",                        DATA_STRING, (sensor_id == ID_THGR122N) ? "Oregon-THGR122N" : "Oregon-THGR968",
-                "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg),
-                "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id),
-                "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
+                "id",                        "House Code",    DATA_INT,        device_id,
+                "channel",             "Channel",         DATA_INT,        channel,
+                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
                 "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg),
                 "humidity",            "Humidity",        DATA_FORMAT, "%u %%",     DATA_INT,        get_os_humidity(msg),
                 NULL);
@@ -276,9 +269,9 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         /* clang-format off */
         data = data_make(
                 "model",            "",                     DATA_STRING, "Oregon-WGR968",
-                "id",                 "House Code", DATA_INT,        get_os_rollingcode(msg),
-                "channel",        "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
-                "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
+                "id",                 "House Code", DATA_INT,        device_id,
+                "channel",        "Channel",        DATA_INT,        channel,
+                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
                 "wind_max_m_s", "Gust",             DATA_FORMAT, "%2.1f m/s",DATA_DOUBLE, gustWindspeed,
                 "wind_avg_m_s", "Average",        DATA_FORMAT, "%2.1f m/s",DATA_DOUBLE, avgWindspeed,
                 "wind_dir_deg",    "Direction",    DATA_FORMAT, "%3.1f degrees",DATA_DOUBLE, quadrant,
@@ -307,9 +300,9 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         /* clang-format off */
         data = data_make(
                 "model",            "",                             DATA_STRING, "Oregon-BHTR968",
-                "id",                 "House Code",         DATA_INT,        get_os_rollingcode(msg),
-                "channel",        "Channel",                DATA_INT,        get_os_channel(msg, sensor_id),
-                "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
+                "id",                 "House Code",         DATA_INT,        device_id,
+                "channel",        "Channel",                DATA_INT,        channel,
+                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
                 "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
                 "humidity",     "Humidity",             DATA_FORMAT, "%u %%",     DATA_INT,        get_os_humidity(msg),
                 "pressure_hPa",    "Pressure",        DATA_FORMAT, "%.0f hPa",     DATA_DOUBLE, pressure,
@@ -327,9 +320,9 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         /* clang-format off */
         data = data_make(
                 "model",            "",                 DATA_STRING,    "Oregon-BTHR918",
-                "id",               "House Code",       DATA_INT,       get_os_rollingcode(msg),
-                "channel",          "Channel",          DATA_INT,       get_os_channel(msg, sensor_id),
-                "battery_ok",       "Battery",          DATA_INT,       !get_os_battery(msg),
+                "id",               "House Code",       DATA_INT,       device_id,
+                "channel",          "Channel",          DATA_INT,       channel,
+                "battery_ok",       "Battery",          DATA_INT,       !battery_low,
                 "temperature_C",    "Celsius",          DATA_FORMAT,    "%.02f C", DATA_DOUBLE, temp_c,
                 "humidity",         "Humidity",         DATA_FORMAT,    "%u %%", DATA_INT, get_os_humidity(msg),
                 "pressure_hPa",     "Pressure",         DATA_FORMAT,    "%.0f hPa", DATA_DOUBLE, pressure,
@@ -346,9 +339,9 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         /* clang-format off */
         data = data_make(
                 "model",            "",                     DATA_STRING, "Oregon-RGR968",
-                "id",                 "House Code", DATA_INT,        get_os_rollingcode(msg),
-                "channel",        "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
-                "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
+                "id",                 "House Code", DATA_INT,        device_id,
+                "channel",        "Channel",        DATA_INT,        channel,
+                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
                 "rain_rate_mm_h",    "Rain Rate",    DATA_FORMAT, "%.02f mm/h", DATA_DOUBLE, rain_rate,
                 "rain_mm", "Total Rain", DATA_FORMAT, "%.02f mm", DATA_DOUBLE, total_rain,
                 NULL);
@@ -356,16 +349,17 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         decoder_output_data(decoder, data);
         return 1;
     }
-    else if (sensor_id == ID_THR228N && msg_bits == 76) {
+    else if ((sensor_id == ID_THR228N || sensor_id == ID_AWR129) && msg_bits == 76) {
         if (validate_os_v2_message(decoder, msg, 76, msg_bits, 12) != 0)
             return 0;
         float temp_c = get_os_temperature(msg);
         /* clang-format off */
         data = data_make(
-                "model",                 "",                        DATA_STRING, "Oregon-THR228N",
-                "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg),
-                "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id),
-                "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
+                "model", "", DATA_COND, sensor_id == ID_THR228N, DATA_STRING, "Oregon-THR228N",
+                "model", "", DATA_COND, sensor_id == ID_AWR129, DATA_STRING, "Oregon-AWR129",
+                "id",                        "House Code",    DATA_INT,        device_id,
+                "channel",             "Channel",         DATA_INT,        channel,
+                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
                 "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
                 NULL);
         /* clang-format on */
@@ -375,13 +369,24 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
     else if (sensor_id == ID_THN132N && msg_bits == 64) {
         if (validate_os_v2_message(decoder, msg, 64, msg_bits, 12) != 0)
             return 0;
+        // Sanity check BCD digits
+        if (((msg[5] >> 4) & 0x0F) > 9 || (msg[4] & 0x0F) > 9 || ((msg[4] >> 4) & 0x0F) > 9) {
+            decoder_log(decoder, 1, __func__, "THN132N Message failed BCD sanity check.");
+            return DECODE_FAIL_SANITY;
+        }
         float temp_c = get_os_temperature(msg);
+        // Sanity check value
+        if (temp_c > 70 || temp_c < -50) {
+            decoder_logf(decoder, 1, __func__, "THN132N Message failed values sanity check: temperature_C %3.1fC.", temp_c);
+            return DECODE_FAIL_SANITY;
+        }
+
         /* clang-format off */
         data = data_make(
                 "model",                 "",                        DATA_STRING, "Oregon-THN132N",
-                "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg),
-                "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id),
-                "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
+                "id",                        "House Code",    DATA_INT,        device_id,
+                "channel",             "Channel",         DATA_INT,        channel,
+                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
                 "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
                 NULL);
         /* clang-format on */
@@ -395,9 +400,9 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         /* clang-format off */
         data = data_make(
                 "model",                 "",                        DATA_STRING, "Oregon-RTGN129",
-                "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg),
-                "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id), // 1 to 5
-                "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
+                "id",                        "House Code",    DATA_INT,        device_id,
+                "channel",             "Channel",         DATA_INT,        channel, // 1 to 5
+                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
                 "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
                 "humidity",            "Humidity",        DATA_FORMAT, "%u %%",     DATA_INT,        get_os_humidity(msg),
                 NULL);
@@ -411,9 +416,9 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         /* clang-format off */
         data = data_make(
                 "model",            "",             DATA_STRING, "Oregon-RTGR328N",
-                "id",               "House Code",   DATA_INT,    get_os_rollingcode(msg),
-                "channel",          "Channel",      DATA_INT,    get_os_channel(msg, sensor_id), // 1 to 5
-                "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
+                "id",               "House Code",   DATA_INT,    device_id,
+                "channel",          "Channel",      DATA_INT,    channel, // 1 to 5
+                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg),
                 "humidity",         "Humidity",     DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg),
                 NULL);
@@ -434,15 +439,15 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         int seconds = ((msg[4] & 0x0F) * 10) + ((msg[4] & 0xF0) >> 4);
 
         char clock_str[24];
-        sprintf(clock_str, "%04d-%02d-%02dT%02d:%02d:%02d",
+        snprintf(clock_str, sizeof(clock_str), "%04d-%02d-%02dT%02d:%02d:%02d",
                 year, month, day, hours, minutes, seconds);
 
         /* clang-format off */
         data = data_make(
                 "model",            "",             DATA_STRING, "Oregon-RTGR328N",
-                "id",               "House Code",   DATA_INT,    get_os_rollingcode(msg),
-                "channel",          "Channel",      DATA_INT,    get_os_channel(msg, sensor_id), // 1 to 5
-                "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
+                "id",               "House Code",   DATA_INT,    device_id,
+                "channel",          "Channel",      DATA_INT,    channel, // 1 to 5
+                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
                 "radio_clock",      "Radio Clock",  DATA_STRING, clock_str,
                 NULL);
         /* clang-format on */
@@ -455,9 +460,9 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
             /* clang-format off */
             data = data_make(
                     "model",                 "",                        DATA_STRING, "Oregon-RTGN318",
-                    "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg),
-                    "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id), // 1 to 5
-                    "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
+                    "id",                        "House Code",    DATA_INT,        device_id,
+                    "channel",             "Channel",         DATA_INT,        channel, // 1 to 5
+                    "battery_ok",          "Battery",         DATA_INT,    !battery_low,
                     "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
                     "humidity",            "Humidity",        DATA_FORMAT, "%u %%",     DATA_INT,        get_os_humidity(msg),
                     NULL);
@@ -476,9 +481,9 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
             /* clang-format off */
             data = data_make(
                     "model",                 "",                        DATA_STRING, (sensor_id == ID_THN129) ? "Oregon-THN129" : "Oregon-RTHN129",
-                    "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg),
-                    "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id), // 1 to 5
-                "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
+                    "id",                        "House Code",    DATA_INT,        device_id,
+                    "channel",             "Channel",         DATA_INT,        channel, // 1 to 5
+                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
                     "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
                     NULL);
             /* clang-format on */
@@ -500,9 +505,9 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         /* clang-format off */
         data = data_make(
                 "model",                 "",                        DATA_STRING, "Oregon-BTHGN129",
-                "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg),
-                "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id), // 1 to 5
-                "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
+                "id",                        "House Code",    DATA_INT,        device_id,
+                "channel",             "Channel",         DATA_INT,        channel, // 1 to 5
+                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
                 "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
                 "humidity",             "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, get_os_humidity(msg),
                 "pressure_hPa",    "Pressure",        DATA_FORMAT, "%.02f hPa", DATA_DOUBLE, pressure,
@@ -514,14 +519,25 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
     else if (sensor_id == ID_UVR128 && msg_bits == 148) {
         if (validate_os_v2_message(decoder, msg, 148, msg_bits, 12) != 0)
             return 0;
+        // Sanity check BCD digits
+        if (((msg[4] >> 4) & 0x0F) > 9 || (msg[4] & 0x0F) > 9) {
+            decoder_log(decoder, 1, __func__, "UVR128 Message failed BCD sanity check.");
+            return DECODE_FAIL_SANITY;
+        }
         int uvidx = get_os_uv(msg);
+        // Sanity check value
+        if (uvidx < 0 || uvidx > 25) {
+            decoder_logf(decoder, 1, __func__, "UVR128 Message failed values sanity check: uv %u.", uvidx);
+            return DECODE_FAIL_SANITY;
+        }
+
         /* clang-format off */
         data = data_make(
                 "model",                    "",                     DATA_STRING, "Oregon-UVR128",
-                "id",                         "House Code", DATA_INT,        get_os_rollingcode(msg),
+                "id",                         "House Code", DATA_INT,        device_id,
                 "uv",                         "UV Index",     DATA_FORMAT, "%u", DATA_INT, uvidx,
-                "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
-                //"channel",                "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
+                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
+                //"channel",                "Channel",        DATA_INT,        channel,
                 NULL);
         /* clang-format on */
         decoder_output_data(decoder, data);
@@ -533,9 +549,9 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         /* clang-format off */
         data = data_make(
                 "model",            "",             DATA_STRING, "Oregon-THGR328N",
-                "id",               "House Code",   DATA_INT,    get_os_rollingcode(msg),
-                "channel",          "Channel",      DATA_INT,    get_os_channel(msg, sensor_id), // 1 to 5
-                "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
+                "id",               "House Code",   DATA_INT,    device_id,
+                "channel",          "Channel",      DATA_INT,    channel, // 1 to 5
+                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg),
                 "humidity",         "Humidity",     DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg),
                 NULL);
@@ -544,7 +560,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         return 1;
     }
     else if (msg_bits > 16) {
-        decoder_logf_bitrow(decoder, 1, __func__, msg, msg_bits, "Unrecognized Oregon Scientific v2.1 message (device ID %4x)", sensor_id);
+        decoder_logf_bitrow(decoder, 1, __func__, msg, msg_bits, "Unrecognized Oregon Scientific v2.1 message (sensor type %04x)", sensor_id);
     }
     else {
         decoder_log_bitrow(decoder, 1, __func__, b, bitbuffer->bits_per_row[0], "Possible Oregon Scientific v2.1 message, but sync nibble wasn't found. Raw");
@@ -553,9 +569,14 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
     return 0;
 }
 
-// ceil( (335 + 11) / 8 )
+// ceil((335 + 11) / 8)
 #define EXPECTED_NUM_BYTES 44
 
+/**
+Various Oregon Scientific protocols.
+
+@todo Documentation needed.
+*/
 static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t *b = bitbuffer->bb[0];
@@ -620,18 +641,32 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     bitbuffer_extract_bytes(bitbuffer, 0, msg_pos, msg, msg_len);
     reflect_nibbles(msg, (msg_len + 7) / 8);
 
-    int sensor_id = (msg[0] << 8) | msg[1];
+    int sensor_id   = (msg[0] << 8) | msg[1];            // not for CM sensor types
+    int channel     = (msg[2] >> 4) & 0x0f;              // not for CM sensor types
+    int device_id   = (msg[2] & 0x0f) | (msg[3] & 0xf0); // not for CM sensor types
+    int battery_low = (msg[3] >> 2) & 0x01;              // not for CM sensor types
+
     if (sensor_id == ID_THGR810 || sensor_id == ID_THGR810a) {
         if (validate_os_checksum(decoder, msg, 15) != 0)
             return DECODE_FAIL_MIC;
+        // Sanity check BCD digits
+        if (((msg[5] >> 4) & 0x0F) > 9 || (msg[4] & 0x0F) > 9 || ((msg[4] >> 4) & 0x0F) > 9 || (msg[6] & 0x0F) > 9 || ((msg[6] >> 4) & 0x0F) > 9) {
+            decoder_log(decoder, 1, __func__, "THGR810 Message failed BCD sanity check.");
+            return DECODE_FAIL_SANITY;
+        }
         float temp_c = get_os_temperature(msg);
         int humidity = get_os_humidity(msg);
+        // Sanity check values
+        if (temp_c > 70 || temp_c < -50 || humidity < 0 || humidity > 98) {
+            decoder_logf(decoder, 1, __func__, "THGR810 Message failed values sanity check: temperature_C %3.1fC humidity %d%%.", temp_c, humidity);
+            return DECODE_FAIL_SANITY;
+        }
         /* clang-format off */
         data = data_make(
                 "model",                    "",                     DATA_STRING, "Oregon-THGR810",
-                "id",                         "House Code", DATA_INT,        get_os_rollingcode(msg),
-                "channel",                "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
-                "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
+                "id",                         "House Code", DATA_INT,        device_id,
+                "channel",                "Channel",        DATA_INT,        channel,
+                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
                 "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
                 "humidity",             "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 NULL);
@@ -646,9 +681,9 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         /* clang-format off */
         data = data_make(
                 "model",                    "",                     DATA_STRING, "Oregon-THN802",
-                "id",                         "House Code", DATA_INT,        get_os_rollingcode(msg),
-                "channel",                "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
-                "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
+                "id",                         "House Code", DATA_INT,        device_id,
+                "channel",                "Channel",        DATA_INT,        channel,
+                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
                 "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
                 NULL);
         /* clang-format on */
@@ -662,9 +697,9 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         /* clang-format off */
         data = data_make(
                 "model",                    "",                     DATA_STRING, "Oregon-UV800",
-                "id",                         "House Code", DATA_INT,        get_os_rollingcode(msg),
-                "channel",                "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
-                "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
+                "id",                         "House Code", DATA_INT,        device_id,
+                "channel",                "Channel",        DATA_INT,        channel,
+                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
                 "uv",                         "UV Index",     DATA_FORMAT, "%u", DATA_INT, uvidx,
                 NULL);
         /* clang-format on */
@@ -674,16 +709,32 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     else if (sensor_id == ID_PCR800) {
         if (validate_os_checksum(decoder, msg, 18) != 0)
             return DECODE_FAIL_MIC;
+        // Sanity check BCD digits
+        if ((msg[8] & 0x0F) > 9
+                || ((msg[8] >> 4) & 0x0F) > 9
+                || (msg[7] & 0x0F) > 9
+                || ((msg[7] >> 4) & 0x0F) > 9
+                || (msg[6] & 0x0F) > 9
+                || ((msg[6] >> 4) & 0x0F) > 9
+                || (msg[5] & 0x0F) > 9
+                || ((msg[5] >> 4) & 0x0F) > 9
+                || (msg[4] & 0x0F) > 9
+                || ((msg[4] >> 4) & 0x0F) > 9) {
+            decoder_log(decoder, 1, __func__, "PCR800 Message failed BCD sanity check.");
+            return DECODE_FAIL_SANITY;
+        }
+
         float rain_rate = get_os_rain_rate(msg);
         float total_rain = get_os_total_rain(msg);
+
         /* clang-format off */
         data = data_make(
                 "model",            "",                     DATA_STRING, "Oregon-PCR800",
-                "id",                 "House Code", DATA_INT,        get_os_rollingcode(msg),
-                "channel",        "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
-                "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
-                "rain_rate_in_h",    "Rain Rate",    DATA_FORMAT, "%3.1f in/h", DATA_DOUBLE, rain_rate,
-                "rain_in", "Total Rain", DATA_FORMAT, "%3.1f in", DATA_DOUBLE, total_rain,
+                "id",                 "House Code", DATA_INT,        device_id,
+                "channel",        "Channel",        DATA_INT,        channel,
+                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
+                "rain_rate_in_h",    "Rain Rate",    DATA_FORMAT, "%5.1f in/h", DATA_DOUBLE, rain_rate,
+                "rain_in", "Total Rain", DATA_FORMAT, "%7.3f in", DATA_DOUBLE, total_rain,
                 NULL);
         /* clang-format on */
         decoder_output_data(decoder, data);
@@ -697,9 +748,9 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         /* clang-format off */
         data = data_make(
                 "model",            "",                     DATA_STRING, "Oregon-PCR800a",
-                "id",                 "House Code", DATA_INT,        get_os_rollingcode(msg),
-                "channel",        "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
-                "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
+                "id",                 "House Code", DATA_INT,        device_id,
+                "channel",        "Channel",        DATA_INT,        channel,
+                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
                 "rain_rate_in_h",    "Rain Rate",    DATA_FORMAT, "%3.1f in/h", DATA_DOUBLE, rain_rate,
                 "rain_in", "Total Rain", DATA_FORMAT, "%3.1f in", DATA_DOUBLE, total_rain,
                 NULL);
@@ -710,15 +761,33 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     else if (sensor_id == ID_WGR800 || sensor_id == ID_WGR800a) {
         if (validate_os_checksum(decoder, msg, 17) != 0)
             return DECODE_FAIL_MIC;
+        // Sanity check BCD digits
+        if ((msg[5] & 0x0F) > 9
+                || ((msg[6] >> 4) & 0x0F) > 9
+                || (msg[6] & 0x0F) > 9
+                || ((msg[7] >> 4) & 0x0F) > 9
+                || (msg[7] & 0x0F) > 9
+                || ((msg[8] >> 4) & 0x0F) > 9) {
+            decoder_log(decoder, 1, __func__, "WGR800 Message failed BCD sanity check.");
+            return DECODE_FAIL_SANITY;
+        }
+
         float gustWindspeed = (msg[5]&0x0f) /10.0F + ((msg[6]>>4)&0x0f) *1.0F + (msg[6]&0x0f) * 10.0F;
         float avgWindspeed = ((msg[7]>>4)&0x0f) / 10.0F + (msg[7]&0x0f) *1.0F + ((msg[8]>>4)&0x0f) * 10.0F;
         float quadrant = (0x0f&(msg[4]>>4))*22.5F;
+
+        // Sanity check values
+        if (gustWindspeed < 0 || gustWindspeed > 56 || avgWindspeed < 0 || avgWindspeed > 56 || quadrant < 0 || quadrant > 337.5) {
+            decoder_logf(decoder, 1, __func__, "WGR800 Message failed values sanity check: wind_max_m_s %2.1f wind_avg_m_s %2.1f wind_dir_deg %3.1f.", gustWindspeed, avgWindspeed, quadrant);
+            return DECODE_FAIL_SANITY;
+        }
+
         /* clang-format off */
         data = data_make(
                 "model",            "",                     DATA_STRING,    "Oregon-WGR800",
-                "id",                 "House Code", DATA_INT,         get_os_rollingcode(msg),
-                "channel",        "Channel",        DATA_INT,         get_os_channel(msg, sensor_id),
-                "battery_ok",          "Battery",         DATA_INT,    !get_os_battery(msg),
+                "id",                 "House Code", DATA_INT,         device_id,
+                "channel",        "Channel",        DATA_INT,         channel,
+                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
                 "wind_max_m_s",             "Gust",             DATA_FORMAT,    "%2.1f m/s",DATA_DOUBLE, gustWindspeed,
                 "wind_avg_m_s",        "Average",        DATA_FORMAT,    "%2.1f m/s",DATA_DOUBLE, avgWindspeed,
                 "wind_dir_deg",    "Direction",    DATA_FORMAT,    "%3.1f degrees",DATA_DOUBLE, quadrant,
@@ -728,16 +797,31 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         return 1;
     }
     else if ((msg[0] == 0x20) || (msg[0] == 0x21) || (msg[0] == 0x22) || (msg[0] == 0x23) || (msg[0] == 0x24)) { // Owl CM160 Readings
-        msg[0] = msg[0] & 0x0f;
+        msg[0] = msg[0] & 0x0F;
+
         if (validate_os_checksum(decoder, msg, 22) != 0)
             return DECODE_FAIL_MIC;
-        float rawAmp = (msg[4] >> 4 << 8 | (msg[3] & 0x0f )<< 4 | msg[3] >> 4);
-        unsigned short int ipower = (rawAmp /(0.27*230)*1000);
+
+        int id = msg[1] & 0x0F;
+
+        unsigned int current_amps  = swap_nibbles(msg[3]) | ((msg[4] >> 4) << 8);
+        double current_watts = current_amps * 0.07 * 230; // Assuming device is running in 230V country
+
+        double total_amps = ((uint64_t)swap_nibbles(msg[10]) << 36) | ((uint64_t)swap_nibbles(msg[9]) << 28) |
+                    (swap_nibbles(msg[8]) << 20) | (swap_nibbles(msg[7]) << 12) |
+                    (swap_nibbles(msg[6]) << 4) | (msg[5]&0xf);
+
+        double total_kWh = total_amps * 230.0 / 3600.0 / 1000.0 * 1.12; // Assuming device is running in 230V country
+        //result compares to the CM160 LCD display values when * 1.12 between readings
+
         /* clang-format off */
         data = data_make(
-                "model",    "",                     DATA_STRING,    "Oregon-CM160",
-                "id",         "House Code", DATA_INT, msg[1]&0x0F,
-                "power_W", "Power",         DATA_FORMAT,    "%d W", DATA_INT, ipower,
+                "model",            "",                     DATA_STRING,    "Oregon-CM160",
+                "id",               "House Code",           DATA_INT, id,
+ //               "current_A",        "Current Amps",         DATA_FORMAT,   "%d A", DATA_INT, current_amps,
+ //               "total_As",         "Total Amps",           DATA_FORMAT,   "%d As", DATA_INT, (int)total_amps,
+                "power_W",          "Power",                DATA_FORMAT,   "%7.4f W", DATA_DOUBLE, current_watts,
+                "energy_kWh",       "Energy",               DATA_FORMAT, "%7.4f kWh",DATA_DOUBLE, total_kWh,
                 NULL);
         /* clang-format on */
         decoder_output_data(decoder, data);
@@ -818,7 +902,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         decoder_log_bitrow(decoder, 1, __func__, msg, msg_len, "Message");
         decoder_log_bitrow(decoder, 1, __func__, b, bitbuffer->bits_per_row[0], "Raw");
     }
-    else if (b[3] != 0 ) {
+    else if (b[3] != 0) {
         decoder_log(decoder, 1, __func__, "Possible Oregon Scientific v3 message, but sync nibble wasn't found");
         decoder_log_bitrow(decoder, 1, __func__, b, bitbuffer->bits_per_row[0], "Raw Data");
     }
@@ -837,7 +921,7 @@ static int oregon_scientific_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return ret;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -865,10 +949,10 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device oregon_scientific = {
+r_device const oregon_scientific = {
         .name        = "Oregon Scientific Weather Sensor",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
-        .short_width = 440, // Nominal 1024Hz (488µs), but pulses are shorter than pauses
+        .short_width = 440, // Nominal 1024Hz (488us), but pulses are shorter than pauses
         .long_width  = 0,   // not used
         .reset_limit = 2400,
         .decode_fn   = &oregon_scientific_decode,

@@ -49,13 +49,11 @@ Also you always need to learn from the same primary.
 
 static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
     uint8_t *b;
     int r;
     int learn = 0;
     int unit; // max 30
     int id;
-    char code_str[7];
 
     if (bitbuffer->num_rows < 3)
         return DECODE_ABORT_EARLY; // truncated transmission
@@ -101,10 +99,11 @@ static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (id == 0 || id == 0x7fff)
         return DECODE_FAIL_SANITY; // reject min/max to reduce false positives
 
-    sprintf(code_str, "%02x%02x%02x", b[2], b[1], b[0]);
+    char code_str[7];
+    snprintf(code_str, sizeof(code_str), "%02x%02x%02x", b[2], b[1], b[0]);
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",        "",             DATA_STRING, "Smoke-GS558",
             "id"   ,        "",             DATA_INT, id,
             "unit",         "",             DATA_INT, unit,
@@ -117,7 +116,7 @@ static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "unit",
@@ -126,7 +125,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device smoke_gs558 = {
+r_device const smoke_gs558 = {
         .name        = "Wireless Smoke and Heat Detector GS 558",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 436,          // Threshold between short and long pulse [us]

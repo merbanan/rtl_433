@@ -51,7 +51,7 @@ Raw data frame (power index):
 - Index     {24}
 - Timestamp {34}
 - MaxPower  {16}
-- some additinal data ???
+- some additional data ???
 - CRC8 poly=0x7 the crc includes a length byte at the beginning
 */
 
@@ -212,7 +212,7 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -225,7 +225,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device archos_tbh = {
+r_device const archos_tbh = {
         .name        = "TBH weather sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 212,
