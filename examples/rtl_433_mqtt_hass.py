@@ -236,6 +236,18 @@ mappings = {
         }
     },
 
+    "detect_wet": {
+        "device_type": "binary_sensor",
+        "object_suffix": "moisture",
+        "config": {
+            "name": "Water Sensor",
+            "device_class": "moisture",
+            "force_update": "true",
+            "payload_on": "1",
+            "payload_off": "0"
+        }
+    },
+
     "pressure_hPa": {
         "device_type": "sensor",
         "object_suffix": "P",
