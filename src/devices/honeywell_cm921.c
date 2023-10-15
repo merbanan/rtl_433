@@ -294,7 +294,8 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
             UNKNOWN_IF(msg->payload_length != 3);
             break;
         }
-        case 0x000a: {
+        case 0x000a: { 
+            // Sent by CTL to UFH. Used for failsafe 
             UNKNOWN_IF(msg->payload_length % 6 != 0);
             for (size_t i=0; i < msg->payload_length; i+=6) {
                 char name[256];
@@ -311,10 +312,23 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
             }
             break;
         }
-        default: /* Unknown command */
+        case 0x1060: { 
+            // belived to be batery status, but I have only ever seen 'ffff01'
+            UNKNOWN_IF(msg->payload_length != 3);
+            break;
+        }
+        case 0x2e04: {
+            // controller mode
+            UNKNOWN_IF(msg->payload_length % 8 !=0 );
+            break;
+        }
+        default: { 
+            /* Unknown command */
 //printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX %04x\n",msg->command);
             return data_append(data, "unknown", "", DATA_FORMAT, "%04X", DATA_INT, 0xDEAD); 
             //UNKNOWN_IF(1);
+            break;
+        }
     }
     return r;
 }
