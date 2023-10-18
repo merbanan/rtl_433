@@ -1668,7 +1668,7 @@ int main(int argc, char **argv) {
             }
             abuf_printf(&p, " ]");
         }
-        print_logf(LOG_CRITICAL, "Protocols", "Registered %zu out of %u device decoding protocols%s",
+        print_logf(LOG_NOTICE, "Protocols", "Registered %zu out of %u device decoding protocols%s",
                 demod->r_devs.len, cfg->num_r_devices, decoders_str);
     }
 
