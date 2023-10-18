@@ -19,6 +19,7 @@
 #include "data.h"
 #include "list.h"
 #include "optparse.h"
+#include "util.h" // for MIN()
 #include "fileformat.h"
 #include "fatal.h"
 
