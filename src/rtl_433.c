@@ -142,7 +142,7 @@ static void usage(int exit_code)
             "  then command line args will be parsed in order.\n"
 #else
             "  A \"rtl_433.conf\" file is searched in \"./\", XDG_CONFIG_HOME e.g. \"$HOME/.config/rtl_433/\",\n"
-            "  \"/usr/local/etc/rtl_433/\", \"/etc/rtl_433/\", then command line args will be parsed in order.\n"
+            "  SYSCONFDIR e.g. \"/usr/local/etc/rtl_433/\", then command line args will be parsed in order.\n"
 #endif
             "\t\t= General options =\n"
             "  [-V] Output the version string and exit\n"

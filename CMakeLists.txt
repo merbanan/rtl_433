@@ -80,6 +80,7 @@ if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES 
     #ADD_DEFINITIONS(-Wfloat-equal)
     #ADD_DEFINITIONS(-Wbad-function-cast)
     #ADD_DEFINITIONS(-Wdocumentation)
+    add_definitions(-Wno-deprecated-declarations)
 
     # for strdup, setenv, use either
     #ADD_DEFINITIONS(-D_POSIX_C_SOURCE=200809) # does not work with uClibc
@@ -118,6 +119,12 @@ endif()
 # Make sure we get M_PI
 if(WIN32)
     add_definitions(-D_USE_MATH_DEFINES)
+endif()
+
+# On Unix pass the SYSCONFDIR through to conf file loader
+if(NOT WIN32)
+    include(GNUInstallDirs)
+    add_definitions(-DINSTALL_SYSCONFDIR=${CMAKE_INSTALL_FULL_SYSCONFDIR})
 endif()
 
 ########################################################################
