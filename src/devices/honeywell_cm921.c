@@ -117,13 +117,13 @@ static data_t *decode_device_ids(const message_t *msg, data_t *data, int style)
         }
         strcat(ds, buf);
     }
-
+//printf("++++%s+++\n",ds);
     return data_append(data, "ids", "Device IDs", DATA_STRING, ds, NULL);
 }
 
 #define UNKNOWN_IF(C) do { \
                         if (C) \
-                           return data_append(data, "unknown", "", DATA_FORMAT, "%04x", DATA_INT, msg->command); \
+                           return data_append(data, "unknown", "", DATA_FORMAT, "0x%04x", DATA_INT, msg->command, NULL); \
                       } while (0)
 
 static data_t *honeywell_cm921_interpret_message(r_device *decoder, const message_t *msg, data_t *data)
@@ -134,7 +134,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
     // (specifically https://www.domoticaforum.eu/download/file.php?id=1396)
     // https://github.com/zxdavb/ramses_protocol
 
-    data = decode_device_ids(msg, data, 0);  // XXX IAP
+    data = decode_device_ids(msg, data, 1);  // XXX IAP
 
     data_t *r = data;
     switch (msg->command) {
@@ -181,7 +181,10 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
             break;
         }
         case 0x0008: {
-            UNKNOWN_IF(msg->payload_length != 2);
+            // Relay Heat Demand
+            // There seems to be two version of this message, a normal one of length 2, and one with csum==1 of length 0x0d
+            
+            UNKNOWN_IF(msg->payload_length != 2); 
             data = data_append(data, "domain_id", "", DATA_INT, msg->payload[0], NULL);
             data = data_append(data, "demand", "", DATA_DOUBLE, msg->payload[1] * (1 / 200.0F) /* 0xC8 */, NULL);
             break;
@@ -197,6 +200,14 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
                     data = data_append(data, "flame_status", "", DATA_INT, msg->payload[3], NULL);
                     break;
             }
+            break;
+        }
+        case 0x3ef1: { 
+            // some kind of actuator message. This always has the bsum == 01.
+            // len, 3 bytes, counter, ???, csum 
+            // 0c 001784 03 8500ec83ae1ae9db 56
+            // 0b 001784 02 4b1c8a136c0910 4f
+            UNKNOWN_IF(1);
             break;
         }
         case 0x2309: {
@@ -322,11 +333,16 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
             UNKNOWN_IF(msg->payload_length % 8 !=0 );
             break;
         }
+        case 0x1fc9: {
+            // RF Bind
+            // 0b 01fe ffff 2db9 9b5d 942b 5c c6
+            // 0b 0205 ffff 411c e725 1210 c2 6a
+            UNKNOWN_IF(1);
+            break;
+        }
         default: { 
             /* Unknown command */
-//printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX %04x\n",msg->command);
-            return data_append(data, "unknown", "", DATA_FORMAT, "%04X", DATA_INT, 0xDEAD); 
-            //UNKNOWN_IF(1);
+            UNKNOWN_IF(1);
             break;
         }
     }
@@ -355,8 +371,10 @@ static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
 
     // Checksum: All bytes add up to 0.
     int bsum = add_bytes(bb, num_bytes) & 0xff;
-    int checksum_ok = bsum == 0;
-    msg->crc = bitrow_get_byte(bb, bmsg->bits_per_row[row] - 8);
+    int checksum_ok = (bsum == 0 || bsum == 1) ? 1 : 0 ;   // bizarely, some packets have a csum of 1 
+//    int checksum_ok = bsum == 0;
+//    msg->crc = bitrow_get_byte(bb, bmsg->bits_per_row[row] - 8);
+    msg->crc = bsum; // more useful to record what the sum was 
 
     if (!checksum_ok)
         return DECODE_FAIL_MIC;
@@ -369,7 +387,9 @@ static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
                           msg->header == 0x1c ? 2 :
                           msg->header == 0x10 ? 2 :
                           msg->header == 0x3c ? 2 :
-                (msg->header >> 2) & 0x03; // total speculation.
+                          msg->header == 0x8c ? 2 :
+                          msg->header == 0x9c ? 2 : 
+                          2 ; // total speculation.
 
     for (unsigned i = 0; i < msg->num_device_ids; i++)
         for (unsigned j = 0; j < 3; j++)
@@ -551,10 +571,11 @@ if (pr <= 0)
     data = data_make(
 //XXX            "model",    "",             DATA_STRING, "Honeywell-CM921",
             "mic",      "Integrity",    DATA_STRING, "CSUM_FAIL",
+            "err", "Error", DATA_INT, pr,
             NULL);
     data = add_hex_string(data, "Packet", packet.bb[row], packet.bits_per_row[row] / 8);
     data = add_hex_string(data, "CRC", &message.crc, 1);
-//    data = data_append(data, "# man errors", "", DATA_INT, man_errors, NULL);
+    //data = data_append(data, "# man errors", "", DATA_INT, man_errors, NULL);
 
     decoder_output_data(decoder, data);
     //return 1;
@@ -563,7 +584,7 @@ if (pr <= 0)
 else
 {
     data = data_make(
-            "mic",      "Integrity",    DATA_STRING, "CHECKSUM",
+            "mic",      "",    DATA_STRING, "CHECKSUM",
             NULL);
 }
     /* clang-format on */
@@ -627,6 +648,7 @@ static char const *const output_fields[] = {
         "actuator_run_time",
         "min_flow_temp",
         "mic",
+        "err",
         "aux_input",
         "temperature (zone 0)",
         "temperature (zone 1)",
