@@ -11,7 +11,7 @@
 
 #include "decoder.h"
 
-/** @fn int wec2103_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+/**
 WEC-2103 temperature/humidity sensor.
 
 Circuit board model numbers: TX07Y-THC V1, TX07K-THC V4
@@ -41,26 +41,6 @@ Example datagram:
 - Example: 82.4F->824->1724->0x6bc
 */
 
-static uint8_t mangled_crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
-{
-    unsigned remainder = init;
-    unsigned poly = polynomial;
-    unsigned bit;
-
-    while (nBytes--) {
-        // In normal CRC, the XOR message goes here.
-        for (bit = 0; bit < 4; bit++) {
-            if (remainder & 0x08) {
-                remainder = (remainder << 1) ^ poly;
-            } else {
-                remainder = (remainder << 1);
-            }
-        }
-        remainder ^= *message++;
-    }
-    return remainder & 0x0f;
-}
-
 static int wec2103_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     if (bitbuffer->num_rows != 6 || bitbuffer->bits_per_row[2] != 42) {
@@ -70,19 +50,9 @@ static int wec2103_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t b[5];
     bitbuffer_extract_bytes(bitbuffer, 3, 0, b, 40);
 
-    uint8_t c[9];
-    c[0] = b[0] >> 4;
-    c[1] = b[0] & 0x0F;
-    c[2] = b[4] & 0x0F; // The last nibble is moved here.
-    c[3] = b[1] & 0x0F;
-    c[4] = b[2] >> 4;
-    c[5] = b[2] & 0x0F;
-    c[6] = b[3] >> 4;
-    c[7] = b[3] & 0x0F;
-    c[8] = b[4] >> 4;
-
-    int crc_calculated = mangled_crc4(c, sizeof(c), 3, 0);
     int crc_received = b[1] >> 4;
+    b[1] = (b[1] & 0x0F) | ((b[4] & 0x0f) << 4);
+    int crc_calculated = crc4(b, sizeof(b) - 1, 3, 0) ^ (b[4] >> 4);
     if (crc_calculated != crc_received) {
         decoder_logf(decoder, 0, __func__, "CRC check failed (0x%X != 0x%X)", crc_calculated, crc_received);
         return DECODE_FAIL_MIC;
