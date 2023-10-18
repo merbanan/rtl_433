@@ -31,7 +31,7 @@ if(GIT_COMMIT) # is a git repo
     # shorten branch spec
     string(REGEX REPLACE ".*/" "" GIT_BRANCH "${GIT_REFSPEC}")
     # use lightweight (non-annotated) tags
-    git_describe(GIT_VERSION "--tags")
+    git_describe(GIT_VERSION "--tags" "--exclude=nightly")
     git_timestamp(GIT_TIMESTAMP)
     message(STATUS "Found Git version: ${GIT_REFSPEC} commit ${GIT_COMMIT} from ${GIT_TIMESTAMP_ISO}")
     message(STATUS "Using Git version tag: ${GIT_VERSION} on ${GIT_BRANCH} at ${GIT_TIMESTAMP}")
