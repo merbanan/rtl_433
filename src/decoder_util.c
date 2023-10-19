@@ -72,7 +72,7 @@ static char *bitrow_asprint_code(uint8_t const *bitrow, unsigned bit_len)
     return row_code;
 }
 
-char *bitrow_asprint_bits(uint8_t const *bitrow, unsigned bit_len)
+static char *bitrow_asprint_bits(uint8_t const *bitrow, unsigned bit_len)
 {
     char *row_bits, *p;
 

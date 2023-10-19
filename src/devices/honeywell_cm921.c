@@ -48,6 +48,7 @@ typedef struct {
     uint8_t unparsed_length;
     uint8_t unparsed[256];
     uint8_t crc;
+    uint8_t csum;
 } message_t;
 
 #ifdef _DEBUG
@@ -117,7 +118,6 @@ static data_t *decode_device_ids(const message_t *msg, data_t *data, int style)
         }
         strcat(ds, buf);
     }
-//printf("++++%s+++\n",ds);
     return data_append(data, "ids", "Device IDs", DATA_STRING, ds, NULL);
 }
 
@@ -134,9 +134,26 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
     // (specifically https://www.domoticaforum.eu/download/file.php?id=1396)
     // https://github.com/zxdavb/ramses_protocol
 
-    data = decode_device_ids(msg, data, 1);  // XXX IAP
-
+    data = decode_device_ids(msg, data, 1);  
     data_t *r = data;
+
+    if (msg->csum == 0x01) {
+        // some devices send messages with the final byte set such that the byte sum is 0x01 rather than the usual 0x00
+        // These messages always have a header of 1c|7c|8c|9c, two addresses, a 2 byte cmd, payload size, payload, csum byte
+        // not sure whice devices send them, but one of them uses the 10e0 message to identify as a "Jasper EIM" 
+        switch (msg->command) {
+            case 0x0008: // Relay Demand message with an extra long payload. eg. 0017872b4ba4402a1bc756f7ec
+            case 0x0502: // mystery long message that come in pairs
+            case 0x10e0: // Device Info message sent to broadcast address, contains ASCI string
+            case 0x1100: // Boiler Relay info e.g. 02090002ee7856655a75f2a3fce10f05334453
+            case 0x1fc9: // RF bind e.g. 0209ffff692c1e918ecf5f
+            case 0x3ef0: // Actuator info e.g. 020a001e60ebe52a896c7eaa5451e77ae9440fef
+            case 0x3ef1: // Actuator unknown   020a001f653c7eab76d7dd91259d61d50048
+            default:
+                UNKNOWN_IF(1);
+                break;
+        }
+    } else {
     switch (msg->command) {
         case 0x1030: {
             UNKNOWN_IF(msg->payload_length != 16);
@@ -346,6 +363,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
             break;
         }
     }
+    }
     return r;
 }
 
@@ -371,10 +389,9 @@ static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
 
     // Checksum: All bytes add up to 0.
     int bsum = add_bytes(bb, num_bytes) & 0xff;
-    int checksum_ok = (bsum == 0 || bsum == 1) ? 1 : 0 ;   // bizarely, some packets have a csum of 1 
-//    int checksum_ok = bsum == 0;
-//    msg->crc = bitrow_get_byte(bb, bmsg->bits_per_row[row] - 8);
-    msg->crc = bsum; // more useful to record what the sum was 
+    int checksum_ok = (bsum == 0 || bsum == 1) ? 1 : 0 ;   // bizarely, some packets have a bsum of 1 
+    msg->crc = bitrow_get_byte(bb, bmsg->bits_per_row[row] - 8);
+    msg->csum = bsum; // more useful to record what the sum was 
 
     if (!checksum_ok)
         return DECODE_FAIL_MIC;
@@ -547,16 +564,16 @@ while( sep < bytes.bits_per_row[row])
     {
         decoder_logf(decoder, 1, __func__, "manchester_fail start=%d sep=%d fail_at=%d", first_byte, sep, fpos);
 
-        char *bitrow_asprint_bits(uint8_t const *bitrow, unsigned bit_len);
-        void free( void* ptr );
+        // char *bitrow_asprint_bits(uint8_t const *bitrow, unsigned bit_len);
+        // void free( void* ptr );
+        // char * p = bitrow_asprint_bits(bytes.bb[0], fpos);
+        // decoder_logf(decoder, 1, __func__, "USED: %s", p);
+        // free(p);
+        // p = bitrow_asprint_bits(bytes.bb[0],  bytes.bits_per_row[0]);
+        // decoder_logf(decoder, 1, __func__, "FULL: %s", p);
+        // free(p);
+        // return DECODE_FAIL_SANITY;
 
-        char * p = bitrow_asprint_bits(bytes.bb[0], fpos);
-        decoder_logf(decoder, 1, __func__, "USED: %s", p);
-        free(p);
-        p = bitrow_asprint_bits(bytes.bb[0],  bytes.bits_per_row[0]);
-        decoder_logf(decoder, 1, __func__, "FULL: %s", p);
-        free(p);
-        //return DECODE_FAIL_SANITY;
         continue;
     }
 
@@ -569,16 +586,15 @@ while( sep < bytes.bits_per_row[row])
 if (pr <= 0)
 {
     data = data_make(
-//XXX            "model",    "",             DATA_STRING, "Honeywell-CM921",
+            "model",    "",             DATA_STRING, "Honeywell-CM921",
             "mic",      "Integrity",    DATA_STRING, "CSUM_FAIL",
             "err", "Error", DATA_INT, pr,
             NULL);
     data = add_hex_string(data, "Packet", packet.bb[row], packet.bits_per_row[row] / 8);
     data = add_hex_string(data, "CRC", &message.crc, 1);
-    //data = data_append(data, "# man errors", "", DATA_INT, man_errors, NULL);
+    data = add_hex_string(data, "csum", &message.csum, 1);
 
     decoder_output_data(decoder, data);
-    //return 1;
     continue;
 }
 else
@@ -600,7 +616,7 @@ else
     data = add_hex_string(data, "Payload", message.payload, message.payload_length);
     data = add_hex_string(data, "Unparsed", message.unparsed, message.unparsed_length);
     data = add_hex_string(data, "CRC", &message.crc, 1);
-    //data = data_append(data, "# man errors", "", DATA_INT, man_errors, NULL);
+    data = add_hex_string(data, "csum", &message.csum, 1);
 #endif
 
     decoder_output_data(decoder, data);
@@ -620,8 +636,8 @@ static char const *const output_fields[] = {
         "Payload",
         "Unparsed",
         "CRC",
+        "csum",
         "Seq",
-        "# man errors",
 #endif
         "unknown",
         "time_request",
