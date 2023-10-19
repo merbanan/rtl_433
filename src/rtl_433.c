@@ -142,7 +142,7 @@ static void usage(int exit_code)
             "  then command line args will be parsed in order.\n"
 #else
             "  A \"rtl_433.conf\" file is searched in \"./\", XDG_CONFIG_HOME e.g. \"$HOME/.config/rtl_433/\",\n"
-            "  \"/usr/local/etc/rtl_433/\", \"/etc/rtl_433/\", then command line args will be parsed in order.\n"
+            "  SYSCONFDIR e.g. \"/usr/local/etc/rtl_433/\", then command line args will be parsed in order.\n"
 #endif
             "\t\t= General options =\n"
             "  [-V] Output the version string and exit\n"
@@ -1668,7 +1668,7 @@ int main(int argc, char **argv) {
             }
             abuf_printf(&p, " ]");
         }
-        print_logf(LOG_CRITICAL, "Protocols", "Registered %zu out of %u device decoding protocols%s",
+        print_logf(LOG_NOTICE, "Protocols", "Registered %zu out of %u device decoding protocols%s",
                 demod->r_devs.len, cfg->num_r_devices, decoders_str);
     }
 
