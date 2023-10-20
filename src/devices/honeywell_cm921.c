@@ -123,7 +123,7 @@ static data_t *decode_device_ids(const message_t *msg, data_t *data, int style)
 
 #define UNKNOWN_IF(C) do { \
                         if (C) \
-                           return data_append(data, "unknown", "", DATA_FORMAT, "0x%04x", DATA_INT, msg->command, NULL); \
+                           return data_append(data, "unknown", "", DATA_FORMAT, "%04x", DATA_INT, msg->command, NULL); \
                       } while (0)
 
 static data_t *honeywell_cm921_interpret_message(r_device *decoder, const message_t *msg, data_t *data)
@@ -135,6 +135,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
     // https://github.com/zxdavb/ramses_protocol
 
     data = decode_device_ids(msg, data, 1);  
+
     data_t *r = data;
 
     if (msg->csum == 0x01) {
@@ -142,7 +143,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
         // These messages always have a header of 1c|7c|8c|9c, two addresses, a 2 byte cmd, payload size, payload, csum byte
         // not sure whice devices send them, but one of them uses the 10e0 message to identify as a "Jasper EIM" 
         switch (msg->command) {
-            case 0x0008: // Relay Demand message with an extra long payload. eg. 0017872b4ba4402a1bc756f7ec
+            case 0x0008: // Relay Demand message with a 13 byte payload. eg. 0017872b4ba4402a1bc756f7ec
             case 0x0502: // mystery long message that come in pairs
             case 0x10e0: // Device Info message sent to broadcast address, contains ASCI string
             case 0x1100: // Boiler Relay info e.g. 02090002ee7856655a75f2a3fce10f05334453
@@ -199,7 +200,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
         }
         case 0x0008: {
             // Relay Heat Demand
-            // There seems to be two version of this message, a normal one of length 2, and one with csum==1 of length 0x0d
+            // The version of this message with csum=0 alayws seems to be 2 byte
             
             UNKNOWN_IF(msg->payload_length != 2); 
             data = data_append(data, "domain_id", "", DATA_INT, msg->payload[0], NULL);
@@ -219,17 +220,9 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
             }
             break;
         }
-        case 0x3ef1: { 
-            // some kind of actuator message. This always has the bsum == 01.
-            // len, 3 bytes, counter, ???, csum 
-            // 0c 001784 03 8500ec83ae1ae9db 56
-            // 0b 001784 02 4b1c8a136c0910 4f
-            UNKNOWN_IF(1);
-            break;
-        }
         case 0x2309: {
             UNKNOWN_IF(msg->payload_length % 3 != 0);
-            if (msg->payload_length == 3) { // for single zone use this message for backward compatibility
+            if (msg->payload_length == 3) { // for single zone use this JSON message for backward compatibility
                 data = data_append(data, "zone", "", DATA_INT, msg->payload[0], NULL);
                 // Observation: CM921 reports a very high setpoint during binding (0x7eff); packet: 143255c1230903017efff7
                 data = data_append(data, "setpoint", "", DATA_DOUBLE, ((msg->payload[1] << 8) | msg->payload[2]) * (1 / 100.0F), NULL);
@@ -291,20 +284,18 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
             break;
         }
         case 0x1f09: {
+            // System Sync message. 3 byte message. domain_id then 2 byte countdown in tenths of a second
             // example "Packet" : "18045ef5045ef51f0903ff077693", "Header" : "18", "Seq" : "00", "Command" : "1f09", "Payload" : "ff0776",
-            // IAP no idea of the function, appears to contain a temp
+            // not sure its useful to log this to JSON 
             UNKNOWN_IF(msg->payload_length != 3);
-            data = data_append(data, "zone", "", DATA_INT, msg->payload[0], NULL);
-            // Observation: CM921 reports a very high setpoint during binding (0x7eff); packet: 143255c1230903017efff7
-            data = data_append(data, "setpoint", "", DATA_DOUBLE, ((msg->payload[1] << 8) | msg->payload[2]) / 100.0, NULL);
             break;
         }
         case 0x0002: {
-            // Sent by a thermostat in resposne to a change in the aux wired input
+            // External Sensor. Sent by a thermostat in resposne to a change in the aux wired input
             // "Packet" : "1a0da2520da2520300020403010105d1", "Header" : "1a", "Seq" : "03", "Command" : "0002", "Payload" : "03010105"
-            // byte[2] of payload indicates whether aux input is logic 1 or 0
             // byte[0] is always 3 (remaining length?) 
             // byte[1] counts between 01 and 02 (seq always remians 0)
+            // byte[2] of payload indicates whether aux input is logic 1 or 0
             // byte[3] is always 5
             UNKNOWN_IF(msg->payload_length != 4);
             data = data_append(data, "aux_input", "", DATA_INT, msg->payload[2], NULL);
@@ -323,31 +314,36 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
             break;
         }
         case 0x000a: { 
-            // Sent by CTL to UFH. Used for failsafe 
+            // Zone Config. Sent by CTL to UFH. Used for failsafe 
             UNKNOWN_IF(msg->payload_length % 6 != 0);
             for (size_t i=0; i < msg->payload_length; i+=6) {
                 char name[256];
                 int16_t temp;
                 snprintf(name, sizeof(name), "flags (zone %u)", msg->payload[i]);
-                temp = msg->payload[6*i+1];
+                temp = msg->payload[i+1];
                 data = data_append(data, name, "", DATA_FORMAT, "%02x", DATA_INT, temp, NULL);
                 snprintf(name, sizeof(name), "temp_low (zone %u)", msg->payload[i]);
-                temp = msg->payload[6*i+2] << 8 | msg->payload[6*i+3];
+                temp = msg->payload[i+2] << 8 | msg->payload[i+3];
                 data = data_append(data, name, "", DATA_DOUBLE, temp/100.0, NULL);
                 snprintf(name, sizeof(name), "temp_high (zone %u)", msg->payload[i]);
-                temp = msg->payload[6*i+4] << 8 | msg->payload[6*i+5];
+                temp = msg->payload[i+4] << 8 | msg->payload[i+5];
                 data = data_append(data, name, "", DATA_DOUBLE, temp/100.0, NULL);
             }
             break;
         }
         case 0x1060: { 
-            // belived to be batery status, but I have only ever seen 'ffff01'
+            // Battery Status. I only observe 'ffff01', likely because all sensors are mains powered.
+            // payload[2] 1=OK 0-low
             UNKNOWN_IF(msg->payload_length != 3);
+            data = data_append(data, "battery_ok", "", DATA_INT, msg->payload[2], NULL);
             break;
         }
         case 0x2e04: {
-            // controller mode
-            UNKNOWN_IF(msg->payload_length % 8 !=0 );
+            // Controller Mode. zxdavb lists the payload below but this in no way matches the 16 byte messages I see 
+            // payload[0] Program mode (0=Auto, 1=Heating Off, 2=Eco, 3=Away, 4=Day off, 7=Custom)
+            // payload[1] hours; payload[2] minutes; payload[3] day; payload[4] month; payload[5] year
+            // payload[6] Program type (0=Permanent, 1=Timed)
+            UNKNOWN_IF(1);
             break;
         }
         case 0x1fc9: {
@@ -389,9 +385,9 @@ static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
 
     // Checksum: All bytes add up to 0.
     int bsum = add_bytes(bb, num_bytes) & 0xff;
-    int checksum_ok = (bsum == 0 || bsum == 1) ? 1 : 0 ;   // bizarely, some packets have a bsum of 1 
+    int checksum_ok = (bsum == 0 || bsum == 1) ? 1 : 0 ;   // bizarely, some packets have a csum of 1 rather than 0
     msg->crc = bitrow_get_byte(bb, bmsg->bits_per_row[row] - 8);
-    msg->csum = bsum; // more useful to record what the sum was 
+    msg->csum = bsum; // record what the csum was
 
     if (!checksum_ok)
         return DECODE_FAIL_MIC;
@@ -446,8 +442,11 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // post=10101100
     // each byte surrounded by start/stop bits (0byte1)
     // then manchester decode.
-    const uint8_t preamble_pattern[4] = { 0x55, 0xff, 0x00, 0x40 }; // { 0x55, 0x5F, 0xF0, 0x04 };
-    const uint8_t preamble_bit_length = 26; //30;
+    // Preamble pattern was { 0x55, 0x5F, 0xF0, 0x04 } and 30 bits, but I 
+    // observed the first nibble was frequently corrupted in otherwise perfect packets
+
+    const uint8_t preamble_pattern[4] = { 0x55, 0xff, 0x00, 0x40 }; 
+    const uint8_t preamble_bit_length = 26; 
     const int row = 0; // we expect a single row only.
     int sep = 0;
 
@@ -462,21 +461,10 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int start = preamble_start + preamble_bit_length;
     int len = bitbuffer->bits_per_row[row] - start;
     decoder_logf(decoder, 1, __func__, "preamble_start=%d start=%d len=%d", preamble_start, start, len);
-    {
-        int y;
-        for(y=0;y<8;y++) {
-            uint8_t tmp[1000];
-            char tstr[200];
-            memset(&tmp,0,1000);
-            bitbuffer_extract_bytes(bitbuffer, 0, y,tmp, bitbuffer->bits_per_row[row]-y);
-            bitrow_snprint(tmp, bitbuffer->bits_per_row[row]-y, tstr, sizeof (tstr));
-            //decoder_logf(decoder, 1, __func__, "AA%d %s",y,tstr);
-        }
-    }
+
     if (len < 8 )
     {
         decoder_logf(decoder, 1, __func__, "err_runt");
-        // continue;
         return DECODE_ABORT_LENGTH;
     }
 
@@ -496,6 +484,7 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     decoder_log_bitrow(decoder, 1, __func__, bytes.bb[0], bytes.bits_per_row[0], "BBB");
 
+    // HCM200d sends multiple commands in the same radio message, separated by an ff00 sequence. Loop over each
 while( sep < bytes.bits_per_row[row])
 {
 
@@ -504,30 +493,6 @@ while( sep < bytes.bits_per_row[row])
 
     if ( start33 != sep ) decoder_logf(decoder, 1, __func__, "Strange start33=%d",start33);
 
-#if 0
-    // Skip Manchester breaking header
-    uint8_t header[3] = { 0x33, 0x55, 0x53 };
-    if (bitrow_get_byte(bytes.bb[row], 0) != header[0] ||
-        bitrow_get_byte(bytes.bb[row], 8) != header[1] ||
-        bitrow_get_byte(bytes.bb[row], 16) != header[2])
-    {
-        decoder_logf(decoder, 1, __func__, "did not find 33 55 53");
-        return DECODE_FAIL_SANITY;
-    }
-
-    // Find Footer 0x35 (0x55*)
-    int fi = bytes.bits_per_row[row] - 8;
-    int seen_aa = 0;
-    while (bitrow_get_byte(bytes.bb[row], fi) == 0x55) {
-        seen_aa = 1;
-        fi -= 8;
-    }
-    if (!seen_aa || bitrow_get_byte(bytes.bb[row], fi) != 0x35)
-    {
-        decoder_logf(decoder, 1, __func__, "did not find 35 55+");
-        return DECODE_FAIL_SANITY;
-    }
-#endif
     unsigned first_byte = start33+24;
     uint8_t seperator_pattern[2] = { 0xff, 0x00 };
     sep = bitbuffer_search(&bytes, row, first_byte, seperator_pattern, sizeof(seperator_pattern)*8);
@@ -548,32 +513,16 @@ while( sep < bytes.bits_per_row[row])
     if (!seen_aa || bitrow_get_byte(bytes.bb[row], fi) != 0x35)
     {
         decoder_logf(decoder, 1, __func__, "did not find 35 55+");
-        //return DECODE_FAIL_SANITY;
         continue;
     }
 
-
-    //unsigned end_byte   = fi;
-    //unsigned num_bits   = end_byte - first_byte;
-    //unsigned num_bytes = num_bits/8 / 2;
-
     bitbuffer_t packet = {0};
     unsigned fpos = bitbuffer_manchester_decode(&bytes, row, first_byte, &packet, fi-first_byte); // decode as much as we can
+    unsigned man_errors = (fi - first_byte) - (fpos - first_byte - 2);
 
     if ( fpos < fi )
     {
         decoder_logf(decoder, 1, __func__, "manchester_fail start=%d sep=%d fail_at=%d", first_byte, sep, fpos);
-
-        // char *bitrow_asprint_bits(uint8_t const *bitrow, unsigned bit_len);
-        // void free( void* ptr );
-        // char * p = bitrow_asprint_bits(bytes.bb[0], fpos);
-        // decoder_logf(decoder, 1, __func__, "USED: %s", p);
-        // free(p);
-        // p = bitrow_asprint_bits(bytes.bb[0],  bytes.bits_per_row[0]);
-        // decoder_logf(decoder, 1, __func__, "FULL: %s", p);
-        // free(p);
-        // return DECODE_FAIL_SANITY;
-
         continue;
     }
 
@@ -581,33 +530,23 @@ while( sep < bytes.bits_per_row[row])
     message_t message;
     int pr = parse_msg(&packet, 0, &message);
 
+#ifndef _DEBUG
+    if (pr <= 0)
+        continue;
+#endif
+ 
     /* clang-format off */
     data_t *data;
-if (pr <= 0)
-{
     data = data_make(
-            "model",    "",             DATA_STRING, "Honeywell-CM921",
-            "mic",      "Integrity",    DATA_STRING, "CSUM_FAIL",
-            "err", "Error", DATA_INT, pr,
+            "model",    "",             DATA_STRING, "Honeywell-CM921", 
             NULL);
-    data = add_hex_string(data, "Packet", packet.bb[row], packet.bits_per_row[row] / 8);
-    data = add_hex_string(data, "CRC", &message.crc, 1);
-    data = add_hex_string(data, "csum", &message.csum, 1);
-
-    decoder_output_data(decoder, data);
-    continue;
-}
-else
-{
-    data = data_make(
-            "mic",      "",    DATA_STRING, "CHECKSUM",
-            NULL);
-}
     /* clang-format on */
 
     data = honeywell_cm921_interpret_message(decoder, &message, data);
 
 #ifdef _DEBUG
+    data = data_append(data, "mic", "Integrity", DATA_STRING, pr>0 ? "CHECKSUM" : "CSUM_FAIL", NULL); 
+    data = data_append(data, "err", "Error", DATA_INT, pr, NULL); 
     data = add_hex_string(data, "Packet", packet.bb[row], packet.bits_per_row[row] / 8);
     data = add_hex_string(data, "Header", &message.header, 1);
     data = add_hex_string(data, "Seq", &message.seq, 1);
@@ -616,6 +555,7 @@ else
     data = add_hex_string(data, "Payload", message.payload, message.payload_length);
     data = add_hex_string(data, "Unparsed", message.unparsed, message.unparsed_length);
     data = add_hex_string(data, "CRC", &message.crc, 1);
+    data = data_append(data, "# man errors", "", DATA_INT, man_errors, NULL);
     data = add_hex_string(data, "csum", &message.csum, 1);
 #endif
 
@@ -631,15 +571,18 @@ static char const *const output_fields[] = {
 #ifdef _DEBUG
         "Packet",
         "Header",
-        "Flags",
         "Command",
         "Payload",
         "Unparsed",
         "CRC",
+        "# man errors",
         "csum",
         "Seq",
+        "mic",
+        "err",
 #endif
         "unknown",
+        "Flags",
         "time_request",
         "flame_status",
         "zone",
@@ -663,9 +606,8 @@ static char const *const output_fields[] = {
         "pump_run_time",
         "actuator_run_time",
         "min_flow_temp",
-        "mic",
-        "err",
         "aux_input",
+        "battery_ok",
         "temperature (zone 0)",
         "temperature (zone 1)",
         "temperature (zone 2)",

@@ -207,7 +207,7 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
             value.v_ptr = va_arg(ap, data_array_t *);
             break;
         default:
-            fprintf(stderr, "vdata_make() bad data type (%d) K%sK *%s*\n", type, key, pretty_key);
+            fprintf(stderr, "vdata_make() bad data type (%d)\n", type);
             goto alloc_error;
         }
 
