@@ -40,7 +40,7 @@ Detailed information on some options follows.
 
 
   A "rtl_433.conf" file is searched in "./", XDG_CONFIG_HOME e.g. "$HOME/.config/rtl_433/",
-  "/usr/local/etc/rtl_433/", "/etc/rtl_433/", then command line args will be parsed in order.
+  SYSCONFDIR e.g. "/usr/local/etc/rtl_433/", then command line args will be parsed in order.
 .SS "General options"
 .TP
 [ \fB\-V\fI\fP ]
@@ -168,7 +168,7 @@ RTL\-SDR device driver is available.
 To set gain for RTL\-SDR use \-g <gain> to set an overall gain in dB.
 .RE
 .RS
-SoapySDR device driver is available.
+SoapySDR device driver is not available.
 .RE
 .TP
 [ \fB\-d\fI ""\fP ]
