@@ -254,6 +254,7 @@
     DECL(fineoffset_ws90) \
     DECL(thermopro_tx2c) \
     DECL(tfa_303151) \
+	DECL(tpms_carchet) \
 
     /* Add new decoders here. */
 
