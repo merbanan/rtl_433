@@ -18,14 +18,13 @@ and every 4 min 40 s under steady state pressure.
 A transmission starts with a preamble of 0x0000 and the packet is sent twice.
 
 Data layout:
-    CCCCCCCC IIIIIIII IIIIIIII IIIIIIII PPPPPPPP TTTTTTTT BFFF0000 00000000
+    CCCCCCCC IIIIIIII IIIIIIII IIIIIIII PPPPPPPP TTTTTTTT FFFFFFFF FFFFFFFF
 
 - C: 8-bit checksum, modulo 256
 - I: 24-bit little-endian id
-- P: 8-bit little-endian Pressure (highest bit not included in checksum)
+- P: 8-bit little-endian Pressure
 - T: 8-bit little-endian Temperature
-- B: 1-bit low battery flag (not included in checksum)
-- F: 3-bit status flags: 0x01 = quick deflation, 0x03 = quick inflation, 0x02 may be accel ?, 0x00 = static/steady state
+- F: 16-bit status flags: 0x8000 = low battery, 0x8020 = batt_ok, 0x1000 = quick deflation, 0x3000 = inflation, 0x0000 = static/steady state
 
 */
 
@@ -55,7 +54,7 @@ rtl_433 -X "n=Carchet,m=OOK_MC_ZEROBIT,s=50,l=50,r=1000,invert" -s 1M
 Using these parameters, the data packets in rtl_433 were of the format 
 
     ffffa9332fc0a84f1000
-    PPPPCCIIIIIIPPTTF000
+    PPPPCCIIIIIIPPTTFFFF
 
 The manufacturer's website, http://carchet.easyofficial.com/carchet-rv-trailer-car-solar-tpms-tire-pressure-monitoring-system-6-sensor-lcd-display-p6.html,
 provides the following specs:
@@ -73,10 +72,10 @@ static int tpms_carchet_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t *b; // bits of a row
-    int serial_id, temperature, calc_checksum, overflow, flags, low_batt, fast_leak, infl_flag;
+    int serial_id, temperature, calc_checksum, overflow, flags1, flags2, low_batt, batt_ok, fast_leak, infl_flag;
     float pressure;
     char id_str[7];
-    char flag_str[3];
+    char flag_str[5];
 
     bitbuffer_invert(bitbuffer);
     //decoder_log_bitbuffer(decoder, 2, __func__, bitbuffer, "");
@@ -97,7 +96,7 @@ static int tpms_carchet_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // last byte should be zero
-    if (b[9] != 0){
+    if (b[10] != 0){
         decoder_log(decoder, 2, __func__, "invalid trailer");
         return DECODE_FAIL_SANITY;
     }
@@ -105,33 +104,33 @@ static int tpms_carchet_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* Check message integrity (Checksum) */
     // The checksum is 8-bit modulo 256 with an overflow flag at bit 8.
     // Overflow flag is set if checksum is greater than 0xff.
-    calc_checksum = b[3] + b[4] + b[5] + b[6] + b[7] + b[8];
-    overflow = 0; // initialize overflow flag
+    calc_checksum = b[3] + b[4] + b[5] + b[6] + b[7] + b[8] + b[9];
+    overflow = 0; // reset overflow flag
     if(calc_checksum > 0xff){
         overflow = 0x80; // set overflow flag
     }
     calc_checksum = calc_checksum & 0xff; // modulo 256 checksum
-    calc_checksum = calc_checksum | overflow; // sets bit 8 checksum overflow flag
+    calc_checksum = calc_checksum | overflow; // set bit 8 checksum overflow flag
     if (calc_checksum - b[2] != 0) {
         decoder_log(decoder, 2, __func__, "checksum error");
         return DECODE_FAIL_MIC; // bad checksum
     }
 
     /* Get the decoded data fields */
-    /* CC II II II PP TT BF 00 */
+    /* CC II II II PP TT FF 00 */
 
     serial_id = (unsigned) b[3] << 16 | b[4] << 8 | b[5];
     snprintf(id_str, sizeof(id_str), "%06X", serial_id );
 
-    pressure = b[6]*  0.363 - 0.06946;
-    if(pressure < 0){pressure = 0;}; // 0 PSI should display non-negative
+    pressure = b[6] *  0.363 - 0.06946;
+    if(pressure < 0){pressure = 0;}; // 0 PSI is non-negative
 
     temperature = b[7];
 
-    flags = b[8]; // TODO: Send various flags to Carchet monitor to check for additional states
-    snprintf(flag_str, sizeof(flag_str), "%02X", flags);
-
-    low_batt = b[8] >> 7;// Low batt flag is last bit
+    flags1 = b[8]; // TODO: Send various flags to Carchet monitor to check for additional states
+    flags2 = b[9]; // Only saw non-zero flags2 when low_batt flag (0x8000) cleared (0x8020)
+    
+    snprintf(flag_str, sizeof(flag_str), "%02X%02x", flags1, flags2);
 
     infl_flag = (b[8] & 0x30) >> 5; // pressure increasing
 
@@ -140,6 +139,13 @@ static int tpms_carchet_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         fast_leak = (b[8] & 0x10) >> 4;
     }
     
+    // Low batt = 0x8000, low_batt cleared = 0x8020
+    low_batt = 0; // reset low_batt flag
+    batt_ok = b[9] >> 6;
+    if(!batt_ok){
+        low_batt = b[8] >> 7;// Low batt flag is last bit
+    }
+
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, "Carchet",
