@@ -1063,6 +1063,10 @@ static int is_websocket(const struct mg_connection *nc)
     return nc->flags & MG_F_IS_WEBSOCKET;
 }
 
+// GCC 11 can't prove the strdup() to free()
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-malloc-leak"
+
 // event handler to broadcast to all our sockets
 static void http_broadcast_send(struct http_server_context *ctx, char const *msg, size_t len)
 {
@@ -1098,6 +1102,8 @@ static void http_broadcast_send(struct http_server_context *ctx, char const *msg
     }
 }
 
+#pragma GCC diagnostic pop
+
 static struct http_server_context *http_server_start(struct mg_mgr *mgr, char const *host, char const *port, r_cfg_t *cfg, struct data_output *output)
 {
     struct mg_bind_opts bind_opts;
@@ -1130,6 +1136,7 @@ static struct http_server_context *http_server_start(struct mg_mgr *mgr, char co
     if (ctx->conn == NULL) {
         print_logf(LOG_ERROR, __func__, "Error starting server on address %s: %s", address,
                 *bind_opts.error_string);
+        ring_list_free(ctx->history);
         free(ctx);
         return NULL;
     }

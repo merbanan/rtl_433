@@ -495,6 +495,10 @@ static uint32_t parse_symbol(const char *code)
     return ((uint32_t)b[0] << 24) | (b[1] << 16) | (b[2] << 8) | (b[3] << 0) | len;
 }
 
+// GCC 11 static analysis chokes on all this
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-malloc-leak"
+
 static const char *parse_map(const char *arg, struct flex_get *getter)
 {
     const char *c = arg;
@@ -788,3 +792,5 @@ r_device *flex_create_device(char *spec)
     free(spec);
     return dev;
 }
+
+#pragma GCC diagnostic pop
