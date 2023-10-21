@@ -20,7 +20,15 @@ cmake $@ -DCMAKE_TOOLCHAIN_FILE=../$CMAKE_TOOLCHAIN_FILE ..
 else
 cmake $@ ..
 fi
-make
+
+CPU_CORES=$(nproc --all)
+if [ -z "${CPU_CORES//[0-9]}" ] && [ -n "$CPU_CORES" ]
+then
+    make -j$CPU_CORES
+else
+    make
+fi
+
 # make install
 
 if [ -n "$RUN_RTL_433_TESTS" ] ; then
