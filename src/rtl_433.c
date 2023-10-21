@@ -1885,7 +1885,7 @@ int main(int argc, char **argv) {
 
             // default case for file-inputs
             int n_blocks = 0;
-            unsigned long n_read;
+            size_t n_read;
             delay_timer_t delay_timer;
             delay_timer_init(&delay_timer);
             do {
@@ -1923,7 +1923,7 @@ int main(int argc, char **argv) {
                 if (n_read == 0) break;  // sdr_callback() will Segmentation Fault with len=0
                 demod->sample_file_pos = ((float)n_blocks * DEFAULT_BUF_LENGTH + n_read) / cfg->samp_rate / demod->sample_size;
                 n_blocks++; // this assumes n_read == DEFAULT_BUF_LENGTH
-                sdr_callback(test_mode_buf, n_read, cfg);
+                sdr_callback(test_mode_buf, (uint32_t)n_read, cfg);
             } while (n_read != 0 && !cfg->exit_async);
 
             // Call a last time with cleared samples to ensure EOP detection

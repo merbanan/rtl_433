@@ -107,7 +107,7 @@ static int datagram_client_open(datagram_client_t *client, const char *host, con
             client->sock = sock;
             memset(&client->addr, 0, sizeof(client->addr));
             memcpy(&client->addr, res->ai_addr, res->ai_addrlen);
-            client->addr_len = res->ai_addrlen;
+            client->addr_len = (socklen_t)res->ai_addrlen;
             break; // success
         }
     }
@@ -140,7 +140,11 @@ static void datagram_client_close(datagram_client_t *client)
 
 static void datagram_client_send(datagram_client_t *client, const char *message, size_t message_len)
 {
-    int r =  sendto(client->sock, message, message_len, 0, (struct sockaddr *)&client->addr, client->addr_len);
+    int r =  sendto(client->sock, message,
+#ifdef _WIN32
+        (int)
+#endif
+        message_len, 0, (struct sockaddr *)&client->addr, client->addr_len);
     if (r == -1) {
         perror("sendto");
     }

@@ -618,7 +618,7 @@ r_device *flex_create_device(char *spec)
             params->name = strdup(val);
             if (!params->name)
                 FATAL_STRDUP("flex_create_device()");
-            int name_size = strlen(val) + 27;
+            size_t name_size = strlen(val) + 27;
             char* flex_name = malloc(name_size);
             if (!flex_name)
                 FATAL_MALLOC("flex_create_device()");

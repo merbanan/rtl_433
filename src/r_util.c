@@ -146,8 +146,8 @@ float inhg2hpa(float inhg)
 
 bool str_endswith(char const *restrict str, char const *restrict suffix)
 {
-    int str_len = strlen(str);
-    int suffix_len = strlen(suffix);
+    size_t str_len = strlen(str);
+    size_t suffix_len = strlen(suffix);
 
     return (str_len >= suffix_len) &&
            (0 == strcmp(str + (str_len - suffix_len), suffix));
@@ -162,8 +162,8 @@ char *str_replace(char const *orig, char const *rep, char const *with)
     char *result;  // the return string
     char const *ins; // the next insert point
     char *tmp;     // varies
-    int len_rep;   // length of rep (the string to remove)
-    int len_with;  // length of with (the string to replace rep with)
+    size_t len_rep;  // length of rep (the string to remove)
+    size_t len_with; // length of with (the string to replace rep with)
     int len_front; // distance between rep and end of last rep
     int count;     // number of replacements
 

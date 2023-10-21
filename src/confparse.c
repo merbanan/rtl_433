@@ -73,9 +73,9 @@ char *readconf(char const *path)
         return NULL;
     }
 
-    off_t n_read = fread(conf, sizeof(char), file_size, fp);
+    size_t n_read = fread(conf, sizeof(char), file_size, fp);
     fclose(fp);
-    if (n_read != file_size) {
+    if (n_read != (size_t)file_size) {
         fprintf(stderr, "Failed to read \"%s\"\n", path);
         free(conf);
         return NULL;

@@ -116,7 +116,12 @@ static ssize_t send_all(int sockfd, void const *buf, size_t len, int flags)
 {
     size_t sent = 0;
     while (sent < len) {
-        ssize_t ret = send(sockfd, (uint8_t *)buf + sent, len - sent, flags);
+        ssize_t ret = send(sockfd, (uint8_t *)buf + sent,
+#ifdef _WIN32
+            (int)
+#endif
+            (len - sent), flags);
+
         if (ret < 0)
             return ret;
         sent += (size_t)ret;
@@ -391,7 +396,7 @@ static int rtltcp_server_start(rtltcp_server_t *srv, char const *host, char cons
             srv->sock = sock;
             memset(&srv->addr, 0, sizeof(srv->addr));
             memcpy(&srv->addr, res->ai_addr, res->ai_addrlen);
-            srv->addr_len = res->ai_addrlen;
+            srv->addr_len = (socklen_t)res->ai_addrlen;
             break; // success
         }
     }
