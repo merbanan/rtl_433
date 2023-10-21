@@ -83,9 +83,9 @@ jobs:
       env:
         RTLSDR: OFF
         CMAKE_TOOLCHAIN_FILE: cmake/Toolchain-gcc-mingw-w64-${{ matrix.arch }}.cmake
-      run: ./do_build.sh
+      run: ./.ci/scripts/do_build.sh
     - name: "Sysroot Build with Mingw-w64"
-      run: ./do_sysroot.sh
+      run: ./.ci/scripts/do_sysroot.sh
     - name: "Upload Release Asset"
       if: matrix.arch == 'x86-64'
       env:
