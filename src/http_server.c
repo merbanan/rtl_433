@@ -1253,5 +1253,5 @@ struct data_output *data_output_http_create(struct mg_mgr *mgr, char const *host
         exit(1);
     }
 
-    return &http->output;
+    return (struct data_output *)http;
 }

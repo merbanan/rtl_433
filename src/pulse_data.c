@@ -13,6 +13,7 @@
 #include "pulse_data.h"
 #include "rfraw.h"
 #include "r_util.h"
+#include "fatal.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -74,6 +75,10 @@ static inline void chk_ret(int ret)
 
 void pulse_data_print_vcd_header(FILE *file, uint32_t sample_rate)
 {
+    if (!file) {
+        FATAL("Invalid stream in pulse_data_print_vcd_header()");
+    }
+
     char time_str[LOCAL_TIME_BUFLEN];
     char *timescale;
     if (sample_rate <= 500000)
@@ -161,6 +166,10 @@ void pulse_data_load(FILE *file, pulse_data_t *data, uint32_t sample_rate)
 
 void pulse_data_print_pulse_header(FILE *file)
 {
+    if (!file) {
+        FATAL("Invalid stream in pulse_data_print_pulse_header()");
+    }
+
     char time_str[LOCAL_TIME_BUFLEN];
 
     chk_ret(fprintf(file, ";pulse data\n"));
@@ -172,6 +181,10 @@ void pulse_data_print_pulse_header(FILE *file)
 
 void pulse_data_dump(FILE *file, pulse_data_t const *data)
 {
+    if (!file) {
+        FATAL("Invalid stream in pulse_data_dump()");
+    }
+
     char time_str[LOCAL_TIME_BUFLEN];
 
     chk_ret(fprintf(file, ";received %s\n", format_time_str(time_str, NULL, 1, 0)));

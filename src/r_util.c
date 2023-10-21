@@ -146,6 +146,12 @@ float inhg2hpa(float inhg)
 
 bool str_endswith(char const *restrict str, char const *restrict suffix)
 {
+    if (!suffix) {
+        return true;
+    }
+    if (!str) {
+        return false;
+    }
     int str_len = strlen(str);
     int suffix_len = strlen(suffix);
 
