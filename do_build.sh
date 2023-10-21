@@ -8,6 +8,26 @@ set -e
 # set CMAKE_TOOLCHAIN_FILE=file (default: unset)
 # set RUN_RTL_433_TESTS=1 (default: unset)
 
+# Default value for the -j option (number of jobs)
+MAKE_JOBS=1
+
+# Parse command line options
+while getopts ":j:" opt; do
+  case $opt in
+    j)
+      MAKE_JOBS="$OPTARG"
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      exit 1
+      ;;
+  esac
+done
+
 RTLSDR="${RTLSDR:-ON}"
 SOAPYSDR="${SOAPYSDR:-AUTO}"
 OPENSSL="${OPENSSL:-AUTO}"
@@ -21,13 +41,7 @@ else
 cmake $@ ..
 fi
 
-CPU_CORES=$(nproc --all)
-if [ -z "${CPU_CORES//[0-9]}" ] && [ -n "$CPU_CORES" ]
-then
-    make -j$CPU_CORES
-else
-    make
-fi
+make -j "$MAKE_JOBS"
 
 # make install
 
