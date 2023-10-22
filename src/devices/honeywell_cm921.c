@@ -41,7 +41,7 @@ typedef struct {
     uint8_t header;
     uint8_t num_device_ids;
     uint8_t device_id[4][3];
-    uint8_t seq; 
+    uint8_t seq;
     uint16_t command;
     uint8_t payload_length;
     uint8_t payload[256];
@@ -139,7 +139,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
     if (msg->csum == 0x01) {
         // some devices send messages with the final byte set such that the byte sum is 0x01 rather than the usual 0x00
         // These messages always have a header of 1c|7c|8c|9c, two addresses, a 2 byte cmd, payload size, payload, csum byte
-        // not sure whice devices send them, but one of them uses the 10e0 message to identify as a "Jasper EIM" 
+        // not sure whice devices send them, but one of them uses the 10e0 message to identify as a "Jasper EIM"
         switch (msg->command) {
             case 0x0008: // Relay Demand message with a 13 byte payload. eg. 0017872b4ba4402a1bc756f7ec
             case 0x0502: // mystery long message that come in pairs
@@ -199,8 +199,8 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
         case 0x0008: {
             // Relay Heat Demand
             // The version of this message with csum=0 always seems to be 2 byte
-            
-            UNKNOWN_IF(msg->payload_length != 2); 
+
+            UNKNOWN_IF(msg->payload_length != 2);
             data = data_append(data, "domain_id", "", DATA_INT, msg->payload[0], NULL);
             data = data_append(data, "demand", "", DATA_DOUBLE, msg->payload[1] * (1 / 200.0F) /* 0xC8 */, NULL);
             break;
@@ -284,14 +284,14 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
         case 0x1f09: {
             // System Sync message. 3 byte message. domain_id then 2 byte countdown in tenths of a second
             // example "Packet" : "18045ef5045ef51f0903ff077693", "Header" : "18", "Seq" : "00", "Command" : "1f09", "Payload" : "ff0776",
-            // not sure its useful to log this to JSON 
+            // not sure its useful to log this to JSON
             UNKNOWN_IF(msg->payload_length != 3);
             break;
         }
         case 0x0002: {
             // External Sensor. Sent by a thermostat in resposne to a change in the aux wired input
             // "Packet" : "1a0da2520da2520300020403010105d1", "Header" : "1a", "Seq" : "03", "Command" : "0002", "Payload" : "03010105"
-            // byte[0] is always 3 (remaining length?) 
+            // byte[0] is always 3 (remaining length?)
             // byte[1] counts between 01 and 02 (seq always remians 0)
             // byte[2] of payload indicates whether aux input is logic 1 or 0
             // byte[3] is always 5
@@ -311,8 +311,8 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
             UNKNOWN_IF(msg->payload_length != 3);
             break;
         }
-        case 0x000a: { 
-            // Zone Config. Sent by CTL to UFH. Used for failsafe 
+        case 0x000a: {
+            // Zone Config. Sent by CTL to UFH. Used for failsafe
             UNKNOWN_IF(msg->payload_length % 6 != 0);
             for (size_t i=0; i < msg->payload_length; i+=6) {
                 char name[256];
@@ -329,7 +329,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
             }
             break;
         }
-        case 0x1060: { 
+        case 0x1060: {
             // Battery Status. I only observe 'ffff01', likely because all sensors are mains powered.
             // payload[2] 1=OK 0-low
             UNKNOWN_IF(msg->payload_length != 3);
@@ -337,7 +337,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
             break;
         }
         case 0x2e04: {
-            // Controller Mode. zxdavb lists the payload below but this in no way matches the 16 byte messages I see 
+            // Controller Mode. zxdavb lists the payload below but this in no way matches the 16 byte messages I see
             // payload[0] Program mode (0=Auto, 1=Heating Off, 2=Eco, 3=Away, 4=Day off, 7=Custom)
             // payload[1] hours; payload[2] minutes; payload[3] day; payload[4] month; payload[5] year
             // payload[6] Program type (0=Permanent, 1=Timed)
