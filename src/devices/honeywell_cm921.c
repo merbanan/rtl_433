@@ -16,7 +16,7 @@ Honeywell CM921 Thermostat (subset of Evohome).
 
 #include "decoder.h"
 
-//#define _DEBUG
+// #define _DEBUG
 
 static int decode_10to8(uint8_t const *b, int pos, int end, uint8_t *out)
 {
@@ -132,7 +132,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
     // (specifically https://www.domoticaforum.eu/download/file.php?id=1396)
     // https://github.com/zxdavb/ramses_protocol
 
-    data = decode_device_ids(msg, data, 1);  
+    data = decode_device_ids(msg, data, 1); 
 
     data_t *r = data;
 
@@ -198,7 +198,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
         }
         case 0x0008: {
             // Relay Heat Demand
-            // The version of this message with csum=0 alayws seems to be 2 byte
+            // The version of this message with csum=0 always seems to be 2 byte
             
             UNKNOWN_IF(msg->payload_length != 2); 
             data = data_append(data, "domain_id", "", DATA_INT, msg->payload[0], NULL);
@@ -547,7 +547,7 @@ while( sep < bytes.bits_per_row[row])
 
     data = data_append(data, "mic", "Integrity", DATA_STRING, (pr>0) ? "CHECKSUM" : "CSUM_FAIL", NULL);
 
-    if(1 || decoder->verbose) {
+    if(1 || decoder->verbose) { // decoder->verbose never seems to get set so force as these are always helpful
     uint8_t cmd[2] = {message.command >> 8, message.command & 0x00FF};
     data = add_hex_string(data, "Command", cmd, 2);
     data = add_hex_string(data, "Payload", message.payload, message.payload_length);
