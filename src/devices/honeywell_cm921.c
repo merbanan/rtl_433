@@ -16,7 +16,7 @@ Honeywell CM921 Thermostat (subset of Evohome).
 
 #include "decoder.h"
 
-#define _DEBUG
+//#define _DEBUG
 
 static int decode_10to8(uint8_t const *b, int pos, int end, uint8_t *out)
 {
@@ -51,7 +51,6 @@ typedef struct {
     uint8_t csum;
 } message_t;
 
-#ifdef _DEBUG
 static data_t *add_hex_string(data_t *data, const char *name, const uint8_t *buf, size_t buf_sz)
 {
     if (buf && buf_sz > 0) {
@@ -61,7 +60,6 @@ static data_t *add_hex_string(data_t *data, const char *name, const uint8_t *buf
     }
     return data;
 }
-#endif
 
 typedef struct {
     int t;
@@ -518,7 +516,10 @@ while( sep < bytes.bits_per_row[row])
 
     bitbuffer_t packet = {0};
     unsigned fpos = bitbuffer_manchester_decode(&bytes, row, first_byte, &packet, fi-first_byte); // decode as much as we can
+
+#ifdef _DEBUG
     unsigned man_errors = (fi - first_byte) - (fpos - first_byte - 2);
+#endif
 
     if ( fpos < fi )
     {
@@ -544,19 +545,23 @@ while( sep < bytes.bits_per_row[row])
 
     data = honeywell_cm921_interpret_message(decoder, &message, data);
 
-#ifdef _DEBUG
-    data = data_append(data, "mic", "Integrity", DATA_STRING, pr>0 ? "CHECKSUM" : "CSUM_FAIL", NULL); 
-    data = data_append(data, "err", "Error", DATA_INT, pr, NULL); 
-    data = add_hex_string(data, "Packet", packet.bb[row], packet.bits_per_row[row] / 8);
-    data = add_hex_string(data, "Header", &message.header, 1);
-    data = add_hex_string(data, "Seq", &message.seq, 1);
+    data = data_append(data, "mic", "Integrity", DATA_STRING, (pr>0) ? "CHECKSUM" : "CSUM_FAIL", NULL);
+
+    if(1 || decoder->verbose) {
     uint8_t cmd[2] = {message.command >> 8, message.command & 0x00FF};
     data = add_hex_string(data, "Command", cmd, 2);
     data = add_hex_string(data, "Payload", message.payload, message.payload_length);
+    data = add_hex_string(data, "csum", &message.csum, 1);
+    }
+
+#ifdef _DEBUG
+    if (pr<=0) data = data_append(data, "err", "Error", DATA_INT, pr, NULL); 
+    data = add_hex_string(data, "Packet", packet.bb[row], packet.bits_per_row[row] / 8);
+    data = add_hex_string(data, "Header", &message.header, 1);
+    data = add_hex_string(data, "Seq", &message.seq, 1);
     data = add_hex_string(data, "Unparsed", message.unparsed, message.unparsed_length);
     data = add_hex_string(data, "CRC", &message.crc, 1);
     data = data_append(data, "# man errors", "", DATA_INT, man_errors, NULL);
-    data = add_hex_string(data, "csum", &message.csum, 1);
 #endif
 
     decoder_output_data(decoder, data);
@@ -571,16 +576,16 @@ static char const *const output_fields[] = {
 #ifdef _DEBUG
         "Packet",
         "Header",
-        "Command",
-        "Payload",
         "Unparsed",
         "CRC",
         "# man errors",
-        "csum",
         "Seq",
-        "mic",
         "err",
 #endif
+        "Command",
+        "Payload",
+        "csum",
+        "mic",
         "unknown",
         "Flags",
         "time_request",
