@@ -137,10 +137,11 @@ void decoder_log_bitbuffer(r_device *decoder, int level, char const *func, const
         // note that decoder levels start at LOG_WARNING
         level += 4;
 
-        char *row_codes[BITBUF_ROWS];
+        char *row_codes[BITBUF_ROWS] = {0};
         char *row_bits[BITBUF_ROWS] = {0};
 
-        for (unsigned i = 0; i < bitbuffer->num_rows; i++) {
+        unsigned num_rows = bitbuffer->num_rows;
+        for (unsigned i = 0; i < num_rows; i++) {
             row_codes[i] = bitrow_asprint_code(bitbuffer->bb[i], bitbuffer->bits_per_row[i]);
 
             if (decoder->verbose_bits) {
@@ -153,20 +154,20 @@ void decoder_log_bitbuffer(r_device *decoder, int level, char const *func, const
                 "src",     "",     DATA_STRING, func,
                 "lvl",      "",     DATA_INT,    level,
                 "msg",      "",     DATA_STRING, msg,
-                "num_rows", "",     DATA_INT, bitbuffer->num_rows,
-                "codes",    "",     DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_STRING, row_codes),
+                "num_rows", "",     DATA_INT, num_rows,
+                "codes",    "",     DATA_ARRAY, data_array(num_rows, DATA_STRING, row_codes),
                 NULL);
         /* clang-format on */
 
         if (decoder->verbose_bits) {
             data_append(data,
-                    "bits", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_STRING, row_bits),
+                    "bits", "", DATA_ARRAY, data_array(num_rows, DATA_STRING, row_bits),
                     NULL);
         }
 
         decoder_output_log(decoder, level, data);
 
-        for (unsigned i = 0; i < bitbuffer->num_rows; i++) {
+        for (unsigned i = 0; i < num_rows; i++) {
             free(row_codes[i]);
             free(row_bits[i]);
         }

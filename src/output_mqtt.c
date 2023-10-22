@@ -599,5 +599,5 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
 
     mqtt->mqc = mqtt_client_init(mgr, &tls_opts, host, port, user, pass, client_id, retain, qos);
 
-    return &mqtt->output;
+    return (struct data_output *)mqtt;
 }
