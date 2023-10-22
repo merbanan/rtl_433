@@ -146,7 +146,7 @@ static void data_append_exception(data_t* data, int exception, uint8_t* bb, int 
 
     rawp = (char *)raw_str;
     for (int i=0; i < browlen; i++) {
-        sprintf(rawp,"%02x",bb[i]);
+        sprintf(rawp,"%02x",bb[i]); // NOLINT
         rawp += 2;
     }
     *rawp = '\0';
@@ -458,7 +458,7 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
      */
     rawp = (char *)raw_str;
     for (int i=0; i < MIN(browlen, 15); i++) {
-        sprintf(rawp,"%02x",bb[i]);
+        sprintf(rawp,"%02x",bb[i]); // NOLINT
         rawp += 2;
     }
     *rawp = '\0';
@@ -811,7 +811,7 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
     // having to enable debug for long running rtl_433 processes.
     rawp = (char *)raw_str;
     for (int i=0; i < MIN(browlen, 15); i++) {
-        sprintf(rawp,"%02x",bb[i]);
+        sprintf(rawp,"%02x",bb[i]); // NOLINT
         rawp += 2;
     }
     *rawp = '\0';

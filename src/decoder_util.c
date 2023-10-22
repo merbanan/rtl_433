@@ -51,7 +51,7 @@ static char *bitrow_asprint_code(uint8_t const *bitrow, unsigned bit_len)
     row_bytes[0] = '\0';
     // print byte-wide
     for (unsigned col = 0; col < (unsigned)(bit_len + 7) / 8; ++col) {
-        sprintf(&row_bytes[2 * col], "%02x", bitrow[col]);
+        sprintf(&row_bytes[2 * col], "%02x", bitrow[col]); // NOLINT
     }
     // remove last nibble if needed
     row_bytes[2 * (bit_len + 3) / 8] = '\0';
@@ -67,7 +67,7 @@ static char *bitrow_asprint_code(uint8_t const *bitrow, unsigned bit_len)
         WARN_MALLOC("decoder_output_bitbuffer()");
         return NULL; // NOTE: returns NULL on alloc failure.
     }
-    sprintf(row_code, "{%u}%s", bit_len, row_bytes);
+    sprintf(row_code, "{%u}%s", bit_len, row_bytes); // NOLINT
 
     return row_code;
 }
@@ -248,7 +248,7 @@ void decoder_output_bitbuffer_array(r_device *decoder, bitbuffer_t const *bitbuf
         row_bytes[0] = '\0';
         // print byte-wide
         for (unsigned col = 0; col < (unsigned)(bitbuffer->bits_per_row[i] + 7) / 8; ++col) {
-            sprintf(&row_bytes[2 * col], "%02x", bitbuffer->bb[i][col]);
+            sprintf(&row_bytes[2 * col], "%02x", bitbuffer->bb[i][col]); // NOLINT
         }
         // remove last nibble if needed
         row_bytes[2 * (bitbuffer->bits_per_row[i] + 3) / 8] = '\0';

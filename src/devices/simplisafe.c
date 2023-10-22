@@ -40,10 +40,10 @@ static void ss_get_id(char *id, uint8_t *b)
         // This probably means the message is invalid.
         // This is at least better than spitting out non-printable stuff :).
         if (c < 32 || c > 126) {
-          sprintf(p++, "%c", '?');
+          sprintf(p++, "%c", '?'); // NOLINT
           continue;
         }
-        sprintf(p++, "%c", (char)c);
+        sprintf(p++, "%c", (char)c); // NOLINT
     }
     *p = '\0';
 }

@@ -85,7 +85,7 @@ static int marlec_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     char frame_str[63 * 2 + 1]   = {0};
     for (int i = 0; i < len; ++i)
-        sprintf(&frame_str[i * 2], "%02x", frame[i + 1]);
+        sprintf(&frame_str[i * 2], "%02x", frame[i + 1]); // NOLINT
 
     /* clang-format off */
     data = data_make(

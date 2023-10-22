@@ -101,7 +101,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     }
 
     // Extract the id as hex string
-    snprintf(id, 3, "%02X", b[1]);
+    snprintf(id, 3, "%02X", b[1]); // NOLINT
 
     // Decode temperature (b[2]), plus 1st 4 bits b[3], LSB first order!
     // Tenths of degrees C, offset from the minimum possible (-40.0 degrees)

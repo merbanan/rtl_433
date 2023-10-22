@@ -199,7 +199,7 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     strncpy(p, "0x", sizeof(TamperCounters_str));
     p += 2;
     for (int j = 0; j < 6; j++) {
-        p += sprintf(p, "%02X", b[13 + j]);
+        p += sprintf(p, "%02X", b[13 + j]); // NOLINT
     }
     decoder_logf_bitrow(decoder, 2, __func__, &b[13], 6 * 8, "TamperCounters_str   %s", TamperCounters_str);
 
@@ -210,7 +210,7 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     strncpy(p, "0x", sizeof(PowerOutageFlags_str));
     p += 2;
     for (int j = 0; j < 6; j++) {
-        p += sprintf(p, "%02X", b[21 + j]);
+        p += sprintf(p, "%02X", b[21 + j]); // NOLINT
     }
     decoder_logf_bitrow(decoder, 2, __func__, &b[21], 6 * 8, "PowerOutageFlags_str %s", PowerOutageFlags_str);
 
@@ -449,7 +449,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     strncpy(p, "0x", sizeof(TamperCounters_str));
     p += 2;
     for (int j = 0; j < 6; j++) {
-        p += sprintf(p, "%02X", b[13 + j]);
+        p += sprintf(p, "%02X", b[13 + j]); // NOLINT
     }
     decoder_logf_bitrow(decoder, 2, __func__, &b[13], 6 * 8, "TamperCounters_str   %s", TamperCounters_str);
 
@@ -458,7 +458,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     strncpy(p, "0x", sizeof(Unknown_field_1_str));
     p += 2;
     for (int j = 0; j < 7; j++) {
-        p += sprintf(p, "%02X", b[19 + j]);
+        p += sprintf(p, "%02X", b[19 + j]); // NOLINT
     }
     decoder_logf_bitrow(decoder, 1, __func__, &b[19], 7 * 8, "Unknown_field_1 %s", Unknown_field_1_str);
 
@@ -470,7 +470,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     strncpy(p, "0x", sizeof(Unknown_field_2_str));
     p += 2;
     for (int j = 0; j < 3; j++) {
-        p += sprintf(p, "%02X", b[29 + j]);
+        p += sprintf(p, "%02X", b[29 + j]); // NOLINT
     }
     decoder_logf_bitrow(decoder, 1, __func__, &b[29], 3 * 8, "Unknown_field_1 %s", Unknown_field_2_str);
 

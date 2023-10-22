@@ -63,7 +63,7 @@ static int ibis_beacon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     counter = ((unsigned)msg[20] << 24) | (msg[21] << 16) | (msg[22] << 8) | msg[23];
 
     for (i=0; i<(len+7)/8 ; ++i) {
-        sprintf(&code_str[i*2], "%02x", msg[i]);
+        sprintf(&code_str[i*2], "%02x", msg[i]); // NOLINT
     }
 
     /* clang-format off */

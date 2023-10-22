@@ -106,7 +106,7 @@ static void print_row_bytes(char *row_bytes, uint8_t *bits, int num_bits)
     row_bytes[0] = '\0';
     // print byte-wide
     for (int col = 0; col < (num_bits + 7) / 8; ++col) {
-        sprintf(&row_bytes[2 * col], "%02x", bits[col]);
+        sprintf(&row_bytes[2 * col], "%02x", bits[col]);  // NOLINT
     }
     // remove last nibble if needed
     row_bytes[2 * (num_bits + 3) / 8] = '\0';
@@ -327,7 +327,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (!row_codes[i])
             WARN_MALLOC("flex_decode()");
         else // NOTE: skipped on alloc failure.
-            sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);
+            sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);  // NOLINT
     }
     /* clang-format off */
     data = data_make(

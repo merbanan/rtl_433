@@ -107,7 +107,7 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
 
     char str_buf[64];
     for (unsigned i = probes + 1; i <= probes + analogs; ++i) {
-        snprintf(str_buf, 64, " analog-1-%u-1", i);
+        snprintf(str_buf, sizeof(str_buf), " analog-1-%u-1", i);
         strcat_s(cmd_line, MAX_PATH, str_buf);
     }
 
