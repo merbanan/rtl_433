@@ -75,7 +75,7 @@ static const dev_map_entry_t device_map[] = {
         {.t = 10, .s = "OTB"}, // OpenTherm bridge (R8810)
         {.t = 12, .s = "THm"}, // Thermostat with setpoint schedule control (DTS92E, CME921)
         {.t = 13, .s = "BDR"}, // Wireless relay box (BDR91) (HC60NG too?)
-        {.t = 17, .s = " 17"}, // Dunno - Outside weather sensor?
+        {.t = 17, .s = " 17"}, // Unknown - Outside weather sensor?
         {.t = 18, .s = "HGI"}, // Honeywell Gateway Interface (HGI80, HGS80)
         {.t = 22, .s = "THM"}, // Thermostat with setpoint schedule control (DTS92E)
         {.t = 30, .s = "GWY"}, // Gateway (e.g. RFG100?)
