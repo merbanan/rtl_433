@@ -155,7 +155,7 @@
 ### Highlights
 
 - Last release to support Autotools (autoconf, automake) builds (#1644)
-- Last release to offer "oldmodel" keys (deprected since 2020)
+- Last release to offer "oldmodel" keys (deprecated since 2020)
 - Added Github Release builds for Windows
 - Added GPSd tags option (#1636)
 - Added optional TLS support to MQTT (#1633)
