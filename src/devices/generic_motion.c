@@ -16,10 +16,10 @@ Example codes are: 80042 Arm alarm, 80002 Disarm alarm,
 (following motion detection the sensor will blackout for 90 seconds).
 
 2315 baud on/off rate and alternating 579 baud bit rate and 463 baud bit rate
-Each transmission has a warmup of 17 to 32 pulse widths then 8 packets with
+Each transmission has a warm-up of 17 to 32 pulse widths then 8 packets with
 alternating 1:3 / 2:2 or 1:4 / 2:3 gap:pulse ratio for 0/1 bit in the packet
 with a repeat gap of 4 pulse widths, i.e.:
-- 6704 us to 13092 us warmup pulse, 1672 us gap,
+- 6704 us to 13092 us warm-up pulse, 1672 us gap,
 - 0: 472 us gap, 1332 us pulse
 - 1: 920 us gap, 888 us pulse
 - 1672 us repeat gap,
