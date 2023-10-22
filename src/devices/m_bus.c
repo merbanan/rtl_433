@@ -879,13 +879,13 @@ static int m_bus_output_data(r_device *decoder, bitbuffer_t *bitbuffer, const m_
     char    str_buf[1024];
 
     // Make data string
-    sprintf(str_buf, "%02x", out->data[0]-2);  // Adjust telegram length NOLINT
-    for (unsigned n=1; n<out->length+2; n++) { sprintf(str_buf+n*2, "%02x", out->data[n]); } // NOLINT
+    sprintf(str_buf, "%02x", out->data[0]-2);  // Adjust telegram length
+    for (unsigned n=1; n<out->length+2; n++) { sprintf(str_buf+n*2, "%02x", out->data[n]); }
 
     // Output data
     if (block1->knx_mode) {
         char sn_str[7*2] = {0};
-        for (unsigned n=0; n<6; n++) { sprintf(sn_str+n*2, "%02x", block1->knx_sn[n]); } // NOLINT
+        for (unsigned n=0; n<6; n++) { sprintf(sn_str+n*2, "%02x", block1->knx_sn[n]); }
 
         /* clang-format off */
         data = data_make(

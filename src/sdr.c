@@ -928,9 +928,9 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, char const *dev_query, int verbos
     if (!dev->dev_info)
         FATAL_MALLOC("sdr_open_soapy");
     for (size_t i = 0; i < args.size; ++i) {
-        p += sprintf(p, "%s\"%s\":\"%s\"", i ? "," : "{", args.keys[i], args.vals[i]); // NOLINT
+        p += sprintf(p, "%s\"%s\":\"%s\"", i ? "," : "{", args.keys[i], args.vals[i]);
     }
-    sprintf(p, "}"); // NOLINT
+    sprintf(p, "}");
     SoapySDRKwargs_clear(&args);
 
     SoapySDRKwargs stream_args = {0};

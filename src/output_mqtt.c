@@ -217,7 +217,7 @@ static void R_API_CALLCONV print_mqtt_array(data_output_t *output, data_array_t 
     char *orig = mqtt->topic + strlen(mqtt->topic); // save current topic
 
     for (int c = 0; c < array->num_values; ++c) {
-        sprintf(orig, "/%d", c); // NOLINT
+        sprintf(orig, "/%d", c);
         print_array_value(output, array, format, c);
     }
     *orig = '\0'; // restore topic
@@ -231,7 +231,7 @@ static char *append_topic(char *topic, data_t *data)
         topic += strlen(data->value.v_ptr);
     }
     else if (data->type == DATA_INT) {
-        topic += sprintf(topic, "%d", data->value.v_int); // NOLINT
+        topic += sprintf(topic, "%d", data->value.v_int);
     }
     else {
         print_logf(LOG_ERROR, __func__, "Can't append data type %d to topic", data->type);
@@ -330,9 +330,9 @@ static char *expand_topic(char *topic, char const *format, data_t *data, char co
         if (data_token)
             topic = append_topic(topic, data_token);
         else if (string_token)
-            topic += sprintf(topic, "%s", string_token); // NOLINT
+            topic += sprintf(topic, "%s", string_token);
         else
-            topic += sprintf(topic, "%.*s", (int)(d_end - d_start), d_start); // NOLINT
+            topic += sprintf(topic, "%.*s", (int)(d_end - d_start), d_start);
     }
 
     *topic = '\0';
