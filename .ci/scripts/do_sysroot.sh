@@ -22,7 +22,8 @@ mkdir -p libusb
 7z x -olibusb -y libusb-${libusb_ver}.7z
 fi
 
-source_dir=$(dirname $($realpath -s $0))
+# remove this script name and two dir levels to get the source root
+source_dir=$(dirname $(dirname $(dirname $($realpath -s $0))))
 sysroot32=$(pwd)/sysroot32
 sysroot64=$(pwd)/sysroot64
 sysroot32static=$(pwd)/sysroot32static

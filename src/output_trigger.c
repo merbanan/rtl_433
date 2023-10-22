@@ -54,5 +54,5 @@ struct data_output *data_output_trigger_create(FILE *file)
     trigger->output.output_free  = data_output_trigger_free;
     trigger->file                = file;
 
-    return &trigger->output;
+    return (struct data_output *)trigger;
 }

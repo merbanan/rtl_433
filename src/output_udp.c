@@ -235,5 +235,5 @@ struct data_output *data_output_syslog_create(int log_level, const char *host, c
     syslog->hostname[_POSIX_HOST_NAME_MAX] = '\0';
     datagram_client_open(&syslog->client, host, port);
 
-    return &syslog->output;
+    return (struct data_output *)syslog;
 }
