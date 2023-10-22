@@ -383,7 +383,7 @@ static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
 
     // Checksum: All bytes add up to 0.
     int bsum = add_bytes(bb, num_bytes) & 0xff;
-    int checksum_ok = (bsum == 0 || bsum == 1) ? 1 : 0 ;   // bizarely, some packets have a csum of 1 rather than 0
+    int checksum_ok = (bsum == 0 || bsum == 1);   // bizarely, some packets have a csum of 1 rather than 0
     msg->crc = bitrow_get_byte(bb, bmsg->bits_per_row[row] - 8);
     msg->csum = bsum; // record what the csum was
 
@@ -537,10 +537,7 @@ while( sep < bytes.bits_per_row[row])
 #endif
  
     /* clang-format off */
-    data_t *data;
-    data = data_make(
-            "model",    "",             DATA_STRING, "Honeywell-CM921", 
-            NULL);
+    data_t *data = data_make( "model", "", DATA_STRING, "Honeywell-CM921", NULL ); 
     /* clang-format on */
 
     data = honeywell_cm921_interpret_message(decoder, &message, data);
