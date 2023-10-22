@@ -16,25 +16,25 @@ set -- -DENABLE_RTLSDR=$RTLSDR -DENABLE_SOAPYSDR=$SOAPYSDR -DENABLE_OPENSSL=$OPE
 mkdir -p build
 cd build
 if [ -n "$CMAKE_TOOLCHAIN_FILE" ] ; then
-cmake $@ -DCMAKE_TOOLCHAIN_FILE=../$CMAKE_TOOLCHAIN_FILE ..
+    cmake $@ -DCMAKE_TOOLCHAIN_FILE=../$CMAKE_TOOLCHAIN_FILE ..
 else
-cmake $@ ..
+    cmake $@ ..
 fi
 make
 # make install
 
 if [ -n "$RUN_RTL_433_TESTS" ] ; then
 
-cd ..
-set -x
-git clone --depth 1 https://github.com/merbanan/rtl_433_tests.git
-cd rtl_433_tests
-export PATH=../build/src:$PATH
-test -f ../build/src/rtl_433
+    cd ..
+    set -x
+    git clone --depth 1 https://github.com/merbanan/rtl_433_tests.git
+    cd rtl_433_tests
+    export PATH=../build/src:$PATH
+    test -f ../build/src/rtl_433
 
-# virtualenv --system-site-packages .venv
-# source .venv/bin/activate
-# pip install deepdiff
-make test
+    # virtualenv --system-site-packages .venv
+    # source .venv/bin/activate
+    # pip install deepdiff
+    make test
 
 fi
