@@ -132,7 +132,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
     // (specifically https://www.domoticaforum.eu/download/file.php?id=1396)
     // https://github.com/zxdavb/ramses_protocol
 
-    data = decode_device_ids(msg, data, 1); 
+    data = decode_device_ids(msg, data, 1);
 
     data_t *r = data;
 
