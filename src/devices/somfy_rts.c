@@ -53,7 +53,7 @@ On some devices (see #2356) there are two extra bytes for a total of 80 bits app
 
 There is a quirk with TEL-FIX wall-mounted remote control for RadioLoop Motor:
 It looks like the seed isn't random but actually the button code: 0x88 DOWN, 0x85 STOP, 0x86 UP.
-The command is fixed to 0xf, which we use as idication that an actual command is in the seed.
+The command is fixed to 0xf, which we use as indication that an actual command is in the seed.
 
 */
 

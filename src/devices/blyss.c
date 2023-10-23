@@ -13,7 +13,7 @@ Generic remote Blyss DC5-UK-WH as sold by B&Q.
 
 DC5-UK-WH pair with receivers, the codes used may be specific to a receiver - use with caution
 
-warmup pulse 5552 us, 2072 gap
+warm-up pulse 5552 us, 2072 gap
 short is 512 us pulse, 1484 us gap
 long is 1508 us pulse, 488 us gap
 packet gap is 6964 us
