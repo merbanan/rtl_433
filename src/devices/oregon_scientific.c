@@ -93,9 +93,9 @@ static unsigned int get_os_uv(unsigned char *message)
     return uvidx;
 }
 
-static uint16_t cm180i_power(uint8_t const *msg, unsigned int offset)
+static unsigned cm180i_power(uint8_t const *msg, unsigned int offset)
 {
-    uint16_t val = 0;
+    unsigned val = 0;
 
     val = (msg[4+offset*2] << 8) | (msg[3+offset*2] & 0xF0);
     // tested across situations varying from 700 watt to more than 8000 watt to
@@ -124,9 +124,9 @@ static uint8_t swap_nibbles(uint8_t byte)
     return (((byte&0xf) << 4) | (byte >> 4));
 }
 
-static uint16_t cm180_power(uint8_t const *msg)
+static unsigned cm180_power(uint8_t const *msg)
 {
-    uint16_t val = 0;
+    unsigned val = 0;
     val = (msg[4] << 8) | (msg[3] & 0xF0);
     // tested across situations varying from 700 watt to more than 8000 watt to
     // get same value as showed in physical CM180 panel (exactly equals to 1+1/160)
@@ -142,13 +142,8 @@ static uint64_t cm180_total(uint8_t const *msg)
         val = (uint64_t)msg[10] << 40;
         val += (uint64_t)msg[9] << 32;
         val += (uint32_t)msg[8] << 24;
-<<<<<<< HEAD
-        val += (uint32_t)msg[7] << 16;
-        val += (uint16_t)msg[6] << 8;
-=======
         val += msg[7] << 16;
         val += msg[6] << 8;
->>>>>>> f6385da2 (fixup! long/long long to int32_t/int64_t, short int to int16_t and comment fix)
         val += msg[5];
     }
     return val;
@@ -844,7 +839,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         int id       = msg[2] << 8 | (msg[1] & 0xF0);
         int batt_low = (msg[3] & 0x1); // 8th bit instead of 6th commonly used for other devices
 
-        uint16_t ipower = cm180_power(msg);
+        unsigned ipower = cm180_power(msg);
         uint64_t itotal = cm180_total(msg);
         float total_energy        = itotal / 3600.0 / 1000.0;
         if (valid == 0) {
@@ -876,9 +871,9 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         int id       = msg[2] << 8 | (msg[1] & 0xF0);
         int batt_low = (msg[3] & 0x40)?1:0; // 8th bit instead of 6th commonly used for other devices
 
-        uint16_t ipower1 = cm180i_power(msg,0);
-        uint16_t ipower2 = cm180i_power(msg,1);
-        uint16_t ipower3 = cm180i_power(msg,2);
+        unsigned ipower1 = cm180i_power(msg,0);
+        unsigned ipower2 = cm180i_power(msg,1);
+        unsigned ipower3 = cm180i_power(msg,2);
         uint64_t itotal= 0;
         if (msg_len >= 140) itotal= cm180i_total(msg);
 
