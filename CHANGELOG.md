@@ -375,7 +375,7 @@
 - Added came top432 flex decoder config (#1474)
 - Fixed wmbus raw telegram output, mainly for wmbusmeters use
 - Fixed efergy_e2_classic False Trigger (#1475)
-- FIXed check manchester_decode check decoded bit length in a constent method, removed superfluous comment
+- FIXed check manchester_decode check decoded bit length in a consistent method, removed superfluous comment
 - FIXed check manchester_decode result length
 - Fixed current_cost 8 bytes required
 - Fixed TPMS Abarth124 false positive (#1466)
