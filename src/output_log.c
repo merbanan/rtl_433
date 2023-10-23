@@ -164,5 +164,5 @@ struct data_output *data_output_log_create(int log_level, FILE *file)
     log->output.output_free  = data_output_log_free;
     log->file                = file;
 
-    return &log->output;
+    return (struct data_output *)log;
 }
