@@ -38,7 +38,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
 ```
 
   A "rtl_433.conf" file is searched in "./", XDG_CONFIG_HOME e.g. "$HOME/.config/rtl_433/",
-  "/usr/local/etc/rtl_433/", "/etc/rtl_433/", then command line args will be parsed in order.
+  SYSCONFDIR e.g. "/usr/local/etc/rtl_433/", then command line args will be parsed in order.
 		= General options =
   [-V] Output the version string and exit
   [-v] Increase verbosity (can be used multiple times).
@@ -314,7 +314,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [226]  Kia TPMS (-s 1000k)
     [227]  SRSmith Pool Light Remote Control SRS-2C-TX (-f 915M)
     [228]  Neptune R900 flow meters
-    [229]* WEC-2103 temperature/humidity sensor
+    [229]  WEC-2103 temperature/humidity sensor
     [230]  Vauno EN8822C
     [231]  Govee Water Leak Detector H5054
     [232]  TFA Dostmann 14.1504.V2 Radio-controlled grill and meat thermometer
@@ -326,7 +326,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [238]  Wireless M-Bus, Mode T, 32.768kbps (-f 868.3M -s 1000k)
     [239]  Revolt NC-5642 Energy Meter
     [240]  LaCrosse TX31U-IT, The Weather Channel WS-1910TWC-IT
-    [241]  EezTire E618 (TPMS10ATC)
+    [241]  EezTire E618
     [242]* Baldr / RainPoint rain gauge.
     [243]  Celsia CZC1 Thermostat
     [244]  Fine Offset Electronics WS90 weather station
@@ -342,7 +342,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-d <RTL-SDR USB device index>] (default: 0)
   [-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]
 	To set gain for RTL-SDR use -g <gain> to set an overall gain in dB.
-	SoapySDR device driver is available.
+	SoapySDR device driver is not available.
   [-d ""] Open default SoapySDR device
   [-d driver=rtlsdr] Open e.g. specific SoapySDR device
 	To set gain for SoapySDR use -g ELEM=val,ELEM=val,... e.g. -g LNA=20,TIA=8,PGA=2 (for LimeSDR).
