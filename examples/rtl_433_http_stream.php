@@ -45,21 +45,21 @@ WantedBy=multi-user.target
 //$needle in $haystack
 function str__contains($haystack,$needle)
 {
-  return (strpos($haystack, $needle) !== false)
+  return (strpos($haystack, $needle) !== false);
 }
 
 
 //main
-$adr  = "127.0.0.1";
+$addr  = "127.0.0.1";
 $port = "8433";
-$url  = $sdr . ":" . $port . "/stream";
+$url  = $addr . ":" . $port . "/stream";
 
 $fp = stream_socket_client("tcp://" . $url , $errno, $errstr, 70);
 if (!$fp) {
     //optional error output
     //echo "$errstr ($errno)<br />\n";
 } else {
-    fwrite($fp, "GET / HTTP/1.0\r\nHost: " . $adr . "\r\nAccept: */*\r\n\r\n");
+    fwrite($fp, "GET / HTTP/1.0\r\nHost: " . $addr . "\r\nAccept: */*\r\n\r\n");
     while (!feof($fp)) {
         $line = fgets($fp, 1024);
         //time is available in all received records, that is the filter word
