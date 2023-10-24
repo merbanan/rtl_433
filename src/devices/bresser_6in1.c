@@ -21,6 +21,7 @@ Decoder for Bresser Weather Center 6-in-1.
 - also Bresser 3-in-1 Professional Wind Gauge / Anemometer, PN 7002531
 - also Bresser soil temperature and moisture meter, PN 7009972
 - also Bresser Thermo-/Hygro-Sensor 7 Channel 868 MHz, PN 7009999
+- also Bresser Pool / Spa Thermometer, PN 7009973 (STYPE = 3)
 
 There are at least two different message types:
 - 24 seconds interval for temperature, hum, uv and rain (alternating messages)
@@ -137,7 +138,7 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     uint32_t id = ((uint32_t)msg[2] << 24) | (msg[3] << 16) | (msg[4] << 8) | (msg[5]);
-    int s_type  = (msg[6] >> 4); // 1: weather station, 2: indoor?, 4: soil probe
+    int s_type  = (msg[6] >> 4); // 1: weather station, 2: indoor?, 3: pool thermometer, 4: soil probe
     int startup = (msg[6] >> 3) & 1; // s.a. #1214
     int chan    = (msg[6] & 0x7);
     int battery = (msg[13] >> 1) & 1; // b[13] & 0x02 is battery_good, s.a. #1993
