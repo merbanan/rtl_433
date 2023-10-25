@@ -3461,6 +3461,10 @@ void mg_broadcast(struct mg_mgr *mgr, mg_event_handler_t cb, void *data,
    * specified callback for each connection. Thus the callback function executes
    * in event manager thread.
    */
+  if (data == NULL || len == 0) {
+    data = "";
+    len = 1;
+  }
   if (mgr->ctl[0] != INVALID_SOCKET && data != NULL &&
       len < sizeof(ctl_msg.message)) {
     size_t ret;
@@ -3471,9 +3475,11 @@ void mg_broadcast(struct mg_mgr *mgr, mg_event_handler_t cb, void *data,
                          offsetof(struct ctl_msg, message) + len, 0);
     if (ret < 0)
       perror("mg_broadcast() send failed, check UDP loopback device");
+/*
     ret = MG_RECV_FUNC(mgr->ctl[0], (char *) &len, 1, 0);
     if (ret < 0)
       perror("mg_broadcast() recv failed, check firewall UDP loopback rules");
+*/
   }
 }
 #endif /* MG_ENABLE_BROADCAST */
@@ -4149,10 +4155,12 @@ static void mg_mgr_handle_ctl_sock(struct mg_mgr *mgr) {
       (int) MG_RECV_FUNC(mgr->ctl[1], (char *) &ctl_msg, sizeof(ctl_msg), 0);
   if (len < 0)
     perror("mg_mgr_handle_ctl_sock() recv failed, check firewall UDP loopback rules");
+/*
   size_t ret = MG_SEND_FUNC(mgr->ctl[1], ctl_msg.message, 1, 0);
   if (ret < 0)
     perror("mg_mgr_handle_ctl_sock() send failed, check UDP loopback device");
   DBG(("read %d from ctl socket", len));
+*/
   if (len >= (int) sizeof(ctl_msg.callback) && ctl_msg.callback != NULL) {
     struct mg_connection *nc;
     for (nc = mg_next(mgr, NULL); nc != NULL; nc = mg_next(mgr, nc)) {
