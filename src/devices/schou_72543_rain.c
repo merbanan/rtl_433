@@ -70,7 +70,7 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Full data is 3 rows, two are required for data validation
     if (bitbuffer->num_rows < 2){
-        return DECODE_ABORT_LENGTH
+        return DECODE_ABORT_LENGTH;
     }
 
 
@@ -79,10 +79,10 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
     }
 
-    uint8_t b = bitbuffer->bb[row];
+    uint8_t *b = bitbuffer->bb[row];
 
     uint8_t micSum = b[7];              // Checksum as read
-    int    cal_sum = add_bytes(b, 7);   // Checksum as calculated
+    int     calSum = add_bytes(b, 7);   // Checksum as calculated
     //uint8_t calSum = 0;               // Checksum as calculated
     //
     //for (i = 0; i<7; i++){
@@ -109,8 +109,8 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 
     deviceID        =   (b[0] << 8 ) | b[1];
-    isBatteryLow    =   (b[2] & 0x80) == 1;                  // if one, battery is low
-    isMessageRepeat =   (b[2] & 0x40) == 1;                  // if one, message is a repeat
+    isBatteryLow    =   (b[2] & 0x80) >  0;                  // if one, battery is low
+    isMessageRepeat =   (b[2] & 0x40) >  0;                  // if one, message is a repeat
     messageCounter  =   (b[2] & 0x0e) >> 1;                  // 3 bit counter (rather than 4 bit incrementing by 2 each time
     rain_mm         =  ((b[4] << 8 ) & b[3]) / 10.0f;
     temp_F          = (((b[6] << 8 ) & b[5]) / 10.0f) - 90;
@@ -144,7 +144,7 @@ static char const *const output_fields[] = {
         NULL,
 };
 
-r_device const ambient_weather = {
+r_device const schou_72543_rain = {
         .name        = "Schou 72543 Rain sensor, DAY series",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 972,
