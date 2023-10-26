@@ -255,6 +255,7 @@
     DECL(thermopro_tx2c) \
     DECL(tfa_303151) \
     DECL(bresser_leakage) \
+    DECL(schou_72543_rain) \
 
     /* Add new decoders here. */
 

@@ -52,7 +52,6 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         - Choose the right bitbuffer extraction method
         - 
     */
-
     // HELP NEEDED HERE ///////////////////////////////////////////////////////////////////////////////
     // How do I best extract the bitbuffer values into b[] while accounting for that row #1 is shifted,
     // and that row #3 has additional data at the end?
@@ -70,7 +69,7 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     //Assuming option #1
 
     // Full data is 3 rows, two are required for data validation
-    if(bitbuffer->num_rows < 2){
+    if (bitbuffer->num_rows < 2){
         return DECODE_ABORT_LENGTH
     }
 
@@ -82,12 +81,13 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint8_t b = bitbuffer->bb[row];
 
-    uint8_t micSum = b[7]; // Checksum as read
-    uint8_t calSum = 0;    // Checksum as calculated
-
-    for(i = 0; i<7; i++){
-        calSum = calSum + b[i];
-    }
+    uint8_t micSum = b[7];              // Checksum as read
+    int    cal_sum = add_bytes(b, 7);   // Checksum as calculated
+    //uint8_t calSum = 0;               // Checksum as calculated
+    //
+    //for (i = 0; i<7; i++){
+    //    calSum = calSum + b[i];
+    //}
 
     if (micSum != calSum) {
         decoder_logf_bitrow(decoder, 1, __func__, b, 65, "Checksum error, expected: %02x calculated: %02x", micSum, calSum);
@@ -111,9 +111,9 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     deviceID        =   (b[0] << 8 ) | b[1];
     isBatteryLow    =   (b[2] & 0x80) == 1;                  // if one, battery is low
     isMessageRepeat =   (b[2] & 0x40) == 1;                  // if one, message is a repeat
-	messageCounter  =   (b[2] & 0x0e) >> 1;                  // 3 bit counter (rather than 4 bit incrementing by 2 each time
+    messageCounter  =   (b[2] & 0x0e) >> 1;                  // 3 bit counter (rather than 4 bit incrementing by 2 each time
     rain_mm         =  ((b[4] << 8 ) & b[3]) / 10.0f;
-	temp_F          = (((b[6] << 8 ) & b[5]) / 10.0f) - 90;
+    temp_F          = (((b[6] << 8 ) & b[5]) / 10.0f) - 90;
 
     /* clang-format off */
     data = data_make(
@@ -121,8 +121,8 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",             "ID",           DATA_INT,    deviceID,
             "battery_ok",     "Battery",      DATA_INT,    !isBatteryLow,
             "msg_repeat",     "Pairing_msg",  DATA_INT,    isMessageRepeat,
-			"msg_counter",    "Counter",      DATA_INT,    messageCounter,
-			"rain_mm",        "Rain",         DATA_FORMAT, "%.1f F", DATA_DOUBLE, rain_mm,
+            "msg_counter",    "Counter",      DATA_INT,    messageCounter,
+            "rain_mm",        "Rain",         DATA_FORMAT, "%.1f F", DATA_DOUBLE, rain_mm,
             "temp_F",         "Temperature",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_F,
             "mic",            "Integrity",    DATA_STRING, "CRC",
             NULL);
