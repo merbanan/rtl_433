@@ -333,6 +333,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [245]* ThermoPro TX-2C Thermometer and Humidity sensor
     [246]  TFA 30.3151 Weather Station
     [247]  Bresser water leakage
+    [248]* Nissan TPMS
 
 * Disabled by default, use -R n or a conf file to enable
 

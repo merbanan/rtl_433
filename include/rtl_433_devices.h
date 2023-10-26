@@ -255,6 +255,7 @@
     DECL(thermopro_tx2c) \
     DECL(tfa_303151) \
     DECL(bresser_leakage) \
+    DECL(tpms_nissan) \
 
     /* Add new decoders here. */
 
