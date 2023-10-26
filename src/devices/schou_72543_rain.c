@@ -68,16 +68,21 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     //Assuming option #1
 
+    printf("\nRestart from begining.c\n");
+
     // Full data is 3 rows, two are required for data validation
     if (bitbuffer->num_rows < 2){
         return DECODE_ABORT_LENGTH;
     }
 
+    printf(" 2) More than two rows in bitbuffer\n");
 
     int row = bitbuffer_find_repeated_prefix(bitbuffer, 2, 64);
     if (row < 0) {
         return DECODE_ABORT_EARLY;
     }
+
+    printf(" 3) Found at least two alike rows\n");
 
     uint8_t *b = bitbuffer->bb[row];
 
@@ -93,6 +98,10 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_logf_bitrow(decoder, 1, __func__, b, 65, "Checksum error, expected: %02x calculated: %02x", micSum, calSum);
         return DECODE_FAIL_MIC;
     }
+
+    printf(" 4) MIC check passed\n");
+
+
     // <<<<<
     // Assuming from here on that b[9] = a1 f8 8c f6 ff 35 06 55 00
 
