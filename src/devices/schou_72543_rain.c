@@ -48,65 +48,28 @@ KEY:  [ 0 ] [ IIII IIII IIII IIII ] [ SSSS ] [ NNNN ] [ rrrr rrrr ] [ RRRR RRRR 
 
 static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    /* TO DO
-        - Choose the right bitbuffer extraction method
-        - 
-    */
-    // HELP NEEDED HERE ///////////////////////////////////////////////////////////////////////////////
-    // How do I best extract the bitbuffer values into b[] while accounting for that row #1 is shifted,
-    // and that row #3 has additional data at the end?
-    // Option #1:
-    //     Preferably I would like to remove the 0 bit of row #1 in the bitbuffer,
-    //     and then use then do something like:
-    //         bitbuffer_find_repeated_prefix(b, 2, 64);
-    //     My understanding is that this would return b[] if the 64 bits exist ín at least two rows.
-    // Option #2:
-    //     As a slower but more roubist alternative I would extract each row in turn and account for
-    //     the differences per loop. This has the added benefit that only one rows data must be intact
-    //     I.e. If the MIC check is positive, then calculate values, exit loop and return values.
-    // >>>>>
-
-    //Assuming option #1
-
-    printf("\nRestart from begining.c\n");
-
     // Full data is 3 rows, two are required for data validation
     if (bitbuffer->num_rows < 2){
         return DECODE_ABORT_LENGTH;
     }
 
-    printf(" 2) More than two rows in bitbuffer\n");
-
+    // Check if the first 64 bits of at least two rows are alike
     int row = bitbuffer_find_repeated_prefix(bitbuffer, 2, 64);
     if (row < 0) {
         return DECODE_ABORT_EARLY;
     }
 
-    printf(" 3) Found at least two alike rows\n");
-
-    uint8_t *b = bitbuffer->bb[row];
-
-    uint8_t micSum = b[7];              // Checksum as read
-    int     calSum = add_bytes(b, 7);   // Checksum as calculated
-    //uint8_t calSum = 0;               // Checksum as calculated
-    //
-    //for (i = 0; i<7; i++){
-    //    calSum = calSum + b[i];
-    //}
+    // Load bitbuffer data and validate checksum
+    uint8_t *b     = bitbuffer->bb[row];
+    uint8_t micSum = b[7];                       // Checksum as read
+    int     calSum = add_bytes(b, 7) & 0x0FF;    // Checksum as calculated, accounting for the lowest 8 bit
 
     if (micSum != calSum) {
         decoder_logf_bitrow(decoder, 1, __func__, b, 65, "Checksum error, expected: %02x calculated: %02x", micSum, calSum);
         return DECODE_FAIL_MIC;
     }
 
-    printf(" 4) MIC check passed\n");
-
-
-    // <<<<<
-    // Assuming from here on that b[9] = a1 f8 8c f6 ff 35 06 55 00
-
-
-
+    // Data is valid, take out memory for variables
     //uint8_t  b[9];
     uint16_t deviceID;
     int      isBatteryLow;
@@ -116,13 +79,13 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float    temp_F;
     data_t   *data;
 
-
-    deviceID        =   (b[0] << 8 ) | b[1];
+    // Decode message
+    deviceID        =   (b[0] << 8 ) | b[1];                 // Assuming little endian, but it not important as the value is random
     isBatteryLow    =   (b[2] & 0x80) >  0;                  // if one, battery is low
-    isMessageRepeat =   (b[2] & 0x40) >  0;                  // if one, message is a repeat
+    isMessageRepeat =   (b[2] & 0x40) >  0;                  // if one, message is a repeat (startup after batteries are replaced)
     messageCounter  =   (b[2] & 0x0e) >> 1;                  // 3 bit counter (rather than 4 bit incrementing by 2 each time
-    rain_mm         =  ((b[4] << 8 ) & b[3]) / 10.0f;
-    temp_F          = (((b[6] << 8 ) & b[5]) / 10.0f) - 90;
+    rain_mm         =  ((b[4] << 8 ) | b[3]) / 10.0f;        //   0.0 to  6553.5  mm
+    temp_F          = (((b[6] << 8 ) | b[5]) / 10.0f) - 90;  // -40.0 to +158     degF
 
     /* clang-format off */
     data = data_make(
