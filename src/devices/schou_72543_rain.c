@@ -84,8 +84,8 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     isBatteryLow    =   (b[2] & 0x80) >  0;                  // if one, battery is low
     isMessageRepeat =   (b[2] & 0x40) >  0;                  // if one, message is a repeat (startup after batteries are replaced)
     messageCounter  =   (b[2] & 0x0e) >> 1;                  // 3 bit counter (rather than 4 bit incrementing by 2 each time
-    rain_mm         =  ((b[4] << 8 ) | b[3]) / 10.0f;        //   0.0 to  6553.5  mm
-    temp_F          = (((b[6] << 8 ) | b[5]) / 10.0f) - 90;  // -40.0 to +158     degF
+    rain_mm         =  ((b[4] << 8 ) | b[3]) * 0.1f;         //   0.0 to  6553.5  mm
+    temp_F          = (((b[6] << 8 ) | b[5]) - 900) * 0.1f;  // -40.0 to +158     degF
 
     /* clang-format off */
     data = data_make(
@@ -117,7 +117,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const schou_72543_rain = {
-        .name        = "Schou 72543 Rain sensor, DAY series",
+        .name        = "Schou-72543",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 972,
         .long_width  = 2680,
