@@ -334,6 +334,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [246]  TFA 30.3151 Weather Station
     [247]  Bresser water leakage
     [248]* Nissan TPMS
+    [249]  Bresser lightning
 
 * Disabled by default, use -R n or a conf file to enable
 
