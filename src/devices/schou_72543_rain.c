@@ -49,7 +49,7 @@ KEY:  [ 0 ] [ IIII IIII IIII IIII ] [ SSSS ] [ NNNN ] [ rrrr rrrr ] [ RRRR RRRR 
 static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // Full data is 3 rows, two are required for data validation
-    if (bitbuffer->num_rows < 2){
+    if (bitbuffer->num_rows < 2) {
         return DECODE_ABORT_LENGTH;
     }
 
@@ -89,13 +89,13 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",          "",             DATA_STRING, "Schou 72543 rain sensor",
+            "model",          "",             DATA_STRING, "Schou_72543",
             "id",             "ID",           DATA_INT,    deviceID,
-            "battery_ok",     "Battery",      DATA_INT,    !isBatteryLow,
-            "msg_repeat",     "Pairing_msg",  DATA_INT,    isMessageRepeat,
+            "battery_ok",     "Battery_ok",   DATA_INT,    !isBatteryLow,
+            "msg_repeat",     "Msg_repeat",   DATA_INT,    isMessageRepeat,
             "msg_counter",    "Counter",      DATA_INT,    messageCounter,
-            "rain_mm",        "Rain",         DATA_FORMAT, "%.1f F", DATA_DOUBLE, rain_mm,
-            "temp_F",         "Temperature",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_F,
+            "rain_mm",        "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
+            "temp_F",         "Temperature",  DATA_FORMAT, "%.1f F",  DATA_DOUBLE, temp_F,
             "mic",            "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -117,7 +117,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const schou_72543_rain = {
-        .name        = "Schou-72543",
+        .name        = "Schou_72543",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 972,
         .long_width  = 2680,
