@@ -1,7 +1,7 @@
 /** @file
     Bresser Lightning Sensor.
 
-    Copyright (C) 2023 Matthias Prinke <m.prinke@arcor.de>
+    Copyright (C) 2023 The rtl_433 Project
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -23,12 +23,12 @@ see https://github.com/merbanan/rtl_433/issues/2140
 Preamble: aa aa 2d d4
 
 Data layout:
-    DIGEST:8h8h ID:8h8h CTR:12h   ?4h8h KM:8d ?8h8h
-        0 1     2 3      4 5h   5l 6    7   8 9
+    DIGEST:8h8h ID:8h8h CTR:12h BATT:1b ?3b STYPE:4h STARTUP:1b CH:3d KM:8d ?8h8h
 
 Based on bresser_7in1.c
 
-The data has a whitening of 0xaa.
+The data (not including STYPE, STARTUP, CH and maybe ID) has a whitening of 0xaa.
+CH is always 0.
 
 First two bytes are an LFSR-16 digest, generator 0x8810 key 0xabf9 with a final xor 0x899e
 */
@@ -63,6 +63,11 @@ static int bresser_lightning_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     decoder_log_bitrow(decoder, 2, __func__, msg, sizeof(msg) * 8, "MSG");
 
+    int s_type      = msg[6] >> 4;
+    int chan        = msg[6] & 0x07;
+    int battery_ok  = (msg[5] & 0x08) ? 0 : 1;
+    int startup     = (msg[6] & 0x08) >> 3;
+
     // data de-whitening
     for (unsigned i = 0; i < sizeof (msg); ++i) {
         msg[i] ^= 0xaa;
@@ -78,10 +83,6 @@ static int bresser_lightning_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     int sensor_id   = (msg[2] << 8) | (msg[3]);
-    int s_type      = msg[6] >> 4;
-    int chan        = msg[6] & 0x07;
-    int battery_ok  = (msg[5] & 0x08) == 0x08;
-    int startup     = (msg[6] & 0x08) == 0x00;
     int distance_km = msg[7];
     int count       = (msg[4] << 4) | (msg[5] & 0xf0) >> 4;
     int unknown1    = ((msg[5] & 0x0f) << 8) |  msg[6];
@@ -114,14 +115,14 @@ static char const *const output_fields[] = {
         "id",
         "battery_ok",
         "distance_km",
-        "count",
+        "strike_count",
         "unknown1",
         "unknown2",
         "startup",
         NULL,
 };
 
-r_device const bresser_leakage = {
+r_device const bresser_lightning = {
         .name        = "Bresser lightning",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 124,
