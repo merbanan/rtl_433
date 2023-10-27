@@ -17,7 +17,7 @@
 /**
 Decoder for Bresser Weather Center 7-in-1 and Air Quality PM2.5 / PM10, outdoor sensors.
 
-See 
+See
 https://github.com/merbanan/rtl_433/issues/1492
 and
 https://github.com/merbanan/rtl_433/issues/2693
