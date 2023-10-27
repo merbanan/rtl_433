@@ -176,7 +176,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char const *const output_fields_7in1[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "temperature_C",
@@ -188,17 +188,8 @@ static char const *const output_fields_7in1[] = {
         "light_klx", // TODO: remove this
         "light_lux",
         "uv",
-        "battery_ok",
-        "mic",
-        "startup",
-        NULL,
-};
-
-static char const *const output_fields_air_pm[] = {
-        "model",
-        "id",
         "pm_2_5_ug_m3",
-        "pm_10_ug_m3"
+        "pm_10_ug_m3",
         "battery_ok",
         "mic",
         "startup",
@@ -206,21 +197,11 @@ static char const *const output_fields_air_pm[] = {
 };
 
 r_device const bresser_7in1 = {
-        .name        = "Bresser Weather Center 7-in-1",
+        .name        = "Bresser Weather Center 7-in-1, Air Quality PM2.5 / PM10",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 124,
         .long_width  = 124,
         .reset_limit = 25000,
         .decode_fn   = &bresser_7in1_decode,
-        .fields      = output_fields_7in1,
-};
-
-r_device const bresser_air_quality_pm = {
-        .name        = "Bresser Air Quality PM2.5 / PM10",
-        .modulation  = FSK_PULSE_PCM,
-        .short_width = 124,
-        .long_width  = 124,
-        .reset_limit = 25000,
-        .decode_fn   = &bresser_7in1_decode,
-        .fields      = output_fields_air_pm,
+        .fields      = output_fields,
 };
