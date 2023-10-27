@@ -95,7 +95,7 @@ static int bresser_lightning_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "",                     DATA_STRING, "Bresser-Leakage",
+            "model",            "",                     DATA_STRING, "Bresser-Lightning",
             "id",               "",                     DATA_FORMAT, "%08x",   DATA_INT,    sensor_id,
             "battery_ok",       "Battery",              DATA_INT,    battery_ok,
             "distance_km",      "storm_distance_km",    DATA_INT,    distance_km,
