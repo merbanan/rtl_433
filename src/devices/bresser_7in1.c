@@ -177,7 +177,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     } else {
         decoder_logf(decoder, 2, __func__, "DECODE_FAIL_SANITY, s_type=%d not implemented", s_type);
         return DECODE_FAIL_SANITY;
-        
+
     }
 }
 
