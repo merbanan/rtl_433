@@ -150,8 +150,10 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 NULL);
         /* clang-format on */
 
-    } else {
-        // SENSOR_TYPE_AIR_PM
+        decoder_output_data(decoder, data);
+        return 1;
+
+    } else if (s_type == SENSOR_TYPE_AIR_PM) {
         int pm_2_5 = (msg[10] & 0x0f) * 1000 + (msg[11] >> 4) * 100 + (msg[11] & 0x0f) * 10 + (msg[12] >> 4);
         int pm_10  = (msg[12] & 0x0f) * 1000 + (msg[13] >> 4) * 100 + (msg[13] & 0x0f) * 10 + (msg[14] >> 4);
 
@@ -168,12 +170,15 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "startup",          "Startup",                  DATA_COND,   startup,  DATA_INT,    startup,
                 NULL);
         /* clang-format on */
+
+        decoder_output_data(decoder, data);
+        return 1;
+
+    } else {
+        decoder_logf(decoder, 2, __func__, "DECODE_FAIL_SANITY, s_type=%d not implemented", s_type);
+        return DECODE_FAIL_SANITY;
+        
     }
-
-
-
-    decoder_output_data(decoder, data);
-    return 1;
 }
 
 static char const *const output_fields[] = {
