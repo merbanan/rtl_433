@@ -165,7 +165,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",            "",                         DATA_STRING, "Bresser-7in1",
                 "id",               "",                         DATA_INT,    id,
                 "channel",          "",                         DATA_INT,    chan,
-                "startup",          "Startup",                  DATA_COND,   startup,  DATA_INT,    startup,
+                "startup",          "Startup",                  DATA_COND,   !nstartup,  DATA_INT, !nstartup,
                 "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
                 "pm_2_5_ug_m3",     "PM2.5 Mass Concentration", DATA_INT,    pm_2_5,
                 "pm_10_ug_m3",      "PM10 Mass Concentraton",   DATA_INT,    pm_10,              
