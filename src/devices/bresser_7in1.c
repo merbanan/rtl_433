@@ -89,9 +89,9 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
     }
 
-    int s_type  = msg[6] >> 4;
-    int startup = (msg[6] & 0x08) ? 0 : 1;
-    int chan    = msg[6] & 0x07;
+    int s_type   = msg[6] >> 4;
+    int nstartup = (msg[6] & 0x08) >> 3;
+    int chan     = msg[6] & 0x07;
 
     // data whitening
     for (unsigned i = 0; i < sizeof (msg); ++i) {
@@ -136,6 +136,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data = data_make(
                 "model",            "",             DATA_STRING, "Bresser-7in1",
                 "id",               "",             DATA_INT,    id,
+                "startup",          "Startup",      DATA_COND,   !nstartup,  DATA_INT, !nstartup,
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
                 "humidity",         "Humidity",     DATA_INT,    humidity,
                 "wind_max_m_s",     "Wind Gust",    DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wgst_raw * 0.1f,
@@ -147,7 +148,6 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "uv",               "UV Index",     DATA_FORMAT, "%.1f", DATA_DOUBLE, uv_index,
                 "battery_ok",       "Battery",      DATA_INT,    !battery_low,
                 "mic",              "Integrity",    DATA_STRING, "CRC",
-                "startup",          "Startup",      DATA_COND,   startup,  DATA_INT,    startup,
                 NULL);
         /* clang-format on */
 
@@ -165,11 +165,11 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",            "",                         DATA_STRING, "Bresser-7in1",
                 "id",               "",                         DATA_INT,    id,
                 "channel",          "",                         DATA_INT,    chan,
-                "pm_2_5_ug_m3",     "PM2.5 Mass Concentration", DATA_INT,    pm_2_5,
-                "pm_10_ug_m3",      "PM10 Mass Concentraton",   DATA_INT,    pm_10,
-                "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
-                "mic",              "Integrity",                DATA_STRING, "CRC",
                 "startup",          "Startup",                  DATA_COND,   startup,  DATA_INT,    startup,
+                "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
+                "pm_2_5_ug_m3",     "PM2.5 Mass Concentration", DATA_INT,    pm_2_5,
+                "pm_10_ug_m3",      "PM10 Mass Concentraton",   DATA_INT,    pm_10,              
+                "mic",              "Integrity",                DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
 
@@ -187,6 +187,7 @@ static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
+        "startup",
         "temperature_C",
         "humidity",
         "wind_max_m_s",
@@ -200,7 +201,6 @@ static char const *const output_fields[] = {
         "pm_10_ug_m3",
         "battery_ok",
         "mic",
-        "startup",
         NULL,
 };
 

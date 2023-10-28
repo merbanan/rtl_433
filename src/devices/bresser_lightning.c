@@ -65,8 +65,8 @@ static int bresser_lightning_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int s_type      = msg[6] >> 4;
     int chan        = msg[6] & 0x07;
-    int battery_ok  = (msg[5] & 0x08) ? 0 : 1;
-    int startup     = (msg[6] & 0x08) ? 0 : 1;
+    int battery_low = (msg[5] & 0x08) >> 3;
+    int nstartup    = (msg[6] & 0x08) >> 3;
 
     // data de-whitening
     for (unsigned i = 0; i < sizeof (msg); ++i) {
@@ -96,13 +96,14 @@ static int bresser_lightning_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data_t *data = data_make(
             "model",            "",                     DATA_STRING, "Bresser-Lightning",
-            "id",               "",                     DATA_FORMAT, "%08x",   DATA_INT,    sensor_id,
-            "battery_ok",       "Battery",              DATA_INT,    battery_ok,
+            "id",               "",                     DATA_FORMAT, "%08x",      DATA_INT,    sensor_id,
+            "startup",          "Startup",              DATA_COND,   !nstartup,   DATA_INT,    !nstartup,
+            "battery_ok",       "Battery",              DATA_INT,    !battery_low,
             "distance_km",      "storm_distance_km",    DATA_INT,    distance_km,
             "strike_count",     "strike_count",         DATA_INT,    count,
-            "unknown1",         "Unknown1",             DATA_FORMAT, "%08x",   DATA_INT,    unknown1,
-            "unknown2",         "Unknown2",             DATA_FORMAT, "%08x",   DATA_INT,    unknown2,
-            "startup",          "Startup",              DATA_COND,   startup,  DATA_INT,    startup,
+            "unknown1",         "Unknown1",             DATA_FORMAT, "%08x",      DATA_INT,    unknown1,
+            "unknown2",         "Unknown2",             DATA_FORMAT, "%08x",      DATA_INT,    unknown2,
+            "mic",              "Integrity",            DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -113,12 +114,12 @@ static int bresser_lightning_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
+        "startup",
         "battery_ok",
         "distance_km",
         "strike_count",
         "unknown1",
         "unknown2",
-        "startup",
         NULL,
 };
 
