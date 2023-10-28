@@ -66,7 +66,7 @@ static int bresser_lightning_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int s_type      = msg[6] >> 4;
     int chan        = msg[6] & 0x07;
     int battery_ok  = (msg[5] & 0x08) ? 0 : 1;
-    int startup     = (msg[6] & 0x08) >> 3;
+    int startup     = (msg[6] & 0x08) ? 0 : 1;
 
     // data de-whitening
     for (unsigned i = 0; i < sizeof (msg); ++i) {
