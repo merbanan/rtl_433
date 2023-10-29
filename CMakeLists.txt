@@ -100,8 +100,8 @@ if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     ADD_DEFINITIONS(-Wlarge-by-value-copy=8)
 endif()
 
-# Enable Static analysis on GCC10+
-if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" AND CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL "10.0.0")
+# Enable Static analysis on GCC13.2.0+
+if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" AND CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL "13.2.0")
     message(STATUS "Using GCC Static analysis")
     add_definitions(-fanalyzer)
 endif()

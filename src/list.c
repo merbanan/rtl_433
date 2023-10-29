@@ -17,10 +17,12 @@
 void list_ensure_size(list_t *list, size_t min_size)
 {
     if (!list->elems || list->size < min_size) {
-        list->elems = realloc(list->elems, min_size * sizeof(*list->elems));
-        if (!list->elems) {
+        // the input pointer is still valid if reallocation fails
+        void *elems_realloc = realloc(list->elems, min_size * sizeof(*list->elems));
+        if (!elems_realloc) {
             FATAL_REALLOC("list_ensure_size()");
         }
+        list->elems = elems_realloc;
         list->size  = min_size;
 
         list->elems[list->len] = NULL; // ensure a terminating NULL
