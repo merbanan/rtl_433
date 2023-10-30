@@ -258,7 +258,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [170]  LaCrosse Technology View LTV-WR1 Multi Sensor
     [171]  LaCrosse Technology View LTV-TH Thermo/Hygro Sensor
     [172]  Bresser Weather Center 6-in-1, 7-in-1 indoor, soil, new 5-in-1, 3-in-1 wind gauge, Froggit WH6000, Ventus C8488A
-    [173]  Bresser Weather Center 7-in-1
+    [173]  Bresser Weather Center 7-in-1, Air Quality PM2.5 / PM10
     [174]  EcoDHOME Smart Socket and MCEE Solar monitor
     [175]  LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1/W2 Wind Sensor
     [176]  BlueLine Innovations Power Cost Monitor
@@ -334,6 +334,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [246]  TFA 30.3151 Weather Station
     [247]  Bresser water leakage
     [248]* Nissan TPMS
+    [249]  Bresser lightning
 
 * Disabled by default, use -R n or a conf file to enable
 

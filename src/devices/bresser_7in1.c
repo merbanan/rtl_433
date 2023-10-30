@@ -11,18 +11,25 @@
 
 #include "decoder.h"
 
-/**
-Decoder for Bresser Weather Center 7-in-1, outdoor sensor.
+#define SENSOR_TYPE_WEATHER 1
+#define SENSOR_TYPE_AIR_PM  8
 
-See https://github.com/merbanan/rtl_433/issues/1492
+/**
+Decoder for Bresser Weather Center 7-in-1 and Air Quality PM2.5 / PM10, outdoor sensors.
+
+See
+https://github.com/merbanan/rtl_433/issues/1492
+and
+https://github.com/merbanan/rtl_433/issues/2693
 
 Preamble:
 
     aa aa aa aa aa 2d d4
 
 Observed length depends on reset_limit.
-The data has a whitening of 0xaa.
+The data (not including STYPE, STARTUP, CH and maybe ID) has a whitening of 0xaa.
 
+Weather Center
 Data layout:
 
     {271}631d05c09e9a18abaabaaaaaaaaa8adacbacff9cafcaaaaaaa000000000000000000
@@ -40,6 +47,11 @@ Data layout:
 
 
 Unit of light is kLux (not W/m²).
+
+Air Quality Sensor PM2.5 / PM10 Sensor (PN 7009970)
+Data layout:
+
+    DIGEST:8h8h ID?8h8h ?8h8h STYPE:4h STARTUP:1b CH:3b ?8h 4h ?4h8h4h PM_2_5:4h8h4h PM10:4h8h4h ?4h ?8h4h BATT:1b ?3b ?8h8h8h8h8h8h TRAILER:8h8h8h
 
 First two bytes are an LFSR-16 digest, generator 0x8810 key 0xba95 with a final xor 0x6df1, which likely means we got that wrong.
 */
@@ -76,6 +88,11 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (msg[21] == 0x00) {
         return DECODE_FAIL_SANITY;
     }
+
+    int s_type   = msg[6] >> 4;
+    int nstartup = (msg[6] & 0x08) >> 3;
+    int chan     = msg[6] & 0x07;
+
     // data whitening
     for (unsigned i = 0; i < sizeof (msg); ++i) {
         msg[i] ^= 0xaa;
@@ -90,53 +107,87 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    int id       = (msg[2] << 8) | (msg[3]);
-    int wdir     = (msg[4] >> 4) * 100 + (msg[4] & 0x0f) * 10 + (msg[5] >> 4);
-    int wgst_raw = (msg[7] >> 4) * 100 + (msg[7] & 0x0f) * 10 + (msg[8] >> 4);
-    int wavg_raw = (msg[8] & 0x0f) * 100 + (msg[9] >> 4) * 10 + (msg[9] & 0x0f);
-    int rain_raw = (msg[10] >> 4) * 100000 + (msg[10] & 0x0f) * 10000 + (msg[11] >> 4) * 1000
-            + (msg[11] & 0x0f) * 100 + (msg[12] >> 4) * 10 + (msg[12] & 0x0f) * 1; // 6 digits
-    float rain_mm = rain_raw * 0.1f;
-    int temp_raw = (msg[14] >> 4) * 100 + (msg[14] & 0x0f) * 10 + (msg[15] >> 4);
-    float temp_c = temp_raw * 0.1f;
-    int flags    = (msg[15] & 0x0f);
+    int id          = (msg[2] << 8) | (msg[3]);
+    int flags       = (msg[15] & 0x0f);
     int battery_low = (flags & 0x06) == 0x06;
-    if (temp_raw > 600)
-        temp_c = (temp_raw - 1000) * 0.1f;
-    int humidity = (msg[16] >> 4) * 10 + (msg[16] & 0x0f);
-    int lght_raw = (msg[17] >> 4) * 100000 + (msg[17] & 0x0f) * 10000 + (msg[18] >> 4) * 1000
-            + (msg[18] & 0x0f) * 100 + (msg[19] >> 4) * 10 + (msg[19] & 0x0f);
-    int uv_raw =   (msg[20] >> 4) * 100 + (msg[20] & 0x0f) * 10 + (msg[21] >> 4);
 
-    float light_klx = lght_raw * 0.001f; // TODO: remove this
-    float light_lux = lght_raw;
-    float uv_index = uv_raw * 0.1f;
+    if (s_type == SENSOR_TYPE_WEATHER) {
+        int wdir     = (msg[4] >> 4) * 100 + (msg[4] & 0x0f) * 10 + (msg[5] >> 4);
+        int wgst_raw = (msg[7] >> 4) * 100 + (msg[7] & 0x0f) * 10 + (msg[8] >> 4);
+        int wavg_raw = (msg[8] & 0x0f) * 100 + (msg[9] >> 4) * 10 + (msg[9] & 0x0f);
+        int rain_raw = (msg[10] >> 4) * 100000 + (msg[10] & 0x0f) * 10000 + (msg[11] >> 4) * 1000
+                + (msg[11] & 0x0f) * 100 + (msg[12] >> 4) * 10 + (msg[12] & 0x0f) * 1; // 6 digits
+        float rain_mm = rain_raw * 0.1f;
+        int temp_raw = (msg[14] >> 4) * 100 + (msg[14] & 0x0f) * 10 + (msg[15] >> 4);
+        float temp_c = temp_raw * 0.1f;
 
-    /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "Bresser-7in1",
-            "id",               "",             DATA_INT,    id,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",     DATA_INT,    humidity,
-            "wind_max_m_s",     "Wind Gust",    DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wgst_raw * 0.1f,
-            "wind_avg_m_s",     "Wind Speed",   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wavg_raw * 0.1f,
-            "wind_dir_deg",     "Direction",    DATA_INT,    wdir,
-            "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
-            "light_klx",        "Light",        DATA_FORMAT, "%.3f klx", DATA_DOUBLE, light_klx, // TODO: remove this
-            "light_lux",        "Light",        DATA_FORMAT, "%.3f lux", DATA_DOUBLE, light_lux,
-            "uv",               "UV Index",     DATA_FORMAT, "%.1f", DATA_DOUBLE, uv_index,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
-    /* clang-format on */
+        if (temp_raw > 600)
+            temp_c = (temp_raw - 1000) * 0.1f;
+        int humidity = (msg[16] >> 4) * 10 + (msg[16] & 0x0f);
+        int lght_raw = (msg[17] >> 4) * 100000 + (msg[17] & 0x0f) * 10000 + (msg[18] >> 4) * 1000
+                + (msg[18] & 0x0f) * 100 + (msg[19] >> 4) * 10 + (msg[19] & 0x0f);
+        int uv_raw =   (msg[20] >> 4) * 100 + (msg[20] & 0x0f) * 10 + (msg[21] >> 4);
 
-    decoder_output_data(decoder, data);
-    return 1;
+        float light_klx = lght_raw * 0.001f; // TODO: remove this
+        float light_lux = lght_raw;
+        float uv_index = uv_raw * 0.1f;
+
+        /* clang-format off */
+        data = data_make(
+                "model",            "",             DATA_STRING, "Bresser-7in1",
+                "id",               "",             DATA_INT,    id,
+                "startup",          "Startup",      DATA_COND,   !nstartup,  DATA_INT, !nstartup,
+                "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+                "humidity",         "Humidity",     DATA_INT,    humidity,
+                "wind_max_m_s",     "Wind Gust",    DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wgst_raw * 0.1f,
+                "wind_avg_m_s",     "Wind Speed",   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wavg_raw * 0.1f,
+                "wind_dir_deg",     "Direction",    DATA_INT,    wdir,
+                "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
+                "light_klx",        "Light",        DATA_FORMAT, "%.3f klx", DATA_DOUBLE, light_klx, // TODO: remove this
+                "light_lux",        "Light",        DATA_FORMAT, "%.3f lux", DATA_DOUBLE, light_lux,
+                "uv",               "UV Index",     DATA_FORMAT, "%.1f", DATA_DOUBLE, uv_index,
+                "battery_ok",       "Battery",      DATA_INT,    !battery_low,
+                "mic",              "Integrity",    DATA_STRING, "CRC",
+                NULL);
+        /* clang-format on */
+
+        decoder_output_data(decoder, data);
+        return 1;
+
+    } else if (s_type == SENSOR_TYPE_AIR_PM) {
+        int pm_2_5 = (msg[10] & 0x0f) * 1000 + (msg[11] >> 4) * 100 + (msg[11] & 0x0f) * 10 + (msg[12] >> 4);
+        int pm_10  = (msg[12] & 0x0f) * 1000 + (msg[13] >> 4) * 100 + (msg[13] & 0x0f) * 10 + (msg[14] >> 4);
+
+        // To Do: identify further data
+
+        /* clang-format off */
+        data = data_make(
+                "model",            "",                         DATA_STRING, "Bresser-7in1",
+                "id",               "",                         DATA_INT,    id,
+                "channel",          "",                         DATA_INT,    chan,
+                "startup",          "Startup",                  DATA_COND,   !nstartup,  DATA_INT, !nstartup,
+                "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
+                "pm_2_5_ug_m3",     "PM2.5 Mass Concentration", DATA_INT,    pm_2_5,
+                "pm_10_ug_m3",      "PM10 Mass Concentraton",   DATA_INT,    pm_10,
+                "mic",              "Integrity",                DATA_STRING, "CRC",
+                NULL);
+        /* clang-format on */
+
+        decoder_output_data(decoder, data);
+        return 1;
+
+    } else {
+        decoder_logf(decoder, 2, __func__, "DECODE_FAIL_SANITY, s_type=%d not implemented", s_type);
+        return DECODE_FAIL_SANITY;
+
+    }
 }
 
 static char const *const output_fields[] = {
         "model",
         "id",
+        "channel",
+        "startup",
         "temperature_C",
         "humidity",
         "wind_max_m_s",
@@ -146,13 +197,15 @@ static char const *const output_fields[] = {
         "light_klx", // TODO: remove this
         "light_lux",
         "uv",
+        "pm_2_5_ug_m3",
+        "pm_10_ug_m3",
         "battery_ok",
         "mic",
         NULL,
 };
 
 r_device const bresser_7in1 = {
-        .name        = "Bresser Weather Center 7-in-1",
+        .name        = "Bresser Weather Center 7-in-1, Air Quality PM2.5 / PM10",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 124,
         .long_width  = 124,
