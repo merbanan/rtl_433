@@ -62,8 +62,8 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t const preamble[] = {0xaa, 0xaa, 0x2d, 0xd4}; // 32 bit, part of preamble and sync word
     uint8_t b[32];
 
-    // Validate package, WS90 nominal size is 330 bit periods
-    if (bitbuffer->bits_per_row[0] < 168 || bitbuffer->bits_per_row[0] > 330) {
+    // Validate package, WS90 nominal size is 345 bit periods
+    if (bitbuffer->bits_per_row[0] < 168 || bitbuffer->bits_per_row[0] > 350) {
         decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "abort length" );
         return DECODE_ABORT_LENGTH;
     }
