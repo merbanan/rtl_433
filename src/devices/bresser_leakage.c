@@ -110,7 +110,7 @@ static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint32_t sensor_id = ((uint32_t)msg[2] << 24) | (msg[3] << 16) | (msg[4] << 8) | (msg[5]);
     int s_type         = msg[6] >> 4;
     int chan           = (msg[6] & 0x7);
-    int battery_ok     = ((msg[7] & 0x30) != 0x00) ? 1 : 0;
+    int battery_ok     = ((msg[7] & 0x30) != 0x00);
     int nstartup       = (msg[6] & 0x08) >> 3;
     int alarm          = (msg[7] & 0x80) >> 7;
     int no_alarm       = (msg[7] & 0x40) >> 6;
