@@ -38,7 +38,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
 ```
 
   A "rtl_433.conf" file is searched in "./", XDG_CONFIG_HOME e.g. "$HOME/.config/rtl_433/",
-  "/usr/local/etc/rtl_433/", "/etc/rtl_433/", then command line args will be parsed in order.
+  SYSCONFDIR e.g. "/usr/local/etc/rtl_433/", then command line args will be parsed in order.
 		= General options =
   [-V] Output the version string and exit
   [-v] Increase verbosity (can be used multiple times).
@@ -258,7 +258,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [170]  LaCrosse Technology View LTV-WR1 Multi Sensor
     [171]  LaCrosse Technology View LTV-TH Thermo/Hygro Sensor
     [172]  Bresser Weather Center 6-in-1, 7-in-1 indoor, soil, new 5-in-1, 3-in-1 wind gauge, Froggit WH6000, Ventus C8488A
-    [173]  Bresser Weather Center 7-in-1
+    [173]  Bresser Weather Center 7-in-1, Air Quality PM2.5 / PM10
     [174]  EcoDHOME Smart Socket and MCEE Solar monitor
     [175]  LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1/W2 Wind Sensor
     [176]  BlueLine Innovations Power Cost Monitor
@@ -314,25 +314,27 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [226]  Kia TPMS (-s 1000k)
     [227]  SRSmith Pool Light Remote Control SRS-2C-TX (-f 915M)
     [228]  Neptune R900 flow meters
-    [229]* WEC-2103 temperature/humidity sensor
+    [229]  WEC-2103 temperature/humidity sensor
     [230]  Vauno EN8822C
     [231]  Govee Water Leak Detector H5054
     [232]  TFA Dostmann 14.1504.V2 Radio-controlled grill and meat thermometer
     [233]* CED7000 Shot Timer
-    [234]  Watchman Sonic Advanced / Plus
+    [234]  Watchman Sonic Advanced / Plus, Tekelek
     [235]  Oil Ultrasonic SMART FSK
     [236]  Gasmate BA1008 meat thermometer
     [237]  Flowis flow meters
     [238]  Wireless M-Bus, Mode T, 32.768kbps (-f 868.3M -s 1000k)
     [239]  Revolt NC-5642 Energy Meter
     [240]  LaCrosse TX31U-IT, The Weather Channel WS-1910TWC-IT
-    [241]  EezTire E618 (TPMS10ATC)
+    [241]  EezTire E618, Carchet TPMS
     [242]* Baldr / RainPoint rain gauge.
     [243]  Celsia CZC1 Thermostat
     [244]  Fine Offset Electronics WS90 weather station
     [245]* ThermoPro TX-2C Thermometer and Humidity sensor
     [246]  TFA 30.3151 Weather Station
     [247]  Bresser water leakage
+    [248]* Nissan TPMS
+    [249]  Bresser lightning
 
 * Disabled by default, use -R n or a conf file to enable
 

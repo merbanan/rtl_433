@@ -255,6 +255,8 @@
     DECL(thermopro_tx2c) \
     DECL(tfa_303151) \
     DECL(bresser_leakage) \
+    DECL(tpms_nissan) \
+    DECL(bresser_lightning) \
     DECL(watts_thermostat) \
 
     /* Add new decoders here. */
