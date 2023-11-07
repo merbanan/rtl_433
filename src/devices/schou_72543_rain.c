@@ -76,7 +76,7 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int      isMessageRepeat;
     int      messageCounter;
     float    rain_mm;
-    float    temp_F;
+    float    temperature_F;
     data_t   *data;
 
     // Decode message
@@ -85,7 +85,7 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     isMessageRepeat =   (b[2] & 0x40) >  0;                  // if one, message is a repeat (startup after batteries are replaced)
     messageCounter  =   (b[2] & 0x0e) >> 1;                  // 3 bit counter (rather than 4 bit incrementing by 2 each time
     rain_mm         =  ((b[4] << 8 ) | b[3]) * 0.1f;         //   0.0 to  6553.5  mm
-    temp_F          = (((b[6] << 8 ) | b[5]) - 900) * 0.1f;  // -40.0 to +158     degF
+    temperature_F   = (((b[6] << 8 ) | b[5]) - 900) * 0.1f;  // -40.0 to +158     degF
 
     /* clang-format off */
     data = data_make(
@@ -95,7 +95,7 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "msg_repeat",     "Msg_repeat",   DATA_INT,    isMessageRepeat,
             "msg_counter",    "Counter",      DATA_INT,    messageCounter,
             "rain_mm",        "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
-            "temp_F",         "Temperature",  DATA_FORMAT, "%.1f F",  DATA_DOUBLE, temp_F,
+            "temperature_F",  "Temperature",  DATA_FORMAT, "%.1f F",  DATA_DOUBLE, temperature_F,
             "mic",            "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -111,13 +111,13 @@ static char const *const output_fields[] = {
         "msg_repeat",
         "msg_counter",
         "rain_mm",
-        "temp_F",
+        "temperature_F",
         "mic",
         NULL,
 };
 
 r_device const schou_72543_rain = {
-        .name        = "Schou_72543",
+        .name        = "Schou_72543_rain",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 972,
         .long_width  = 2680,

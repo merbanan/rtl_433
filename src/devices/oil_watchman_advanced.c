@@ -15,7 +15,8 @@
 Watchman Sonic Advanced/Plus oil tank level monitor.
 
 Tested devices:
-- Watchman Sonic Advanced
+- Watchman Sonic Advanced, model code 0x0401 (seen on two devices)
+- Tekelek, model code 0x0106 (seen on two devices)
 
 The devices uses GFSK with 500 us long and short pulses.
 Using -Y minmax should be sufficient to get it to work.
@@ -23,35 +24,34 @@ Using -Y minmax should be sufficient to get it to work.
 Total length of message including preamble is 192 bits.
 The format might be most easily summarised in a BitBench string:
 
-    PRE: 40b SYNC: 16h MODEL: 24h ID: 24d 8h TEMP: 8h 16h DEPTH: 8d 32h CRC: 16h
+    PRE: 40b SYNC: 16h LEN:8d MODEL:16h ID:24d 8h TEMP:8h ?:16h DEPTH:8d VER:32h CRC:16h
 
 Data Layout:
 
 - 40 bits of preamble, i.e. 10101010 etc.
-- 0x2dd4 - 'standard' sync word
+- 2 byte of 0x2dd4 - 'standard' sync word
 - 1 byte - message length, fixed 0x0e (14)
-- 2 byte - fixed 0x0401 - presumably a model identifier, common at least to the two devices we have tested this on
-- 0x0e0401 - presumably a model identifier, common at least to the two devices we have tested this on
+- 2 byte - fixed 0x0401 or 0x0106 - presumably a model identifier, common at least to the devices we have tested
 - 3 byte integer serial number - as printed on a label attached to the device itself
 - 1 byte status:
   - 0xC0 - during the first 20ish minutes after sync with the receiver when the device is transmitting once per second
   - 0x80 - the first one or two transmissions after the sync period when the device seems to be calibrating itself
   - 0x98 - normal, live value that you'll see on every transmission when the device is up and running
 - 1 byte temperature, in intervals of 0.5 degrees, offset by 0x48
-- two more varying bytes which could be the raw sensor reading
+- 2 byte - varying bytes which could be the raw sensor reading
 - 1 byte integer depth (i.e. the distance between the sensor and the oil in the tank)
-- 0x01050300 - 4 bytes of constant values which could be a version number? (1.5.3.0)
+- 4 byte of 0x01050300 - constant values which could be a version number? (1.5.3.0)
 - 2 byte CRC-16 poly 0x8005 init 0
 */
 
 static int oil_watchman_advanced_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     static uint8_t const PREAMBLE_SYNC_LENGTH_BITS = 40;
-    static uint8_t const HEADER_LENGTH_BITS        = 24;
-    static uint8_t const BODY_LENGTH_BITS          = 128;
+    static uint8_t const HEADER_LENGTH_BITS        = 8;
+    static uint8_t const BODY_LENGTH_BITS          = 144;
     // no need to match all the preamble; 24 bits worth should do
     // include part of preamble, sync-word, length, message identifier
-    uint8_t const preamble_pattern[] = {0xaa, 0xaa, 0xaa, 0x2d, 0xd4, 0x0e, 0x04, 0x01};
+    uint8_t const preamble_pattern[] = {0xaa, 0xaa, 0xaa, 0x2d, 0xd4, 0x0e};
 
     unsigned bitpos = 0;
     int events      = 0;
@@ -67,13 +67,20 @@ static int oil_watchman_advanced_decode(r_device *decoder, bitbuffer_t *bitbuffe
 
         uint8_t *b = msg;
         if (crc16(b, (BODY_LENGTH_BITS + HEADER_LENGTH_BITS) / 8, 0x8005, 0) != 0) {
+            decoder_log(decoder, 2, __func__, "failed CRC check");
             return DECODE_FAIL_MIC;
+        }
+
+        int mcode = (b[1] << 8) | b[2];
+        if (mcode != 0x0401 && mcode != 0x0106) {
+            decoder_logf(decoder, 1, __func__, "Unknown model code %04x", mcode);
+            return DECODE_FAIL_SANITY;
         }
 
         // as printed on the side of the unit
         uint32_t serial   = (b[3] << 16) | (b[4] << 8) | b[5];
         uint8_t status    = b[6];
-        float temperature = (float)(int8_t)(0.5 * (b[7] - 0x48)); // truncate to whole number
+        float temperature = (b[7] - 0x48) / 2; // truncate to whole number
         uint8_t depth     = b[10];
 
         /* clang-format off */
@@ -103,7 +110,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const oil_watchman_advanced = {
-        .name        = "Watchman Sonic Advanced / Plus",
+        .name        = "Watchman Sonic Advanced / Plus, Tekelek",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 500,
         .long_width  = 500,

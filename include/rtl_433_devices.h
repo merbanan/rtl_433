@@ -256,7 +256,9 @@
     DECL(tfa_303151) \
     DECL(bresser_leakage) \
     DECL(tpms_nissan) \
+    DECL(bresser_lightning) \
     DECL(schou_72543_rain) \
+
 
     /* Add new decoders here. */
 

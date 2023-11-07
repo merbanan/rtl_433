@@ -110,10 +110,10 @@ static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint32_t sensor_id = ((uint32_t)msg[2] << 24) | (msg[3] << 16) | (msg[4] << 8) | (msg[5]);
     int s_type         = msg[6] >> 4;
     int chan           = (msg[6] & 0x7);
-    int battery_ok     = ((msg[7] & 0x30) != 0x00) ? 1 : 0;
-    int startup        = (msg[6] >> 3) & 1;
-    int alarm          = ((msg[7] & 0x80) == 0x80) ? 1 : 0;
-    int no_alarm       = ((msg[7] & 0x40) == 0x40) ? 1 : 0;
+    int battery_ok     = ((msg[7] & 0x30) != 0x00);
+    int nstartup       = (msg[6] & 0x08) >> 3;
+    int alarm          = (msg[7] & 0x80) >> 7;
+    int no_alarm       = (msg[7] & 0x40) >> 6;
 
     // Sanity checks
     if (s_type != SENSOR_TYPE_LEAKAGE
@@ -129,7 +129,7 @@ static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "channel",          "",             DATA_INT,    chan,
             "battery_ok",       "Battery",      DATA_INT,    battery_ok,
             "alarm",            "Alarm",        DATA_INT,    alarm,
-            "startup",          "Startup",      DATA_COND,   startup,  DATA_INT,    startup,
+            "startup",          "Startup",      DATA_COND,   !nstartup,  DATA_INT,  !nstartup,
             NULL);
     /* clang-format on */
 
