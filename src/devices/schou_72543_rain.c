@@ -91,11 +91,11 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",          "",             DATA_STRING, "Schou_72543",
             "id",             "ID",           DATA_INT,    deviceID,
-            "battery_ok",     "Battery_ok",   DATA_INT,    !isBatteryLow,
-            "msg_repeat",     "Msg_repeat",   DATA_INT,    isMessageRepeat,
-            "msg_counter",    "Counter",      DATA_INT,    messageCounter,
-            "rain_mm",        "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
             "temperature_F",  "Temperature",  DATA_FORMAT, "%.1f F",  DATA_DOUBLE, temperature_F,
+            "rain_mm",        "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
+            "battery_ok",     "Battery_ok",   DATA_INT,    !isBatteryLow,
+            "msg_counter",    "Counter",      DATA_INT,    messageCounter,
+            "msg_repeat",     "Msg_repeat",   DATA_INT,    isMessageRepeat,
             "mic",            "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -107,11 +107,11 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
-        "battery_ok",
-        "msg_repeat",
-        "msg_counter",
-        "rain_mm",
         "temperature_F",
+        "rain_mm",
+        "battery_ok",
+        "msg_counter",
+        "msg_repeat",
         "mic",
         NULL,
 };
