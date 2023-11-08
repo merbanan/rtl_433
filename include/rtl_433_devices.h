@@ -259,7 +259,6 @@
     DECL(bresser_lightning) \
     DECL(schou_72543_rain) \
 
-
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
