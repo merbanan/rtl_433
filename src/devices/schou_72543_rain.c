@@ -109,7 +109,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const schou_72543_rain = {
-        .name        = "Schou_72543_rain",
+        .name        = "Schou 72543 Day Rain Gauge",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 972,
         .long_width  = 2680,
