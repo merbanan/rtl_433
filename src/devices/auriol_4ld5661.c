@@ -3,6 +3,8 @@
 
     Copyright (C) 2021 Balazs H.
     Copyright (C) 2023 Peter Soos
+    Copyright (C) 2023 Gerald Reisinger
+
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -11,16 +13,18 @@
 */
 
 /**
-Lidl Auriol 4-LD5661/4-LD5972/4-LD6313 sensors.
+Lidl Auriol 4-LD5661/4-LD5972/4-LD6313 and Aldi Sempre 4-AH0423-4 sensors.
 
 See also issues #1857, #2631 and PR #2633
 
 Data layout:
 
-    II B TTT F RRRRRR
+    II B F CC TTT F RRRRRR
 
 - I: id, 8 bit: factory (hard)coded random ID
-- B: battery, 4 bit: 0x8 if normal, 0x0 if low
+- B: battery, 1 bit: 1=OK, 0=LOW
+- F: flag, 1 bit: unknown yet
+- C: channel, 2 bit: 0=CH1, 1=CH2, 2=CH3
 - T: temperature, 12 bit: 2's complement, scaled by 10
 - F: 4 bit: seems to be 0xf constantly, a separator between temp and rain
 - R: rain sensor, probably the remaining 24 bit: a counter for every 0.3 mm (4-LD5661) or 0.242 mm (4-LD6313)
@@ -41,9 +45,10 @@ static int auriol_4ld5661_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         uint8_t *b  = bitbuffer->bb[i];
         int id      = b[0];
-        int batt_ok = b[1] >> 7;
+        int battery  = b[1] & 0x80;
+        int channel  = ((b[1] & 0x30) >> 4) + 1;
 
-        if (b[3] != 0xf0 || (b[1] & 0x70) != 0) {
+        if (b[3] != 0xf0) {
             ret = DECODE_FAIL_MIC;
             continue;
         }
@@ -71,7 +76,8 @@ static int auriol_4ld5661_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data_t *data = data_make(
                 "model",            "Model",        DATA_STRING, "Auriol-4LD5661",
                 "id",               "ID",           DATA_FORMAT, "%02x", DATA_INT, id,
-                "battery_ok",       "Battery OK",   DATA_INT, batt_ok,
+                "channel",          "Channel",      DATA_INT,    channel,
+                "battery_ok",       "Battery",      DATA_INT,    !!battery,
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
                 "rain_mm",          "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain,
                 "rain",             "Rain tips",    DATA_INT, rain_raw,
@@ -88,6 +94,7 @@ static int auriol_4ld5661_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
+        "channel",
         "battery_ok",
         "temperature_C",
         "rain_mm",
@@ -96,7 +103,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const auriol_4ld5661 = {
-        .name        = "Auriol 4-LD5661/4-LD5972/4-LD6313 temperature/rain sensors",
+        .name        = "Auriol 4-LD5661/4-LD5972/4-LD6313, Sempre 4-AH0423-4 temperature/rain sensors",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1000,
         .long_width  = 2000,
