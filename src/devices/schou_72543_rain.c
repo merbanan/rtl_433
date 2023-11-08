@@ -62,32 +62,32 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Load bitbuffer data and validate checksum
-    uint8_t *b = bitbuffer->bb[row];
-    int micSum = b[7];                    // Checksum as read
-    int calSum = add_bytes(b, 7) & 0x0FF; // Checksum as calculated, accounting for the lowest 8 bit
+    uint8_t *b  = bitbuffer->bb[row];
+    int micsum = b[7];                    // Checksum as read
+    int calsum = add_bytes(b, 7) & 0x0FF; // Checksum as calculated, accounting for the lowest 8 bit
 
-    if (micSum != calSum) {
-        decoder_logf_bitrow(decoder, 1, __func__, b, 65, "Checksum error, expected: %02x calculated: %02x", micSum, calSum);
+    if (micsum != calsum) {
+        decoder_logf_bitrow(decoder, 1, __func__, b, 65, "Checksum error, expected: %02x calculated: %02x", micsum, calsum);
         return DECODE_FAIL_MIC;
     }
 
     // Decode message
-    int deviceID        = (b[0] << 8) | b[1];                  // Assuming little endian, but it not important as the value is random
-    int isBatteryLow    = (b[2] & 0x80) > 0;                   // if one, battery is low
-    int isMessageRepeat = (b[2] & 0x40) > 0;                   // if one, message is a repeat (startup after batteries are replaced)
-    int messageCounter  = (b[2] & 0x0e) >> 1;                  // 3 bit counter (rather than 4 bit incrementing by 2 each time
+    int device_id       = (b[0] << 8) | b[1];                  // Assuming little endian, but it not important as the value is random
+    int battery_low     = (b[2] & 0x80) > 0;                   // if one, battery is low
+    int message_repeat  = (b[2] & 0x40) > 0;                   // if one, message is a repeat (startup after batteries are replaced)
+    int message_counter = (b[2] & 0x0e) >> 1;                  // 3 bit counter (rather than 4 bit incrementing by 2 each time
     float rain_mm       = ((b[4] << 8) | b[3]) * 0.1f;         //   0.0 to  6553.5  mm
     float temperature_F = (((b[6] << 8) | b[5]) - 900) * 0.1f; // -40.0 to +158     degF
 
     /* clang-format off */
     data_t   *data = data_make(
-            "model",            "",             DATA_STRING, "Schou_72543",
-            "id",               "ID",           DATA_INT,    deviceID,
+            "model",            "",             DATA_STRING, "Schou-72543",
+            "id",               "ID",           DATA_INT,    device_id,
             "temperature_F",    "Temperature",  DATA_FORMAT, "%.1f F",  DATA_DOUBLE, temperature_F,
             "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
-            "battery_ok",       "Battery_ok",   DATA_INT,    !isBatteryLow,
-            "msg_counter",      "Counter",      DATA_INT,    messageCounter,
-            "msg_repeat",       "Msg_repeat",   DATA_INT,    isMessageRepeat,
+            "battery_ok",       "Battery_ok",   DATA_INT,    !battery_low,
+            "msg_counter",      "Counter",      DATA_INT,    message_counter,
+            "msg_repeat",       "Msg_repeat",   DATA_INT,    message_repeat,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
