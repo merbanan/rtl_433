@@ -1,5 +1,5 @@
 /** @file
-    Auriol 4-LD5661/4-LD5972/4-LD6313 sensors.
+    Auriol 4-LD5661/4-LD5972/4-LD6313, Sempre 4-AH0423-4 sensors.
 
     Copyright (C) 2021 Balazs H.
     Copyright (C) 2023 Peter Soos
@@ -19,12 +19,14 @@ See also issues #1857, #2631 and PR #2633
 
 Data layout:
 
-    II B F CC TTT F RRRRRR
+    1a       80       88       f0       00       14       5
+    00011010 10000000 10001000 11110000 00000000 00010100 0101
+    IIIIIIII B?CCTTTT TTTTTTTT FFFFRRRR RRRRRRRR RRRRRRRR RRRR
 
 - I: id, 8 bit: factory (hard)coded random ID
 - B: battery, 1 bit: 1=OK, 0=LOW
-- F: flag, 1 bit: unknown yet
-- C: channel, 2 bit: 0=CH1, 1=CH2, 2=CH3
+- ?: flag, 1 bit: seems to always 0
+- C: channel, 2 bit: seems to be a hardcoded channel, 0 on auriol, 3 on sempre
 - T: temperature, 12 bit: 2's complement, scaled by 10
 - F: 4 bit: seems to be 0xf constantly, a separator between temp and rain
 - R: rain sensor, probably the remaining 24 bit: a counter for every 0.3 mm (4-LD5661) or 0.242 mm (4-LD6313)
@@ -45,10 +47,9 @@ static int auriol_4ld5661_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         uint8_t *b  = bitbuffer->bb[i];
         int id      = b[0];
-        int battery  = b[1] & 0x80;
-        int channel  = ((b[1] & 0x30) >> 4) + 1;
+        int batt_ok = b[1] >> 7;
 
-        if (b[3] != 0xf0) {
+        if (b[3] != 0xf0 || (b[1] & 0x40) != 0) {
             ret = DECODE_FAIL_MIC;
             continue;
         }
@@ -76,8 +77,7 @@ static int auriol_4ld5661_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data_t *data = data_make(
                 "model",            "Model",        DATA_STRING, "Auriol-4LD5661",
                 "id",               "ID",           DATA_FORMAT, "%02x", DATA_INT, id,
-                "channel",          "Channel",      DATA_INT,    channel,
-                "battery_ok",       "Battery",      DATA_INT,    !!battery,
+                "battery_ok",       "Battery OK",   DATA_INT, batt_ok,
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
                 "rain_mm",          "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain,
                 "rain",             "Rain tips",    DATA_INT, rain_raw,
@@ -94,7 +94,6 @@ static int auriol_4ld5661_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
-        "channel",
         "battery_ok",
         "temperature_C",
         "rain_mm",
