@@ -1,0 +1,68 @@
+diff --git a/src/mongoose.c b/src/mongoose.c
+index 049539e8..7f05c0b3 100644
+--- a/src/mongoose.c
++++ b/src/mongoose.c
+@@ -1,4 +1,8 @@
+ #include "mongoose.h"
++/* MSG_NOSIGNAL is Linux and most BSDs only, not macOS or Windows */
++#ifndef MSG_NOSIGNAL
++#define MSG_NOSIGNAL 0
++#endif
+ #ifdef MG_MODULE_LINES
+ #line 1 "mongoose/src/mg_internal.h"
+ #endif
+@@ -3874,7 +3878,12 @@ void mg_socket_if_connect_tcp(struct mg_connection *nc,
+                               const union socket_address *sa) {
+   int rc, proto = 0;
+   nc->sock = socket(sa->sa.sa_family, SOCK_STREAM, proto);
+-  if (nc->sock == INVALID_SOCKET) {
++  if (nc->sock == INVALID_SOCKET
++#ifdef SO_NOSIGPIPE
++      /* Prevent SIGPIPE per file descriptor, supported on MacOS and most BSDs */
++      || setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, (void *)&nopipe, sizeof(nopipe))
++#endif
++  ) {
+     nc->err = mg_get_errno() ? mg_get_errno() : 1;
+     return;
+   }
+@@ -3891,7 +3900,12 @@ void mg_socket_if_connect_tcp(struct mg_connection *nc,
+ 
+ void mg_socket_if_connect_udp(struct mg_connection *nc) {
+   nc->sock = socket(AF_INET, SOCK_DGRAM, 0);
+-  if (nc->sock == INVALID_SOCKET) {
++  if (nc->sock == INVALID_SOCKET
++#ifdef SO_NOSIGPIPE
++      /* Prevent SIGPIPE per file descriptor, supported on MacOS and most BSDs */
++      || setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, (void *)&nopipe, sizeof(nopipe))
++#endif
++  ) {
+     nc->err = mg_get_errno() ? mg_get_errno() : 1;
+     return;
+   }
+@@ -3927,7 +3941,7 @@ static int mg_socket_if_listen_udp(struct mg_connection *nc,
+ 
+ static int mg_socket_if_tcp_send(struct mg_connection *nc, const void *buf,
+                                  size_t len) {
+-  int n = (int) MG_SEND_FUNC(nc->sock, buf, len, 0);
++  int n = (int) MG_SEND_FUNC(nc->sock, buf, len, MSG_NOSIGNAL);
+   if (n < 0 && !mg_is_error()) n = 0;
+   return n;
+ }
+@@ -4007,11 +4021,17 @@ static sock_t mg_open_listening_socket(union socket_address *sa, int type,
+   socklen_t sa_len =
+       (sa->sa.sa_family == AF_INET) ? sizeof(sa->sin) : sizeof(sa->sin6);
+   sock_t sock = INVALID_SOCKET;
++  int nopipe = 1;
+ #if !MG_LWIP
+   int on = 1;
+ #endif
+ 
+   if ((sock = socket(sa->sa.sa_family, type, proto)) != INVALID_SOCKET &&
++#ifdef SO_NOSIGPIPE
++      /* Prevent SIGPIPE per file descriptor, supported on MacOS and most BSDs */
++      !setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, (void *)&nopipe, sizeof(nopipe)) &&
++#endif
++
+ #if !MG_LWIP /* LWIP doesn't support either */
+ #if defined(_WIN32) && defined(SO_EXCLUSIVEADDRUSE) && !defined(WINCE)
+       /* "Using SO_REUSEADDR and SO_EXCLUSIVEADDRUSE" http://goo.gl/RmrFTm */

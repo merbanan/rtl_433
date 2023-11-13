@@ -257,6 +257,7 @@
     DECL(bresser_leakage) \
     DECL(tpms_nissan) \
     DECL(bresser_lightning) \
+    DECL(schou_72543_rain) \
     DECL(watts_thermostat) \
 
     /* Add new decoders here. */

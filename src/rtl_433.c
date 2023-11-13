@@ -1335,7 +1335,10 @@ console_handler(int signum)
 static void sighandler(int signum)
 {
     if (signum == SIGPIPE) {
-        signal(SIGPIPE, SIG_IGN);
+        // NOTE: we already ignore most network SIGPIPE's, this might be a STDOUT/STDERR problem.
+        // Printing is likely not the correct way to handle this.
+        write_err("Ignoring received signal SIGPIPE, Broken pipe.\n");
+        return;
     }
     else if (signum == SIGINFO/* TODO: maybe SIGUSR1 */) {
         g_cfg.stats_now++;
