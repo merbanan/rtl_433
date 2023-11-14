@@ -12,7 +12,8 @@
 */
 
 #include "decoder.h"
-/**
+
+/** @fn int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 Watts WFHT-RF Thermostat.
 
 This code is based on a slightly older OEM system created by ADEV in France which
@@ -69,7 +70,6 @@ Decoded example:
 */
 
 #define WATTSTHERMO_BITLEN             54
-#define WATTSTHERMO_PREAMBLE           0xa5
 #define WATTSTHERMO_PREAMBLE_BITLEN    8
 #define WATTSTHERMO_ID_BITLEN          16
 #define WATTSTHERMO_FLAGS_BITLEN       4
@@ -78,26 +78,26 @@ Decoded example:
 #define WATTSTHERMO_CHKSUM_BITLEN      8
 
 enum WATTSTHERMO_FLAGS {
-    NONE     = 0,
-    PAIRING  = 1,
-    UNKNOWN1 = 2,
-    UNKNOWN2 = 4,
-    UNKNOWN3 = 8,
+    WF_NONE     = 0,
+    WF_PAIRING  = 1,
+    WF_UNKNOWN1 = 2,
+    WF_UNKNOWN2 = 4,
+    WF_UNKNOWN3 = 8,
 };
 
 static int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    uint8_t const preamble_pattern[] = {0xa5}; // inverted and reflected, raw value is 0x5a
+
     bitbuffer_invert(bitbuffer);
 
     // We're expecting a single row
     for (uint16_t row = 0; row < bitbuffer->num_rows; ++row) {
 
-        uint16_t row_len    = bitbuffer->bits_per_row[row];
-        uint8_t chksum      = 0;
-        uint8_t preamble    = WATTSTHERMO_PREAMBLE;
-        unsigned bitpos     = 0;
+        uint16_t row_len = bitbuffer->bits_per_row[row];
+        unsigned bitpos  = 0;
 
-        bitpos = bitbuffer_search(bitbuffer, row, 0, &preamble, WATTSTHERMO_PREAMBLE_BITLEN);
+        bitpos = bitbuffer_search(bitbuffer, row, 0, &preamble_pattern, WATTSTHERMO_PREAMBLE_BITLEN);
         if (bitpos >= row_len) {
             decoder_log(decoder, 2, __func__, "Preamble not found");
             return DECODE_ABORT_EARLY;
@@ -112,49 +112,50 @@ static int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t id_raw[2];
         bitbuffer_extract_bytes(bitbuffer, row, bitpos, id_raw, WATTSTHERMO_ID_BITLEN);
         reflect_bytes(id_raw, 2);
-        chksum += add_bytes(id_raw, 2);
-        uint16_t id  = id_raw[1] << 8 | id_raw[0];
+        int id  = (id_raw[1] << 8) | id_raw[0];
         bitpos += WATTSTHERMO_ID_BITLEN;
 
         uint8_t flags[1];
         bitbuffer_extract_bytes(bitbuffer, row, bitpos, flags, WATTSTHERMO_FLAGS_BITLEN);
         reflect_bytes(flags, 1);
-        chksum += add_bytes(flags, 1);
-        uint8_t pairing = flags[0] & PAIRING;
+        int pairing = flags[0] & WF_PAIRING;
         bitpos += WATTSTHERMO_FLAGS_BITLEN;
 
         uint8_t temp_raw[2];
         bitbuffer_extract_bytes(bitbuffer, row, bitpos, temp_raw, WATTSTHERMO_TEMPERATURE_BITLEN);
         reflect_bytes(temp_raw, 2);
-        chksum += add_bytes(temp_raw, 2);
-        uint16_t temp = temp_raw[1] << 8 | temp_raw[0];
+        int temp = (temp_raw[1] << 8) | temp_raw[0];
         bitpos += WATTSTHERMO_TEMPERATURE_BITLEN;
 
         uint8_t setp_raw[2];
         bitbuffer_extract_bytes(bitbuffer, row, bitpos, setp_raw, WATTSTHERMO_SETPOINT_BITLEN);
         reflect_bytes(setp_raw, 2);
-        chksum += add_bytes(setp_raw, 2);
-        uint16_t setp = setp_raw[1] << 8 | setp_raw[0];
+        int setp = (setp_raw[1] << 8) | setp_raw[0];
         bitpos += WATTSTHERMO_SETPOINT_BITLEN;
+
+        uint8_t chksum = add_bytes(id_raw, 2)
+                + add_bytes(flags, 1)
+                + add_bytes(temp_raw, 2)
+                + add_bytes(setp_raw, 2);
 
         uint8_t chk[1];
         bitbuffer_extract_bytes(bitbuffer, row, bitpos, chk, WATTSTHERMO_CHKSUM_BITLEN);
         reflect_bytes(chk, 1);
         if (chk[0] != chksum) {
-            decoder_log_bitbuffer(decoder, 1, __func__, bitbuffer, "Checksum fail.");
+            decoder_log_bitbuffer(decoder, 1, __func__, bitbuffer, "Checksum fail");
             return DECODE_FAIL_MIC;
         }
 
         /* clang-format off */
         data_t *data = data_make(
-            "model",            "Model",            DATA_STRING, "Watts-WFHTRF",
-            "id",               "ID",               DATA_INT,    id,
-            "pairing",          "Pairing",          DATA_INT,    pairing,
-            "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",      DATA_DOUBLE,  temp * 0.1f,
-            "setpoint_C",       "Setpoint",         DATA_FORMAT, "%.1f C",      DATA_DOUBLE,  setp * 0.1f,
-            "flags",            "Flags",            DATA_INT,     flags,
-            "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-            NULL);
+                "model",            "Model",            DATA_STRING, "Watts-WFHTRF",
+                "id",               "ID",               DATA_INT,    id,
+                "pairing",          "Pairing",          DATA_INT,    pairing,
+                "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",      DATA_DOUBLE,  temp * 0.1f,
+                "setpoint_C",       "Setpoint",         DATA_FORMAT, "%.1f C",      DATA_DOUBLE,  setp * 0.1f,
+                "flags",            "Flags",            DATA_INT,    flags,
+                "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
+                NULL);
         /* clang-format on */
 
         decoder_output_data(decoder, data);
