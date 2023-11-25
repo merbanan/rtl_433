@@ -190,6 +190,19 @@ mappings = {
         }
     },
 
+    "supercap_V": {
+        "device_type": "sensor",
+        "object_suffix": "V",
+        "config": {
+            "device_class": "voltage",
+            "name": "Supercap V",
+            "unit_of_measurement": "V",
+            "value_template": "{{ float(value) }}",
+            "state_class": "measurement",
+            "entity_category": "diagnostic"
+        }
+    },
+
     "humidity": {
         "device_type": "sensor",
         "object_suffix": "H",
