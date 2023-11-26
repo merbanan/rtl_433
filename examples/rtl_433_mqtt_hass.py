@@ -190,6 +190,19 @@ mappings = {
         }
     },
 
+    "battery_mV": {
+        "device_type": "sensor",
+        "object_suffix": "mV",
+        "config": {
+            "device_class": "voltage",
+            "name": "Battery mV",
+            "unit_of_measurement": "mV",
+            "value_template": "{{ float(value) }}",
+            "state_class": "measurement",
+            "entity_category": "diagnostic"
+        }
+    },
+
     "humidity": {
         "device_type": "sensor",
         "object_suffix": "H",
