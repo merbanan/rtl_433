@@ -226,7 +226,7 @@ mappings = {
 
     "moisture": {
         "device_type": "sensor",
-        "object_suffix": "H",
+        "object_suffix": "M",
         "config": {
             "device_class": "moisture",
             "name": "Moisture",
