@@ -37,7 +37,7 @@ static int tpms_nissan_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
 
     uint8_t *b = packet_bits.bb[0];
 
-    // TODO Is there any parity or other checks we can preform to return
+    // TODO Is there any parity or other checks we can perform to return
     // DECODE_ABORT_EARLY or DECODE_FAIL_MIC
 
     // MODE:3d
