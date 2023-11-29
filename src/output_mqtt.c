@@ -226,7 +226,7 @@ static void R_API_CALLCONV print_mqtt_array(data_output_t *output, data_array_t 
 static char *append_topic(char *topic, data_t *data)
 {
     if (data->type == DATA_STRING) {
-        strcpy(topic, data->value.v_ptr);
+        strcpy(topic, data->value.v_ptr); // NOLINT
         mqtt_sanitize_topic(topic);
         topic += strlen(data->value.v_ptr);
     }
@@ -401,7 +401,7 @@ static void R_API_CALLCONV print_mqtt_data(data_output_t *output, data_t *data, 
         else {
             // push topic
             *end = '/';
-            strcpy(end + 1, data->key);
+            strcpy(end + 1, data->key); // NOLINT
             print_value(output, data->type, data->value, data->format);
             *end = '\0'; // pop topic
         }
@@ -422,10 +422,10 @@ static void R_API_CALLCONV print_mqtt_double(data_output_t *output, double data,
     char str[20];
     // use scientific notation for very big/small values
     if (data > 1e7 || data < 1e-4) {
-        snprintf(str, 20, "%g", data);
+        snprintf(str, sizeof(str), "%g", data);
     }
     else {
-        int ret = snprintf(str, 20, "%.5f", data);
+        int ret = snprintf(str, sizeof(str), "%.5f", data);
         // remove trailing zeros, always keep one digit after the decimal point
         char *p = str + ret - 1;
         while (*p == '0' && p[-1] != '.') {
@@ -439,7 +439,7 @@ static void R_API_CALLCONV print_mqtt_double(data_output_t *output, double data,
 static void R_API_CALLCONV print_mqtt_int(data_output_t *output, int data, char const *format)
 {
     char str[20];
-    snprintf(str, 20, "%d", data);
+    snprintf(str, sizeof(str), "%d", data);
     print_mqtt_string(output, str, format);
 }
 

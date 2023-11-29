@@ -47,7 +47,7 @@ char *format_time_str(char *buf, char const *format, int with_tz, time_t time_se
     if (with_tz) {
         strftime(buf + l, LOCAL_TIME_BUFLEN - l, "%z", &tm_info);
         if (!strcmp(buf + l, "+0000"))
-            strcpy(buf + l, "Z");
+            strcpy(buf + l, "Z"); // NOLINT
     }
     return buf;
 }
@@ -77,7 +77,7 @@ char *usecs_time_str(char *buf, char const *format, int with_tz, struct timeval 
     if (with_tz) {
         strftime(buf + l, LOCAL_TIME_BUFLEN - l, "%z", &tm_info);
         if (!strcmp(buf + l, "+0000"))
-            strcpy(buf + l, "Z");
+            strcpy(buf + l, "Z"); // NOLINT
     }
     return buf;
 }
@@ -204,10 +204,10 @@ char *str_replace(char const *orig, char const *rep, char const *with)
         ins = strstr(orig, rep);
         len_front = ins - orig;
         tmp = strncpy(tmp, orig, len_front) + len_front;
-        tmp = strcpy(tmp, with) + len_with;
+        tmp = strcpy(tmp, with) + len_with; // NOLINT
         orig += len_front + len_rep; // move to next "end of rep"
     }
-    strcpy(tmp, orig);
+    strcpy(tmp, orig); // NOLINT
     return result;
 }
 
