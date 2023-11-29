@@ -27,4 +27,3 @@ Running the "-F http" option would look like this:
 (directory)> rtl_433 -F http
 Press enter and rtl_433 should successfully launch.
 When it does, go to http://127.0.0.1:8433/
-
