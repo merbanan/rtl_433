@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" 
+"""
 $ rtl_433 -R 104 -F json | rtl_433_json_to_rtlwmbus.py
 
 A script to convert rtl_433 wmbus json output to rtlwmbus output
