@@ -38,12 +38,14 @@ static int bresser_lightning_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t const preamble_pattern[] = {0xaa, 0xaa, 0x2d, 0xd4};
     uint8_t msg[25];
 
-    if (bitbuffer->num_rows != 1
-            || bitbuffer->bits_per_row[0] < 160
-            || bitbuffer->bits_per_row[0] > 440) {
+    /* clang-format off */
+    if (   bitbuffer->num_rows != 1
+        || bitbuffer->bits_per_row[0] < 160
+        || bitbuffer->bits_per_row[0] > 440) {
         decoder_logf(decoder, 2, __func__, "bit_per_row %u out of range", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_EARLY; // Unrecognized data
     }
+    /* clang-format on */
 
     unsigned start_pos = bitbuffer_search(bitbuffer, 0, 0,
             preamble_pattern, sizeof (preamble_pattern) * 8);
