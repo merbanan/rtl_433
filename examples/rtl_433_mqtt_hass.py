@@ -534,7 +534,7 @@ mappings = {
             "state_class": "measurement"
         }
     },
-  
+
     "energy_kWh": {
         "device_type": "sensor",
         "object_suffix": "kwh",
@@ -546,7 +546,7 @@ mappings = {
             "state_class": "measurement"
         }
     },
-  
+
     "current_A": {
         "device_type": "sensor",
         "object_suffix": "A",
@@ -558,7 +558,7 @@ mappings = {
             "state_class": "measurement"
         }
     },
-  
+
     "voltage_V": {
         "device_type": "sensor",
         "object_suffix": "V",
@@ -656,7 +656,7 @@ mappings = {
             "state_class": "total_increasing",
         }
     },
-  
+
     "consumption": {
         "device_type": "sensor",
         "object_suffix": "consumption",
