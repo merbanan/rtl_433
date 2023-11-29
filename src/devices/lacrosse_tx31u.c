@@ -68,8 +68,8 @@ These readings have not been tested.
 
 #define BIT(pos)               (1 << (pos))
 #define CHECK_BIT(y, pos)      ((0u == ((y) & (BIT(pos)))) ? 0u : 1u)
-#define SET_LSBITS(len)        (BIT(len) - 1)                     // the first len bits are '1' and the rest are '0'
-#define BF_PREP(y, start, len) (((y)&SET_LSBITS(len)) << (start)) // Prepare a bitmask
+#define SET_LSBITS(len)        (BIT(len) - 1)                       // the first len bits are '1' and the rest are '0'
+#define BF_PREP(y, start, len) (((y) & SET_LSBITS(len)) << (start)) // Prepare a bitmask
 #define BF_GET(y, start, len)  (((y) >> (start)) & SET_LSBITS(len))
 
 #define TX31U_MIN_LEN_BYTES    9  // assume at least one measurement

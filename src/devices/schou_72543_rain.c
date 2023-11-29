@@ -62,7 +62,7 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Load bitbuffer data and validate checksum
-    uint8_t *b  = bitbuffer->bb[row];
+    uint8_t *b = bitbuffer->bb[row];
     int micsum = b[7];                    // Checksum as read
     int calsum = add_bytes(b, 7) & 0x0FF; // Checksum as calculated, accounting for the lowest 8 bit
 
