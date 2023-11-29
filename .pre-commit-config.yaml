@@ -120,7 +120,7 @@ repos:
     rev: v1.3.5
     hooks:
       - id: clang-format
-        stages: [manual]
+        #stages: [manual]
         # Target added at end of pre-commit because of the long list of exclusions
         args: [-i]
         exclude: |
