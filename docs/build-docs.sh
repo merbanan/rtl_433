@@ -4,7 +4,7 @@
 set -e
 
 # navigate to the docs directory
-cd ${0%/*}
+cd "${0%/*}"
 
 # copy other docs
 sed 's/docs\///' ../README.md >README.md
