@@ -33,7 +33,7 @@ https://www.bresser.de/en/Weather-Time/Accessories/EXPLORE-SCIENTIFIC-Soil-Moist
 Moisture:
 
     f16e 187000e34 7 ffffff0000 252 2 16 fff 004 000 [25,2, 99%, CH 7]
-    DIGEST:8h8h ID?8h8h8h8h STYPE:4h STARTUP:1b CH:3d 8h 8h8h 8h8h TEMP:12h ?2b BATT:1b ?1b MOIST:8h UV?~12h ?4h CHKSUM:8h
+    DIGEST:8h8h ID?8h8h8h8h STYPE:4h STARTUP:1b CH:3d 8h 8h8h 8h8h TEMP:12h TSIGN:1b ?1b BATT:1b ?1b MOIST:8h UV?~12h ?4h CHKSUM:8h
 
 Moisture is transmitted in the humidity field as index 1-16: 0, 7, 13, 20, 27, 33, 40, 47, 53, 60, 67, 73, 80, 87, 93, 99.
 The Wind speed and direction fields decode to valid zero but we exclude them from the output.
@@ -71,7 +71,7 @@ The Wind speed and direction fields decode to valid zero but we exclude them fro
 
 Wind and Temperature/Humidity or Rain:
 
-    DIGEST:8h8h ID:8h8h8h8h STYPE:4h STARTUP:1b CH:3d WSPEED:~8h~4h ~4h~8h WDIR:12h ?4h TEMP:8h.4h ?2b BATT:1b ?1b HUM:8h UV?~12h ?4h CHKSUM:8h
+    DIGEST:8h8h ID:8h8h8h8h STYPE:4h STARTUP:1b CH:3d WSPEED:~8h~4h ~4h~8h WDIR:12h ?4h TEMP:8h.4h TSIGN:1b ?1b BATT:1b ?1b HUM:8h UV?~12h ?4h CHKSUM:8h
     DIGEST:8h8h ID:8h8h8h8h STYPE:4h STARTUP:1b CH:3d WSPEED:~8h~4h ~4h~8h WDIR:12h ?4h RAINFLAG:8h RAIN:8h8h UV:8h8h CHKSUM:8h
 
 Digest is LFSR-16 gen 0x8810 key 0x5412, excluding the add-checksum and trailer.
@@ -144,11 +144,17 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int battery = (msg[13] >> 1) & 1; // b[13] & 0x02 is battery_good, s.a. #1993
 
     // temperature, humidity, shared with rain counter, only if valid BCD digits
-    int temp_ok  = msg[12] <= 0x99 && (msg[13] & 0xf0) <= 0x90;
-    int temp_raw = (msg[12] >> 4) * 100 + (msg[12] & 0x0f) * 10 + (msg[13] >> 4);
-    float temp_c = temp_raw * 0.1f;
-    if (temp_raw > 600)
+    int temp_ok   = msg[12] <= 0x99 && (msg[13] & 0xf0) <= 0x90;
+    int temp_raw  = (msg[12] >> 4) * 100 + (msg[12] & 0x0f) * 10 + (msg[13] >> 4);
+    int temp_sign = (msg[13] >> 3) & 1;
+    float temp_c  = temp_raw * 0.1f;
+    if (temp_sign) {
         temp_c = (temp_raw - 1000) * 0.1f;
+    }
+    // Correction for Bresser 3-in-1 Professional Wind Gauge, PN 7002531
+    if (temp_c < -50.0) {
+        temp_c = -temp_raw * 0.1f;
+    }
 
     int humidity    = (msg[14] >> 4) * 10 + (msg[14] & 0x0f);
 
