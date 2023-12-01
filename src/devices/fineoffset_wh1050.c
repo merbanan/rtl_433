@@ -50,8 +50,8 @@ weather data as usual.
 TFA 30.3151 Sensor is FSK version and decodes here. See issue #2538: Preamble is aaaa2dd4 and Temperature is not offset and rain gauge is 0.5 mm by pulse.
 
 To recognize which message is received (weather or time) you can use the 'msg_type' field on json output:
-- msg_type 0 = weather data
-- msg_type 1 = time data
+- msg_type 5 = weather data
+- msg_type 6 = time data
 
 Weather data - Message layout and example:
 
@@ -62,9 +62,9 @@ Weather data - Message layout and example:
      Payload{72}   : BC CD DD EE FF GG HH HH II
      Sample{72}    : 5f 51 93 48 00 00 12 46 aa
 
-- B :  4 bits : ?? - seems to be 0x5 for whether data, 0x6 for time data
+- B :  4 bits : Msg Type - seems to be 0x5 for whether data, 0x6 for time data
 - C :  8 bits : Id, changes when reset (e.g., 0xF5)
-- D :  1 bit  : msg_type - 0, for whether data
+- D :  1 bit  : Temperature-Sign, only for FSK version
 - D :  1 bit  : Battery, 0 = ok, 1 = low (e.g, OK)
 - D : 10 bits : Temperature in Celsius, [offset 400 only for OOK Version], scaled by 10 (e.g., 0.3 degrees C)
 - E :  8 bits : Relative humidity, percent (e.g., 72%)
@@ -82,11 +82,11 @@ Time data - Message layout and example:
      Payload{72}   : BC CD DE FG HI JK LM NO PP
      Sample{72}    : 69 0a 96 02 41 23 43 27 df
 
-- B :  4 bits : ?? - seems to be 0x5 for whether data, seems 0x6 for time data
+- B :  4 bits : Msg Type - seems to be 0x5 for whether data, 0x6 for time data
 - C :  8 bits : Id, changes when reset (e.g., 0x90)
-- D :  1 bit  : msg_type - 1, for time data
+- D :  1 bit  : Unknown (always 1?)
 - D :  1 bit  : Battery, 0 = ok, 1 = low (e.g, OK)
-- D :  4 bits : ??
+- D :  4 bits : Unknown (always 0?)
 - D :  2 bits : hour BCD coded (*10)
 - E :  4 bits : hour BCD coded (*1)
 - F :  4 bits : minute BCD coded (*10)
@@ -95,7 +95,7 @@ Time data - Message layout and example:
 - I :  4 bits : second BCD coded (*1)
 - J :  4 bits : year BCD coded (*10), counted from 2000
 - K :  4 bits : year BCD coded (*1), counted from 2000
-- L :  3 bits : ??
+- L :  3 bits : Unknown
 - L :  1 bits : month BCD coded (*10)
 - M :  4 bits : month BCD coded (*1)
 - N :  4 bits : day BCD coded (*10)
@@ -116,10 +116,11 @@ static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
     }
 
     // GETTING MESSAGE TYPE
-    int msg_type = (br[1] & 0x08) >> 3;
+    int msg_type = (br[0] >> 4);
 
-    if (msg_type == 0) {
+    if (msg_type == 5) {
         // GETTING WEATHER SENSORS DATA
+        int temp_sign     = (br[1] & 0x08) >> 3; // only FSK version
         int temp_raw      = ((br[1] & 0x03) << 8) | br[2];
         int rain_raw      = (br[6] << 8) | br[7];
         if (type == TYPE_OOK) {
@@ -129,6 +130,9 @@ static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
         else {
             temperature = temp_raw * 0.1f;
             rain        = rain_raw * 0.5f;
+            if (temp_sign) {
+                temperature = -temperature;
+            }
         }
         int humidity      = br[3];
         float speed       = (br[4] * 0.34f) * 3.6f; // m/s -> km/h
@@ -152,7 +156,7 @@ static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
                 NULL);
         /* clang-format on */
     }
-    else {
+    else if (msg_type == 6) {
         // GETTING TIME DATA
         int device_id   = (br[0] << 4 & 0xf0) | (br[1] >> 4);
         int battery_low = br[1] & 0x04;
@@ -178,6 +182,10 @@ static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
                 "mic",              "Integrity",        DATA_STRING,    "CRC",
                 NULL);
         /* clang-format on */
+    }
+    else {
+        decoder_logf(decoder, 1, __func__, "Unknown msg type %x", msg_type);
+        return 0; // DECODE_FAIL_MIC;
     }
 
     decoder_output_data(decoder, data);
