@@ -335,7 +335,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [247]  Bresser water leakage
     [248]* Nissan TPMS
     [249]  Bresser lightning
-    [250]  Schou 72543 Day Rain Gauge
+    [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge
 
 * Disabled by default, use -R n or a conf file to enable
 
