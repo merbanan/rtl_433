@@ -12,28 +12,34 @@ to improve the feedback loop and decrease the burden for the maintainers.
 Pull-Requests (PR) will be added as squash commit
 and the commit message will likely be updated to follow this format.
 
-The commit messages should follow the common format of
+For general work, e.g. adding or changing decoders
+the commit messages should follow a format of
+
+    <verb> [<decoder_model>] <commit_message>
+
+Verb must be one of the following:
+
+- `Add`: for new additions, e.g. device support
+- `Fix`: for changes that don't change anything to input/output (security related or bug fixing)
+- `Remove`: for changes that remove behaviour (e.g. some old algorithms are cleaned up)
+- `Change`: for changes that modify input/output behaviour (e.g. added checksums, preambles)
+- `Improve`: for improvements without changes in normal output/behaviour
+
+Don't prefix general work, e.g. adding a decoder should be `Add support for TheDevice`.
+
+Other commit messages should follow the common format of
 
     <area_of_work>: <verb> <commit_message>
 
 Area of work is optional and may be one of the following:
 
-- build: for build/build system related work
-- docs: for documentation related work, both in code and readme/docs folder
-- ci: for work related to continuous integration
-- test: for test related work
-- deps: for changes related to (external) dependencies (e.g. soapysdr is updated or mongoose is updated)
-- cosmetics: for housekeeping work, code style changes
-
-Don't prefix general work, e.g. adding a decoder should be "Add support for TheDevice".
-
-Verb may be one of the following:
-
-- Add: for new additions, e.g. device support
-- Fix: for changes that don't change anything to input/output (security related or bug fixing)
-- Remove: for changes that remove behaviour (e.g. some old algorithms are cleaned up)
-- Change: for changes that modify input/output behaviour (e.g. added checksums, preambles)
-- Improve: for improvements without changes in normal output/behaviour
+- `minor`: other small changes that do not warrant a changelog entry
+- `build`: for build/build system related work
+- `docs`: for documentation related work, both in code and readme/docs folder
+- `ci`: for work related to continuous integration
+- `test`: for test related work
+- `deps`: for changes related to (external) dependencies (e.g. soapysdr is updated or mongoose is updated)
+- `cosmetics`: for housekeeping work, code style changes
 
 ## Supporting Additional Devices and Test Data
 
