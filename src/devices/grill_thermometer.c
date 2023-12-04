@@ -35,48 +35,41 @@ Data structure:
 
 #include "decoder.h"
 
-static int validate_decode_result(int row, bitbuffer_t *bitbuffer)
-{
-    if (bitbuffer->bits_per_row[row] != 24)
-        return DECODE_ABORT_LENGTH;
-
-    if (bitbuffer->bb[row][0] != 0xff)
-        return DECODE_ABORT_EARLY; // preamble
-
-    if (bitbuffer->bb[row][1] != bitbuffer->bb[row][2])
-        return DECODE_ABORT_EARLY; // temp values must match
-
-    return 1;
-}
-
-static int grill_thermometer_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int grill_thermometer_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int raw_value = -1, repeats = 0;
 
     // use the most recent "valid" data that repeats more than once
     for (int row = 0; row < bitbuffer->num_rows; row++) {
-        if (validate_decode_result(row, bitbuffer) == 1) {
-            int current_value = bitbuffer->bb[row][1];
+        uint8_t *row_data = bitbuffer->bb[row];
 
-            if (raw_value != current_value) {
-                raw_value = current_value;
-                repeats   = 0;
-            }
-            else {
-                repeats++;
-            }
+        // validate decode result
+        if (bitbuffer->bits_per_row[row] != 24 ||
+                row_data[0] != 0xff ||
+                row_data[1] != row_data[2]) {
+            continue;
+        }
+
+        int current_value = row_data[1];
+
+        if (raw_value != current_value) {
+            raw_value = current_value;
+            repeats   = 0;
+        }
+        else {
+            repeats++;
         }
     }
 
-    if (raw_value == -1 || repeats < 1)
+    if (raw_value == -1 || repeats < 1) {
         return DECODE_ABORT_EARLY;
+    }
 
-    data_t *data;
     int id = 0, temp_f = 0xFF - raw_value;
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "Grill Thermometer",
+    data_t *data = data_make(
+            "model",            "",             DATA_STRING, "RF-T0912 Grill Thermometer",
             "id",               "Id",           DATA_INT,    id,
             "temperature_F",    "Temperature",  DATA_FORMAT, "%i F", DATA_INT, temp_f,
             NULL);
@@ -94,13 +87,14 @@ static char const *const output_fields[] = {
 };
 
 r_device const grill_thermometer = {
-        .name        = "Grill Thermometer",
+        .name        = "RF-T0912 Grill Thermometer",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 252,
         .long_width  = 736,
         .gap_limit   = 5000,
         .reset_limit = 8068,
         .sync_width  = 980,
-        .decode_fn   = &grill_thermometer_callback,
+        .priority    = 10, // lower decode priority due to potential false positives
+        .decode_fn   = &grill_thermometer_decode,
         .fields      = output_fields,
 };
