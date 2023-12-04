@@ -8,7 +8,7 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/** @fn int grill_thermometer_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+/** @fn int grill_thermometer_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 Remote Grill Thermometer -- Generic wireless thermometer with probe.
 
 This is a meat thermometer with no brand / model identification except the FCC ID.
