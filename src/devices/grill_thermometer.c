@@ -36,7 +36,7 @@ Data structure:
 
 static int grill_thermometer_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    short temp_f     = -1;
+    short temp_f     = 0;
     int overload     = 0;
     int repeats      = 0;
     uint8_t checksum = 0;
@@ -65,7 +65,7 @@ static int grill_thermometer_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
-    if (temp_f == -1 || repeats < 1) {
+    if (repeats < 1) {
         return DECODE_ABORT_EARLY;
     }
 
