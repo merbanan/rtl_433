@@ -19,17 +19,16 @@ Manufacturer:
 Supported Models:
 - RF-T0912 (FCC ID TXRFPT0912)
 
-0 - 255 F, frequency 434.052 MHz
+9 - 415 F, frequency 434.052 MHz
 
 Data structure:
 
 10 repetitions of the same 24 bit payload.
 
-    11111111 AAAAAAAA BBBBBBBB
+    AAAAAAAA AAAAAAAA BBBBBBBB
 
-- 1: 8 bit preamble. Always set to 0xff
-- A: 8 bit temperature in Fahrenheit. Calculated as (Temp = 255 - A)
-- B: Copy of 'A' presumably for message integrity
+- A: 16 bit temperature in Fahrenheit. Big Endian.
+- B: Checksum of A
 
 */
 
@@ -37,41 +36,50 @@ Data structure:
 
 static int grill_thermometer_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int raw_value = -1, repeats = 0;
+    short temp_f     = -1;
+    int overload     = 0;
+    int repeats      = 0;
+    uint8_t checksum = 0;
+
+    bitbuffer_invert(bitbuffer);
 
     // use the most recent "valid" data that repeats more than once
     for (int row = 0; row < bitbuffer->num_rows; row++) {
         uint8_t *row_data = bitbuffer->bb[row];
+        checksum          = row_data[0] + row_data[1];
 
-        // validate decode result
         if (bitbuffer->bits_per_row[row] != 24 ||
-                row_data[0] != 0xff ||
-                row_data[1] != row_data[2]) {
+                checksum != row_data[2] ||
+                checksum == 0) {
             continue;
         }
 
-        int current_value = row_data[1];
+        short current_value = (row_data[0] << 8) + row_data[1];
 
-        if (raw_value != current_value) {
-            raw_value = current_value;
-            repeats   = 0;
+        if (temp_f != current_value) {
+            temp_f  = current_value;
+            repeats = 0;
         }
         else {
             repeats++;
         }
     }
 
-    if (raw_value == -1 || repeats < 1) {
+    if (temp_f == -1 || repeats < 1) {
         return DECODE_ABORT_EARLY;
     }
 
-    int id = 0, temp_f = 0xFF - raw_value;
+    if (temp_f == -1029) {
+        temp_f   = 0;
+        overload = 1;
+    }
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "",             DATA_STRING, "RF-T0912 Grill Thermometer",
-            "id",               "Id",           DATA_INT,    id,
+            "model",            "",             DATA_STRING, "RF-T0912",
             "temperature_F",    "Temperature",  DATA_FORMAT, "%i F", DATA_INT, temp_f,
+            "overload",         "Overload",     DATA_STRING, overload ? "true" : "false",
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
@@ -81,8 +89,9 @@ static int grill_thermometer_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char const *const output_fields[] = {
         "model",
-        "id",
         "temperature_F",
+        "overload",
+        "mic",
         NULL,
 };
 
