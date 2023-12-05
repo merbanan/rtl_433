@@ -36,7 +36,7 @@ Data structure:
 
 static int grill_thermometer_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    short temp_f     = 0;
+    int temp_f       = 0;
     int overload     = 0;
     int repeats      = 0;
     uint8_t checksum = 0;
@@ -54,7 +54,7 @@ static int grill_thermometer_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             continue;
         }
 
-        short current_value = (row_data[0] << 8) + row_data[1];
+        int current_value = (int16_t)(row_data[0] << 8) | row_data[1]; // uses sign-extend
 
         if (temp_f != current_value) {
             temp_f  = current_value;
@@ -70,15 +70,14 @@ static int grill_thermometer_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (temp_f == -1029) {
-        temp_f   = 0;
         overload = 1;
     }
 
     /* clang-format off */
     data_t *data = data_make(
             "model",            "",             DATA_STRING, "RF-T0912",
-            "temperature_F",    "Temperature",  DATA_FORMAT, "%i F", DATA_INT, temp_f,
-            "overload",         "Overload",     DATA_STRING, overload ? "true" : "false",
+            "temperature_F",    "Temperature",  DATA_COND, !overload, DATA_FORMAT, "%i F", DATA_INT, temp_f,
+            "overload",         "Overload",     DATA_INT, overload,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
