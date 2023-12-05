@@ -615,6 +615,17 @@ mappings = {
         }
     },
 
+    "storm_dist_km": {
+        "device_type": "sensor",
+        "object_suffix": "stdist",
+        "config": {
+            "name": "Lightning Distance",
+            "unit_of_measurement": "km",
+            "value_template": "{{ value|int }}",
+            "state_class": "measurement"
+        }
+    },
+  
     "storm_dist": {
         "device_type": "sensor",
         "object_suffix": "stdist",
