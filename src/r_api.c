@@ -730,9 +730,12 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
             else if ((d->type == DATA_DOUBLE) &&
                      (str_endswith(d->key, "_in") || str_endswith(d->key, "_inch"))) {
                 d->value.v_dbl = inch2mm(d->value.v_dbl);
-                char *new_label = str_replace(str_replace(d->key, "_inch", "_in"), "_in", "_mm");
+                // need to free ptr returned from str_replace
+                char* new_label1 = str_replace(d->key, "_inch", "_in");
+                char* new_label2 = str_replace(new_label1, "_in", "_mm");
+                free(new_label1);
                 free(d->key);
-                d->key = new_label;
+                d->key = new_label2;
                 char *new_format_label = str_replace(d->format, "in", "mm");
                 free(d->format);
                 d->format = new_format_label;
