@@ -727,15 +727,11 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 d->format = new_format_label;
             }
             // Convert double type fields ending in _in to _mm
-            else if ((d->type == DATA_DOUBLE) &&
-                     (str_endswith(d->key, "_in") || str_endswith(d->key, "_inch"))) {
+            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_in")) {
                 d->value.v_dbl = inch2mm(d->value.v_dbl);
-                // need to free ptr returned from str_replace
-                char* new_label1 = str_replace(d->key, "_inch", "_in");
-                char* new_label2 = str_replace(new_label1, "_in", "_mm");
-                free(new_label1);
+                char *new_label = str_replace(d->key, "_in", "_mm");
                 free(d->key);
-                d->key = new_label2;
+                d->key = new_label;
                 char *new_format_label = str_replace(d->format, "in", "mm");
                 free(d->format);
                 d->format = new_format_label;
@@ -805,7 +801,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 free(d->format);
                 d->format = new_format_label;
             }
-            // Convert double type fields ending in _mm to _inch
+            // Convert double type fields ending in _mm to _in
             else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_mm")) {
                 d->value.v_dbl = mm2inch(d->value.v_dbl);
                 char *new_label = str_replace(d->key, "_mm", "_in");
