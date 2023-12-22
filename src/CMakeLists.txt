@@ -190,6 +190,7 @@ add_library(r_433 STATIC
     devices/proflame2.c
     devices/prologue.c
     devices/proove.c
+    devices/ptspdp.c
     devices/quhwa.c
     devices/radiohead_ask.c
     devices/rainpoint.c

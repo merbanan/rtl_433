@@ -258,6 +258,7 @@
     DECL(tpms_nissan) \
     DECL(bresser_lightning) \
     DECL(schou_72543_rain) \
+    DECL(ptspdp) \
 
     /* Add new decoders here. */
 
