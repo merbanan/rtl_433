@@ -272,7 +272,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const emax = {
-        .name        = "Emax W6, rebrand Altronics x7063/4, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025, Protmex PT3390A, Jula Marquant 014331/32, Weather Station or temperature/humidity sensor",
+        .name        = "Emax W6, rebrand Altronics x7063/4, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025, Protmex PT3390A, Jula Marquant 014331/32, TechniSat IMETEO X6 76-4924-00, Weather Station or temperature/humidity sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 90,
         .long_width  = 90,
