@@ -49,6 +49,8 @@ weather data as usual.
 
 TFA 30.3151 Sensor is FSK version and decodes here. See issue #2538: Preamble is aaaa2dd4 and Temperature is not offset and rain gauge is 0.5 mm by pulse.
 
+Note there is a collison with WH55 which starts with `aa aa aa 2d d4 55`
+
 To recognize which message is received (weather or time) you can use the 'msg_type' field on json output:
 - msg_type 5 = weather data
 - msg_type 6 = time data
@@ -270,5 +272,6 @@ r_device const tfa_303151 = {
         .long_width  = 60,
         .reset_limit = 2500,
         .decode_fn   = &fineoffset_wh1050_callback,
+        .priority    = 10, // Eliminate false positives by letting Fineoffset/Ecowitt WH55 go earlier
         .fields      = output_fields,
 };
