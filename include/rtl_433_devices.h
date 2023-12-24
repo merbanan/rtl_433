@@ -259,25 +259,7 @@
     DECL(bresser_lightning) \
     DECL(schou_72543_rain) \
     DECL(fineoffset_wh55) \
-    DECL(tpms_bmw) \
-    DECL(watts_thermostat) \
-    DECL(thermor) \
-    DECL(mueller_hotrod) \
-    DECL(thermopro_tp28b) \
-    DECL(tpms_bmwg3) \
-    DECL(chamberlain_cwpirc) \
-    DECL(thermopro_tp829b) \
-    DECL(arad_ms_meter) \
-    DECL(geevon) \
-    DECL(fineoffset_wh46) \
-    DECL(vevor_7in1) \
-    DECL(arexx_ml) \
-    DECL(rosstech_dcu706) \
-    DECL(risco_agility) \
-    DECL(thermopro_tp828b) \
-    DECL(bresser_st1005h) \
-    DECL(deltadore_x3d) \
-    DECL(quinetic) \
+    DECL(audiovox_car_remote) \
 
     /* Add new decoders here. */
 
