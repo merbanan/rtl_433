@@ -54,6 +54,7 @@ add_library(r_433 STATIC
     devices/ant_antplus.c
     devices/archos_tbh.c
     devices/atech_ws308.c
+    devices/audiovox_car_remote.c
     devices/auriol_4ld5661.c
     devices/auriol_aft77b2.c
     devices/auriol_afw2a1.c

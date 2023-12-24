@@ -259,6 +259,7 @@
     DECL(bresser_lightning) \
     DECL(schou_72543_rain) \
     DECL(fineoffset_wh55) \
+    DECL(audiovox_car_remote) \
 
     /* Add new decoders here. */
 
