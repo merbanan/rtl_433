@@ -54,12 +54,17 @@ ID: hhhh UNKNOWN: bbb BUTTON_INVERSE: bbbbbbbb BUTTON: bbbbbbbb UNKNOWN: b
 */
 
 #include "decoder.h"
+#include "fatal.h"
 #include <stdlib.h>
 
 static int compustar_1wg3r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int rows_data_idx = -1;
     data_t **rows_data = malloc(bitbuffer->num_rows * sizeof(data_t *));
+    if (!rows_data) {
+        WARN_MALLOC("compustar_1wg3r_decode()");
+        return -1; // NOTE: returns error on alloc failure.
+    }
 
     // loop through all of the rows and only return unique valid results
     // programming mode will send a sequence of key presses all in one message
