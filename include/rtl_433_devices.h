@@ -261,7 +261,8 @@
     DECL(fineoffset_wh55) \
     DECL(audiovox_car_remote) \
     DECL(astrostart_2000) \
-    DECL(compustar_700r)
+    DECL(compustar_700r) \
+    DECL(compustar_1wg3r)
 
     /* Add new decoders here. */
 
