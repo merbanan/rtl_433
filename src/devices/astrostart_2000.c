@@ -82,7 +82,7 @@ static int astrostart_2000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *bytes = bitbuffer->bb[0];
 
     if (bytes[0] != (~bytes[1] & 0xff)) {
-        return DECODE_ABORT_EARLY;
+        return DECODE_FAIL_MIC;
     }
 
     button = bytes[0];
@@ -97,7 +97,7 @@ static int astrostart_2000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (actual_checksum != expected_checksum) {
-        return DECODE_ABORT_EARLY;
+        return DECODE_FAIL_MIC;
     }
 
     // these are not bit flags

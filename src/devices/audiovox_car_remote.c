@@ -66,8 +66,8 @@ static int audiovox_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     code   = (bytes[2] << 8) | bytes[3];
     button = (bytes[4] >> 3) & 0xf;
 
-    if (id == 0 || code == 0 || button == 0) {
-        return DECODE_ABORT_EARLY;
+    if (id == 0 || code == 0 || button == 0 || id == 0xffff || code == 0xffff) {
+        return DECODE_FAIL_SANITY;
     }
 
     /* clang-format off */

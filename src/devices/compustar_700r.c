@@ -34,7 +34,7 @@ IIIII bbbbb xxx
 
 - I: 20 bit remote ID
 - B: 5 bit button flags
-- x: 3 bit unknown (always set to 111)
+- x: 3 bit unknown (always set to 000)
 
 Format string:
 
@@ -57,14 +57,14 @@ static int compustar_700r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *bytes = bitbuffer->bb[0];
 
     if ((bytes[4] & 0x7) != 0x0) {
-        return DECODE_ABORT_EARLY;
+        return DECODE_FAIL_SANITY;
     }
 
     int id     = bytes[0] << 12 | bytes[1] << 4 | bytes[2] >> 4;
     int button = ~(bytes[2] << 1 | bytes[3] >> 7) & 0x1f;
 
-    if ((bytes[4] & 0x7) != 0x0 || button == 0 || id == 0) {
-        return DECODE_ABORT_EARLY;
+    if ((bytes[4] & 0x7) != 0x0 || button == 0 || id == 0 || id == 0xfffff) {
+        return DECODE_FAIL_SANITY;
     }
 
     // button flags
