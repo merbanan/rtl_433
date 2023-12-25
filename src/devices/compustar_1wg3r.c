@@ -3,7 +3,7 @@
 
     Copyright (C) 2023 Ethan Halsall
 
-    This program is free software; you can panicistribute it and/or modify
+    This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
@@ -58,8 +58,8 @@ ID: hhhh UNKNOWN: bbb BUTTON_INVERSE: bbbbbbbb BUTTON: bbbbbbbb UNKNOWN: b
 
 static int compustar_1wg3r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int rows_data_idx  = -1;
-    data_t **rows_data = malloc(bitbuffer->num_rows);
+    int rows_data_idx = -1;
+    data_t **rows_data = malloc(bitbuffer->num_rows * sizeof(data_t *));
 
     // loop through all of the rows and only return unique valid results
     // programming mode will send a sequence of key presses all in one message
@@ -114,7 +114,7 @@ static int compustar_1wg3r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             case 0xe: unlock = 1; start = 1; trunk = 1; break;
             case 0xd: lock = 1; start = 1; trunk = 1; break;
         }
-    
+
         // unique codes between normal and long press
         switch (button & 0x1f) {
             case 0x0f: lock = 1; break;
