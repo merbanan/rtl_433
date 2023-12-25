@@ -46,9 +46,6 @@ ID: hhhhh BUTTON: bbbbb UNKNOWN: bbb
 
 static int compustar_700r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int id     = 0;
-    int button = 0;
-
     if (bitbuffer->bits_per_row[0] != 25) {
         return DECODE_ABORT_LENGTH;
     }
@@ -63,8 +60,12 @@ static int compustar_700r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
     }
 
-    id     = bytes[0] << 12 | bytes[1] << 4 | bytes[2] >> 4;
-    button = ~(bytes[2] << 1 | bytes[3] >> 7) & 0x1f;
+    int id     = bytes[0] << 12 | bytes[1] << 4 | bytes[2] >> 4;
+    int button = ~(bytes[2] << 1 | bytes[3] >> 7) & 0x1f;
+
+    if ((bytes[4] & 0x7) != 0x0 || button == 0 || id == 0) {
+        return DECODE_ABORT_EARLY;
+    }
 
     // button flags
     int unlock = (button & 0x2) >> 1;
