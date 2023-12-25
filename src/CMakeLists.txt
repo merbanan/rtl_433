@@ -85,6 +85,7 @@ add_library(r_433 STATIC
     devices/chuango.c
     devices/cmr113.c
     devices/companion_wtr001.c
+    devices/compustar_700r.c
     devices/cotech_36_7959.c
     devices/current_cost.c
     devices/danfoss.c
