@@ -61,7 +61,6 @@ static int astrostart_2000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int id       = 0;
     int button   = 0;
-    int checksum = 0;
 
     // button flags
     int panic         = 0;
@@ -89,15 +88,15 @@ static int astrostart_2000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     button = bytes[0];
     id     = bytes[2] << 24 | bytes[3] << 16 | bytes[4] << 8 | bytes[5];
 
-    int expected_checksum = 0;
     int actual_checksum   = bytes[6] >> 4 & 0xf;
+    int expected_checksum = 0;
 
     for (int i = 2; i < 6; i++) {
-        actual_checksum += bytes[i] >> 4;
-        actual_checksum += bytes[i] & 0xf;
+        expected_checksum = (expected_checksum + (bytes[i] >> 4)) & 0xf;
+        expected_checksum = (expected_checksum + bytes[i]) & 0xf;
     }
 
-    if (actual_checksum & 0xf != checksum) {
+    if (actual_checksum != expected_checksum) {
         return DECODE_ABORT_EARLY;
     }
 
