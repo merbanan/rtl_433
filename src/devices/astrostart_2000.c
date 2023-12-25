@@ -22,13 +22,23 @@ Data structure:
 
 Astrostart 2000, 3000 Transmitters
 
+The transmitter uses a fixed code message. Each button press will always send three messages.
+
 Button operation:
 This transmitter has 5 (Astrostart 2000) or 6 (Astrostart 3000) buttons.
 One or two buttons at a time can be pressed and held to send a unique code.
 Pressing three buttons will result in a code, but is not unique to different button combinations.
 
 Using the primary / secondary serial number:
-The transmitter supports two sending two serial numbers depending
+
+The transmitter supports two sending two serial numbers.
+Press and hold a button combination once to use the primary serial number.
+
+The second serial number can be used by pressing the buttons in the below sequence:
+1. Press a button or button combination twice, holding the combinations on the second press.
+2. Hold the buttons down until you hear the four beeps / see the led flash slowly four times.
+
+Note: The panic button will always send two messages on the primary serial number, and one message on the secondary number.
 
 Data layout:
 
@@ -126,12 +136,12 @@ static int astrostart_2000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",         "model",        DATA_STRING, "Astrostart-2000",
             "id",            "device-id",    DATA_INT,    id,
             "button_code",   "Button Code",  DATA_INT,    button,
-            "panic",         "Panic",        DATA_INT,    panic, 
-            "start",         "Start",        DATA_INT,    start, 
-            "stop",          "Stop",         DATA_INT,    stop, 
-            "lock",          "Lock",         DATA_INT,    lock, 
-            "unlock",        "Unlock",       DATA_INT,    unlock, 
-            "trunk",         "Trunk",        DATA_INT,    trunk, 
+            "panic",         "Panic",        DATA_INT,    panic,
+            "start",         "Start",        DATA_INT,    start,
+            "stop",          "Stop",         DATA_INT,    stop,
+            "lock",          "Lock",         DATA_INT,    lock,
+            "unlock",        "Unlock",       DATA_INT,    unlock,
+            "trunk",         "Trunk",        DATA_INT,    trunk,
             "multiple",      "Multiple",     DATA_INT,    three_buttons,
             "mic",           "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
