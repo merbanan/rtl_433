@@ -80,6 +80,7 @@ add_library(r_433 STATIC
     devices/ced7000.c
     devices/celsia_czc1.c
     devices/chuango.c
+    devices/chrysler_car_remote.c
     devices/cmr113.c
     devices/companion_wtr001.c
     devices/compustar_700r.c

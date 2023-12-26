@@ -262,7 +262,8 @@
     DECL(audiovox_car_remote) \
     DECL(astrostart_2000) \
     DECL(compustar_700r) \
-    DECL(compustar_1wg3r)
+    DECL(compustar_1wg3r) \
+    DECL(chrysler_car_remote)
 
     /* Add new decoders here. */
 
