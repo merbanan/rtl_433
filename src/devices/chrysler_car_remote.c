@@ -106,7 +106,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const chrysler_car_remote = {
-        .name        = "Chrysler Car Remote",
+        .name        = "Chrysler Car Remote (-f 315M)",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 400,
         .long_width  = 700,

@@ -81,13 +81,12 @@ add_library(r_433 STATIC
     devices/cavius.c
     devices/ced7000.c
     devices/celsia_czc1.c
-    devices/chamberlain_cwpirc.c
-    devices/chuango.c
     devices/chrysler_car_remote.c
+    devices/chuango.c
     devices/cmr113.c
     devices/companion_wtr001.c
-    devices/compustar_700r.c
     devices/compustar_1wg3r.c
+    devices/compustar_700r.c
     devices/cotech_36_7959.c
     devices/current_cost.c
     devices/danfoss.c

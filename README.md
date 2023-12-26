@@ -337,25 +337,11 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [249]  Bresser lightning
     [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge, TFA Dostmann 30.3252.01/47.3006.01 Rain Gauge and Thermometer, ADE WS1907
     [251]  Fine Offset / Ecowitt WH55 water leak sensor
-    [252]  BMW Gen4-Gen5 TPMS and Audi TPMS Pressure Alert, multi-brand HUF/Beru, Continental, Schrader/Sensata, Audi
-    [253]  Watts WFHT-RF Thermostat
-    [254]  Thermor DG950 weather station
-    [255]  Mueller Hot Rod water meter
-    [256]  ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill
-    [257]  BMW Gen3 TPMS
-    [258]  Chamberlain CWPIRC PIR Sensor
-    [259]  ThermoPro Meat Thermometers, TP829B 4 probes with temp only
-    [260]* Arad/Master Meter Dialog3G water utility meter
-    [261]  Geevon TX16-3 outdoor sensor
-    [262]  Fine Offset Electronics WH46 air quality sensor
-    [263]  Vevor Wireless Weather Station 7-in-1
-    [264]  Arexx Multilogger IP-HA90, IP-TH78EXT, TSN-70E
-    [265]  Rosstech Digital Control Unit DCU-706/Sundance/Jacuzzi
-    [266]  Risco 2 Way Agility protocol, Risco PIR/PET Sensor RWX95P
-    [267]  ThermoPro Meat Thermometers, TP828B 2 probes with Temp, BBQ Target LO and HI
-    [268]  Bresser Thermo-/Hygro-Sensor Explore Scientific ST1005H
-    [269]  DeltaDore X3D devices
-    [270]* Quinetic
+    [252]  Audiovox car remote
+    [253]  Astrostart 2000 Car Remote
+    [254]  Compustar 700R Car Remote
+    [255]  Compustar 1WG3R-SH Car Remote
+    [256]  Chrysler Car Remote
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -365,7 +351,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-d <RTL-SDR USB device index>] (default: 0)
   [-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]
 	To set gain for RTL-SDR use -g <gain> to set an overall gain in dB.
-	SoapySDR device driver is available.
+	SoapySDR device driver is not available.
   [-d ""] Open default SoapySDR device
   [-d driver=rtlsdr] Open e.g. specific SoapySDR device
 	To set gain for SoapySDR use -g ELEM=val,ELEM=val,... e.g. -g LNA=20,TIA=8,PGA=2 (for LimeSDR).
