@@ -337,6 +337,11 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [249]  Bresser lightning
     [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge
     [251]  Fine Offset / Ecowitt WH55 water leak sensor
+    [252]  Audiovox car remote
+    [253]  Astrostart 2000 Car Remote
+    [254]  Compustar 700R Car Remote
+    [255]  Compustar 1WG3R-SH Car Remote
+    [256]  Chrysler Car Remote
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -346,7 +351,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-d <RTL-SDR USB device index>] (default: 0)
   [-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]
 	To set gain for RTL-SDR use -g <gain> to set an overall gain in dB.
-	SoapySDR device driver is available.
+	SoapySDR device driver is not available.
   [-d ""] Open default SoapySDR device
   [-d driver=rtlsdr] Open e.g. specific SoapySDR device
 	To set gain for SoapySDR use -g ELEM=val,ELEM=val,... e.g. -g LNA=20,TIA=8,PGA=2 (for LimeSDR).

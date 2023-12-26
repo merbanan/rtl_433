@@ -166,7 +166,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const astrostart_2000 = {
-        .name        = "Astrostart 2000 Car Remote",
+        .name        = "Astrostart 2000 Car Remote (-f 372.5M)",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 326,
         .long_width  = 526,

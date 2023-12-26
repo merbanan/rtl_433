@@ -93,7 +93,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const audiovox_car_remote = {
-        .name        = "Audiovox car remote",
+        .name        = "Audiovox Car Remote",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 500,
         .long_width  = 945,
