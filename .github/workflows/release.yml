@@ -53,13 +53,13 @@ jobs:
         echo "RELEASE_NAME=Pre-Release ${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
         echo "PRERELEASE=true" >> $GITHUB_ENV
         ./.deploy/gen_nightly_info.sh
-    - uses: actions/create-release@v1
+    - uses: softprops/action-gh-release@v1
       id: create_release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ env.RELEASE_VERSION }}
-        release_name: ${{ env.RELEASE_NAME }}
+        name: ${{ env.RELEASE_NAME }}
         body_path: RELEASEINFO.md
         #draft: true
         prerelease: ${{ env.PRERELEASE }}
@@ -83,27 +83,23 @@ jobs:
       env:
         RTLSDR: OFF
         CMAKE_TOOLCHAIN_FILE: cmake/Toolchain-gcc-mingw-w64-${{ matrix.arch }}.cmake
-      run: ./do_build.sh
+      run: ./.ci/scripts/do_build.sh
     - name: "Sysroot Build with Mingw-w64"
-      run: ./do_sysroot.sh
-    - uses: actions/upload-release-asset@v1
+      run: ./.ci/scripts/do_sysroot.sh
+    - name: "Upload Release Asset"
       if: matrix.arch == 'x86-64'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.release_job.outputs.upload_url }}
-        asset_path: rtl_433-win-x64.zip
-        asset_name: rtl_433-win-x64-${{ needs.release_job.outputs.release_version }}.zip
-        asset_content_type: application/zip
-    - uses: actions/upload-release-asset@v1
+      run: |
+        mv rtl_433-win-x64.zip rtl_433-win-x64-${{ needs.release_job.outputs.release_version }}.zip
+        gh release upload ${{ needs.release_job.outputs.release_version }} rtl_433-win-x64-${{ needs.release_job.outputs.release_version }}.zip
+    - name: "Upload Release Asset"
       if: matrix.arch == 'x86-64'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.release_job.outputs.upload_url }}
-        asset_path: rtl_433-win-x32.zip
-        asset_name: rtl_433-win-x32-${{ needs.release_job.outputs.release_version }}.zip
-        asset_content_type: application/zip
+      run: |
+        mv rtl_433-win-x32.zip rtl_433-win-x32-${{ needs.release_job.outputs.release_version }}.zip
+        gh release upload ${{ needs.release_job.outputs.release_version }} rtl_433-win-x32-${{ needs.release_job.outputs.release_version }}.zip
 
   build_msvc_job:
     needs: [downloads_job, release_job]
@@ -210,15 +206,17 @@ jobs:
         cp rtl_433/.deploy/WINDOWS-MSVC.txt                      dist/README.txt
         ls -al dist
         7z a rtl_433-win-msvc-x64.zip ./dist/*
-    - uses: actions/upload-release-asset@v1
+    - name: "Upload Release Asset"
       if: matrix.os == 'windows-2019' && matrix.platform == 'x64'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.release_job.outputs.upload_url }}
-        asset_path: ${{ runner.workspace }}/rtl_433-win-msvc-x64.zip
-        asset_name: rtl_433-win-msvc-x64-${{ needs.release_job.outputs.release_version }}.zip
-        asset_content_type: application/zip
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+      shell: bash
+      working-directory: ${{ runner.workspace }}
+      run: |
+        mv rtl_433-win-msvc-x64.zip rtl_433-win-msvc-x64-${{ needs.release_job.outputs.release_version }}.zip
+        gh release upload ${{ needs.release_job.outputs.release_version }} rtl_433-win-msvc-x64-${{ needs.release_job.outputs.release_version }}.zip
 
   build_linux_job:
     strategy:
@@ -346,11 +344,8 @@ jobs:
             --url https://triq.org/
           ls -al
           ls -al "${PWD}/dist"
-      - uses: actions/upload-release-asset@v1
+      - name: "Upload Release Asset"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.release_job.outputs.upload_url }}
-          asset_path: rtl433_${{ needs.release_job.outputs.release_version }}-1${{ matrix.distro }}_${{ matrix.arch }}.deb
-          asset_name: rtl433_${{ needs.release_job.outputs.release_version }}-1${{ matrix.distro }}_${{ matrix.arch }}.deb
-          asset_content_type: application/vnd.debian.binary-package
+        run: |
+          gh release upload ${{ needs.release_job.outputs.release_version }} rtl433_${{ needs.release_job.outputs.release_version }}-1${{ matrix.distro }}_${{ matrix.arch }}.deb

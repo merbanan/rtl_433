@@ -31,15 +31,12 @@ Data layout (nibbles):
 
 static int tpms_jansite_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    data_t *data;
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
     unsigned id;
-    char id_str[7 + 1];
     int flags;
     int pressure;
     int temperature;
-    char code_str[7 * 2 + 1];
 
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 56);
 
@@ -56,11 +53,14 @@ static int tpms_jansite_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     pressure    = b[4];
     temperature = b[5];
     //crc         = b[6];
-    sprintf(id_str, "%07x", id);
-    sprintf(code_str, "%02x%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5], b[6]); // figure out the checksum
+
+    char id_str[7 + 1];
+    snprintf(id_str, sizeof(id_str), "%07x", id);
+    char code_str[7 * 2 + 1];
+    snprintf(code_str, sizeof(code_str), "%02x%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5], b[6]); // figure out the checksum
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Jansite",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,

@@ -276,7 +276,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
     }
     else if (msg_type == 1) {
         char clock_str[23];
-        sprintf(clock_str, "%04d-%02d-%02dT%02d:%02d:%02d",
+        snprintf(clock_str, sizeof(clock_str), "%04d-%02d-%02dT%02d:%02d:%02d",
                 year, month, day, hours, minutes, seconds);
 
         /* clang-format off */

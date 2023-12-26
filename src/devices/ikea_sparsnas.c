@@ -129,7 +129,7 @@ static uint32_t ikea_sparsnas_brute_force_encryption(uint8_t buffer[18])
             }
         }
     }
-   return 0;
+    return 0;
 }
 
 static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)

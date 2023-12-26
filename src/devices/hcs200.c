@@ -25,7 +25,7 @@ Hardware buttons might map to combinations of these bits.
 - Datasheet HCS200: http://ww1.microchip.com/downloads/en/devicedoc/40138c.pdf
 - Datasheet HCS300: http://ww1.microchip.com/downloads/en/devicedoc/21137g.pdf
 
-The warmup of 12 short pulses is followed by a long 4400 us gap.
+The warm-up of 12 short pulses is followed by a long 4400 us gap.
 There are two packets with a 17500 us gap.
 
 rtl_433 -R 0 -X 'n=hcs200,m=OOK_PWM,s=370,l=772,r=9000,g=1500,t=152'
@@ -66,9 +66,9 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int repeat         = (b[8] & 0x40) == 0x40;
 
     char encrypted_str[9];
-    sprintf(encrypted_str, "%08X", encrypted);
+    snprintf(encrypted_str, sizeof(encrypted_str), "%08X", encrypted);
     char serial_str[9];
-    sprintf(serial_str, "%07X", serial);
+    snprintf(serial_str, sizeof(serial_str), "%07X", serial);
 
     /* clang-format off */
     data_t *data = data_make(

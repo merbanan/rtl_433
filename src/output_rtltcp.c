@@ -254,14 +254,21 @@ static THREAD_RETURN THREAD_CALL accept_thread(void *arg)
     rtltcp_server_t *srv = arg;
 
     // Start listening for clients, waits for an incoming connection
-    listen(srv->sock, 1);
+    int listen_sock = srv->sock; // make it easy for the checker
+    int r = listen(listen_sock, 1);
+    if (r < 0) {
+        perror("ERROR on listen");
+        closesocket(listen_sock);
+        srv->sock = INVALID_SOCKET;
+        return 0;
+    }
     // print_log(LOG_DEBUG, "rtl_tcp", "rtl_tcp listening...");
 
     for (;;) {
         // Accept actual connection from the client
         struct sockaddr_storage addr = {0};
         unsigned addr_len = sizeof(addr);
-        int sock = accept(srv->sock, (struct sockaddr *)&addr, &addr_len);
+        int sock = accept(listen_sock, (struct sockaddr *)&addr, &addr_len);
 
         // TODO: ignore ECONNABORTED (Software caused connection abort)
         if (sock < 0) {
@@ -274,6 +281,7 @@ static THREAD_RETURN THREAD_CALL accept_thread(void *arg)
         int opt = 1;
         if (setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt)) == -1) {
             perror("setsockopt");
+            closesocket(sock);
             continue;
         }
 #endif
@@ -285,6 +293,7 @@ static THREAD_RETURN THREAD_CALL accept_thread(void *arg)
                 host, sizeof(host), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV);
         if (err != 0) {
             print_logf(LOG_ERROR, __func__, "failed to convert address to string (code=%d)", err);
+            closesocket(sock);
             continue;
         }
         print_logf(LOG_NOTICE, "rtl_tcp", "client connected from %s port %s", host, port);
@@ -388,7 +397,6 @@ static int rtltcp_server_start(rtltcp_server_t *srv, char const *host, char cons
     for (res = res0; res; res = res->ai_next) {
         sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
         if (sock >= 0) {
-            srv->sock = sock;
             memset(&srv->addr, 0, sizeof(srv->addr));
             memcpy(&srv->addr, res->ai_addr, res->ai_addrlen);
             srv->addr_len = res->ai_addrlen;
@@ -403,9 +411,11 @@ static int rtltcp_server_start(rtltcp_server_t *srv, char const *host, char cons
 
     if (bind(sock, (struct sockaddr *)&srv->addr, srv->addr_len) < 0) {
         perror("error on binding");
+        closesocket(sock);
         return -1;
     }
 
+    srv->sock    = sock;
     srv->cfg     = cfg;
     srv->output  = output;
 
@@ -416,6 +426,7 @@ static int rtltcp_server_start(rtltcp_server_t *srv, char const *host, char cons
             address, sizeof(address), portstr, sizeof(portstr), NI_NUMERICHOST | NI_NUMERICSERV);
     if (err != 0) {
         print_logf(LOG_ERROR, __func__, "failed to convert address to string (code=%d)", err);
+        closesocket(sock);
         return -1;
     }
     print_logf(LOG_CRITICAL, "rtl_tcp server", "Serving rtl_tcp on address %s %s", address, portstr);
@@ -436,6 +447,7 @@ static int rtltcp_server_start(rtltcp_server_t *srv, char const *host, char cons
 #endif
     if (r) {
         fprintf(stderr, "%s: error in pthread_create, rc: %d\n", __func__, r);
+        closesocket(sock);
     }
 
     return r;
@@ -531,15 +543,16 @@ struct raw_output *raw_output_rtltcp_create(const char *host, const char *port, 
         exit(1);
     }
 
-    return &rtltcp->output;
+    return (struct raw_output *)rtltcp;
 }
 
 #else
 
-struct raw_output *raw_output_rtltcp_create(const char *host, const char *port, r_cfg_t *cfg)
+struct raw_output *raw_output_rtltcp_create(const char *host, const char *port, char const *opts, r_cfg_t *cfg)
 {
     UNUSED(host);
     UNUSED(port);
+    UNUSED(opts);
     UNUSED(cfg);
     print_log(LOG_ERROR, "rtl_tcp server", "rtl_tcp output not available in this build!");
     return NULL;

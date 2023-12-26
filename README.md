@@ -37,6 +37,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
 
 ```
 
+  A "rtl_433.conf" file is searched in "./", XDG_CONFIG_HOME e.g. "$HOME/.config/rtl_433/",
+  SYSCONFDIR e.g. "/usr/local/etc/rtl_433/", then command line args will be parsed in order.
 		= General options =
   [-V] Output the version string and exit
   [-v] Increase verbosity (can be used multiple times).
@@ -161,7 +163,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
     [76]  LaCrosse TX29IT, TFA Dostmann 30.3159.IT Temperature sensor
     [77]  Vaillant calorMatic VRT340f Central Heating Control
-    [78]  Fine Offset Electronics, WH25, WH32B, WH24, WH65B, HP1000, Misol WS2320 Temperature/Humidity/Pressure Sensor
+    [78]  Fine Offset Electronics, WH25, WH32, WH32B, WN32B, WH24, WH65B, HP1000, Misol WS2320 Temperature/Humidity/Pressure Sensor
     [79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
     [80]  IBIS beacon
     [81]  Oil Ultrasonic STANDARD FSK
@@ -256,7 +258,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [170]  LaCrosse Technology View LTV-WR1 Multi Sensor
     [171]  LaCrosse Technology View LTV-TH Thermo/Hygro Sensor
     [172]  Bresser Weather Center 6-in-1, 7-in-1 indoor, soil, new 5-in-1, 3-in-1 wind gauge, Froggit WH6000, Ventus C8488A
-    [173]  Bresser Weather Center 7-in-1
+    [173]  Bresser Weather Center 7-in-1, Air Quality PM2.5 / PM10
     [174]  EcoDHOME Smart Socket and MCEE Solar monitor
     [175]  LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1/W2 Wind Sensor
     [176]  BlueLine Innovations Power Cost Monitor
@@ -283,7 +285,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [197]  Acurite Grill/Meat Thermometer 01185M
     [198]* EnOcean ERP1
     [199]  Linear Megacode Garage/Gate Remotes
-    [200]* Auriol 4-LD5661 temperature/rain sensor
+    [200]* Auriol 4-LD5661/4-LD5972/4-LD6313 temperature/rain sensors
     [201]  Unbranded SolarTPMS for trucks
     [202]  Funkbus / Instafunk (Berker, Gira, Jung)
     [203]  Porsche Boxster/Cayman TPMS
@@ -298,7 +300,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [212]  Renault 0435R TPMS
     [213]  Fine Offset Electronics WS80 weather station
     [214]  EMOS E6016 weatherstation with DCF77
-    [215]  Emax W6, rebrand Altronics x7063/4, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025, Protmex PT3390A, Jula Marquant 014331/32, Weather Station or temperature/humidity sensor
+    [215]  Emax W6, rebrand Altronics x7063/4, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025, Protmex PT3390A, Jula Marquant 014331/32, TechniSat IMETEO X6 76-4924-00, Weather Station or temperature/humidity sensor
     [216]* ANT and ANT+ devices
     [217]  EMOS E6016 rain gauge
     [218]  Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes (FSK)
@@ -312,24 +314,29 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [226]  Kia TPMS (-s 1000k)
     [227]  SRSmith Pool Light Remote Control SRS-2C-TX (-f 915M)
     [228]  Neptune R900 flow meters
-    [229]* WEC-2103 temperature/humidity sensor
+    [229]  WEC-2103 temperature/humidity sensor
     [230]  Vauno EN8822C
     [231]  Govee Water Leak Detector H5054
     [232]  TFA Dostmann 14.1504.V2 Radio-controlled grill and meat thermometer
     [233]* CED7000 Shot Timer
-    [234]  Watchman Sonic Advanced / Plus
+    [234]  Watchman Sonic Advanced / Plus, Tekelek
     [235]  Oil Ultrasonic SMART FSK
     [236]  Gasmate BA1008 meat thermometer
     [237]  Flowis flow meters
     [238]  Wireless M-Bus, Mode T, 32.768kbps (-f 868.3M -s 1000k)
     [239]  Revolt NC-5642 Energy Meter
     [240]  LaCrosse TX31U-IT, The Weather Channel WS-1910TWC-IT
-    [241]  EezTire E618 (TPMS10ATC)
+    [241]  EezTire E618, Carchet TPMS
     [242]* Baldr / RainPoint rain gauge.
     [243]  Celsia CZC1 Thermostat
     [244]  Fine Offset Electronics WS90 weather station
-    [245]* ThermoPro TX-2C Thermometer
+    [245]* ThermoPro TX-2C Thermometer and Humidity sensor
     [246]  TFA 30.3151 Weather Station
+    [247]  Bresser water leakage
+    [248]* Nissan TPMS
+    [249]  Bresser lightning
+    [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge
+    [251]  Fine Offset / Ecowitt WH55 water leak sensor
 
 * Disabled by default, use -R n or a conf file to enable
 

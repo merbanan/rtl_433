@@ -2,6 +2,7 @@
     Acurite weather stations and temperature / humidity sensors.
 
     Copyright (c) 2015, Jens Jenson, Helge Weissig, David Ray Thompson, Robert Terzi
+    Enhanced Acurite-606TX by Boing <dhs.mobil@gmail.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -21,7 +22,7 @@ Devices decoded:
 - Acurite 609TXC "TH" temperature and humidity sensor (609A1TX)
 - Acurite 986 Refrigerator / Freezer Thermometer
 - Acurite 515 Refrigerator / Freezer Thermometer
-- Acurite 606TX temperature sensor
+- Acurite 606TX temperature sensor, optional with channels and [TX]Button
 - Acurite 6045M Lightning Detector
 - Acurite 00275rm and 00276rm temp. and humidity with optional probe.
 - Acurite 1190/1192 leak/water detector
@@ -1654,6 +1655,8 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int16_t temp_raw; // temperature as read from the data packet
     float temp_c;     // temperature in C
     int battery_ok;   // the battery status: 1 is good, 0 is low
+    int channel;      // the channel
+    int button;       // the reset button: 1: pressed
     int sensor_id;    // the sensor ID - basically a random number that gets reset whenever the battery is removed
 
     row = bitbuffer_find_repeated_row(bitbuffer, 3, 32); // expected are 6 rows
@@ -1682,6 +1685,8 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // upper 4 bits of nibble 1 are reserved for other usages (e.g. battery status)
     sensor_id  = b[0];
     battery_ok = (b[1] & 0x80) >> 7;
+    channel    = ((b[1] & 0x30) >> 4)+1; // Channel A,B,C / 1,2,3
+    button     = (b[1] & 0x40) >> 6; // SensorTX Button
     temp_raw   = (int16_t)((b[1] << 12) | (b[2] << 4));
     temp_raw   = temp_raw >> 4;
     temp_c     = temp_raw * 0.1f;
@@ -1690,7 +1695,9 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",            "",             DATA_STRING, "Acurite-606TX",
             "id",               "",             DATA_INT, sensor_id,
+            "channel",          "Channel",      DATA_INT,   channel,
             "battery_ok",       "Battery",      DATA_INT,    battery_ok,
+            "button",           "Button" ,      DATA_INT,   button,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
@@ -1767,8 +1774,8 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
      data = data_make(
             "model",            "",             DATA_STRING, "Acurite-590TX",
             "id",               "",             DATA_INT,    sensor_id,
-            "battery_ok",       "Battery",      DATA_INT,    battery_ok,
             "channel",          "Channel",      DATA_INT,    channel,
+            "battery_ok",       "Battery",      DATA_INT,    battery_ok,
             "humidity",         "Humidity",     DATA_COND,   humidity != -1,    DATA_INT,    humidity,
             "temperature_C",    "Temperature",  DATA_COND,   humidity == -1,    DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "mic",              "Integrity",    DATA_STRING, "PARITY",
@@ -2004,8 +2011,8 @@ static char const *const acurite_606_output_fields[] = {
 static char const *const acurite_590_output_fields[] = {
         "model",
         "id",
-        "battery_ok",
         "channel",
+        "battery_ok",
         "temperature_C",
         "humidity",
         "mic",

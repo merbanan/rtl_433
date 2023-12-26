@@ -184,7 +184,7 @@ static int neptune_r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int leaknow = b[9]&0x03;
     // extra 24 bits ???
     char extra[7];
-    sprintf(extra,"%02x%02x%02x", b[10], b[11], b[12]);
+    snprintf(extra, sizeof(extra),"%02x%02x%02x", b[10], b[11], b[12]);
 
     /* clang-format off */
     data_t *data = data_make(

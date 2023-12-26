@@ -330,6 +330,9 @@ char *asepcb(char **stringp, char delim, char stop)
 
 int kwargs_match(char const *s, char const *key, char const **val)
 {
+    if (!key || !*key) {
+        return 0; // no match
+    }
     size_t len = strlen(key);
     // check prefix match
     if (strncmp(s, key, len)) {

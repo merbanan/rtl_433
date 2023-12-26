@@ -254,6 +254,11 @@
     DECL(fineoffset_ws90) \
     DECL(thermopro_tx2c) \
     DECL(tfa_303151) \
+    DECL(bresser_leakage) \
+    DECL(tpms_nissan) \
+    DECL(bresser_lightning) \
+    DECL(schou_72543_rain) \
+    DECL(fineoffset_wh55) \
     DECL(deltadore_x3d) \
 
     /* Add new decoders here. */

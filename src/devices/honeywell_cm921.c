@@ -75,7 +75,7 @@ static const dev_map_entry_t device_map[] = {
         {.t = 10, .s = "OTB"}, // OpenTherm bridge (R8810)
         {.t = 12, .s = "THm"}, // Thermostat with setpoint schedule control (DTS92E, CME921)
         {.t = 13, .s = "BDR"}, // Wireless relay box (BDR91) (HC60NG too?)
-        {.t = 17, .s = " 17"}, // Dunno - Outside weather sensor?
+        {.t = 17, .s = " 17"}, // Unknown - Outside weather sensor?
         {.t = 18, .s = "HGI"}, // Honeywell Gateway Interface (HGI80, HGS80)
         {.t = 22, .s = "THM"}, // Thermostat with setpoint schedule control (DTS92E)
         {.t = 30, .s = "GWY"}, // Gateway (e.g. RFG100?)
@@ -107,9 +107,9 @@ static data_t *decode_device_ids(const message_t *msg, data_t *data, int style)
 
         char buf[16] = {0};
         if (style == 0)
-            decode_device_id(msg->device_id[i], buf, 16);
+            decode_device_id(msg->device_id[i], buf, sizeof(buf));
         else {
-            sprintf(buf, "%02x%02x%02x",
+            snprintf(buf, sizeof(buf), "%02x%02x%02x",
                     msg->device_id[i][0],
                     msg->device_id[i][1],
                     msg->device_id[i][2]);
@@ -171,7 +171,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
                     uint8_t month = msg->payload[6];
                     uint8_t year[2] = { msg->payload[7],  msg->payload[8] };
                     char time_str[256];
-                    sprintf(time_str, "%02d:%02d:%02d %02d-%02d-%04d", hour, minute, second, day, month, (year[0] << 8) | year[1]);
+                    snprintf(time_str, sizeof(time_str), "%02d:%02d:%02d %02d-%02d-%04d", hour, minute, second, day, month, (year[0] << 8) | year[1]);
                     data = data_append(data, "datetime", "", DATA_STRING, time_str, NULL);
                     break;
                 }
@@ -181,17 +181,17 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
         case 0x0008: {
             UNKNOWN_IF(msg->payload_length != 2);
             data = data_append(data, "domain_id", "", DATA_INT, msg->payload[0], NULL);
-            data = data_append(data, "demand", "", DATA_DOUBLE, msg->payload[1] / 200.0 /* 0xC8 */, NULL);
+            data = data_append(data, "demand", "", DATA_DOUBLE, msg->payload[1] * (1 / 200.0F) /* 0xC8 */, NULL);
             break;
         }
         case 0x3ef0: {
             UNKNOWN_IF(msg->payload_length != 3 && msg->payload_length != 6);
             switch (msg->payload_length) {
                 case 3:
-                    data = data_append(data, "status", "", DATA_DOUBLE, msg->payload[1] / 200.0 /* 0xC8 */, NULL);
+                    data = data_append(data, "status", "", DATA_DOUBLE, msg->payload[1] * (1 / 200.0F) /* 0xC8 */, NULL);
                     break;
                 case 6:
-                    data = data_append(data, "boiler_modulation_level", "", DATA_DOUBLE, msg->payload[1] / 200.0 /* 0xC8 */, NULL);
+                    data = data_append(data, "boiler_modulation_level", "", DATA_DOUBLE, msg->payload[1] * (1 / 200.0F) /* 0xC8 */, NULL);
                     data = data_append(data, "flame_status", "", DATA_INT, msg->payload[3], NULL);
                     break;
             }
@@ -201,17 +201,17 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
             UNKNOWN_IF(msg->payload_length != 3);
             data = data_append(data, "zone", "", DATA_INT, msg->payload[0], NULL);
             // Observation: CM921 reports a very high setpoint during binding (0x7eff); packet: 143255c1230903017efff7
-            data = data_append(data, "setpoint", "", DATA_DOUBLE, ((msg->payload[1] << 8) | msg->payload[2]) / 100.0, NULL);
+            data = data_append(data, "setpoint", "", DATA_DOUBLE, ((msg->payload[1] << 8) | msg->payload[2]) * (1 / 100.0F), NULL);
             break;
         }
         case 0x1100: {
             UNKNOWN_IF(msg->payload_length != 5 && msg->payload_length != 8);
             data = data_append(data, "domain_id", "", DATA_INT, msg->payload[0], NULL);
-            data = data_append(data, "cycle_rate", "", DATA_DOUBLE, msg->payload[1] / 4.0, NULL);
-            data = data_append(data, "minimum_on_time", "", DATA_DOUBLE, msg->payload[2] / 4.0, NULL);
-            data = data_append(data, "minimum_off_time", "", DATA_DOUBLE, msg->payload[3] / 4.0, NULL);
+            data = data_append(data, "cycle_rate", "", DATA_DOUBLE, msg->payload[1] * (1 / 4.0F), NULL);
+            data = data_append(data, "minimum_on_time", "", DATA_DOUBLE, msg->payload[2] * (1 / 4.0F), NULL);
+            data = data_append(data, "minimum_off_time", "", DATA_DOUBLE, msg->payload[3] * (1 / 4.0F), NULL);
             if (msg->payload_length == 8)
-                data = data_append(data, "proportional_band_width", "", DATA_DOUBLE, (msg->payload[5] << 8 | msg->payload[6]) / 100.0, NULL);
+                data = data_append(data, "proportional_band_width", "", DATA_DOUBLE, (msg->payload[5] << 8 | msg->payload[6]) * (1 / 100.0F), NULL);
             break;
         }
         case 0x0009: {
@@ -227,18 +227,18 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
         case 0x3B00: {
             UNKNOWN_IF(msg->payload_length != 2);
             data = data_append(data, "domain_id", "", DATA_INT, msg->payload[0], NULL);
-            data = data_append(data, "state", "", DATA_DOUBLE, msg->payload[1] / 200.0 /* 0xC8 */, NULL);
+            data = data_append(data, "state", "", DATA_DOUBLE, msg->payload[1] * (1 / 200.0F) /* 0xC8 */, NULL);
             break;
         }
         case 0x30C9: {
-          size_t num_zones = msg->payload_length/3;
-          for (size_t i=0; i < num_zones; i++) {
-            char name[256];
-            snprintf(name, sizeof(name), "temperature (zone %u)", msg->payload[3*i]);
-            int16_t temp = msg->payload[3*i+1] << 8 | msg->payload[3*i+1];
-            data = data_append(data, name, "", DATA_DOUBLE, temp/100.0, NULL);
-          }
-          break;
+            size_t num_zones = msg->payload_length / 3;
+            for (size_t i = 0; i < num_zones; i++) {
+                char name[256];
+                snprintf(name, sizeof(name), "temperature (zone %u)", msg->payload[3 * i]);
+                int16_t temp = msg->payload[3 * i + 1] << 8 | msg->payload[3 * i + 2];
+                data         = data_append(data, name, "", DATA_DOUBLE, temp * (1 / 100.0F), NULL);
+            }
+            break;
         }
         case 0x1fd4: {
             int temp = (msg->payload[1] << 8) | msg->payload[2];

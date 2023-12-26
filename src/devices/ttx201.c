@@ -187,7 +187,7 @@ static int ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row
         int minute = b[4] & 0x3f;
         int second = (b[5] & 0x7e) >> 1;
         char clock_str[25];
-        sprintf(clock_str, "%04d-%02d-%02dT%02d:%02d:%02d %s", year + 2000, month, day, hour, minute, second, cest ? "CEST" : "CET");
+        snprintf(clock_str, sizeof(clock_str), "%04d-%02d-%02dT%02d:%02d:%02d %s", year + 2000, month, day, hour, minute, second, cest ? "CEST" : "CET");
 
         /* clang-format off */
         data = data_make(

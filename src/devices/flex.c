@@ -317,6 +317,11 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // add a data line for each getter
         render_getters(row_data[i], bitbuffer->bb[i], params);
 
+        // print at least one '0'
+        if (row_bytes[0] == '\0') {
+            snprintf(row_bytes, sizeof(row_bytes), "0");
+        }
+
         // a simpler representation for csv output
         row_codes[i] = malloc(8 + bitbuffer->bits_per_row[i] / 4 + 1); // "{nnnn}..\0"
         if (!row_codes[i])

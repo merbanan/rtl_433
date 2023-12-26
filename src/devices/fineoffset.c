@@ -437,7 +437,7 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
-Fine Offset Electronics WH25 / WH32B Temperature/Humidity/Pressure sensor protocol.
+Fine Offset Electronics WH25 / WH32 / WH32B / WN32B Temperature/Humidity/Pressure sensor protocol.
 
 The sensor sends a package each ~64 s with a width of ~28 ms. The bits are PCM modulated with Frequency Shift Keying.
 
@@ -474,9 +474,15 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned bit_offset;
 
     // Validate package
-    if (bitbuffer->bits_per_row[0] < 190) {
+    if (bitbuffer->bits_per_row[0] < 160) {
+        // Nominal length of WH0290 is 129 bits
         return fineoffset_WH0290_callback(decoder, bitbuffer); // abort and try WH0290
-    } else if (bitbuffer->bits_per_row[0] < 440) {  // Nominal size is 488 bit periods
+    }
+    else if (bitbuffer->bits_per_row[0] < 190) {
+        // Nominal length of WN32B is 173 bits
+        type = 32; // new WN32B
+    }
+    else if (bitbuffer->bits_per_row[0] < 440) {             // Nominal size is 488 bit periods
         return fineoffset_WH24_callback(decoder, bitbuffer); // abort and try WH24, WH65B, HP1000
     }
 
@@ -485,14 +491,14 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Find a data package and extract data payload
-    // Normal index of WH25 is 367, and 123, 570 for WH32B
-    // skip some bytes to find faster
-    bit_offset = bitbuffer_search(bitbuffer, 0, 100, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
+    // Nominal index of WH25 is 367, and 123, 570 for WH32B
+    bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
         decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "short package. Header index: %u", bit_offset);
         return DECODE_ABORT_LENGTH;
     }
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
+    decoder_log_bitrow(decoder, 2, __func__, b, sizeof(b) * 8, "Packet");
 
     // Verify type code
     int msg_type = b[0] & 0xf0;
@@ -630,7 +636,7 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Decode data
     char id[7];
-    sprintf(id, "%02x%02x%02x", b[1], b[2], b[3]);
+    snprintf(id, sizeof(id), "%02x%02x%02x", b[1], b[2], b[3]);
     int boost           = (b[4] & 0xe0) >> 5;
     int battery_mv      = (b[4] & 0x1f) * 100;
     float battery_level = (battery_mv - 700) / 900.0f; // assume 1.6V (100%) to 0.7V (0%) range
@@ -788,7 +794,7 @@ static int alecto_ws1200v2_dcf_callback(r_device *decoder, bitbuffer_t *bitbuffe
     int time_m      = b[8]; // (b[8] >> 4) * 10 + (b[8] & 0x0f);
     int time_s      = b[9]; // (b[9] >> 4) * 10 + (b[9] & 0x0f);
     char clock_str[32];
-    sprintf(clock_str, "%04x-%02x-%02xT%02x:%02x:%02x",
+    snprintf(clock_str, sizeof(clock_str), "%04x-%02x-%02xT%02x:%02x:%02x",
             date_y, date_m, date_d, time_h, time_m, time_s);
 
     /* clang-format off */
@@ -1020,7 +1026,7 @@ r_device const fineoffset_WH2 = {
 };
 
 r_device const fineoffset_WH25 = {
-        .name        = "Fine Offset Electronics, WH25, WH32B, WH24, WH65B, HP1000, Misol WS2320 Temperature/Humidity/Pressure Sensor",
+        .name        = "Fine Offset Electronics, WH25, WH32, WH32B, WN32B, WH24, WH65B, HP1000, Misol WS2320 Temperature/Humidity/Pressure Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 58,    // Bit width = 58µs (measured across 580 samples / 40 bits / 250 kHz)
         .long_width  = 58,    // NRZ encoding (bit width = pulse width)

@@ -139,9 +139,9 @@ static int rtltcp_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
 
     char *param = arg_param(dev_query); // strip scheme
     hostport[0] = '\0';
-    if (param)
-        strncpy(hostport, param, sizeof(hostport) - 1);
-    hostport[sizeof(hostport) - 1] = '\0';
+    if (param) {
+        snprintf(hostport, sizeof(hostport), "%s", param);
+    }
     hostport_param(hostport, &host, &port);
 
     print_logf(LOG_CRITICAL, "SDR", "rtl_tcp input from %s port %s", host, port);
@@ -177,6 +177,7 @@ static int rtltcp_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
             ret = connect(sock, res->ai_addr, res->ai_addrlen);
             if (ret == -1) {
                 perror("connect");
+                closesocket(sock);
                 sock = INVALID_SOCKET;
             }
             else
@@ -720,8 +721,7 @@ static int soapysdr_gain_str_set(SoapySDRDevice *dev, char const *gain_str, int 
 
     if (strchr(gain_str, '=')) {
         char gain_cpy[GAIN_STR_MAX_SIZE];
-        strncpy(gain_cpy, gain_str, GAIN_STR_MAX_SIZE);
-        gain_cpy[GAIN_STR_MAX_SIZE - 1] = '\0';
+        snprintf(gain_cpy, sizeof(gain_cpy), "%s", gain_str);
         char *gain_p = gain_cpy;
         // Set each gain individually (more control)
         char *name;
@@ -955,6 +955,10 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, char const *dev_query, int verbos
     return 0;
 }
 
+// the buffer sizes can't be proven to be correct
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-allocation-size"
+
 static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len)
 {
     size_t buffer_size = (size_t)buf_num * buf_len;
@@ -1050,6 +1054,8 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint
 
     return 0;
 }
+
+#pragma GCC diagnostic pop
 
 #endif
 
@@ -1510,8 +1516,12 @@ int sdr_apply_settings(sdr_dev_t *dev, char const *sdr_settings, int verbose)
         for (size_t i = 0; i < settings.size; ++i) {
             const char *key   = settings.keys[i];
             const char *value = settings.vals[i];
-            if (verbose)
+            if (!key) {
+                continue;
+            }
+            if (verbose) {
                 print_logf(LOG_NOTICE, "SDR", "Setting %s to %s", key, value);
+            }
             if (!strcmp(key, "antenna")) {
                 if (SoapySDRDevice_setAntenna(dev->soapy_dev, SOAPY_SDR_RX, 0, value) != 0) {
                     r = -1;

@@ -39,7 +39,6 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     for (int row = 0; row < bitbuffer->num_rows; row++)
     {
         //Payload is inverted Manchester encoded, and reversed MSB/LSB order
-        char sensor_idhex[7];
         uint8_t *b = bitbuffer->bb[row];
 
         //Length must be 72 bits to be considered a valid packet
@@ -51,7 +50,7 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             continue; // DECODE_ABORT_EARLY
 
         //Preamble
-        uint8_t preAmble = ~reverse8(b[2]);
+        uint8_t preamble = ~reverse8(b[2]);
 
         //Sensor ID
         uint8_t id1 = ~reverse8(b[3]);
@@ -68,14 +67,16 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         //Checksum is a sum of all the other values
         uint8_t payload_checksum = ~reverse8(b[8]);
-        uint8_t calculated_checksum = preAmble + id1 + id2 + p1 + tempFahrenheit + tmpbattery_mV;
+        uint8_t calculated_checksum = preamble + id1 + id2 + p1 + tempFahrenheit + tmpbattery_mV;
         if (payload_checksum != calculated_checksum)
             continue; // DECODE_FAIL_MIC
 
-        int sensor_id = (id1 << 8) | id2;
-        sprintf(sensor_idhex, "0x%04x", sensor_id);
+        int sensor_id      = (id1 << 8) | id2;
         float pressure_psi = p1 * 0.5f;
-        int battery_mV = tmpbattery_mV * 2;
+        int battery_mV     = tmpbattery_mV * 2;
+
+        char sensor_idhex[7];
+        snprintf(sensor_idhex, sizeof(sensor_idhex), "0x%04x", sensor_id);
 
         /* clang-format off */
         data_t *data = data_make(

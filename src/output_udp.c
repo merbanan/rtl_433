@@ -22,6 +22,11 @@
 #include <stdlib.h>
 
 #include <limits.h>
+// _POSIX_HOST_NAME_MAX is broken in gcc-13 at least on MacOS
+#ifndef _POSIX_HOST_NAME_MAX
+//#warning The limits.h include is missing the _POSIX_HOST_NAME_MAX define.
+#define _POSIX_HOST_NAME_MAX 255
+#endif
 // gethostname() needs _XOPEN_SOURCE 500 on unistd.h
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 500
@@ -230,5 +235,5 @@ struct data_output *data_output_syslog_create(int log_level, const char *host, c
     syslog->hostname[_POSIX_HOST_NAME_MAX] = '\0';
     datagram_client_open(&syslog->client, host, port);
 
-    return &syslog->output;
+    return (struct data_output *)syslog;
 }

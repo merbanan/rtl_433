@@ -65,6 +65,9 @@ static int revolt_nc5462_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b = bitbuffer->bb[0];
 
     int sum = add_bytes(b, 11);
+    if (sum == 0) {
+        return DECODE_FAIL_SANITY;
+    }
     int chk = b[11];
     if ((sum & 0xff) != chk) {
         return DECODE_FAIL_MIC;

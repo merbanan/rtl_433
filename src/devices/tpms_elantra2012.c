@@ -51,13 +51,10 @@ Preamble is 111 0001 0101 0101 (0x7155).
 
 static int tpms_elantra2012_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    data_t *data;
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
     uint32_t id;
-    char id_str[9];
     int flags;
-    char flags_str[3];
     int pressure_kpa;
     int temperature_c;
     int triggered, battery_low, storage;
@@ -73,21 +70,21 @@ static int tpms_elantra2012_decode(r_device *decoder, bitbuffer_t *bitbuffer, un
         return DECODE_FAIL_MIC;
     }
 
-    id = ((uint32_t)b[2] << 24) | (b[3] << 16) | (b[4] << 8) | (b[5]);
-    sprintf(id_str, "%08x", id);
-
-    flags = b[6];
-    sprintf(flags_str, "%x", flags);
-
+    id            = ((uint32_t)b[2] << 24) | (b[3] << 16) | (b[4] << 8) | (b[5]);
+    flags         = b[6];
     pressure_kpa  = b[0] + 60;
     temperature_c = b[1] - 50;
+    storage       = (b[6] & 0x04) >> 2;
+    battery_low   = (b[6] & 0x02) >> 1;
+    triggered     = (b[6] & 0x01) >> 0;
 
-    storage     = (b[6] & 0x04) >> 2;
-    battery_low = (b[6] & 0x02) >> 1;
-    triggered   = (b[6] & 0x01) >> 0;
+    char id_str[9];
+    snprintf(id_str, sizeof(id_str), "%08x", id);
+    char flags_str[3];
+    snprintf(flags_str, sizeof(flags_str), "%x", flags);
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Elantra2012",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,

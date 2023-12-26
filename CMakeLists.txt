@@ -31,7 +31,7 @@ if(GIT_COMMIT) # is a git repo
     # shorten branch spec
     string(REGEX REPLACE ".*/" "" GIT_BRANCH "${GIT_REFSPEC}")
     # use lightweight (non-annotated) tags
-    git_describe(GIT_VERSION "--tags")
+    git_describe(GIT_VERSION "--tags" "--exclude=nightly")
     git_timestamp(GIT_TIMESTAMP)
     message(STATUS "Found Git version: ${GIT_REFSPEC} commit ${GIT_COMMIT} from ${GIT_TIMESTAMP_ISO}")
     message(STATUS "Using Git version tag: ${GIT_VERSION} on ${GIT_BRANCH} at ${GIT_TIMESTAMP}")
@@ -80,6 +80,7 @@ if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES 
     #ADD_DEFINITIONS(-Wfloat-equal)
     #ADD_DEFINITIONS(-Wbad-function-cast)
     #ADD_DEFINITIONS(-Wdocumentation)
+    add_definitions(-Wno-deprecated-declarations)
 
     # for strdup, setenv, use either
     #ADD_DEFINITIONS(-D_POSIX_C_SOURCE=200809) # does not work with uClibc
@@ -97,6 +98,12 @@ endif()
 if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     # make sure we don't accidentally copy more than an int
     ADD_DEFINITIONS(-Wlarge-by-value-copy=8)
+endif()
+
+# Enable Static analysis on GCC13.2.0+
+if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" AND CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL "13.2.0")
+    message(STATUS "Using GCC Static analysis")
+    add_definitions(-fanalyzer)
 endif()
 
 # Shut MSVC up about strdup and strtok
@@ -118,6 +125,12 @@ endif()
 # Make sure we get M_PI
 if(WIN32)
     add_definitions(-D_USE_MATH_DEFINES)
+endif()
+
+# On Unix pass the SYSCONFDIR through to conf file loader
+if(NOT WIN32)
+    include(GNUInstallDirs)
+    add_definitions(-DINSTALL_SYSCONFDIR=${CMAKE_INSTALL_FULL_SYSCONFDIR})
 endif()
 
 ########################################################################

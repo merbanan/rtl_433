@@ -74,12 +74,12 @@ static uint8_t calc_checksum(uint8_t const *bitrow, unsigned len)
     const uint8_t full_bytes = len / 8;
     const uint8_t bits_left  = len % 8;
 
-    uint8_t xor = xor_bytes(bitrow, full_bytes);
+    uint8_t xor_byte = xor_bytes(bitrow, full_bytes);
     if (bits_left) {
-        xor ^= bitrow[full_bytes] & ~BIT_MASK(8 - bits_left);
+        xor_byte ^= bitrow[full_bytes] & ~BIT_MASK(8 - bits_left);
     }
 
-    const uint8_t xor_nibble = ((xor&0xF0) >> 4) ^ (xor&0x0F);
+    const uint8_t xor_nibble = ((xor_byte&0xF0) >> 4) ^ (xor_byte&0x0F);
 
     uint8_t result = 0;
     if (xor_nibble & 0x8) {
@@ -96,7 +96,7 @@ static uint8_t calc_checksum(uint8_t const *bitrow, unsigned len)
     }
 
     result = result & 0xF;
-    result |= (parity8(xor) << 4);
+    result |= (parity8(xor_byte) << 4);
 
     return result;
 }

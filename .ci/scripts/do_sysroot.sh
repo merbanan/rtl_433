@@ -17,12 +17,13 @@ sed="${sed:-sed}"
 # from https://libusb.info/
 if [ ! -e libusb/include/libusb-1.0/libusb.h ]
 then
-[ -e libusb-${libusb_ver}.7z ] || curl -L -O https://github.com/libusb/libusb/releases/download/v${libusb_ver}/libusb-${libusb_ver}.7z
-mkdir -p libusb
-7z x -olibusb -y libusb-${libusb_ver}.7z
+    [ -e libusb-${libusb_ver}.7z ] || curl -L -O https://github.com/libusb/libusb/releases/download/v${libusb_ver}/libusb-${libusb_ver}.7z
+    mkdir -p libusb
+    7z x -olibusb -y libusb-${libusb_ver}.7z
 fi
 
-source_dir=$(dirname $($realpath -s $0))
+# remove this script name and two dir levels to get the source root
+source_dir=$(dirname $(dirname $(dirname $($realpath -s $0))))
 sysroot32=$(pwd)/sysroot32
 sysroot64=$(pwd)/sysroot64
 sysroot32static=$(pwd)/sysroot32static
@@ -45,64 +46,64 @@ cp libusb/MinGW64/dll/libusb-1.0.dll.a $sysroot64/usr/lib
 
 if [ ! -d rtl-sdr-${rtlsdr_ver} ]
 then
-# or git clone https://github.com/osmocom/rtl-sdr.git
-[ -e rtl-sdr-${rtlsdr_ver}.tar.gz ] || curl -L -o rtl-sdr-${rtlsdr_ver}.tar.gz https://github.com/osmocom/rtl-sdr/archive/${rtlsdr_ver}.tar.gz
-tar xzf rtl-sdr-${rtlsdr_ver}.tar.gz
+    # or git clone https://github.com/osmocom/rtl-sdr.git
+    [ -e rtl-sdr-${rtlsdr_ver}.tar.gz ] || curl -L -o rtl-sdr-${rtlsdr_ver}.tar.gz https://github.com/osmocom/rtl-sdr/archive/${rtlsdr_ver}.tar.gz
+    tar xzf rtl-sdr-${rtlsdr_ver}.tar.gz
 fi
 
 cd rtl-sdr-${rtlsdr_ver}
 
 if [ ! -e $sysroot32/usr/lib/librtlsdr.a ]
 then
-export CMAKE_SYSROOT=$sysroot32 ; echo $CMAKE_SYSROOT
-mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=$source_dir/cmake/Toolchain-gcc-mingw-w64-i686.cmake .. && make && make install ; cd ..
-rm -rf build-tmp
-mv $sysroot32/usr/lib/librtlsdr_static.a $sysroot32/usr/lib/librtlsdr.a
+    export CMAKE_SYSROOT=$sysroot32 ; echo $CMAKE_SYSROOT
+    mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=$source_dir/cmake/Toolchain-gcc-mingw-w64-i686.cmake .. && make && make install ; cd ..
+    rm -rf build-tmp
+    mv $sysroot32/usr/lib/librtlsdr_static.a $sysroot32/usr/lib/librtlsdr.a
 fi
 
 if [ ! -e $sysroot32static/usr/lib/librtlsdr.a ]
 then
-export CMAKE_SYSROOT=$sysroot32static ; echo $CMAKE_SYSROOT
-mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=$source_dir/cmake/Toolchain-gcc-mingw-w64-i686.cmake -DBUILD_SHARED_LIBS:BOOL=OFF .. && make && make install ; cd ..
-rm -rf build-tmp
-mv $sysroot32static/usr/lib/librtlsdr_static.a $sysroot32static/usr/lib/librtlsdr.a
-rm $sysroot32static/usr/lib/librtlsdr.dll.a
-rm $sysroot32static/usr/bin/librtlsdr.dll
+    export CMAKE_SYSROOT=$sysroot32static ; echo $CMAKE_SYSROOT
+    mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=$source_dir/cmake/Toolchain-gcc-mingw-w64-i686.cmake -DBUILD_SHARED_LIBS:BOOL=OFF .. && make && make install ; cd ..
+    rm -rf build-tmp
+    mv $sysroot32static/usr/lib/librtlsdr_static.a $sysroot32static/usr/lib/librtlsdr.a
+    rm $sysroot32static/usr/lib/librtlsdr.dll.a
+    rm $sysroot32static/usr/bin/librtlsdr.dll
 fi
 
 if [ ! -e $sysroot64/usr/lib/librtlsdr.a ]
 then
-export CMAKE_SYSROOT=$sysroot64 ; echo $CMAKE_SYSROOT
-mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=$source_dir/cmake/Toolchain-gcc-mingw-w64-x86-64.cmake .. && make && make install ; cd ..
-rm -rf build-tmp
-mv $sysroot64/usr/lib/librtlsdr_static.a $sysroot64/usr/lib/librtlsdr.a
+    export CMAKE_SYSROOT=$sysroot64 ; echo $CMAKE_SYSROOT
+    mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=$source_dir/cmake/Toolchain-gcc-mingw-w64-x86-64.cmake .. && make && make install ; cd ..
+    rm -rf build-tmp
+    mv $sysroot64/usr/lib/librtlsdr_static.a $sysroot64/usr/lib/librtlsdr.a
 fi
 
 if [ ! -e $sysroot64static/usr/lib/librtlsdr.a ]
 then
-export CMAKE_SYSROOT=$sysroot64static ; echo $CMAKE_SYSROOT
-mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=$source_dir/cmake/Toolchain-gcc-mingw-w64-x86-64.cmake -DBUILD_SHARED_LIBS:BOOL=OFF .. && make && make install ; cd ..
-rm -rf build-tmp
-mv $sysroot64static/usr/lib/librtlsdr_static.a $sysroot64static/usr/lib/librtlsdr.a
-rm $sysroot64static/usr/lib/librtlsdr.dll.a
-rm $sysroot64static/usr/bin/librtlsdr.dll
+    export CMAKE_SYSROOT=$sysroot64static ; echo $CMAKE_SYSROOT
+    mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=$source_dir/cmake/Toolchain-gcc-mingw-w64-x86-64.cmake -DBUILD_SHARED_LIBS:BOOL=OFF .. && make && make install ; cd ..
+    rm -rf build-tmp
+    mv $sysroot64static/usr/lib/librtlsdr_static.a $sysroot64static/usr/lib/librtlsdr.a
+    rm $sysroot64static/usr/lib/librtlsdr.dll.a
+    rm $sysroot64static/usr/bin/librtlsdr.dll
 fi
 
 cd ..
 
 if [ ! -e $sysroot64/usr/bin/SoapySDR.dll -o ! -e $sysroot64/usr/lib/SoapySDR.lib ]
 then
-# from https://downloads.myriadrf.org/builds/PothosSDR/
-[ -e PothosSDR-${pothos_ver}-x64.exe ] || curl -L -O https://downloads.myriadrf.org/builds/PothosSDR/PothosSDR-${pothos_ver}-x64.exe
-mkdir -p pothos
-7z x -opothos -y PothosSDR-${pothos_ver}-x64.exe
-# workaround: 7-Zip 9.20 creates strange root directories
-[ -e pothos/bin ] || mv pothos/*/* pothos/ || :
-cp pothos/bin/SoapySDR.dll $sysroot64/usr/bin
-cp -R pothos/include/SoapySDR $sysroot64/usr/include
-cp pothos/lib/SoapySDR.lib $sysroot64/usr/lib
-cp -R pothos/cmake $sysroot64/usr
-$sed -i 's/.*INTERFACE_COMPILE_OPTIONS.*//g' $sysroot64/usr/cmake/SoapySDRExport.cmake
+    # from https://downloads.myriadrf.org/builds/PothosSDR/
+    [ -e PothosSDR-${pothos_ver}-x64.exe ] || curl -L -O https://downloads.myriadrf.org/builds/PothosSDR/PothosSDR-${pothos_ver}-x64.exe
+    mkdir -p pothos
+    7z x -opothos -y PothosSDR-${pothos_ver}-x64.exe
+    # workaround: 7-Zip 9.20 creates strange root directories
+    [ -e pothos/bin ] || mv pothos/*/* pothos/ || :
+    cp pothos/bin/SoapySDR.dll $sysroot64/usr/bin
+    cp -R pothos/include/SoapySDR $sysroot64/usr/include
+    cp pothos/lib/SoapySDR.lib $sysroot64/usr/lib
+    cp -R pothos/cmake $sysroot64/usr
+    $sed -i 's/.*INTERFACE_COMPILE_OPTIONS.*//g' $sysroot64/usr/cmake/SoapySDRExport.cmake
 fi
 
 # build rtl_433

@@ -16,10 +16,10 @@ Example codes are: 80042 Arm alarm, 80002 Disarm alarm,
 (following motion detection the sensor will blackout for 90 seconds).
 
 2315 baud on/off rate and alternating 579 baud bit rate and 463 baud bit rate
-Each transmission has a warmup of 17 to 32 pulse widths then 8 packets with
+Each transmission has a warm-up of 17 to 32 pulse widths then 8 packets with
 alternating 1:3 / 2:2 or 1:4 / 2:3 gap:pulse ratio for 0/1 bit in the packet
 with a repeat gap of 4 pulse widths, i.e.:
-- 6704 us to 13092 us warmup pulse, 1672 us gap,
+- 6704 us to 13092 us warm-up pulse, 1672 us gap,
 - 0: 472 us gap, 1332 us pulse
 - 1: 920 us gap, 888 us pulse
 - 1672 us repeat gap,
@@ -32,13 +32,8 @@ with a repeat gap of 4 pulse widths, i.e.:
 
 static int generic_motion_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
-    uint8_t *b;
-    int code;
-    char code_str[6];
-
     for (int i = 0; i < bitbuffer->num_rows; ++i) {
-        b = bitbuffer->bb[i];
+        uint8_t *b = bitbuffer->bb[i];
         // strictly validate package as there is no checksum
         if ((bitbuffer->bits_per_row[i] != 20)
                 || ((b[1] == 0) && (b[2] == 0))
@@ -46,11 +41,12 @@ static int generic_motion_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 || bitbuffer_count_repeats(bitbuffer, i, 0) < 3)
             continue; // DECODE_ABORT_EARLY
 
-        code = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
-        sprintf(code_str, "%05x", code);
+        int code = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
+        char code_str[6];
+        snprintf(code_str, sizeof(code_str), "%05x", code);
 
         /* clang-format off */
-        data = data_make(
+        data_t *data = data_make(
                 "model",    "",  DATA_STRING, "Generic-Motion",
                 "code",     "",  DATA_STRING, code_str,
                 NULL);

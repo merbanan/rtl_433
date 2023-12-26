@@ -34,6 +34,7 @@ typedef SSIZE_T ssize_t;
 
 #include <time.h>
 
+#include "fatal.h"
 #include "baseband.h"
 
 #define MEASURE(label, block)                                              \
@@ -94,6 +95,9 @@ int main(int argc, char *argv[])
     filename = argv[1];
 
     cu8_buf  = malloc(sizeof(uint8_t) * 2 * max_block_size);
+    if (!cu8_buf) {
+        FATAL_MALLOC("main()");
+    }
     n_read = read_buf(filename, cu8_buf, sizeof(uint8_t) * 2 * max_block_size);
     if (n_read < 1) {
         free(cu8_buf);
@@ -101,12 +105,33 @@ int main(int argc, char *argv[])
     }
 
     y16_buf  = malloc(sizeof(uint16_t) * max_block_size);
+    if (!y16_buf) {
+        FATAL_MALLOC("main()");
+    }
     cs16_buf = malloc(sizeof(int16_t) * 2 * max_block_size);
+    if (!cs16_buf) {
+        FATAL_MALLOC("main()");
+    }
     y32_buf  = malloc(sizeof(uint32_t) * max_block_size);
+    if (!y32_buf) {
+        FATAL_MALLOC("main()");
+    }
     u16_buf  = malloc(sizeof(uint16_t) * max_block_size);
+    if (!u16_buf) {
+        FATAL_MALLOC("main()");
+    }
     u32_buf  = malloc(sizeof(uint32_t) * max_block_size);
+    if (!u32_buf) {
+        FATAL_MALLOC("main()");
+    }
     s16_buf  = malloc(sizeof(int16_t) * max_block_size);
+    if (!s16_buf) {
+        FATAL_MALLOC("main()");
+    }
     s32_buf  = malloc(sizeof(int32_t) * max_block_size);
+    if (!s32_buf) {
+        FATAL_MALLOC("main()");
+    }
 
     n_samples = n_read / (sizeof(uint8_t) * 2);
 

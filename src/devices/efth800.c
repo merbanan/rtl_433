@@ -64,7 +64,7 @@ static int eurochron_efth800_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int dcf77_mth  = (b[6] & 0x0f);
 
         if (!crc8(b, 8, 0x31, 0x00)) {
-            sprintf(dcf77_str, "%4d-%02d-%02dT%02d:%02d:%02d", dcf77_year + 2000, dcf77_mth, dcf77_day, dcf77_hour, dcf77_min, dcf77_sec);
+            snprintf(dcf77_str, sizeof(dcf77_str), "%4d-%02d-%02dT%02d:%02d:%02d", dcf77_year + 2000, dcf77_mth, dcf77_day, dcf77_hour, dcf77_min, dcf77_sec);
         }
     }
 

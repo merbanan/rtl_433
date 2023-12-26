@@ -15,7 +15,7 @@
 
 char **compat_get_default_conf_paths(void)
 {
-    static char *paths[5] = { NULL };
+    static char *paths[4] = { NULL };
     static char buf[256] = "";
     char *env_config_home = getenv("XDG_CONFIG_HOME");
     if (!paths[0]) {
@@ -25,9 +25,10 @@ char **compat_get_default_conf_paths(void)
         else
             snprintf(buf, sizeof(buf), "%s%s", getenv("HOME"), "/.config/rtl_433/rtl_433.conf");
         paths[1] = buf;
-        paths[2] = "/usr/local/etc/rtl_433/rtl_433.conf";
-        paths[3] = "/etc/rtl_433/rtl_433.conf";
-        paths[4] = NULL;
+#define STR_VALUE(arg) #arg
+#define STR_EXPAND(s)  STR_VALUE(s)
+        paths[2] = STR_EXPAND(INSTALL_SYSCONFDIR) "/rtl_433/rtl_433.conf";
+        paths[3] = NULL;
     };
     return paths;
 }
@@ -57,7 +58,7 @@ char **compat_get_default_conf_paths(void)
     else {
         paths[0] = NULL;
     }
-    // Local per user configuration files (e.g. Win7: C:\Users\myusername\AppData\Local\rtl_433\rtl_433.conf)
+    // Local per user configuration files %LocalAppData% (e.g. Win7: C:\Users\myusername\AppData\Local\rtl_433\rtl_433.conf)
     if (SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, bufs[1]) == S_OK) {
         strcat_s(bufs[1], sizeof(bufs[1]), "\\rtl_433\\rtl_433.conf");
         paths[1] = bufs[1];
@@ -65,7 +66,7 @@ char **compat_get_default_conf_paths(void)
     else {
         paths[1] = NULL;
     }
-    // Per machine configuration data (e.g. Win7: C:\ProgramData\rtl_433\rtl_433.conf)
+    // Per machine configuration data %ProgramData% (e.g. Win7: C:\ProgramData\rtl_433\rtl_433.conf)
     if (SHGetFolderPath(NULL, CSIDL_COMMON_APPDATA, NULL, 0, bufs[2]) == S_OK) {
         strcat_s(bufs[2], sizeof(bufs[2]), "\\rtl_433\\rtl_433.conf");
         paths[2] = bufs[2];

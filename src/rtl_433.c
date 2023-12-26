@@ -127,15 +127,23 @@ r_device *flex_create_device(char *spec); // maybe put this in some header file?
 static void print_version(void)
 {
     fprintf(stderr, "%s\n", version_string());
-    fprintf(stderr, "Use -h for usage help and see https://triq.org/ for documentation.\n");
 }
 
 _Noreturn
 static void usage(int exit_code)
 {
-    term_help_printf(
+    term_help_fprintf(exit_code ? stderr : stdout,
             "Generic RF data receiver and decoder for ISM band devices using RTL-SDR and SoapySDR.\n"
+            "Full documentation is available at https://triq.org/\n"
             "\nUsage:\n"
+#ifdef _WIN32
+            "  A \"rtl_433.conf\" file is searched in the current dir, %%LocalAppData%%, %%ProgramData%%,\n"
+            "  e.g. \"C:\\Users\\username\\AppData\\Local\\rtl_433\\\", \"C:\\ProgramData\\rtl_433\\\",\n"
+            "  then command line args will be parsed in order.\n"
+#else
+            "  A \"rtl_433.conf\" file is searched in \"./\", XDG_CONFIG_HOME e.g. \"$HOME/.config/rtl_433/\",\n"
+            "  SYSCONFDIR e.g. \"/usr/local/etc/rtl_433/\", then command line args will be parsed in order.\n"
+#endif
             "\t\t= General options =\n"
             "  [-V] Output the version string and exit\n"
             "  [-v] Increase verbosity (can be used multiple times).\n"
@@ -196,13 +204,15 @@ static void help_protocols(r_device *devices, unsigned num_devices, int exit_cod
     char disabledc;
 
     if (devices) {
-        term_help_printf("\t\t= Supported device protocols =\n");
+        FILE *fp = exit_code ? stderr : stdout;
+        term_help_fprintf(fp,
+                "\t\t= Supported device protocols =\n");
         for (i = 0; i < num_devices; i++) {
             disabledc = devices[i].disabled ? '*' : ' ';
             if (devices[i].disabled <= 2) // if not hidden
-                fprintf(stderr, "    [%02u]%c %s\n", i + 1, disabledc, devices[i].name);
+                fprintf(fp, "    [%02u]%c %s\n", i + 1, disabledc, devices[i].name);
         }
-        fprintf(stderr, "\n* Disabled by default, use -R n or a conf file to enable\n");
+        fprintf(fp, "\n* Disabled by default, use -R n or a conf file to enable\n");
     }
     exit(exit_code);
 }
@@ -210,7 +220,7 @@ static void help_protocols(r_device *devices, unsigned num_devices, int exit_cod
 _Noreturn
 static void help_device_selection(void)
 {
-    term_help_printf(
+    term_help_fprintf(stdout,
             "\t\t= Input device selection =\n"
 #ifdef RTLSDR
             "\tRTL-SDR device driver is available.\n"
@@ -236,7 +246,7 @@ static void help_device_selection(void)
 _Noreturn
 static void help_gain(void)
 {
-    term_help_printf(
+    term_help_fprintf(stdout,
             "\t\t= Gain option =\n"
             "  [-g <gain>] (default: auto)\n"
             "\tFor RTL-SDR: gain in dB (\"0\" is auto).\n"
@@ -248,7 +258,7 @@ static void help_gain(void)
 _Noreturn
 static void help_device_mode(void)
 {
-    term_help_printf(
+    term_help_fprintf(stdout,
             "\t\t= Input device run mode =\n"
             "  [-D restart | pause | quit | manual] Input device run mode options.\n"
             "\tSupported input device run modes:\n"
@@ -263,7 +273,7 @@ static void help_device_mode(void)
 _Noreturn
 static void help_output(void)
 {
-    term_help_printf(
+    term_help_fprintf(stdout,
             "\t\t= Output format option =\n"
             "  [-F log|kv|json|csv|mqtt|influx|syslog|trigger|null] Produce decoded output in given format.\n"
             "\tWithout this option the default is LOG and KV output. Use \"-F null\" to remove the default.\n"
@@ -289,7 +299,7 @@ static void help_output(void)
 _Noreturn
 static void help_tags(void)
 {
-    term_help_printf(
+    term_help_fprintf(stdout,
             "\t\t= Data tags option =\n"
             "  [-K FILE | PATH | <tag> | <key>=<tag>] Add an expanded token or fixed tag to every output line.\n"
             "\tIf <tag> is \"FILE\" or \"PATH\" an expanded token will be added.\n"
@@ -310,7 +320,7 @@ static void help_tags(void)
 _Noreturn
 static void help_meta(void)
 {
-    term_help_printf(
+    term_help_fprintf(stdout,
             "\t\t= Meta information option =\n"
             "  [-M time[:<options>]|protocol|level|noise[:<secs>]|stats|bits] Add various metadata to every output line.\n"
             "\tUse \"time\" to add current date and time meta data (preset for live inputs).\n"
@@ -336,7 +346,7 @@ static void help_meta(void)
 _Noreturn
 static void help_read(void)
 {
-    term_help_printf(
+    term_help_fprintf(stdout,
             "\t\t= Read file option =\n"
             "  [-r <filename>] Read data from input file instead of a receiver\n"
             "\tParameters are detected from the full path, file name, and extension.\n\n"
@@ -358,7 +368,7 @@ static void help_read(void)
 _Noreturn
 static void help_write(void)
 {
-    term_help_printf(
+    term_help_fprintf(stdout,
             "\t\t= Write file option =\n"
             "  [-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)\n"
             "  [-W <filename>] Save data stream to output file, overwrite existing file\n"
@@ -830,7 +840,7 @@ static void parse_conf_try_default_files(r_cfg_t *cfg)
 {
     char **paths = compat_get_default_conf_paths();
     for (int a = 0; paths[a]; a++) {
-        fprintf(stderr, "Trying conf file at \"%s\"...\n", paths[a]);
+        // fprintf(stderr, "Trying conf file at \"%s\"...\n", paths[a]);
         if (hasconf(paths[a])) {
             fprintf(stderr, "Reading conf from \"%s\".\n", paths[a]);
             parse_conf_file(cfg, paths[a]);
@@ -1325,7 +1335,10 @@ console_handler(int signum)
 static void sighandler(int signum)
 {
     if (signum == SIGPIPE) {
-        signal(SIGPIPE, SIG_IGN);
+        // NOTE: we already ignore most network SIGPIPE's, this might be a STDOUT/STDERR problem.
+        // Printing is likely not the correct way to handle this.
+        write_err("Ignoring received signal SIGPIPE, Broken pipe.\n");
+        return;
     }
     else if (signum == SIGINFO/* TODO: maybe SIGUSR1 */) {
         g_cfg.stats_now++;
@@ -1658,7 +1671,7 @@ int main(int argc, char **argv) {
             }
             abuf_printf(&p, " ]");
         }
-        print_logf(LOG_CRITICAL, "Protocols", "Registered %zu out of %u device decoding protocols%s",
+        print_logf(LOG_NOTICE, "Protocols", "Registered %zu out of %u device decoding protocols%s",
                 demod->r_devs.len, cfg->num_r_devices, decoders_str);
     }
 
