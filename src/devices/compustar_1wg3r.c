@@ -1,5 +1,5 @@
 /** @file
-    Compustar 1WG3R-SH - Car Remote.
+    Compustar 1WG3R - Car Remote.
 
     Copyright (C) 2023 Ethan Halsall
 
@@ -9,7 +9,7 @@
     (at your option) any later version.
 */
 /** @fn int compustar_1wg3r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-Compustar 1WG3R-SH - Car Remote
+Compustar 1WG3R - Car Remote
 
 Manufacturer:
 - Compustar
@@ -20,7 +20,7 @@ Supported Models:
 
 Data structure:
 
-Compustar 1WG3R-SH Transmitters
+Compustar 1WG3R Transmitters
 
 The transmitter uses a fixed code message.
 
@@ -143,7 +143,7 @@ static int compustar_1wg3r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         rows_data_idx++;
         /* clang-format off */
         rows_data[rows_data_idx] = data_make(
-                "model",            "model",            DATA_STRING, "Compustar-1WG3R-SH",
+                "model",            "model",            DATA_STRING, "Compustar-1WG3R",
                 "id",               "device-id",        DATA_INT,    id,
                 "button_code",      "Button Code",      DATA_INT,    button,
                 "alarm",            "Alarm",            DATA_INT,    alarm,
@@ -188,7 +188,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const compustar_1wg3r = {
-        .name        = "Compustar 1WG3R-SH Car Remote",
+        .name        = "Compustar 1WG3R Car Remote",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 708,
         .long_width  = 1076,

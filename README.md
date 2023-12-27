@@ -340,7 +340,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [252]  Audiovox Car Remote
     [253]  Astrostart 2000 Car Remote (-f 372.5M)
     [254]  Compustar 700R Car Remote
-    [255]  Compustar 1WG3R-SH Car Remote
+    [255]  Compustar 1WG3R Car Remote
     [256]  Chrysler Car Remote (-f 315.1M -s 2400k)
     [257]  Honda Car Remote (-f 313M -s 240k)
 
