@@ -15,7 +15,9 @@ Manufacturer:
 - Chrysler
 
 Supported Models:
+- 56008761
 - 56008762 (FCC ID GQ43VT7T)
+- 04686366
 - 56021903AA
 
 Data structure:
@@ -111,8 +113,8 @@ r_device const chrysler_car_remote = {
         .short_width = 400,
         .long_width  = 700,
         .reset_limit = 18500,
-        .sync_width  = 14000,
-        .gap_limit   = 15800,
+        .sync_width  = 7000,
+        .gap_limit   = 15000,
         .decode_fn   = &chrysler_car_remote_decode,
         .fields      = output_fields,
 };
