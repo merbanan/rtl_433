@@ -15,6 +15,8 @@
 	
 	FCCID KR5V1X
 	Frequency 313.55 MHz and 314.15 MHz
+
+        Signal is 2FSK, 15 kHz deviation, datarate(baud) 16.66 kbps
 */
 
 
