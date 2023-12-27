@@ -263,7 +263,8 @@
     DECL(astrostart_2000) \
     DECL(compustar_700r) \
     DECL(compustar_1wg3r) \
-    DECL(chrysler_car_remote)
+    DECL(chrysler_car_remote) \
+    DECL(honda_car_remote)
 
     /* Add new decoders here. */
 
