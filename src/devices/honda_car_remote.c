@@ -15,7 +15,7 @@ Manufacturer:
 - Honda
 
 Supported Models:
-FCC ID OUCG8D-344H-A
+- OUCG8D-344H-A
 
 Data structure:
 
