@@ -18,12 +18,13 @@
 
 	Signal is 2FSK, 15 kHz deviation, datarate(baud) 16.66 kbps
  	Device uses Manchester encoded pulses of 60 us and 120 us
+  	Data packets are usually 180 bits (full sync included)
   	Data packet starts with sync of 0xFFFFFFFFFFF
   	Data layout after sync:
            MMMMMM HH DDDDDDDD EE NNNNNN RRRRRRRR CC
 
  	- M: 24 bit Manufacturer ID
-  	- H: 8 bit indicator of packet number (keyfob button press sends packet 2 times, reciever requires both packets. 0x08 is first packet, 0x0a is second packet)
+  	- H: 8 bit indicator of packet number (keyfob button press sends packet 2 times, receiver requires both packets. 0x08 is first packet, 0x0a is second packet)
    	- D: 32 bit Device ID of keyfob
     	- E: 8 bit Keyfob command (event)
      	- N: 24 bit counter
@@ -52,7 +53,7 @@ static int honda_decode(r_device *decoder, bitbuffer_t *bitbuffer){
 
 
 	uint8_t b[16];
-	bitbuffer_extract_bytes( bitbuffer, 0, bit_offset + 16, b, 120); //extract 120 bits, excluding first 2 bytes of manufacture code
+	bitbuffer_extract_bytes( bitbuffer, 0, bit_offset + 16, b, 120); //extract 120 bits after sync, excluding first 2 bytes of manufacture code
 	
 	char const *event = "Unknown";
 	int device_id = ((unsigned)b[2] << 24) | (b[3] << 16) | (b[4] << 8) | (b[5]);
@@ -61,24 +62,24 @@ static int honda_decode(r_device *decoder, bitbuffer_t *bitbuffer){
 	
 	switch( b[6] ){
 		case 0x21:
-			event = "Lock";  //value 0x21
+			event = "Lock";
 			break;
 		case 0x22:
-			event = "Unlock";  //value 0x22
+			event = "Unlock";
 			break;
 		case 0x24:
-			event = "Trunk";  //value 0x24
+			event = "Trunk";
 			break;
 		case 0x2d:
-			event = "RemoteStart"; //value 0x2D
+			event = "RemoteStart";
 			break;
 		case 0x27:
-			event = "Emergency"; //value 0x27
+			event = "Emergency";
 			break;
 	}
 
 
-	int crc_value = crc8(b, 14, 0x2f, 0x00); //OPENSAFETY-CRC8 uses polynomial 0x2F and init 0x00
+	int crc_value = crc8(b, 14, 0x2f, 0x00); //OPENSAFETY-CRC8
 	if( crc_value != (b[14])){
 			decoder_log(decoder, 1, __func__, "CRC error");
 			return DECODE_FAIL_MIC;
