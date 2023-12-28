@@ -100,5 +100,6 @@ r_device const nutek_car_remote = {
         .gap_limit   = 4050,
         .sync_width  = 2000,
         .decode_fn   = &audiovox_decode,
+        .priority    = 10,
         .fields      = output_fields,
 };
