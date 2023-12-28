@@ -281,6 +281,7 @@ static void help_output(void)
             "\tSpecify MQTT server with e.g. -F mqtt://localhost:1883\n"
             "\tAdd MQTT options with e.g. -F \"mqtt://host:1883,opt=arg\"\n"
             "\tMQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]\n"
+            "\tDefault user and password are read from MQTT_USER and MQTT_PASSWORD env vars.\n"
             "\tSupported MQTT formats: (default is all)\n"
             "\t  events: posts JSON event data\n"
             "\t  states: posts JSON state data\n"
