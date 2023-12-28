@@ -343,6 +343,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [255]  Compustar 1WG3R Car Remote
     [256]  Chrysler Car Remote (-f 315.1M -s 2400k)
     [257]  Honda Car Remote (-f 313M -s 240k)
+    [258]  Audiovox PRO-OE3B Car Remote (-f 303M)
 
 * Disabled by default, use -R n or a conf file to enable
 
