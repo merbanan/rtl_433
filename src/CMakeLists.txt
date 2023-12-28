@@ -56,7 +56,6 @@ add_library(r_433 STATIC
     devices/archos_tbh.c
     devices/astrostart_2000.c
     devices/atech_ws308.c
-    devices/audiovox_car_remote.c
     devices/audiovox_pro_oe3b.c
     devices/auriol_4ld5661.c
     devices/auriol_aft77b2.c
@@ -190,6 +189,7 @@ add_library(r_433 STATIC
     devices/nexus.c
     devices/nice_flor_s.c
     devices/norgo.c
+    devices/nutek_car_remote.c
     devices/oil_smart.c
     devices/oil_standard.c
     devices/oil_watchman.c

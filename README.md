@@ -337,7 +337,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [249]  Bresser lightning
     [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge, TFA Dostmann 30.3252.01/47.3006.01 Rain Gauge and Thermometer, ADE WS1907
     [251]  Fine Offset / Ecowitt WH55 water leak sensor
-    [252]  Audiovox Car Remote
+    [252]  Nutek Car Remote
     [253]  Astrostart 2000 Car Remote (-f 372.5M)
     [254]  Compustar 1WG3R Car Remote
     [255]  Chrysler Car Remote (-f 315.1M -s 2400k)
