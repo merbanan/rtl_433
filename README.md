@@ -343,6 +343,10 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [255]  Chrysler Car Remote (-f 315.1M -s 2400k)
     [256]  Honda Car Remote (-f 313M -s 240k)
     [257]  Audiovox PRO-OE3B Car Remote (-f 303M)
+    [258]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (315.1M Sync, 833 bit/s)
+    [259]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (315.1M Sync, 1667 bit/s)
+    [260]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (315.1M No Sync, 833 bit/s)
+    [261]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (315.1M No Sync, 1667 bit/s)
 
 * Disabled by default, use -R n or a conf file to enable
 

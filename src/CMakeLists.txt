@@ -140,6 +140,7 @@ add_library(r_433 STATIC
     devices/gt_wt_02.c
     devices/gt_wt_03.c
     devices/hcs200.c
+    devices/hcs361.c
     devices/hideki.c
     devices/holman_ws5029.c
     devices/honda_car_remote.c
