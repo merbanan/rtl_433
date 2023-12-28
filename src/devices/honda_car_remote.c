@@ -89,7 +89,7 @@ static int honda_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",       "model",     DATA_STRING, "Honda-CarRemote",
+            "model",       "model",     DATA_STRING, "Honda-OUCG8D",
             "id",          "device-id", DATA_INT,    id,
             "sequence",    "Sequence",  DATA_INT,    sequence,
             "button_code", "Button",    DATA_INT,    button,

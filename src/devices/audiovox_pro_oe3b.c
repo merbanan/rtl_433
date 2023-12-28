@@ -8,7 +8,7 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/** @fn int audiovox_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+/** @fn int audiovox_pro_oe3b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 Audiovox - Car Remote
 
 Manufacturer:
