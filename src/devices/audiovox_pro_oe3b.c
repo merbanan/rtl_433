@@ -108,5 +108,6 @@ r_device const audiovox_pro_oe3b = {
         .gap_limit   = 1790,
         .sync_width  = 1368,
         .decode_fn   = &audiovox_pro_oe3b_decode,
+        .priority    = 10,
         .fields      = output_fields,
 };

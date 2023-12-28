@@ -340,7 +340,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [252]  Nutek Car Remote
     [253]  Astrostart 2000 Car Remote (-f 372.5M)
     [254]  Compustar 1WG3R Car Remote
-    [255]  Chrysler Car Remote (-f 315.1M -s 2400k)
+    [255]  Chrysler Car Remote (-f 315.1M -s 1024k)
     [256]  Honda Car Remote (-f 313M -s 240k)
     [257]  Audiovox PRO-OE3B Car Remote (-f 303M)
     [258]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (315.1M Sync, 833 bit/s)
