@@ -339,11 +339,10 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [251]  Fine Offset / Ecowitt WH55 water leak sensor
     [252]  Audiovox Car Remote
     [253]  Astrostart 2000 Car Remote (-f 372.5M)
-    [254]  Compustar 700R Car Remote
-    [255]  Compustar 1WG3R Car Remote
-    [256]  Chrysler Car Remote (-f 315.1M -s 2400k)
-    [257]  Honda Car Remote (-f 313M -s 240k)
-    [258]  Audiovox PRO-OE3B Car Remote (-f 303M)
+    [254]  Compustar 1WG3R Car Remote
+    [255]  Chrysler Car Remote (-f 315.1M -s 2400k)
+    [256]  Honda Car Remote (-f 313M -s 240k)
+    [257]  Audiovox PRO-OE3B Car Remote (-f 303M)
 
 * Disabled by default, use -R n or a conf file to enable
 

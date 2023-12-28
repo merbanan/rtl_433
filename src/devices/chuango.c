@@ -24,6 +24,8 @@ Tested devices:
 - SMK-500 Smoke sensor (Default: 24H Zone)
 - WI-200 Water sensor (Default: 24H Zone)
 - newer DWC-102 additionally generates a cmd=12 signal on door/windows being closed
+- Compustar 700R Car Remote
+- Compustar 900R Car Remote
 
 Note: simple 24 bit fixed ID protocol (x1527 style) and should be handled by the flex decoder.
 
