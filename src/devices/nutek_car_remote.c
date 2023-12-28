@@ -1,5 +1,5 @@
 /** @file
-    Audiovox - Car Remote.
+    Nutek - Car Remote.
 
     Copyright (C) 2023 Ethan Halsall
 
@@ -9,21 +9,20 @@
     (at your option) any later version.
 */
 /** @fn int audiovox_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-Audiovox - Car Remote
+Nutek - Car Remote
 
 Manufacturer:
-- Audiovox
+- Nutek
 
 Supported Models:
-- ATCD-1
-- APS99BT3BCF4, ATCH (FCC ID ELVATCD)
+- ATCD-1, APS99BT3BCF4, ATCH (FCC ID ELVATCD)
 - AVX1BS4, AVX-1BS4 (FCC ID ELVATCC)
 - A1BTX (FCC ID ELVATFE)
 - 105BP (FCC ID ELVATJA)
 
 Data structure:
 
-Audiovox Type 4 and Code Alarm Type 7 Transmitters
+Nutek Type 4 and Code Alarm Type 7 Transmitters
 
 Transmitter uses a rolling code that changes between each button press.
 The same code is continuously repeated while button is held down.
@@ -73,7 +72,7 @@ static int audiovox_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",    "model",        DATA_STRING, "Audiovox-CarRemote",
+            "model",    "model",        DATA_STRING, "Nutek-CarRemote",
             "id",       "device-id",    DATA_INT,    id,
             "code",     "code",         DATA_INT,    code,
             "button",   "button",       DATA_INT,    button,
@@ -92,8 +91,8 @@ static char const *const output_fields[] = {
         NULL,
 };
 
-r_device const audiovox_car_remote = {
-        .name        = "Audiovox Car Remote",
+r_device const nutek_car_remote = {
+        .name        = "Nutek Car Remote",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 500,
         .long_width  = 945,
