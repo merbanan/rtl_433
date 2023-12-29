@@ -270,7 +270,8 @@
     DECL(hcs361_txwak_1_bsel_0) \
     DECL(hcs361_txwak_1_bsel_1) \
     DECL(six_sc_two_car_remote) \
-    DECL(gm_car_remote)
+    DECL(gm_car_remote) \
+    DECL(siemens_5wy72xx_car_remote)
 
     /* Add new decoders here. */
 
