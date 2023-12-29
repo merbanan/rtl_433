@@ -515,7 +515,7 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
     char const *path_states = "states";
 
     // get user and pass from env vars if available.
-    char *user = getenv("MQTT_USER");
+    char *user = getenv("MQTT_USERNAME");
     char *pass = getenv("MQTT_PASSWORD");
     int retain = 0;
     int qos = 0;

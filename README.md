@@ -429,7 +429,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"
 	MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
-	Default user and password are read from MQTT_USER and MQTT_PASSWORD env vars.
+	Default user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.
 	A base topic can be set with base=<topic>, default is "rtl_433/HOSTNAME".
 	Supported MQTT formats: (default is all)
 	  events: posts JSON event data
