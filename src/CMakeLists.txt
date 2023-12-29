@@ -136,6 +136,7 @@ add_library(r_433 STATIC
     devices/generic_remote.c
     devices/generic_temperature_sensor.c
     devices/geo_minim.c
+    devices/gm_car_remote.c
     devices/govee.c
     devices/gt_tmbbq05.c
     devices/gt_wt_02.c
