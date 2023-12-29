@@ -43,6 +43,7 @@ add_library(r_433 STATIC
     sdr.c
     term_ctl.c
     write_sigrok.c
+    devices/6sc2.c
     devices/abmt.c
     devices/acurite.c
     devices/acurite_01185m.c
