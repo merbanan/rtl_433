@@ -1,5 +1,5 @@
 /** @file
-    6SC0 - Car Remote.
+    6SC2 - Car Remote.
 
     Copyright (C) 2023 Ethan Halsall
 
@@ -8,14 +8,15 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/** @fn int six_sc_zero_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-6SC0 - Car Remote (315 MHz)
+/** @fn int six_sc_two_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+6SC2 - Car Remote (315 MHz)
 
 Manufacturer:
 - Unknown
 
 Supported Models:
-- 6SC0
+- 6SC2 CMGU
+- 6SC2 CDFA
 
 Data structure:
 
@@ -45,7 +46,7 @@ PREAMBLE: hhhh ENCRYPTED: hhhhhhhh BUTTON: bbbb UNKNOWN: bbbb SEQUENCE: hhhh CHE
 
 #include "decoder.h"
 
-static int six_sc_zero_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int six_sc_two_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int row = bitbuffer_find_repeated_row(bitbuffer, 1, 48);
 
@@ -85,7 +86,7 @@ static int six_sc_zero_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuff
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "model",       DATA_STRING, "6SC0-CarRemote",
+            "model",            "model",       DATA_STRING, "6SC2-CarRemote",
             "encrypted",        "",            DATA_STRING, encrypted_str,
             "button_code",      "Button Code", DATA_INT,    button,
             "button_str",       "Button",      DATA_STRING, button_str,
@@ -108,11 +109,11 @@ static char const *const output_fields[] = {
         NULL,
 };
 
-r_device const six_sc_zero_car_remote = {
-        .name        = "6SC0 Car Remote (-f 315.1M -s 1024k)",
+r_device const six_sc_two_car_remote = {
+        .name        = "6SC2 Car Remote (-f 315.1M -s 1024k)",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 250,
         .reset_limit = 10000,
-        .decode_fn   = &six_sc_zero_car_remote_decode,
+        .decode_fn   = &six_sc_two_car_remote_decode,
         .fields      = output_fields,
 };

@@ -269,7 +269,7 @@
     DECL(hcs361_txwak_0_bsel_1) \
     DECL(hcs361_txwak_1_bsel_0) \
     DECL(hcs361_txwak_1_bsel_1) \
-    DECL(six_sc_zero_car_remote)
+    DECL(six_sc_two_car_remote)
 
     /* Add new decoders here. */
 
