@@ -33,16 +33,17 @@ Bytes are inverted.
 
 The decoder will match on the last 64 bits of the preamble: 0xfffffff0
 
-SSSS IIIII bbbb CC
+SSSS IIIIII uuuu bbbb CC
 
 - I: 16 bit sequence that increments on each code transmitted
-- I: 20 bit remote ID
-- b: b bit button code
-- C: 8 bit unknown code, possibly a checksum or rolling code
+- I: 24 bit remote ID
+- u: 4 bit unknown
+- b: 4 bit button code
+- C: 16 bit unknown code, possibly a checksum or rolling code
 
 Format string:
 
-SEQUENCE hhhh ID: hhhhhhh BUTTON: bbbb CODE: bbbbbbbb
+SEQUENCE hhhh ID: hhhhhh UNKNOWN: bbbb BUTTON: bbbb CODE: hhhh
 
 */
 
@@ -54,8 +55,8 @@ static int nidec_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
-    uint8_t pattern[8] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xf0};
-    int offset         = bitbuffer_search(bitbuffer, 0, 0, pattern, 64) + 64;
+    uint8_t pattern[8] = {0xff, 0xff, 0xff, 0xf0};
+    int offset         = bitbuffer_search(bitbuffer, 0, 0, pattern, 32) + 32;
 
     if (bitbuffer->bits_per_row[0] - offset < 56) {
         return DECODE_ABORT_EARLY;
@@ -66,21 +67,21 @@ static int nidec_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t bytes[8];
     bitbuffer_extract_bytes(bitbuffer, 0, offset, bytes, 64);
 
-    uint32_t id  = (bytes[2] << 20) | (bytes[3] << 12) | (bytes[4] << 4) | (bytes[5] >> 4);
     int sequence = (bytes[0] << 8) | bytes[1];
+    uint32_t id  = (bytes[2] << 16) | (bytes[3] << 8) | bytes[4];
     int button   = bytes[5] & 0xf;
-    int code     = bytes[6];
+    int code     = (bytes[6] << 8) | bytes[7];
 
     if (id == 0 ||
             button == 0 ||
             sequence == 0 ||
-            id == 0xfffffff ||
+            id == 0xffffff ||
             sequence == 0xffff) {
         return DECODE_FAIL_SANITY;
     }
 
-    char id_str[11];
-    snprintf(id_str, sizeof(id_str), "%02X%08X", bytes[1], id);
+    char id_str[7];
+    snprintf(id_str, sizeof(id_str), "%06X", id);
 
     char const *button_str;
     /* clang-format off */
