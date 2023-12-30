@@ -9,7 +9,7 @@
     (at your option) any later version.
 */
 /** @fn int astrostart_2000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-Astrostart 2000 - Car Remote
+Astrostart 2000 - Car Remote 372.5 MHz
 
 Manufacturer:
 - Astroflex
@@ -59,18 +59,6 @@ BUTTON: bbbbbbbb INVERSE: bbbbbbbb ID: hhhhhhhh CHECKSUM: h
 
 static int astrostart_2000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int id       = 0;
-    int button   = 0;
-
-    // button flags
-    int panic         = 0;
-    int start         = 0;
-    int stop          = 0;
-    int lock          = 0;
-    int unlock        = 0;
-    int trunk         = 0;
-    int three_buttons = 0;
-
     if (bitbuffer->bits_per_row[0] != 52) {
         return DECODE_ABORT_LENGTH;
     }
@@ -85,10 +73,7 @@ static int astrostart_2000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    button = bytes[0];
-    id     = bytes[2] << 24 | bytes[3] << 16 | bytes[4] << 8 | bytes[5];
-
-    int actual_checksum   = bytes[6] >> 4 & 0xf;
+    int actual_checksum   = bytes[6] >> 4;
     int expected_checksum = 0;
 
     for (int i = 2; i < 6; i++) {
@@ -100,48 +85,60 @@ static int astrostart_2000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    // these are not bit flags
-    // the remote appears to map the button combinations to tbe below table
+    // parse id
+    uint32_t id = bytes[2] << 24 | bytes[3] << 16 | bytes[4] << 8 | bytes[5];
+    char id_str[9];
+    snprintf(id_str, sizeof(id_str), "%08X", id);
+
+    // parse button
+    int button          = bytes[0];
+    char button_str[64] = "";
+
+    typedef struct {
+        const char *name;
+        const uint8_t len;
+        const uint8_t vals[6];
+    } S;
+
     /* clang-format off */
-    switch (button) {
-        case 0x2b: lock = 1; break;
-        case 0x1f: panic = 1; break;
-        case 0x13: start = 1; break;
-        case 0x2f: stop = 1; break;
-        case 0x23: trunk = 1; break;
-        case 0x0b: unlock = 1; break;
-        case 0x35: panic = 1; lock = 1; break;
-        case 0x0d: panic = 1; stop = 1; break;
-        case 0x25: panic = 1; trunk = 1; break;
-        case 0x15: panic = 1; unlock = 1; break;
-        case 0x37: start = 1; lock = 1; break;
-        case 0x2d: start = 1; panic = 1; break;
-        case 0x33: start = 1; stop = 1; break;
-        case 0x3d: start = 1; trunk = 1; break;
-        case 0x3b: start = 1; unlock = 1; break;
-        case 0x03: stop = 1; lock = 1; break;
-        case 0x1d: stop = 1; trunk = 1; break;
-        case 0x17: stop = 1; unlock = 1; break;
-        case 0x27: trunk = 1; lock = 1; break;
-        case 0x07: trunk = 1; unlock = 1; break;
-        case 0x0f: unlock = 1; lock = 1; break;
-        case 0x3f: three_buttons = 1; break;
-        // default: unknown button
-    }
+    const S button_map[7] = {
+        { .name = "Lock",     .len = 6, .vals = { 0x2b, 0x03, 0x27, 0x0f, 0x35, 0x37 } },
+        { .name = "Panic",    .len = 6, .vals = { 0x1f, 0x35, 0x0d, 0x25, 0x15, 0x2d } },
+        { .name = "Start",    .len = 6, .vals = { 0x13, 0x37, 0x2d, 0x33, 0x3d, 0x3b } },
+        { .name = "Stop", .    len = 6, .vals = { 0x2f, 0x0d, 0x33, 0x03, 0x1d, 0x17 } },
+        { .name = "Trunk",    .len = 6, .vals = { 0x23, 0x25, 0x3d, 0x1d, 0x27, 0x07 } },
+        { .name = "Unlock",   .len = 6, .vals = { 0x0b, 0x15, 0x3b, 0x17, 0x07, 0x0f } },
+        { .name = "Multiple", .len = 1, .vals = { 0x3F } }
+    };
     /* clang-format on */
+    const char *delimiter = "; ";
+    const char *unknown   = "?";
+
+    int matches = 0;
+    // iterate over the button to value map to record which button(s) are pressed
+    for (int i = 0; i < 7; i++) {
+        for (int j = 0; j < button_map[i].len; j++) {
+            if (button == button_map[i].vals[j]) { // if the button values matches the value in the map
+                if (matches) {
+                    strcat(button_str, delimiter); // append a delimiter if there are multiple buttons matching
+                }
+                strcat(button_str, button_map[i].name); // append the button name
+                matches++; // record the match
+                break; // move to the next button
+            }
+        }
+    }
+
+    if (!matches) {
+        strcat(button_str, unknown);
+    }
 
     /* clang-format off */
     data_t *data = data_make(
             "model",         "model",        DATA_STRING, "Astrostart-2000",
-            "id",            "device-id",    DATA_INT,    id,
+            "id",            "ID",           DATA_STRING, id_str,
             "button_code",   "Button Code",  DATA_INT,    button,
-            "panic",         "Panic",        DATA_INT,    panic,
-            "start",         "Start",        DATA_INT,    start,
-            "stop",          "Stop",         DATA_INT,    stop,
-            "lock",          "Lock",         DATA_INT,    lock,
-            "unlock",        "Unlock",       DATA_INT,    unlock,
-            "trunk",         "Trunk",        DATA_INT,    trunk,
-            "multiple",      "Multiple",     DATA_INT,    three_buttons,
+            "button_str",    "Button",       DATA_STRING, button_str,
             "mic",           "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
@@ -154,13 +151,7 @@ static char const *const output_fields[] = {
         "model",
         "id",
         "button_code",
-        "panic",
-        "start",
-        "stop",
-        "lock",
-        "unlock",
-        "trunk",
-        "multiple",
+        "button_str",
         "mic",
         NULL,
 };
