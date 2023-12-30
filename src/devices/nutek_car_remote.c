@@ -48,9 +48,9 @@ ID: hhhh CODE: hhhh UNKNOWN: x BUTTON: bbbb
 
 static int audiovox_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int id     = 0;
-    int code   = 0;
-    int button = 0;
+    uint16_t id   = 0;
+    uint16_t code = 0;
+    int button    = 0;
 
     if (bitbuffer->bits_per_row[0] != 37) {
         return DECODE_ABORT_LENGTH;
@@ -62,8 +62,14 @@ static int audiovox_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint8_t *bytes = bitbuffer->bb[0];
 
-    id     = (bytes[0] << 8) | bytes[1];
-    code   = (bytes[2] << 8) | bytes[3];
+    id = (bytes[0] << 8) | bytes[1];
+    char id_str[5];
+    snprintf(id_str, sizeof(id_str), "%04X", id);
+
+    code = (bytes[2] << 8) | bytes[3];
+    char code_str[5];
+    snprintf(code_str, sizeof(code_str), "%04X", code);
+
     button = (bytes[4] >> 3) & 0xf;
 
     if (id == 0 || code == 0 || button == 0 || id == 0xffff || code == 0xffff) {
@@ -72,10 +78,10 @@ static int audiovox_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",    "model",        DATA_STRING, "Nutek-CarRemote",
-            "id",       "device-id",    DATA_INT,    id,
-            "code",     "code",         DATA_INT,    code,
-            "button",   "button",       DATA_INT,    button,
+            "model",    "model",  DATA_STRING, "Nutek-CarRemote",
+            "id",       "ID",     DATA_STRING, id_str,
+            "code",     "code",   DATA_STRING, code_str,
+            "button",   "button", DATA_INT,    button,
             NULL);
     /* clang-format on */
 
