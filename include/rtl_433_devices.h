@@ -263,7 +263,7 @@
     DECL(astrostart_2000) \
     DECL(compustar_1wg3r) \
     DECL(chrysler_car_remote) \
-    DECL(honda_car_remote) \
+    DECL(nidec_car_remote) \
     DECL(audiovox_pro_oe3b) \
     DECL(hcs361_txwak_0_bsel_0) \
     DECL(hcs361_txwak_0_bsel_1) \
