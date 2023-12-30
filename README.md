@@ -351,6 +351,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [263]  GM ABO1502T Car Remote (-f 315.1M)
     [264]  Siemens 5WY72XX Car Remote (-f 315.1M)
     [265]  Alps FWB1U545 Car Remote
+    [266]  Continental KR5V2X Car Remote (-f 313.8M -s 1024)
 
 * Disabled by default, use -R n or a conf file to enable
 

@@ -1,5 +1,5 @@
 /** @file
-    Handa - Car Remote.
+    Nidec - Car Remote.
 
     Copyright (C) 2023 Ethan Halsall
 
@@ -9,7 +9,7 @@
     (at your option) any later version.
 */
 /** @fn int nidec_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-Nidec - Car Remote (315 MHz)
+Nidec - Car Remote (313 MHz)
 
 Manufacturer:
 - Nidec
@@ -30,9 +30,6 @@ The panic button will repeat the panic code as long as it is held.
 Data layout:
 
 Bytes are inverted.
-
-Example:
-codes     : {385}fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0ee6f22beaeaa7d0
 
 The decoder will match on the last 64 bits of the preamble: 0xfffffff0
 
