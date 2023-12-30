@@ -8,14 +8,14 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/** @fn int honda_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-Honda - Car Remote (315 MHz)
+/** @fn int nidec_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+Nidec - Car Remote (315 MHz)
 
 Manufacturer:
-- Honda
+- Nidec
 
 Supported Models:
-- OUCG8D-344H-A
+- OUCG8D-344H-A (OEM for Honda)
 
 Data structure:
 
@@ -51,7 +51,7 @@ SEQUENCE hhhh ID: hhhhhhh BUTTON: bbbb CODE: bbbbbbbb
 
 #include <decoder.h>
 
-static int honda_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int nidec_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     if (bitbuffer->bits_per_row[0] < 128) {
         return DECODE_ABORT_LENGTH;
@@ -69,15 +69,10 @@ static int honda_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t bytes[8];
     bitbuffer_extract_bytes(bitbuffer, 0, offset, bytes, 64);
 
-    int id       = (bytes[2] << 20) | (bytes[3] << 12) | (bytes[4] << 4) | (bytes[5] >> 4);
+    uint32_t id  = (bytes[2] << 20) | (bytes[3] << 12) | (bytes[4] << 4) | (bytes[5] >> 4);
     int sequence = (bytes[0] << 8) | bytes[1];
     int button   = bytes[5] & 0xf;
     int code     = bytes[6];
-
-    int unlock = button == 3;
-    int lock   = button == 4;
-    int trunk  = button == 15;
-    int panic  = button == 6;
 
     if (id == 0 ||
             button == 0 ||
@@ -87,17 +82,29 @@ static int honda_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
     }
 
+    char id_str[11];
+    snprintf(id_str, sizeof(id_str), "%02X%08X", bytes[1], id);
+
+    char const *button_str;
+    /* clang-format off */
+    switch (button) {
+        case 0x3: button_str = "Lock"; break;
+        case 0x4: button_str = "Unlock"; break;
+        case 0x5: button_str = "Trunk/Panic Short Press"; break;
+        case 0x6: button_str = "Panic Long Press"; break;
+        case 0xf: button_str = "Trunk Long Press"; break;
+        default: button_str = "?"; break;
+    }
+    /* clang-format on */
+
     /* clang-format off */
     data_t *data = data_make(
-            "model",       "model",     DATA_STRING, "Honda-OUCG8D",
-            "id",          "device-id", DATA_INT,    id,
-            "sequence",    "Sequence",  DATA_INT,    sequence,
-            "button_code", "Button",    DATA_INT,    button,
-            "code",        "Code",      DATA_INT,    code,
-            "lock",        "Lock",      DATA_INT,    lock,
-            "unlock",      "Unlock",    DATA_INT,    unlock,
-            "trunk",       "Trunk",     DATA_INT,    trunk,
-            "panic",       "Panic",     DATA_INT,    panic,
+            "model",       "model",       DATA_STRING, "Nidec-OUCG8D",
+            "id",          "ID",          DATA_STRING, id_str,
+            "sequence",    "Sequence",    DATA_INT,    sequence,
+            "button_code", "Button Code", DATA_INT,    button,
+            "button_str",  "Button",      DATA_STRING, button_str,
+            "code",        "Code",        DATA_INT,    code,
             NULL);
     /* clang-format on */
 
@@ -111,19 +118,15 @@ static char const *const output_fields[] = {
         "sequence",
         "button_code",
         "code",
-        "lock",
-        "unlock",
-        "trunk",
-        "panic",
         NULL,
 };
 
-r_device const honda_car_remote = {
-        .name        = "Honda Car Remote (-f 313M -s 240k)",
-        .modulation  = OOK_PULSE_PWM, // this is actually FSK, but I was not able to decode using that modulation. Tuning to one end of the signal works with OOK PWM modulation.
-        .short_width = 242,
-        .long_width  = 483,
-        .reset_limit = 492,
-        .decode_fn   = &honda_car_remote_decode,
+r_device const nidec_car_remote = {
+        .name        = "Nidec Car Remote (-f 313.8M -s 1024)",
+        .modulation  = FSK_PULSE_PWM,
+        .short_width = 250,
+        .long_width  = 500,
+        .reset_limit = 1000,
+        .decode_fn   = &nidec_car_remote_decode,
         .fields      = output_fields,
 };

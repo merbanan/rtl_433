@@ -146,7 +146,6 @@ add_library(r_433 STATIC
     devices/hcs361.c
     devices/hideki.c
     devices/holman_ws5029.c
-    devices/honda_car_remote.c
     devices/hondaremote.c
     devices/honeywell.c
     devices/honeywell_cm921.c
@@ -192,6 +191,7 @@ add_library(r_433 STATIC
     devices/nexa.c
     devices/nexus.c
     devices/nice_flor_s.c
+    devices/nidec_car_remote.c
     devices/norgo.c
     devices/nutek_car_remote.c
     devices/oil_smart.c
