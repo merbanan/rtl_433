@@ -8,9 +8,8 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/**
+/** @fn hcs361_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 Microchip HCS361 KeeLoq Code Hopping Encoder based remotes.
-
 
 Data Format:
 
@@ -93,15 +92,15 @@ static int hcs361_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     int crc         = 0;
-    int crc_bat_low = 0; // datasheet recommends checking against flipped bat low indicator
+    int crc_bat_low = 0;
     int actual_crc  = (b[8] >> 5) & 0x3;
 
     for (int i = 0; i < 65; i++) {
         int bit     = (b[i / 8] >> (7 - (i % 8)));
         int crc_bit = ((crc >> 1) ^ bit) & 0x1;
 
+        // datasheet recommends checking the final crc bit for bat low flag if it is flipped
         if (i == 64) {
-            // calculate the final crc bit for bat low flag if it is flipped
             int crc_bit_bat_low = ((crc >> 1) ^ ~bit) & 0x1;
             crc_bat_low         = crc_bit_bat_low | (((crc_bit_bat_low ^ crc) << 1) & 0x2);
         }

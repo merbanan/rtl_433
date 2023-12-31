@@ -97,25 +97,25 @@ static int astrostart_2000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     typedef struct {
         const char *name;
         const uint8_t len;
-        const uint8_t vals[6];
-    } S;
+        const uint8_t *vals;
+    } Button;
 
     /* clang-format off */
-    const S button_map[7] = {
-        { .name = "Lock",     .len = 6, .vals = { 0x2b, 0x03, 0x27, 0x0f, 0x35, 0x37 } },
-        { .name = "Panic",    .len = 6, .vals = { 0x1f, 0x35, 0x0d, 0x25, 0x15, 0x2d } },
-        { .name = "Start",    .len = 6, .vals = { 0x13, 0x37, 0x2d, 0x33, 0x3d, 0x3b } },
-        { .name = "Stop", .    len = 6, .vals = { 0x2f, 0x0d, 0x33, 0x03, 0x1d, 0x17 } },
-        { .name = "Trunk",    .len = 6, .vals = { 0x23, 0x25, 0x3d, 0x1d, 0x27, 0x07 } },
-        { .name = "Unlock",   .len = 6, .vals = { 0x0b, 0x15, 0x3b, 0x17, 0x07, 0x0f } },
-        { .name = "Multiple", .len = 1, .vals = { 0x3F } }
+    const Button button_map[7] = {
+        { .name = "Lock",     .len = 6, .vals = (uint8_t[]){ 0x2b, 0x03, 0x27, 0x0f, 0x35, 0x37 } },
+        { .name = "Panic",    .len = 6, .vals = (uint8_t[]){ 0x1f, 0x35, 0x0d, 0x25, 0x15, 0x2d } },
+        { .name = "Start",    .len = 6, .vals = (uint8_t[]){ 0x13, 0x37, 0x2d, 0x33, 0x3d, 0x3b } },
+        { .name = "Stop", .    len = 6, .vals = (uint8_t[]){ 0x2f, 0x0d, 0x33, 0x03, 0x1d, 0x17 } },
+        { .name = "Trunk",    .len = 6, .vals = (uint8_t[]){ 0x23, 0x25, 0x3d, 0x1d, 0x27, 0x07 } },
+        { .name = "Unlock",   .len = 6, .vals = (uint8_t[]){ 0x0b, 0x15, 0x3b, 0x17, 0x07, 0x0f } },
+        { .name = "Multiple", .len = 1, .vals = (uint8_t[]){ 0x3F } }
     };
     /* clang-format on */
     const char *delimiter = "; ";
     const char *unknown   = "?";
 
     int matches = 0;
-    // iterate over the button to value map to record which button(s) are pressed
+    // iterate over the button-to-value map to record which button(s) are pressed
     for (int i = 0; i < 7; i++) {
         for (int j = 0; j < button_map[i].len; j++) {
             if (button == button_map[i].vals[j]) { // if the button values matches the value in the map
@@ -123,8 +123,8 @@ static int astrostart_2000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     strcat(button_str, delimiter); // append a delimiter if there are multiple buttons matching
                 }
                 strcat(button_str, button_map[i].name); // append the button name
-                matches++; // record the match
-                break; // move to the next button
+                matches++;                              // record the match
+                break;                                  // move to the next button
             }
         }
     }
@@ -135,11 +135,11 @@ static int astrostart_2000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",         "model",        DATA_STRING, "Astrostart-2000",
-            "id",            "ID",           DATA_STRING, id_str,
-            "button_code",   "Button Code",  DATA_INT,    button,
-            "button_str",    "Button",       DATA_STRING, button_str,
-            "mic",           "Integrity",    DATA_STRING, "CHECKSUM",
+            "model",       "model",       DATA_STRING, "Astrostart-2000",
+            "id",          "ID",          DATA_STRING, id_str,
+            "button_code", "Button Code", DATA_INT,    button,
+            "button_str",  "Button",      DATA_STRING, button_str,
+            "mic",         "Integrity",   DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 

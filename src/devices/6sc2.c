@@ -29,18 +29,18 @@ Data layout:
 
 Bytes are reflected
 
-IIIIIIII bbbb x d xx CC
+PPPP EEEEEEEE bbbb uuuu SSSS CC
 
-- I: 32 bit remote ID
-- b: 4 bit button code
-- x: 1 bit unknown
-- d: 1 bit set to 1 when multiple buttons are pressed
-- x: 2 bit unknown
+- P: 16 bit preamble
+- E: 32 bit encrypted
+- b: 4 bit button
+- u: 4 bit unknown
+- S: 16 bit sequence
 - C: 8 bit checksum
 
 Format string:
 
-PREAMBLE: hhhh ENCRYPTED: hhhhhhhh BUTTON: bbbb UNKNOWN: bbbb SEQUENCE: hhhh CHECKSUM: hhhh
+PREAMBLE: hhhh ENCRYPTED: hh hh hh hh BUTTON: bbbb UNKNOWN: bbbb SEQUENCE: hhhh CHECKSUM: hh
 
 */
 
@@ -80,18 +80,18 @@ static int six_sc_two_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffe
         case 0x2: button_str = "Lock"; break;
         case 0x3: button_str = "Trunk"; break;
         case 0x4: button_str = "Panic"; break;
-        default: button_str = "?"; break;
+        default:  button_str = "?"; break;
     }
     /* clang-format on */
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "model",       DATA_STRING, "6SC2-CarRemote",
-            "encrypted",        "",            DATA_STRING, encrypted_str,
-            "button_code",      "Button Code", DATA_INT,    button,
-            "button_str",       "Button",      DATA_STRING, button_str,
-            "sequence",         "Sequence",    DATA_INT,    sequence,
-            "mic",              "Integrity",   DATA_STRING, "CHECKSUM",
+            "model",       "model",       DATA_STRING, "6SC2-CarRemote",
+            "encrypted",   "",            DATA_STRING, encrypted_str,
+            "button_code", "Button Code", DATA_INT,    button,
+            "button_str",  "Button",      DATA_STRING, button_str,
+            "sequence",    "Sequence",    DATA_INT,    sequence,
+            "mic",         "Integrity",   DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 

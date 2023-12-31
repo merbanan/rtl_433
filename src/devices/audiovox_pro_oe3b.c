@@ -16,6 +16,7 @@ Manufacturer:
 
 Supported Models:
 - PRO-OE3B, AVX01BT3CL3 (FCC ID BGAOE3B)
+- PRO-OE4B, AVX01BT3CL3 (FCC ID BGAOE3B)
 
 Data structure:
 
@@ -61,27 +62,52 @@ static int audiovox_pro_oe3b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_invert(bitbuffer);
 
-    int id     = (bytes[0] << 8) | bytes[1];
-    int button = (bytes[2] & 0x10 >> 2) |
-                 (bytes[2] & 0x4 >> 1) |
-                 (bytes[2] & 0x1);
-
-    int trunk  = (bytes[2] & 0x10) != 0;
-    int unlock = (bytes[2] & 0x4) != 0;
-    int lock   = (bytes[2] & 0x1) != 0;
-
+    uint16_t id = (bytes[0] << 8) | bytes[1];
     if (id == 0 || id == 0xffff) {
+        return DECODE_FAIL_SANITY;
+    }
+
+    char id_str[5];
+    snprintf(id_str, sizeof(id_str), "%04X", id);
+
+    // parse buttons
+    int button = (bytes[2] & 0x40 >> 3) | // Trunk
+                 (bytes[2] & 0x10 >> 2) | // Option
+                 (bytes[2] & 0x4 >> 1) |  // Unlock
+                 (bytes[2] & 0x1);        // Lock
+
+    char button_str[64]           = "";
+    char const *delimiter         = "; ";
+    char const *button_strings[4] = {
+            "Lock",
+            "Unlock",
+            "Option",
+            "Trunk",
+    };
+
+    int matches = 0;
+    int mask    = 0x01;
+    for (int i = 0; i < 4; i++) {
+        if (bytes[2] & mask) {
+            if (matches) {
+                strcat(button_str, delimiter);
+            }
+            strcat(button_str, button_strings[i]);
+            matches++;
+        };
+        mask <<= 2;
+    }
+
+    if (!matches) {
         return DECODE_FAIL_SANITY;
     }
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",    "model",        DATA_STRING, "Audiovox-PROOE3B",
-            "id",       "device-id",    DATA_INT,    id,
-            "button",   "button",       DATA_INT,    button,
-            "trunk",    "trunk",        DATA_INT,    trunk,
-            "unlock",   "unlock",       DATA_INT,    unlock,
-            "lock",     "lock",         DATA_INT,    lock,
+            "model",       "model",       DATA_STRING, "Audiovox-PROOE3B",
+            "id",          "ID",          DATA_STRING, id_str,
+            "button_code", "Button Code", DATA_INT,    button,
+            "button_str",  "Button",      DATA_STRING, button_str,
             NULL);
     /* clang-format on */
 
@@ -92,10 +118,8 @@ static int audiovox_pro_oe3b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
-        "button",
-        "trunk",
-        "unlock",
-        "lock",
+        "button_code",
+        "button_str",
         NULL,
 };
 

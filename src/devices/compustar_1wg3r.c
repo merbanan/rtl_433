@@ -28,14 +28,16 @@ Button operation:
 This transmitter has 4 buttons which can be pressed once to transmit a single message
 Multiple buttons can be pressed down to send unique codes.
 
+Panic:
+Press and hold the lock button for 3 seconds.
+
 Long Press:
 Hold the button combination down for 2.5 seconds to send a long press signal.
 
 Secondary mode:
 Press and hold the unlock and the trunk buttons (II & III) at the same time. (press and hold for 2.5 seconds)
 The LED will flash slowly indicating the remote is in the secondary mode.
-Button presses are batched by the remote when secondary mode is activated.
-
+Button presses sent in batches by the remote when secondary mode is activated.
 
 Data layout:
 
@@ -59,7 +61,7 @@ ID: hhhh UNKNOWN: bbb BUTTON_INVERSE: bbbbbbbb BUTTON: bbbbbbbb UNKNOWN: b
 
 static int compustar_1wg3r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int rows_data_idx = -1;
+    int rows_data_idx  = -1;
     data_t **rows_data = malloc(bitbuffer->num_rows * sizeof(data_t *));
     if (!rows_data) {
         WARN_MALLOC("compustar_1wg3r_decode()");
@@ -82,78 +84,83 @@ static int compustar_1wg3r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             continue; // DECODE_ABORT_EARLY;
         }
 
-        if ((bytes[0] = 0xff && bytes[1] == 0xff) ||
+        if ((bytes[0] == 0xff && bytes[1] == 0xff) ||
                 (bytes[0] == 0x00 && bytes[1] == 0x00)) {
             continue; // DECODE_FAIL_SANITY;
         }
 
-        int id             = bytes[0] << 8 | bytes[1];
-        int button_inverse = (bytes[2] << 3 & 0xff) | bytes[3] >> 5;
+        uint16_t id = (bytes[0] << 8) | bytes[1];
+        char id_str[5];
+        snprintf(id_str, sizeof(id_str), "%04X", id);
+
+        int button_inverse = ((bytes[2] << 3) & 0xff) | bytes[3] >> 5;
         int button         = ((bytes[3] << 3) & 0xff) | bytes[4] >> 5;
 
         if ((~button_inverse & 0xff) != button) {
             continue; // DECODE_FAIL_MIC;
         }
 
-        // button flags
-        int long_press     = (button & 0x10) > 0;
-        int secondary_mode = (button & 0x80) > 0;
-        int alarm          = 0;
-        int unlock         = 0;
-        int lock           = 0;
-        int trunk          = 0;
-        int start          = 0;
+        // parse button
+        char button_str[128] = "";
 
-        // these are not bit flags
-        // the remote maps the button combinations to tbe below table
+        typedef struct {
+            const char *name;
+            const uint8_t len;
+            const uint8_t *vals;
+        } Button;
+
         /* clang-format off */
-        // shared codes between normal and long press
-        switch (button & 0xf) {
-            case 0x3: lock = 1; unlock = 1; break;
-            case 0x5: lock = 1; trunk = 1; break;
-            case 0x9: lock = 1; start = 1; break;
-            case 0x6: unlock = 1; trunk = 1; break;
-            case 0xa: unlock = 1; start = 1; break;
-            case 0xc: start = 1; trunk = 1; break;
-            case 0xb: lock = 1; unlock = 1; start = 1; break;
-            case 0xe: unlock = 1; start = 1; trunk = 1; break;
-            case 0xd: lock = 1; start = 1; trunk = 1; break;
+        const Button button_map[6] = {
+            { .name = "Lock",       .len = 13,  .vals = (uint8_t[]){ 0x03, 0x05, 0x09, 0x0b, 0x0d, 0x0f, 0x1f, 0x17, 0x13, 0x15, 0x19, 0x1b, 0x1d } },
+            { .name = "Panic",      .len = 1,   .vals = (uint8_t[]){ 0x18 } },
+            { .name = "Start",      .len = 16,  .vals = (uint8_t[]){ 0x09, 0x0a, 0x0c, 0x0b, 0x0e, 0x0d, 0x04, 0x1f, 0x08, 0x19, 0x1a, 0x1c, 0x1b, 0x1e, 0x1d, 0x12 } },
+            { .name = "Trunk",      .len = 15,  .vals = (uint8_t[]){ 0x05, 0x06, 0x0c, 0x0e, 0x0d, 0x1f, 0x17, 0x02, 0x15, 0x16, 0x1c, 0x1e, 0x1d, 0x08, 0x14 } },
+            { .name = "Unlock",     .len = 13,  .vals = (uint8_t[]){ 0x03, 0x06, 0x0a, 0x0b, 0x0e, 0x1f, 0x07, 0x17, 0x13, 0x16, 0x1a, 0x1b, 0x1e } },
+            { .name = "Long Press", .len = 28,  .vals = (uint8_t[]){ 0x23, 0x31, 0x13, 0x16, 0x17, 0x1a, 0x1b, 0x1e, 0x15, 0x16, 0x1c, 0x1e, 0x1d, 0x08, 0x14, 0x08, 0x19, 0x1a, 0x1c, 0x1b, 0x1e, 0x1d, 0x12, 0x13, 0x15, 0x19, 0x1b, 0x1d } },
+        };
+        /* clang-format on */
+        const char *delimiter = "; ";
+        const char *unknown   = "?";
+
+        int matches = 0;
+        // iterate over the button-to-value map to record which button(s) are pressed
+        for (int i = 0; i < 6; i++) {
+            for (int j = 0; j < button_map[i].len; j++) {
+                if ((button & 0x7f) == button_map[i].vals[j]) { // if the button values matches the value in the map
+                    if (matches) {
+                        strcat(button_str, delimiter); // append a delimiter if there are multiple buttons matching
+                    }
+                    strcat(button_str, button_map[i].name); // append the button name
+                    matches++;                              // record the match
+                    break;                                  // move to the next button
+                }
+            }
         }
 
-        // unique codes between normal and long press
-        switch (button & 0x1f) {
-            case 0x0f: lock = 1; break;
-            case 0x1f: lock = 1; unlock = 1; start = 1; trunk = 1; break;
-            case 0x07: unlock = 1; break;
-            case 0x17: lock = 1; unlock = 1; trunk = 1; break;
-            case 0x02: trunk = 1; break;
-            case 0x04: start = 1; break;
-            case 0x12: start = 1; break;
-            case 0x14: trunk = 1; break;
-            case 0x08: start = 1; trunk = 1; long_press = 1; break;
-            case 0x18: alarm = 1; break;
+        if (!matches) {
+            strcat(button_str, unknown);
         }
-        /* clang-format on */
+
+        if (button & 0x80) {
+            if (matches) {
+                strcat(button_str, delimiter); // append a delimiter if there are multiple buttons matching
+            }
+            strcat(button_str, "Secondary Mode"); // append the button name
+        }
 
         if (previous_row >= 0 && bitbuffer_compare_rows(bitbuffer, previous_row, current_row, 35)) {
-            continue; // duplicate of previous row
+            continue; // duplicate of previous valid message
         }
 
         previous_row = current_row;
         rows_data_idx++;
         /* clang-format off */
         rows_data[rows_data_idx] = data_make(
-                "model",            "model",            DATA_STRING, "Compustar-1WG3R",
-                "id",               "device-id",        DATA_INT,    id,
-                "button_code",      "Button Code",      DATA_INT,    button,
-                "alarm",            "Alarm",            DATA_INT,    alarm,
-                "start",            "Start",            DATA_INT,    start,
-                "lock",             "Lock",             DATA_INT,    lock,
-                "unlock",           "Unlock",           DATA_INT,    unlock,
-                "trunk",            "Trunk",            DATA_INT,    trunk,
-                "long_press",       "Long Press",       DATA_INT,    long_press,
-                "secondary_mode",   "Secondary Mode",   DATA_INT,    secondary_mode,
-                "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
+                "model",        "model",       DATA_STRING, "Compustar-1WG3R",
+                "id",           "ID",          DATA_STRING, id_str,
+                "button_code",  "Button Code", DATA_INT,    button,
+                "button_str",   "Button",      DATA_STRING, button_str,
+                "mic",          "Integrity",   DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
     }
@@ -176,13 +183,7 @@ static char const *const output_fields[] = {
         "model",
         "id",
         "button_code",
-        "alarm",
-        "start",
-        "lock",
-        "unlock",
-        "trunk",
-        "long_press",
-        "secondary_mode",
+        "button_str",
         "mic",
         NULL,
 };

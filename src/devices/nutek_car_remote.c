@@ -8,7 +8,7 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/** @fn int audiovox_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+/** @fn int nutek_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 Nutek - Car Remote
 
 Manufacturer:
@@ -46,7 +46,7 @@ ID: hhhh CODE: hhhh UNKNOWN: x BUTTON: bbbb
 
 #include "decoder.h"
 
-static int audiovox_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int nutek_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint16_t id   = 0;
     uint16_t code = 0;
@@ -105,7 +105,7 @@ r_device const nutek_car_remote = {
         .reset_limit = 20000,
         .gap_limit   = 4050,
         .sync_width  = 2000,
-        .decode_fn   = &audiovox_decode,
+        .decode_fn   = &nutek_decode,
         .priority    = 10,
         .fields      = output_fields,
 };
