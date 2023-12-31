@@ -39,7 +39,7 @@
 #include "decoder.h"
 
 static int honda_decode(r_device *decoder, bitbuffer_t *bitbuffer){
-	if (bitbuffer->num_rows > 1){ return DECODE_ABORT_EARLY; } //should only be 1 row
+        if (bitbuffer->num_rows > 1){ return DECODE_ABORT_EARLY; } //should only be 1 row
 
 	if( bitbuffer->bits_per_row[0] < 150 || bitbuffer->bits_per_row[0] > 184 ){ return DECODE_ABORT_EARLY; }
 
