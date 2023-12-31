@@ -84,7 +84,7 @@ static int honda_decode(r_device *decoder, bitbuffer_t *bitbuffer){
 	}
 
 	data_t *data = data_make(
-			"model",        "model",      	DATA_STRING, "Honda Keyfob",
+			"model",        "model",      	DATA_STRING, "Honda Keyfob KR5V2X/1X",
 			"id",	"Device ID",	DATA_FORMAT, "%08x", DATA_INT, device_id,
 			"event",	"Event",	DATA_STRING, event,
 			"counter","Counter",	DATA_FORMAT, "%06x", DATA_INT, device_counter,
@@ -109,7 +109,7 @@ static char const *const output_fields[] = {
 
 
 r_device const honda_keyfob = {
-	.name        = "Honda Keyfob",
+	.name        = "Honda Keyfob KR5V2X/1X",
 	.modulation  = FSK_PULSE_MANCHESTER_ZEROBIT,
 	.short_width = 60,
 	.long_width  = 120,
