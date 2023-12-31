@@ -100,7 +100,7 @@
     DECL(tpms_renault) \
     DECL(infactory) \
     DECL(ft004b) \
-    DECL(fordremote) \
+    DECL(ford_car_remote) \
     DECL(philips_aj3650) \
     DECL(schrader_EG53MA4) \
     DECL(nexa) \

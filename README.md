@@ -178,7 +178,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [90]  Renault TPMS
     [91]  inFactory, nor-tec, FreeTec NC-3982-913 temperature humidity sensor
     [92]  FT-004-B Temperature Sensor
-    [93]  Ford Car Key
+    [93]  Ford Car Remote
     [94]  Philips outdoor temperature sensor (type AJ3650)
     [95]  Schrader TPMS EG53MA4, PA66GF35
     [96]  Nexa
