@@ -9,18 +9,18 @@
 */
 
 /**
-	Decoder for Honda Car Keyfob
-	FCCID KR5V2X
-	Frequency 433.66 MHz or 434.18 MHz
-	
-	FCCID KR5V1X
-	Frequency 313.55 MHz or 314.15 MHz
+        Decoder for Honda Car Keyfob
+        FCCID KR5V2X
+        Frequency 433.66 MHz or 434.18 MHz
 
-	Signal is 2FSK, 15 kHz deviation, datarate(baud) 16.66 kbps
- 	Device uses Manchester encoded pulses of 60 us and 120 us
-  	Data packets are usually 180 bits (full sync included)
-  	Data packet starts with sync of 0xFFFFFFFFFFF
-  	Data layout after sync:
+        FCCID KR5V1X
+        Frequency 313.55 MHz or 314.15 MHz
+
+        Signal is 2FSK, 15 kHz deviation, datarate(baud) 16.66 kbps
+        Device uses Manchester encoded pulses of 60 us and 120 us
+        Data packets are usually 180 bits (with entire sync)
+        Data packet starts with sync of 0xFFFFFFFFFFF
+        Data layout after sync:
            MMMMMM HH DDDDDDDD EE NNNNNN RRRRRRRR CC
 
  	- M: 24 bit Manufacturer ID
@@ -32,7 +32,6 @@
        	- C: 8 bit CRC, OPENSAFETY poly 0x2f init 0x00
 
  	Flex decoder: rtl_433 -f 433657000 -R 0 -X 'n=honda,m=FSK_MC_ZEROBIT,s=60,l=120,r=75000,preamble={32}0xffffec0f'
-  
 */
 
 
@@ -40,7 +39,6 @@
 #include "decoder.h"
 
 static int honda_decode(r_device *decoder, bitbuffer_t *bitbuffer){
-
 	if (bitbuffer->num_rows > 1){ return DECODE_ABORT_EARLY; } //should only be 1 row
 
 	if( bitbuffer->bits_per_row[0] < 150 || bitbuffer->bits_per_row[0] > 184 ){ return DECODE_ABORT_EARLY; }
@@ -86,7 +84,7 @@ static int honda_decode(r_device *decoder, bitbuffer_t *bitbuffer){
 	}
 
 	data_t *data = data_make(
-			"model",        "",      	DATA_STRING, "Honda Keyfob",
+			"model",        "model",      	DATA_STRING, "Honda Keyfob",
 			"id",	"Device ID",	DATA_FORMAT, "%08x", DATA_INT, device_id,
 			"event",	"Event",	DATA_STRING, event,
 			"counter","Counter",	DATA_FORMAT, "%06x", DATA_INT, device_counter,
