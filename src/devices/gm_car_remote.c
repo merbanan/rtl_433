@@ -98,13 +98,13 @@ static int gm_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "model",       DATA_STRING, "GM-ABO1502T",
-            "id",               "ID",          DATA_STRING, id_str,
-            "encrypted",        "",            DATA_STRING, encrypted_str,
-            "button_code",      "Button Code", DATA_INT,    button,
-            "button_str",       "Button",      DATA_STRING, button_str,
-            "sequence",         "Sequence",    DATA_INT,    sequence,
-            "mic",              "Integrity",   DATA_STRING, "CHECKSUM",
+            "model",       "model",       DATA_STRING, "GM-ABO1502T",
+            "id",          "ID",          DATA_STRING, id_str,
+            "encrypted",   "",            DATA_STRING, encrypted_str,
+            "button_code", "Button Code", DATA_INT,    button,
+            "button_str",  "Button",      DATA_STRING, button_str,
+            "sequence",    "Sequence",    DATA_INT,    sequence,
+            "mic",         "Integrity",   DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 

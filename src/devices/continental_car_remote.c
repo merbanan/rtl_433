@@ -69,7 +69,6 @@ static int continental_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuff
     int button         = bytes[5] >> 4;
     int sequence       = (bytes[6] << 16) | bytes[7] << 8 | bytes[8];
     uint32_t encrypted = (bytes[9] << 24) | (bytes[10] << 16) | (bytes[11] << 8) | bytes[12];
-    int checksum       = bytes[13];
 
     if (id == 0 ||
             button == 0 ||

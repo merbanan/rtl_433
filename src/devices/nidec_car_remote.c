@@ -67,10 +67,10 @@ static int nidec_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t bytes[8];
     bitbuffer_extract_bytes(bitbuffer, 0, offset, bytes, 64);
 
-    int sequence = (bytes[0] << 8) | bytes[1];
-    uint32_t id  = (bytes[2] << 16) | (bytes[3] << 8) | bytes[4];
-    int button   = bytes[5] & 0xf;
-    int code     = (bytes[6] << 8) | bytes[7];
+    int sequence  = (bytes[0] << 8) | bytes[1];
+    uint32_t id   = (bytes[2] << 16) | (bytes[3] << 8) | bytes[4];
+    int button    = bytes[5] & 0xf;
+    uint16_t code = (bytes[6] << 8) | bytes[7];
 
     if (id == 0 ||
             button == 0 ||
@@ -82,6 +82,9 @@ static int nidec_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     char id_str[7];
     snprintf(id_str, sizeof(id_str), "%06X", id);
+
+    char code_str[5];
+    snprintf(code_str, sizeof(code_str), "%04X", code);
 
     char const *button_str;
     /* clang-format off */
@@ -99,10 +102,10 @@ static int nidec_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data = data_make(
             "model",       "model",       DATA_STRING, "Nidec-OUCG8D",
             "id",          "ID",          DATA_STRING, id_str,
+            "code",        "",            DATA_STRING, code_str,
             "sequence",    "Sequence",    DATA_INT,    sequence,
             "button_code", "Button Code", DATA_INT,    button,
             "button_str",  "Button",      DATA_STRING, button_str,
-            "code",        "Code",        DATA_INT,    code,
             NULL);
     /* clang-format on */
 
@@ -113,14 +116,15 @@ static int nidec_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
+        "code",
         "sequence",
         "button_code",
-        "code",
+        "button_str",
         NULL,
 };
 
 r_device const nidec_car_remote = {
-        .name        = "Nidec Car Remote (-f 313.8M -s 1024)",
+        .name        = "Nidec Car Remote (-f 313.8M -s 1024k)",
         .modulation  = FSK_PULSE_PWM,
         .short_width = 250,
         .long_width  = 500,

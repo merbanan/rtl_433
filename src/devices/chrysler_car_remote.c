@@ -33,7 +33,6 @@ Data layout:
 Bytes are inverted and reflected
 
 IIIIIIII bbbb x d xx CC
-
 - I: 32 bit remote ID
 - b: 4 bit button code
 - x: 1 bit unknown
@@ -43,7 +42,7 @@ IIIIIIII bbbb x d xx CC
 
 Format string:
 
-ID: hhhhhhhh BUTTON: bbbb x MULTIPLE: b xx CHECKSUM: bbbbbbbb
+PREAMBLE: ID: hhhhhhhh BUTTON: bbbb x MULTIPLE: b xx CHECKSUM: bbbbbbbb
 
 */
 
@@ -68,27 +67,54 @@ static int chrysler_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    int id     = bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3];
-    int button = bytes[4] >> 4;
+    // parse id
+    uint32_t id = (bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
+    if (id == 0 || id == 0xffff) {
+        return DECODE_FAIL_SANITY;
+    }
 
-    int unlock       = (button & 0x1) != 0;
-    int lock         = (button & 0x2) != 0;
-    int panic        = (button & 0x4) != 0;
-    int double_press = (bytes[4] & 0x4) != 0;
+    char id_str[9];
+    snprintf(id_str, sizeof(id_str), "%08X", id);
 
-    if (id == 0 || button == 0 || (unlock + lock + panic > 1 && double_press != 1)) {
+    // parse button
+    int button      = bytes[4] >> 4;
+    int multi_press = (bytes[4] & 0x4) != 0;
+
+    if (button == 0) {
+        return DECODE_FAIL_SANITY;
+    }
+
+    char button_str[64]           = "";
+    char const *delimiter         = "; ";
+    char const *button_strings[3] = {
+            "Unlock",
+            "Lock",
+            "Panic"};
+
+    int matches = 0;
+    int mask    = 0x01;
+    for (int i = 0; i < 3; i++) {
+        if (button & mask) {
+            if (matches) {
+                strcat(button_str, delimiter);
+            }
+            strcat(button_str, button_strings[i]);
+            matches++;
+        };
+        mask <<= 1;
+    }
+
+    if (!matches || (matches > 1 && !multi_press) || (matches == 1 && multi_press)) {
         return DECODE_FAIL_SANITY;
     }
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "model",            DATA_STRING, "Chrysler-CarRemote",
-            "id",               "device-id",        DATA_INT,    id,
-            "button_code",      "Button Code",      DATA_INT,    button,
-            "lock",             "Lock",             DATA_INT,    lock,
-            "unlock",           "Unlock",           DATA_INT,    unlock,
-            "panic",            "Panic",            DATA_INT,    panic,
-            "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
+            "model",       "model",       DATA_STRING, "Chrysler-CarRemote",
+            "id",          "ID",          DATA_STRING, id_str,
+            "button_code", "Button Code", DATA_INT,    button,
+            "button_str",  "Button",      DATA_STRING, button_str,
+            "mic",         "Integrity",   DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
@@ -100,9 +126,7 @@ static char const *const output_fields[] = {
         "model",
         "id",
         "button_code",
-        "lock",
-        "unlock",
-        "panic",
+        "button_str",
         "mic",
         NULL,
 };
