@@ -429,11 +429,13 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"
 	MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
+	Default user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.
+	A base topic can be set with base=<topic>, default is "rtl_433/HOSTNAME".
 	Supported MQTT formats: (default is all)
 	  events: posts JSON event data
 	  states: posts JSON state data
 	  devices: posts device and sensor info in nested topics
-	The topic string will expand keys like [/model]
+	Any topic string overrides the base topic and will expand keys like [/model]
 	E.g. -F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
 	With MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client-ID is computed from the driver string.
 	If you use multiple RTL-SDR, perhaps set a serial and select by that (helps not to get the wrong antenna).
