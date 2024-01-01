@@ -36,10 +36,10 @@ Hardware buttons might map to combinations of these bits.
 - Datasheet HCS361: https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ProductDocuments/DataSheets/40146F.pdf
 
 Known Devices:
-- Manufacturer
-  - Leer
-- Model
-  - OUTE_ELC (FCC ID KOBLEAR1XT)
+- Manufacturer / Model
+  - Leer - OUTE_ELC (FCC ID KOBLEAR1XT)
+  - Marelli - (FCC ID KBRASTU15)
+  - Jeep / Chrysler remote
 
 Pulse Format / Timing:
 
@@ -63,23 +63,23 @@ Timing is selected by the two flags coded into the EEPROM.
 
 static int hcs361_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    if (bitbuffer->num_rows != 2 || bitbuffer->bits_per_row[1] != 67)
+    if (bitbuffer->num_rows < 2 || bitbuffer->bits_per_row[1] != 67) {
         return DECODE_ABORT_LENGTH;
+    }
 
-    if (bitbuffer->bits_per_row[0] == 6) {
-        // sync
-        if (bitbuffer->bb[0][0] != 0xfc) {
-            return DECODE_ABORT_EARLY;
-        }
+    // sync
+    if (bitbuffer->bits_per_row[0] == 6 && bitbuffer->bb[0][0] != 0xfc) {
+        return DECODE_FAIL_SANITY;
     }
-    else if (bitbuffer->bits_per_row[0] == 12) {
-        // no sync
-        if (bitbuffer->bb[0][0] != 0xff || bitbuffer->bb[0][1] != 0xf0) {
-            return DECODE_ABORT_EARLY;
+    // no sync
+    if (bitbuffer->bits_per_row[0] == 12) {
+        uint16_t preamble = (bitbuffer->bb[0][0]) << 8 | bitbuffer->bb[0][1];
+        if (
+                preamble != 0xaaa0 && // PIWM modulation
+                preamble != 0xfff0)   // PWM modulation
+        {
+            return DECODE_FAIL_SANITY;
         }
-    }
-    else {
-        return DECODE_ABORT_LENGTH;
     }
 
     // Second row is data
@@ -158,7 +158,7 @@ BSEL:  0
 TE:    (min: 260us), (avg: 400us), (max: 620us)
 */
 r_device const hcs361_txwak_0_bsel_0 = {
-        .name        = "Microchip HCS361 KeeLoq Hopping Encoder based remotes (315.1M Sync, 833 bit/s)",
+        .name        = "Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (Sync, 833 bit/s)",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 400,            // Short     1x  TE
         .long_width  = 800,            // Long      2x  TE
@@ -167,7 +167,6 @@ r_device const hcs361_txwak_0_bsel_0 = {
         .tolerance   = 140,            // Tolerance 140 us
         .sync_width  = 4000,           // Sync      10x TE
         .decode_fn   = &hcs361_decode, // 111111     [sync 10x TE] [header 10x TE] [data] [guard time]
-        .priority    = 1,              // prevent duplicate messages
         .fields      = output_fields,
 };
 
@@ -178,7 +177,7 @@ BSEL:  1
 TE:    (min: 130us), (avg: 200us), (max: 310us)
 */
 r_device const hcs361_txwak_0_bsel_1 = {
-        .name        = "Microchip HCS361 KeeLoq Hopping Encoder based remotes (315.1M Sync, 1667 bit/s)",
+        .name        = "Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (Sync, 1667 bit/s)",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 200,            // Short     1x  TE
         .long_width  = 400,            // Long      2x  TE
@@ -187,7 +186,6 @@ r_device const hcs361_txwak_0_bsel_1 = {
         .tolerance   = 70,             // Tolerance 70  us
         .sync_width  = 2000,           // Sync      10x TE
         .decode_fn   = &hcs361_decode, // 111111     [sync 10x TE] [header 10x TE] [data] [guard time]
-        .priority    = 1,              // prevent duplicate messages
         .fields      = output_fields,
 };
 
@@ -198,7 +196,7 @@ BSEL:  0
 TE:    (min: 130us), (avg: 200us), (max: 310us)
 */
 r_device const hcs361_txwak_1_bsel_0 = {
-        .name        = "Microchip HCS361 KeeLoq Hopping Encoder based remotes (315.1M No Sync, 833 bit/s)",
+        .name        = "Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (No Sync, 833 bit/s)",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 200,            // Short     1x  TE
         .long_width  = 400,            // Long      2x  TE
@@ -206,7 +204,6 @@ r_device const hcs361_txwak_1_bsel_0 = {
         .reset_limit = 6800,           // Reset     34x TE
         .tolerance   = 140,            // Tolerance 70  us
         .decode_fn   = &hcs361_decode, // 1111111111               [header 10x TE] [data] [guard time]
-        .priority    = 1,              // prevent duplicate messages
         .fields      = output_fields,
 };
 
@@ -217,7 +214,7 @@ BSEL:  1
 TE:    (min: 65us),  (avg: 100us), (max: 155us)
 */
 r_device const hcs361_txwak_1_bsel_1 = {
-        .name        = "Microchip HCS361 KeeLoq Hopping Encoder based remotes (315.1M No Sync, 1667 bit/s)",
+        .name        = "Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (No Sync, 1667 bit/s)",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 100,            // Short     1x  TE
         .long_width  = 200,            // Long      2x  TE
@@ -225,18 +222,41 @@ r_device const hcs361_txwak_1_bsel_1 = {
         .reset_limit = 6600,           // Reset     66x TE
         .tolerance   = 70,             // Tolerance 35  us
         .decode_fn   = &hcs361_decode, // 1111111111               [header 10x TE] [data] [guard time]
-        .priority    = 1,              // prevent duplicate messages
         .fields      = output_fields,
 };
 
 /*
-(Currently not implemented here)
 VPWM Mode:
-  BSEL=0
-  - TE: (min: 260us), (avg: 400us), (max: 620us)
-  - Guard Time: 114x TE
-
-  BSEL=1
-  - TE: (min: 130us), (avg: 200us), (max: 310us)
-  - Guard Time: 226x TE
+BSEL:  0
+TE:    (min: 260us), (avg: 400us), (max: 620us)
 */
+r_device const hcs361_vpwm_1_bsel_0 = {
+        .name        = "Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (PIWM, 2500 bit/s)",
+        .modulation  = OOK_PULSE_PIWM_DC,
+        .short_width = 400,            // Short     1x  TE
+        .long_width  = 800,            // Long      2x  TE
+        .gap_limit   = 4000,           // Gap       3x  TE
+        .reset_limit = 45600,          // Reset     114x TE
+        .tolerance   = 140,            // Tolerance 140 us
+        .sync_width  = 4000,           // Sync      10x TE
+        .decode_fn   = &hcs361_decode, // 111111     [sync 10x TE] [header 10x TE] [data] [guard time]
+        .fields      = output_fields,
+};
+
+/*
+VPWM Mode:
+BSEL:  1
+TE:    (min: 130us), (avg: 200us), (max: 310us)
+*/
+r_device const hcs361_vpwm_1_bsel_1 = {
+        .name        = "Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (PIWM, 5000 bit/s)",
+        .modulation  = OOK_PULSE_PIWM_DC,
+        .short_width = 200,            // Short     1x   TE
+        .long_width  = 400,            // Long      2x   TE
+        .gap_limit   = 2000,           // Gap       3x   TE
+        .reset_limit = 45200,          // Reset     114x TE
+        .tolerance   = 70,             // Tolerance 140  us
+        .sync_width  = 2000,           // Sync      10x  TE
+        .decode_fn   = &hcs361_decode, // 111111     [sync 10x TE] [header 10x TE] [data] [guard time]
+        .fields      = output_fields,
+};
