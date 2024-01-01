@@ -275,7 +275,8 @@
     DECL(gm_car_remote) \
     DECL(siemens_5wy72xx_car_remote) \
     DECL(alps_fwb1u545_car_remote) \
-    DECL(continental_car_remote)
+    DECL(continental_car_remote) \
+    DECL(code_alarm_frdpc2000_car_remote)
 
     /* Add new decoders here. */
 

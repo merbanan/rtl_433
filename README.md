@@ -354,6 +354,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [266]  Siemens 5WY72XX Car Remote (-f 315.1M)
     [267]  Alps FWB1U545 Car Remote
     [268]  Continental KR5V2X Car Remote (-f 313.8M -s 1024)
+    [269]  Code Alarm FRDPC2002 Car Remote
 
 * Disabled by default, use -R n or a conf file to enable
 
