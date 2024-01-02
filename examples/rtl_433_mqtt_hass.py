@@ -750,17 +750,6 @@ mappings = {
         }
     },
 
-    "protocol": {
-        "device_type": "sensor",
-        "object_suffix": "proto",
-        "config": {
-            "name": "Protocol",
-            "value_template": "{{ value|int }}",
-            "entity_category": "diagnostic",
-            "enabled_by_default": False
-        }
-    },
-
     "ext_power": {
         "device_type": "binary_sensor",
         "object_suffix": "extpwr",
