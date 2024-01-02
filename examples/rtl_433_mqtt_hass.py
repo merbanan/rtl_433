@@ -698,6 +698,81 @@ mappings = {
         }
     },
 
+    # WH45, WH290
+    "pm2_5_ug_m3": {
+        "device_type": "sensor",
+        "object_suffix": "PM25",
+        "config": {
+            "device_class": "pm25",
+            "name": "PM 2.5 Concentration",
+            "unit_of_measurement": "µg/m³",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
+
+    # WH45
+    "pm10_ug_m3": {
+        "device_type": "sensor",
+        "object_suffix": "PM10",
+        "config": {
+            "device_class": "pm10",
+            "name": "PM 10 Concentration",
+            "unit_of_measurement": "µg/m³",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
+
+    # WH290
+    "estimated_pm10_0_ug_m3": {
+        "device_type": "sensor",
+        "object_suffix": "PM10",
+        "config": {
+            "device_class": "pm10",
+            "name": "Estimated PM 10 Concentration",
+            "unit_of_measurement": "µg/m³",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
+
+    # WH45
+    "co2_ppm": {
+        "device_type": "sensor",
+        "object_suffix": "CO2",
+        "config": {
+            "device_class": "carbon_dioxide",
+            "name": "CO2 Concentration",
+            "unit_of_measurement": "ppm",
+            "value_template": "{{ value|int }}",
+            "state_class": "measurement"
+        }
+    },
+
+    "protocol": {
+        "device_type": "sensor",
+        "object_suffix": "proto",
+        "config": {
+            "name": "Protocol",
+            "value_template": "{{ value|int }}",
+            "entity_category": "diagnostic",
+            "enabled_by_default": False
+        }
+    },
+
+    "ext_power": {
+        "device_type": "binary_sensor",
+        "object_suffix": "extpwr",
+        "config": {
+            "device_class": "power",
+            "name": "External Power",
+            "payload_on": "1",
+            "payload_off": "0",
+            "entity_category": "diagnostic"
+        }
+    },
+
 }
 
 # Use secret_knock to trigger device automations for Honeywell ActivLink
