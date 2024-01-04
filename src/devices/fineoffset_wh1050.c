@@ -49,7 +49,7 @@ weather data as usual.
 
 TFA 30.3151 Sensor is FSK version and decodes here. See issue #2538: Preamble is aaaa2dd4 and Temperature is not offset and rain gauge is 0.5 mm by pulse.
 
-Note there is a collison with WH55 which starts with `aa aa aa 2d d4 55`
+Note there is a collision with WH55 which starts with `aa aa aa 2d d4 55`
 
 To recognize which message is received (weather or time) you can use the 'msg_type' field on json output:
 - msg_type 5 = weather data
