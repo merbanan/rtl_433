@@ -17,7 +17,7 @@ Fine Offset / Ecowitt WH55 water leak sensor.
 
 Test decoding with: rtl_433 -f 433.92M  -X 'n=wh55,m=FSK_PCM,s=60,l=60,g=1000,r=2500'
 
-Note there is a collison with Fine Offset WH1050 / TFA 30.3151 weather station which starts with `aa aa aa 2d d4 5`
+Note there is a collision with Fine Offset WH1050 / TFA 30.3151 weather station which starts with `aa aa aa 2d d4 5`
 
 Data format:
 
