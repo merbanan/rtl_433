@@ -556,7 +556,7 @@ With `-C si` units are converted to the SI system:
 With `-C customary` units are converted to customary units:
 - converts fields of Celsius to Fahrenheit (`_C to _F`)
 - converts fields of km/h to Miles/h (`_kph to _mph`, `_km_h to _mi_h`)
-- converts fields of mm to Inch (`_mm to _inch`)
+- converts fields of mm to Inch (`_mm to _in`)
 - converts fields of mm/h to Inch/h (`_mm_h to _in_h`)
 - converts fields of hPa to InchHg (`_hPa to _inHg`)
 - converts fields of kPa to PSI (`_kPa to _PSI`)

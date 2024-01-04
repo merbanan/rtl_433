@@ -93,9 +93,9 @@ static unsigned int get_os_uv(unsigned char *message)
     return uvidx;
 }
 
-static unsigned short int cm180i_power(uint8_t const *msg, unsigned int offset)
+static unsigned cm180i_power(uint8_t const *msg, unsigned int offset)
 {
-    unsigned short int val = 0;
+    unsigned val = 0;
 
     val = (msg[4+offset*2] << 8) | (msg[3+offset*2] & 0xF0);
     // tested across situations varying from 700 watt to more than 8000 watt to
@@ -104,15 +104,15 @@ static unsigned short int cm180i_power(uint8_t const *msg, unsigned int offset)
     return val;
 }
 
-static unsigned long long cm180i_total(uint8_t const *msg)
+static uint64_t cm180i_total(uint8_t const *msg)
 {
-    unsigned long long val = 0;
+    uint64_t val = 0;
     if ((msg[1] & 0x0F) == 0) {
         // Sensor returns total only if nibble#4 == 0
-        val = (unsigned long long)msg[14] << 40;
-        val += (unsigned long long)msg[13] << 32;
-        val += (unsigned long)msg[12] << 24;
-        val += (unsigned long)msg[11] << 16;
+        val = (uint64_t)msg[14] << 40;
+        val += (uint64_t)msg[13] << 32;
+        val += (uint32_t)msg[12] << 24;
+        val += msg[11] << 16;
         val += msg[10] << 8;
         val += msg[9];
     }
@@ -124,9 +124,9 @@ static uint8_t swap_nibbles(uint8_t byte)
     return (((byte&0xf) << 4) | (byte >> 4));
 }
 
-static unsigned short int cm180_power(uint8_t const *msg)
+static unsigned cm180_power(uint8_t const *msg)
 {
-    unsigned short int val = 0;
+    unsigned val = 0;
     val = (msg[4] << 8) | (msg[3] & 0xF0);
     // tested across situations varying from 700 watt to more than 8000 watt to
     // get same value as showed in physical CM180 panel (exactly equals to 1+1/160)
@@ -134,15 +134,15 @@ static unsigned short int cm180_power(uint8_t const *msg)
     return val;
 }
 
-static unsigned long long cm180_total(uint8_t const *msg)
+static uint64_t cm180_total(uint8_t const *msg)
 {
-    unsigned long long val = 0;
+    uint64_t val = 0;
     if ((msg[1] & 0x0F) == 0) {
         // Sensor returns total only if nibble#4 == 0
-        val = (unsigned long long)msg[10] << 40;
-        val += (unsigned long long)msg[9] << 32;
-        val += (unsigned long)msg[8] << 24;
-        val += (unsigned long)msg[7] << 16;
+        val = (uint64_t)msg[10] << 40;
+        val += (uint64_t)msg[9] << 32;
+        val += (uint32_t)msg[8] << 24;
+        val += msg[7] << 16;
         val += msg[6] << 8;
         val += msg[5];
     }
@@ -839,8 +839,8 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         int id       = msg[2] << 8 | (msg[1] & 0xF0);
         int batt_low = (msg[3] & 0x1); // 8th bit instead of 6th commonly used for other devices
 
-        unsigned short int ipower = cm180_power(msg);
-        unsigned long long itotal = cm180_total(msg);
+        unsigned ipower = cm180_power(msg);
+        uint64_t itotal = cm180_total(msg);
         float total_energy        = itotal / 3600.0 / 1000.0;
         if (valid == 0) {
             /* clang-format off */
@@ -871,13 +871,13 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         int id       = msg[2] << 8 | (msg[1] & 0xF0);
         int batt_low = (msg[3] & 0x40)?1:0; // 8th bit instead of 6th commonly used for other devices
 
-        unsigned short int ipower1 = cm180i_power(msg,0);
-        unsigned short int ipower2 = cm180i_power(msg,1);
-        unsigned short int ipower3 = cm180i_power(msg,2);
-        unsigned long long itotal= 0;
+        unsigned ipower1 = cm180i_power(msg,0);
+        unsigned ipower2 = cm180i_power(msg,1);
+        unsigned ipower3 = cm180i_power(msg,2);
+        uint64_t itotal= 0;
         if (msg_len >= 140) itotal= cm180i_total(msg);
 
-        // per hour and in kilowat
+        // Convert `itotal` which is in Ws (or J) to kWh unit.
         float total_energy        = itotal / 3600.0 / 1000.0;
 
         if (valid == 0) {

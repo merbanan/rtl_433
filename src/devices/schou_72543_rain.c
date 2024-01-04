@@ -19,6 +19,8 @@ Decode Schou 72543 Rain Gauge, DAY series.
 Devices supported:
 
 - Schou 72543 Rain Gauge, DAY Series.
+- Motonet MTX rain gauge (Product code: 86-01352) sold in Finland.
+- MarQuant Wireless Rain Gauge (Product code: 014369) sold by JULA AB, Sweden.
 
 This decoder handles the 433mhz rain-thermometer.
 
@@ -62,7 +64,7 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Load bitbuffer data and validate checksum
-    uint8_t *b  = bitbuffer->bb[row];
+    uint8_t *b = bitbuffer->bb[row];
     int micsum = b[7];                    // Checksum as read
     int calsum = add_bytes(b, 7) & 0x0FF; // Checksum as calculated, accounting for the lowest 8 bit
 
@@ -109,7 +111,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const schou_72543_rain = {
-        .name        = "Schou 72543 Day Rain Gauge",
+        .name        = "Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 972,
         .long_width  = 2680,

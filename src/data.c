@@ -329,6 +329,10 @@ R_API data_t *data_retain(data_t *data)
     return data;
 }
 
+#if defined(__clang__)
+    // ignore "call to function _free through pointer to incorrect function type"
+    __attribute__((no_sanitize("undefined")))
+#endif
 R_API void data_free(data_t *data)
 {
     if (data && data->retain) {

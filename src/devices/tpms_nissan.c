@@ -37,7 +37,7 @@ static int tpms_nissan_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
 
     uint8_t *b = packet_bits.bb[0];
 
-    // TODO Is there any parity or other checks we can preform to return
+    // TODO Is there any parity or other checks we can perform to return
     // DECODE_ABORT_EARLY or DECODE_FAIL_MIC
 
     // MODE:3d
@@ -47,7 +47,7 @@ static int tpms_nissan_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
     int id = (unsigned)((b[0] & 0x1F) << 19) | (b[1] << 11) | (b[2] << 3) | (b[3] >> 5);
 
     // (PSI+THREE)*FOUR=8d
-    int pressure_raw = ((b[3] & 0x1F) << 3) | (b[4] >> 5);
+    int pressure_raw   = ((b[3] & 0x1F) << 3) | (b[4] >> 5);
     float pressure_psi = (double)(pressure_raw / 4.0) - 3.0;
 
     // UNKNOWN:2b

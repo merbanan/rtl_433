@@ -38,20 +38,22 @@ static int bresser_lightning_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t const preamble_pattern[] = {0xaa, 0xaa, 0x2d, 0xd4};
     uint8_t msg[25];
 
-    if (bitbuffer->num_rows != 1
-            || bitbuffer->bits_per_row[0] < 160
-            || bitbuffer->bits_per_row[0] > 440) {
+    /* clang-format off */
+    if (   bitbuffer->num_rows != 1
+        || bitbuffer->bits_per_row[0] < 160
+        || bitbuffer->bits_per_row[0] > 440) {
         decoder_logf(decoder, 2, __func__, "bit_per_row %u out of range", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_EARLY; // Unrecognized data
     }
+    /* clang-format on */
 
     unsigned start_pos = bitbuffer_search(bitbuffer, 0, 0,
-            preamble_pattern, sizeof (preamble_pattern) * 8);
+            preamble_pattern, sizeof(preamble_pattern) * 8);
 
     if (start_pos >= bitbuffer->bits_per_row[0]) {
         return DECODE_ABORT_LENGTH;
     }
-    start_pos += sizeof (preamble_pattern) * 8;
+    start_pos += sizeof(preamble_pattern) * 8;
 
     unsigned len = bitbuffer->bits_per_row[0] - start_pos;
     if (len < sizeof(msg) * 8) {
@@ -69,7 +71,7 @@ static int bresser_lightning_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int nstartup    = (msg[6] & 0x08) >> 3;
 
     // data de-whitening
-    for (unsigned i = 0; i < sizeof (msg); ++i) {
+    for (unsigned i = 0; i < sizeof(msg); ++i) {
         msg[i] ^= 0xaa;
     }
     decoder_log_bitrow(decoder, 2, __func__, msg, sizeof(msg) * 8, "XOR");
@@ -85,7 +87,7 @@ static int bresser_lightning_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int sensor_id   = (msg[2] << 8) | (msg[3]);
     int distance_km = msg[7];
     int count       = (msg[4] << 4) | (msg[5] & 0xf0) >> 4;
-    int unknown1    = ((msg[5] & 0x0f) << 8) |  msg[6];
+    int unknown1    = ((msg[5] & 0x0f) << 8) | msg[6];
     int unknown2    = (msg[8] << 8) | msg[9];
 
     // Sanity checks

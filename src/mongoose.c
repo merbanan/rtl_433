@@ -3461,6 +3461,10 @@ void mg_broadcast(struct mg_mgr *mgr, mg_event_handler_t cb, void *data,
    * specified callback for each connection. Thus the callback function executes
    * in event manager thread.
    */
+  if (data == NULL || len == 0) {
+    data = "";
+    len = 1;
+  }
   if (mgr->ctl[0] != INVALID_SOCKET && data != NULL &&
       len < sizeof(ctl_msg.message)) {
     size_t ret;
@@ -3471,9 +3475,11 @@ void mg_broadcast(struct mg_mgr *mgr, mg_event_handler_t cb, void *data,
                          offsetof(struct ctl_msg, message) + len, 0);
     if (ret < 0)
       perror("mg_broadcast() send failed, check UDP loopback device");
+/*
     ret = MG_RECV_FUNC(mgr->ctl[0], (char *) &len, 1, 0);
     if (ret < 0)
       perror("mg_broadcast() recv failed, check firewall UDP loopback rules");
+*/
   }
 }
 #endif /* MG_ENABLE_BROADCAST */
@@ -3877,11 +3883,14 @@ static int mg_is_error(void) {
 void mg_socket_if_connect_tcp(struct mg_connection *nc,
                               const union socket_address *sa) {
   int rc, proto = 0;
+#ifdef SO_NOSIGPIPE
+  int nopipe = 1;
+#endif
   nc->sock = socket(sa->sa.sa_family, SOCK_STREAM, proto);
   if (nc->sock == INVALID_SOCKET
 #ifdef SO_NOSIGPIPE
       /* Prevent SIGPIPE per file descriptor, supported on MacOS and most BSDs */
-      || setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, (void *)&nopipe, sizeof(nopipe))
+      || setsockopt(nc->sock, SOL_SOCKET, SO_NOSIGPIPE, (void *)&nopipe, sizeof(nopipe))
 #endif
   ) {
     nc->err = mg_get_errno() ? mg_get_errno() : 1;
@@ -3899,11 +3908,14 @@ void mg_socket_if_connect_tcp(struct mg_connection *nc,
 }
 
 void mg_socket_if_connect_udp(struct mg_connection *nc) {
+#ifdef SO_NOSIGPIPE
+  int nopipe = 1;
+#endif
   nc->sock = socket(AF_INET, SOCK_DGRAM, 0);
   if (nc->sock == INVALID_SOCKET
 #ifdef SO_NOSIGPIPE
       /* Prevent SIGPIPE per file descriptor, supported on MacOS and most BSDs */
-      || setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, (void *)&nopipe, sizeof(nopipe))
+      || setsockopt(nc->sock, SOL_SOCKET, SO_NOSIGPIPE, (void *)&nopipe, sizeof(nopipe))
 #endif
   ) {
     nc->err = mg_get_errno() ? mg_get_errno() : 1;
@@ -4021,7 +4033,9 @@ static sock_t mg_open_listening_socket(union socket_address *sa, int type,
   socklen_t sa_len =
       (sa->sa.sa_family == AF_INET) ? sizeof(sa->sin) : sizeof(sa->sin6);
   sock_t sock = INVALID_SOCKET;
+#ifdef SO_NOSIGPIPE
   int nopipe = 1;
+#endif
 #if !MG_LWIP
   int on = 1;
 #endif
@@ -4141,10 +4155,12 @@ static void mg_mgr_handle_ctl_sock(struct mg_mgr *mgr) {
       (int) MG_RECV_FUNC(mgr->ctl[1], (char *) &ctl_msg, sizeof(ctl_msg), 0);
   if (len < 0)
     perror("mg_mgr_handle_ctl_sock() recv failed, check firewall UDP loopback rules");
+/*
   size_t ret = MG_SEND_FUNC(mgr->ctl[1], ctl_msg.message, 1, 0);
   if (ret < 0)
     perror("mg_mgr_handle_ctl_sock() send failed, check UDP loopback device");
   DBG(("read %d from ctl socket", len));
+*/
   if (len >= (int) sizeof(ctl_msg.callback) && ctl_msg.callback != NULL) {
     struct mg_connection *nc;
     for (nc = mg_next(mgr, NULL); nc != NULL; nc = mg_next(mgr, nc)) {

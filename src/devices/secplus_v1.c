@@ -319,7 +319,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             snprintf(pin_s, sizeof(pin_s), "%04d", pin);
         }
         else if (10000 <= pin && pin <= 11029) {
-            strcat(pin_s, "enter");
+            strcat(pin_s, "enter"); // NOLINT
         }
 
         int pin_suffix = 0;
@@ -327,9 +327,9 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         pin_suffix = (fixed / 1162261467) % 3;
 
         if (pin_suffix == 1)
-            strcat(pin_s, "#");
+            strcat(pin_s, "#"); // NOLINT
         else if (pin_suffix == 2)
-            strcat(pin_s, "*");
+            strcat(pin_s, "*"); // NOLINT
 
         // decoder_logf(decoder, 1, __func__, "pad_id=%d pin=%d pin_s=%s", pad_id, pin, pin_s);
     }

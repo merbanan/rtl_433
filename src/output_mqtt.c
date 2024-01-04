@@ -226,7 +226,7 @@ static void R_API_CALLCONV print_mqtt_array(data_output_t *output, data_array_t 
 static char *append_topic(char *topic, data_t *data)
 {
     if (data->type == DATA_STRING) {
-        strcpy(topic, data->value.v_ptr);
+        strcpy(topic, data->value.v_ptr); // NOLINT
         mqtt_sanitize_topic(topic);
         topic += strlen(data->value.v_ptr);
     }
@@ -401,7 +401,7 @@ static void R_API_CALLCONV print_mqtt_data(data_output_t *output, data_t *data, 
         else {
             // push topic
             *end = '/';
-            strcpy(end + 1, data->key);
+            strcpy(end + 1, data->key); // NOLINT
             print_value(output, data->type, data->value, data->format);
             *end = '\0'; // pop topic
         }
@@ -422,10 +422,10 @@ static void R_API_CALLCONV print_mqtt_double(data_output_t *output, double data,
     char str[20];
     // use scientific notation for very big/small values
     if (data > 1e7 || data < 1e-4) {
-        snprintf(str, 20, "%g", data);
+        snprintf(str, sizeof(str), "%g", data);
     }
     else {
-        int ret = snprintf(str, 20, "%.5f", data);
+        int ret = snprintf(str, sizeof(str), "%.5f", data);
         // remove trailing zeros, always keep one digit after the decimal point
         char *p = str + ret - 1;
         while (*p == '0' && p[-1] != '.') {
@@ -439,7 +439,7 @@ static void R_API_CALLCONV print_mqtt_double(data_output_t *output, double data,
 static void R_API_CALLCONV print_mqtt_int(data_output_t *output, int data, char const *format)
 {
     char str[20];
-    snprintf(str, 20, "%d", data);
+    snprintf(str, sizeof(str), "%d", data);
     print_mqtt_string(output, str, format);
 }
 
@@ -505,16 +505,18 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
     snprintf(client_id, sizeof(client_id), "rtl_433-%04x%04x%04x", host_crc, devq_crc, parm_crc);
 
     // default base topic
-    char base_topic[8 + sizeof(mqtt->hostname)];
-    snprintf(base_topic, sizeof(base_topic), "rtl_433/%s", mqtt->hostname);
+    char default_base_topic[8 + sizeof(mqtt->hostname)];
+    snprintf(default_base_topic, sizeof(default_base_topic), "rtl_433/%s", mqtt->hostname);
+    char const *base_topic = default_base_topic;
 
     // default topics
     char const *path_devices = "devices[/type][/model][/subtype][/channel][/id]";
     char const *path_events = "events";
     char const *path_states = "states";
 
-    char *user = NULL;
-    char *pass = NULL;
+    // get user and pass from env vars if available.
+    char *user = getenv("MQTT_USERNAME");
+    char *pass = getenv("MQTT_PASSWORD");
     int retain = 0;
     int qos = 0;
 
@@ -544,6 +546,8 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
             retain = atobv(val, 1);
         else if (!strcasecmp(key, "q") || !strcasecmp(key, "qos"))
             qos = atoiv(val, 1);
+        else if (!strcasecmp(key, "b") || !strcasecmp(key, "base"))
+            base_topic = val;
         // Simple key-topic mapping
         else if (!strcasecmp(key, "d") || !strcasecmp(key, "devices"))
             mqtt->devices = mqtt_topic_default(val, base_topic, path_devices);

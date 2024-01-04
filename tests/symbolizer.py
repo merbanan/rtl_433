@@ -154,9 +154,9 @@ def process_source(path, name):
             m = re.match(r'(?:static)?\s?char\s?\*\s?[^\*\s]+\s?=\s?(?:{|")', line)
             if m:
                 err(f"::error file={name},line={i}::char * variable should be char const * when being given a constant value")
-                
+
             # look for output fields declarations that must be static char const *const
-            m = re.match(r'static\s?char\s+const\s*\*\s*[^\*\s]+\[\]\s*=\s*\{', line) 
+            m = re.match(r'static\s?char\s+const\s*\*\s*[^\*\s]+\[\]\s*=\s*\{', line)
             if m:
                 err(f"::error file={name},line={i}::output fields static variable should be 'static char const *const'")
 

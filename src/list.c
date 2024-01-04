@@ -59,6 +59,10 @@ void list_remove(list_t *list, size_t idx, list_elem_free_fn elem_free)
     list->len--;
 }
 
+#if defined(__clang__)
+    // ignore "call to function _free through pointer to incorrect function type"
+    __attribute__((no_sanitize("undefined")))
+#endif
 void list_clear(list_t *list, list_elem_free_fn elem_free)
 {
     if (elem_free) {

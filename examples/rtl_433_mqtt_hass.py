@@ -190,6 +190,19 @@ mappings = {
         }
     },
 
+    "battery_mV": {
+        "device_type": "sensor",
+        "object_suffix": "mV",
+        "config": {
+            "device_class": "voltage",
+            "name": "Battery mV",
+            "unit_of_measurement": "mV",
+            "value_template": "{{ float(value) }}",
+            "state_class": "measurement",
+            "entity_category": "diagnostic"
+        }
+    },
+
     "humidity": {
         "device_type": "sensor",
         "object_suffix": "H",
@@ -226,9 +239,9 @@ mappings = {
 
     "moisture": {
         "device_type": "sensor",
-        "object_suffix": "H",
+        "object_suffix": "M",
         "config": {
-            "device_class": "humidity",
+            "device_class": "moisture",
             "name": "Moisture",
             "unit_of_measurement": "%",
             "value_template": "{{ value|float }}",
@@ -521,7 +534,7 @@ mappings = {
             "state_class": "measurement"
         }
     },
-  
+
     "energy_kWh": {
         "device_type": "sensor",
         "object_suffix": "kwh",
@@ -533,7 +546,7 @@ mappings = {
             "state_class": "measurement"
         }
     },
-  
+
     "current_A": {
         "device_type": "sensor",
         "object_suffix": "A",
@@ -545,7 +558,7 @@ mappings = {
             "state_class": "measurement"
         }
     },
-  
+
     "voltage_V": {
         "device_type": "sensor",
         "object_suffix": "V",
@@ -602,6 +615,17 @@ mappings = {
         }
     },
 
+    "storm_dist_km": {
+        "device_type": "sensor",
+        "object_suffix": "stdist",
+        "config": {
+            "name": "Lightning Distance",
+            "unit_of_measurement": "km",
+            "value_template": "{{ value|int }}",
+            "state_class": "measurement"
+        }
+    },
+  
     "storm_dist": {
         "device_type": "sensor",
         "object_suffix": "stdist",
@@ -643,7 +667,7 @@ mappings = {
             "state_class": "total_increasing",
         }
     },
-  
+
     "consumption": {
         "device_type": "sensor",
         "object_suffix": "consumption",
@@ -671,6 +695,70 @@ mappings = {
            "automation_type": "trigger",
            "type": "button_short_release",
            "subtype": "button_1",
+        }
+    },
+
+    # WH45, WH290
+    "pm2_5_ug_m3": {
+        "device_type": "sensor",
+        "object_suffix": "PM25",
+        "config": {
+            "device_class": "pm25",
+            "name": "PM 2.5 Concentration",
+            "unit_of_measurement": "µg/m³",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
+
+    # WH45
+    "pm10_ug_m3": {
+        "device_type": "sensor",
+        "object_suffix": "PM10",
+        "config": {
+            "device_class": "pm10",
+            "name": "PM 10 Concentration",
+            "unit_of_measurement": "µg/m³",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
+
+    # WH290
+    "estimated_pm10_0_ug_m3": {
+        "device_type": "sensor",
+        "object_suffix": "PM10",
+        "config": {
+            "device_class": "pm10",
+            "name": "Estimated PM 10 Concentration",
+            "unit_of_measurement": "µg/m³",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
+
+    # WH45
+    "co2_ppm": {
+        "device_type": "sensor",
+        "object_suffix": "CO2",
+        "config": {
+            "device_class": "carbon_dioxide",
+            "name": "CO2 Concentration",
+            "unit_of_measurement": "ppm",
+            "value_template": "{{ value|int }}",
+            "state_class": "measurement"
+        }
+    },
+
+    "ext_power": {
+        "device_type": "binary_sensor",
+        "object_suffix": "extpwr",
+        "config": {
+            "device_class": "power",
+            "name": "External Power",
+            "payload_on": "1",
+            "payload_off": "0",
+            "entity_category": "diagnostic"
         }
     },
 
