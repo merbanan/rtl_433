@@ -625,7 +625,7 @@ mappings = {
             "state_class": "measurement"
         }
     },
-  
+
     "storm_dist": {
         "device_type": "sensor",
         "object_suffix": "stdist",
