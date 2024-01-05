@@ -72,7 +72,7 @@ Get the `rtl_433` git repository if needed:
 
     git clone https://github.com/merbanan/rtl_433.git
 
-Installation using CMake:
+Installation using CMake and Make (commonly available):
 
     cd rtl_433/
     mkdir build
@@ -80,6 +80,23 @@ Installation using CMake:
     cmake ..
     make
     make install
+
+Installation using CMake and Ninja (newer and faster):
+
+    cd rtl_433/
+    mkdir build
+    cd build
+    cmake -DFORCE_COLORED_BUILD:BOOL=ON -GNinja ..
+    cmake --build . -j 4
+    cmake --build . -- install
+
+If installing to a global prefix (e.g. the default `/usr/local`) then instead run `make install` with privileges, .i.e.
+
+    sudo make install
+
+or
+
+    sudo cmake --build . -- install
 
 Use CMake with `-DENABLE_SOAPYSDR=ON` (default: `AUTO`) to require SoapySDR (e.g. with Debian needs the package `libsoapysdr-dev`), use `-DENABLE_RTLSDR=OFF` (default: `ON`) to disable RTL-SDR if needed.
 E.g. use:
