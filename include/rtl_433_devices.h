@@ -259,6 +259,9 @@
     DECL(bresser_lightning) \
     DECL(schou_72543_rain) \
     DECL(fineoffset_wh55) \
+    DECL(gridstream96) \
+    DECL(gridstream192) \
+    DECL(gridstream384) \
 
     /* Add new decoders here. */
 
