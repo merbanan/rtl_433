@@ -152,6 +152,8 @@ To get raw data:
 #define DELTADORE_X3D_HEADER_FLAG3_TEMP       0x08
 #define DELTADORE_X3D_HEADER_FLAG2_WND_CLOSED 0x01
 #define DELTADORE_X3D_HEADER_FLAG2_WND_OPENED 0x41
+#define DELTADORE_X3D_HEADER_TEMP_INDOOR      0x00
+#define DELTADORE_X3D_HEADER_TEMP_OUTDOOR     0x01
 
 #define DELTADORE_X3D_MAX_PKT_LEN             (64U)
 
@@ -364,55 +366,42 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     switch (head.temp_type) {
-        case 0x00: temp_type = "indoor";  break;
-        case 0x01: temp_type = "outdoor"; break;
-        default:   temp_type = "";        break;
+        case DELTADORE_X3D_HEADER_TEMP_INDOOR:  temp_type = "indoor";  break;
+        case DELTADORE_X3D_HEADER_TEMP_OUTDOOR: temp_type = "outdoor"; break;
+        default:                                temp_type = "";        break;
     }
     /* clang-format on */
+
+
+    /* clang-format off */
+    data = data_make(
+            "model",   "",            DATA_STRING, "DeltaDore-X3D",
+            "id",      "",            DATA_INT,    head.device_id,
+            "network", "Net",         DATA_INT,    head.network,
+            "subtype", "Class",       DATA_FORMAT, "%s", DATA_STRING, class,
+            "msg_id",  "Message Id",  DATA_INT,    head.message_id,
+            "msg_no",  "Message No.", DATA_INT,    head.number,
+            "mic",     "Integrity",   DATA_STRING, "CRC",
+            NULL);
+    /* clang-format on */
+
+    // message from thermostate
+    if (head.unknown_header_flags3 == DELTADORE_X3D_HEADER_FLAG3_TEMP) {
+        float temperature = head.temperature / 100.0f;
+        /* clang-format off */
+        data = data_append(data,
+                "temperature_C",    "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
+                "temperature_type", "Temp Type",   DATA_FORMAT, "%s",      DATA_STRING, temp_type,
+                NULL);
+        /* clang-format on */
+    }
 
     if (head.header_flags & DELTADORE_X3D_HEADER_FLAG_NO_PAYLOAD) {
         // Window stat from window sensor
         if (strlen(wnd_stat) > 0) {
             /* clang-format off */
-            data = data_make(
-                    "model",            "",                     DATA_STRING, "DeltaDore-X3D",
-                    "id",               "",                     DATA_INT,    head.device_id,
-                    "network",          "Net",                  DATA_INT,    head.network,
-                    "subtype",          "Class",                DATA_FORMAT, "%s",      DATA_STRING, class,
-                    "msg_id",           "Message Id",           DATA_INT,    head.message_id,
-                    "msg_no",           "Message No.",          DATA_INT,    head.number,
-                    "wnd_stat",         "Window Status",        DATA_FORMAT, "%s",      DATA_STRING, wnd_stat,
-                    "mic",              "Integrity",            DATA_STRING, "CRC",
-                    NULL);
-            /* clang-format on */
-        }
-        // temp message from thermostate
-        else if (head.unknown_header_flags3 == DELTADORE_X3D_HEADER_FLAG3_TEMP) {
-            float temperature = head.temperature / 100.0f;
-            /* clang-format off */
-            data = data_make(
-                    "model",            "",                     DATA_STRING, "DeltaDore-X3D",
-                    "id",               "",                     DATA_INT,    head.device_id,
-                    "network",          "Net",                  DATA_INT,    head.network,
-                    "subtype",          "Class",                DATA_FORMAT, "%s",      DATA_STRING, class,
-                    "msg_id",           "Message Id",           DATA_INT,    head.message_id,
-                    "msg_no",           "Message No.",          DATA_INT,    head.number,
-                    "temperature_C",    "Temperature",          DATA_FORMAT, "%.1f °C", DATA_DOUBLE, temperature,
-                    "temperature_type", "Temp Type",            DATA_FORMAT, "%s",      DATA_STRING, temp_type,
-                    "mic",              "Integrity",            DATA_STRING, "CRC",
-                    NULL);
-            /* clang-format on */
-        }
-        else {
-            /* clang-format off */
-            data = data_make(
-                    "model",            "",                     DATA_STRING, "DeltaDore-X3D",
-                    "id",               "",                     DATA_INT,    head.device_id,
-                    "network",          "Net",                  DATA_INT,    head.network,
-                    "subtype",          "Class",                DATA_FORMAT, "%s",      DATA_STRING, class,
-                    "msg_id",           "Message Id",           DATA_INT,    head.message_id,
-                    "msg_no",           "Message No.",          DATA_INT,    head.number,
-                    "mic",              "Integrity",            DATA_STRING, "CRC",
+            data = data_append(data,
+                    "wnd_stat", "Window Status", DATA_FORMAT, "%s", DATA_STRING, wnd_stat,
                     NULL);
             /* clang-format on */
         }
@@ -429,54 +418,19 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             snprintf(&raw_data[i * 2], 3, "%02x", frame[i + bytes_read]); // NOLINT
         }
 
-        // temp message from thermostat
-        if (head.unknown_header_flags3 == DELTADORE_X3D_HEADER_FLAG3_TEMP) {
-            float temperature = head.temperature / 100.0f;
-            /* clang-format off */
-            data = data_make(
-                    "model",            "",                     DATA_STRING, "DeltaDore-X3D",
-                    "id",               "",                     DATA_INT,    head.device_id,
-                    "network",          "Net",                  DATA_INT,    head.network,
-                    "subtype",          "Class",                DATA_FORMAT, "%s",      DATA_STRING, class,
-                    "msg_id",           "Message Id",           DATA_INT,    head.message_id,
-                    "msg_no",           "Message No.",          DATA_INT,    head.number,
-                    "temperature_C",    "Temperature",          DATA_FORMAT, "%.1f °C", DATA_DOUBLE, temperature,
-                    "temperature_type", "Temp Type",            DATA_FORMAT, "%s",      DATA_STRING, temp_type,
-                    "retry",            "Retry",                DATA_INT,    body.retry,
-                    "transfer",         "Transfer",             DATA_INT,    body.transfer,
-                    "transfer_ack",     "Transfer Ack",         DATA_INT,    body.transfer_ack,
-                    "target",           "Target",               DATA_INT,    body.target,
-                    "target_ack",       "Target Ack",           DATA_INT,    body.target_ack,
-                    "action",           "Action",               DATA_INT,    body.action,
-                    "register_high",    "Reg High",             DATA_INT,    body.register_high,
-                    "register_low",     "Reg Low",              DATA_INT,    body.register_low,
-                    "raw",              "Raw Register Data",    DATA_FORMAT, "%s",      DATA_STRING, raw_data,
-                    "mic",              "Integrity",            DATA_STRING, "CRC",
-                    NULL);
-            /* clang-format on */
-        }
-        else {
-            /* clang-format off */
-            data = data_make(
-                    "model",            "",                     DATA_STRING, "DeltaDore-X3D",
-                    "id",               "",                     DATA_INT,    head.device_id,
-                    "network",          "Net",                  DATA_INT,    head.network,
-                    "subtype",          "Class",                DATA_FORMAT, "%s",      DATA_STRING, class,
-                    "msg_id",           "Message Id",           DATA_INT,    head.message_id,
-                    "msg_no",           "Message No.",          DATA_INT,    head.number,
-                    "retry",            "Retry",                DATA_INT,    body.retry,
-                    "transfer",         "Transfer",             DATA_INT,    body.transfer,
-                    "transfer_ack",     "Transfer Ack",         DATA_INT,    body.transfer_ack,
-                    "target",           "Target",               DATA_INT,    body.target,
-                    "target_ack",       "Target Ack",           DATA_INT,    body.target_ack,
-                    "action",           "Action",               DATA_INT,    body.action,
-                    "register_high",    "Reg High",             DATA_INT,    body.register_high,
-                    "register_low",     "Reg Low",              DATA_INT,    body.register_low,
-                    "raw",              "Raw Register Data",    DATA_FORMAT, "%s",      DATA_STRING, raw_data,
-                    "mic",              "Integrity",            DATA_STRING, "CRC",
-                    NULL);
-            /* clang-format on */
-        }
+        /* clang-format off */
+        data = data_append(data,
+                "retry",         "Retry",             DATA_INT,    body.retry,
+                "transfer",      "Transfer",          DATA_INT,    body.transfer,
+                "transfer_ack",  "Transfer Ack",      DATA_INT,    body.transfer_ack,
+                "target",        "Target",            DATA_INT,    body.target,
+                "target_ack",    "Target Ack",        DATA_INT,    body.target_ack,
+                "action",        "Action",            DATA_INT,    body.action,
+                "register_high", "Reg High",          DATA_INT,    body.register_high,
+                "register_low",  "Reg Low",           DATA_INT,    body.register_low,
+                "raw",           "Raw Register Data", DATA_FORMAT, "%s", DATA_STRING, raw_data,
+                NULL);
+        /* clang-format on */
     }
 
     decoder_output_data(decoder, data);
