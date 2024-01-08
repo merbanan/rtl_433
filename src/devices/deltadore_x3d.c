@@ -161,10 +161,11 @@ struct deltadore_x3d_message_header {
     uint8_t header_len;
     uint8_t header_flags;
     uint32_t device_id;
+    uint8_t network;
     uint8_t unknown_header_flags1;
     uint8_t unknown_header_flags2;
     uint8_t unknown_header_flags3;
-    uint8_t temp_sign;
+    uint8_t temp_type;
     int16_t temperature;
     uint16_t message_id;
     int16_t header_check;
@@ -172,10 +173,13 @@ struct deltadore_x3d_message_header {
 
 struct deltadore_x3d_message_payload {
     uint8_t retry;
-    uint8_t actor;
-    uint8_t unknown1;
-    uint8_t response;
-    uint8_t unknown2;
+    uint16_t transfer;
+    uint16_t transfer_ack;
+    uint16_t target;
+    uint8_t action;
+    uint8_t register_high;
+    uint8_t register_low;
+    uint16_t target_ack;
 };
 
 static void ccitt_dewhitening(
@@ -208,23 +212,22 @@ static void ccitt_dewhitening(
 }
 
 /* clang-format off */
-static uint32_t deltadore_x3d_read_le_u32(uint8_t ** buffer)
+static uint32_t deltadore_x3d_read_le_u24(uint8_t **buffer)
 {
     uint32_t res = **buffer; (*buffer)++;
     res |= **buffer << 8;    (*buffer)++;
     res |= **buffer << 16;   (*buffer)++;
-    res |= **buffer << 24;   (*buffer)++;
     return res;
 }
 
-static uint16_t deltadore_x3d_read_le_u16(uint8_t ** buffer)
+static uint16_t deltadore_x3d_read_le_u16(uint8_t **buffer)
 {
     uint16_t res = **buffer; (*buffer)++;
     res |= **buffer << 8;    (*buffer)++;
     return res;
 }
 
-static uint16_t deltadore_x3d_read_be_u16(uint8_t ** buffer)
+static uint16_t deltadore_x3d_read_be_u16(uint8_t **buffer)
 {
     uint16_t res = **buffer << 8; (*buffer)++;
     res |= **buffer;              (*buffer)++;
@@ -239,7 +242,8 @@ static uint8_t deltadore_x3d_parse_message_header(uint8_t *buffer, struct deltad
     out->type                  = *buffer++;
     out->header_len            = *buffer & DELTADORE_X3D_HEADER_LENGTH_MASK;
     out->header_flags          = *buffer++ & DELTADORE_X3D_HEADER_FLAGS_MASK;
-    out->device_id             = deltadore_x3d_read_le_u32(&buffer);
+    out->device_id             = deltadore_x3d_read_le_u24(&buffer);
+    out->network               = *buffer++;
     out->unknown_header_flags1 = *buffer++;
     out->unknown_header_flags2 = *buffer++;
     out->unknown_header_flags3 = *buffer++;
@@ -248,7 +252,7 @@ static uint8_t deltadore_x3d_parse_message_header(uint8_t *buffer, struct deltad
         bytes_read++;
     }
     else if (out->unknown_header_flags3 == DELTADORE_X3D_HEADER_FLAG3_TEMP) {
-        out->temp_sign   = *buffer++;
+        out->temp_type   = *buffer++;
         out->temperature = deltadore_x3d_read_le_u16(&buffer);
         bytes_read += 3;
     }
@@ -260,13 +264,15 @@ static uint8_t deltadore_x3d_parse_message_header(uint8_t *buffer, struct deltad
 
 static uint8_t deltadore_x3d_parse_message_payload(uint8_t *buffer, struct deltadore_x3d_message_payload *out)
 {
-    uint8_t bytes_read = 5;
     out->retry         = *buffer++;
-    out->actor         = *buffer++;
-    out->unknown1      = *buffer++;
-    out->response      = *buffer++;
-    out->unknown2      = *buffer++;
-    return bytes_read;
+    out->transfer      = deltadore_x3d_read_le_u16(&buffer);
+    out->transfer_ack  = deltadore_x3d_read_le_u16(&buffer);
+    out->target        = deltadore_x3d_read_le_u16(&buffer);
+    out->action        = *buffer++;
+    out->register_high = *buffer++;
+    out->register_low  = *buffer++;
+    out->target_ack    = deltadore_x3d_read_le_u16(&buffer);
+    return sizeof(struct deltadore_x3d_message_payload);
 }
 
 static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -324,7 +330,7 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     ccitt_dewhitening(&whitening_key_msb, &whitening_key_lsb, &frame[1], len - 1);
 
     if (decoder->verbose > 1) {
-        decoder_log_bitrow(decoder, 0, __func__, frame, (len) * 8, "frame data");
+        decoder_log_bitrow(decoder, 0, __func__, frame, (len)*8, "frame data");
     }
 
     const uint16_t crc        = crc16(frame, len - 2, 0x1021, 0x0000);
@@ -340,7 +346,7 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     struct deltadore_x3d_message_header head = {0};
     uint8_t bytes_read                       = 2; // step over length and FF field
     bytes_read += deltadore_x3d_parse_message_header(&frame[bytes_read], &head);
-    const char *class, *wnd_stat;
+    const char *class, *wnd_stat, *temp_type;
 
     /* clang-format off */
     switch (head.type) {
@@ -356,6 +362,12 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         case DELTADORE_X3D_HEADER_FLAG2_WND_OPENED: wnd_stat = "Opened"; break;
         default:                                    wnd_stat = "";       break;
     }
+
+    switch (head.temp_type) {
+        case 0x00: temp_type = "indoor";  break;
+        case 0x01: temp_type = "outdoor"; break;
+        default:   temp_type = "";        break;
+    }
     /* clang-format on */
 
     if (head.header_flags & DELTADORE_X3D_HEADER_FLAG_NO_PAYLOAD) {
@@ -363,13 +375,14 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (strlen(wnd_stat) > 0) {
             /* clang-format off */
             data = data_make(
-                    "model",        "",                 DATA_STRING, "DeltaDore-X3D",
-                    "id",           "",                 DATA_INT,    head.device_id,
-                    "subtype",      "Class",            DATA_FORMAT, "%s",   DATA_STRING, class,
-                    "msg_id",       "Message Id",       DATA_INT,    head.message_id,
-                    "msg_no",       "Message No.",      DATA_INT,    head.number,
-                    "wnd_stat",     "Window Status",    DATA_FORMAT, "%s",   DATA_STRING, wnd_stat,
-                    "mic",          "Integrity",        DATA_STRING, "CRC",
+                    "model",            "",                     DATA_STRING, "DeltaDore-X3D",
+                    "id",               "",                     DATA_INT,    head.device_id,
+                    "network",          "Net",                  DATA_INT,    head.network,
+                    "subtype",          "Class",                DATA_FORMAT, "%s",      DATA_STRING, class,
+                    "msg_id",           "Message Id",           DATA_INT,    head.message_id,
+                    "msg_no",           "Message No.",          DATA_INT,    head.number,
+                    "wnd_stat",         "Window Status",        DATA_FORMAT, "%s",      DATA_STRING, wnd_stat,
+                    "mic",              "Integrity",            DATA_STRING, "CRC",
                     NULL);
             /* clang-format on */
         }
@@ -378,25 +391,28 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             float temperature = head.temperature / 100.0f;
             /* clang-format off */
             data = data_make(
-                    "model",            "",                 DATA_STRING, "DeltaDore-X3D",
-                    "id",               "",                 DATA_INT,    head.device_id,
-                    "subtype",          "Class",            DATA_FORMAT, "%s",      DATA_STRING, class,
-                    "msg_id",           "Message Id",       DATA_INT,    head.message_id,
-                    "msg_no",           "Message No.",      DATA_INT,    head.number,
-                    "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temperature,
-                    "mic",              "Integrity",        DATA_STRING, "CRC",
+                    "model",            "",                     DATA_STRING, "DeltaDore-X3D",
+                    "id",               "",                     DATA_INT,    head.device_id,
+                    "network",          "Net",                  DATA_INT,    head.network,
+                    "subtype",          "Class",                DATA_FORMAT, "%s",      DATA_STRING, class,
+                    "msg_id",           "Message Id",           DATA_INT,    head.message_id,
+                    "msg_no",           "Message No.",          DATA_INT,    head.number,
+                    "temperature_C",    "Temperature",          DATA_FORMAT, "%.1f °C", DATA_DOUBLE, temperature,
+                    "temperature_type", "Temp Type",            DATA_FORMAT, "%s",      DATA_STRING, temp_type,
+                    "mic",              "Integrity",            DATA_STRING, "CRC",
                     NULL);
             /* clang-format on */
         }
         else {
             /* clang-format off */
             data = data_make(
-                    "model",        "",                 DATA_STRING, "DeltaDore-X3D",
-                    "id",           "",                 DATA_INT,    head.device_id,
-                    "subtype",      "Class",            DATA_FORMAT, "%s",   DATA_STRING, class,
-                    "msg_id",       "Message Id",       DATA_INT,    head.message_id,
-                    "msg_no",       "Message No.",      DATA_INT,    head.number,
-                    "mic",          "Integrity",        DATA_STRING, "CRC",
+                    "model",            "",                     DATA_STRING, "DeltaDore-X3D",
+                    "id",               "",                     DATA_INT,    head.device_id,
+                    "network",          "Net",                  DATA_INT,    head.network,
+                    "subtype",          "Class",                DATA_FORMAT, "%s",      DATA_STRING, class,
+                    "msg_id",           "Message Id",           DATA_INT,    head.message_id,
+                    "msg_no",           "Message No.",          DATA_INT,    head.number,
+                    "mic",              "Integrity",            DATA_STRING, "CRC",
                     NULL);
             /* clang-format on */
         }
@@ -420,13 +436,20 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             data = data_make(
                     "model",            "",                     DATA_STRING, "DeltaDore-X3D",
                     "id",               "",                     DATA_INT,    head.device_id,
+                    "network",          "Net",                  DATA_INT,    head.network,
                     "subtype",          "Class",                DATA_FORMAT, "%s",      DATA_STRING, class,
                     "msg_id",           "Message Id",           DATA_INT,    head.message_id,
                     "msg_no",           "Message No.",          DATA_INT,    head.number,
-                    "temperature_C",    "Temperature",          DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temperature,
+                    "temperature_C",    "Temperature",          DATA_FORMAT, "%.1f °C", DATA_DOUBLE, temperature,
+                    "temperature_type", "Temp Type",            DATA_FORMAT, "%s",      DATA_STRING, temp_type,
                     "retry",            "Retry",                DATA_INT,    body.retry,
-                    "actor",            "Actor",                DATA_INT,    body.actor,
-                    "response",         "Response",             DATA_INT,    body.response,
+                    "transfer",         "Transfer",             DATA_INT,    body.transfer,
+                    "transfer_ack",     "Transfer Ack",         DATA_INT,    body.transfer_ack,
+                    "target",           "Target",               DATA_INT,    body.target,
+                    "target_ack",       "Target Ack",           DATA_INT,    body.target_ack,
+                    "action",           "Action",               DATA_INT,    body.action,
+                    "register_high",    "Reg High",             DATA_INT,    body.register_high,
+                    "register_low",     "Reg Low",              DATA_INT,    body.register_low,
                     "raw",              "Raw Register Data",    DATA_FORMAT, "%s",      DATA_STRING, raw_data,
                     "mic",              "Integrity",            DATA_STRING, "CRC",
                     NULL);
@@ -435,16 +458,22 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         else {
             /* clang-format off */
             data = data_make(
-                    "model",        "",                     DATA_STRING, "DeltaDore-X3D",
-                    "id",           "",                     DATA_INT,    head.device_id,
-                    "subtype",      "Class",                DATA_FORMAT, "%s",      DATA_STRING, class,
-                    "msg_id",       "Message Id",           DATA_INT,    head.message_id,
-                    "msg_no",       "Message No.",          DATA_INT,    head.number,
-                    "retry",        "Retry",                DATA_INT,    body.retry,
-                    "actor",        "Actor",                DATA_INT,    body.actor,
-                    "response",     "Response",             DATA_INT,    body.response,
-                    "raw",          "Raw Register Data",    DATA_FORMAT, "%s",      DATA_STRING, raw_data,
-                    "mic",          "Integrity",            DATA_STRING, "CRC",
+                    "model",            "",                     DATA_STRING, "DeltaDore-X3D",
+                    "id",               "",                     DATA_INT,    head.device_id,
+                    "network",          "Net",                  DATA_INT,    head.network,
+                    "subtype",          "Class",                DATA_FORMAT, "%s",      DATA_STRING, class,
+                    "msg_id",           "Message Id",           DATA_INT,    head.message_id,
+                    "msg_no",           "Message No.",          DATA_INT,    head.number,
+                    "retry",            "Retry",                DATA_INT,    body.retry,
+                    "transfer",         "Transfer",             DATA_INT,    body.transfer,
+                    "transfer_ack",     "Transfer Ack",         DATA_INT,    body.transfer_ack,
+                    "target",           "Target",               DATA_INT,    body.target,
+                    "target_ack",       "Target Ack",           DATA_INT,    body.target_ack,
+                    "action",           "Action",               DATA_INT,    body.action,
+                    "register_high",    "Reg High",             DATA_INT,    body.register_high,
+                    "register_low",     "Reg Low",              DATA_INT,    body.register_low,
+                    "raw",              "Raw Register Data",    DATA_FORMAT, "%s",      DATA_STRING, raw_data,
+                    "mic",              "Integrity",            DATA_STRING, "CRC",
                     NULL);
             /* clang-format on */
         }
@@ -458,14 +487,20 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static const char *const output_fields[] = {
         "model",
         "id",
+        "network",
         "subtype",
         "msg_id",
         "msg_no",
         "temperature_C",
         "wnd_stat",
         "retry",
-        "actor",
-        "response",
+        "transfer",
+        "transfer_ack",
+        "target",
+        "action",
+        "register_high",
+        "register_low",
+        "target_ack",
         "raw",
         "mic",
         NULL,
