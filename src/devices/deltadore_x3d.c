@@ -171,7 +171,7 @@ struct deltadore_x3d_message_header {
     int16_t header_check;
 };
 
-struct deltadore_x3d_message_payload {
+struct __attribute__((packed)) deltadore_x3d_message_payload {
     uint8_t retry;
     uint16_t transfer;
     uint16_t transfer_ack;
