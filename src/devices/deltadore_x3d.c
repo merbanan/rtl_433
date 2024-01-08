@@ -442,10 +442,10 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "transfer",         "Transfer",             DATA_INT,    body.transfer,
                     "transfer_ack",     "Transfer Ack",         DATA_INT,    body.transfer_ack,
                     "target",           "Target",               DATA_INT,    body.target,
+                    "target_ack",       "Target Ack",           DATA_INT,    body.target_ack,
                     "action",           "Action",               DATA_INT,    body.action,
                     "register_high",    "Reg High",             DATA_INT,    body.register_high,
                     "register_low",     "Reg Low",              DATA_INT,    body.register_low,
-                    "target_ack",       "Target Ack",           DATA_INT,    body.target_ack,
                     "raw",              "Raw Register Data",    DATA_FORMAT, "%s",      DATA_STRING, raw_data,
                     "mic",              "Integrity",            DATA_STRING, "CRC",
                     NULL);
@@ -464,10 +464,10 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "transfer",         "Transfer",             DATA_INT,    body.transfer,
                     "transfer_ack",     "Transfer Ack",         DATA_INT,    body.transfer_ack,
                     "target",           "Target",               DATA_INT,    body.target,
+                    "target_ack",       "Target Ack",           DATA_INT,    body.target_ack,
                     "action",           "Action",               DATA_INT,    body.action,
                     "register_high",    "Reg High",             DATA_INT,    body.register_high,
                     "register_low",     "Reg Low",              DATA_INT,    body.register_low,
-                    "target_ack",       "Target Ack",           DATA_INT,    body.target_ack,
                     "raw",              "Raw Register Data",    DATA_FORMAT, "%s",      DATA_STRING, raw_data,
                     "mic",              "Integrity",            DATA_STRING, "CRC",
                     NULL);
