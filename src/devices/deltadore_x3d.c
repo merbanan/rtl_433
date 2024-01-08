@@ -212,12 +212,11 @@ static void ccitt_dewhitening(
 }
 
 /* clang-format off */
-static uint32_t deltadore_x3d_read_le_u32(uint8_t ** buffer)
+static uint32_t deltadore_x3d_read_le_u24(uint8_t **buffer)
 {
     uint32_t res = **buffer; (*buffer)++;
     res |= **buffer << 8;    (*buffer)++;
     res |= **buffer << 16;   (*buffer)++;
-    res |= **buffer << 24;   (*buffer)++;
     return res;
 }
 
@@ -243,7 +242,8 @@ static uint8_t deltadore_x3d_parse_message_header(uint8_t *buffer, struct deltad
     out->type                  = *buffer++;
     out->header_len            = *buffer & DELTADORE_X3D_HEADER_LENGTH_MASK;
     out->header_flags          = *buffer++ & DELTADORE_X3D_HEADER_FLAGS_MASK;
-    out->device_id             = deltadore_x3d_read_le_u32(&buffer);
+    out->device_id             = deltadore_x3d_read_le_u24(&buffer);
+    out->network               = *buffer++;
     out->unknown_header_flags1 = *buffer++;
     out->unknown_header_flags2 = *buffer++;
     out->unknown_header_flags3 = *buffer++;
@@ -362,13 +362,13 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         case DELTADORE_X3D_HEADER_FLAG2_WND_OPENED: wnd_stat = "Opened"; break;
         default:                                    wnd_stat = "";       break;
     }
-    /* clang-format on */
 
     switch (head.temp_type) {
-        case 0x00: temp_type = "indoor"; break;
+        case 0x00: temp_type = "indoor";  break;
         case 0x01: temp_type = "outdoor"; break;
-        default: temp_type = ""; break;
+        default:   temp_type = "";        break;
     }
+    /* clang-format on */
 
     if (head.header_flags & DELTADORE_X3D_HEADER_FLAG_NO_PAYLOAD) {
         // Window stat from window sensor
