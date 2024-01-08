@@ -36,7 +36,7 @@ Known Data:
    - 0x00   sensor message (from window detector)
    - 0x01   standard message
    - 0x02   setup message
-   - 0x03   actor identifcation beacon (click/clack)
+   - 0x03   actor identification beacon (click/clack)
 - Header Len/Flag   {8}
    - possible upper 3 bits are flags, if bit 5 (0x20) is set, then no message payload is attached
    - lower 5 bits align with length of following header
@@ -76,7 +76,7 @@ Payload standard message 0x01:
 - 2nd Value         {8}
 
 Register address:
-- register area  {8}  11, 15, 16, 18, 19, 1a
+- register area  {8}  x11, x15, x16, x18, x19, x1a
 - register no.   {8}
 
   - 11-51: Unknown
@@ -140,18 +140,20 @@ To get raw data:
 #include "decoder.h"
 
 // ** DeltaDore X3D known message types
-#define DELTADORE_X3D_MSGTYPE_SENSOR                   0x00
-#define DELTADORE_X3D_MSGTYPE_STANDARD                 0x01
-#define DELTADORE_X3D_MSGTYPE_PAIRING                  0x02
-#define DELTADORE_X3D_MSGTYPE_BEACON                   0x03
+#define DELTADORE_X3D_MSGTYPE_SENSOR          0x00
+#define DELTADORE_X3D_MSGTYPE_STANDARD        0x01
+#define DELTADORE_X3D_MSGTYPE_PAIRING         0x02
+#define DELTADORE_X3D_MSGTYPE_BEACON          0x03
 
-#define DELTADORE_X3D_HEADER_LENGTH_MASK               0x1f
-#define DELTADORE_X3D_HEADER_FLAGS_MASK                0xe0
-#define DELTADORE_X3D_HEADER_FLAG_NO_PAYLOAD           0x20
-#define DELTADORE_X3D_HEADER_FLAG3_EMPTY_BYTE          0x01
-#define DELTADORE_X3D_HEADER_FLAG3_TEMP                0x08
-#define DELTADORE_X3D_HEADER_FLAG2_WND_CLOSED          0x01
-#define DELTADORE_X3D_HEADER_FLAG2_WND_OPENED          0x41
+#define DELTADORE_X3D_HEADER_LENGTH_MASK      0x1f
+#define DELTADORE_X3D_HEADER_FLAGS_MASK       0xe0
+#define DELTADORE_X3D_HEADER_FLAG_NO_PAYLOAD  0x20
+#define DELTADORE_X3D_HEADER_FLAG3_EMPTY_BYTE 0x01
+#define DELTADORE_X3D_HEADER_FLAG3_TEMP       0x08
+#define DELTADORE_X3D_HEADER_FLAG2_WND_CLOSED 0x01
+#define DELTADORE_X3D_HEADER_FLAG2_WND_OPENED 0x41
+
+#define DELTADORE_X3D_MAX_PKT_LEN             (64U)
 
 struct deltadore_x3d_message_header {
     uint8_t number;
@@ -176,7 +178,11 @@ struct deltadore_x3d_message_payload {
     uint8_t unknown2;
 };
 
-static void ccitt_dewhitening(uint8_t *whitening_key_msb_p, uint8_t *whitening_key_lsb_p, uint8_t *buffer, uint16_t buffer_size)
+static void ccitt_dewhitening(
+        uint8_t *whitening_key_msb_p,
+        uint8_t *whitening_key_lsb_p,
+        uint8_t *buffer,
+        uint16_t buffer_size)
 {
     uint8_t whitening_key_msb = *whitening_key_msb_p;
     uint8_t whitening_key_lsb = *whitening_key_lsb_p;
@@ -184,7 +190,6 @@ static void ccitt_dewhitening(uint8_t *whitening_key_msb_p, uint8_t *whitening_k
     uint8_t reverted_whitening_key_lsb = whitening_key_lsb;
 
     for (uint16_t buffer_pos = 0; buffer_pos < buffer_size; buffer_pos++) {
-
         reverted_whitening_key_lsb = (whitening_key_lsb & 0xf0) >> 4 | (whitening_key_lsb & 0x0f) << 4;
         reverted_whitening_key_lsb = (reverted_whitening_key_lsb & 0xcc) >> 2 | (reverted_whitening_key_lsb & 0x33) << 2;
         reverted_whitening_key_lsb = (reverted_whitening_key_lsb & 0xaa) >> 1 | (reverted_whitening_key_lsb & 0x55) << 1;
@@ -193,8 +198,8 @@ static void ccitt_dewhitening(uint8_t *whitening_key_msb_p, uint8_t *whitening_k
 
         for (uint8_t rol_counter = 0; rol_counter < 8; rol_counter++) {
             whitening_key_msb_previous = whitening_key_msb;
-            whitening_key_msb = (whitening_key_lsb & 0x01) ^ ((whitening_key_lsb >> 5) & 0x01);
-            whitening_key_lsb = ((whitening_key_msb_previous << 7) & 0x80) | ((whitening_key_lsb >> 1) & 0xff);
+            whitening_key_msb          = (whitening_key_lsb & 0x01) ^ ((whitening_key_lsb >> 5) & 0x01);
+            whitening_key_lsb          = ((whitening_key_msb_previous << 7) & 0x80) | ((whitening_key_lsb >> 1) & 0xff);
         }
     }
 
@@ -202,65 +207,65 @@ static void ccitt_dewhitening(uint8_t *whitening_key_msb_p, uint8_t *whitening_k
     *whitening_key_lsb_p = whitening_key_lsb;
 }
 
+/* clang-format off */
 static uint32_t deltadore_x3d_read_le_u32(uint8_t ** buffer)
 {
     uint32_t res = **buffer; (*buffer)++;
-    res |= **buffer << 8; (*buffer)++;
-    res |= **buffer << 16; (*buffer)++;
-    res |= **buffer << 24; (*buffer)++;
+    res |= **buffer << 8;    (*buffer)++;
+    res |= **buffer << 16;   (*buffer)++;
+    res |= **buffer << 24;   (*buffer)++;
     return res;
 }
 
 static uint16_t deltadore_x3d_read_le_u16(uint8_t ** buffer)
 {
     uint16_t res = **buffer; (*buffer)++;
-    res |= **buffer << 8; (*buffer)++;
+    res |= **buffer << 8;    (*buffer)++;
     return res;
 }
 
 static uint16_t deltadore_x3d_read_be_u16(uint8_t ** buffer)
 {
     uint16_t res = **buffer << 8; (*buffer)++;
-    res |= **buffer; (*buffer)++;
+    res |= **buffer;              (*buffer)++;
     return res;
 }
+/* clang-format on */
 
-static uint8_t deltadore_x3d_parse_message_header(uint8_t * buffer, struct deltadore_x3d_message_header * out)
+static uint8_t deltadore_x3d_parse_message_header(uint8_t *buffer, struct deltadore_x3d_message_header *out)
 {
-    uint8_t bytes_read = 14;
-    out->number = *buffer++;
-    out->type = *buffer++;
-    out->header_len = *buffer & DELTADORE_X3D_HEADER_LENGTH_MASK;
-    out->header_flags = *buffer++ & DELTADORE_X3D_HEADER_FLAGS_MASK;
-    out->device_id = deltadore_x3d_read_le_u32(&buffer);
+    uint8_t bytes_read         = 14;
+    out->number                = *buffer++;
+    out->type                  = *buffer++;
+    out->header_len            = *buffer & DELTADORE_X3D_HEADER_LENGTH_MASK;
+    out->header_flags          = *buffer++ & DELTADORE_X3D_HEADER_FLAGS_MASK;
+    out->device_id             = deltadore_x3d_read_le_u32(&buffer);
     out->unknown_header_flags1 = *buffer++;
     out->unknown_header_flags2 = *buffer++;
     out->unknown_header_flags3 = *buffer++;
-    if (out->unknown_header_flags3 == DELTADORE_X3D_HEADER_FLAG3_EMPTY_BYTE)
-    {
+    if (out->unknown_header_flags3 == DELTADORE_X3D_HEADER_FLAG3_EMPTY_BYTE) {
         buffer++;
         bytes_read++;
     }
-    else if (out->unknown_header_flags3 == DELTADORE_X3D_HEADER_FLAG3_TEMP)
-    {
-        out->temp_sign = *buffer++;
+    else if (out->unknown_header_flags3 == DELTADORE_X3D_HEADER_FLAG3_TEMP) {
+        out->temp_sign   = *buffer++;
         out->temperature = deltadore_x3d_read_le_u16(&buffer);
         bytes_read += 3;
     }
-    out->message_id = deltadore_x3d_read_le_u16(&buffer);
+    out->message_id   = deltadore_x3d_read_le_u16(&buffer);
     out->header_check = deltadore_x3d_read_be_u16(&buffer);
 
     return bytes_read;
 }
 
-static uint8_t deltadore_x3d_parse_message_payload(uint8_t * buffer, struct deltadore_x3d_message_payload * out)
+static uint8_t deltadore_x3d_parse_message_payload(uint8_t *buffer, struct deltadore_x3d_message_payload *out)
 {
     uint8_t bytes_read = 5;
-    out->retry = *buffer++;
-    out->actor = *buffer++;
-    out->unknown1 = *buffer++;
-    out->response = *buffer++;
-    out->unknown2 = *buffer++;
+    out->retry         = *buffer++;
+    out->actor         = *buffer++;
+    out->unknown1      = *buffer++;
+    out->response      = *buffer++;
+    out->unknown2      = *buffer++;
     return bytes_read;
 }
 
@@ -279,17 +284,17 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int row = 0;
     // Validate message and reject it as fast as possible : check for preamble
-    unsigned start_pos = bitbuffer_search(bitbuffer, row, 0, preamble, sizeof (preamble) * 8);
+    unsigned start_pos = bitbuffer_search(bitbuffer, row, 0, preamble, sizeof(preamble) * 8);
 
     if (start_pos >= bitbuffer->bits_per_row[row]) {
         return DECODE_ABORT_EARLY; // no preamble detected
     }
 
     // start after preamble
-    start_pos += sizeof (preamble) * 8;
+    start_pos += sizeof(preamble) * 8;
 
     // check min length
-    if (bitbuffer->bits_per_row[row] < 10 * 8) { //preamble(4) + sync(4) + len(1) + data(1)
+    if (bitbuffer->bits_per_row[row] < 10 * 8) { // preamble(4) + sync(4) + len(1) + data(1)
         return DECODE_ABORT_LENGTH;
     }
 
@@ -302,56 +307,58 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // dewhite length
     ccitt_dewhitening(&whitening_key_msb, &whitening_key_lsb, &len, 1);
 
-    if (len > 64) {
+    if (len > DELTADORE_X3D_MAX_PKT_LEN) {
         if (decoder->verbose) {
-             decoder_logf(decoder, 0, __func__, "packet to large (%d bytes), drop it\n", len);
+            decoder_logf(decoder, 0, __func__, "packet too large (%u bytes), dropping it\n", len);
         }
         return DECODE_ABORT_LENGTH;
     }
 
     uint8_t frame[65] = {0};
-    frame[0] = len;
+    frame[0]          = len;
 
-    // Get frame (len include the length byte)
+    // Get frame (len includes the length byte)
     bitbuffer_extract_bytes(bitbuffer, row, start_pos + 8, &frame[1], (len - 1) * 8);
 
-    // dewhite data
+    // dewhite the data
     ccitt_dewhitening(&whitening_key_msb, &whitening_key_lsb, &frame[1], len - 1);
 
     if (decoder->verbose > 1) {
         decoder_log_bitrow(decoder, 0, __func__, frame, (len) * 8, "frame data");
     }
 
-    uint16_t crc = crc16(frame, len - 2, 0x1021, 0x0000);
+    const uint16_t crc        = crc16(frame, len - 2, 0x1021, 0x0000);
+    const uint16_t actual_crc = (frame[len - 2] << 8 | frame[len - 1]);
 
-    if ((frame[len - 2] << 8 | frame[len - 1]) != crc) {
+    if (actual_crc != crc) {
         if (decoder->verbose) {
-             decoder_logf(decoder, 0, __func__, "CRC invalid %04x != %04x\n", frame[len - 2] << 8 | frame[len - 1], crc);
+            decoder_logf(decoder, 0, __func__, "CRC invalid %04x != %04x\n", actual_crc, crc);
         }
         return DECODE_FAIL_MIC;
     }
 
     struct deltadore_x3d_message_header head = {0};
-    uint8_t bytes_read = 2; // step over length and FF field
+    uint8_t bytes_read                       = 2; // step over length and FF field
     bytes_read += deltadore_x3d_parse_message_header(&frame[bytes_read], &head);
-    char const *class, *wnd_stat;
+    const char *class, *wnd_stat;
 
+    /* clang-format off */
     switch (head.type) {
-        case DELTADORE_X3D_MSGTYPE_SENSOR: class = "Sensor"; break;
+        case DELTADORE_X3D_MSGTYPE_SENSOR:   class = "Sensor";   break;
         case DELTADORE_X3D_MSGTYPE_STANDARD: class = "Standard"; break;
-        case DELTADORE_X3D_MSGTYPE_PAIRING: class = "Pairing"; break;
-        case DELTADORE_X3D_MSGTYPE_BEACON: class = "Beacon"; break;
-        default: class = "Unknown"; break;
+        case DELTADORE_X3D_MSGTYPE_PAIRING:  class = "Pairing";  break;
+        case DELTADORE_X3D_MSGTYPE_BEACON:   class = "Beacon";   break;
+        default:                             class = "Unknown";  break;
     }
 
     switch (head.unknown_header_flags2) {
         case DELTADORE_X3D_HEADER_FLAG2_WND_CLOSED: wnd_stat = "Closed"; break;
         case DELTADORE_X3D_HEADER_FLAG2_WND_OPENED: wnd_stat = "Opened"; break;
-        default: wnd_stat = ""; break;
+        default:                                    wnd_stat = "";       break;
     }
+    /* clang-format on */
 
-    if (head.header_flags & DELTADORE_X3D_HEADER_FLAG_NO_PAYLOAD)
-    {
+    if (head.header_flags & DELTADORE_X3D_HEADER_FLAG_NO_PAYLOAD) {
         // Window stat from window sensor
         if (strlen(wnd_stat) > 0) {
             /* clang-format off */
@@ -398,14 +405,15 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         struct deltadore_x3d_message_payload body = {0};
         bytes_read += deltadore_x3d_parse_message_payload(&frame[bytes_read], &body);
 
-        char raw_data[64] = {0};
+        // Max Hex string len is 2 - (maximum packet length - crc) + EOS character
+        char raw_data[2 * (DELTADORE_X3D_MAX_PKT_LEN - 2) + 1] = {0};
 
         // do not put length and crc to raw data
         for (int i = 0; i < len - bytes_read - 2; ++i) {
-            sprintf(&raw_data[i * 2], "%02x", frame[i + bytes_read]);
+            snprintf(&raw_data[i * 2], 3, "%02x", frame[i + bytes_read]); // NOLINT
         }
 
-        // temp message from thermostate
+        // temp message from thermostat
         if (head.unknown_header_flags3 == DELTADORE_X3D_HEADER_FLAG3_TEMP) {
             float temperature = head.temperature / 100.0f;
             /* clang-format off */
@@ -447,7 +455,7 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char const *const output_fields[] = {
+static const char *const output_fields[] = {
         "model",
         "id",
         "subtype",
