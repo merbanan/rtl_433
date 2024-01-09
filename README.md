@@ -338,11 +338,11 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge, TFA Dostmann 30.3252.01/47.3006.01 Rain Gauge and Thermometer, ADE WS1907
     [251]  Fine Offset / Ecowitt WH55 water leak sensor
     [252]  Nutek Car Remote
-    [253]  Astrostart 2000 Car Remote (-f 372.5M)
+    [253]  Astrostart 2000 Car Remote (-f 372.4M)
     [254]  Compustar 1WG3R Car Remote
     [255]  Chrysler Car Remote (-f 315.1M -s 920k)
     [256]  Nidec Car Remote (-f 313.8M -s 1024k)
-    [257]  Audiovox PRO-OE3B Car Remote (-f 303M)
+    [257]  Audiovox PRO-OE3B Car Remote (-f 303.4M)
     [258]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (Sync, 833 bit/s)
     [259]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (Sync, 1667 bit/s)
     [260]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (No Sync, 833 bit/s)
@@ -353,7 +353,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [265]  GM ABO1502T Car Remote (-f 315.1M)
     [266]  Siemens 5WY72XX Car Remote (-f 315.1M)
     [267]  Alps FWB1U545 Car Remote
-    [268]  Continental KR5V2X Car Remote (-f 313.8M -s 1024)
+    [268]  Continental KR5V2X Car Remote (-f 313.8M -s 1024k)
     [269]  Code Alarm FRDPC2002 Car Remote
 
 * Disabled by default, use -R n or a conf file to enable

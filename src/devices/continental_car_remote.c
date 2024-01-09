@@ -129,7 +129,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const continental_car_remote = {
-        .name        = "Continental KR5V2X Car Remote (-f 313.8M -s 1024)",
+        .name        = "Continental KR5V2X Car Remote (-f 313.8M -s 1024k)",
         .modulation  = FSK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 100,
         .long_width  = 200,

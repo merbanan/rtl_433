@@ -9,7 +9,7 @@
     (at your option) any later version.
 */
 /** @fn int astrostart_2000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-Astrostart 2000 - Car Remote 372.5 MHz
+Astrostart 2000 - Car Remote 372.4 MHz
 
 Manufacturer:
 - Astroflex
@@ -157,7 +157,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const astrostart_2000 = {
-        .name        = "Astrostart 2000 Car Remote (-f 372.5M)",
+        .name        = "Astrostart 2000 Car Remote (-f 372.4M)",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 326,
         .long_width  = 526,
