@@ -19,7 +19,7 @@ Supported Models:
 
 Data structure:
 
-This transmitter uses a rolling code transmitting on 315.1 MHz.
+This transmitter uses a rolling code.
 The same code is continuously repeated while button is held down.
 Multiple buttons can be pressed to set multiple button flags.
 
