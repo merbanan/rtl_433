@@ -23,6 +23,7 @@ The transmitter uses a rolling code message with an unencrypted sequence number.
 
 Button operation:
 This transmitter has 2 to 4 buttons which can be pressed once to transmit a single message
+Pressing both lock and unlock appears to send a fixed code, possibly a PRNG seed or secret key for the rolling code.
 
 Data layout:
 
@@ -124,7 +125,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const gm_car_remote = {
-        .name        = "GM ABO1502T Car Remote (-f 315.1M)",
+        .name        = "GM ABO1502T Car Remote (-f 314.9M)",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 300,
         .long_width  = 500,

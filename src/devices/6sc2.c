@@ -23,7 +23,7 @@ Data structure:
 The transmitter uses a rolling code message with an unencrypted sequence number.
 
 Button operation:
-This transmitter has 4 buttons which can be pressed once to transmit a single message
+This transmitter has up to 4 buttons which can be pressed once to transmit a single message
 
 Data layout:
 
@@ -110,7 +110,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const six_sc_two_car_remote = {
-        .name        = "6SC2 Car Remote (-f 315.1M -s 1024k)",
+        .name        = "6SC2 Car Remote (-f 315.1M)",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 250,
         .reset_limit = 10000,
