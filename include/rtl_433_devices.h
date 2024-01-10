@@ -259,7 +259,6 @@
     DECL(bresser_lightning) \
     DECL(schou_72543_rain) \
     DECL(fineoffset_wh55) \
-    DECL(nutek_car_remote) \
     DECL(astrostart_2000) \
     DECL(compustar_1wg3r) \
     DECL(chrysler_car_remote) \

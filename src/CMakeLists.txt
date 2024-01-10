@@ -195,7 +195,6 @@ add_library(r_433 STATIC
     devices/nice_flor_s.c
     devices/nidec_car_remote.c
     devices/norgo.c
-    devices/nutek_car_remote.c
     devices/oil_smart.c
     devices/oil_standard.c
     devices/oil_watchman.c
