@@ -198,7 +198,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [110]  PMV-107J (Toyota) TPMS
     [111]  Emos TTX201 Temperature Sensor
     [112]  Ambient Weather TX-8300 Temperature/Humidity Sensor
-    [113]  Ambient Weather WH31E Thermo-Hygrometer Sensor, EcoWitt WH40 rain gauge
+    [113]  Ambient Weather WH31E Thermo-Hygrometer Sensor, EcoWitt WH40 rain gauge, EcoWitt WS68 weather station
     [114]  Maverick et73
     [115]  Honeywell ActivLink, Wireless Doorbell
     [116]  Honeywell ActivLink, Wireless Doorbell (FSK)
