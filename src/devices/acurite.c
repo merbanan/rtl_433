@@ -2002,7 +2002,9 @@ r_device const acurite_986 = {
 static char const *const acurite_606_output_fields[] = {
         "model",
         "id",
+        "channel",
         "battery_ok",
+        "button",
         "temperature_C",
         "mic",
         NULL,

@@ -371,7 +371,7 @@ static char const *const output_fields[] = {
         "id",
         "channel",
         "battery_ok",
-        "battery_v",
+        "battery_V",
         "temperature_C",
         "humidity",
         "rain_mm",
