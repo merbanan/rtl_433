@@ -990,7 +990,7 @@ Message Type 0x04, 7 bytes
 
 - C: Channel 00: C, 10: B, 11: A, (01 is invalid)
 - I: Device ID (14 bits)
-- B: Battery, 1 is battery OK, 0 is battery low
+- B: Battery, 1 is battery OK, 0 is battery low (observed low < 2.5V)
 - M: Message type (6 bits), 0x04
 - T: Temperature Celsius (11 - 14 bits?), + 1000 * 10
 - H: Relative Humidity (%) (7 bits)
