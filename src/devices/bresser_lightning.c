@@ -87,7 +87,7 @@ static int bresser_lightning_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int sensor_id   = (msg[2] << 8) | (msg[3]);
     int distance_km = msg[7];
     // Counter encoded as BCD with most significant digit counting up to 15! -> Maximum value: 1599
-    int count       = (msgw[4] >> 4) * 100 + (msgw[4] & 0xf) * 10 + (msgw[5] >> 4);
+    int count       = (msg[4] >> 4) * 100 + (msg[4] & 0xf) * 10 + (msg[5] >> 4);
     int unknown1    = ((msg[5] & 0x0f) << 8) | msg[6];
     int unknown2    = (msg[8] << 8) | msg[9];
 
