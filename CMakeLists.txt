@@ -133,6 +133,12 @@ if(NOT WIN32)
     add_definitions(-DINSTALL_SYSCONFDIR=${CMAKE_INSTALL_FULL_SYSCONFDIR})
 endif()
 
+find_program(CCACHE "ccache")
+if(CCACHE)
+    set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE})
+    set(ENV{CCACHE_SLOPPINESS} pch_defines,time_macros)
+endif(CCACHE)
+
 ########################################################################
 # Use pkg-config
 ########################################################################
