@@ -41,7 +41,7 @@ Data Layout:
 - S: (9-bit reflected) Set-Point
 - X: (8-bit reflected) Checksum (8-bit sum)
 
-    The only flag found is PAIRING (0b0001). Chksum is calculated by summing all 
+    The only flag found is PAIRING (0b0001). Chksum is calculated by summing all
     high and low bytes the for ID, Flags, Temperature and Set-Point.
 
     Temperature and Set-Point values are in 0.1°C steps with an observed Set-Point
