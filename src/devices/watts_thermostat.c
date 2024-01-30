@@ -39,11 +39,13 @@ Data Layout:
 - F: (4-bit reflected) Flags
 - T: (9-bit reflected) Temperature
 - S: (9-bit reflected) Set-Point
-- X: (8-bit reflected) Checksum (6 bit nibble sum)
+- X: (8-bit reflected) Checksum (8-bit sum)
 
-    All fields need reflection, possibly easier to just reverse the whole
-    row first. The only flag found is PAIRING (0b0001). Chksum seems to be
-    additive.
+    The only flag found is PAIRING (0b0001). Chksum is calculated by summing all 
+    high and low bytes the for ID, Flags, Temperature and Set-Point.
+
+    Temperature and Set-Point values are in 0.1°C steps with an observed Set-Point
+    range of ~4°C to ~30°C.
 
 Raw data:
 
@@ -58,14 +60,15 @@ Raw data:
     {54}5ab249f58b9a4c
     {54}5ab249fb8f9acc
 
-    https://tinyurl.com/2z5jtfuu
+    https://tinyurl.com/wattsthermobitbench
 
     Format string:
-    ID:^16d FLAGS:^4b TEMP:^9d SETP:^9d CHK:^8d
+    PRE:^8h ID:^16d FLAGS:^4b TEMP:^9d SETP:^9d CHK:^8d
 
 Decoded example:
 
-    ID:28205 FLAGS:0001 TEMP:265 SETP:048 CHK:214
+    PRE:a5 ID:28082 FLAGS:0001 TEMP:271 SETP:304 CHK:097
+    PRE:a5 ID:28252 FLAGS:0000 TEMP:019 SETP:303 CHK:013
 
 */
 
