@@ -100,7 +100,7 @@ static int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         uint16_t row_len = bitbuffer->bits_per_row[row];
         unsigned bitpos  = 0;
 
-        bitpos = bitbuffer_search(bitbuffer, row, 0, &preamble_pattern, WATTSTHERMO_PREAMBLE_BITLEN);
+        bitpos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, WATTSTHERMO_PREAMBLE_BITLEN);
         if (bitpos >= row_len) {
             decoder_log(decoder, 2, __func__, "Preamble not found");
             return DECODE_ABORT_EARLY;
@@ -156,7 +156,7 @@ static int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "pairing",          "Pairing",          DATA_INT,    pairing,
                 "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",      DATA_DOUBLE,  temp * 0.1f,
                 "setpoint_C",       "Setpoint",         DATA_FORMAT, "%.1f C",      DATA_DOUBLE,  setp * 0.1f,
-                "flags",            "Flags",            DATA_INT,    flags,
+                "flags",            "Flags",            DATA_INT,    flags[0],
                 "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
