@@ -18,9 +18,9 @@
 
 /**
 Decoder for Bresser Weather Center 7-in-1 and Air quality sensors.
-Air Quality PM2.5/PM10 PN 7009970
-CO2 sensor             PN 7009977
-HCHO/VOC sensor        PN 7009978
+- Air Quality PM2.5/PM10 PN 7009970
+- CO2 sensor             PN 7009977
+- HCHO/VOC sensor        PN 7009978
 
 See
 https://github.com/merbanan/rtl_433/issues/1492
