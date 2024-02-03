@@ -87,7 +87,7 @@ XOR / de-whitened :
 Data layout de-whitened :
 DIGEST:16h ID:16h PPM:16h 8x8x8x8x8x8x8x8x8x8x4x BATT:1b 3x8x8x8x8x8x8x TRAILER:16x
 
-Air Quality Sensor HCHO/VPC (PN 7009978) : issue #2814
+Air Quality Sensor HCHO/VOC (PN 7009978) : issue #2814
 
 From user manual , hcho ppb is from 0 to 1000 ppm, so it's 16 bits coded.
               and voc level is from 1 (bad air quality) to 5 (good air quality), so it's 4 bits coded.
