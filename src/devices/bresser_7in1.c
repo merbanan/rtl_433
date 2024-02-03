@@ -64,28 +64,29 @@ From user manual , co2 ppm is from 400 to 5000 ppm, so it's 16 bits coded.
 
 Samples :
 Raw :
-              SType Startup & Channel
-                  | |
-{207}dab6d782acd9 a 1 ad9aad9aad9aaaaaaaaaaaaaaaaae99aaaaa00 Type = 0xa = 10, Startup = 0, ch = 1
-{207}04a9d782acd8 a 1 ad9aad9aad9aaaaaaaaaaaaaaaaae99aaaaa00 Type = 0xa = 10, Startup = 0, ch = 1
-{207}04a9d782acd8 a 1 ad9aad9aad9aaaaaaaaaaaaaaaaae99aaaaa00 Type = 0xa = 10, Startup = 0, ch = 1
-{207}0dd1d782b8ee a 1 ad9aad9aad9aaaaaaaaaaaaaaaaae99aaaaa00 Type = 0xa = 10, Startup = 0, ch = 1
+                  SType Startup & Channel
+
+                      | |
+    {207}dab6d782acd9 a 1 ad9aad9aad9aaaaaaaaaaaaaaaaae99aaaaa00 Type = 0xa = 10, Startup = 0, ch = 1
+    {207}04a9d782acd8 a 1 ad9aad9aad9aaaaaaaaaaaaaaaaae99aaaaa00 Type = 0xa = 10, Startup = 0, ch = 1
+    {207}04a9d782acd8 a 1 ad9aad9aad9aaaaaaaaaaaaaaaaae99aaaaa00 Type = 0xa = 10, Startup = 0, ch = 1
+    {207}0dd1d782b8ee a 1 ad9aad9aad9aaaaaaaaaaaaaaaaae99aaaaa00 Type = 0xa = 10, Startup = 0, ch = 1
 
 Data layout raw :
-DIGEST:16h ID:16h 8x8x STYPE:4h STARTUP:1b CH:3d 8x8x8x8x8x8x8x8x8x8x8x8x8x8x8x8x8x8x TRAILER:8x
+    DIGEST:16h ID:16h 8x8x STYPE:4h STARTUP:1b CH:3d 8x8x8x8x8x8x8x8x8x8x8x8x8x8x8x8x8x8x TRAILER:8x
 
 XOR / de-whitened :
 
-      0 1  2 3  4 5  6 7 8 9101112131415161718192021222324
-   DIGEST   ID  ppm                  bat
-        |    |    |                    |
-{200}701c 7d28 0673 0b073007300730000000000000000043300000 [ XOR from g001_868.34M_1000k.cu8 co2 ppm  673]
-{200}ae03 7d28 0672 0b073007300730000000000000000043300000 [ XOR from g001_868.34M_250k.cu8  co2 ppm  672]
-{200}ae03 7d28 0672 0b073007300730000000000000000043300000 [ XOR from g002_868.34M_1000k.cu8 co2 ppm  672]
-{200}a77b 7d28 1244 0b073007300730000000000000000043300000 [ XOR from g002_868.34M_250k.cu8  co2 ppm 1244]
+          0 1  2 3  4 5  6 7 8 9101112131415161718192021222324
+       DIGEST   ID  ppm                  bat
+            |    |    |                    |
+    {200}701c 7d28 0673 0b073007300730000000000000000043300000 [ XOR from g001_868.34M_1000k.cu8 co2 ppm  673]
+    {200}ae03 7d28 0672 0b073007300730000000000000000043300000 [ XOR from g001_868.34M_250k.cu8  co2 ppm  672]
+    {200}ae03 7d28 0672 0b073007300730000000000000000043300000 [ XOR from g002_868.34M_1000k.cu8 co2 ppm  672]
+    {200}a77b 7d28 1244 0b073007300730000000000000000043300000 [ XOR from g002_868.34M_250k.cu8  co2 ppm 1244]
 
 Data layout de-whitened :
-DIGEST:16h ID:16h PPM:16h 8x8x8x8x8x8x8x8x8x8x4x BATT:1b 3x8x8x8x8x8x8x TRAILER:16x
+    DIGEST:16h ID:16h PPM:16h 8x8x8x8x8x8x8x8x8x8x4x BATT:1b 3x8x8x8x8x8x8x TRAILER:16x
 
 Air Quality Sensor HCHO/VOC (PN 7009978) : issue #2814
 
@@ -94,32 +95,32 @@ From user manual , hcho ppb is from 0 to 1000 ppm, so it's 16 bits coded.
 
 Samples:
 Raw :
-              SType Startup & Channel
-                  | |
-{207}3f2dc4a5aaaf b 1 aaa8aaa8aaa8aaaaaaaaaaaaaaaae9feaaaa00 Type = 0xb = 11, Startup = 0, ch = 1
-{207}0c1cc4a5aaaf b 1 aaa8aaa8aaa8aaaaaaaaaaaaaaaae9ffaaaa00 Type = 0xb = 11, Startup = 0, ch = 1
-{207}3f2dc4a5aaaf b 1 aaa8aaa8aaa8aaaaaaaaaaaaaaaae9feaaaa00 Type = 0xb = 11, Startup = 0, ch = 1
-{207}0c1cc4a5aaaf b 1 aaa8aaa8aaa8aaaaaaaaaaaaaaaae9ffaaaa00 Type = 0xb = 11, Startup = 0, ch = 1
-{207}61afc4a5aaa2 b 9 aaa8aaa8aaa9aaaaaaaaaaaaaaaae9f8aaaa00 Type = 0xb = 11, Startup = 1, ch = 1
-{207}ecddc4a5aaae b 9 aaa8aaa8aaa9aaaaaaaaaaaaaaaae9fbaaaa00 Type = 0xb = 11, Startup = 1, ch = 1
+                  SType Startup & Channel
+                      | |
+    {207}3f2dc4a5aaaf b 1 aaa8aaa8aaa8aaaaaaaaaaaaaaaae9feaaaa00 Type = 0xb = 11, Startup = 0, ch = 1
+    {207}0c1cc4a5aaaf b 1 aaa8aaa8aaa8aaaaaaaaaaaaaaaae9ffaaaa00 Type = 0xb = 11, Startup = 0, ch = 1
+    {207}3f2dc4a5aaaf b 1 aaa8aaa8aaa8aaaaaaaaaaaaaaaae9feaaaa00 Type = 0xb = 11, Startup = 0, ch = 1
+    {207}0c1cc4a5aaaf b 1 aaa8aaa8aaa8aaaaaaaaaaaaaaaae9ffaaaa00 Type = 0xb = 11, Startup = 0, ch = 1
+    {207}61afc4a5aaa2 b 9 aaa8aaa8aaa9aaaaaaaaaaaaaaaae9f8aaaa00 Type = 0xb = 11, Startup = 1, ch = 1
+    {207}ecddc4a5aaae b 9 aaa8aaa8aaa9aaaaaaaaaaaaaaaae9fbaaaa00 Type = 0xb = 11, Startup = 1, ch = 1
 
 Data layout raw :
-DIGEST:16h ID:16h 8x8x STYPE:4h STARTUP:1b CH:3d 8x8x8x8x8x8x8x8x8x8x8x8x8x8x8x8x8x8x TRAILER:8x
+    DIGEST:16h ID:16h 8x8x STYPE:4h STARTUP:1b CH:3d 8x8x8x8x8x8x8x8x8x8x8x8x8x8x8x8x8x8x TRAILER:8x
 
 XOR / de-whitened :
 
-      0 1  2 3  4 5  6 7 8 9101112131415161718192021 22 2324
-   DIGEST   ID  ppb                  bat            voc
-        |    |    |                    |              |
-{200}9587 6e0f 0005 1b0002000200020000000000000000435 4 0000 [XOR from g001_868.34M_1000k.cu8 hcho_ppb 5 voc_level 4]
-{200}a6b6 6e0f 0005 1b0002000200020000000000000000435 5 0000 [XOR from g001_868.34M_250k.cu8  hcho_ppb 5 voc_level 5]
-{200}9587 6e0f 0005 1b0002000200020000000000000000435 4 0000 [XOR from g002_868.34M_1000k.cu8 hcho_ppb 5 voc_level 4]
-{200}a6b6 6e0f 0005 1b0002000200020000000000000000435 5 0000 [XOR from g001_868.34M_250k.cu8  hcho_ppb 5 voc_level 5]
-{200}cb05 6e0f 0008 130002000200030000000000000000435 2 0000 [XOR from g003_868.34M_1000k.cu8 hcho_ppb 8 voc_level 2]
-{200}4677 6e0f 0004 130002000200030000000000000000435 1 0000 [XOR from g004_868.34M_1000k.cu8 hcho_ppb 4 voc_level 1]
+          0 1  2 3  4 5  6 7 8 9101112131415161718192021 22 2324
+       DIGEST   ID  ppb                  bat            voc
+            |    |    |                    |              |
+    {200}9587 6e0f 0005 1b0002000200020000000000000000435 4 0000 [XOR from g001_868.34M_1000k.cu8 hcho_ppb 5 voc_level 4]
+    {200}a6b6 6e0f 0005 1b0002000200020000000000000000435 5 0000 [XOR from g001_868.34M_250k.cu8  hcho_ppb 5 voc_level 5]
+    {200}9587 6e0f 0005 1b0002000200020000000000000000435 4 0000 [XOR from g002_868.34M_1000k.cu8 hcho_ppb 5 voc_level 4]
+    {200}a6b6 6e0f 0005 1b0002000200020000000000000000435 5 0000 [XOR from g001_868.34M_250k.cu8  hcho_ppb 5 voc_level 5]
+    {200}cb05 6e0f 0008 130002000200030000000000000000435 2 0000 [XOR from g003_868.34M_1000k.cu8 hcho_ppb 8 voc_level 2]
+    {200}4677 6e0f 0004 130002000200030000000000000000435 1 0000 [XOR from g004_868.34M_1000k.cu8 hcho_ppb 4 voc_level 1]
 
 Data layout de-whitened :
-DIGEST:16h ID:16h PPB:16h 8x8x8x8x8x8x8x8x8x8x4x BATT:1b 3x8x8x8x8x8x4x VOC:4h TRAILER:16x
+    DIGEST:16h ID:16h PPB:16h 8x8x8x8x8x8x8x8x8x8x4x BATT:1b 3x8x8x8x8x8x4x VOC:4h TRAILER:16x
 
 First two bytes are an LFSR-16 digest, generator 0x8810 key 0xba95 with a final xor 0x6df1, which likely means we got that wrong.
 */
@@ -228,7 +229,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",            "",                         DATA_STRING, "Bresser-AIR-PM",
+                "model",            "",                         DATA_STRING, "Bresser-7in1",  // should be Bresser-Air-PM
                 "id",               "",                         DATA_INT,    id,
                 "channel",          "",                         DATA_INT,    chan,
                 "startup",          "Startup",                  DATA_COND,   !nstartup,  DATA_INT, !nstartup,
