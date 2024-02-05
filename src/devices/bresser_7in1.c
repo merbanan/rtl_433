@@ -122,6 +122,9 @@ XOR / de-whitened :
 Data layout de-whitened :
     DIGEST:16h ID:16h PPB:16h 8x8x8x8x8x8x8x8x8x8x4x BATT:1b 3x8x8x8x8x8x4x VOC:4h TRAILER:16x
 
+#2816 Bresser Air Quality sensors, ignore first packet:
+    The first signal is not sending the good BCD values , all at 0xF and need to be excluded from result (BCD value can't be > 9) .
+
 First two bytes are an LFSR-16 digest, generator 0x8810 key 0xba95 with a final xor 0x6df1, which likely means we got that wrong.
 */
 
@@ -224,18 +227,20 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
 
     } else if (s_type == SENSOR_TYPE_AIR_PM) {
-        int pm_2_5 = (msg[10] & 0x0f) * 1000 + (msg[11] >> 4) * 100 + (msg[11] & 0x0f) * 10 + (msg[12] >> 4);
-        int pm_10  = (msg[12] & 0x0f) * 1000 + (msg[13] >> 4) * 100 + (msg[13] & 0x0f) * 10 + (msg[14] >> 4);
+        int pm_2_5      = (msg[10] & 0x0f) * 1000 + (msg[11] >> 4) * 100 + (msg[11] & 0x0f) * 10 + (msg[12] >> 4);
+        int pm_10       = (msg[12] & 0x0f) * 1000 + (msg[13] >> 4) * 100 + (msg[13] & 0x0f) * 10 + (msg[14] >> 4);
+        int pm_2_5_init = ((msg[12] >> 4) & 0x0f) == 0x0f;
+        int pm_10_init  = ((msg[14] >> 4) & 0x0f) == 0x0f;
 
         /* clang-format off */
         data = data_make(
                 "model",            "",                         DATA_STRING, "Bresser-7in1",  // should be Bresser-Air-PM
                 "id",               "",                         DATA_INT,    id,
                 "channel",          "",                         DATA_INT,    chan,
-                "startup",          "Startup",                  DATA_COND,   !nstartup,  DATA_INT, !nstartup,
+                "startup",          "Startup",                  DATA_COND,   !nstartup,   DATA_INT, !nstartup,
                 "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
-                "pm_2_5_ug_m3",     "PM2.5 Mass Concentration", DATA_INT,    pm_2_5,
-                "pm_10_ug_m3",      "PM10 Mass Concentraton",   DATA_INT,    pm_10,
+                "pm_2_5_ug_m3",     "PM2.5 Mass Concentration", DATA_COND,   !pm_2_5_init,   DATA_INT, pm_2_5,
+                "pm_10_ug_m3",      "PM10 Mass Concentraton",   DATA_COND,   !pm_10_init,    DATA_INT, pm_10,
                 "mic",              "Integrity",                DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
@@ -244,7 +249,8 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
 
     } else if (s_type == SENSOR_TYPE_CO2) {
-        int co2 = ((msg[4]& 0xf0) >> 4) * 1000 + (msg[4]& 0x0f) * 100 + ((msg[5]& 0xf0) >> 4) * 10 + (msg[5] & 0x0f);
+        int co2      = ((msg[4]& 0xf0) >> 4) * 1000 + (msg[4]& 0x0f) * 100 + ((msg[5]& 0xf0) >> 4) * 10 + (msg[5] & 0x0f);
+        int co2_init = (msg[5] & 0x0f) == 0x0f;
 
         /* clang-format off */
         data = data_make(
@@ -253,7 +259,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "channel",          "",                         DATA_INT,    chan,
                 "startup",          "Startup",                  DATA_COND,   !nstartup,  DATA_INT, !nstartup,
                 "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
-                "co2_ppm",          "Carbon Dioxide",           DATA_FORMAT, "%i ppm",   DATA_INT, co2,
+                "co2_ppm",          "Carbon Dioxide",           DATA_COND,   !co2_init,     DATA_FORMAT, "%i ppm", DATA_INT, co2,
                 "mic",              "Integrity",                DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
@@ -262,18 +268,21 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
 
     } else if (s_type == SENSOR_TYPE_HCHO_VOC) {
-        int hcho = ((msg[4]& 0xf0) >> 4) * 1000 + (msg[4]& 0x0f) * 100 + ((msg[5]& 0xf0) >> 4) * 10 + (msg[5] & 0x0f);
-        int voc  = (msg[22]& 0x0f);
+        int hcho      = ((msg[4]& 0xf0) >> 4) * 1000 + (msg[4]& 0x0f) * 100 + ((msg[5]& 0xf0) >> 4) * 10 + (msg[5] & 0x0f);
+        int voc       = (msg[22]& 0x0f);
+        int hcho_init = (msg[5] & 0x0f) == 0x0f;
+        int voc_init  = voc == 0x0f;
+
         /* clang-format off */
         data = data_make(
-                "model",            "",                         DATA_STRING, "Bresser-HCHO-VOC",
-                "id",               "",                         DATA_INT,    id,
-                "channel",          "",                         DATA_INT,    chan,
-                "startup",          "Startup",                  DATA_COND,   !nstartup,  DATA_INT, !nstartup,
-                "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
-                "hcho_ppb",         "Formaldehyde",             DATA_FORMAT, "%i ppb",   DATA_INT, hcho,
-                "voc_level",        "Volatile Organic Compounds",DATA_FORMAT, "%i",   DATA_INT, voc, // from 1 bad air quality to 5 very good air quality
-                "mic",              "Integrity",                DATA_STRING, "CRC",
+                "model",            "",                           DATA_STRING, "Bresser-HCHO-VOC",
+                "id",               "",                           DATA_INT,    id,
+                "channel",          "",                           DATA_INT,    chan,
+                "startup",          "Startup",                    DATA_COND,   !nstartup,  DATA_INT, !nstartup,
+                "battery_ok",       "Battery",                    DATA_INT,    !battery_low,
+                "hcho_ppb",         "Formaldehyde",               DATA_COND,   !hcho_init, DATA_FORMAT, "%i ppb", DATA_INT, hcho,
+                "voc_level",        "Volatile Organic Compounds", DATA_COND,   !voc_init,  DATA_FORMAT, "%i",     DATA_INT, voc, // from 1 bad air quality to 5 very good air quality
+                "mic",              "Integrity",                  DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
 
