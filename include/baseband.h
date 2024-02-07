@@ -122,6 +122,7 @@ void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t le
     @param x_buf input samples (I/Q samples in interleaved uint8)
     @param[out] y_buf output from FM demodulator
     @param num_samples number of samples to process
+    @param samp_rate sample rate of samples to process
     @param low_pass Low-pass filter frequency or ratio
     @param[in,out] state State to store between chunk processing
 */
