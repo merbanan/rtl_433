@@ -31,11 +31,11 @@ or as follows:
 
 1. On the display, hold down the <- and +> buttons together for 3 seconds.
 2. At the next screen, hold down the middle button for 3 seconds until the
-   display shows “Pair?”
+   display shows "Pair?"
 3. On the sensor, press and hold the pair button (next to the red light)
    until the red LED light illuminates.
 4. Release the pair button and the LED flashes as the transmitter pairs.
-5. The display should now read “Paired CT"
+5. The display should now read "Paired CT"
 
 When paired the display listens for sensor packets and then transmits a
 summary packet using the same protocol.
