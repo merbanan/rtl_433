@@ -624,7 +624,7 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
             } else if (vif_uam == 0x78) {
                 // E111 1000    Fabrication No
             } else if (vif_uam == 0x79) {
-                // E111 1001    Enhanced Identification••
+                // E111 1001    Enhanced Identification
             } else if (vif_uam == 0x7A) {
                 // E111 1010    Bus Address     data type C (x=8)
             } else {

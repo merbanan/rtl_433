@@ -97,9 +97,9 @@ Find index of next bursts/packets in bitbuffer.
 
 The transmissions do not have a magic number or preamble.
 
-They all start with a '0' or a '2'  represented at 0001. and 0111.
+They all start with a '0' or a '2' represented at 0001. and 0111.
 since all nibbles start with 0 we can look for bytes
-000 + 0001 + 0 and 000 + 0111 + 0 for the start of a transmission
+000 + 0001 + 0 and 000 + 0111 + 0 for the start of a transmission
 (or just the 0001 and 0111 at the start of a bitbuffer)
 */
 

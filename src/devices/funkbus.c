@@ -18,12 +18,12 @@ developed by Insta GmbH.
 - Preamble: 4000us
 - Short: 500us
 - Long: 1000us
-- Encoding: Differential Manchester Biphase–Mark (BP-M)
+- Encoding: Differential Manchester Biphase-Mark (BP-M)
 
       __ __       __    __ __    __
      |     |     |  |  |     |  |  |
     _|     |__ __|  |__|     |__|  |__.....
-     |  0  |  0  | 	1  |  0  |  1  |
+     |  0  |  0  |  1  |  0  |  1  |
 
 - Mic: parity + lfsr with 8bit mask 0x8C shifted left by 2 bit
 - Bits: 48

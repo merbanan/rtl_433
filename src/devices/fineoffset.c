@@ -250,7 +250,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int humidity        = b[5];                      // 0xff if invalid
     int wind_speed_raw  = b[6] | (b[3] & 0x10) << 4; // 0x1ff if invalid
     float wind_speed_factor, rain_cup_count;
-    // Wind speed factor is 1.12 m/s (1.19 per specs?) for WH24, 0.51 m/s for WH65B
+    // Wind speed factor is 1.12 m/s (1.19 per specs?) for WH24, 0.51 m/s for WH65B
     // Rain cup each count is 0.3mm for WH24, 0.01inch (0.254mm) for WH65B
     if (type == MODEL_WH24) { // WH24
         wind_speed_factor = 1.12f;
@@ -259,7 +259,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         wind_speed_factor = 0.51f;
         rain_cup_count = 0.254f;
     }
-    // Wind speed is scaled by 8, wind speed = raw / 8 * 1.12 m/s (0.51 for WH65B)
+    // Wind speed is scaled by 8, wind speed = raw / 8 * 1.12 m/s (0.51 for WH65B)
     float wind_speed_ms = wind_speed_raw * 0.125f * wind_speed_factor;
     int gust_speed_raw  = b[7];             // 0xff if invalid
     // Wind gust is unscaled, multiply by wind speed factor 1.12 m/s
@@ -590,7 +590,7 @@ Data format:
 See http://www.ecowitt.com/upfile/201904/WH51%20Manual.pdf for relationship between AD and moisture %
 
 Short explanation:
-- Soil Moisture Percentage = (Moisture AD – 0%AD) / (100%AD – 0%AD) * 100
+- Soil Moisture Percentage = (Moisture AD - 0%AD) / (100%AD - 0%AD) * 100
 - 0%AD = 70
 - 100%AD = 450 (manual states 500, but sensor internal computation are closer to 450)
 - If sensor-calculated moisture percentage are inaccurate at low/high values, use the AD value and the above formaula
