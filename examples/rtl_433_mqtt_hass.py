@@ -694,7 +694,7 @@ mappings = {
         "config": {
            "automation_type": "trigger",
            "type": "button_short_release",
-           "subtype": "button_1",
+           "subtype": "button_2",
         }
     },
 
