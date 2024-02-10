@@ -10,7 +10,9 @@
     (at your option) any later version.
 */
 
-/**
+#include "decoder.h"
+
+/** @fn int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 Simple FS20 remote decoder.
 
 Frequency: use rtl_433 -f 868.35M
@@ -29,14 +31,12 @@ checksum and parity are not checked by this decoder.
 Command extensions are also not decoded. feel free to improve!
 */
 
-#include "decoder.h"
-
 static int fs20_find_preamble(bitbuffer_t *bitbuffer, int bitpos)
 {
     // Preamble is 12 x '0' | '1', but we ignore the first preamble bit
     // Last bit ('1') is at position (pattern[1] >> 4 & 1)
     uint8_t const preamble_pattern[2] = {0x00, 0x10};
-    uint8_t const min_packet_length = 4 * (8 + 1);
+    uint8_t const min_packet_length   = 4 * (8 + 1);
 
     // fast scan for 8 consecutive '0' bits
     uint8_t *bits = bitbuffer->bb[0];
@@ -50,8 +50,9 @@ static int fs20_find_preamble(bitbuffer_t *bitbuffer, int bitpos)
     }
 
     while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 12)) < bitbuffer->bits_per_row[0]) {
-        if (bitpos + min_packet_length >= bitbuffer->bits_per_row[0])
+        if (bitpos + min_packet_length >= bitbuffer->bits_per_row[0]) {
             return DECODE_ABORT_LENGTH;
+        }
 
         return bitpos + 12;
     }
@@ -65,7 +66,7 @@ struct parity_byte {
     uint8_t err;
 };
 
-static struct parity_byte get_byte(uint8_t* bits, unsigned pos)
+static struct parity_byte get_byte(uint8_t *bits, unsigned pos)
 {
     uint16_t word = (bits[pos / 8] << 8) | bits[(pos / 8) + 1];
     struct parity_byte res;
@@ -166,13 +167,11 @@ static int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint16_t ad_b4 = 0;
     uint32_t hc_b4 = 0;
 
-    int rc = DECODE_FAIL_MIC;
+    int rc     = DECODE_FAIL_MIC;
     int bitpos = 0;
 
     while ((bitpos = fs20_find_preamble(bitbuffer, bitpos)) >= 0) {
-        if (decoder->verbose) {
-            fprintf(stderr, "Found preamble at %d\n", bitpos);
-        }
+        decoder_logf(decoder, 2, __func__, "Found preamble at %d", bitpos);
 
         struct parity_byte res;
 
@@ -212,15 +211,17 @@ static int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         sum = res.data;
 
         rc = 1;
-            break;
+        break;
     }
 
     // propagate MIC
-    if (rc <= 0)
+    if (rc <= 0) {
         return rc;
+    }
 
-    if (bitpos < 0)
+    if (bitpos < 0) {
         return bitpos;
+    }
 
     // Sum is (HC1 + HC2 + Addr + Cmd [+ Ext] + Type + Repeater-Hopcount
     // Type is either 6 for regular FS20 devices (switches, dimmers, ...)
@@ -231,8 +232,9 @@ static int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     sum -= cmd;
     sum -= ext;
 
-    if ((sum < 6) || (sum > 0xC + 2))
-      return DECODE_FAIL_SANITY;
+    if ((sum < 6) || (sum > 0xC + 2)) {
+        return DECODE_FAIL_SANITY;
+    }
 
     // convert address to fs20 format (base4+1)
     for (uint8_t i = 0; i < 4; i++) {
@@ -248,12 +250,14 @@ static int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",        "", DATA_STRING, (sum < 0xc) ? "FS20" : "FHT",
+            "model",        "", DATA_COND,  (sum < 0xc),    DATA_STRING,    "FS20",
+            "model",        "", DATA_COND, !(sum < 0xc),    DATA_STRING,    "FHT",
             "housecode",    "", DATA_FORMAT, "%x", DATA_INT, hc_b4,
             "address",      "", DATA_FORMAT, "%x", DATA_INT, ad_b4,
             "command",      "", DATA_STRING, (sum < 0xc) ? cmd_tab[cmd & 0x1f] : fht_cmd_tab[cmd & 0xf],
             "flags",        "", DATA_STRING, (sum < 0xc) ? flags_tab[cmd >> 5] : fht_flags_tab[cmd >> 5],
             "ext",          "", DATA_FORMAT, "%x", DATA_INT, ext,
+            "mic",          "Integrity",    DATA_STRING, "PARITY",
             NULL);
     /* clang-format on */
     decoder_output_data(decoder, data);
@@ -272,12 +276,11 @@ static char const *const output_fields[] = {
 };
 
 r_device const fs20 = {
-        .name        = "FS20",
+        .name        = "FS20 / FHT",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 400,
         .long_width  = 600,
         .reset_limit = 9000,
         .decode_fn   = &fs20_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -275,7 +275,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",            "",                           DATA_STRING, "Bresser-HCHO-VOC",
+                "model",            "",                           DATA_STRING, "Bresser-HCHOVOC",
                 "id",               "",                           DATA_INT,    id,
                 "channel",          "",                           DATA_INT,    chan,
                 "startup",          "Startup",                    DATA_COND,   !nstartup,  DATA_INT, !nstartup,
