@@ -232,6 +232,7 @@ add_library(r_433 STATIC
     devices/thermopro_tx2c.c
     devices/tpms_abarth124.c
     devices/tpms_ave.c
+    devices/tpms_bmw.c
     devices/tpms_citroen.c
     devices/tpms_eezrv.c
     devices/tpms_elantra2012.c
