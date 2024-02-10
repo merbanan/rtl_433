@@ -178,7 +178,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [90]  Renault TPMS
     [91]  inFactory, nor-tec, FreeTec NC-3982-913 temperature humidity sensor
     [92]  FT-004-B Temperature Sensor
-    [93]  Ford Car Key
+    [93]  Ford Car Remote
     [94]  Philips outdoor temperature sensor (type AJ3650)
     [95]  Schrader TPMS EG53MA4, PA66GF35
     [96]  Nexa
@@ -337,6 +337,23 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [249]  Bresser lightning
     [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge
     [251]  Fine Offset / Ecowitt WH55 water leak sensor
+    [252]  Astrostart 2000 Car Remote (-f 372.4M)
+    [253]  Compustar 1WG3R Car Remote
+    [254]  Chrysler Car Remote (-f 315.1M -s 920k)
+    [255]  Nidec Car Remote (-f 313.8M -s 1024k)
+    [256]  Audiovox PRO-OE3B Car Remote (-f 303.4M)
+    [257]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (Sync, 833 bit/s)
+    [258]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (Sync, 1667 bit/s)
+    [259]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (No Sync, 833 bit/s)
+    [260]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (No Sync, 1667 bit/s)
+    [261]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (PIWM, 2500 bit/s)
+    [262]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (PIWM, 5000 bit/s)
+    [263]  6SC2 Car Remote (-f 315.1M)
+    [264]  GM ABO1502T Car Remote (-f 314.9M)
+    [265]  Siemens 5WY72XX Car Remote (-f 315.1M)
+    [266]  Alps FWB1U545 Car Remote
+    [267]  Continental KR5V2X Car Remote (-f 313.8M -s 1024k)
+    [268]  Code Alarm FRDPC2002 Car Remote
 
 * Disabled by default, use -R n or a conf file to enable
 
