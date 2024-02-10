@@ -337,6 +337,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [249]  Bresser lightning
     [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge
     [251]  Fine Offset / Ecowitt WH55 water leak sensor
+    [252]  BMW Gen5 TPMS, multi-brand HUF, Continental, Schrader/Sensata
 
 * Disabled by default, use -R n or a conf file to enable
 
