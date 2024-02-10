@@ -229,8 +229,8 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     } else if (s_type == SENSOR_TYPE_AIR_PM) {
         int pm_2_5      = (msg[10] & 0x0f) * 1000 + (msg[11] >> 4) * 100 + (msg[11] & 0x0f) * 10 + (msg[12] >> 4);
         int pm_10       = (msg[12] & 0x0f) * 1000 + (msg[13] >> 4) * 100 + (msg[13] & 0x0f) * 10 + (msg[14] >> 4);
-        int pm_2_5_init = ((msg[12] >> 4) & 0x0f) == 0x0f;
-        int pm_10_init  = ((msg[14] >> 4) & 0x0f) == 0x0f;
+        int pm_2_5_init = (msg[10] & 0x0f) == 0x0f; // confirmed by https://github.com/merbanan/rtl_433/issues/2816#issuecomment-1935439318
+        int pm_10_init  = (msg[12] & 0x0f) == 0x0f; // confirmed by https://github.com/merbanan/rtl_433/issues/2816#issuecomment-1935439318
 
         /* clang-format off */
         data = data_make(
