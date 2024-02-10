@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdlib.h>
 #ifndef _WIN32
 #include <unistd.h>
 #include <sys/ioctl.h>
@@ -20,7 +21,6 @@
 #include "term_ctl.h"
 
 #ifdef _WIN32
-#include <stdlib.h>
 #include <io.h>
 #include <limits.h>
 #include <windows.h>
@@ -228,8 +228,15 @@ int term_has_color(void *ctx)
 #ifdef _WIN32
     return _term_has_color(ctx);
 #else
+    char const *env = getenv("RTL433_COLOR");
+    if (env && strcmp(env, "always") == 0) {
+        return 1;
+    }
+    if (env && strcmp(env, "never") == 0) {
+        return 0;
+    }
     FILE *fp = (FILE *)ctx;
-    return isatty(fileno(fp)); // || get_env("force_color")
+    return isatty(fileno(fp));
 #endif
 }
 
