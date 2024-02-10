@@ -1,6 +1,7 @@
 /** @file
     BMW Gen5 TPMS sensor.
-    Copyright (C) 2024 Bruno OCTAU (ProfBoc75), @petrjac, Christian W. Zuckschwerdt <christian@zuckschwerdt.org>
+    
+    Copyright (C) 2024 Bruno OCTAU (ProfBoc75), \@petrjac, Christian W. Zuckschwerdt <christian@zuckschwerdt.org>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -10,7 +11,7 @@
 /**
 BMW Gen5 TPMS sensor.
 
-issue #2821 BMW Gen5 TPMS support open by @petrjac
+issue #2821 BMW Gen5 TPMS support open by \@petrjac
 
 Samples raw :
 
