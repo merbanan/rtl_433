@@ -337,6 +337,9 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [249]  Bresser lightning
     [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge
     [251]  Fine Offset / Ecowitt WH55 water leak sensor
+    [252]  Landis & Gyr Gridstream Power Meters 9.6k
+    [253]  Landis & Gyr Gridstream Power Meters 19.2k
+    [254]  Landis & Gyr Gridstream Power Meters 38.4k
 
 * Disabled by default, use -R n or a conf file to enable
 
