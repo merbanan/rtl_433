@@ -159,7 +159,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const tpms_eezrv = {
-        .name        = "EezTire E618, Carchet TPMS",
+        .name        = "EezTire E618, Carchet TPMS, TST-507 TPMS",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 50,
         .long_width  = 50,
