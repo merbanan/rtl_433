@@ -95,7 +95,7 @@ static int tpms_bmw_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int brand_id            = b[0]; // 0x03 = HUF Gen 5, 0x80 = Continental, 0x23 = Sensata, 0x88 = ??
     float pressure_kPa      = b[5] * 2.45;
     int temperature_C       = b[6] - 52;
-    int flags1              = b[7]; // depends on brand_id, could be pressure or SEQ ID and other WARM flags Battery , fast deflating ... 
+    int flags1              = b[7]; // depends on brand_id, could be pressure or SEQ ID and other WARM flags Battery , fast deflating ...
     int flags2              = b[8]; // depends on brand_id, could be pressure and other WARM flags Battery , fast deflating ...
     int flags3              = b[9]; // Nominal Pressure for brand HUF 0x03, depends on brand_id, could be SEQ ID and other WARM flags Battery , fast deflating ...
 
@@ -106,10 +106,10 @@ static int tpms_bmw_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",               "",                DATA_STRING, "BMW",
+            "model",               "",                DATA_STRING, "BMW-GEN5",
             "type",                "",                DATA_STRING, "TPMS",
-            "brand",               "b0",              DATA_INT,    brand_id,
-            "id",                  "b1-4",            DATA_STRING, id_str,
+            "brand",               "Brand",           DATA_INT,    brand_id,
+            "id",                  "",                DATA_STRING, id_str,
             "pressure_kPa",        "Pressure",        DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, (double)pressure_kPa,
             "temperature_C",       "Temperature",     DATA_FORMAT, "%.1f C",   DATA_DOUBLE, (double)temperature_C,
             "flags1",              "",                DATA_INT,    flags1,
@@ -140,7 +140,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const tpms_bmw = {
-        .name        = "BMW TPMS, multi-brand HUF Gen5, Continental, Schrader/Sensata",
+        .name        = "BMW Gen5 TPMS, multi-brand HUF, Continental, Schrader/Sensata",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 25,
         .long_width  = 25,
