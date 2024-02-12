@@ -434,8 +434,8 @@ mappings = {
         "config": {
             "device_class": "precipitation",
             "name": "Rain Total",
-            "unit_of_measurement": "mm",
-            "value_template": "{{ (float(value|float) * 25.4) | round(2) }}",
+            "unit_of_measurement": "in",
+            "value_template": "{{ value|float|round(2) }}",
             "state_class": "total_increasing"
         }
     },
@@ -625,7 +625,7 @@ mappings = {
             "state_class": "measurement"
         }
     },
-  
+
     "storm_dist": {
         "device_type": "sensor",
         "object_suffix": "stdist",

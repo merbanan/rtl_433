@@ -27,7 +27,7 @@ Modulation:
 S.a. #1824
 
 Temperature is 16 bit, degrees F, scaled x10 +900.
-The first reading is the “Meat” channel and the second is for the “Ambient” or grill temperature.
+The first reading is the "Meat" channel and the second is for the "Ambient" or grill temperature.
 The range would be around -57F to 572F with the manual stating temps higher than 700F could damage the sensor.
 
 - A value of 0x1b58 (7000 / 610F) indicates the sensor is unplugged and sending an E1 error to the displays.

@@ -23,9 +23,6 @@ static int newkaku_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t *b = bitbuffer->bb[0];
 
-    if (b[0] != 0x65 && b[0] != 0x59) // always starts with 0110 0101 or 0101 1001
-        return DECODE_ABORT_EARLY;
-
     /* Reject missing sync */
     if (bitbuffer->syncs_before_row[0] != 1)
         return DECODE_ABORT_EARLY;

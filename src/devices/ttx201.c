@@ -34,8 +34,8 @@ A complete message is 445 bits:
 54-bit data packet format
 
     0    1   2    3   4    5   6    7   8    9   10   11  12   13  (nibbles #, aligned to 8-bit values)
-    ..LL LLKKKKKK IIIIIIII StttBCCC 0XXXTTTT TTTTTTTT MMMMMMMM JJJJ	(temperature)
-or  ..LL LLKKKKKK zyyyyyyy 0tttmmmm dddddHHH HHMMMMMM 0SSSSSS? JJJJ	(date/time)
+    ..LL LLKKKKKK IIIIIIII StttBCCC 0XXXTTTT TTTTTTTT MMMMMMMM JJJJ (temperature)
+or  ..LL LLKKKKKK zyyyyyyy 0tttmmmm dddddHHH HHMMMMMM 0SSSSSS? JJJJ (date/time)
 
 - L = 4-bit start of packet, always 0
 - K = 6-bit checksum, sum of nibbles 3-12

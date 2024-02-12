@@ -2,7 +2,7 @@
     Ambient Weather (Fine Offset) WH31L protocol.
 
     Copyright (C) 2021 Christian W. Zuckschwerdt <zany@triq.net>
-    based on protocol analysis by @MksRasp.
+    based on protocol analysis by \@MksRasp.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

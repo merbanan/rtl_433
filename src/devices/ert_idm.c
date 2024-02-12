@@ -190,8 +190,8 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     http://davestech.blogspot.com/2008/02/itron-remote-read-electric-meter.html
     SCM1 Counter1 Meter has been inverted
     SCM1 Counter2 Meter has been removed
-    SCM2 Counter3 Meter detected a button–press demand reset
-    SCM2 Counter4 Meter has a low-battery/end–of–calendar warning
+    SCM2 Counter3 Meter detected a button-press demand reset
+    SCM2 Counter4 Meter has a low-battery/end-of-calendar warning
     SCM3 Counter5 Meter has an error or a warning that can affect billing
     SCM3 Counter6 Meter has a warning that may or may not require a site visit,
     */
@@ -440,8 +440,8 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     http://davestech.blogspot.com/2008/02/itron-remote-read-electric-meter.html
     SCM1 Counter1 Meter has been inverted
     SCM1 Counter2 Meter has been removed
-    SCM2 Counter3 Meter detected a button–press demand reset
-    SCM2 Counter4 Meter has a low-battery/end–of–calendar warning
+    SCM2 Counter3 Meter detected a button-press demand reset
+    SCM2 Counter4 Meter has a low-battery/end-of-calendar warning
     SCM3 Counter5 Meter has an error or a warning that can affect billing
     SCM3 Counter6 Meter has a warning that may or may not require a site visit,
     */

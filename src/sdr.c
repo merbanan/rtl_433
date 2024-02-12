@@ -957,6 +957,7 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, char const *dev_query, int verbos
 
 // the buffer sizes can't be proven to be correct
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wanalyzer-allocation-size"
 
 static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len)

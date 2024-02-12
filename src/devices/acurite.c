@@ -990,7 +990,7 @@ Message Type 0x04, 7 bytes
 
 - C: Channel 00: C, 10: B, 11: A, (01 is invalid)
 - I: Device ID (14 bits)
-- B: Battery, 1 is battery OK, 0 is battery low
+- B: Battery, 1 is battery OK, 0 is battery low (observed low < 2.5V)
 - M: Message type (6 bits), 0x04
 - T: Temperature Celsius (11 - 14 bits?), + 1000 * 10
 - H: Relative Humidity (%) (7 bits)
@@ -1259,7 +1259,7 @@ Process messages for Acurite weather stations, tower and related sensors
 @sa acurite_515_decode()
 @sa acurite_6045_decode()
 @sa acurite_899_decode()
-#sa acurite_3n1_decode()
+@sa acurite_3n1_decode()
 @sa acurite_5n1_decode()
 @sa acurite_atlas_decode()
 @sa acurite_tower_decode()
@@ -1279,7 +1279,7 @@ These devices have a message type in the 3rd byte and an 8 bit checksum
 in the last byte.
 
 */
-static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int decoded = 0;
     int error_ret = 0;
@@ -1949,14 +1949,14 @@ static char const *const acurite_txr_output_fields[] = {
 };
 
 r_device const acurite_txr = {
-        .name        = "Acurite 592TXR Temp/Humidity, 592TX Temp, 5n1 Weather Station, 6045 Lightning, 899 Rain, 3N1, Atlas",
+        .name        = "Acurite 592TXR temp/humidity, 592TX temp, 5n1, 3n1, Atlas weather station, 515 fridge/freezer, 6045 lightning, 899 rain, 1190/1192 leak",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 220,  // short pulse is 220 us + 392 us gap
         .long_width  = 408,  // long pulse is 408 us + 204 us gap
         .sync_width  = 620,  // sync pulse is 620 us + 596 us gap
         .gap_limit   = 500,  // longest data gap is 392 us, sync gap is 596 us
         .reset_limit = 4000, // packet gap is 2192 us
-        .decode_fn   = &acurite_txr_callback,
+        .decode_fn   = &acurite_txr_decode,
         .fields      = acurite_txr_output_fields,
 };
 
@@ -2002,7 +2002,9 @@ r_device const acurite_986 = {
 static char const *const acurite_606_output_fields[] = {
         "model",
         "id",
+        "channel",
         "battery_ok",
+        "button",
         "temperature_C",
         "mic",
         NULL,
