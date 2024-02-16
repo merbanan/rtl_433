@@ -338,6 +338,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "codes", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_STRING, row_codes),
             NULL);
     /* clang-format on */
+    render_getters(data, bitbuffer->bb[0], params);
 
     decoder_output_data(decoder, data);
     for (i = 0; i < bitbuffer->num_rows; i++) {
