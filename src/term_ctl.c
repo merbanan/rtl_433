@@ -228,13 +228,19 @@ int term_has_color(void *ctx)
 #ifdef _WIN32
     return _term_has_color(ctx);
 #else
-    char const *env = getenv("RTL433_COLOR");
-    if (env && strcmp(env, "always") == 0) {
+    char const *color = getenv("RTL433_COLOR");
+    if (color && strcmp(color, "always") == 0) {
         return 1;
     }
-    if (env && strcmp(env, "never") == 0) {
+    if (color && strcmp(color, "never") == 0) {
         return 0;
     }
+
+    char const *no_color = getenv("NO_COLOR");
+    if (no_color && no_color[0] != '\0') {
+        return 0;
+    }
+
     FILE *fp = (FILE *)ctx;
     return isatty(fileno(fp));
 #endif
