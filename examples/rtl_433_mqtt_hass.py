@@ -105,6 +105,26 @@ import re
 
 discovery_timeouts = {}
 
+CONFIG_PATHS = [
+    "/etc/rtl_433",
+    "/usr/local/etc/rtl_433",
+    os.path.expanduser("~/.config/rtl_433"),
+    os.path.dirname(os.path.realpath(__file__)),
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), "data")
+]
+CONFIG_PATHS = [p for p in CONFIG_PATHS if os.path.exists(p)]
+
+CONFIG_FILENAME = "rtl_433.conf"
+
+def find_file_in_path(filename, paths, success_log=None):
+    for path in paths:
+        fullpath = os.path.join(path, filename)
+        if os.path.exists(fullpath):
+            if success_log:
+                logging.info(success_log % path)
+            return fullpath
+    raise FileNotFoundError(f"File {filename} not found in paths: {paths}")
+
 # Fields that get ignored when publishing to Home Assistant
 # (reduces noise to help spot missing field mappings)
 SKIP_KEYS = [ "type", "model", "subtype", "channel", "id", "mic", "mod",
