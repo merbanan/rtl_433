@@ -980,7 +980,7 @@ def bridge_event_to_hass(mqttc, topic_prefix, data):
 def rtl_433_bridge():
     """Run a MQTT Home Assistant auto discovery bridge for rtl_433."""
 
-    mqttc = mqtt.Client()
+    mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
 
     if args.debug:
         mqttc.enable_logger()
@@ -1126,7 +1126,7 @@ if __name__ == "__main__":
             args.password = password
         if retain:
             logging.info(f"Using retain {retain} from config")
-            args.retain = retain
+            args.retain = int(retain)
         if devices:
             logging.info(f"Using device_topic_suffix {devices} from config")
             args.device_topic_suffix = devices
