@@ -127,6 +127,9 @@ if(WIN32)
     add_definitions(-D_USE_MATH_DEFINES)
 endif()
 
+# Enable server features by default
+ADD_DEFINITIONS(-DSERVER)
+
 # On Unix pass the SYSCONFDIR through to conf file loader
 if(NOT WIN32)
     include(GNUInstallDirs)

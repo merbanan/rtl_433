@@ -78,7 +78,10 @@ char const *version_string(void)
 #else
             " version unknown"
 #endif
-            " inputs file rtl_tcp"
+            " inputs file"
+#ifdef SERVER
+            " rtl_tcp"
+#endif
 #ifdef RTLSDR
             " RTL-SDR"
 #endif
@@ -92,7 +95,7 @@ char const *version_string(void)
 }
 
 /* helper */
-
+#ifdef SERVER
 struct mg_mgr *get_mgr(r_cfg_t *cfg)
 {
     if (!cfg->mgr) {
@@ -104,7 +107,7 @@ struct mg_mgr *get_mgr(r_cfg_t *cfg)
 
     return cfg->mgr;
 }
-
+#endif
 void set_center_freq(r_cfg_t *cfg, uint32_t center_freq)
 {
     cfg->frequencies = 1;
@@ -232,16 +235,17 @@ void r_free_cfg(r_cfg_t *cfg)
     r_logger_set_log_handler(NULL, NULL);
 
     list_free_elems(&cfg->output_handler, (list_elem_free_fn)data_output_free);
-
+#ifdef SERVER
     list_free_elems(&cfg->data_tags, (list_elem_free_fn)data_tag_free);
-
+#endif
     list_free_elems(&cfg->in_files, NULL);
 
     free(cfg->demod);
 
     free(cfg->devices);
-
+#ifdef SERVER
     mg_mgr_free(cfg->mgr);
+#endif
     free(cfg->mgr);
 
     //free(cfg);
@@ -887,11 +891,13 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 NULL);
     }
 
+#ifdef SERVER
     // apply all tags
     for (void **iter = cfg->data_tags.elems; iter && *iter; ++iter) {
         data_tag_t *tag = *iter;
         data            = data_tag_apply(tag, data, cfg->in_filename);
     }
+#endif
 
     for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
         data_output_t *output = cfg->output_handler.elems[i];
@@ -1091,6 +1097,7 @@ void add_kv_output(r_cfg_t *cfg, char *param)
     list_push(&cfg->output_handler, data_output_kv_create(log_level, fopen_output(param)));
 }
 
+#ifdef SERVER
 void add_mqtt_output(r_cfg_t *cfg, char *param)
 {
     list_push(&cfg->output_handler, data_output_mqtt_create(get_mgr(cfg), param, cfg->dev_query));
@@ -1128,6 +1135,7 @@ void add_http_output(r_cfg_t *cfg, char *param)
 
     list_push(&cfg->output_handler, data_output_http_create(get_mgr(cfg), host, port, cfg));
 }
+#endif
 
 void add_trigger_output(r_cfg_t *cfg, char *param)
 {
@@ -1236,8 +1244,9 @@ void add_infile(r_cfg_t *cfg, char *in_file)
 {
     list_push(&cfg->in_files, in_file);
 }
-
+#ifdef SERVER
 void add_data_tag(struct r_cfg *cfg, char *param)
 {
     list_push(&cfg->data_tags, data_tag_create(param, get_mgr(cfg)));
 }
+#endif
