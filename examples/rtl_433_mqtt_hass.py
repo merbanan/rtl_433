@@ -883,6 +883,27 @@ def rtl_433_device_info(data, topic_prefix):
     return (f"{topic_prefix}/{path}", id)
 
 
+def device_topic_from_data(data):
+    device_topic_suffix = ''+args.device_topic_suffix
+    keys = re.findall(r'\[([^\]]+)\]', device_topic_suffix)
+    for key in keys:
+        default = None
+        k = key
+        if key.startswith('/'):
+            k = key[1:]
+        if ':' in key:
+            k, default = key.split(':')
+        value = data.get(k, default)
+        if key.startswith('/') and value is None:
+            device_topic_suffix = device_topic_suffix.replace(f'[{key}]', '')
+            continue
+        elif key.startswith('/') and value is not None:
+            value = '/' + str(value)
+
+        device_topic_suffix = device_topic_suffix.replace(f'[{key}]', str(value))
+    return device_topic_suffix
+
+
 def publish_config(mqttc, topic, model, object_id, mapping, key=None):
     """Publish Home Assistant auto discovery data."""
     global discovery_timeouts
@@ -943,6 +964,8 @@ def bridge_event_to_hass(mqttc, topic_prefix, data):
     published_keys = []
 
     base_topic, device_id = rtl_433_device_info(data, topic_prefix)
+    base_topic = device_topic_from_data(data)
+
     if not device_id:
         # no unique device identifier
         logging.warning("No suitable identifier found for model: %s", model)
