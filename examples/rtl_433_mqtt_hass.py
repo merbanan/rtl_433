@@ -1053,13 +1053,67 @@ if __name__ == "__main__":
     if not args.password and 'MQTT_PASSWORD' in os.environ:
         args.password = os.environ['MQTT_PASSWORD']
 
-    if not args.user or not args.password:
-        logging.warning("User or password is not set. Check credentials if subscriptions do not return messages.")
-
     if args.ids:
         ids = ', '.join(str(id) for id in args.ids)
         logging.info("Only discovering devices with ids: [%s]" % ids)
     else:
         logging.info("Discovering all devices")
+
+    found_config = False 
+    try:
+        with open(find_file_in_path(CONFIG_FILENAME, CONFIG_PATHS)) as f:
+            found = re.findall('^output (.*)$', f.read(), re.MULTILINE)
+            devices = None
+            events = None
+            retain = None
+            user = None 
+            password = None 
+            host = None 
+            port = None
+            for find in found: 
+                if "mqtt" not in find: continue
+                host = re.findall(r'mqtt://(.*?),', find)[0]
+                devices = re.findall(r'devices=(.*?)(?:,+|$)', find)
+                if len(devices) > 0: devices = devices[0]
+                events = re.findall(r'events=(.*?)(?:,+|$)', find)
+                if len(events) > 0: events = events[0]
+                retain = re.findall(r'retain=(.*?)(?:,+|$)', find)
+                if len(retain) > 0: retain = retain[0]
+
+                if '@' in host:
+                    user, password = host.split('@')[0].split(':')
+                    host = host.split('@')[1]
+                if ':' in host:
+                    host, port = host.split(':')
+                found_config = True
+                break 
+    except FileNotFoundError:
+        logging.warning("Config file not found")
+    except Exception as e:
+        logging.exception("Error reading config file")
+
+    if found_config:
+        if host:
+            logging.info(f"Using host {host} from config")
+            args.host = host
+        if port:
+            logging.info(f"Using port {port} from config")
+            args.port = int(port)
+        if user:
+            logging.info(f"Using user {user} from config")
+            args.user = user
+        if password:
+            args.password = password
+        if retain:
+            logging.info(f"Using retain {retain} from config")
+            args.retain = retain
+        if devices:
+            logging.info(f"Using device_topic_suffix {devices} from config")
+            args.device_topic_suffix = devices
+        if events:
+            logging.info(f"Using rtl_topic {events} from config")
+            args.rtl_topic = events
+    if not args.user or not args.password:
+        logging.warning("User or password is not set. Check credentials if subscriptions do not return messages.")
 
     run()
