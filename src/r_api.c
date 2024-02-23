@@ -452,6 +452,12 @@ static char const **convert_csv_fields(r_cfg_t *cfg, char const **fields)
             else if (!strcmp(*p, "wind_max_km_h")) *p = "wind_max_mi_h";
         }
     }
+   if (cfg->conversion_mode == FORCE_KMH) {
+        for (char const **p = fields; *p; ++p) {
+            if (!strcmp(*p, "wind_avg_m_s")) *p = "wind_avg_km_h";
+            else if  (!strcmp(*p, "wind_max_m_s")) *p = "wind_max_km_h";
+            }
+  } 
     return fields;
 }
 
@@ -768,6 +774,21 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
             }
         }
     }
+
+     if (cfg->conversion_mode == FORCE_KMH){
+        for (data_t *d = data; d; d = d->next) {
+            if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "m_s")) {
+                d->value.v_dbl = ms2kmh(d->value.v_dbl);
+                char *new_label = str_replace(d->key, "m_s", "km_h");
+                free(d->key);
+                d->key = new_label;
+                char *new_format_label = str_replace(d->format, "m/s", "km/h");
+                free(d->format);
+                d->format = new_format_label;
+            }
+        }
+    }
+
     if (cfg->conversion_mode == CONVERT_CUSTOMARY) {
         for (data_t *d = data; d; d = d->next) {
             // Convert double type fields ending in _C to _F

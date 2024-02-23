@@ -143,7 +143,10 @@ float inhg2hpa(float inhg)
     return inhg * 33.8639f;
 }
 
-
+float ms2kmh(float ms)
+{
+    return ms * 3.6;
+}
 bool str_endswith(char const *restrict str, char const *restrict suffix)
 {
     if (!suffix) {

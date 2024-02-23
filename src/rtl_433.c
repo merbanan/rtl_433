@@ -1231,6 +1231,9 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         else if (strcmp(arg, "customary") == 0) {
             cfg->conversion_mode = CONVERT_CUSTOMARY;
         }
+	else if (strcmp(arg, "forcekmh") == 0) {
+            cfg->conversion_mode = FORCE_KMH;
+        }
         else {
             fprintf(stderr, "Invalid conversion mode: %s\n", arg);
             usage(1);

@@ -145,6 +145,13 @@ float inhg2hpa(float inhg);
     @param suffix the pattern to search
     @return true if the string ends with the specified suffix, false otherwise.
 */
+
+float ms2kmh(float ms);
+
+/** @param ms wind speed in meters/second
+    @return wind speed in km/h
+*/
+
 bool str_endswith(char const *restrict str, char const *restrict suffix);
 
 /** Replace a pattern in a string.

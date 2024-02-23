@@ -32,6 +32,7 @@ typedef enum {
     CONVERT_NATIVE,
     CONVERT_SI,
     CONVERT_CUSTOMARY,
+    FORCE_KMH,
 } conversion_mode_t;
 
 typedef enum {
