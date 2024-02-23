@@ -706,16 +706,6 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                     *pos = 'C';
                 }
             }
-            // Convert double type fields ending in _mph to _kph
-            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_mph")) {
-                d->value.v_dbl = mph2kmph(d->value.v_dbl);
-                char *new_label = str_replace(d->key, "_mph", "_kph");
-                free(d->key);
-                d->key = new_label;
-                char *new_format_label = str_replace(d->format, "mi/h", "km/h");
-                free(d->format);
-                d->format = new_format_label;
-            }
             // Convert double type fields ending in _mi_h to _km_h
             else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_mi_h")) {
                 d->value.v_dbl = mph2kmph(d->value.v_dbl);
@@ -780,16 +770,6 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 if (d->format && (pos = strrchr(d->format, 'C'))) {
                     *pos = 'F';
                 }
-            }
-            // Convert double type fields ending in _kph to _mph
-            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_kph")) {
-                d->value.v_dbl = kmph2mph(d->value.v_dbl);
-                char *new_label = str_replace(d->key, "_kph", "_mph");
-                free(d->key);
-                d->key = new_label;
-                char *new_format_label = str_replace(d->format, "km/h", "mi/h");
-                free(d->format);
-                d->format = new_format_label;
             }
             // Convert double type fields ending in _km_h to _mi_h
             else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_km_h")) {
