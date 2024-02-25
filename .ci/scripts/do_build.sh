@@ -1,6 +1,9 @@
 #!/bin/sh
+
 set -e
 
+# This script is for internal CI use only
+#
 # performs a standard out-of-tree build and transform environment vars to cmake options
 # set RTLSDR=ON/OFF/AUTO (default: ON)
 # set SOAPYSDR=ON/OFF/AUTO (default: AUTO)
@@ -14,14 +17,12 @@ OPENSSL="${OPENSSL:-AUTO}"
 set -- -DENABLE_RTLSDR=$RTLSDR -DENABLE_SOAPYSDR=$SOAPYSDR -DENABLE_OPENSSL=$OPENSSL
 
 mkdir -p build
-cd build
 if [ -n "$CMAKE_TOOLCHAIN_FILE" ] ; then
-    cmake $@ -DCMAKE_TOOLCHAIN_FILE=../$CMAKE_TOOLCHAIN_FILE ..
+    cmake $@ -DCMAKE_TOOLCHAIN_FILE=../$CMAKE_TOOLCHAIN_FILE -GNinja -B build
 else
-    cmake $@ ..
+    cmake $@ -GNinja -B build
 fi
-make
-# make install
+cmake --build build
 
 if [ -n "$RUN_RTL_433_TESTS" ] ; then
 
