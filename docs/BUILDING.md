@@ -25,7 +25,7 @@ The usual update mechanism will now keep the rtl_433 version current.
 
 ### Fedora
 
-Fedora users (31, 32 and Rawhide) can add the following copr repository to get nightly builds:
+Fedora users (38, 39 and Rawhide) can add the following copr repository to get nightly builds:
 
     $ sudo dnf copr enable tvass/rtl_433
     $ sudo dnf install rtl_433
@@ -51,7 +51,7 @@ Centos/Fedora/RHEL with EPEL repo using cmake:
   * If you require TLS connections, install `openssl-devel`.
 
 ````
-sudo dnf install libtool libusbx-devel rtl-sdr-devel rtl-sdr cmake
+sudo dnf install libtool libusb1-devel rtl-sdr-devel rtl-sdr cmake
 ````
 
 Mac OS X with MacPorts:
