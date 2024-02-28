@@ -144,7 +144,7 @@ static int fineoffset_wh31l_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "battery_ok",       "Battery",          DATA_DOUBLE, battery_ok * 0.5f,
             "state",            "State",            DATA_STRING, state_str,
             "flags",            "Flags",            DATA_FORMAT, "%04x", DATA_INT,    flags,
-            "storm_dist_km",    "Storm Dist",       DATA_COND, s_dist != 63, DATA_FORMAT, "%d km", DATA_INT,    s_dist,
+            "storm_dist_km",    "Storm Distance",   DATA_COND, s_dist != 63, DATA_FORMAT, "%d km", DATA_INT,    s_dist,
             "strike_count",     "Strike Count",     DATA_INT,    s_count,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
