@@ -134,7 +134,7 @@ static int badger_orion_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format on */
 
     decoder_output_data(decoder, data);
-    return 0;
+    return 1;
 }
 
 // Note: At this time the exact meaning of the flags is not known.
