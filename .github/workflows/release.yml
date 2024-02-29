@@ -16,7 +16,7 @@ jobs:
     #runs-on: ubuntu-latest
     runs-on: windows-latest
     steps:
-    - uses: actions/cache@v3
+    - uses: actions/cache@v4
       id: downloads
       with:
         path: ${{ runner.workspace }}/${{ env.pothos-exe }}
@@ -34,7 +34,7 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       release_version: ${{ env.RELEASE_VERSION }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Create Release info
@@ -74,16 +74,15 @@ jobs:
     runs-on: ubuntu-latest
     name: Build with Mingw-w64 on ${{ matrix.arch }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: "Install Mingw-w64"
       run: |
         sudo apt-get update -q -y
         sudo apt-get install -q -y gcc-mingw-w64-base binutils-mingw-w64-${{ matrix.arch }} gcc-mingw-w64-${{ matrix.arch }} mingw-w64-${{ matrix.arch }}-dev gcc-mingw-w64 gcc-multilib p7zip-full
     - name: "Build with Mingw-w64"
-      env:
-        RTLSDR: OFF
-        CMAKE_TOOLCHAIN_FILE: cmake/Toolchain-gcc-mingw-w64-${{ matrix.arch }}.cmake
-      run: ./.ci/scripts/do_build.sh
+      run: |
+        cmake -DCMAKE_TOOLCHAIN_FILE=cmake/Toolchain-gcc-mingw-w64-${{ matrix.arch }}.cmake -DENABLE_RTLSDR=OFF -B build
+        cmake --build build
     - name: "Sysroot Build with Mingw-w64"
       run: ./.ci/scripts/do_sysroot.sh
     - name: "Upload Release Asset"
@@ -121,8 +120,8 @@ jobs:
     steps:
     - run: choco install openssl
       if: matrix.platform == 'x64'
-    - uses: actions/checkout@v3
-    - uses: actions/cache@v3
+    - uses: actions/checkout@v4
+    - uses: actions/cache@v4
       id: downloads
       if: matrix.platform == 'x64'
       with:
@@ -226,7 +225,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Build with CMake on ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install SDR
       run: |
         sudo apt-get update -q
@@ -273,7 +272,7 @@ jobs:
             distro: buster
     name: Build on ${{ matrix.distro }} ${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: uraimo/run-on-arch-action@v2.0.8
         id: runcmd
         with:
@@ -309,11 +308,9 @@ jobs:
             uname -a
             lsb_release -sc || echo NO lsb_release
             echo Release ${{ needs.release_job.outputs.release_version }}
-            mkdir build
-            cd build
-            cmake -DCMAKE_INSTALL_PREFIX:PATH=../dist ..
-            cmake --build .
-            cmake --build . --target install
+            cmake -DCMAKE_INSTALL_PREFIX:PATH=../dist -B build
+            cmake --build build
+            cmake --build build --target install
 
       - name: Install FPM
         run: |
