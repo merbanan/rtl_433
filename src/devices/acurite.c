@@ -154,8 +154,8 @@ static void data_append_exception(data_t* data, int exception, uint8_t* bb, int 
 
     /* clang-format off */
     data = data_append(data,
-            "exception",        "data_exception",   DATA_INT,    exception,
-            "raw_msg",          "raw_message",      DATA_STRING, raw_str,
+            "exception",        "Data Exception",   DATA_INT,    exception,
+            "raw_msg",          "Raw Message",      DATA_STRING, raw_str,
             NULL);
     /* clang-format on */
 
@@ -378,7 +378,7 @@ Data fields in rtl_433 messages:
     counts up to 255, wraps around to 0
     non-volatile (doesn't reset at power up)
 
-- storm_distance - statistically estimated distance to edge of storm
+- storm_dist - statistically estimated distance to edge of storm
     See AS3935 documentation
     sensor will make calculate a distance estimate with each strike event
     0x1f (31) is invalid/undefined value, used at power-up to indicate invalid
@@ -393,7 +393,7 @@ Notes:
 
 2020-08-29 - changed temperature decoding, was 2.0 F too low vs. Acurite Access
 
-@todo - storm_distance conversion to miles/KM (should match Acurite consoles)
+@todo - storm_dist conversion to miles/KM (should match Acurite consoles)
 
 */
 static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row)
@@ -475,14 +475,14 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
             "id",               NULL,               DATA_INT,    sensor_id,
             "channel",          NULL,               DATA_STRING, channel_str,
             "battery_ok",       "Battery",          DATA_INT,    !battery_low,
-            "temperature_F",    "temperature",      DATA_FORMAT, "%.1f F",     DATA_DOUBLE,     tempf,
-            "humidity",         "humidity",         DATA_FORMAT, "%u %%", DATA_INT,    humidity,
-            "strike_count",     "strike_count",     DATA_INT,    strike_count,
-            "storm_dist",       "storm_distance",   DATA_INT,    strike_distance,
-            "active",           "active_mode",      DATA_INT,    active,
-            "rfi",              "rfi_detect",       DATA_INT,    rfi_detect,
-            "exception",        "data_exception",   DATA_INT,    exception,
-            "raw_msg",          "raw_message",      DATA_STRING, raw_str,
+            "temperature_F",    "Temperature",      DATA_FORMAT, "%.1f F",     DATA_DOUBLE,     tempf,
+            "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT,    humidity,
+            "strike_count",     "Strike Count",     DATA_INT,    strike_count,
+            "storm_dist",       "Storm Distance",   DATA_INT,    strike_distance,
+            "active",           "Active Mode",      DATA_INT,    active,
+            "rfi",              "RFI Detect",       DATA_INT,    rfi_detect,
+            "exception",        "Data Exception",   DATA_INT,    exception,
+            "raw_msg",          "Raw Message",      DATA_STRING, raw_str,
             NULL);
     /* clang-format on */
 
@@ -532,7 +532,7 @@ static int acurite_899_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t
             // "channel",              NULL,           DATA_STRING, channel_str,
             "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
             "rain_mm",          "Rainfall Accumulation",    DATA_FORMAT, "%.2f mm", DATA_DOUBLE, raincounter * 0.254,
-            "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
+            "mic",              "Integrity",                DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
@@ -603,18 +603,17 @@ static int acurite_3n1_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t
     float wind_speed_mph = bb[6] & 0x7f; // seems to be plain MPH
 
     /* clang-format off */
-    data_t *data;
-    data = data_make(
-            "model",        "",   DATA_STRING,    "Acurite-3n1",
-            "message_type", NULL,   DATA_INT,       message_type,
-            "id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
-            "channel",      NULL,   DATA_STRING,    channel_str,
-            "sequence_num",  NULL,   DATA_INT,      sequence_num,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "wind_avg_mi_h",   "wind_speed",   DATA_FORMAT,    "%.1f mi/h", DATA_DOUBLE,     wind_speed_mph,
-            "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
-            "humidity",     NULL,    DATA_FORMAT,    "%u %%",   DATA_INT,   humidity,
-            "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
+    data_t *data = data_make(
+            "model",            "",             DATA_STRING,    "Acurite-3n1",
+            "message_type",     NULL,           DATA_INT,       message_type,
+            "id",               NULL,           DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
+            "channel",          NULL,           DATA_STRING,    channel_str,
+            "sequence_num",     NULL,           DATA_INT,       sequence_num,
+            "battery_ok",       "Battery",      DATA_INT,       !battery_low,
+            "wind_avg_mi_h",    "Wind Speed",   DATA_FORMAT,    "%.1f mi/h", DATA_DOUBLE,     wind_speed_mph,
+            "temperature_F",    "Temperature",  DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
+            "humidity",         NULL,           DATA_FORMAT,    "%u %%",   DATA_INT,   humidity,
+            "mic",              "Integrity",    DATA_STRING,    "CHECKSUM",
             NULL);
     /* clang-format on */
 
@@ -660,16 +659,16 @@ static int acurite_5n1_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t
         /* clang-format off */
         data_t *data;
         data = data_make(
-                "model",        "",   DATA_STRING,    "Acurite-5n1",
-                "message_type", NULL,   DATA_INT,       message_type,
-                "id",           NULL, DATA_INT,       sensor_id,
-                "channel",      NULL,   DATA_STRING,    channel_str,
-                "sequence_num",  NULL,   DATA_INT,      sequence_num,
-                "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-                "wind_avg_km_h",   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
-                "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dir,
-                "rain_in",      "Rainfall Accumulation",   DATA_FORMAT, "%.2f in", DATA_DOUBLE, raincounter * 0.01f,
-                "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
+                "model",            "",                         DATA_STRING,    "Acurite-5n1",
+                "message_type",     NULL,                       DATA_INT,       message_type,
+                "id",               NULL,                       DATA_INT,       sensor_id,
+                "channel",          NULL,                       DATA_STRING,    channel_str,
+                "sequence_num",     NULL,                       DATA_INT,       sequence_num,
+                "battery_ok",       "Battery",                  DATA_INT,       !battery_low,
+                "wind_avg_km_h",    "Wind Speed",               DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
+                "wind_dir_deg",     NULL,                       DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dir,
+                "rain_in",          "Rainfall Accumulation",    DATA_FORMAT,    "%.2f in", DATA_DOUBLE, raincounter * 0.01f,
+                "mic",              "Integrity",                DATA_STRING,    "CHECKSUM",
                 NULL);
         /* clang-format on */
 
@@ -699,16 +698,16 @@ static int acurite_5n1_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t
         /* clang-format off */
         data_t *data;
         data = data_make(
-                "model",        "",   DATA_STRING,    "Acurite-5n1",
-                "message_type", NULL,   DATA_INT,       message_type,
-                "id",           NULL, DATA_INT,  sensor_id,
-                "channel",      NULL,   DATA_STRING,    channel_str,
-                "sequence_num",  NULL,   DATA_INT,      sequence_num,
-                "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-                "wind_avg_km_h",   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
-                "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
-                "humidity",     NULL,    DATA_FORMAT,    "%u %%",   DATA_INT,   humidity,
-                "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
+                "model",            "",             DATA_STRING,    "Acurite-5n1",
+                "message_type",     NULL,           DATA_INT,       message_type,
+                "id",               NULL,           DATA_INT,       sensor_id,
+                "channel",          NULL,           DATA_STRING,    channel_str,
+                "sequence_num",     NULL,           DATA_INT,       sequence_num,
+                "battery_ok",       "Battery",      DATA_INT,       !battery_low,
+                "wind_avg_km_h",    "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
+                "temperature_F",    "temperature",  DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
+                "humidity",         NULL,           DATA_FORMAT,    "%u %%",   DATA_INT,   humidity,
+                "mic",              "Integrity",    DATA_STRING,    "CHECKSUM",
                 NULL);
         /* clang-format on */
 
@@ -886,7 +885,7 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
         /* clang-format off */
         data = data_append(data,
-                "temperature_F",    "temperature",  DATA_FORMAT,    "%.1f F",       DATA_DOUBLE, tempf,
+                "temperature_F",    "Temperature",  DATA_FORMAT,    "%.1f F",       DATA_DOUBLE, tempf,
                 "humidity",         NULL,           DATA_FORMAT,    "%u %%",        DATA_INT,    humidity,
                 NULL);
         /* clang-format on */
@@ -966,8 +965,8 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
     // @todo only do this if exception != 0, but would be somewhat incompatible
     data = data_append(data,
-            "exception",        "data_exception",   DATA_INT,    exception,
-            "raw_msg",          "raw_message",      DATA_STRING, raw_str,
+            "exception",        "Data Exception",   DATA_INT,    exception,
+            "raw_msg",          "Raw Message",      DATA_STRING, raw_str,
             NULL);
 
     decoder_output_data(decoder, data);
@@ -1627,7 +1626,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "channel",          NULL,           DATA_STRING, channel_str,
                 "battery_ok",       "Battery",      DATA_INT,    !battery_low,
                 "temperature_F",    "temperature",  DATA_FORMAT, "%f F", DATA_DOUBLE,    (float)tempf,
-                "status",           "status",       DATA_INT,    status,
+                "status",           "Status",       DATA_INT,    status,
                 "mic",              "Integrity",    DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
