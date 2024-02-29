@@ -16,9 +16,8 @@ SOAPYSDR="${SOAPYSDR:-AUTO}"
 OPENSSL="${OPENSSL:-AUTO}"
 set -- -DENABLE_RTLSDR=$RTLSDR -DENABLE_SOAPYSDR=$SOAPYSDR -DENABLE_OPENSSL=$OPENSSL
 
-mkdir -p build
 if [ -n "$CMAKE_TOOLCHAIN_FILE" ] ; then
-    cmake $@ -DCMAKE_TOOLCHAIN_FILE=../$CMAKE_TOOLCHAIN_FILE -GNinja -B build
+    cmake $@ -DCMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE -GNinja -B build
 else
     cmake $@ -GNinja -B build
 fi
