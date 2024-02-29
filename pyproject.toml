@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+dynamic = ["version"]
+
+[tool.codespell]
+ignore-words-list = """
+stdio,master,ws,hsa,proove,thead,thru,blacklist,wen,ba,fo,uis,slave,clen,te,ans,hass,hist,nd,bu,udo,clas,ue,produkt,callis,anull,temperatur,checksm
+"""
+skip = """./.*,*/.metadata,*.xml"""
+quiet-level=2
+ignore-regex = '\\[fnrstv]'
+builtin = "clear,rare,informal,usage,code,names"
+
+[tool.setuptools]
+include-package-data = false
