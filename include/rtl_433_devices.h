@@ -260,6 +260,7 @@
     DECL(schou_72543_rain) \
     DECL(fineoffset_wh55) \
     DECL(tpms_bmw) \
+    DECL(watts_thermostat) \
 
     /* Add new decoders here. */
 
