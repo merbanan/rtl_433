@@ -525,6 +525,16 @@ Some examples:
 | `rtl_433 -F json -M utc \| mosquitto_pub -t home/rtl_433 -l` | Will pipe the output to network as JSON formatted MQTT messages. A test MQTT client can be found in `examples/mqtt_rtl_433_test_client.py`.
 | `rtl_433 -f 433.53M -f 434.02M -H 15` | Will poll two frequencies with 15 seconds hop interval.
 
+## Security
+
+Please note: We aim to make `rtl_433` safe to use, but it should not be assumed secure.
+There is no reason to e.g. run with `sudo`, we do read and write files without any checks.
+
+The output is literally pulled from thin air, it's not to be trusted.
+If you feed downstream systems with data make sure edge cases are checked and handled.
+Network inputs and outputs are for use in a trusted local network, will contain unfiltered data, and might overload the recipient
+(know that e.g. the MQTT output can be controlled by anyone with a radio sender).
+
 ## Google Group
 
 Join the Google group, rtl_433, for more information about rtl_433:
