@@ -41,6 +41,7 @@ add_library(r_433 STATIC
     samp_grab.c
     sdr.c
     term_ctl.c
+    tinyexpr.c
     util.c
     write_sigrok.c
     devices/abmt.c
