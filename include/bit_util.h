@@ -14,14 +14,6 @@
 
 #include <stdint.h>
 
-// Helper macros, collides with MSVC's stdlib.h unless NOMINMAX is used
-#ifndef MAX
-#define MAX(a,b) ((a) > (b) ? (a) : (b))
-#endif
-#ifndef MIN
-#define MIN(a,b) ((a) < (b) ? (a) : (b))
-#endif
-
 /// Reverse (reflect) the bits in an 32 bit byte.
 ///
 /// @param x input byte

@@ -11,7 +11,7 @@
 
 #include "pulse_analyzer.h"
 #include "pulse_slicer.h"
-#include "bit_util.h" // for MIN(), MAX()
+#include "c_util.h" // for MIN(), MAX()
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
