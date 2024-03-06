@@ -8,6 +8,7 @@ add_library(r_433 STATIC
     abuf.c
     am_analyze.c
     baseband.c
+    bit_util.c
     bitbuffer.c
     compat_paths.c
     compat_time.c
@@ -41,7 +42,6 @@ add_library(r_433 STATIC
     samp_grab.c
     sdr.c
     term_ctl.c
-    util.c
     write_sigrok.c
     devices/abmt.c
     devices/acurite.c

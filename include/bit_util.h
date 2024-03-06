@@ -9,8 +9,8 @@
     (at your option) any later version.
 */
 
-#ifndef INCLUDE_UTIL_H_
-#define INCLUDE_UTIL_H_
+#ifndef INCLUDE_BIT_UTIL_H_
+#define INCLUDE_BIT_UTIL_H_
 
 #include <stdint.h>
 
@@ -204,4 +204,4 @@ int add_bytes(uint8_t const message[], unsigned num_bytes);
 /// @return summation value
 int add_nibbles(uint8_t const message[], unsigned num_bytes);
 
-#endif /* INCLUDE_UTIL_H_ */
+#endif /* INCLUDE_BIT_UTIL_H_ */

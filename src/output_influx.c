@@ -14,7 +14,6 @@
 // note: our unit header includes unistd.h for gethostname() via data.h
 #include "output_influx.h"
 #include "optparse.h"
-#include "util.h"
 #include "logger.h"
 #include "fatal.h"
 #include "r_util.h"
