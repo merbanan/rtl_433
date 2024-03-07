@@ -402,7 +402,7 @@ static r_device *blueline_create(char *arg)
 {
     r_device *r_dev = create_device(&blueline);
     if (!r_dev) {
-        fprintf(stderr, "blueline_create() failed\n");
+        WARN_MALLOC("blueline_create()");
         return NULL; // NOTE: returns NULL on alloc failure.
     }
 

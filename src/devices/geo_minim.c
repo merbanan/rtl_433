@@ -277,8 +277,7 @@ static int minim_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         bitpos = bitbuffer_search(bitbuffer, row, 0, preamble2, preamble_len) + preamble_len;
     }
     if (bitpos >= bitbuffer->bits_per_row[row]) {
-        if (decoder->verbose >= 2)
-            decoder_logf_bitbuffer(decoder, 3, __func__, bitbuffer, "Sync not found");
+        decoder_logf_bitbuffer(decoder, 3, __func__, bitbuffer, "Sync not found");
         return DECODE_ABORT_EARLY;
     }
 

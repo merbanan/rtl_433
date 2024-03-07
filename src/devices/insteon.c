@@ -182,17 +182,15 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
         min_pkt_len = INSTEON_PACKET_MIN_EXT;
     }
 
-    if (decoder->verbose) {
-        decoder_logf(decoder, 1, __func__, "start_pos %u row_length %hu =  %u",
-                start_pos, bits->bits_per_row[row], (bits->bits_per_row[row] - start_pos));
-        decoder_logf(decoder, 1, __func__, "%s %-5s %s %s %s",
-                "pkt_i", "pkt_d", "next", "length", "count");
+    decoder_logf(decoder, 1, __func__, "start_pos %u row_length %hu =  %u",
+            start_pos, bits->bits_per_row[row], (bits->bits_per_row[row] - start_pos));
+    decoder_logf(decoder, 1, __func__, "%s %-5s %s %s %s",
+            "pkt_i", "pkt_d", "next", "length", "count");
 
-        uint8_t buffy[4];
-        bitbuffer_extract_bytes(bits, row, start_pos - 2, buffy, 30);
-        decoder_logf_bitrow(decoder, 1, __func__, buffy, 30, "%2d %02X %03u %u %2d",
-                pkt_i, pkt_d, next_pos, (next_pos - start_pos), 0);
-    }
+    uint8_t buffy[4];
+    bitbuffer_extract_bytes(bits, row, start_pos - 2, buffy, 30);
+    decoder_logf_bitrow(decoder, 1, __func__, buffy, 30, "%2d %02X %03u %u %2d",
+            pkt_i, pkt_d, next_pos, (next_pos - start_pos), 0);
 
     /*   Is this overkill ??
     unsigned int l;
@@ -236,14 +234,12 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
 
         results[results_len++] = pkt_d;
 
-        if (decoder->verbose) {
-            uint8_t buffy[4];
-            bitbuffer_extract_bytes(bits, row, start_pos - 2, buffy, 30);
-            // decoder_logf_bitrow(decoder, 1, __func__, buffy, 30, "%s: %2d  %02X  %3u %d %d",
-            decoder_logf_bitrow(decoder, 1, __func__, buffy, 30, "%2d %02X %03u %u %2d",
-                    pkt_i, pkt_d, next_pos, (next_pos - start_pos), j);
-            // parse_insteon_pkt: curr packet (3f) { 1} d6 : 1
-        }
+        uint8_t buffy[4];
+        bitbuffer_extract_bytes(bits, row, start_pos - 2, buffy, 30);
+        // decoder_logf_bitrow(decoder, 1, __func__, buffy, 30, "%s: %2d  %02X  %3u %d %d",
+        decoder_logf_bitrow(decoder, 1, __func__, buffy, 30, "%2d %02X %03u %u %2d",
+                pkt_i, pkt_d, next_pos, (next_pos - start_pos), j);
+        // parse_insteon_pkt: curr packet (3f) { 1} d6 : 1
 
         // packet index should decrement
         if (pkt_i < prev_i) {

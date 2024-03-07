@@ -21,7 +21,7 @@ static r_device *fineoffset_WH2_create(char *arg)
 {
     r_device *r_dev = create_device(&fineoffset_WH2);
     if (!r_dev) {
-        fprintf(stderr, "fineoffset_WH2_create() failed");
+        WARN_MALLOC("fineoffset_WH2_create()");
         return NULL; // NOTE: returns NULL on alloc failure.
     }
 

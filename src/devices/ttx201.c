@@ -129,16 +129,14 @@ static int ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row
     data_t *data;
 
     if (bits != MSG_PACKET_MIN_BITS && bits != MSG_PACKET_BITS) {
-        if (decoder->verbose > 1) {
-            if (row == 0) {
-                if (bits < MSG_PREAMBLE_BITS) {
-                    decoder_logf(decoder, 2, __func__, "Short preamble: %d bits (expected %d)",
-                            bits, MSG_PREAMBLE_BITS);
-                }
-            } else if (row != (unsigned)bitbuffer->num_rows - 1 && bits == 1) {
-                decoder_logf(decoder, 2, __func__, "Wrong packet #%u length: %d bits (expected %d)",
-                        row, bits, MSG_PACKET_BITS);
+        if (row == 0) {
+            if (bits < MSG_PREAMBLE_BITS) {
+                decoder_logf(decoder, 2, __func__, "Short preamble: %d bits (expected %d)",
+                        bits, MSG_PREAMBLE_BITS);
             }
+        } else if (row != (unsigned)bitbuffer->num_rows - 1 && bits == 1) {
+            decoder_logf(decoder, 2, __func__, "Wrong packet #%u length: %d bits (expected %d)",
+                    row, bits, MSG_PACKET_BITS);
         }
         return DECODE_ABORT_LENGTH;
     }

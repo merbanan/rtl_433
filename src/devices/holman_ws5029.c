@@ -96,9 +96,7 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t b[18];
 
     if (bitbuffer->num_rows != 1) {
-        if (decoder->verbose) {
-            decoder_logf(decoder, 1, __func__, "Wrong number of rows (%d)", bitbuffer->num_rows);
-        }
+        decoder_logf(decoder, 1, __func__, "Wrong number of rows (%d)", bitbuffer->num_rows);
         return DECODE_ABORT_EARLY;
     }
 
