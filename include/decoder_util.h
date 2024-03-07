@@ -29,7 +29,14 @@
 #endif
 
 /// Create a new r_device, copy from dev_template if not NULL.
-r_device *create_device(r_device const *dev_template);
+///
+/// A user data memory of `user_data_size` bytes will be allocated if not `0`.
+r_device *decoder_create(r_device const *dev_template, unsigned user_data_size);
+
+/// Get the user data pointer, otherwise NULL.
+///
+/// The memory can be freely used by a decoder and is of the size given to `decoder_create()`.
+void *decoder_user_data(r_device *decoder);
 
 /// Output data.
 void decoder_output_data(r_device *decoder, data_t *data);

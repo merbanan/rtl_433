@@ -157,7 +157,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     char *row_codes[BITBUF_ROWS];
     char row_bytes[BITBUF_ROWS * BITBUF_COLS * 2 + 1]; // TODO: this is a lot of stack
 
-    struct flex_params *params = decoder->decode_ctx;
+    struct flex_params *params = decoder_user_data(decoder);
 
     // discard short / unwanted bitbuffers
     if ((bitbuffer->num_rows < params->min_rows)
@@ -586,18 +586,11 @@ r_device *flex_create_device(char *spec)
         help();
     }
 
-    struct flex_params *params = calloc(1, sizeof(*params));
-    if (!params) {
-        WARN_CALLOC("flex_create_device()");
-        return NULL; // NOTE: returns NULL on alloc failure.
-    }
-    r_device *dev = calloc(1, sizeof(*dev));
+    r_device *dev = decoder_create(NULL, sizeof(struct flex_params));
     if (!dev) {
-        WARN_CALLOC("flex_create_device()");
-        free(params);
         return NULL; // NOTE: returns NULL on alloc failure.
     }
-    dev->decode_ctx = params;
+    struct flex_params *params = decoder_user_data(dev);
     int get_count = 0;
 
     spec = strdup(spec);

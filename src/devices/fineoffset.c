@@ -12,31 +12,24 @@
 */
 
 #include "decoder.h"
-#include "fatal.h"
-#include <stdlib.h>
 
 r_device const fineoffset_WH2;
 
 static r_device *fineoffset_WH2_create(char *arg)
 {
-    r_device *r_dev = create_device(&fineoffset_WH2);
-    if (!r_dev) {
-        WARN_MALLOC("fineoffset_WH2_create()");
-        return NULL; // NOTE: returns NULL on alloc failure.
-    }
-
     if (arg && !strcmp(arg, "no-wh5")) {
-        int *quirk = malloc(sizeof (*quirk));
-        if (!quirk) {
-            WARN_MALLOC("fineoffset_WH2_create()");
-            free(r_dev);
+        r_device *r_dev = decoder_create(&fineoffset_WH2, sizeof(int));
+        if (!r_dev) {
             return NULL; // NOTE: returns NULL on alloc failure.
         }
-        *quirk = 1;
-        r_dev->decode_ctx = quirk;
-    }
 
-    return r_dev;
+        int *quirk = decoder_user_data(r_dev);
+        *quirk = 1;
+        return r_dev;
+    }
+    else {
+        return decoder_create(&fineoffset_WH2, 0); // NOTE: returns NULL on alloc failure.
+    }
 }
 
 /**
@@ -69,6 +62,7 @@ http://lucsmall.com/2012/04/29/weather-station-hacking-part-2/
 #define MODEL_TP 7
 static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    void *user_data = decoder_user_data(decoder);
     bitrow_t *bb = bitbuffer->bb;
     uint8_t b[6] = {0};
     data_t *data;
@@ -94,7 +88,7 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             bb[0][0] == 0xFE) { // WH5
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 40);
         model_num = MODEL_WH5;
-        if (decoder->decode_ctx) // don't care for the actual value
+        if (user_data) // don't care for the actual value
             model_num = MODEL_RB;
 
     } else if (bitbuffer->bits_per_row[0] == 49 &&
@@ -121,7 +115,7 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Nibble 5,6,7 contains 12 bits of temperature
     temp = ((b[1] & 0x0F) << 8) | b[2];
-    if (bitbuffer->bits_per_row[0] != 47 || decoder->decode_ctx) { // WH2, Telldus, WH2A
+    if (bitbuffer->bits_per_row[0] != 47 || user_data) { // WH2, Telldus, WH2A
         // The temperature is signed magnitude and scaled by 10
         if (temp & 0x800) {
             temp &= 0x7FF; // remove sign bit
