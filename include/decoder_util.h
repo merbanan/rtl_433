@@ -47,6 +47,11 @@ void decoder_output_log(r_device *decoder, int level, data_t *data);
 // be terse, a maximum msg length of 60 characters is supported on the decoder_log_ functions
 // e.g. "FoobarCorp-XY3000: unexpected type code %02x"
 
+/// Get the current verbosity level for the decoder.
+///
+/// @deprecated Should not be used, consider using only `decoder_log_` functions.
+int decoder_verbose(r_device *decoder);
+
 /// Output a log message.
 void decoder_log(r_device *decoder, int level, char const *func, char const *msg);
 

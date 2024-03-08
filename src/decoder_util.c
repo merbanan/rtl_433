@@ -115,6 +115,11 @@ static char *bitrow_asprint_bits(uint8_t const *bitrow, unsigned bit_len)
 
 // variadic output functions
 
+int decoder_verbose(r_device *decoder)
+{
+    return decoder->verbose;
+}
+
 void decoder_log(r_device *decoder, int level, char const *func, char const *msg)
 {
     if (decoder->verbose >= level) {

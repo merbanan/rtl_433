@@ -149,7 +149,7 @@ static int ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row
     data_type = (b[2] & 0x70) >> 4;
     postmark = b[5];
 
-    if (decoder->verbose > 1) {
+    if (decoder_verbose(decoder) > 1) {
         decoder_log(decoder, 0, __func__, "TTX201 received raw data");
         decoder_log_bitbuffer(decoder, 0, __func__, bitbuffer, "");
         decoder_logf(decoder, 0, __func__, "Data decoded:" \
@@ -232,7 +232,7 @@ static int ttx201_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             ret = ttx201_decode(decoder, bitbuffer, row, 0);
             if (ret > 0)
                 events += ret;
-            if (events && !decoder->verbose)
+            if (events && !decoder_verbose(decoder))
                 return events; // for now, break after first successful message
         }
     }

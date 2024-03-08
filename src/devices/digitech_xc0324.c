@@ -111,9 +111,9 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     humidity = reverse8(b[4]);
 
     // Create the data structure, ready for the decoder_output_data function.
-    // Separate production output (decoder->verbose == 0)
-    // from (simulated) deciphering stage output (decoder->verbose > 0)
-    if (!decoder->verbose) { // production output
+    // Separate production output (decoder_verbose == 0)
+    // from (simulated) deciphering stage output (decoder_verbose > 0)
+    if (!decoder_verbose(decoder)) { // production output
         /* clang-format off */
         *data = data_make(
                 "model",            "Device Type",      DATA_STRING, "Digitech-XC0324",
@@ -178,9 +178,9 @@ static int digitech_xc0324_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     r, bitpos, events, &data);
             if (ret > 0)
                 events += ret;
-            // Keep production output (decoder->verbose == 0) separate from
-            // (simulated) development stage output (decoder->verbose > 0)
-            if (events > 0 && !decoder->verbose) { // Production output
+            // Keep production output (decoder_verbose == 0) separate from
+            // (simulated) development stage output (decoder_verbose > 0)
+            if (events > 0 && !decoder_verbose(decoder)) { // Production output
                 data_append(data,
                         "message_num", "Message repeat count", DATA_INT, events, NULL);
                 decoder_output_data(decoder, data);

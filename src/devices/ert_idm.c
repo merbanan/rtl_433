@@ -227,7 +227,7 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         DifferentialConsumptionIntervals[j] = ((uint16_t)buffy[0] << 1) | (buffy[1] >> 7);
         pos += 9;
     }
-    if (decoder->verbose > 1) {
+    if (decoder_verbose(decoder) > 1) {
         decoder_log(decoder, 2, __func__, "DifferentialConsumptionIntervals");
         for (int j = 0; j < 47; j++) {
             decoder_logf(decoder, 2, __func__, "%d", DifferentialConsumptionIntervals[j]);
@@ -489,7 +489,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // decoder_logf_bitrow(decoder, 0, __func__, buffy, 14, "%d %d", j, DifferentialConsumptionIntervals[j]);
         pos += 14;
     }
-    if (decoder->verbose) {
+    if (decoder_verbose(decoder)) {
         decoder_log(decoder, 1, __func__, "DifferentialConsumptionIntervals");
         for (int j = 0; j < 27; j++) {
             decoder_logf(decoder, 1, __func__, "%d", DifferentialConsumptionIntervals[j]);

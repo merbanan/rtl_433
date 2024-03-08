@@ -267,9 +267,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
-    if (decoder->verbose) {
-        decoder_log_bitbuffer(decoder, 1, params->name, bitbuffer, "");
-    }
+    decoder_log_bitbuffer(decoder, 1, params->name, bitbuffer, "");
 
     // discard duplicates
     if (params->unique) {
@@ -571,7 +569,6 @@ static void parse_getter(const char *arg, struct flex_get *getter)
         usage();
     }
     /*
-    if (decoder->verbose)
         fprintf(stderr, "parse_getter() bit_offset: %d bit_count: %d mask: %lx name: %s\n",
                 getter->bit_offset, getter->bit_count, getter->mask, getter->name);
     */
@@ -769,13 +766,11 @@ r_device *flex_create_device(char *spec)
     }
 
     /*
-    if (decoder->verbose) {
         fprintf(stderr, "Adding flex decoder \"%s\"\n", params->name);
         fprintf(stderr, "\tmodulation=%u, short_width=%.0f, long_width=%.0f, reset_limit=%.0f\n",
                 dev->modulation, dev->short_width, dev->long_width, dev->reset_limit);
         fprintf(stderr, "\tmin_rows=%u, min_bits=%u, min_repeats=%u, invert=%u, reflect=%u, match_len=%u, preamble_len=%u\n",
                 params->min_rows, params->min_bits, params->min_repeats, params->invert, params->reflect, params->match_len, params->preamble_len);
-    }
     */
 
     free(spec);
