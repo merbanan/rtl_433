@@ -209,9 +209,11 @@ void r_free_cfg(r_cfg_t *cfg)
     if (cfg->dev) {
         sdr_deactivate(cfg->dev);
         sdr_close(cfg->dev);
+        cfg->dev = NULL;
     }
 
     free(cfg->gain_str);
+    cfg->gain_str = NULL;
 
     for (void **iter = cfg->demod->dumper.elems; iter && *iter; ++iter) {
         file_info_t const *dumper = *iter;
@@ -224,8 +226,10 @@ void r_free_cfg(r_cfg_t *cfg)
 
     if (cfg->demod->am_analyze)
         am_analyze_free(cfg->demod->am_analyze);
+    cfg->demod->am_analyze = NULL;
 
     pulse_detect_free(cfg->demod->pulse_detect);
+    cfg->demod->pulse_detect = NULL;
 
     list_free_elems(&cfg->raw_handler, (list_elem_free_fn)raw_output_free);
 
@@ -238,11 +242,14 @@ void r_free_cfg(r_cfg_t *cfg)
     list_free_elems(&cfg->in_files, NULL);
 
     free(cfg->demod);
+    cfg->demod = NULL;
 
     free(cfg->devices);
+    cfg->devices = NULL;
 
     mg_mgr_free(cfg->mgr);
     free(cfg->mgr);
+    cfg->mgr = NULL;
 
     //free(cfg);
 }

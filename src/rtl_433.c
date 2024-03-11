@@ -394,6 +394,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     char time_str[LOCAL_TIME_BUFLEN];
     unsigned long n_samples;
 
+    if (!demod) {
+        // might happen when the demod closed and we get a last data frame
+        return; // ignore the data
+    }
+
     // do this here and not in sdr_handler so realtime replay can use rtl_tcp output
     for (void **iter = cfg->raw_handler.elems; iter && *iter; ++iter) {
         raw_output_t *output = *iter;
@@ -1367,6 +1372,7 @@ static void sighandler(int signum)
 }
 #endif
 
+// NOTE: this handler might be called while already in `r_free_cfg()`.
 static void sdr_handler(struct mg_connection *nc, int ev_type, void *ev_data)
 {
     //fprintf(stderr, "%s: %d, %d, %p, %p\n", __func__, nc->sock, ev_type, nc->user_data, ev_data);
@@ -1441,6 +1447,13 @@ static void acquire_callback(sdr_event_t *ev, void *ctx)
 static int start_sdr(r_cfg_t *cfg)
 {
     int r;
+    if (cfg->dev) {
+        r = sdr_close(cfg->dev);
+        cfg->dev = NULL;
+        if (r < 0) {
+            print_logf(LOG_ERROR, "Input", "Closing SDR failed (%d)", r);
+        }
+    }
     r = sdr_open(&cfg->dev, cfg->dev_query, cfg->verbosity);
     if (r < 0) {
         return -1; // exit(2);
