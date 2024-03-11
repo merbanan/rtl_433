@@ -654,7 +654,7 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
                     // Close sets bits 2 and 6 to 0
                     state = b[0]&0x44;
                     data = data_append(data,
-                            "switch", "Switch", DATA_FORMAT, "%s", DATA_STRING, (state==0x44) ? "open":"closed",
+                            "switch", "Switch", DATA_STRING, (state==0x44) ? "open":"closed",
                             NULL);
                     break;
                 case 0x3a:
