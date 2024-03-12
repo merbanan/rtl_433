@@ -188,6 +188,7 @@ void r_init_cfg(r_cfg_t *cfg)
     baseband_init();
 
     time(&cfg->frames_since);
+    get_time_now(&cfg->demod->now);
 
     list_ensure_size(&cfg->demod->r_devs, 100);
     list_ensure_size(&cfg->demod->dumper, 32);
