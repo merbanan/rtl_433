@@ -407,7 +407,7 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     int exception = 0;
     data_t *data;
 
-    int browlen = (bitbuffer->bits_per_row[row] + 7) / 8;
+    int browlen = NUM_BYTES(bitbuffer->bits_per_row[row]);
     uint8_t *bb = bitbuffer->bb[row];
 
     char const *channel_str = acurite_getChannel(bb[0]); // same as TXR
@@ -798,7 +798,7 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
     float tempf, wind_dir, wind_speed_mph;
     data_t *data;
 
-    int browlen = (bitbuffer->bits_per_row[row] + 7) / 8;
+    int browlen = NUM_BYTES(bitbuffer->bits_per_row[row]);
     uint8_t *bb = bitbuffer->bb[row];
 
     message_type = bb[2] & 0x3f;

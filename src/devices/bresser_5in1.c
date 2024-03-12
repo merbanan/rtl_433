@@ -87,7 +87,7 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     start_pos += sizeof (preamble_pattern) * 8;
     len = bitbuffer->bits_per_row[0] - start_pos;
-    if (((len + 7) / 8) < sizeof (msg)) {
+    if (NUM_BYTES(len) < sizeof (msg)) {
         decoder_logf(decoder, 2, __func__, "%u too short", len);
         return DECODE_ABORT_LENGTH; // message too short
     }

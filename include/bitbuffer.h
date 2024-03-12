@@ -14,6 +14,9 @@
 
 #include <stdint.h>
 
+// Round up (NUM_BITS / 8)
+#define NUM_BYTES(NUM_BITS) (((NUM_BITS) + 7) >> 3)
+
 // NOTE: Wireless mbus protocol needs at least ((256+16*2+3)*12)/8 => 437 bytes
 //       which fits even if RTL_433_REDUCE_STACK_USE is defined because of row spilling
 #ifdef RTL_433_REDUCE_STACK_USE

@@ -132,7 +132,7 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // set message starting position (just past preamble and sync bit)
     bit_offset += (sizeof preamble_pattern) * 8;
 
-    uint8_t message[(INTERLOGIX_MSG_BIT_LEN + 7) / 8];
+    uint8_t message[NUM_BYTES(INTERLOGIX_MSG_BIT_LEN)];
 
     bitbuffer_extract_bytes(bitbuffer, row, bit_offset, message, INTERLOGIX_MSG_BIT_LEN);
 

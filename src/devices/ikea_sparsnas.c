@@ -74,7 +74,7 @@ detail. Many thanks to kodarn!
 
 #include "decoder.h"
 #define IKEA_SPARSNAS_MESSAGE_BITLEN 160    // 20 bytes incl 8 bit length, 8 bit address, 128 bits data, and 16 bits of CRC. Excluding preamble and sync word
-#define IKEA_SPARSNAS_MESSAGE_BYTELEN    ((IKEA_SPARSNAS_MESSAGE_BITLEN + 7) / 8)
+#define IKEA_SPARSNAS_MESSAGE_BYTELEN    NUM_BYTES(IKEA_SPARSNAS_MESSAGE_BITLEN)
 #define IKEA_SPARSNAS_MESSAGE_BITLEN_MAX 260 // Just for early sanity checks
 
 #define IKEA_SPARSNAS_PREAMBLE_BITLEN 32

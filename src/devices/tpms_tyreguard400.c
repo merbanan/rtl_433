@@ -71,7 +71,7 @@ Flex decoder:
 
 static int tpms_tyreguard400_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    uint8_t b[(TPMS_TYREGUARD400_MESSAGE_BITLEN + 7) / 8];
+    uint8_t b[NUM_BYTES(TPMS_TYREGUARD400_MESSAGE_BITLEN)];
 
     // Extract the message
     bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, TPMS_TYREGUARD400_MESSAGE_BITLEN);

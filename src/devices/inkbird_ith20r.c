@@ -79,7 +79,7 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     decoder_logf(decoder, 2, __func__, "start_pos=%u len=%u", start_pos, len);
 
-    if (((len + 7) / 8) < sizeof (msg)) {
+    if (NUM_BYTES(len) < sizeof (msg)) {
         decoder_logf(decoder, 1, __func__, "%u too short", len);
         return DECODE_ABORT_LENGTH; // Message too short
     }

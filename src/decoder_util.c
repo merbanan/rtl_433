@@ -64,7 +64,7 @@ static char *bitrow_asprint_code(uint8_t const *bitrow, unsigned bit_len)
 
     row_bytes[0] = '\0';
     // print byte-wide
-    for (unsigned col = 0; col < (unsigned)(bit_len + 7) / 8; ++col) {
+    for (unsigned col = 0; col < NUM_BYTES(bit_len); ++col) {
         sprintf(&row_bytes[2 * col], "%02x", bitrow[col]);
     }
     // remove last nibble if needed
