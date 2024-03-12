@@ -158,19 +158,20 @@ Samples with 0.9V battery (last 3 samples contain 1 manual bucket tip)
 Ecowitt WS68 Anemometer protocol with LUX and UVI.
 
 Units confirmed from issue #2786 , LUX and UVI decoding as well
+Wind unit and decoding from issue #2867
 
 Data layout:
 
-    TYPE:8h ?8h ID:16h LUX:16h BATT:8h WDIR_H:4h 4h8h8h WSPEED:8h WDIR_LO:8h WGUST:8h UVI:8h CRC:8h SUM:8h ?8h4h
+    TYPE:8h ?8h ID:16h LUX:16h BATT:8d ?1b WGUST_MSB:1b WDIR_MSB:1b WSPEED_MSB:1b ?4h 8h8h WSPEED_LSB:8d WDIR_LSB:8h WGUST_LSB:8d UVI:8h CRC:8h SUM:8h ?8h4h
 
 Some payloads:
-    TT ??II II LLLL BB WDH     WS WDLWG UV CCSS ???
-    68 0000 c5 0000 4b 0f ffff 00 5a 00 00 d0af 104
-    68 0000 c5 0000 4b 0f ffff 00 b4 00 00 79b2 102
-    68 0000 c5 0000 4b 0f ffff 7e e0 94 00 75ec 102
-    68 0000 c5 0000 4b 2f ffff 00 0e 00 00 8033 208
-    68 0000 c5 000f 4b 0f ffff 00 2e 00 00 d395 108
-    68 0000 c5 0107 4b 0f ffff 00 2e 00 02 a663 100
+    TT ?? IIII LLLL BB WH f ffff WSL WDL WGL UV CC SS ???
+    68 00 00c5 0000 4b  0 f ffff  00  5a  00 00 d0 af 104
+    68 00 00c5 0000 4b  0 f ffff  00  b4  00 00 79 b2 102
+    68 00 00c5 0000 4b  0 f ffff  7e  e0  94 00 75 ec 102
+    68 00 00c5 0000 4b  2 f ffff  00  0e  00 00 80 33 208
+    68 00 00c5 000f 4b  0 f ffff  00  2e  00 00 d3 95 108
+    68 00 00c5 0107 4b  0 f ffff  00  2e  00 02 a6 63 100
 
 */
 
@@ -333,9 +334,9 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             int light_lux = lux_raw * 10;
             int batt    = b[6];
             int batt_ok = batt > 0x20; // wild guess
-            int wspeed  = b[10];
-            int wgust   = b[12];
-            int wdir    = ((b[7] & 0x20) >> 5) | b[11];
+            int wspeed  = ((b[7] & 0x10) << 4) | (b[10]);
+            int wdir    = ((b[7] & 0x20) << 3) | (b[11]);
+            int wgust   = ((b[7] & 0x40) << 2) | (b[12]);
             int uvindex = (int)b[13] * 0.1f;
             char extra[4];
             snprintf(extra, sizeof(extra), "%02x%01x", b[16], b[17] >> 4);
@@ -346,9 +347,9 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "id" ,              "",             DATA_INT,    id,
                     "battery_raw",      "Battery Raw",  DATA_INT,    batt,
                     "battery_ok",       "Battery OK",   DATA_INT,    batt_ok,
-                    "light_lux",        "Lux",          DATA_FORMAT, "%u lux",    DATA_INT, light_lux,
-                    "wind_avg_km_h",    "Wind Speed",   DATA_FORMAT, "%.1f km/h", DATA_DOUBLE, (double)wspeed,
-                    "wind_max_km_h",    "Wind Gust",    DATA_FORMAT, "%.1f km/h", DATA_DOUBLE, (double)wgust,
+                    "light_lux",        "Lux",          DATA_FORMAT, "%u lux",   DATA_INT,    light_lux,
+                    "wind_avg_m_s",     "Wind Speed",   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wspeed * 0.1f,
+                    "wind_max_m_s",     "Wind Gust",    DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wgust * 0.1f,
                     "uvi",              "UVI",          DATA_INT,    uvindex,
                     "wind_dir_deg",     "Wind dir",     DATA_INT,    wdir,
                     "data",             "Extra Data",   DATA_STRING, extra,
@@ -377,8 +378,8 @@ static char const *const output_fields[] = {
         "rain_mm",
         "uvi",
         "light_lux",
-        "wind_avg_km_h",
-        "wind_max_km_h",
+        "wind_avg_m_s",
+        "wind_max_m_s",
         "wind_dir_deg",
         "data",
         "radio_clock",
