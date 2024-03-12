@@ -424,6 +424,56 @@ static void help(void)
     exit(0);
 }
 
+static float parse_atoiv(char const *str, int def, char const *error_hint)
+{
+    if (!str) {
+        return def;
+    }
+
+    if (!*str) {
+        return def;
+    }
+
+    char *endptr;
+    int val = strtol(str, &endptr, 10);
+
+    if (str == endptr) {
+        fprintf(stderr, "%sinvalid number argument (%s)\n", error_hint, str);
+        exit(1);
+    }
+
+    return val;
+}
+
+static float parse_float(char const *str, char const *error_hint)
+{
+    if (!str) {
+        fprintf(stderr, "%smissing number argument\n", error_hint);
+        exit(1);
+    }
+
+    if (!*str) {
+        fprintf(stderr, "%sempty number argument\n", error_hint);
+        exit(1);
+    }
+
+    char *endptr;
+    double val = strtod(str, &endptr);
+
+    if (str == endptr) {
+        fprintf(stderr, "%sinvalid number argument (%s)\n", error_hint, str);
+        exit(1);
+    }
+
+    if (*endptr != '\0') {
+        fprintf(stderr, "%strailing characters in number argument (%s)\n", error_hint, str);
+        exit(1);
+    }
+
+    return val;
+
+}
+
 static unsigned parse_modulation(char const *str)
 {
     if (!strcasecmp(str, "OOK_MC_ZEROBIT"))
@@ -619,45 +669,45 @@ r_device *flex_create_device(char *spec)
         else if (!strcasecmp(key, "m") || !strcasecmp(key, "modulation"))
             dev->modulation = parse_modulation(val);
         else if (!strcasecmp(key, "s") || !strcasecmp(key, "short"))
-            dev->short_width = atoi(val);
+            dev->short_width = parse_float(val, "short: ");
         else if (!strcasecmp(key, "l") || !strcasecmp(key, "long"))
-            dev->long_width = atoi(val);
+            dev->long_width = parse_float(val, "long: ");
         else if (!strcasecmp(key, "y") || !strcasecmp(key, "sync"))
-            dev->sync_width = atoi(val);
+            dev->sync_width = parse_float(val, "sync: ");
         else if (!strcasecmp(key, "g") || !strcasecmp(key, "gap"))
-            dev->gap_limit = atoi(val);
+            dev->gap_limit = parse_float(val, "gap: ");
         else if (!strcasecmp(key, "r") || !strcasecmp(key, "reset"))
-            dev->reset_limit = atoi(val);
+            dev->reset_limit = parse_float(val, "reset: ");
         else if (!strcasecmp(key, "t") || !strcasecmp(key, "tolerance"))
-            dev->tolerance = atoi(val);
+            dev->tolerance = parse_float(val, "tolerance: ");
         else if (!strcasecmp(key, "prio") || !strcasecmp(key, "priority"))
-            dev->priority = atoi(val);
+            dev->priority = parse_atoiv(val, 0, "priority: ");
 
         else if (!strcasecmp(key, "bits>"))
-            params->min_bits = val ? atoi(val) : 0;
+            params->min_bits = parse_atoiv(val, 0, "bits: ");
         else if (!strcasecmp(key, "bits<"))
-            params->max_bits = val ? atoi(val) : 0;
+            params->max_bits = parse_atoiv(val, 0, "bits: ");
         else if (!strcasecmp(key, "bits"))
-            params->min_bits = params->max_bits = val ? atoi(val) : 0;
+            params->min_bits = params->max_bits = parse_atoiv(val, 0, "bits:");
 
         else if (!strcasecmp(key, "rows>"))
-            params->min_rows = val ? atoi(val) : 0;
+            params->min_rows = parse_atoiv(val, 0, "rows: ");
         else if (!strcasecmp(key, "rows<"))
-            params->max_rows = val ? atoi(val) : 0;
+            params->max_rows = parse_atoiv(val, 0, "rows: ");
         else if (!strcasecmp(key, "rows"))
-            params->min_rows = params->max_rows = val ? atoi(val) : 0;
+            params->min_rows = params->max_rows = parse_atoiv(val, 0, "rows: ");
 
         else if (!strcasecmp(key, "repeats>"))
-            params->min_repeats = val ? atoi(val) : 0;
+            params->min_repeats = parse_atoiv(val, 0, "repeats: ");
         else if (!strcasecmp(key, "repeats<"))
-            params->max_repeats = val ? atoi(val) : 0;
+            params->max_repeats = parse_atoiv(val, 0, "repeats: ");
         else if (!strcasecmp(key, "repeats"))
-            params->min_repeats = params->max_repeats = val ? atoi(val) : 0;
+            params->min_repeats = params->max_repeats = parse_atoiv(val, 0, "repeats: ");
 
         else if (!strcasecmp(key, "invert"))
-            params->invert = val ? atoi(val) : 1;
+            params->invert = parse_atoiv(val, 1, "invert: ");
         else if (!strcasecmp(key, "reflect"))
-            params->reflect = val ? atoi(val) : 1;
+            params->reflect = parse_atoiv(val, 1, "reflect: ");
 
         else if (!strcasecmp(key, "match"))
             params->match_len = parse_bits(val, params->match_bits);
@@ -666,15 +716,15 @@ r_device *flex_create_device(char *spec)
             params->preamble_len = parse_bits(val, params->preamble_bits);
 
         else if (!strcasecmp(key, "countonly"))
-            params->count_only = val ? atoi(val) : 1;
+            params->count_only = parse_atoiv(val, 1, "countonly: ");
 
         else if (!strcasecmp(key, "unique"))
-            params->unique = val ? atoi(val) : 1;
+            params->unique = parse_atoiv(val, 1, "unique: ");
 
         else if (!strcasecmp(key, "decode_uart"))
-            params->decode_uart = val ? atoi(val) : 1;
+            params->decode_uart = parse_atoiv(val, 1, "decode_uart: ");
         else if (!strcasecmp(key, "decode_dm"))
-            params->decode_dm = val ? atoi(val) : 1;
+            params->decode_dm = parse_atoiv(val, 1, "decode_dm: ");
 
         else if (!strcasecmp(key, "symbol_zero"))
             params->symbol_zero = parse_symbol(val);
