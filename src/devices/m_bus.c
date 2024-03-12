@@ -879,8 +879,8 @@ static int m_bus_output_data(r_device *decoder, bitbuffer_t *bitbuffer, const m_
     char    str_buf[1024];
 
     // Make data string
-    sprintf(str_buf, "%02x", out->data[0]-2);  // Adjust telegram length
-    for (unsigned n=1; n<out->length+2; n++) { sprintf(str_buf+n*2, "%02x", out->data[n]); }
+    sprintf(str_buf, "%02x", out->data[0]);  // Adjust telegram length
+    for (unsigned n=1; n<out->length; n++) { sprintf(str_buf+n*2, "%02x", out->data[n]); }
 
     // Output data
     if (block1->knx_mode) {
