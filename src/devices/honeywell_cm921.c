@@ -134,7 +134,6 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
 
     data = decode_device_ids(msg, data, 1);
 
-    data_t *r = data;
     switch (msg->command) {
         case 0x1030: {
             UNKNOWN_IF(msg->payload_length != 16);
@@ -161,15 +160,15 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
                 case 1:
                     data = data_append(data, "time_request", "", DATA_INT, msg->payload[0], NULL); break;
                 case 9: {
-                    //uint8_t unknown_0 = msg->payload[0]; /* always == 0? */
-                    //uint8_t unknown_1 = msg->payload[1]; /* direction? */
-                    uint8_t second = msg->payload[2];
-                    uint8_t minute = msg->payload[3];
-                    //uint8_t day_of_week = msg->payload[4] >> 5;
-                    uint8_t hour = msg->payload[4] & 0x1F;
-                    uint8_t day = msg->payload[5];
-                    uint8_t month = msg->payload[6];
-                    uint8_t year[2] = { msg->payload[7],  msg->payload[8] };
+                    //uint8_t const unknown_0 = msg->payload[0]; /* always == 0? */
+                    //uint8_t const unknown_1 = msg->payload[1]; /* direction? */
+                    uint8_t const second = msg->payload[2];
+                    uint8_t const minute = msg->payload[3];
+                    //uint8_t const day_of_week = msg->payload[4] >> 5;
+                    uint8_t const hour = msg->payload[4] & 0x1F;
+                    uint8_t const day = msg->payload[5];
+                    uint8_t const month = msg->payload[6];
+                    uint8_t const year[2] = { msg->payload[7],  msg->payload[8] };
                     char time_str[256];
                     snprintf(time_str, sizeof(time_str), "%02d:%02d:%02d %02d-%02d-%04d", hour, minute, second, day, month, (year[0] << 8) | year[1]);
                     data = data_append(data, "datetime", "", DATA_STRING, time_str, NULL);
@@ -254,7 +253,7 @@ static data_t *honeywell_cm921_interpret_message(r_device *decoder, const messag
         default: /* Unknown command */
             UNKNOWN_IF(1);
     }
-    return r;
+    return data;
 }
 
 static uint8_t next(const uint8_t *bb, unsigned *ipos, unsigned num_bytes)

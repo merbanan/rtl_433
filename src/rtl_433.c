@@ -1895,8 +1895,9 @@ int main(int argc, char **argv) {
                     }
                 }
 
-                if (in_file != stdin)
-                    fclose(in_file = stdin);
+                if (in_file != stdin) {
+                    fclose(in_file);
+                }
 
                 continue;
             }
@@ -1964,8 +1965,9 @@ int main(int argc, char **argv) {
                 print_logf(LOG_NOTICE, "Input", "Test mode file issued %d packets", n_blocks);
             }
 
-            if (in_file != stdin)
-                fclose(in_file = stdin);
+            if (in_file != stdin) {
+                fclose(in_file);
+            }
         }
 
         close_dumpers(cfg);
