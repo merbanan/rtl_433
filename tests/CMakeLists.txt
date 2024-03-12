@@ -63,6 +63,5 @@ add_test(clang-analyzer
     -Xanalyzer
     -analyzer-output=text
     -Xanalyzer
-    -analyzer-disable-checker=deadcode.DeadStores
     ${ANALYZER_CHECK_FILES})
 endif()

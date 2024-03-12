@@ -510,8 +510,9 @@ static int m_bus_decode_val(const uint8_t *b, uint8_t dif_coding, int64_t *out_v
  * @param dif_su        Data Information Field -
  * @return int
  */
-static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam, uint8_t dif_sn, uint8_t dif_ff, uint8_t dif_su)
+static int m_bus_decode_records(data_t **inout_data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam, uint8_t dif_sn, uint8_t dif_ff, uint8_t dif_su)
 {
+    data_t *data = *inout_data;
     int ret = 0;
     int state;
     int64_t val = 0;
@@ -670,6 +671,7 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
         default:
             break;
     }
+    *inout_data = data;
     return ret;
 }
 
@@ -677,22 +679,6 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
 {
     uint8_t off = block1->block2.pl_offset;
     const uint8_t *b = out->data;
-    uint8_t dif = 0;
-    uint8_t dife_array[10] = {0};
-    uint8_t dife_cnt = 0;
-    uint8_t dif_coding = 0;
-    uint8_t dif_sn = 0;
-    uint8_t dif_ff = 0;
-    uint8_t dif_su = 0;
-    uint8_t vif = 0;
-    uint8_t vife_array[10] = {0};
-    uint8_t vife_cnt = 0;
-    uint8_t vif_uam = 0;
-    uint8_t vif_linear = 0;
-    //uint8_t vife = 0;
-    //uint8_t exponent = 0;
-    //int cnt = 0, consumed;
-    int consumed;
 
     /* Align offset pointer, there might be 2 0x2F bytes */
     if (b[off] == 0x2F) off++;
@@ -704,15 +690,25 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
 
     /* Payload must start with a DIF */
     while (off < block1->L) {
-        memset(dife_array, 0, 10);
-        memset(vife_array, 0, 10);
+        uint8_t dif;
+        uint8_t dife_array[10] = {0};
+        uint8_t dife_cnt;
+        uint8_t dif_coding;
+        uint8_t dif_sn;
+        uint8_t dif_ff;
+        uint8_t dif_su;
+        uint8_t vif;
+        uint8_t vife_array[10] = {0};
+        uint8_t vife_cnt;
+        uint8_t vif_uam;
+        uint8_t vif_linear;
+
         dife_cnt = 0;
         vife_cnt = 0;
 
         /* Parse DIF */
         dif = b[off];
         dif_sn = (dif&0x40) >> 6;
-        dif_su = 0;
         while (b[off]&0x80) {
             off++;
             dife_array[dife_cnt++] = b[off];
@@ -746,12 +742,11 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
             vif_uam = vif&0x7F;
         }
 
-        consumed = m_bus_decode_records(data, &b[off], dif_coding, vif_linear, vif_uam, dif_sn, dif_ff, dif_su);
+        int consumed = m_bus_decode_records(&data, &b[off], dif_coding, vif_linear, vif_uam, dif_sn, dif_ff, dif_su);
         if (consumed == -1) return;
 
         off +=consumed;
     }
-    return;
 }
 
 static int parse_block2(const m_bus_data_t *in, m_bus_block1_t *block1)
@@ -876,9 +871,9 @@ static int m_bus_output_data(r_device *decoder, bitbuffer_t *bitbuffer, const m_
     (void)bitbuffer; // note: to match the common decoder function signature
 
     data_t  *data;
-    char    str_buf[1024];
 
     // Make data string
+    char str_buf[1024];
     sprintf(str_buf, "%02x", out->data[0]-2);  // Adjust telegram length
     for (unsigned n=1; n<out->length+2; n++) { sprintf(str_buf+n*2, "%02x", out->data[n]); }
 
@@ -957,7 +952,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
     m_bus_data_t    data_out    = {0};  // Data from Data Link layer
     m_bus_block1_t  block1      = {0};  // Block1 fields from Data Link layer
-    char const *mode = "";
+    char const *mode;
 
     // Validate package length
     if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*12)) {  // Min/Max (Preamble + payload)
@@ -1097,7 +1092,7 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bit_offset += sizeof(PREAMBLE_F)*8;     // skip preamble
 
     uint8_t next_byte = bitrow_get_byte(bitbuffer->bb[0], bit_offset);
-    bit_offset += 8;
+    // bit_offset += 8;
     // Format A
     if (next_byte == 0x8D) {
         decoder_log(decoder, 1, __func__, "M-Bus: Mode F, Format A");

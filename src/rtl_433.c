@@ -1463,18 +1463,18 @@ static int start_sdr(r_cfg_t *cfg)
     // cfg->demod->sample_signed = sdr_get_sample_signed(cfg->dev);
 
     /* Set the sample rate */
-    r = sdr_set_sample_rate(cfg->dev, cfg->samp_rate, 1); // always verbose
+    sdr_set_sample_rate(cfg->dev, cfg->samp_rate, 1); // always verbose
 
     if (cfg->verbosity || cfg->demod->level_limit < 0.0)
         print_logf(LOG_NOTICE, "Input", "Bit detection level set to %.1f%s.", cfg->demod->level_limit, (cfg->demod->level_limit < 0.0 ? "" : " (Auto)"));
 
-    r = sdr_apply_settings(cfg->dev, cfg->settings_str, 1); // always verbose for soapy
+    sdr_apply_settings(cfg->dev, cfg->settings_str, 1); // always verbose for soapy
 
     /* Enable automatic gain if gain_str empty (or 0 for RTL-SDR), set manual gain otherwise */
-    r = sdr_set_tuner_gain(cfg->dev, cfg->gain_str, 1); // always verbose
+    sdr_set_tuner_gain(cfg->dev, cfg->gain_str, 1); // always verbose
 
     if (cfg->ppm_error) {
-        r = sdr_set_freq_correction(cfg->dev, cfg->ppm_error, 1); // always verbose
+        sdr_set_freq_correction(cfg->dev, cfg->ppm_error, 1); // always verbose
     }
 
     /* Reset endpoint before we start reading from it (mandatory) */
@@ -1482,13 +1482,13 @@ static int start_sdr(r_cfg_t *cfg)
     if (r < 0) {
         print_log(LOG_ERROR, "Input", "Failed to reset buffers.");
     }
-    r = sdr_activate(cfg->dev);
+    sdr_activate(cfg->dev);
 
     if (cfg->verbosity) {
         print_log(LOG_NOTICE, "Input", "Reading samples in async mode...");
     }
 
-    r = sdr_set_center_freq(cfg->dev, cfg->center_frequency, 1); // always verbose
+    sdr_set_center_freq(cfg->dev, cfg->center_frequency, 1); // always verbose
 
     r = sdr_start(cfg->dev, acquire_callback, (void *)get_mgr(cfg),
             DEFAULT_ASYNC_BUF_NUMBER, cfg->out_block_size);
