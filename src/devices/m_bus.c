@@ -497,7 +497,7 @@ static int m_bus_decode_val(const uint8_t *b, uint8_t dif_coding, int64_t *out_v
 /**
  * @brief decode wireless mbus records
  *
- * @param data          output for decoded records
+ * @param[in,out] inout_data    pointer to output data for decoded records
  * @param b             input buffer with records
  * @param dif_coding    Data Information - Length and coding of data (2=16bit,4=32bit, etc)
  * @param vif_linear    Value Information Field
