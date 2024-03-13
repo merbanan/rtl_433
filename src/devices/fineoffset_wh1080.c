@@ -111,7 +111,7 @@ so you can see -sometimes- some little difference between module's output and LC
 
 #include "decoder.h"
 
-static int wind_dir_degr[]= {0, 23, 45, 68, 90, 113, 135, 158, 180, 203, 225, 248, 270, 293, 315, 338};
+static int const wind_dir_degr[]= {0, 23, 45, 68, 90, 113, 135, 158, 180, 203, 225, 248, 270, 293, 315, 338};
 
 // The transmission differences are 8 preamble bits (EPB) and 7 preamble bits (SPB)
 #define EPB 8

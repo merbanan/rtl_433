@@ -68,7 +68,7 @@ and ANDing the result with 0x0f.
 
 static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char const * const command_names[] = {
+    char const *const command_names[] = {
             /* 0  */ "invalid",
             /* 1  */ "fan_speed",
             /* 2  */ "fan_speed",

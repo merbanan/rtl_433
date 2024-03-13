@@ -44,11 +44,10 @@ RMS18, Radio Shack 61-2675-T
 
 static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
     uint8_t *b = bitbuffer->bb[1];
 
-    uint8_t arrbKnownConstBitMask[4]  = {0x0B, 0x0B, 0x07, 0x07};
-    uint8_t arrbKnownConstBitValue[4] = {0x00, 0x0B, 0x00, 0x07};
+    uint8_t const arrbKnownConstBitMask[4]  = {0x0B, 0x0B, 0x07, 0x07};
+    uint8_t const arrbKnownConstBitValue[4] = {0x00, 0x0B, 0x00, 0x07};
 
     // Row [0] is sync pulse
     // Validate length
@@ -134,7 +133,7 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "id=%s%i event_str=%s", housecode, bDeviceCode, event_str);
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",        "",             DATA_STRING, "X10-RF",
             "id",           "",             DATA_INT,    bDeviceCode,
             "channel",      "",             DATA_STRING, housecode,

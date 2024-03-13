@@ -115,7 +115,7 @@ static int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "unused",
             "unused",
     };
-    static char const *flags_tab[8] = {
+    static char const *const flags_tab[8] = {
             "(none)",
             "Extended",
             "BiDir",
@@ -125,7 +125,7 @@ static int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "Response | BiDir",
             "Response | Extended | BiDir",
     };
-    static char const *fht_cmd_tab[16] = {
+    static char const *const fht_cmd_tab[16] = {
             "end-of-sync",
             "valve open",
             "valve close",
@@ -143,7 +143,7 @@ static int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "beep",
             "pairing?",
     };
-    static char const *fht_flags_tab[8] = {
+    static char const *const fht_flags_tab[8] = {
             "(none)",
             "Extended",
             "BS?",

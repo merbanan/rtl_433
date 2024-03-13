@@ -183,7 +183,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             && bb[2][0] == bb[3][0] && bb[3][0] == bb[4][0]
             && bb[4][0] == bb[5][0] && bb[5][0] == bb[6][0]
             && (bb[3][4] & 0xf) == 0 && (bb[5][4] & 0xf) == 0) {
-        //static char * temp_states[4] = {"stable", "increasing", "decreasing", "invalid"};
+        //static char const *const temp_states[4] = {"stable", "increasing", "decreasing", "invalid"};
         temp_raw = (int16_t)((reverse8(b[1]) & 0xf0) | (reverse8(b[2]) << 8)); // sign-extend
         temp_c   = (temp_raw >> 4) * 0.1f;
         humidity = bcd_decode8(reverse8(b[3]));

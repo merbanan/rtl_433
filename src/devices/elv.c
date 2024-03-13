@@ -174,7 +174,7 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t dec[16]= {0};
     uint8_t nibbles=0;
     uint8_t bit=11; // preamble
-    char const *types[]={"!AS3", "AS2000/ASH2000/S2000/S2001A/S2001IA/ASH2200/S300IA", "!S2000R", "!S2000W", "S2001I/S2001ID", "!S2500H", "!Pyrano", "KS200/KS300"};
+    char const *const types[]={"!AS3", "AS2000/ASH2000/S2000/S2001A/S2001IA/ASH2200/S300IA", "!S2000R", "!S2000W", "S2001I/S2001ID", "!S2500H", "!Pyrano", "KS200/KS300"};
     uint8_t const length[16] = {5, 8, 5, 8, 12, 9, 8, 14, 8};
     uint8_t check_calculated=0, sum_calculated=0;
     uint8_t i;

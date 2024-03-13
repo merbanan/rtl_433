@@ -9,6 +9,8 @@
 /**
 IKEA Sparsnäs Energy Meter Monitor.
 
+@warning This decoder is not stateless.
+
 The IKEA Sparsnäs consists of a display unit, and a sender unit. The display unit
 displays and stores the values sent by the sender unit. It is not needed for this
 decoder. The sender unit is placed by the energy meter. The sender unit has an
@@ -84,19 +86,19 @@ detail. Many thanks to kodarn!
 
 #define IKEA_SPARSNAS_ID_KEY_SUB 0x5D38E8CB
 
-static uint16_t ikea_sparsnas_pulses_per_kwh = 1000;
+static uint16_t const ikea_sparsnas_pulses_per_kwh = 1000;
 static uint32_t ikea_sparsnas_sensor_id = 0;
 
 static uint32_t ikea_sparsnas_brute_force_encryption(uint8_t buffer[18])
 {
-    const uint8_t b5 = buffer[5 + 0];
-    const uint8_t b6 = buffer[5 + 1];
-    const uint8_t b7 = buffer[5 + 2];
-    const uint8_t b8 = buffer[5 + 3];
-    const uint8_t battery_enc = buffer[17];
+    uint8_t const b5 = buffer[5 + 0];
+    uint8_t const b6 = buffer[5 + 1];
+    uint8_t const b7 = buffer[5 + 2];
+    uint8_t const b8 = buffer[5 + 3];
+    uint8_t const battery_enc = buffer[17];
 
     uint8_t d0, d1, d2;
-    const uint8_t d3 = b8 ^ 0x47;
+    uint8_t const d3 = b8 ^ 0x47;
 
     uint32_t dec_sensor_id, key_sensor_id;
     uint8_t battery_dec, k0, k1, k2, k4;
@@ -180,7 +182,7 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t decrypted[18];
 
     uint8_t key[5];
-    const uint32_t sensor_id_sub = ikea_sparsnas_sensor_id - IKEA_SPARSNAS_ID_KEY_SUB;
+    uint32_t const sensor_id_sub = ikea_sparsnas_sensor_id - IKEA_SPARSNAS_ID_KEY_SUB;
 
     key[0] = (uint8_t)(sensor_id_sub >> 24);
     key[1] = (uint8_t)(sensor_id_sub);

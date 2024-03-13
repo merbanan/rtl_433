@@ -12,6 +12,8 @@
 /** @fn int minim_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 GEO mimim+ energy monitor.
 
+@warning This decoder depends on `mktime()` formatting.
+
 @sa geo_minim_ct_sensor_decode()
 @sa geo_minim_display_decode()
 
