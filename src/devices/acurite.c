@@ -172,7 +172,6 @@ static int acurite_rain_896_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t const *b = bitbuffer->bb[0];
     int id;
     float total_rain;
-    data_t *data;
 
     // This needs more validation to positively identify correct sensor type, but it basically works if message is really from acurite raingauge and it doesn't have any errors
     if (bitbuffer->bits_per_row[0] < 24)
@@ -193,7 +192,7 @@ static int acurite_rain_896_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_log_bitrow(decoder, 2, __func__, b, bitbuffer->bits_per_row[0], "Raw Message ");
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",                "",             DATA_STRING, "Acurite-Rain",
             "id",                   "",             DATA_INT,    id,
             "rain_mm",              "Total Rain",   DATA_FORMAT, "%.1f mm", DATA_DOUBLE, total_rain,
@@ -225,7 +224,6 @@ static int acurite_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int cksum, battery_low, valid = 0;
     float tempc;
     uint8_t humidity, id, status;
-    data_t *data;
     int result = 0;
 
     for (uint16_t brow = 0; brow < bitbuffer->num_rows; ++brow) {
@@ -260,7 +258,7 @@ static int acurite_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         /* clang-format off */
-        data = data_make(
+        data_t *data = data_make(
                 "model",            "",             DATA_STRING, "Acurite-609TXC",
                 "id",               "",             DATA_INT,    id,
                 "battery_ok",       "Battery",      DATA_INT,    !battery_low,
@@ -406,7 +404,6 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     uint8_t strike_count, strike_distance;
     int battery_low, active, rfi_detect;
     int exception = 0;
-    data_t *data;
 
     int browlen = (bitbuffer->bits_per_row[row] + 7) / 8;
     uint8_t const *bb = bitbuffer->bb[row];
@@ -471,7 +468,7 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
         exception++;
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",                 DATA_STRING, "Acurite-6045M",
             "id",               NULL,               DATA_INT,    sensor_id,
             "channel",          NULL,               DATA_STRING, channel_str,
@@ -525,8 +522,7 @@ static int acurite_899_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t
     int raincounter = ((bb[5] & 0x7f) << 7) | (bb[6] & 0x7f);
 
     /* clang-format off */
-    data_t *data;
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",                         DATA_STRING, "Acurite-Rain899",
             "id",               "",                         DATA_INT,    sensor_id,
             "channel",          "",                         DATA_INT,    channel,
@@ -657,8 +653,7 @@ static int acurite_5n1_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t
         int raincounter = ((bb[5] & 0x7f) << 7) | (bb[6] & 0x7F);
 
         /* clang-format off */
-        data_t *data;
-        data = data_make(
+        data_t *data = data_make(
                 "model",            "",                         DATA_STRING,    "Acurite-5n1",
                 "message_type",     NULL,                       DATA_INT,       message_type,
                 "id",               NULL,                       DATA_INT,       sensor_id,
@@ -696,8 +691,7 @@ static int acurite_5n1_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t
 
 
         /* clang-format off */
-        data_t *data;
-        data = data_make(
+        data_t *data = data_make(
                 "model",            "",             DATA_STRING,    "Acurite-5n1",
                 "message_type",     NULL,           DATA_INT,       message_type,
                 "id",               NULL,           DATA_INT,       sensor_id,
@@ -1549,7 +1543,6 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char sensor_type;
     char const *channel_str;
     int battery_low;
-    data_t *data;
 
     int result = 0;
 
@@ -1614,7 +1607,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_logf(decoder, 1, __func__, "sensor 0x%04x - %d%c: %d F", sensor_id, sensor_num, sensor_type, tempf);
 
         /* clang-format off */
-        data = data_make(
+        data_t *data = data_make(
                 "model",            "",             DATA_STRING, "Acurite-986",
                 "id",               NULL,           DATA_INT,    sensor_id,
                 "channel",          NULL,           DATA_STRING, channel_str,
@@ -1642,7 +1635,6 @@ Acurite 606 Temperature sensor
 */
 static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
     uint8_t *b;
     int row;
     int16_t temp_raw; // temperature as read from the data packet
@@ -1685,7 +1677,7 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     temp_c     = temp_raw * 0.1f;
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Acurite-606TX",
             "id",               "",             DATA_INT, sensor_id,
             "channel",          "Channel",      DATA_INT,   channel,
@@ -1706,7 +1698,6 @@ Acurite 590TX temperature/humidity sensor
 */
 static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
     uint8_t *b;
     int row;
     int sensor_id;  // the sensor ID - basically a random number that gets reset whenever the battery is removed
@@ -1764,7 +1755,7 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         humidity = -1;
 
     /* clang-format off */
-     data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Acurite-590TX",
             "id",               "",             DATA_INT,    sensor_id,
             "channel",          "Channel",      DATA_INT,    channel,

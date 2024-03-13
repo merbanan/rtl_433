@@ -21,16 +21,19 @@ Honeywell CM921 Thermostat (subset of Evohome).
 static int decode_10to8(uint8_t const *b, int pos, int end, uint8_t *out)
 {
     // we need 10 bits
-    if (pos + 10 > end)
+    if (pos + 10 > end) {
         return DECODE_ABORT_LENGTH;
+    }
 
     // start bit of 0
-    if (bitrow_get_bit(b, pos) != 0)
+    if (bitrow_get_bit(b, pos) != 0) {
         return DECODE_FAIL_SANITY;
+    }
 
     // stop bit of 1
-    if (bitrow_get_bit(b, pos + 9) != 1)
+    if (bitrow_get_bit(b, pos + 9) != 1) {
         return DECODE_FAIL_SANITY;
+    }
 
     *out = bitrow_get_byte(b, pos + 1);
 
@@ -90,9 +93,11 @@ static void decode_device_id(const uint8_t device_id[3], char *buf, size_t buf_s
     int dev_id   = (device_id[0] & 0x03) << 16 | (device_id[1] << 8) | device_id[2];
 
     char const *dev_name = " --";
-    for (size_t i = 0; i < sizeof(device_map) / sizeof(dev_map_entry_t); i++)
-        if (device_map[i].t == dev_type)
+    for (size_t i = 0; i < sizeof(device_map) / sizeof(dev_map_entry_t); i++) {
+        if (device_map[i].t == dev_type) {
             dev_name = device_map[i].s;
+        }
+    }
 
     snprintf(buf, buf_sz, "%3s:%06d", dev_name, dev_id);
 }
@@ -102,12 +107,14 @@ static data_t *decode_device_ids(const message_t *msg, data_t *data, int style)
     char ds[64] = {0}; // up to 4 ids of at most 10+1 chars
 
     for (unsigned i = 0; i < msg->num_device_ids; i++) {
-        if (i != 0)
+        if (i != 0) {
             strcat(ds, " ");
+        }
 
         char buf[16] = {0};
-        if (style == 0)
+        if (style == 0) {
             decode_device_id(msg->device_id[i], buf, sizeof(buf));
+        }
         else {
             snprintf(buf, sizeof(buf), "%02x%02x%02x",
                     msg->device_id[i][0],
@@ -260,15 +267,17 @@ static uint8_t next(const uint8_t *bb, unsigned *ipos, unsigned num_bytes)
 {
     uint8_t r = bitrow_get_byte(bb, *ipos);
     *ipos += 8;
-    if (*ipos >= num_bytes * 8)
+    if (*ipos >= num_bytes * 8) {
         return DECODE_FAIL_SANITY;
+    }
     return r;
 }
 
 static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
 {
-    if (!bmsg || row >= bmsg->num_rows || bmsg->bits_per_row[row] < 8)
+    if (!bmsg || row >= bmsg->num_rows || bmsg->bits_per_row[row] < 8) {
         return DECODE_ABORT_LENGTH;
+    }
 
     unsigned num_bytes = bmsg->bits_per_row[0]/8;
     unsigned num_bits = bmsg->bits_per_row[0];
@@ -281,8 +290,9 @@ static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
     int checksum_ok = bsum == 0;
     msg->crc = bitrow_get_byte(bb, bmsg->bits_per_row[row] - 8);
 
-    if (!checksum_ok)
+    if (!checksum_ok) {
         return DECODE_FAIL_MIC;
+    }
 
     msg->header = next(bb, &ipos, num_bytes);
 
@@ -293,22 +303,25 @@ static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
                           msg->header == 0x3c ? 2 :
                 (msg->header >> 2) & 0x03; // total speculation.
 
-    for (unsigned i = 0; i < msg->num_device_ids; i++)
-        for (unsigned j = 0; j < 3; j++)
+    for (unsigned i = 0; i < msg->num_device_ids; i++) {
+        for (unsigned j = 0; j < 3; j++) {
             msg->device_id[i][j] = next(bb, &ipos, num_bytes);
+        }
+    }
 
     msg->command = (next(bb, &ipos, num_bytes) << 8) | next(bb, &ipos, num_bytes);
     msg->payload_length = next(bb, &ipos, num_bytes);
 
-    for (unsigned i = 0; i < msg->payload_length; i++)
+    for (unsigned i = 0; i < msg->payload_length; i++) {
         msg->payload[i] = next(bb, &ipos, num_bytes);
+    }
 
-    if (ipos < num_bits - 8)
-    {
-      unsigned num_unparsed_bits = (bmsg->bits_per_row[row] - 8) - ipos;
-      msg->unparsed_length = (num_unparsed_bits / 8) + (num_unparsed_bits % 8) ? 1 : 0;
-      if (msg->unparsed_length != 0)
-          bitbuffer_extract_bytes(bmsg, row, ipos, msg->unparsed, num_unparsed_bits);
+    if (ipos < num_bits - 8) {
+        unsigned num_unparsed_bits = (bmsg->bits_per_row[row] - 8) - ipos;
+        msg->unparsed_length = (num_unparsed_bits / 8) + (num_unparsed_bits % 8) ? 1 : 0;
+        if (msg->unparsed_length != 0) {
+            bitbuffer_extract_bytes(bmsg, row, ipos, msg->unparsed, num_unparsed_bits);
+        }
     }
 
     return ipos;
@@ -330,8 +343,9 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     const uint8_t preamble_bit_length = 30;
     const int row = 0; // we expect a single row only.
 
-    if (bitbuffer->num_rows != 1 || bitbuffer->bits_per_row[row] < 60)
+    if (bitbuffer->num_rows != 1 || bitbuffer->bits_per_row[row] < 60) {
         return DECODE_ABORT_LENGTH;
+    }
 
     decoder_log_bitrow(decoder, 1, __func__, bitbuffer->bb[row], bitbuffer->bits_per_row[row], "");
 
@@ -339,27 +353,31 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int start = preamble_start + preamble_bit_length;
     int len = bitbuffer->bits_per_row[row] - start;
     decoder_logf(decoder, 1, __func__, "preamble_start=%d start=%d len=%d", preamble_start, start, len);
-    if (len < 8)
+    if (len < 8) {
         return DECODE_ABORT_LENGTH;
+    }
     int end = start + len;
 
     bitbuffer_t bytes = {0};
     int pos = start;
     while (pos < end) {
         uint8_t byte = 0;
-        if (decode_10to8(bitbuffer->bb[row], pos, end, &byte) != 10)
+        if (decode_10to8(bitbuffer->bb[row], pos, end, &byte) != 10) {
             break;
-        for (unsigned i = 0; i < 8; i++)
+        }
+        for (unsigned i = 0; i < 8; i++) {
             bitbuffer_add_bit(&bytes, (byte >> i) & 0x1);
+        }
         pos += 10;
     }
 
     // Skip Manchester breaking header
     uint8_t header[3] = { 0x33, 0x55, 0x53 };
     if (bitrow_get_byte(bytes.bb[row], 0) != header[0] ||
-        bitrow_get_byte(bytes.bb[row], 8) != header[1] ||
-        bitrow_get_byte(bytes.bb[row], 16) != header[2])
+            bitrow_get_byte(bytes.bb[row], 8) != header[1] ||
+            bitrow_get_byte(bytes.bb[row], 16) != header[2]) {
         return DECODE_FAIL_SANITY;
+    }
 
     // Find Footer 0x35 (0x55*)
     int fi = bytes.bits_per_row[row] - 8;
@@ -368,8 +386,9 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         seen_aa = 1;
         fi -= 8;
     }
-    if (!seen_aa || bitrow_get_byte(bytes.bb[row], fi) != 0x35)
+    if (!seen_aa || bitrow_get_byte(bytes.bb[row], fi) != 0x35) {
         return DECODE_FAIL_SANITY;
+    }
 
     unsigned first_byte = 24;
     unsigned end_byte   = fi;
@@ -381,16 +400,18 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned man_errors = num_bits - (fpos - first_byte - 2);
 
 #ifndef _DEBUG
-    if (man_errors != 0)
+    if (man_errors != 0) {
         return DECODE_FAIL_SANITY;
+    }
 #endif
 
     message_t message;
 
     int pr = parse_msg(&packet, 0, &message);
 
-    if (pr <= 0)
+    if (pr <= 0) {
         return pr;
+    }
 
     /* clang-format off */
     data_t *data = data_make(

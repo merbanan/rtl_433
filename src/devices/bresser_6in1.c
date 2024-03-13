@@ -94,7 +94,6 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int const moisture_map[] = {0, 7, 13, 20, 27, 33, 40, 47, 53, 60, 67, 73, 80, 87, 93, 99}; // scale is 20/3
 
-    data_t *data;
     uint8_t msg[18];
 
     if (bitbuffer->num_rows != 1
@@ -200,7 +199,7 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         moisture = moisture_map[humidity - 1];
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Bresser-6in1",
             "id",               "",             DATA_FORMAT, "%08x", DATA_INT,    id,
             "channel",          "",             DATA_INT,    chan,
