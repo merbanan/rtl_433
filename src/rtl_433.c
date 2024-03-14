@@ -1309,6 +1309,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
 }
 
 static r_cfg_t g_cfg;
+static volatile sig_atomic_t sig_hup;
 
 // TODO: SIGINFO is not in POSIX...
 #ifndef SIGINFO
@@ -1345,6 +1346,10 @@ static void sighandler(int signum)
         // NOTE: we already ignore most network SIGPIPE's, this might be a STDOUT/STDERR problem.
         // Printing is likely not the correct way to handle this.
         write_err("Ignoring received signal SIGPIPE, Broken pipe.\n");
+        return;
+    }
+    else if (signum == SIGHUP) {
+        sig_hup = 1;
         return;
     }
     else if (signum == SIGINFO/* TODO: maybe SIGUSR1 */) {
@@ -1504,6 +1509,10 @@ static void timer_handler(struct mg_connection *nc, int ev, void *ev_data)
 {
     //fprintf(stderr, "%s: %d, %d, %p, %p\n", __func__, nc->sock, ev, nc->user_data, ev_data);
     r_cfg_t *cfg = (r_cfg_t *)nc->user_data;
+    if (sig_hup) {
+        reopen_dumpers(cfg);
+        sig_hup = 0;
+    }
     switch (ev) {
     case MG_EV_TIMER: {
         double now  = *(double *)ev_data;
@@ -1988,6 +1997,7 @@ int main(int argc, char **argv) {
     sigact.sa_handler = sighandler;
     sigemptyset(&sigact.sa_mask);
     sigact.sa_flags = 0;
+    sigaction(SIGHUP, &sigact, NULL);
     sigaction(SIGINT, &sigact, NULL);
     sigaction(SIGTERM, &sigact, NULL);
     sigaction(SIGQUIT, &sigact, NULL);
