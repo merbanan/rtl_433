@@ -240,8 +240,12 @@ def process_source(path, name):
                     links[fName].update({"doc_line": dLine, "doc": doc})
                     doc = None
                 continue
+            # Match the prefix string up to "TheModelName"
             # "model", "", DATA_STRING, "Schrader",
             m = re.match(r'\s*"model"\s*,.*DATA_STRING', line)
+            if not m:
+                # data_t *data = data_str(NULL, "model", "", NULL, "Honeywell-CM921");
+                m = re.match(r'.*data_str\([^,]*\s*,\s*"model"\s*,[^,]*,[^,]*,', line)
             if m:
                 prefix = m.group(0)
                 s = line[len(prefix):]

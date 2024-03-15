@@ -181,8 +181,7 @@ static int digitech_xc0324_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             // Keep production output (decoder_verbose == 0) separate from
             // (simulated) development stage output (decoder_verbose > 0)
             if (events > 0 && !decoder_verbose(decoder)) { // Production output
-                data_append(data,
-                        "message_num", "Message repeat count", DATA_INT, events, NULL);
+                data = data_int(data, "message_num", "Message repeat count", NULL, events);
                 decoder_output_data(decoder, data);
                 return events; // in production, first successful decode is enough
             }

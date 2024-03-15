@@ -296,8 +296,7 @@ static data_t *append_str(data_t *data, enum UnitType unit_type, uint8_t value_t
         snprintf(pretty, sizeof(pretty), "%s %s %s", value_types_tab[value_type][1], unit_names[unit_type][1], pretty_extra);
     }
 
-    return data_append(data,
-            key, pretty, DATA_STRING, value, NULL);
+    return data_str(data, key, pretty, NULL, value);
 
 }
 
@@ -622,18 +621,15 @@ static int m_bus_decode_records(data_t **inout_data, const uint8_t *b, uint8_t d
                 // E111 1010    Bus Address     data type C (x=8)
             } else {
                 // reserved
-                data = data_append(data,
-                        "unknown", "Unknown", DATA_STRING, "none",
-                        NULL);
+                data = data_str(data, "unknown", "Unknown", NULL, "none");
             }
 
             break;
         case 0x7B:
             switch(vif_uam>>1) {
                 case 0xD:
-                    data = data_append(data,
-                            oms_hum[dif_ff&0x3][dif_sn&0x3], oms_hum_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.1f %%", DATA_DOUBLE, val*humidity_factor[vif_uam&0x1],
-                            NULL);
+                    data = data_dbl(data,
+                            oms_hum[dif_ff&0x3][dif_sn&0x3], oms_hum_el[dif_ff&0x3][dif_sn&0x3], "%.1f %%", val*humidity_factor[vif_uam&0x1]);
                     break;
                 default:
                     break;
@@ -646,15 +642,12 @@ static int m_bus_decode_records(data_t **inout_data, const uint8_t *b, uint8_t d
                     // Open  sets bits 2 and 6 to 1
                     // Close sets bits 2 and 6 to 0
                     state = b[0]&0x44;
-                    data = data_append(data,
-                            "switch", "Switch", DATA_STRING, (state==0x44) ? "open":"closed",
-                            NULL);
+                    data  = data_str(data, "switch", "Switch", NULL, (state == 0x44) ? "open" : "closed");
                     break;
                 case 0x3a:
                     /* Only use 32 bits of 48 available */
-                    data = data_append(data,
-                            ((dif_su==0)?"counter_0":"counter_1"), ((dif_su==0)?"Counter 0":"Counter 1"), DATA_FORMAT, "%d", DATA_INT, (b[3]<<24|b[2]<<16|b[1]<<8|b[0]),
-                            NULL);
+                    data = data_int(data,
+                            ((dif_su==0)?"counter_0":"counter_1"), ((dif_su==0)?"Counter 0":"Counter 1"), "%d", (b[3]<<24|b[2]<<16|b[1]<<8|b[0]));
                     break;
                 default:
                     break;
@@ -909,12 +902,10 @@ static int m_bus_output_data(r_device *decoder, bitbuffer_t *bitbuffer, const m_
     }
     if (block1->block2.CI) {
         /* clang-format off */
-        data = data_append(data,
-                "CI",     "Control Info",   DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.CI,
-                "AC",     "Access number",  DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.AC,
-                "ST",     "Device Type",    DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.ST,
-                "CW",     "Configuration Word",DATA_FORMAT, "0x%04X",   DATA_INT, block1->block2.CW,
-                NULL);
+        data = data_int(data, "CI",     "Control Info",         "0x%02X",   block1->block2.CI);
+        data = data_int(data, "AC",     "Access number",        "0x%02X",   block1->block2.AC);
+        data = data_int(data, "ST",     "Device Type",          "0x%02X",   block1->block2.ST);
+        data = data_int(data, "CW",     "Configuration Word",   "0x%04X",   block1->block2.CW);
         /* clang-format on */
     }
     /* Encryption not supported */
@@ -922,9 +913,7 @@ static int m_bus_output_data(r_device *decoder, bitbuffer_t *bitbuffer, const m_
         parse_payload(data, block1, out);
     } else {
         /* clang-format off */
-        data = data_append(data,
-                "payload_encrypted", "Payload Encrypted", DATA_FORMAT, "1", DATA_INT, NULL,
-                NULL);
+        data = data_int(data, "payload_encrypted", "Payload Encrypted", NULL, 1);
         /* clang-format on */
     }
     decoder_output_data(decoder, data);
