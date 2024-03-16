@@ -187,6 +187,7 @@ void r_init_cfg(r_cfg_t *cfg)
     // initialize tables
     baseband_init();
 
+    time(&cfg->running_since);
     time(&cfg->frames_since);
     get_time_now(&cfg->demod->now);
 
@@ -938,7 +939,7 @@ data_t *create_report_data(r_cfg_t *cfg, int level)
     }
 
     data = data_make(
-            "count",            "", DATA_INT, cfg->frames_count,
+            "count",            "", DATA_INT, cfg->frames_ook,
             "fsk",              "", DATA_INT, cfg->frames_fsk,
             "events",           "", DATA_INT, cfg->frames_events,
             NULL);
@@ -962,7 +963,7 @@ void flush_report_data(r_cfg_t *cfg)
     list_t *r_devs = &cfg->demod->r_devs;
 
     time(&cfg->frames_since);
-    cfg->frames_count = 0;
+    cfg->frames_ook = 0;
     cfg->frames_fsk = 0;
     cfg->frames_events = 0;
 

@@ -460,7 +460,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     int noise_only = avg_db < demod->noise_level + 3.0f; // or demod->min_level_auto?
     // always process frames if loader, dumper, or analyzers are in use, otherwise skip silent frames
     int process_frame = demod->squelch_offset <= 0 || !noise_only || demod->load_info.format || demod->analyze_pulses || demod->dumper.len || demod->samp_grab;
+    cfg->total_frames_count += 1;
     if (noise_only) {
+        cfg->total_frames_squelch += 1;
         demod->noise_level = (demod->noise_level * 7 + avg_db) / 8; // fast fall over 8 frames
         // If auto_level and noise level well below min_level and significant change in noise level
         if (demod->auto_level > 0 && demod->noise_level < demod->min_level - 3.0f
@@ -479,8 +481,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 noise_only ? "noise" : "signal", avg_db, demod->noise_level);
     }
 
-    if (process_frame)
-    baseband_low_pass_filter(demod->buf.temp, demod->am_buf, n_samples, &demod->lowpass_filter_state);
+    if (process_frame) {
+        baseband_low_pass_filter(demod->buf.temp, demod->am_buf, n_samples, &demod->lowpass_filter_state);
+    }
 
     // FM demodulation
     // Select the correct fsk pulse detector
@@ -539,7 +542,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t%s\n", time_pos_str(cfg, demod->pulse_data.start_ago, time_str));
 
                 p_events += run_ook_demods(&demod->r_devs, &demod->pulse_data);
-                cfg->frames_count++;
+                cfg->total_frames_ook += 1;
+                cfg->total_frames_events += p_events > 0;
+                cfg->frames_ook +=1;
                 cfg->frames_events += p_events > 0;
 
                 for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
@@ -564,7 +569,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 if (demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t%s\n", time_pos_str(cfg, demod->fsk_pulse_data.start_ago, time_str));
 
                 p_events += run_fsk_demods(&demod->r_devs, &demod->fsk_pulse_data);
-                cfg->frames_fsk++;
+                cfg->total_frames_fsk +=1;
+                cfg->total_frames_events += p_events > 0;
+                cfg->frames_fsk += 1;
                 cfg->frames_events += p_events > 0;
 
                 for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
@@ -1517,6 +1524,7 @@ static void timer_handler(struct mg_connection *nc, int ev, void *ev_data)
             if (cfg->dev_state == DEVICE_STATE_STARTING
                     || cfg->dev_state == DEVICE_STATE_GRACE) {
                 cfg->dev_state = DEVICE_STATE_STARTED;
+                time(&cfg->sdr_since);
             }
             cfg->watchdog = 0;
             break;
