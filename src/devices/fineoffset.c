@@ -289,7 +289,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",                 DATA_STRING, type == MODEL_WH24 ? "Fineoffset-WH24" : "Fineoffset-WH65B",
             "id",               "ID",               DATA_INT,    id,
             "battery_ok",       "Battery",          DATA_INT,    !low_battery,
-            "temperature_C",    "Temperature",      DATA_COND, temp_raw != 0x7ff, DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
+            "temperature_C",    "Temperature",      DATA_COND, temp_raw != 0x7ff, DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",         DATA_COND, humidity != 0xff, DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "wind_dir_deg",     "Wind direction",   DATA_COND, wind_dir != 0x1ff, DATA_INT, wind_dir,
             "wind_avg_m_s",     "Wind speed",       DATA_COND, wind_speed_raw != 0x1ff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_speed_ms,
@@ -418,8 +418,8 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, "Fineoffset-WH0290",
             "id",               "ID",           DATA_INT,    id,
             "battery_ok",       "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
-            "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm25/10,
-            "estimated_pm10_0_ug_m3",     "Estimate of 10um Coarse Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
+            "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%d ug/m3", DATA_INT, pm25/10,
+            "estimated_pm10_0_ug_m3",     "Estimate of 10um Coarse Particulate Matter",  DATA_FORMAT, "%d ug/m3", DATA_INT, pm100/10,
             "family",           "FAMILY",       DATA_INT,    family,
             "unknown1",         "UNKNOWN1",     DATA_INT,    unknown1,
             "mic",              "Integrity",    DATA_STRING, "CRC",
@@ -540,9 +540,9 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_COND, type == 25, DATA_STRING, "Fineoffset-WH25",
             "id",               "ID",           DATA_INT,    id,
             "battery_ok",       "Battery",      DATA_INT,    !low_battery,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "pressure_hPa",     "Pressure",     DATA_COND,   pressure_raw != 0xffff, DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure,
+            "pressure_hPa",     "Pressure",     DATA_COND,   pressure_raw != 0xffff, DATA_FORMAT, "%.1f hPa", DATA_DOUBLE, pressure,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -712,8 +712,8 @@ static int alecto_ws1200v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, "Alecto-WS1200v1",
             "id",               "ID",           DATA_INT,    id,
             "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
-            "rain_mm",          "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
+            "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -870,8 +870,8 @@ static int alecto_ws1200v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, "Alecto-WS1200v2",
             "id",               "ID",           DATA_INT,    id,
             "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
-            "rain_mm",          "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
+            "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -943,8 +943,8 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, "Fineoffset-WH0530",
             "id",               "ID",           DATA_INT,    id,
             "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
-            "rain_mm",          "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
+            "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */

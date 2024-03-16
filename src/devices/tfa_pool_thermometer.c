@@ -69,7 +69,7 @@ static int tfa_pool_thermometer_decode(r_device *decoder, bitbuffer_t *bitbuffer
             "id",               "Id",               DATA_INT,       device,
             "channel",          "Channel",          DATA_INT,       channel,
             "battery_ok",       "Battery",          DATA_INT,       battery,
-            "temperature_C",    "Temperature",      DATA_FORMAT,    "%.01f C",  DATA_DOUBLE,    temp_f,
+            "temperature_C",    "Temperature",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE,    temp_f,
             "mic",              "Integrity",        DATA_STRING,    "CHECKSUM",
             NULL);
     /* clang-format on */

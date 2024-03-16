@@ -188,7 +188,7 @@ static int acurite_rain_896_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     total_rain = ((b[1] & 0xf) << 8) | b[2];
     total_rain *= 0.5; // Sensor reports number of bucket tips.  Each bucket tip is .5mm
 
-    decoder_logf(decoder, 2, __func__, "Total Rain is %2.1fmm", total_rain);
+    decoder_logf(decoder, 2, __func__, "Total Rain is %.1fmm", total_rain);
     decoder_log_bitrow(decoder, 2, __func__, b, bitbuffer->bits_per_row[0], "Raw Message ");
 
     /* clang-format off */

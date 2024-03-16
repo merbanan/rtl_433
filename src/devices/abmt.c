@@ -73,7 +73,7 @@ static int abmt_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data = data_make(
              "model",         "",            DATA_STRING, "Basics-Meat",
              "id",            "Id",          DATA_INT,    id,
-             "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
+             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
              NULL);
     /* clang-format on */
     decoder_output_data(decoder, data);

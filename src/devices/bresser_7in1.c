@@ -259,7 +259,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "channel",          "",                         DATA_INT,    chan,
                 "startup",          "Startup",                  DATA_COND,   !nstartup,  DATA_INT, !nstartup,
                 "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
-                "co2_ppm",          "Carbon Dioxide",           DATA_COND,   !co2_init,     DATA_FORMAT, "%i ppm", DATA_INT, co2,
+                "co2_ppm",          "Carbon Dioxide",           DATA_COND,   !co2_init,     DATA_FORMAT, "%d ppm", DATA_INT, co2,
                 "mic",              "Integrity",                DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
@@ -280,8 +280,8 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "channel",          "",                           DATA_INT,    chan,
                 "startup",          "Startup",                    DATA_COND,   !nstartup,  DATA_INT, !nstartup,
                 "battery_ok",       "Battery",                    DATA_INT,    !battery_low,
-                "hcho_ppb",         "Formaldehyde",               DATA_COND,   !hcho_init, DATA_FORMAT, "%i ppb", DATA_INT, hcho,
-                "voc_level",        "Volatile Organic Compounds", DATA_COND,   !voc_init,  DATA_FORMAT, "%i",     DATA_INT, voc, // from 1 bad air quality to 5 very good air quality
+                "hcho_ppb",         "Formaldehyde",               DATA_COND,   !hcho_init, DATA_FORMAT, "%d ppb", DATA_INT, hcho,
+                "voc_level",        "Volatile Organic Compounds", DATA_COND,   !voc_init,  DATA_FORMAT, "%d",     DATA_INT, voc, // from 1 bad air quality to 5 very good air quality
                 "mic",              "Integrity",                  DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */

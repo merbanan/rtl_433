@@ -1723,7 +1723,7 @@ static THREAD_RETURN THREAD_CALL acquire_thread(void *arg)
     print_log(LOG_DEBUG, __func__, "acquire_thread async stop...");
 
     if (r < 0) {
-        print_logf(LOG_ERROR, "SDR", "async read failed (%i).", r);
+        print_logf(LOG_ERROR, "SDR", "async read failed (%d).", r);
     }
 
 //    sdr_event_t ev = {

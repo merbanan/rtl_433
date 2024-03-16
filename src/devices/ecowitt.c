@@ -97,7 +97,7 @@ static int ecowitt_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model", "", DATA_STRING, "Ecowitt-WH53",
             "id", "Id", DATA_INT, sensor_id,
             "channel", "Channel", DATA_INT, channel,
-            "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
+            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "mic", "Integrity", DATA_STRING, "CRC",
             NULL);
     /* clang-format on */

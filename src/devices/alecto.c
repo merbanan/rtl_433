@@ -171,7 +171,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id",           "House Code",   DATA_INT,    sensor_id,
                 "channel",      "Channel",      DATA_INT,    channel,
                 "battery_ok",   "Battery",      DATA_INT,    !battery_low,
-                "rain_mm",      "Total Rain",   DATA_FORMAT, "%.02f mm", DATA_DOUBLE, rain_mm,
+                "rain_mm",      "Total Rain",   DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rain_mm,
                 "mic",          "Integrity",    DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
@@ -196,7 +196,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id",            "House Code",  DATA_INT,    sensor_id,
                 "channel",       "Channel",     DATA_INT,    channel,
                 "battery_ok",    "Battery",     DATA_INT,    !battery_low,
-                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT, humidity,
                 "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
                 NULL);

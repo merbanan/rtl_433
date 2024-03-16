@@ -155,10 +155,10 @@ static void usage(int exit_code)
             "  [-t <settings>] apply a list of keyword=value settings to the SDR device\n"
             "       e.g. for SoapySDR -t \"antenna=A,bandwidth=4.5M,rfnotch_ctrl=false\"\n"
             "       for RTL-SDR use \"direct_samp[=1]\", \"offset_tune[=1]\", \"digital_agc[=1]\", \"biastee[=1]\"\n"
-            "  [-f <frequency>] Receive frequency(s) (default: %i Hz)\n"
-            "  [-H <seconds>] Hop interval for polling of multiple frequencies (default: %i seconds)\n"
+            "  [-f <frequency>] Receive frequency(s) (default: %d Hz)\n"
+            "  [-H <seconds>] Hop interval for polling of multiple frequencies (default: %d seconds)\n"
             "  [-p <ppm_error>] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
-            "  [-s <sample rate>] Set sample rate (default: %i Hz)\n"
+            "  [-s <sample rate>] Set sample rate (default: %d Hz)\n"
             "  [-D restart | pause | quit | manual] Input device run mode options.\n"
             "\t\t= Demodulator options =\n"
             "  [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)\n"
@@ -1500,7 +1500,7 @@ static int start_sdr(r_cfg_t *cfg)
     r = sdr_start(cfg->dev, acquire_callback, (void *)get_mgr(cfg),
             DEFAULT_ASYNC_BUF_NUMBER, cfg->out_block_size);
     if (r < 0) {
-        print_logf(LOG_ERROR, "Input", "async start failed (%i).", r);
+        print_logf(LOG_ERROR, "Input", "async start failed (%d).", r);
     }
 
     cfg->dev_state = DEVICE_STATE_STARTING;

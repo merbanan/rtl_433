@@ -101,7 +101,7 @@ static int fineoffset_wn34_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "ID",           DATA_FORMAT, "%x", DATA_INT, id,
             "battery_ok",       "Battery",      DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
             "battery_mV",       "Battery Voltage", DATA_FORMAT, "%d mV", DATA_INT, battery_mv,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */

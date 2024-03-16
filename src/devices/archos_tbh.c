@@ -169,7 +169,7 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data = data_make(
                 "model",        "",                 DATA_STRING, "Archos-TBH",
                 "id",           "Station ID",       DATA_FORMAT, "%08X", DATA_INT, id,
-                "temperature_C", "Temperature",     DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
+                "temperature_C", "Temperature",     DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
                 "humidity",     "Humidity",         DATA_FORMAT, "%d %%", DATA_INT, humidity,
                 "mic",          "Integrity",        DATA_STRING, "CRC",
                 NULL);

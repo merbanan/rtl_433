@@ -184,10 +184,9 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
 
     decoder_logf(decoder, 1, __func__, "start_pos %u row_length %hu =  %u",
             start_pos, bits->bits_per_row[row], (bits->bits_per_row[row] - start_pos));
-    decoder_logf(decoder, 1, __func__, "%s %-5s %s %s %s",
-            "pkt_i", "pkt_d", "next", "length", "count");
 
     {
+    decoder_log(decoder, 1, __func__, "pkt_i pkt_d next length count");
     uint8_t buffy[4];
     bitbuffer_extract_bytes(bits, row, start_pos - 2, buffy, 30);
     decoder_logf_bitrow(decoder, 1, __func__, buffy, 30, "%2d %02X %03u %u %2d",

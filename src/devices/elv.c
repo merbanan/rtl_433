@@ -57,7 +57,7 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t stopbit = AD_POP(bb_p, 1, bit);
         bit += 1;
         if (!stopbit) {
-//            decoder_logf(decoder, 0, __func__, "!stopbit: %i", i);
+//            decoder_logf(decoder, 0, __func__, "!stopbit: %d", i);
             return DECODE_ABORT_EARLY;
         }
         checksum_calculated ^= dec[i];
@@ -195,7 +195,7 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         dec[i] = AD_POP(bb[0], 4, bit); bit+=4;
         stopbit= AD_POP(bb[0], 1, bit); bit+=1;
         if (!stopbit) {
-            decoder_logf(decoder, 1, __func__, "!stopbit %i", bit);
+            decoder_logf(decoder, 1, __func__, "!stopbit %d", bit);
             return DECODE_ABORT_EARLY;
         }
         check_calculated ^= dec[i];

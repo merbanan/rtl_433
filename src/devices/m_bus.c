@@ -333,7 +333,7 @@ static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_t
     }
     double fvalue = val * pow10_table[exp];
 
-    snprintf(buffer_val, sizeof(buffer_val), "%.03f %s%s", fvalue, prefix, unit_names[unit_type][2]);
+    snprintf(buffer_val, sizeof(buffer_val), "%.3f %s%s", fvalue, prefix, unit_names[unit_type][2]);
 
     return append_str(data, unit_type, value_type, sn, key_extra, pretty_extra, buffer_val);
 }
