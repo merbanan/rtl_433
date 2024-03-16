@@ -501,7 +501,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         type = 31;
     }
     else if (msg_type != 0xe0) {
-        decoder_logf(decoder, 1, __func__, "Msg type unknown: %2x", b[0]);
+        decoder_logf(decoder, 1, __func__, "Msg type unknown: %02x", b[0]);
         if (b[0] == 0x41) {
             return fineoffset_WH0290_callback(decoder, bitbuffer); // abort and try WH0290
         }
@@ -612,7 +612,7 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Verify family code
     if (b[0] != 0x51) {
-        decoder_logf(decoder, 1, __func__, "Msg family unknown: %2x", b[0]);
+        decoder_logf(decoder, 1, __func__, "Msg family unknown: %02x", b[0]);
         return DECODE_ABORT_EARLY;
     }
 

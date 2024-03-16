@@ -53,7 +53,7 @@ static int fineoffset_wn34_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Verify family code
     if (b[0] != 0x34) {
-        decoder_logf(decoder, 2, __func__, "Msg family unknown: %2x", b[0]);
+        decoder_logf(decoder, 2, __func__, "Msg family unknown: %02x", b[0]);
         decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "Row length(bits_per_row[0]): %u", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_EARLY;
     }

@@ -77,7 +77,7 @@ static int m_bus_crc_valid(r_device *decoder, const uint8_t *bytes, unsigned crc
     uint16_t crc_calc = ~crc16(bytes, crc_offset, CRC_POLY, 0);
     uint16_t crc_read = (((uint16_t)bytes[crc_offset] << 8) | bytes[crc_offset+1]);
     if (crc_calc != crc_read) {
-        decoder_logf(decoder, 1, __func__, "M-Bus: CRC error: Calculated 0x%0X, Read: 0x%0X", (unsigned)crc_calc, (unsigned)crc_read);
+        decoder_logf(decoder, 1, __func__, "M-Bus: CRC error: Calculated 0x%X, Read: 0x%X", (unsigned)crc_calc, (unsigned)crc_read);
         return 0;
     }
     return 1;
