@@ -11,7 +11,7 @@
 
 #include "decoder.h"
 
-/**
+/** @fn int thermopro_tp28b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill.
 
 
@@ -45,30 +45,27 @@ Data layout:
     - p2_temp: probe 2 current temp. 16 bit BCD
     - p2_set_hi: probe 2 high alarm temp. 16 bit BCD
     - p2_set_lo: probe 2 low alarm temp. 16 bit BCD
-
-    Below is some work on status/alarm flags, but I can't quite make sense of them all.
-
     - flags: 16 bit status flags
-
-        02d8 => F,  p1: in-range,    p2: in-range
-        02f9 => F,  p1: low,         p2: in-range
-        02dd => F,  p1: in-range,    p2: low
-        02de => F,  p1: in-range,    p2: hi
-        02fa => F,  p1: hi,          p2: in-range
-        86f9 => F,  p1: low,         p2: low
-        82f9 => F,  p1: low,         p2: low        ack'd
-        a2f9 => C,  p1: low,         p2: low        ack'd
-        a6f9 => C,  p1: low,         p2: low        unack'd
-
-        - flags & 0x2000 => Display in Celcius, otherwise Fahrenheit
-        - flags & 0x0400 => Alarm unacknowledged, otherwise acknowledged
-        - flags & 0x0020 => P1 in alarm, otherwise normal
-        - flags & 0x0004 => P2 in alarm, otherwise normal
-        - flags & 0x0001 => P2 in alarm low
-
     - id: 16 bit identifier
     - cksum: 16 bit checksum
+    
+Below is some work on status/alarm flags, but I can't quite make sense of them all:
 
+    02d8 => F,  p1: in-range,    p2: in-range
+    02f9 => F,  p1: low,         p2: in-range
+    02dd => F,  p1: in-range,    p2: low
+    02de => F,  p1: in-range,    p2: hi
+    02fa => F,  p1: hi,          p2: in-range
+    86f9 => F,  p1: low,         p2: low
+    82f9 => F,  p1: low,         p2: low        ack'd
+    a2f9 => C,  p1: low,         p2: low        ack'd
+    a6f9 => C,  p1: low,         p2: low        unack'd
+
+    - flags & 0x2000 => Display in Celcius, otherwise Fahrenheit
+    - flags & 0x0400 => Alarm unacknowledged, otherwise acknowledged
+    - flags & 0x0020 => P1 in alarm, otherwise normal
+    - flags & 0x0004 => P2 in alarm, otherwise normal
+    - flags & 0x0001 => P2 in alarm low
 */
 
 // Convert BCD encoded temp to float
@@ -77,7 +74,7 @@ static float bcd2float(uint8_t lo, uint8_t hi)
     return ((hi & 0xF0) >> 4) * 100.0f + (hi & 0x0F) * 10.0f + ((lo & 0xF0) >> 4) * 1.0f + (lo & 0x0F) * 0.1f;
 }
 
-static int thermopro_tx2c_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int thermopro_tp28b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble_pattern[] = {0xd2, 0xaa, 0x2d, 0xd4};
 
@@ -130,7 +127,7 @@ static int thermopro_tx2c_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",                "",                             DATA_STRING,    "TP28b",
+            "model",                "",                             DATA_STRING,    "ThermoPro-TP28b",
             "id",                   "",                             DATA_FORMAT,    "%04x",   DATA_INT,    id,
             "temperature_1_C",      "Temperature 1",                DATA_FORMAT,    "%.1f C", DATA_DOUBLE, p1_temp,
             "alarm_high_1_C",       "Temperature 1 alarm high",     DATA_FORMAT,    "%.1f C", DATA_DOUBLE, p1_set_hi,
@@ -167,5 +164,5 @@ r_device const thermopro_tp28b = {
         .short_width = 105,
         .long_width  = 105,
         .reset_limit = 5500,
-        .decode_fn   = &thermopro_tx2c_decode,
+        .decode_fn   = &thermopro_tp28b_decode,
         .fields      = output_fields};
