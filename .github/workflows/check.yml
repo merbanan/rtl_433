@@ -6,7 +6,7 @@ jobs:
     name: Build with CMake
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Get latest CMake and Ninja
       uses: lukka/get-cmake@latest
     - name: Run CMake+Ninja
@@ -23,18 +23,37 @@ jobs:
         configurePresetCmdString: "[`-B`, `${{ runner.workspace }}/b/unixmakefiles`, `-G`, `Unix Makefiles`, `-DENABLE_RTLSDR=OFF`, `-DENABLE_SOAPYSDR=OFF`]"
         buildPreset: dummy
         buildPresetCmdString: "[`--build`, `${{ runner.workspace }}/b/unixmakefiles`]"
+  doc_check_job:
+    runs-on: ubuntu-latest
+    name: Build documentation
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Get latest CMake and Ninja
+      uses: lukka/get-cmake@latest
+    - name: "Install Doxygen"
+      run: |
+        sudo apt-get update -q -y
+        sudo apt-get install -q -y doxygen
+    - name: Run CMake+Ninja
+      uses: lukka/run-cmake@v10
+      with:
+        configurePreset: dummy
+        configurePresetCmdString: "[`-B`, `${{ runner.workspace }}/b/ninja`, `-GNinja`, `-DBUILD_DOCUMENTATION=ON`, `-DENABLE_RTLSDR=OFF`, `-DENABLE_SOAPYSDR=OFF`]"
+        buildPreset: dummy
+        buildPresetCmdString: "[`--build`, `${{ runner.workspace }}/b/ninja`, `--`, `doc_doxygen`]"
   style_check_job:
     runs-on: ubuntu-latest
     name: Check code style
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Style Check
       uses: ./.github/actions/style-check
   maintainer_update_check_job:
     runs-on: ubuntu-latest
     name: Needs maintainer_update
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Working directory clean excluding untracked files
       run: |
         ./maintainer_update.py
@@ -43,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Check symbol errors
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Symbolizer report
       run: |
         ./tests/symbolizer.py check
@@ -58,7 +77,7 @@ jobs:
     runs-on: ubuntu-22.04
     name: Analyze with Clang
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install Clang
       run: |
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key 2>/dev/null | sudo apt-key add -

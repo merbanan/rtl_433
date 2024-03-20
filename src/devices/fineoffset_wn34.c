@@ -1,7 +1,7 @@
 /** @file
     Fine Offset Electronics WN34 Temperature Sensor.
 
-    Copyright (C) 2022 @anthyz
+    Copyright (C) 2022 \@anthyz
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@ static int fineoffset_wn34_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Verify family code
     if (b[0] != 0x34) {
-        decoder_logf(decoder, 2, __func__, "Msg family unknown: %2x", b[0]);
+        decoder_logf(decoder, 2, __func__, "Msg family unknown: %02x", b[0]);
         decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "Row length(bits_per_row[0]): %u", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_EARLY;
     }
@@ -101,7 +101,7 @@ static int fineoffset_wn34_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "ID",           DATA_FORMAT, "%x", DATA_INT, id,
             "battery_ok",       "Battery",      DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
             "battery_mV",       "Battery Voltage", DATA_FORMAT, "%d mV", DATA_INT, battery_mv,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */

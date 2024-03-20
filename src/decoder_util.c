@@ -16,17 +16,31 @@
 
 // create decoder functions
 
-r_device *create_device(r_device const *dev_template)
+r_device *decoder_create(r_device const *dev_template, unsigned user_data_size)
 {
-    r_device *r_dev = malloc(sizeof (*r_dev));
+    r_device *r_dev = calloc(1, sizeof (*r_dev));
     if (!r_dev) {
-        WARN_MALLOC("create_device()");
+        WARN_MALLOC("decoder_create()");
         return NULL; // NOTE: returns NULL on alloc failure.
     }
     if (dev_template)
         *r_dev = *dev_template; // copy
 
+    if (user_data_size) {
+        r_dev->decode_ctx = calloc(1, user_data_size);
+        if (!r_dev->decode_ctx) {
+            WARN_MALLOC("decoder_create()");
+            free(r_dev);
+            return NULL; // NOTE: returns NULL on alloc failure.
+        }
+    }
+
     return r_dev;
+}
+
+void *decoder_user_data(r_device *decoder)
+{
+    return decoder->decode_ctx;
 }
 
 // output functions
@@ -100,6 +114,11 @@ static char *bitrow_asprint_bits(uint8_t const *bitrow, unsigned bit_len)
 }
 
 // variadic output functions
+
+int decoder_verbose(r_device *decoder)
+{
+    return decoder->verbose;
+}
 
 void decoder_log(r_device *decoder, int level, char const *func, char const *msg)
 {

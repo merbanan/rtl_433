@@ -8,6 +8,7 @@ add_library(r_433 STATIC
     abuf.c
     am_analyze.c
     baseband.c
+    bit_util.c
     bitbuffer.c
     compat_paths.c
     compat_time.c
@@ -41,7 +42,6 @@ add_library(r_433 STATIC
     samp_grab.c
     sdr.c
     term_ctl.c
-    util.c
     write_sigrok.c
     devices/abmt.c
     devices/acurite.c
@@ -233,6 +233,7 @@ add_library(r_433 STATIC
     devices/thermopro_tx2c.c
     devices/tpms_abarth124.c
     devices/tpms_ave.c
+    devices/tpms_bmw.c
     devices/tpms_citroen.c
     devices/tpms_eezrv.c
     devices/tpms_elantra2012.c
@@ -254,6 +255,7 @@ add_library(r_433 STATIC
     devices/vaillant_vrt340f.c
     devices/vauno_en8822c.c
     devices/visonic_powercode.c
+    devices/watts_thermostat.c
     devices/waveman.c
     devices/wec2103.c
     devices/wg_pb12v1.c

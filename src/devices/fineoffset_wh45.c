@@ -1,7 +1,7 @@
 /** @file
     Fine Offset Electronics WH45 air quality sensor.
 
-    Copyright (C) 2022 @anthyz
+    Copyright (C) 2022 \@anthyz
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -114,11 +114,11 @@ static int fineoffset_wh45_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, "Fineoffset-WH45",
             "id",               "ID",           DATA_FORMAT, "%06x", DATA_INT, id,
             "battery_ok",       "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm2_5,
             "pm10_ug_m3",       "10um Coarse Particulate Matter",  DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm10,
-            "co2_ppm",          "Carbon Dioxide", DATA_FORMAT, "%i ppm", DATA_INT, co2,
+            "co2_ppm",          "Carbon Dioxide", DATA_FORMAT, "%d ppm", DATA_INT, co2,
             "ext_power",        "External Power", DATA_INT, ext_power,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);

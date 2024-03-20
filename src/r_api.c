@@ -187,7 +187,9 @@ void r_init_cfg(r_cfg_t *cfg)
     // initialize tables
     baseband_init();
 
+    time(&cfg->running_since);
     time(&cfg->frames_since);
+    get_time_now(&cfg->demod->now);
 
     list_ensure_size(&cfg->demod->r_devs, 100);
     list_ensure_size(&cfg->demod->dumper, 32);
@@ -209,9 +211,11 @@ void r_free_cfg(r_cfg_t *cfg)
     if (cfg->dev) {
         sdr_deactivate(cfg->dev);
         sdr_close(cfg->dev);
+        cfg->dev = NULL;
     }
 
     free(cfg->gain_str);
+    cfg->gain_str = NULL;
 
     for (void **iter = cfg->demod->dumper.elems; iter && *iter; ++iter) {
         file_info_t const *dumper = *iter;
@@ -224,8 +228,10 @@ void r_free_cfg(r_cfg_t *cfg)
 
     if (cfg->demod->am_analyze)
         am_analyze_free(cfg->demod->am_analyze);
+    cfg->demod->am_analyze = NULL;
 
     pulse_detect_free(cfg->demod->pulse_detect);
+    cfg->demod->pulse_detect = NULL;
 
     list_free_elems(&cfg->raw_handler, (list_elem_free_fn)raw_output_free);
 
@@ -238,11 +244,14 @@ void r_free_cfg(r_cfg_t *cfg)
     list_free_elems(&cfg->in_files, NULL);
 
     free(cfg->demod);
+    cfg->demod = NULL;
 
     free(cfg->devices);
+    cfg->devices = NULL;
 
     mg_mgr_free(cfg->mgr);
     free(cfg->mgr);
+    cfg->mgr = NULL;
 
     //free(cfg);
 }
@@ -706,16 +715,6 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                     *pos = 'C';
                 }
             }
-            // Convert double type fields ending in _mph to _kph
-            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_mph")) {
-                d->value.v_dbl = mph2kmph(d->value.v_dbl);
-                char *new_label = str_replace(d->key, "_mph", "_kph");
-                free(d->key);
-                d->key = new_label;
-                char *new_format_label = str_replace(d->format, "mi/h", "km/h");
-                free(d->format);
-                d->format = new_format_label;
-            }
             // Convert double type fields ending in _mi_h to _km_h
             else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_mi_h")) {
                 d->value.v_dbl = mph2kmph(d->value.v_dbl);
@@ -780,16 +779,6 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 if (d->format && (pos = strrchr(d->format, 'C'))) {
                     *pos = 'F';
                 }
-            }
-            // Convert double type fields ending in _kph to _mph
-            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_kph")) {
-                d->value.v_dbl = kmph2mph(d->value.v_dbl);
-                char *new_label = str_replace(d->key, "_kph", "_mph");
-                free(d->key);
-                d->key = new_label;
-                char *new_format_label = str_replace(d->format, "km/h", "mi/h");
-                free(d->format);
-                d->format = new_format_label;
             }
             // Convert double type fields ending in _km_h to _mi_h
             else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_km_h")) {
@@ -950,7 +939,7 @@ data_t *create_report_data(r_cfg_t *cfg, int level)
     }
 
     data = data_make(
-            "count",            "", DATA_INT, cfg->frames_count,
+            "count",            "", DATA_INT, cfg->frames_ook,
             "fsk",              "", DATA_INT, cfg->frames_fsk,
             "events",           "", DATA_INT, cfg->frames_events,
             NULL);
@@ -974,7 +963,7 @@ void flush_report_data(r_cfg_t *cfg)
     list_t *r_devs = &cfg->demod->r_devs;
 
     time(&cfg->frames_since);
-    cfg->frames_count = 0;
+    cfg->frames_ook = 0;
     cfg->frames_fsk = 0;
     cfg->frames_events = 0;
 

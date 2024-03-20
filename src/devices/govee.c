@@ -182,7 +182,7 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     chk     = (chk >> 4) ^ (chk & 0xf);
 
     // Parity arguments were discovered using revdgst's RevSum and the data packets included at the top of this file.
-    // 	 https://github.com/triq-org/revdgst
+    // https://github.com/triq-org/revdgst
     if (chk != parity) {
         decoder_log(decoder, 1, __func__, "Parity did NOT match.");
         return DECODE_FAIL_MIC;

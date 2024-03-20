@@ -13,7 +13,8 @@ Nexus sensor protocol with ID, temperature and optional humidity
 also FreeTec (Pearl) NC-7345 sensors for FreeTec Weatherstation NC-7344,
 also infactory/FreeTec (Pearl) NX-3980 sensors for infactory/FreeTec NX-3974 station,
 also Solight TE82S sensors for Solight TE76/TE82/TE83/TE84 stations,
-also TFA 30.3209.02 temperature/humidity sensor.
+also TFA 30.3209.02 temperature/humidity sensor,
+also Unmarked sensor form Rossmann Poland, board markings XS1043 REV02.
 
 The sensor sends 36 bits 12 times,
 the packets are ppm modulated (distance coding) with a pulse of ~500 us
@@ -81,7 +82,7 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id",            "House Code",  DATA_INT,    id,
                 "channel",       "Channel",     DATA_INT,    channel,
                 "battery_ok",    "Battery",     DATA_INT,    !!battery,
-                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 NULL);
         /* clang-format on */
     }
@@ -92,7 +93,7 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id",            "House Code",  DATA_INT,    id,
                 "channel",       "Channel",     DATA_INT,    channel,
                 "battery_ok",    "Battery",     DATA_INT,    !!battery,
-                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 NULL);
         /* clang-format on */

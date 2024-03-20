@@ -56,7 +56,7 @@ Data layout:
 - U:  8-bit Unknown1
 - N:  6-bit NoUse (3 bits)
 - B:  2-bit backflow flag
-- C: 24-bit Consumption Data
+- C: 24-bit Consumption Data, might be 1/10 gallon units
 - U:  2-bit Unknown3
 - T:  4-bit days of leak mapping (3 bits)
 - L:  2-bit leak flag type

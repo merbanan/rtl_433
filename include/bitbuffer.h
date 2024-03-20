@@ -102,24 +102,32 @@ int bitrow_snprint(uint8_t const *bitrow, unsigned bit_len, char *str, unsigned 
 void bitbuffer_parse(bitbuffer_t *bits, const char *code);
 
 /// Search the specified row of the bitbuffer, starting from bit 'start', for
-/// the pattern provided. Return the location of the first match, or the end
-/// of the row if no match is found.
+/// the pattern provided.
+///
 /// The pattern starts in the high bit. For example if searching for 011011
 /// the byte pointed to by 'pattern' would be 0xAC. (011011xx).
+///
+/// @return the location of the first match, or the end of the row if no match is found.
 unsigned bitbuffer_search(bitbuffer_t *bitbuffer, unsigned row, unsigned start,
         const uint8_t *pattern, unsigned pattern_bits_len);
 
 /// Manchester decoding from one bitbuffer into another, starting at the
-/// specified row and start bit. Decode at most 'max' data bits (i.e. 2*max)
-/// bits from the input buffer). Return the bit position in the input row
+/// specified row and start bit.
+///
+/// Decode at most 'max' data bits (i.e. 2*max) bits from the input buffer).
+/// Manchester per IEEE 802.3 conventions, i.e. high-low is a 0 bit, low-high is a 1 bit.
+///
+/// @return the bit position in the input row
 /// (i.e. returns start + 2*outbuf->bits_per_row[0]).
-/// per IEEE 802.3 conventions, i.e. high-low is a 0 bit, low-high is a 1 bit.
 unsigned bitbuffer_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned start,
         bitbuffer_t *outbuf, unsigned max);
 
 /// Differential Manchester decoding from one bitbuffer into another, starting at the
-/// specified row and start bit. Decode at most 'max' data bits (i.e. 2*max)
-/// bits from the input buffer). Return the bit position in the input row
+/// specified row and start bit.
+///
+/// Decode at most 'max' data bits (i.e. 2*max) bits from the input buffer).
+///
+/// @return the bit position in the input row
 /// (i.e. returns start + 2*outbuf->bits_per_row[0]).
 unsigned bitbuffer_differential_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned start,
         bitbuffer_t *outbuf, unsigned max);

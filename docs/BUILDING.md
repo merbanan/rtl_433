@@ -25,7 +25,7 @@ The usual update mechanism will now keep the rtl_433 version current.
 
 ### Fedora
 
-Fedora users (31, 32 and Rawhide) can add the following copr repository to get nightly builds:
+Fedora users (38, 39 and Rawhide) can add the following copr repository to get nightly builds:
 
     $ sudo dnf copr enable tvass/rtl_433
     $ sudo dnf install rtl_433
@@ -51,7 +51,7 @@ Centos/Fedora/RHEL with EPEL repo using cmake:
   * If you require TLS connections, install `openssl-devel`.
 
 ````
-sudo dnf install libtool libusbx-devel rtl-sdr-devel rtl-sdr cmake
+sudo dnf install libtool libusb1-devel rtl-sdr-devel rtl-sdr cmake
 ````
 
 Mac OS X with MacPorts:
@@ -75,28 +75,19 @@ Get the `rtl_433` git repository if needed:
 Installation using CMake and Make (commonly available):
 
     cd rtl_433/
-    mkdir build
-    cd build
-    cmake ..
-    make
-    make install
+    cmake -B build
+    cmake --build build --target install
 
 Installation using CMake and Ninja (newer and faster):
 
     cd rtl_433/
-    mkdir build
-    cd build
-    cmake -DFORCE_COLORED_BUILD:BOOL=ON -GNinja ..
-    cmake --build . -j 4
-    cmake --build . -- install
+    cmake -DFORCE_COLORED_BUILD:BOOL=ON -GNinja -B build
+    cmake --build build -j 4
+    cmake --build build --target install
 
 If installing to a global prefix (e.g. the default `/usr/local`) then instead run `make install` with privileges, .i.e.
 
-    sudo make install
-
-or
-
-    sudo cmake --build . -- install
+    sudo cmake --build build --target install
 
 Use CMake with `-DENABLE_SOAPYSDR=ON` (default: `AUTO`) to require SoapySDR (e.g. with Debian needs the package `libsoapysdr-dev`), use `-DENABLE_RTLSDR=OFF` (default: `ON`) to disable RTL-SDR if needed.
 E.g. use:
@@ -108,6 +99,14 @@ If you experience trouble with SoapySDR when compiling or running: you likely mi
 Purge all SoapySDR packages and source installation from /usr/local.
 Then install only from packages (version 0.7) or only from source (version 0.8).
 :::
+
+## Package maintainers
+
+To properly configure builds without relying on automatic feature detection you should set all options explicitly, e.g.
+
+    cmake -DENABLE_RTLSDR=ON -DENABLE_SOAPYSDR=ON -DENABLE_OPENSSL=ON -DBUILD_DOCUMENTATION=OFF -DCMAKE_BUILD_TYPE=Release -GNinja -B build
+    cmake --build build -j 10
+    DESTDIR=/tmp/destdir cmake --build build --target install
 
 ## Windows
 
@@ -136,10 +135,8 @@ To start a build use in the menu e.g. "CMake" > "Build all"
 Or build at the Command Prompt without opening Visual Studio. Clone rtl_433 sources, then
 
     cd rtl_433
-    mkdir build
-    cd build
-    cmake -G "Visual Studio 15 2017 Win64" ..
-    cmake --build .
+    cmake -G "Visual Studio 15 2017 Win64" -B build
+    cmake --build build
 
 ### MinGW-w64
 
@@ -194,15 +191,13 @@ SET(Threads_FOUND TRUE)
 ```
 
 * open a MinGW terminal in the librtlsdr folder
-* create build folder and go into it: `mkdir build && cd build`
-* generate makefiles for MinGW: `cmake -G "MinGW Makefiles" ..`
-* build the librtlsdr library: `mingw32-make`
+* generate makefiles for MinGW: `cmake -G "MinGW Makefiles" -B build`
+* build the librtlsdr library: `cmake --build build`
 
 #### rtl_433
 
 * clone the rtl_433 repository and cd into it
-* create a build folder and go into it: `mkdir build && cd build`
-* run `cmake -G "MinGW Makefiles" .. ` in the build directory
+* run `cmake -G "MinGW Makefiles" -B build` in the build directory
 * run cmake-gui (this is easiest)
 * set the source (the rtl_433 source code directory) and the build directory (one might create a build directory in the source directory)
 * click configure
@@ -211,7 +206,7 @@ SET(Threads_FOUND TRUE)
 * point the `LIBRTLSDR_INCLUDE_DIRS` to the include folder of the librtlsdr source
 * point the `LIBRTLSDR_LIBRARIES` to the `librtlsdr.dll.a` file in the <librtlsdr_source>/build/src folder
     * that's the one you've built earlier
-* start a MinGW terminal and run `mingw32-make` to build
+* start a MinGW terminal and run `cmake --build build` to build
     * when something in the tests folder doesn't build, you can disable it by commenting out `add_subdirectory(tests)` in the CMakeLists.txt file in the source folder of rtl_433
 * rtl_433.exe should be built now
 * you need to place it in the same folder as librtlsdr.dll and libusb-1.0.dll (you should have seen both of them by now)
