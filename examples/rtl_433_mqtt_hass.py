@@ -452,6 +452,41 @@ mappings = {
         }
     },
 
+    "event": {
+        "device_type": "sensor",
+        "object_suffix": "event",
+        "config": {
+            "name": "Event",
+            "value_template": "{{ value|int }}",
+            "state_class": "measurement",
+            "entity_category": "diagnostic"
+        }
+    },
+
+    "state": {
+        "device_type": "binary_sensor",
+        "object_suffix": "state",
+        "config": {
+            "device_class": "safety",
+            "force_update": "true",
+            "payload_on": "open",
+            "payload_off": "closed",
+            "entity_category": "diagnostic"
+        }
+    },
+
+    "contact_open": {
+        "device_type": "binary_sensor",
+        "object_suffix": "contact_open",
+        "config": {
+            "device_class": "safety",
+            "force_update": "true",
+            "payload_on": "1",
+            "payload_off": "0",
+            "entity_category": "diagnostic"
+        }
+    },
+
     "tamper": {
         "device_type": "binary_sensor",
         "object_suffix": "tamper",
