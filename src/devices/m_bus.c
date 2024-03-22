@@ -59,16 +59,19 @@ static uint8_t m_bus_decode_3of6(uint8_t byte)
 // Bad data must be handled with second layer CRC
 static int m_bus_decode_3of6_buffer(uint8_t const *bits, unsigned bit_offset, uint8_t* output, unsigned num_bytes)
 {
+    int successful_contiguous_bytes = -1;
     for (unsigned n=0; n<num_bytes; ++n) {
         uint8_t nibble_h = m_bus_decode_3of6(bitrow_get_byte(bits, n*12+bit_offset) >> 2);
         uint8_t nibble_l = m_bus_decode_3of6(bitrow_get_byte(bits, n*12+bit_offset+6) >> 2);
         if (nibble_h > 0xf || nibble_l > 0xf) {
             // return -1;  // fail at first 3of6 decoding error
             nibble_l &= 0x0F;  // assume logical 0 nibble if 3of6 decoding error, let CRC fail decoding if necessary
+            successful_contiguous_bytes > -1 || successful_contiguous_bytes = n;  // return count found until the first error
         }
         output[n] = (nibble_h << 4) | nibble_l;
     }
-    return 0;
+    successful_contiguous_bytes > -1 || successful_contiguous_bytes = num_bytes;  // if all data decoded successfully
+    return successful_contiguous_bytes;
 }
 
 // Validate CRC
