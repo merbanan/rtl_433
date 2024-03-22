@@ -31,25 +31,25 @@ static unsigned bcd2int(uint8_t bcd)
 // Mapping from 6 bits to 4 bits. "3of6" coding used for Mode T
 static uint8_t m_bus_decode_3of6(uint8_t byte)
 {
-    uint8_t out = 0xFF; // Error
+    uint8_t out = 0xF0; // Error
     //fprintf(stderr,"Decode %0d\n", byte);
     switch(byte) {
-        case 22:    out = 0x0;  break;  // 0x16
-        case 13:    out = 0x1;  break;  // 0x0D
-        case 14:    out = 0x2;  break;  // 0x0E
-        case 11:    out = 0x3;  break;  // 0x0B
-        case 28:    out = 0x4;  break;  // 0x17
-        case 25:    out = 0x5;  break;  // 0x19
-        case 26:    out = 0x6;  break;  // 0x1A
-        case 19:    out = 0x7;  break;  // 0x13
-        case 44:    out = 0x8;  break;  // 0x2C
-        case 37:    out = 0x9;  break;  // 0x25
-        case 38:    out = 0xA;  break;  // 0x26
-        case 35:    out = 0xB;  break;  // 0x23
-        case 52:    out = 0xC;  break;  // 0x34
-        case 49:    out = 0xD;  break;  // 0x31
-        case 50:    out = 0xE;  break;  // 0x32
-        case 41:    out = 0xF;  break;  // 0x29
+        case 22:    out = 0x00;  break;  // 0x16
+        case 13:    out = 0x01;  break;  // 0x0D
+        case 14:    out = 0x02;  break;  // 0x0E
+        case 11:    out = 0x03;  break;  // 0x0B
+        case 28:    out = 0x04;  break;  // 0x1C
+        case 25:    out = 0x05;  break;  // 0x19
+        case 26:    out = 0x06;  break;  // 0x1A
+        case 19:    out = 0x07;  break;  // 0x13
+        case 44:    out = 0x08;  break;  // 0x2C
+        case 37:    out = 0x09;  break;  // 0x25
+        case 38:    out = 0x0A;  break;  // 0x26
+        case 35:    out = 0x0B;  break;  // 0x23
+        case 52:    out = 0x0C;  break;  // 0x34
+        case 49:    out = 0x0D;  break;  // 0x31
+        case 50:    out = 0x0E;  break;  // 0x32
+        case 41:    out = 0x0F;  break;  // 0x29
         default:    break;  // Error
     }
     return out;
@@ -63,7 +63,8 @@ static int m_bus_decode_3of6_buffer(uint8_t const *bits, unsigned bit_offset, ui
         uint8_t nibble_h = m_bus_decode_3of6(bitrow_get_byte(bits, n*12+bit_offset) >> 2);
         uint8_t nibble_l = m_bus_decode_3of6(bitrow_get_byte(bits, n*12+bit_offset+6) >> 2);
         if (nibble_h > 0xf || nibble_l > 0xf) {
-            return -1;
+            // return -1;  // fail at first 3of6 decoding error
+            nibble_l &= 0x0F;  // assume logical 0 nibble if 3of6 decoding error, let CRC fail decoding if necessary
         }
         output[n] = (nibble_h << 4) | nibble_l;
     }
