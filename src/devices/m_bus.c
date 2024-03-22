@@ -66,11 +66,11 @@ static int m_bus_decode_3of6_buffer(uint8_t const *bits, unsigned bit_offset, ui
         if (nibble_h > 0xf || nibble_l > 0xf) {
             // return -1;  // fail at first 3of6 decoding error
             nibble_l &= 0x0F;  // assume logical 0 nibble if 3of6 decoding error, let CRC fail decoding if necessary
-            successful_contiguous_bytes > -1 || successful_contiguous_bytes = n;  // return count found until the first error
+            if (successful_contiguous_bytes < 0) successful_contiguous_bytes = n;  // return count found until the first error
         }
         output[n] = (nibble_h << 4) | nibble_l;
     }
-    successful_contiguous_bytes > -1 || successful_contiguous_bytes = num_bytes;  // if all data decoded successfully
+    if (successful_contiguous_bytes < 0) successful_contiguous_bytes = num_bytes;  // if all data decoded successfully
     return successful_contiguous_bytes;
 }
 
