@@ -1,7 +1,8 @@
 /** @file
-    Nice Flor-s remote for gates.
+    Nice-FlorS remote for gates.
 
-    Copyright (C) 2020 Samuel Tardieu <sam@rfc1149.net>
+    Copyright (C) 2022 Daniel Henzulea <zulea1@gmail.com>
+    based on code Copyright (C) 2020 Samuel Tardieu <sam@rfc1149.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -24,6 +25,8 @@ A packet is made of 52 bits (13 nibbles S0 to S12):
 */
 
 #include "decoder.h"
+#include "nice_flor_s_table_decode.h"
+#include "nice_flor_s_table_ki.h"
 
 static int nice_flor_s_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -33,26 +36,33 @@ static int nice_flor_s_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[0] != 52) {
         return DECODE_ABORT_LENGTH;
     }
-
     bitbuffer_invert(bitbuffer);
     uint8_t *b = bitbuffer->bb[0];
-
-    uint8_t button_id = b[0] >> 4;
-    if (button_id < 1 || button_id > 4) {
-        return DECODE_ABORT_EARLY;
+    uint8_t encbuff[7];
+    encbuff[0] = (b[0] >> 4) & 0x0f;
+    for (uint8_t i = 0; i < 6; i++) {
+        encbuff[i+1] = ((b[i] << 4) & 0xf0) | ((b[i+1] >> 4) & 0x0f);
     }
-    int count = 1 + (((b[0] ^ ~button_id) - 1) & 0xf);
-    uint32_t serial = ((b[1] & 0xf0) << 20) | ((b[3] & 0xf) << 20) |
-       (b[4] << 12) | (b[5] << 4) | (b[6] >> 4);
-    uint16_t code = (b[1] << 12) | (b[2] << 4) | (b[3] >> 4);
+    uint16_t enccode = ((encbuff[2] << 8) & 0xff00) | (encbuff[3] & 0x00ff);
+    uint16_t deccode = nice_flor_s_table_decode[enccode];
+    uint8_t ki = nice_flor_s_table_ki[deccode & 0xff] ^ (enccode & 0xff);
+    uint8_t       snbuff[4];
+    snbuff[3] = (encbuff[1] ^ ki) & 0x0f;
+    snbuff[2] = encbuff[4] ^ ki;
+    snbuff[1] = encbuff[5] ^ ki;
+    snbuff[0] = encbuff[6] ^ ki;
+    uint32_t serial = (uint32_t)((snbuff[3] << 24) & 0xff000000) | ((snbuff[2] << 16) & 0xff0000) | ((snbuff[1] << 8) & 0xff00) | (snbuff[0] & 0xff);
+    uint16_t code = deccode;
+    uint8_t button_id = encbuff[0] & 0x0f;
+    uint8_t repeat = ((encbuff[1] >> 4) & 0x0f) ^ (encbuff[0] & 0x0f) ^ 0x0f;
 
     /* clang-format off */
     data_t *data = data_make(
             "model",  "",              DATA_STRING, "Nice-FlorS",
             "button", "Button ID",     DATA_INT,     button_id,
-            "serial", "Serial (enc.)", DATA_FORMAT, "%07x",        DATA_INT, serial,
-            "code",   "Code (enc.)",   DATA_FORMAT, "%04x",        DATA_INT, code,
-            "count",  "",              DATA_INT,     count,
+            "serial", "Serial (hex)",  DATA_FORMAT, "0x%07x", DATA_INT, serial,
+            "code",   "Code (dec)",    DATA_FORMAT, "%d", DATA_INT, code,
+            "count",  "Repeat counter",DATA_INT,     repeat,
             NULL);
     /* clang-format on */
 
@@ -70,10 +80,10 @@ static char const *const output_fields[] = {
 };
 
 // Example:
-// $ rtl_433 -R 169 -y "{52} 0xe7a760b94372e {0}"
-// time      : 2020-10-21 11:06:12
-// model     : Nice Flor-s  Button ID : 1             Serial (enc.): 56bc8d1    Code (enc.): 89f4
-// count     : 6
+// $ rtl_433 -R 169 -y "{52} 0xd6f703d160ad9 {0}"
+// time      : 2022-11-17 18:30:20
+// model     : Nice-FlorS  Button ID : 2             Serial    : 0x3aab665     Code (crt idx): 2813
+// Repeat counter: 4
 
 r_device const nice_flor_s = {
         .name        = "Nice Flor-s remote control for gates",
