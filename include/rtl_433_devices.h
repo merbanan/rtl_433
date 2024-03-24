@@ -261,6 +261,7 @@
     DECL(fineoffset_wh55) \
     DECL(tpms_bmw) \
     DECL(watts_thermostat) \
+    DECL(deltadore_x3d) \
 
     /* Add new decoders here. */
 
