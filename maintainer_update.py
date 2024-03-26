@@ -76,7 +76,7 @@ def parse_devices(devices_text):
     devices = []
     for line in devices_text.splitlines():
         # match the [123] device number
-        device_info = re.search("\[(\d{1,5})\](.) (.*)", line)
+        device_info = re.search(r'\[(\d{1,5})\](.) (.*)', line)
         if not device_info:
             continue
         device_number = int(device_info.group(1).strip(), base=10)
@@ -167,7 +167,7 @@ for dev_num, dev_descr, disabled in parsed_devices:
     conf_text += text
     #print(dev_num, "-" if disabled else "+", dev_descr)
 print(conf_text)
-replace_block("## Protocols to enable \(command line option \"-R\"\)\n",
+replace_block(r'## Protocols to enable \(command line option \"-R\"\)\n',
         "## Flex devices", "\n" + conf_text + "\n", "conf/rtl_433.example.conf")
 
 # MAN pages
