@@ -43,6 +43,10 @@
 #include "fatal.h"
 #include "http_server.h"
 
+#ifndef _WIN32
+#include <sys/stat.h>
+#endif
+
 #ifdef _WIN32
 #include <io.h>
 #include <fcntl.h>
@@ -1153,6 +1157,47 @@ void add_sr_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
     add_dumper(cfg, "F32:FM:analog-1-7-1", overwrite);
     cfg->sr_filename = spec;
     cfg->sr_execopen = overwrite;
+}
+
+void reopen_dumpers(struct r_cfg *cfg)
+{
+#ifndef _WIN32
+    for (void **iter = cfg->demod->dumper.elems; iter && *iter; ++iter) {
+        file_info_t *dumper = *iter;
+        if (dumper->file && (dumper->file != stdout)) {
+            // Get current file inode
+            struct stat old_st = {0};
+            int ret = fstat(fileno(dumper->file), &old_st);
+            if (ret) {
+                fprintf(stderr, "Failed to fstat %s (%d)\n", dumper->path, errno);
+                exit(1);
+            }
+
+            // Get new path inode if available
+            struct stat new_st = {0};
+            stat(dumper->path, &new_st);
+            // ok for stat() to fail, the file might not exist
+            if (old_st.st_ino == new_st.st_ino) {
+                continue;
+            }
+
+            // Reopen the file
+            print_logf(LOG_INFO, "Dumper", "Reopening \"%s\"", dumper->path);
+            fclose(dumper->file);
+            dumper->file = fopen(dumper->path, "wb");
+            if (!dumper->file) {
+                fprintf(stderr, "Failed to open %s\n", dumper->path);
+                exit(1);
+            }
+            if (dumper->format == VCD_LOGIC) {
+                pulse_data_print_vcd_header(dumper->file, cfg->samp_rate);
+            }
+            if (dumper->format == PULSE_OOK) {
+                pulse_data_print_pulse_header(dumper->file);
+            }
+        }
+    }
+#endif
 }
 
 void close_dumpers(struct r_cfg *cfg)
