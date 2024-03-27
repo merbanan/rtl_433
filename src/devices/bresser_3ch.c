@@ -38,7 +38,6 @@ The data is grouped in 5 bytes / 10 nibbles
 
 static int bresser_3ch_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
     uint8_t *b;
 
     int id, battery_low, channel, temp_raw, humidity;
@@ -80,15 +79,14 @@ static int bresser_3ch_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data = data_make(
-            "model",         "",            DATA_STRING, "Bresser-3CH",
-            "id",            "Id",          DATA_INT,    id,
-            "channel",       "Channel",     DATA_INT,    channel,
-            "battery_ok",    "Battery",     DATA_INT,    !battery_low,
-            "temperature_F", "Temperature", DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
-            "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
-            NULL);
+    data_t *data = data_create();
+    data_append_str(&data,    "model",            "",             NULL,       "Bresser-3CH");
+    data_append_int(&data,    "id",               "Id",           NULL,       id);
+    data_append_int(&data,    "channel",          "Channel",      NULL,       channel);
+    data_append_int(&data,    "battery_ok",       "Battery",      NULL,       !battery_low);
+    data_append_dbl(&data,    "temperature_F",    "Temperature",  "%.2f F",   temp_f);
+    data_append_int(&data,    "humidity",         "Humidity",     "%u %%",    humidity);
+    data_append_str(&data,    "mic",              "Integrity",    NULL,       "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

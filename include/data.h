@@ -115,6 +115,13 @@ R_API data_t *data_make(const char *key, const char *pretty_key, ...);
 */
 R_API data_t *data_append(data_t *first, const char *key, const char *pretty_key, ...);
 
+R_API data_t *data_create(void);
+R_API void data_append_data(data_t **first, const char *key, const char *pretty_key, char const *format, data_t *value);
+R_API void data_append_int(data_t **first, const char *key, const char *pretty_key, char const *format, int value);
+R_API void data_append_dbl(data_t **first, const char *key, const char *pretty_key, char const *format, double value);
+R_API void data_append_str(data_t **first, const char *key, const char *pretty_key, char const *format, char const *value);
+R_API void data_append_arr(data_t **first, const char *key, const char *pretty_key, char const *format, data_array_t *value);
+
 /** Adds to a structured data object, by prepending data.
 
     @see data_make()

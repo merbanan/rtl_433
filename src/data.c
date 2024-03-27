@@ -181,10 +181,13 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
                 fprintf(stderr, "vdata_make() format type used twice\n");
                 goto alloc_error;
             }
-            format = strdup(va_arg(ap, char *));
+            format = va_arg(ap, char *);
+            if (format) {
+            format = strdup(format);
             if (!format) {
                 WARN_STRDUP("vdata_make()");
                 goto alloc_error;
+            }
             }
             type = va_arg(ap, data_type_t);
             continue;
@@ -309,6 +312,75 @@ R_API data_t *data_prepend(data_t *first, const char *key, const char *pretty_ke
     prev->next = first;
 
     return result;
+}
+
+R_API data_t *data_create(void)
+{
+    return NULL;
+}
+R_API void data_append_data(data_t **first, const char *key, const char *pretty_key, char const *format, data_t *value)
+{
+    *first = data_append(*first, key, pretty_key, DATA_FORMAT, format, DATA_DATA, value, NULL); // TODO: mock
+}
+R_API void data_append_int(data_t **first, const char *key, const char *pretty_key, char const *format, int int_value)
+{
+    //return data_append(first, key, pretty_key, DATA_FORMAT, format, DATA_INT, int_value, NULL); // TODO: mock
+
+    data_t *prev = *first;
+    while (prev && prev->next)
+        prev = prev->next;
+
+    data_t *current = calloc(1, sizeof(*current));
+    if (!current) {
+        WARN_CALLOC("vdata_make()");
+        goto alloc_error;
+    }
+
+    current->type        = DATA_INT;
+    current->value.v_int = int_value;
+    current->next        = NULL;
+
+    if (prev)
+        prev->next = current;
+    prev = current;
+    if (!*first)
+        *first = current;
+
+    if (format) {
+        current->format = strdup(format);
+        if (!current->format) {
+            WARN_STRDUP("vdata_make()");
+            goto alloc_error;
+        }
+    }
+
+    current->key = strdup(key);
+    if (!current->key) {
+        WARN_STRDUP("vdata_make()");
+        goto alloc_error;
+    }
+    current->pretty_key = strdup(pretty_key ? pretty_key : key);
+    if (!current->pretty_key) {
+        WARN_STRDUP("vdata_make()");
+        goto alloc_error;
+    }
+
+    return;
+
+alloc_error:
+    data_free(*first);
+}
+R_API void data_append_dbl(data_t **first, const char *key, const char *pretty_key, char const *format, double value)
+{
+    *first = data_append(*first, key, pretty_key, DATA_FORMAT, format, DATA_DOUBLE, value, NULL); // TODO: mock
+}
+R_API void data_append_str(data_t **first, const char *key, const char *pretty_key, char const *format, char const *value)
+{
+    *first = data_append(*first, key, pretty_key, DATA_FORMAT, format, DATA_STRING, value, NULL); // TODO: mock
+}
+R_API void data_append_arr(data_t **first, const char *key, const char *pretty_key, char const *format, data_array_t *value)
+{
+    *first = data_append(*first, key, pretty_key, DATA_FORMAT, format, DATA_ARRAY, value, NULL); // TODO: mock
 }
 
 R_API void data_array_free(data_array_t *array)
