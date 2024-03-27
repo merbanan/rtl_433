@@ -48,7 +48,7 @@ Data layout:
     - flags: 16 bit status flags
     - id: 16 bit identifier
     - cksum: 16 bit checksum
-    
+
 Below is some work on status/alarm flags, but I can't quite make sense of them all:
 
     02d8 => F,  p1: in-range,    p2: in-range
