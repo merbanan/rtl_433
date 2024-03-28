@@ -100,7 +100,7 @@ static int mueller_hotrod_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",       "",          DATA_STRING, "Mueller-Hot-Rod",
+            "model",       "",          DATA_STRING, "Mueller-HotRod",
             "id",          "",          DATA_STRING, id_str,
             "volume_gal",  "Volume",    DATA_FORMAT, "%u gal", DATA_INT, volume,
             "flag1",       "Flag 1",    DATA_FORMAT, "%x" , DATA_INT, flag1,
