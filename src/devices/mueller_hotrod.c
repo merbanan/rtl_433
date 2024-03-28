@@ -83,8 +83,8 @@ static int mueller_hotrod_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     char id_str[16];
     snprintf(id_str, sizeof(id_str), "%02x%02x%02x%02x", b[0], b[1], b[2], b[3]);
-    
-    // 5 nibbles BCD (20 bit) x 100 = volume_gal 
+
+    // 5 nibbles BCD (20 bit) x 100 = volume_gal
     int volume = (((b[4] & 0xf0) >> 4) * 10000 + (b[4] & 0x0f) * 1000 + ((b[5] & 0xf0) >> 4) * 100 + (b[5] & 0x0f) * 10 + ((b[6] & 0xf0) >> 4)) * 100;
     int flag1  = b[6] & 0x0f;
     int flag2  = b[7] & 0xff;
