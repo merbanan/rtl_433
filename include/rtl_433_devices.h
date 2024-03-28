@@ -262,6 +262,7 @@
     DECL(tpms_bmw) \
     DECL(watts_thermostat) \
     DECL(thermor) \
+    DECL(mueller_hotrod) \
 
     /* Add new decoders here. */
 
