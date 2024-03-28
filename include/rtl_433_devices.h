@@ -261,6 +261,7 @@
     DECL(fineoffset_wh55) \
     DECL(tpms_bmw) \
     DECL(watts_thermostat) \
+    DECL(mueller_hotrod) \
 
     /* Add new decoders here. */
 
