@@ -15,8 +15,8 @@
 /**
 Mueller Hot Rod water meter.
 
-S.a. #2719 Decoder desired for Mueller Systems Hot Rod transmitter (water meter), open by @howardtopher, related to Hod Rod v2 transmitter
-S.a. #2752 Decoder for Mueller Hot Rod V1 Water Meter Transmitter, open by @dolai1, related to Hod Rod v1 transmitter
+S.a. #2719 Decoder desired for Mueller Systems Hot Rod transmitter (water meter), open by "howardtopher", related to Hod Rod v2 transmitter
+S.a. #2752 Decoder for Mueller Hot Rod V1 Water Meter Transmitter, open by "dolai1", related to Hod Rod v1 transmitter
 
 Both version v1 and v2 protocols look same format.
 
