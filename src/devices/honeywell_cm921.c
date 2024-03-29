@@ -160,7 +160,7 @@ static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
 
     if (ipos < num_bits - 8) {
         unsigned num_unparsed_bits = (bmsg->bits_per_row[row] - 8) - ipos;
-        msg->unparsed_length = (num_unparsed_bits / 8) + (num_unparsed_bits % 8) ? 1 : 0;
+        msg->unparsed_length = (num_unparsed_bits + 7) / 8;
         if (msg->unparsed_length != 0) {
             bitbuffer_extract_bytes(bmsg, row, ipos, msg->unparsed, num_unparsed_bits);
         }
@@ -437,12 +437,12 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 #ifdef _DEBUG
     data = add_hex_string(data, "Packet", packet.bb[row], packet.bits_per_row[row] / 8);
-    data = add_hex_string(data, "Header", &message.header, 1);
-    uint8_t cmd[2] = {message.command >> 8, message.command & 0x00FF};
+    data = add_hex_string(data, "Header", &msg.header, 1);
+    uint8_t cmd[2] = {msg.command >> 8, msg.command & 0x00FF};
     data = add_hex_string(data, "Command", cmd, 2);
-    data = add_hex_string(data, "Payload", message.payload, message.payload_length);
-    data = add_hex_string(data, "Unparsed", message.unparsed, message.unparsed_length);
-    data = add_hex_string(data, "CRC", &message.crc, 1);
+    data = add_hex_string(data, "Payload", msg.payload, msg.payload_length);
+    data = add_hex_string(data, "Unparsed", msg.unparsed, msg.unparsed_length);
+    data = add_hex_string(data, "CRC", &msg.crc, 1);
     data = data_append(data, "# man errors", "", DATA_INT, man_errors, NULL);
 #endif
 
