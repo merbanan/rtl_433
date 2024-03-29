@@ -202,7 +202,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [114]  Maverick ET73
     [115]  Honeywell ActivLink, Wireless Doorbell
     [116]  Honeywell ActivLink, Wireless Doorbell (FSK)
-    [117]* ESA1000 / ESA2000 Energy Monitor
+    [117]  ESA1000 / ESA2000 Energy Monitor, GIRA Wetterstation
     [118]* Biltema rain gauge
     [119]  Bresser Weather Center 5-in-1
     [120]  Digitech XC-0324 / AmbientWeather FT005TH temp/hum sensor
