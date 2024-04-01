@@ -340,6 +340,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [252]  BMW Gen5 TPMS, multi-brand HUF, Continental, Schrader/Sensata
     [253]  Watts WFHT-RF Thermostat
     [254]  Thermor DG950 Weather Station
+    [255]  Mueller Hot Rod water meter
 
 * Disabled by default, use -R n or a conf file to enable
 
