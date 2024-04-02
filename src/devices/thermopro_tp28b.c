@@ -155,7 +155,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const thermopro_tp28b = {
-        .name        = "ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill.",
+        .name        = "ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 105,
         .long_width  = 105,
