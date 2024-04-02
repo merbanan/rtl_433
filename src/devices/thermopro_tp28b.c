@@ -14,8 +14,6 @@
 /** @fn int thermopro_tp28b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill.
 
-
-
 Example data:
 
     rtl_433 -f 915M -F json -X "n=tp28b,m=FSK_PCM,s=105,l=105,r=5500,preamble=d2aa2dd4" | jq --unbuffered -r '.codes[0]'
@@ -25,29 +23,30 @@ Example data:
     {259}2217 0626 0000 3102 1107 0000 a290 6d70 bf02 000000000000 aaaa 0000000000000 [over1: 261C, Temp1: 172, over2: 71C, Temp2: 23C]
     {259}4421 1026 9009 3002 1012 4410 a298 6d70 5a03 000000000000 aaaa 0000000000000 [over1: 261C, Temp1: 214, over2: 121C, Temp2: 23C]
 
-
-
 Data layout:
-
-    Bit bench format: A_TEMP:hhhh A_HI:hhhh A_LO:hhhh B_TEMP:hhhh B_HI:hhhh B_LO:hhhh FLAGS:hhhh ID:hhhh CHK:hhhh hhhhhhhhhhhh hhhh hhhhhhhhhhhhh
 
     [p1_temp] [p1_set_hi] [p1_set_lo] [p2_temp] [p2_set_hi] [p2_set_lo] [flags] [id] [cksum] 000000000000 aaaa 0000000000000
 
-    Temps are 16 bit Binary Coded Decimals (BCD), LLHH. They are always in Celsius.
+- p1_temp: probe 1 current temp. 16 bit BCD
+- p1_set_hi: probe 1 high alarm temp. 16 bit BCD
+- p1_set_lo: probe 1 low alarm temp. 16 bit BCD
+- p2_temp: probe 2 current temp. 16 bit BCD
+- p2_set_hi: probe 2 high alarm temp. 16 bit BCD
+- p2_set_lo: probe 2 low alarm temp. 16 bit BCD
+- flags: 16 bit status flags
+- id: 16 bit identifier
+- cksum: 16 bit checksum
+
+Bit bench format:
+
+    A_TEMP:hhhh A_HI:hhhh A_LO:hhhh B_TEMP:hhhh B_HI:hhhh B_LO:hhhh FLAGS:hhhh ID:hhhh CHK:hhhh hhhhhhhhhhhh hhhh hhhhhhhhhhhhh
+
+Temps are little-endian 16 bit Binary Coded Decimals (BCD), LLHH. They are always in Celsius.
+
     Example: 2821,
         28 => 2.8 deg C
         21 => 210 deg C
         210 + 2.8 = 212.8 C (displayed rounded to 213)
-
-    - p1_temp: probe 1 current temp. 16 bit BCD
-    - p1_set_hi: probe 1 high alarm temp. 16 bit BCD
-    - p1_set_lo: probe 1 low alarm temp. 16 bit BCD
-    - p2_temp: probe 2 current temp. 16 bit BCD
-    - p2_set_hi: probe 2 high alarm temp. 16 bit BCD
-    - p2_set_lo: probe 2 low alarm temp. 16 bit BCD
-    - flags: 16 bit status flags
-    - id: 16 bit identifier
-    - cksum: 16 bit checksum
 
 Below is some work on status/alarm flags, but I can't quite make sense of them all:
 
@@ -61,11 +60,11 @@ Below is some work on status/alarm flags, but I can't quite make sense of them a
     a2f9 => C,  p1: low,         p2: low        ack'd
     a6f9 => C,  p1: low,         p2: low        unack'd
 
-    - flags & 0x2000 => Display in Celcius, otherwise Fahrenheit
-    - flags & 0x0400 => Alarm unacknowledged, otherwise acknowledged
-    - flags & 0x0020 => P1 in alarm, otherwise normal
-    - flags & 0x0004 => P2 in alarm, otherwise normal
-    - flags & 0x0001 => P2 in alarm low
+- flags & 0x2000 => Display in Celcius, otherwise Fahrenheit
+- flags & 0x0400 => Alarm unacknowledged, otherwise acknowledged
+- flags & 0x0020 => P1 in alarm, otherwise normal
+- flags & 0x0004 => P2 in alarm, otherwise normal
+- flags & 0x0001 => P2 in alarm low
 */
 
 // Convert BCD encoded temp to float
@@ -89,12 +88,9 @@ static int thermopro_tp28b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_logf(decoder, 1, __func__, "Packet too short: %d bits", msg_len);
         return DECODE_ABORT_LENGTH;
     }
-    else if (msg_len > 451) {
+    if (msg_len > 451) {
         decoder_logf(decoder, 1, __func__, "Packet too long: %d bits", msg_len);
         return DECODE_ABORT_LENGTH;
-    }
-    else {
-        decoder_logf(decoder, 1, __func__, "packet length: %d", msg_len);
     }
 
     int offset = bitbuffer_search(bitbuffer, 0, 0,
@@ -114,7 +110,7 @@ static int thermopro_tp28b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    decoder_log_bitrow(decoder, 1, __func__, b, bitbuffer->bits_per_row[0] - offset, "");
+    decoder_log_bitrow(decoder, 2, __func__, b, bitbuffer->bits_per_row[0] - offset, "");
 
     uint16_t id     = b[15] | b[14] << 8;
     uint16_t flags  = b[13] | b[12] << 8;
@@ -165,4 +161,5 @@ r_device const thermopro_tp28b = {
         .long_width  = 105,
         .reset_limit = 5500,
         .decode_fn   = &thermopro_tp28b_decode,
-        .fields      = output_fields};
+        .fields      = output_fields,
+};
