@@ -263,6 +263,7 @@
     DECL(watts_thermostat) \
     DECL(thermor) \
     DECL(mueller_hotrod) \
+    DECL(thermopro_tp28b) \
 
     /* Add new decoders here. */
 
