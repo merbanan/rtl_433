@@ -335,10 +335,12 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [247]  Bresser water leakage
     [248]* Nissan TPMS
     [249]  Bresser lightning
-    [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge
+    [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge, TFA Dostmann 30.3252.01/47.3006.01 Rain Gauge and Thermometer, ADE WS1907
     [251]  Fine Offset / Ecowitt WH55 water leak sensor
     [252]  BMW Gen5 TPMS, multi-brand HUF, Continental, Schrader/Sensata
     [253]  Watts WFHT-RF Thermostat
+    [254]  Thermor DG950 Weather Station
+    [255]  Mueller Hot Rod water meter
 
 * Disabled by default, use -R n or a conf file to enable
 

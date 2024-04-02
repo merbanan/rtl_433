@@ -171,6 +171,7 @@ add_library(r_433 STATIC
     devices/mebus.c
     devices/megacode.c
     devices/missil_ml0757.c
+    devices/mueller_hotrod.c
     devices/neptune_r900.c
     devices/new_template.c
     devices/newkaku.c
@@ -231,6 +232,7 @@ add_library(r_433 STATIC
     devices/thermopro_tp28b.c
     devices/thermopro_tx2.c
     devices/thermopro_tx2c.c
+    devices/thermor.c
     devices/tpms_abarth124.c
     devices/tpms_ave.c
     devices/tpms_bmw.c
