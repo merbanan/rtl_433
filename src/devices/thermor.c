@@ -211,7 +211,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const thermor = {
-        .name        = "Thermor Weather Station DG950",
+        .name        = "Thermor DG950 weather station",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 680,
         .long_width  = 2100,
