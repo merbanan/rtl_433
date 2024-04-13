@@ -30,7 +30,7 @@ Data layout{89} 11 x 8:
 
 - II:{32} ID, hexa 0x1c50f175 or decimal value 475066741
 - PP:{8}: Tire pressure, PSI = (PP - 43) * 0.363 or kPa = ( PP - 43 ) * 2.5
-- TT:{8}: Temperature in C offset 50 
+- TT:{8}: Temperature in C offset 50
 - F1, F2, F3: Flags that could contain battery information, flat tire, lost of pressure ...
 - CC: CRC-16 bits, poly 0x1021, init 0x0000 [from previous 9 bytes].
 - 8: useless trailing bit
