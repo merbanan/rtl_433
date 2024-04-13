@@ -337,7 +337,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [249]  Bresser lightning
     [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge, TFA Dostmann 30.3252.01/47.3006.01 Rain Gauge and Thermometer, ADE WS1907
     [251]  Fine Offset / Ecowitt WH55 water leak sensor
-    [252]  BMW Gen4-Gen5 and Audi TPMS, multi-brand HUF, Continental, Schrader/Sensata
+    [252]  BMW Gen4-Gen5 TPMS and Audi TPMS Pressure Alert, multi-brand HUF/Beru, Continental, Schrader/Sensata, Audi
     [253]  Watts WFHT-RF Thermostat
     [254]  Thermor DG950 weather station
     [255]  Mueller Hot Rod water meter
