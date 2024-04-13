@@ -1,7 +1,7 @@
 /** @file
     BMW Gen3 TPMS sensor.
 
-    Copyright (C) 2024 Bruno OCTAU (ProfBoc75)
+    Copyright (C) 2024 Bruno OCTAU (ProfBoc75), \@Billymazze
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -11,7 +11,7 @@
 /**
 BMW Gen3 TPMS sensor.
 
-issue #xxxx BMW Gen3 TPMS support open by \@xxxxxx
+issue #2893 BMW Gen3 TPMS support open by \@Billymazze
 
 Last progress based on this:
 
