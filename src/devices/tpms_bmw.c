@@ -1,5 +1,5 @@
 /** @file
-    BMW Gen4 Gen5 and Audi TPMS sensor.
+    BMW Gen4 Gen5 TPMS and Audi TPMS Pressure Alert sensor.
 
     Copyright (C) 2024 Bruno OCTAU (ProfBoc75), \@petrjac, \@Gucioo, Christian W. Zuckschwerdt <christian@zuckschwerdt.org>
 
@@ -9,14 +9,14 @@
     (at your option) any later version.
 */
 /**
-BMW Gen4 Gen5 and Audi TPMS sensor.
+BMW Gen4 Gen5 TPMS and Audi TPMS Pressure Alert sensor.
 
 issue #2821:
 - BMW Gen5 TPMS support open by \@petrjac
 - BMW Gen4 TPMS supported
 
 #2821 issue comment 2043641606 \@Gucioo
-- Audi TPMS based on the same protocol with shorter message
+- Audi TPMS based on the same protocol with shorter message in case of sudden increase or decrease in pressure
 
 Samples raw :
 
@@ -24,7 +24,7 @@ Samples raw :
     {207}555554b2aab4b2b552acb4d332accb32b552aaacd334d32ad334
     {211}555554b2aab4b2b552acb4d332acb4cab54caaacd4cad32b4b55e
 
-    Audi
+    Audi Pressure Alert
     {166}2aaaaa5955555955a5556a65666a56aa65a65999fc
     {165}2aaaaa5955555955a5556a65666a56aa65a65999f8
     {167}5555552caaaaacaad2aab532b3352b5532d32cccfe
@@ -40,19 +40,19 @@ Samples after MC Inverted:
     03 23 e1 36 a1 4a 3e 01 6b 68 6b
     03 23 e1 36 a1 34 3d 01 74 68 cf
 
-    AUDI
+    AUDI Pressure Alert
      0  1  2  3  4  5  6  7
     MM II II II II PP TT CC
     00 20 c0 74 57 36 4c 23
 
-- MM : Brand BRAND ID, 0x00 = Audi, 0x03 = HUF Gen 5, 0x23 = Schrader/Sensata, 0x80 = Continental
+- MM : Brand BRAND ID, 0x00 = Audi Pressure Alert, 0x03 = HUF Gen 5/Beru, 0x23 = Schrader/Sensata, 0x80 = Continental, 0x88 Audi
 - II : Sensor ID
 - PP : Pressure * 2.45 kPa
 - TT : Temp - 52 C
 - F1 : BMW only, Warning Flags , battery, fast deflating ... not yet guess
 - F2 : BMW only, Sequence number, to be confirmed
 - F3 : BMW only, Target Nominal Pressure * 0.0245 for 0x03
-- CC : CRC 8 of previous bytes (7 bytes for Audi, 10 bytes for BMW) , poli 0x2f, init 0xaa
+- CC : CRC 8 of previous bytes (7 bytes for Audi Pressure Alert, 10 bytes for BMW) , poli 0x2f, init 0xaa
 
 Data layout after MC for HUF Gen 5:
 
@@ -69,7 +69,7 @@ Schrader/Sensata model:
 
     F1, F2, F3 to guess
 
-Audi model:
+Audi Pressure Alert:
 
     BRAND = 8h | SENSOR_ID = 32h      | PRESS = 8d  | TEMP = 8d  | CRC = 8h
 
@@ -85,7 +85,7 @@ static int tpms_bmw_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b;
     // preamble is aa59
     uint8_t const preamble_pattern[] = {0xaa, 0x59};
-    uint8_t len_msg = 11; // default for BMW = 11, if Audi len_msg = 8
+    uint8_t len_msg = 11; // default for BMW = 11, if Audi-Alert len_msg = 8
     int flags1      =  0;
     int flags2      =  0;
     int flags3      =  0;
@@ -128,7 +128,7 @@ static int tpms_bmw_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC; // crc mismatch
     }
     decoder_log(decoder, 2, __func__, "BMW or Audi found");
-    int brand_id            = b[0]; // 0x00 = Audi, 0x03 = HUF Gen 5, 0x80 = Continental, 0x23 = Sensata, 0x88 = ??
+    int brand_id            = b[0]; // 0x00 = Audi-Alert, 0x03 = HUF/Beru, 0x23 = Schrader/Sensata, 0x80 = Continental, 0x88 = Audi
     float pressure_kPa      = b[5] * 2.45;
     int temperature_C       = b[6] - 52;
 
@@ -148,8 +148,9 @@ static int tpms_bmw_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data_t *data = data_make(
             "model",               "",                DATA_COND, len_msg == 11, DATA_STRING, "BMW-GEN5",
-            "model",               "",                DATA_COND, len_msg == 8, DATA_STRING, "Audi",
+            "model",               "",                DATA_COND, len_msg == 8, DATA_STRING, "Audi-PressureAlert",
             "type",                "",                DATA_STRING, "TPMS",
+            "alert",               "Alert",           DATA_COND, len_msg == 8, DATA_STRING, "Alert Pressure increase/decrease !",
             "brand",               "Brand",           DATA_INT,    brand_id,
             "id",                  "",                DATA_STRING, id_str,
             "pressure_kPa",        "Pressure",        DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, (double)pressure_kPa,
@@ -169,6 +170,7 @@ static int tpms_bmw_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "type",
+        "alert",
         "id",
         "brand",
         "battery_ok",
@@ -182,7 +184,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const tpms_bmw = {
-        .name        = "BMW Gen4-Gen5 and Audi TPMS, multi-brand HUF, Continental, Schrader/Sensata",
+        .name        = "BMW Gen4-Gen5 TPMS and Audi TPMS Pressure Alert, multi-brand HUF/Beru, Continental, Schrader/Sensata, Audi",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 25,
         .long_width  = 25,
