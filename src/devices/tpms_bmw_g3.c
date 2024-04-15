@@ -30,7 +30,7 @@ Data layout{89} 11 x 8:
 
 - II:{32} ID, hexa 0x1c50f175 or decimal value 475066741
 - PP:{8}: Tire pressure, PSI = (PP - 43) * 0.363 or kPa = ( PP - 43 ) * 2.5
-- TT:{8}: Temperature in C offset 50
+- TT:{8}: Temperature in C offset 40
 - F1, F2, F3: Flags that could contain battery information, flat tire, lost of pressure ...
 - CC: CRC-16 bits, poly 0x1021, init 0x0000 [from previous 9 bytes].
 - 8: useless trailing bit
@@ -77,7 +77,7 @@ static int tpms_bmwg3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     decoder_log(decoder, 1, __func__, "BMW G3 found");
     float pressure_kPa      = (b[4] - 43) * 2.5f;
-    float temperature_C     = (b[5] - 50);
+    float temperature_C     = (b[5] - 40);
     int flags1              = b[6]; // fixed value to 0xf8 could be Brand ID ?
     int flags2              = b[7]; // Battery , pressure warning ?
     int flags3              = b[8]; // fixed value to 0x03 could be Brand ID ?
