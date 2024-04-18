@@ -48,7 +48,7 @@ static int tpms_nissan_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
 
     // (PSI+THREE)*FOUR=8d
     int pressure_raw   = ((b[3] & 0x1F) << 3) | (b[4] >> 5);
-    float pressure_psi = ((float)pressure_raw - 3.f) / 4.f;
+    float pressure_psi = (float)pressure_raw / 4.f;
 
     // UNKNOWN:2b
     int unknown = (b[4] & 0x1F) >> 3;
