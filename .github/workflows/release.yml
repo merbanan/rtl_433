@@ -53,7 +53,7 @@ jobs:
         echo "RELEASE_NAME=Pre-Release ${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
         echo "PRERELEASE=true" >> $GITHUB_ENV
         ./.deploy/gen_nightly_info.sh
-    - uses: softprops/action-gh-release@v1
+    - uses: softprops/action-gh-release@v2
       id: create_release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -85,10 +85,10 @@ jobs:
       - name: Setup SoapySDR deps
         if: matrix.feat == 'soapysdr'
         run: brew install soapysdr
+      - name: Configure
+        run: cmake -B build
       - name: Build
-        run: |
-          cmake -B build
-          cmake --build build
+        run: cmake --build build
       - name: Adjust binary to run with MacPorts or Homebrew
         # Homebrew has x86 in /usr/local and arm64 in /opt/homebrew
         run: >
@@ -153,10 +153,10 @@ jobs:
         if: matrix.feat == 'soapysdr'
         run: |
           sudo apt-get install -q -y libsoapysdr-dev
+      - name: Configure
+        run: cmake -GNinja -B build
       - name: Build
-        run: |
-          cmake -GNinja -B build
-          cmake --build build
+        run: cmake --build build
       - name: Check final binary
         run: ldd build/src/rtl_433
       - name: "Upload Release Asset"
@@ -211,10 +211,10 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
           packages: "librtlsdr-dev:${{ matrix.arch }} libssl-dev:${{ matrix.arch }} libsoapysdr-dev:${{ matrix.arch }}"
+      - name: Configure
+        run: cmake -DCMAKE_TOOLCHAIN_FILE="$(pwd)/cmake/Toolchain-${{ matrix.compiler }}.cmake" -GNinja -B build
       - name: Build
-        run: |
-          cmake -DCMAKE_TOOLCHAIN_FILE="$(pwd)/cmake/Toolchain-${{ matrix.compiler }}.cmake" -GNinja -B build
-          cmake --build build
+        run: cmake --build build
       - name: Check final binary
         run: ${{ matrix.compiler }}-readelf -a build/src/rtl_433 | grep "Shared library:"
       - name: "Upload Release Asset"
@@ -240,10 +240,10 @@ jobs:
       run: |
         sudo apt-get update -q -y
         sudo apt-get install -q -y gcc-mingw-w64-base binutils-mingw-w64-${{ matrix.arch }} gcc-mingw-w64-${{ matrix.arch }} mingw-w64-${{ matrix.arch }}-dev gcc-mingw-w64 gcc-multilib p7zip-full
+    - name: "Configure with Mingw-w64"
+      run: cmake -DCMAKE_TOOLCHAIN_FILE=cmake/Toolchain-gcc-mingw-w64-${{ matrix.arch }}.cmake -DENABLE_RTLSDR=OFF -B build
     - name: "Build with Mingw-w64"
-      run: |
-        cmake -DCMAKE_TOOLCHAIN_FILE=cmake/Toolchain-gcc-mingw-w64-${{ matrix.arch }}.cmake -DENABLE_RTLSDR=OFF -B build
-        cmake --build build
+      run: cmake --build build
     - name: "Sysroot Build with Mingw-w64"
       run: ./.ci/scripts/do_sysroot.sh
     - name: "Upload Release Asset"
@@ -281,7 +281,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.generator }} ${{ matrix.platform }} CMake (MSBuild) on ${{ matrix.os }}
     steps:
-    - run: choco install openssl
+    - run: choco install openssl --yes --no-progress
       if: matrix.platform == 'x64'
     - uses: actions/checkout@v4
     - uses: actions/cache@v4
