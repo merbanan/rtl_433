@@ -264,6 +264,7 @@
     DECL(thermor) \
     DECL(mueller_hotrod) \
     DECL(thermopro_tp28b) \
+    DECL(tpms_bmwg3) \
 
     /* Add new decoders here. */
 
