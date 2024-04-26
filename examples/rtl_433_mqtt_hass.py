@@ -563,7 +563,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "kwh",
         "config": {
-            "device_class": "power",
+            "device_class": "energy",
             "name": "Energy",
             "unit_of_measurement": "kWh",
             "value_template": "{{ value|float }}",
@@ -587,7 +587,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "V",
         "config": {
-            "device_class": "power",
+            "device_class": "voltage",
             "name": "Voltage",
             "unit_of_measurement": "V",
             "value_template": "{{ value|float }}",
@@ -624,7 +624,7 @@ mappings = {
         "config": {
             "name": "UV Index",
             "unit_of_measurement": "UV Index",
-            "value_template": "{{ value|int }}",
+            "value_template": "{{ value|float|round(1) }}",
             "state_class": "measurement"
         }
     },
@@ -634,7 +634,7 @@ mappings = {
         "config": {
             "name": "UV Index",
             "unit_of_measurement": "UV Index",
-            "value_template": "{{ value|int }}",
+            "value_template": "{{ value|float|round(1) }}",
             "state_class": "measurement"
         }
     },
