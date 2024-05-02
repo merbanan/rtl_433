@@ -98,7 +98,7 @@ static char const *const output_fields[] = {
         "type",
         "id",
         "mode",
-        "pressure_psi",
+        "pressure_PSI",
         "unknown",
         NULL,
 };
