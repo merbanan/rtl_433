@@ -105,6 +105,26 @@ import re
 
 discovery_timeouts = {}
 
+CONFIG_PATHS = [
+    "/etc/rtl_433",
+    "/usr/local/etc/rtl_433",
+    os.path.expanduser("~/.config/rtl_433"),
+    os.path.dirname(os.path.realpath(__file__)),
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), "data")
+]
+CONFIG_PATHS = [p for p in CONFIG_PATHS if os.path.exists(p)]
+
+CONFIG_FILENAME = "rtl_433.conf"
+
+def find_file_in_path(filename, paths, success_log=None):
+    for path in paths:
+        fullpath = os.path.join(path, filename)
+        if os.path.exists(fullpath):
+            if success_log:
+                logging.info(success_log % path)
+            return fullpath
+    raise FileNotFoundError(f"File {filename} not found in paths: {paths}")
+
 # Fields that get ignored when publishing to Home Assistant
 # (reduces noise to help spot missing field mappings)
 SKIP_KEYS = [ "type", "model", "subtype", "channel", "id", "mic", "mod",
@@ -887,6 +907,27 @@ def rtl_433_device_info(data, topic_prefix):
     return (f"{topic_prefix}/{path}", id)
 
 
+def device_topic_from_data(data):
+    device_topic_suffix = ''+args.device_topic_suffix
+    keys = re.findall(r'\[([^\]]+)\]', device_topic_suffix)
+    for key in keys:
+        default = None
+        k = key
+        if key.startswith('/'):
+            k = key[1:]
+        if ':' in key:
+            k, default = key.split(':')
+        value = data.get(k, default)
+        if key.startswith('/') and value is None:
+            device_topic_suffix = device_topic_suffix.replace(f'[{key}]', '')
+            continue
+        elif key.startswith('/') and value is not None:
+            value = '/' + str(value)
+
+        device_topic_suffix = device_topic_suffix.replace(f'[{key}]', str(value))
+    return device_topic_suffix
+
+
 def publish_config(mqttc, topic, model, object_id, mapping, key=None):
     """Publish Home Assistant auto discovery data."""
     global discovery_timeouts
@@ -947,6 +988,8 @@ def bridge_event_to_hass(mqttc, topic_prefix, data):
     published_keys = []
 
     base_topic, device_id = rtl_433_device_info(data, topic_prefix)
+    base_topic = device_topic_from_data(data)
+
     if not device_id:
         # no unique device identifier
         logging.warning("No suitable identifier found for model: %s", model)
@@ -984,7 +1027,7 @@ def bridge_event_to_hass(mqttc, topic_prefix, data):
 def rtl_433_bridge():
     """Run a MQTT Home Assistant auto discovery bridge for rtl_433."""
 
-    mqttc = mqtt.Client()
+    mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
 
     if args.debug:
         mqttc.enable_logger()
@@ -1077,13 +1120,67 @@ if __name__ == "__main__":
     if not args.password and 'MQTT_PASSWORD' in os.environ:
         args.password = os.environ['MQTT_PASSWORD']
 
-    if not args.user or not args.password:
-        logging.warning("User or password is not set. Check credentials if subscriptions do not return messages.")
-
     if args.ids:
         ids = ', '.join(str(id) for id in args.ids)
         logging.info("Only discovering devices with ids: [%s]" % ids)
     else:
         logging.info("Discovering all devices")
+
+    found_config = False 
+    try:
+        with open(find_file_in_path(CONFIG_FILENAME, CONFIG_PATHS)) as f:
+            found = re.findall('^output (.*)$', f.read(), re.MULTILINE)
+            devices = None
+            events = None
+            retain = None
+            user = None 
+            password = None 
+            host = None 
+            port = None
+            for find in found: 
+                if "mqtt" not in find: continue
+                host = re.findall(r'mqtt://(.*?),', find)[0]
+                devices = re.findall(r'devices=(.*?)(?:,+|$)', find)
+                if len(devices) > 0: devices = devices[0]
+                events = re.findall(r'events=(.*?)(?:,+|$)', find)
+                if len(events) > 0: events = events[0]
+                retain = re.findall(r'retain=(.*?)(?:,+|$)', find)
+                if len(retain) > 0: retain = retain[0]
+
+                if '@' in host:
+                    user, password = host.split('@')[0].split(':')
+                    host = host.split('@')[1]
+                if ':' in host:
+                    host, port = host.split(':')
+                found_config = True
+                break 
+    except FileNotFoundError:
+        logging.warning("Config file not found")
+    except Exception as e:
+        logging.exception("Error reading config file")
+
+    if found_config:
+        if host:
+            logging.info(f"Using host {host} from config")
+            args.host = host
+        if port:
+            logging.info(f"Using port {port} from config")
+            args.port = int(port)
+        if user:
+            logging.info(f"Using user {user} from config")
+            args.user = user
+        if password:
+            args.password = password
+        if retain:
+            logging.info(f"Using retain {retain} from config")
+            args.retain = int(retain)
+        if devices:
+            logging.info(f"Using device_topic_suffix {devices} from config")
+            args.device_topic_suffix = devices
+        if events:
+            logging.info(f"Using rtl_topic {events} from config")
+            args.rtl_topic = events
+    if not args.user or not args.password:
+        logging.warning("User or password is not set. Check credentials if subscriptions do not return messages.")
 
     run()
