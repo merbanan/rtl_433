@@ -984,7 +984,10 @@ def bridge_event_to_hass(mqttc, topic_prefix, data):
 def rtl_433_bridge():
     """Run a MQTT Home Assistant auto discovery bridge for rtl_433."""
 
-    mqttc = mqtt.Client()
+    if hasattr(mqtt, 'CallbackAPIVersion'):  # paho >= 2.0.0
+        mqttc = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION1)
+    else:
+        mqttc = mqtt.Client()
 
     if args.debug:
         mqttc.enable_logger()
