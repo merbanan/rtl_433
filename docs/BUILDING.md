@@ -41,7 +41,7 @@ Debian:
 * If you require TLS connections, install `libssl-dev`.
 
 ````
-sudo apt-get install libtool libusb-1.0-0-dev librtlsdr-dev rtl-sdr build-essential cmake pkg-config
+sudo apt-get install libtool libusb-1.0-0-dev librtlsdr-dev rtl-sdr libssl-dev build-essential cmake pkg-config
 ````
 
 
