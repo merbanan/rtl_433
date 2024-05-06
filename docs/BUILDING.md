@@ -44,6 +44,13 @@ Debian:
 sudo apt-get install libtool libusb-1.0-0-dev librtlsdr-dev rtl-sdr build-essential cmake pkg-config
 ````
 
+Ubutu:
+
+* As for Debian but it might be necessary to add additionally the following line, if when compiling you have a message about the missing TLS connection support
+  
+````
+sudo apt install libssl-dev
+````  
 
 Centos/Fedora/RHEL with EPEL repo using cmake:
 
