@@ -46,7 +46,7 @@ sudo apt-get install libtool libusb-1.0-0-dev librtlsdr-dev rtl-sdr build-essent
 
 Ubutu:
 
-* As for Debian but it might be necessary to add additionally the following line, if when compiling you have a message about the missing TLS connection support
+* As for Debian but it might be necessary to add additionally the following line, if when compiling you have a message about the missing OpenSSL support (Could NOT find OpenSSL, try to set the path to OpenSSL root folder in the system variable OPENSSL_ROOT_DIR (missing: OPENSSL_CRYPTO_LIBRARY OPENSSL_INCLUDE_DIR) -- OpenSSL development files not found, TLS won't be possible.)
   
 ````
 sudo apt install libssl-dev
