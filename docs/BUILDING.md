@@ -38,12 +38,11 @@ Depending on your system, you may need to install the following libraries.
 
 Debian:
 
-* If you require TLS connections, install `libssl-dev`.
-
 ````
 sudo apt-get install libtool libusb-1.0-0-dev librtlsdr-dev rtl-sdr build-essential cmake pkg-config
 ````
 
+* If you require TLS connections, also install `libssl-dev` (`sudo apt-get install libssl-dev`).
 
 Centos/Fedora/RHEL with EPEL repo using cmake:
 
