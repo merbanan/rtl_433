@@ -11,73 +11,6 @@
 
 #include "decoder.h"
 
-#define RESERVED_BIT   2
-#define BRIGHTNESS_BIT 3
-#define SWITCH_BIT     4
-#define PREAMBLE_BIT   20
-
-enum socket_codes {
-    SOCKET_ONE   = 0x0,
-    SOCKET_TWO   = 0x4,
-    SOCKET_THREE = 0x2,
-    SOCKET_FOUR  = 0x6,
-    SOCKET_ALL   = 0x7
-};
-
-/* Determine the target socket. */
-static const char *get_sock_id(uint32_t packet)
-{
-    packet = (packet >> 5) & 0x7;
-
-    switch (packet) {
-    case SOCKET_ONE:
-        return "1";
-    case SOCKET_TWO:
-        return "2";
-    case SOCKET_THREE:
-        return "3";
-    case SOCKET_FOUR:
-        return "4";
-    case SOCKET_ALL:
-        return "ALL";
-    default:
-        return NULL;
-    }
-}
-
-/* Parse the command, i.e. set brightness or power on/off. */
-static const char *get_command(uint32_t packet)
-{
-    int on, brightness;
-
-    on         = packet & (1 << SWITCH_BIT);
-    brightness = packet & (1 << BRIGHTNESS_BIT);
-
-    if (on) {
-        if (brightness)
-            return "DIM";
-        return "ON";
-    }
-    if (brightness)
-        return "BRIGHT";
-    return "OFF";
-}
-
-/* Join the three bytes into one 4-byte integer. */
-static uint32_t build_packet(uint8_t *data)
-{
-    uint32_t packet = 0;
-
-    for (unsigned int i = 0; i <= 2; ++i) {
-        packet <<= 8;
-        packet |= data[i];
-    }
-
-    /* The third byte only contains 5 bits. */
-    packet >>= 3;
-    return packet;
-}
-
 /**
 TR-502MSV remote controller for RC-710DX.
 
@@ -96,32 +29,39 @@ TR-502MSV remote controller for RC-710DX.
 
 static int tr502msv_decode(r_device *decoder, bitbuffer_t *buffer)
 {
-    uint32_t packet;
     int device_id;
     data_t *output_data;
-    const char *command, *sock_id;
+    uint8_t socket_id;
+    uint8_t *b;
+    const char *command_str, *socket_str;
+    const char *sockets[]  = {"1", "3", "2", "4", "ALL"};
+    const char *commands[] = {"OFF", "BRIGHT", "ON", "DIM"};
 
     if (buffer->num_rows != 1 || buffer->bits_per_row[0] != 21)
         return DECODE_ABORT_LENGTH;
 
-    packet = build_packet(buffer->bb[0]);
-    if ((packet & (1 << PREAMBLE_BIT)) == 0)
+    b = buffer->bb[0];
+    if ((b[0] & (1 << 7)) == 0)
         return DECODE_ABORT_EARLY;
-    if ((packet & (1 << RESERVED_BIT)) != 0)
+    if ((b[2] & (1 << 5)) != 0)
         return DECODE_FAIL_SANITY;
 
-    device_id = (packet & ~(1 << PREAMBLE_BIT)) >> 8;
-    command   = get_command(packet);
-    sock_id   = get_sock_id(packet);
-    if (sock_id == NULL)
+    device_id   = ((b[0] & 0x7f) << 5) | (b[1] >> 3);
+    command_str = commands[b[2] >> 6];
+    socket_id   = b[1] & 0x7;
+    if (socket_id % 2 == 0)
+        socket_str = sockets[socket_id >> 1];
+    else if (socket_id == 0x7)
+        socket_str = sockets[4];
+    else
         return DECODE_FAIL_SANITY;
 
     /* clang-format off */
     output_data = data_make (
         "model",    "Model",        DATA_STRING,    "TR-502MSV",
         "id",    "Device ID",        DATA_FORMAT,    "%u",    DATA_INT,    device_id,
-        "sock_id",    "Socket",    DATA_STRING,    sock_id,
-        "command",    "Command",    DATA_STRING,    command,
+        "socket_id",    "Socket",    DATA_STRING,    socket_str,
+        "command",    "Command",    DATA_STRING,    command_str,
         NULL
         );
     /* clang-format on */
@@ -134,7 +74,7 @@ static const char *output_fields[] = {
         "model",
         "id",
         "device_id",
-        "sock_id",
+        "socket_id",
         "command",
         NULL,
 };
