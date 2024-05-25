@@ -15,6 +15,8 @@ Largely the same as esperanza_ews, kedsum.
 
 Also NC-5849-913 from Pearl (for FWS-310 station).
 
+Also ST389 sensor for ORIA WA50 Wireless Digital Freezer Thermometer (no humidity)
+
 Transmit Interval: every ~50s.
 Message Format: 40 bits (10 nibbles).
 
@@ -97,13 +99,15 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, "Conrad-S3318P",
+            "model",            "",             DATA_COND,   humidity != 0, DATA_STRING, "Conrad-S3318P",
+            "model",            "",             DATA_COND,   humidity == 0, DATA_STRING, "ORIA-WA50",
             "id",               "ID",           DATA_INT,    id,
-            "channel",          "Channel",      DATA_INT,    channel,
+            "channel",          "Channel",      DATA_COND,   humidity != 0, DATA_INT,    channel,
+            "sensor",           "Sensor",       DATA_COND,   humidity == 0, DATA_INT,    channel - 1,
             "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "temperature_F",    "Temperature",  DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
-            "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "button",           "Button",       DATA_INT,    button,
+            "humidity",         "Humidity",     DATA_COND,   humidity != 0, DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "button",           "Button",       DATA_COND,   humidity != 0, DATA_INT,    button,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
