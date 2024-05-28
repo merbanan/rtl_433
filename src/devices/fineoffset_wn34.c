@@ -75,6 +75,7 @@ static int fineoffset_wn34_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int id          = (b[1] << 16) | (b[2] << 8) | (b[3]);
     int temp_raw    = (int16_t)((b[4] & 0x0F) << 12 | b[5] << 4); // use sign extend
     int sub_type    = (b[4] & 0xF0) >> 4;
+    decoder_logf(decoder, 1, __func__, "subtype : %d", sub_type);
 
     if (sub_type == 4) // WN34D
         temperature = (temp_raw >> 4) * 0.1f;    // scale by 10 only.
@@ -107,9 +108,9 @@ static int fineoffset_wn34_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",         "",                DATA_STRING, "Fineoffset-WN34",
+            "model",         "",                DATA_COND, sub_type != 4, DATA_STRING, "Fineoffset-WN34",
+            "model",         "",                DATA_COND, sub_type == 4, DATA_STRING, "Fineoffset-WN34D",
             "id",            "ID",              DATA_FORMAT, "%x",     DATA_INT,    id,
-            "subtype",       "Subtype",         DATA_INT,    sub_type,
             "battery_ok",    "Battery",         DATA_FORMAT, "%.1f",   DATA_DOUBLE, battery_ok,
             "battery_mV",    "Battery Voltage", DATA_FORMAT, "%d mV",  DATA_INT,    battery_mv,
             "temperature_C", "Temperature",     DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
@@ -124,7 +125,6 @@ static int fineoffset_wn34_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
-        "subtype",
         "battery_ok",
         "battery_mV",
         "temperature_C",
@@ -133,7 +133,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const fineoffset_wn34 = {
-        .name        = "Fine Offset Electronics WN34 temperature sensor",
+        .name        = "Fine Offset Electronics WN34S/L/D and Froggit DP150/D35 temperature sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 58,
         .long_width  = 58,
