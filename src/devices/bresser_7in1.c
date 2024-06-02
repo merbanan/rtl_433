@@ -239,8 +239,8 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "channel",          "",                         DATA_INT,    chan,
                 "startup",          "Startup",                  DATA_COND,   !nstartup,   DATA_INT, !nstartup,
                 "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
-                "pm_2_5_ug_m3",     "PM2.5 Mass Concentration", DATA_COND,   !pm_2_5_init,   DATA_INT, pm_2_5,
-                "pm_10_ug_m3",      "PM10 Mass Concentraton",   DATA_COND,   !pm_10_init,    DATA_INT, pm_10,
+                "pm2_5_ug_m3",      "PM2.5 Mass Concentration", DATA_COND,   !pm_2_5_init,   DATA_INT, pm_2_5,
+                "pm10_0_ug_m3",     "PM10 Mass Concentraton",   DATA_COND,   !pm_10_init,    DATA_INT, pm_10,
                 "mic",              "Integrity",                DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
@@ -312,8 +312,8 @@ static char const *const output_fields[] = {
         "light_klx", // TODO: remove this
         "light_lux",
         "uv",
-        "pm_2_5_ug_m3",
-        "pm_10_ug_m3",
+        "pm2_5_ug_m3",
+        "pm10_0_ug_m3",
         "battery_ok",
         "co2_ppm",
         "hcho_ppb",
