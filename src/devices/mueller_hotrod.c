@@ -93,7 +93,7 @@ static int mueller_hotrod_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",       "",          DATA_STRING, "Mueller-HotRod",
             "id",          "",          DATA_STRING, id_str,
             "volume_gal",  "Volume",    DATA_FORMAT, "%u gal", DATA_INT, volume,
-            "flag",        "Flag",      DATA_FORMAT, "%x" , DATA_INT, flag,
+            "flag",        "Flag",      DATA_FORMAT, "%x", DATA_INT, flag,
             "mic",         "Integrity", DATA_STRING, "CRC",
             NULL);
     /* clang-format on */

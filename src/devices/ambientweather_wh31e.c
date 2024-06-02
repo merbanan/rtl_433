@@ -225,7 +225,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             data_t *data = data_make(
                     "model",            "",             DATA_COND, msg_type == 0x30, DATA_STRING, "AmbientWeather-WH31E",
                     "model",            "",             DATA_COND, msg_type == 0x37, DATA_STRING, "AmbientWeather-WH31B",
-                    "id" ,              "",             DATA_INT,    id,
+                    "id",               "",             DATA_INT,    id,
                     "channel",          "Channel",      DATA_INT,    channel,
                     "battery_ok",       "Battery",      DATA_INT,    !batt_low,
                     "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
@@ -267,7 +267,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             /* clang-format off */
             data_t *data = data_make(
                     "model",        "",             DATA_STRING,    "AmbientWeather-WH31E",
-                    "id" ,          "Station ID",   DATA_INT,       id,
+                    "id",           "Station ID",   DATA_INT,       id,
                     "data",         "Unknown",      DATA_INT,       unknown,
                     "radio_clock",  "Radio Clock",  DATA_STRING,    clock_str,
                     "mic",          "Integrity",    DATA_STRING,    "CRC",
@@ -303,7 +303,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             /* clang-format off */
             data_t *data = data_make(
                     "model",            "",                DATA_STRING, "EcoWitt-WH40",
-                    "id" ,              "",                DATA_INT,    id,
+                    "id",               "",                DATA_INT,    id,
                     "battery_V",        "Battery Voltage", DATA_COND, battery_v != 0, DATA_FORMAT, "%f V", DATA_DOUBLE, battery_v * 0.1f,
                     "battery_ok",       "Battery",         DATA_COND, battery_v != 0, DATA_DOUBLE, battery_lvl * 0.01f,
                     "rain_mm",          "Total Rain",      DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1,
@@ -344,7 +344,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             /* clang-format off */
             data_t *data = data_make(
                     "model",            "",             DATA_STRING, "EcoWitt-WS68",
-                    "id" ,              "",             DATA_INT,    id,
+                    "id",               "",             DATA_INT,    id,
                     "battery_raw",      "Battery Raw",  DATA_INT,    batt,
                     "battery_ok",       "Battery OK",   DATA_INT,    batt_ok,
                     "light_lux",        "Lux",          DATA_FORMAT, "%u lux",   DATA_INT,    light_lux,

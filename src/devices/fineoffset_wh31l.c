@@ -140,7 +140,7 @@ static int fineoffset_wh31l_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data_t *data = data_make(
             "model",            "",                 DATA_STRING, "FineOffset-WH31L",
-            "id" ,              "",                 DATA_INT,    id,
+            "id",               "",                 DATA_INT,    id,
             "battery_ok",       "Battery",          DATA_DOUBLE, battery_ok * 0.5f,
             "state",            "State",            DATA_STRING, state_str,
             "flags",            "Flags",            DATA_FORMAT, "%04x", DATA_INT,    flags,

@@ -1682,7 +1682,7 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "",             DATA_INT, sensor_id,
             "channel",          "Channel",      DATA_INT,   channel,
             "battery_ok",       "Battery",      DATA_INT,    battery_ok,
-            "button",           "Button" ,      DATA_INT,   button,
+            "button",           "Button",       DATA_INT,   button,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
