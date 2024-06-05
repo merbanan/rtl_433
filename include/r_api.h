@@ -97,6 +97,8 @@ void start_outputs(struct r_cfg *cfg, char const *const *well_known);
 
 void add_sr_dumper(struct r_cfg *cfg, char const *spec, int overwrite);
 
+void reopen_dumpers(struct r_cfg *cfg);
+
 void close_dumpers(struct r_cfg *cfg);
 
 void add_dumper(struct r_cfg *cfg, char const *spec, int overwrite);

@@ -2,7 +2,7 @@
     Ambient Weather (Fine Offset) WH31L protocol.
 
     Copyright (C) 2021 Christian W. Zuckschwerdt <zany@triq.net>
-    based on protocol analysis by @MksRasp.
+    based on protocol analysis by \@MksRasp.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -140,11 +140,11 @@ static int fineoffset_wh31l_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data_t *data = data_make(
             "model",            "",                 DATA_STRING, "FineOffset-WH31L",
-            "id" ,              "",                 DATA_INT,    id,
+            "id",               "",                 DATA_INT,    id,
             "battery_ok",       "Battery",          DATA_DOUBLE, battery_ok * 0.5f,
             "state",            "State",            DATA_STRING, state_str,
             "flags",            "Flags",            DATA_FORMAT, "%04x", DATA_INT,    flags,
-            "storm_dist_km",    "Storm Dist",       DATA_COND, s_dist != 63, DATA_FORMAT, "%d km", DATA_INT,    s_dist,
+            "storm_dist_km",    "Storm Distance",   DATA_COND, s_dist != 63, DATA_FORMAT, "%d km", DATA_INT,    s_dist,
             "strike_count",     "Strike Count",     DATA_INT,    s_count,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);

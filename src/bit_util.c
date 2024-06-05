@@ -9,7 +9,8 @@
     (at your option) any later version.
 */
 
-#include "util.h"
+#include "bit_util.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

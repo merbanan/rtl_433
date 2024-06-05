@@ -15,7 +15,7 @@ Common sample rates with RTL-SDR receivers are 250 kHz and 1024 kHz, also 1 MHz 
 :::
 
 The nature of an I/Q sample allows to use a bandwidth equal to the sample rate
-(with a purely real signal the Nyquist–Shannon sampling theorem would only allow half the bandwidth).
+(with a purely real signal the Nyquist-Shannon sampling theorem would only allow half the bandwidth).
 
 Generally the data formats are header- (and thus metadata-)less,
 the used center frequency and sample rate must be transferred separately or encoded in the filename.

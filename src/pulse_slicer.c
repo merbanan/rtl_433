@@ -14,7 +14,7 @@
 #include "pulse_slicer.h"
 #include "pulse_data.h"
 #include "bitbuffer.h"
-#include "util.h"
+#include "c_util.h" // for MIN()
 #include "logger.h"
 #include "decoder_util.h" // TODO: this should be refactored
 #include <stdio.h>

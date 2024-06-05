@@ -1,5 +1,5 @@
 /** @file
-    SRSmith Pool Light Remote Control, Model #SRS-2C-TX.
+    SRSmith Pool Light Remote Control, Model SRS-2C-TX.
 
     Copyright (C) 2022 gcohen55
 
@@ -12,7 +12,7 @@
 #include "decoder.h"
 
 /**
-SRSmith Pool Light Remote Control, Model #SRS-2C-TX.
+SRSmith Pool Light Remote Control, Model SRS-2C-TX.
 
 The SR Smith remote control sends broadcasts of ~144 bits and it comes in shifted (similar to the Maverick XR30 BBQ Sensor)
 - Frequency: 915MHz

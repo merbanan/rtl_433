@@ -118,7 +118,7 @@ static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",            "",             DATA_STRING, "GT-TMBBQ05",
             "id",               "ID Code",      DATA_INT,    device_id,
-            "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, (float)tempf,
+            "temperature_F",    "Temperature",  DATA_FORMAT, "%.2f F", DATA_DOUBLE, (float)tempf,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */

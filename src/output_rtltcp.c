@@ -168,7 +168,7 @@ static int parse_command(r_cfg_t *cfg, int control, uint8_t const *buf, int len)
     int cmd = buf[0];
     unsigned arg = (unsigned)buf[1] << 24 | buf[2] << 16 | buf[3] << 8 | buf[4];
     // print_logf(LOG_TRACE, "rtl_tcp", "CMD: %d with %u (%d) %02x %02x %02x %02x", cmd, arg, (int)arg, buf[1], buf[2], buf[3], buf[4]);
-    len -= 5;
+    // len -= 5;
 
     switch (cmd) {
     case RTLTCP_SET_FREQ:

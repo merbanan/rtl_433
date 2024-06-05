@@ -29,7 +29,7 @@ import time
 import dateutil.parser
 import http.server
 
-## 0x77 w 0x78 x → port 30584
+## 0x77 w 0x78 x -> port 30584
 _SRV_PORT = 0x7778
 
 

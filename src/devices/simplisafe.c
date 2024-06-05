@@ -64,7 +64,7 @@ static int ss_sensor_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
     uint8_t state = reverse8(b[9]);
     uint8_t csum = reverse8(b[10]);
     if (((seq + state) & 0xff) != csum)
-      return DECODE_FAIL_MIC;
+        return DECODE_FAIL_MIC;
 
     char id[6];
     ss_get_id(id, b);

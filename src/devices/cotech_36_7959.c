@@ -47,6 +47,11 @@ Message layout
 - O : 16 bit: Sunlight intensity, 0 to 200,000 lumens
 - P : 8 bit: UV index (1-15)
 - X : 8 bit: CRC, poly 0x31, init 0xc0
+
+Data format:
+
+    TYPE:h ID:8h FLAGS:h WIND:8d GUST:8d DIR:8d ?:h RAIN:12d FLAGS:h TEMP:12d HUM:8d LIGHT:16d UV:8d CRC:8h
+
 */
 
 static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -98,17 +103,17 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int wind_dir  = (deg_msb << 8) | b[4];                        // [32:8]
     //int rain_msb  = (b[5] >> 4);                                  // [40:4]
     int rain      = ((b[5] & 0x0f) << 8) | (b[6]);                // [44:12]
-    int flags     = (b[7] & 0xf0) >> 4;                           // [56:4]
+    //int flags     = (b[7] & 0xf0) >> 4;                           // [56:4]
     int temp_raw  = ((b[7] & 0x0f) << 8) | (b[8]);                // [60:12]
     int humidity  = (b[9]);                                       // [72:8]
-    int light_lux = (b[10] << 8) + b[11] + ((flags & 0x08) << 9); // [80:16]
+    int light_lux = (b[10] << 8) | b[11] | ((b[7] & 0x80) << 9);  // [56:1][80:16]
     int uv        = (b[12]);                                      // [96:8]
     //int crc       = (b[13]);                                      // [104:8]
 
     float temp_c = (temp_raw - 400) * 0.1f;
 
     // On models without a light sensor, the value read for UV index is out of bounds with its top bits set
-    int light_is_valid = ((uv & 0xf0) == 0);
+    int light_is_valid = (uv <= 150); // error value seems to be 0xfb, lux would be 0xfffb
 
     /* clang-format off */
     data = data_make(
@@ -123,7 +128,7 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "wind_avg_m_s",     "Wind",             DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind * 0.1f,
             "wind_max_m_s",     "Gust",             DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust * 0.1f,
             "light_lux",        "Light Intensity",  DATA_COND, light_is_valid, DATA_FORMAT, "%u lux", DATA_INT, light_lux,
-            "uv",               "UV Index",         DATA_COND, light_is_valid, DATA_FORMAT, "%u", DATA_INT, uv,
+            "uv",               "UV Index",         DATA_COND, light_is_valid, DATA_FORMAT, "%.1f", DATA_DOUBLE, uv * 0.1f,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */

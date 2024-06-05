@@ -29,7 +29,14 @@
 #endif
 
 /// Create a new r_device, copy from dev_template if not NULL.
-r_device *create_device(r_device const *dev_template);
+///
+/// A user data memory of `user_data_size` bytes will be allocated if not `0`.
+r_device *decoder_create(r_device const *dev_template, unsigned user_data_size);
+
+/// Get the user data pointer, otherwise NULL.
+///
+/// The memory can be freely used by a decoder and is of the size given to `decoder_create()`.
+void *decoder_user_data(r_device *decoder);
 
 /// Output data.
 void decoder_output_data(r_device *decoder, data_t *data);
@@ -39,6 +46,11 @@ void decoder_output_log(r_device *decoder, int level, data_t *data);
 
 // be terse, a maximum msg length of 60 characters is supported on the decoder_log_ functions
 // e.g. "FoobarCorp-XY3000: unexpected type code %02x"
+
+/// Get the current verbosity level for the decoder.
+///
+/// @deprecated Should not be used, consider using only `decoder_log_` functions.
+int decoder_verbose(r_device *decoder);
 
 /// Output a log message.
 void decoder_log(r_device *decoder, int level, char const *func, char const *msg);

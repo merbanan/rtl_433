@@ -76,7 +76,7 @@ static int maverick_xr30_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     //digest is used to represent a session. This means, we get a new id if a reset or battery exchange is done.
     int id = lfsr_digest16(&b[7], 3, 0x8810, 0x0d42) ^ digest;
 
-    decoder_logf(decoder, 1, __func__, "sync %08x, flags %0x, t1 %d, t2 %d, digest %04x, chk_data %02x%02x%02x, digest xor'ed: %04x",
+    decoder_logf(decoder, 1, __func__, "sync %08x, flags %x, t1 %d, t2 %d, digest %04x, chk_data %02x%02x%02x, digest xor'ed: %04x",
                 sync, flags, temp1, temp2, digest, b[7], b[8], b[9], id);
 
     /* clang-format off */
@@ -84,8 +84,8 @@ static int maverick_xr30_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",                     DATA_STRING, "Maverick-XR30",
             "id",               "Session_ID",           DATA_INT,    id,
             "status",           "Status",               DATA_STRING, status,
-            "temperature_1_C",  "TemperatureSensor1",   DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp1_c,
-            "temperature_2_C",  "TemperatureSensor2",   DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp2_c,
+            "temperature_1_C",  "TemperatureSensor1",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp1_c,
+            "temperature_2_C",  "TemperatureSensor2",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp2_c,
             NULL);
     /* clang-format on */
 

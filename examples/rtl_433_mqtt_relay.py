@@ -111,7 +111,10 @@ def rtl_433_probe():
     """Run a rtl_433 UDP listener."""
 
     ## Connect to MQTT
-    mqttc = mqtt.Client()
+    if hasattr(mqtt, 'CallbackAPIVersion'):  # paho >= 2.0.0
+        mqttc = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION1)
+    else:
+        mqttc = mqtt.Client()
     mqttc.on_connect = mqtt_connect
     mqttc.on_disconnect = mqtt_disconnect
     if MQTT_USERNAME != None:

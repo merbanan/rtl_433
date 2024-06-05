@@ -347,23 +347,18 @@ static void print_bitrow(uint8_t const *bitrow, unsigned bit_len, unsigned highe
 
 static void print_bitbuffer(const bitbuffer_t *bits, int always_binary)
 {
-    unsigned highest_indent, indent_this_col, indent_this_row;
-    unsigned col, row;
-
-    /* Figure out the longest row of bit to get the highest_indent
-     */
-    highest_indent = sizeof("[dd] {dd} ") - 1;
-    for (row = indent_this_row = 0; row < bits->num_rows; ++row) {
-        for (col = indent_this_col = 0; col < (unsigned)(bits->bits_per_row[row] + 7) / 8; ++col) {
-            indent_this_col += 2 + 1;
-        }
-        indent_this_row = indent_this_col;
-        if (indent_this_row > highest_indent)
+    // Figure out the longest row of bits to get the highest_indent
+    unsigned highest_indent = sizeof("[dd] {dd} ") - 1;
+    for (unsigned row = 0; row < bits->num_rows; ++row) {
+        unsigned hex_bytes = (bits->bits_per_row[row] + 7) / 8;
+        unsigned indent_this_row = (2 + 1) * hex_bytes;
+        if (indent_this_row > highest_indent) {
             highest_indent = indent_this_row;
+        }
     }
 
     fprintf(stderr, "bitbuffer:: Number of rows: %u \n", bits->num_rows);
-    for (row = 0; row < bits->num_rows; ++row) {
+    for (unsigned row = 0; row < bits->num_rows; ++row) {
         fprintf(stderr, "[%02u] ", row);
         print_bitrow(bits->bb[row], bits->bits_per_row[row], highest_indent, always_binary);
     }

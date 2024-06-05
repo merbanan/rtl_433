@@ -39,12 +39,6 @@ Data layout (nibbles):
 static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     bitbuffer_t packet_bits = {0};
-    uint8_t *b;
-    int pressure;
-    int temperature;
-    int status;
-    int checksum;
-
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 72);
 
     // make sure we decoded the expected number of bits
@@ -53,18 +47,18 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
         return 0; // DECODE_FAIL_SANITY;
     }
 
-    b = packet_bits.bb[0];
+    uint8_t *b = packet_bits.bb[0];
 
     // check checksum (checksum8 xor)
-    checksum = xor_bytes(b, 9);
+    int const checksum = xor_bytes(b, 9);
     if (checksum != 0) {
         return 0; // DECODE_FAIL_MIC;
     }
 
-    pressure    = b[5];
-    temperature = b[6];
-    status      = b[7];
-    checksum    = b[8];
+    int const pressure    = b[5];
+    int const temperature = b[6];
+    int const status      = b[7];
+    // int const checksum    = b[8];
 
     char flags[1 * 2 + 1];
     snprintf(flags, sizeof(flags), "%02x", b[4]);

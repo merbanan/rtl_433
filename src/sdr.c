@@ -957,6 +957,7 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, char const *dev_query, int verbos
 
 // the buffer sizes can't be proven to be correct
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wanalyzer-allocation-size"
 
 static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len)
@@ -1722,7 +1723,7 @@ static THREAD_RETURN THREAD_CALL acquire_thread(void *arg)
     print_log(LOG_DEBUG, __func__, "acquire_thread async stop...");
 
     if (r < 0) {
-        print_logf(LOG_ERROR, "SDR", "async read failed (%i).", r);
+        print_logf(LOG_ERROR, "SDR", "async read failed (%d).", r);
     }
 
 //    sdr_event_t ev = {

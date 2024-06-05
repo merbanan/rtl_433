@@ -108,7 +108,7 @@ static int calibeur_rf104_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",         "",            DATA_STRING, "Calibeur-RF104",
             "id",            "ID",          DATA_INT,    id,
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-            "humidity",      "Humidity",    DATA_FORMAT, "%2.0f %%", DATA_DOUBLE, humidity,
+            "humidity",      "Humidity",    DATA_FORMAT, "%.0f %%", DATA_DOUBLE, humidity,
             "mic",           "Integrity",   DATA_STRING, "CRC",
             NULL);
     /* clang-format on */

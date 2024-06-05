@@ -79,7 +79,7 @@ static int sharp_spc775_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",                 DATA_STRING, "Sharp-SPC775",
             "id",               "",                 DATA_INT,    id,
             "battery_ok",       "Battery",          DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C",  DATA_DOUBLE, temp_c,
+            "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%",    DATA_INT,    humidity,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);

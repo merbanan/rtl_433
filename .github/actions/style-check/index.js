@@ -29,7 +29,7 @@ process.exitCode = [
   'tests/CMakeLists.txt',
 ])
   .filter(discard_vendor)
-  .reduce((e, f) => e + style_check(f), 0) > 0
+  .reduce((e, f) => e + style_check(f), 0) > 0 ? 1 : 0
 
 function discard_vendor(filename) {
   return filename.indexOf('/jsmn.') < 0 && filename.indexOf('/mongoose.') < 0

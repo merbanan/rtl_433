@@ -12,6 +12,8 @@
 /** @fn int minim_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 GEO mimim+ energy monitor.
 
+@warning This decoder depends on `mktime()` formatting.
+
 @sa geo_minim_ct_sensor_decode()
 @sa geo_minim_display_decode()
 
@@ -31,11 +33,11 @@ or as follows:
 
 1. On the display, hold down the <- and +> buttons together for 3 seconds.
 2. At the next screen, hold down the middle button for 3 seconds until the
-   display shows “Pair?”
+   display shows "Pair?"
 3. On the sensor, press and hold the pair button (next to the red light)
    until the red LED light illuminates.
 4. Release the pair button and the LED flashes as the transmitter pairs.
-5. The display should now read “Paired CT"
+5. The display should now read "Paired CT"
 
 When paired the display listens for sensor packets and then transmits a
 summary packet using the same protocol.
@@ -277,8 +279,7 @@ static int minim_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         bitpos = bitbuffer_search(bitbuffer, row, 0, preamble2, preamble_len) + preamble_len;
     }
     if (bitpos >= bitbuffer->bits_per_row[row]) {
-        if (decoder->verbose >= 2)
-            decoder_logf_bitbuffer(decoder, 3, __func__, bitbuffer, "Sync not found");
+        decoder_logf_bitbuffer(decoder, 3, __func__, bitbuffer, "Sync not found");
         return DECODE_ABORT_EARLY;
     }
 

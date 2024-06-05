@@ -128,7 +128,11 @@ static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
          */
 
         if (bitbuffer->bits_per_row[r] < MYDEVICE_BITLEN) {
-            continue;
+            continue; // not enough bits
+        }
+
+        if (b[0] != 0x42) {
+            continue; // magic header not found
         }
 
         /*

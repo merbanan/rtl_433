@@ -101,7 +101,7 @@ static int burnhardbbq_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",             "",                     DATA_STRING, "BurnhardBBQ",
                 "id",                "ID",                   DATA_INT,    id,
                 "channel",           "Channel",              DATA_INT,    channel,
-                "temperature_C",     "Temperature",          DATA_COND,   temp_raw != 0, DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
+                "temperature_C",     "Temperature",          DATA_COND,   temp_raw != 0, DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
                 "setpoint_C",        "Temperature setpoint", DATA_FORMAT, "%.0f C", DATA_DOUBLE, setpoint_c,
                 "temperature_alarm", "Temperature alarm",    DATA_INT,    temp_alarm,
                 "timer",             "Timer",                DATA_STRING, timer_str,

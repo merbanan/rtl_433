@@ -14,7 +14,6 @@
 // note: our unit header includes unistd.h for gethostname() via data.h
 #include "output_influx.h"
 #include "optparse.h"
-#include "util.h"
 #include "logger.h"
 #include "fatal.h"
 #include "r_util.h"
@@ -372,7 +371,6 @@ static void R_API_CALLCONV print_influx_data(data_output_t *output, data_t *data
                 str++;
             end = &buf->buf[buf->len - 1];
             influx_sanitize_tag(str, end);
-            str = end + 1;
             print_value(output, data->type, data->value, data->format);
             comma = true;
         }

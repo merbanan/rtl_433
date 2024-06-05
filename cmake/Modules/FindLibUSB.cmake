@@ -44,7 +44,9 @@ set(LibUSB_VERSION ${PC_LibUSB_VERSION})
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set LibUSB_FOUND to TRUE
 # if all listed variables are TRUE
+# Note that `FOUND_VAR LibUSB_FOUND` is needed for cmake 3.2 and older.
 find_package_handle_standard_args(LibUSB
+                                  FOUND_VAR LibUSB_FOUND
                                   REQUIRED_VARS LibUSB_LIBRARY LibUSB_INCLUDE_DIR
                                   VERSION_VAR LibUSB_VERSION)
 

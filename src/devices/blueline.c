@@ -10,7 +10,6 @@
  */
 
 #include <stdlib.h>
-#include "fatal.h"
 #include "decoder.h"
 
 /**
@@ -189,7 +188,7 @@ static uint8_t rev_crc8(uint8_t const message[], unsigned nBytes, uint8_t polyno
 
 static uint16_t guess_blueline_id(r_device *decoder, const uint8_t *current_row)
 {
-    struct blueline_stateful_context *const context = decoder->decode_ctx;
+    struct blueline_stateful_context *const context = decoder_user_data(decoder);
     const uint16_t start_value = ((current_row[2] << 8) | current_row[1]);
     const uint8_t recv_crc = current_row[3];
     const uint8_t rcv_msg_type = (current_row[1] & 0x03);
@@ -239,7 +238,7 @@ static uint16_t guess_blueline_id(r_device *decoder, const uint8_t *current_row)
 
 static int blueline_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    struct blueline_stateful_context *const context = decoder->decode_ctx;
+    struct blueline_stateful_context *const context = decoder_user_data(decoder);
     data_t *data;
     int row_index;
     uint8_t *current_row;
@@ -400,20 +399,12 @@ r_device const blueline;
 
 static r_device *blueline_create(char *arg)
 {
-    r_device *r_dev = create_device(&blueline);
+    r_device *r_dev = decoder_create(&blueline, sizeof(struct blueline_stateful_context));
     if (!r_dev) {
-        fprintf(stderr, "blueline_create() failed\n");
         return NULL; // NOTE: returns NULL on alloc failure.
     }
 
-    struct blueline_stateful_context *context = malloc(sizeof(*context));
-    if (!context) {
-        WARN_MALLOC("blueline_create()");
-        free(r_dev);
-        return NULL; // NOTE: returns NULL on alloc failure.
-    }
-    memset(context, 0, sizeof(*context));
-    r_dev->decode_ctx = context;
+    struct blueline_stateful_context *context = decoder_user_data(r_dev);
 
     if (arg != NULL) {
         if (strcmp(arg, "auto") == 0) {

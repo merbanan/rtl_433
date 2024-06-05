@@ -190,8 +190,8 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     http://davestech.blogspot.com/2008/02/itron-remote-read-electric-meter.html
     SCM1 Counter1 Meter has been inverted
     SCM1 Counter2 Meter has been removed
-    SCM2 Counter3 Meter detected a button–press demand reset
-    SCM2 Counter4 Meter has a low-battery/end–of–calendar warning
+    SCM2 Counter3 Meter detected a button-press demand reset
+    SCM2 Counter4 Meter has a low-battery/end-of-calendar warning
     SCM3 Counter5 Meter has an error or a warning that can affect billing
     SCM3 Counter6 Meter has a warning that may or may not require a site visit,
     */
@@ -227,7 +227,7 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         DifferentialConsumptionIntervals[j] = ((uint16_t)buffy[0] << 1) | (buffy[1] >> 7);
         pos += 9;
     }
-    if (decoder->verbose > 1) {
+    if (decoder_verbose(decoder) > 1) {
         decoder_log(decoder, 2, __func__, "DifferentialConsumptionIntervals");
         for (int j = 0; j < 47; j++) {
             decoder_logf(decoder, 2, __func__, "%d", DifferentialConsumptionIntervals[j]);
@@ -440,8 +440,8 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     http://davestech.blogspot.com/2008/02/itron-remote-read-electric-meter.html
     SCM1 Counter1 Meter has been inverted
     SCM1 Counter2 Meter has been removed
-    SCM2 Counter3 Meter detected a button–press demand reset
-    SCM2 Counter4 Meter has a low-battery/end–of–calendar warning
+    SCM2 Counter3 Meter detected a button-press demand reset
+    SCM2 Counter4 Meter has a low-battery/end-of-calendar warning
     SCM3 Counter5 Meter has an error or a warning that can affect billing
     SCM3 Counter6 Meter has a warning that may or may not require a site visit,
     */
@@ -489,7 +489,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // decoder_logf_bitrow(decoder, 0, __func__, buffy, 14, "%d %d", j, DifferentialConsumptionIntervals[j]);
         pos += 14;
     }
-    if (decoder->verbose) {
+    if (decoder_verbose(decoder)) {
         decoder_log(decoder, 1, __func__, "DifferentialConsumptionIntervals");
         for (int j = 0; j < 27; j++) {
             decoder_logf(decoder, 1, __func__, "%d", DifferentialConsumptionIntervals[j]);

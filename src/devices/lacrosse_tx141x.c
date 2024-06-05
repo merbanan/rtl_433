@@ -226,7 +226,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (0 == id || (device == LACROSSE_TX141TH && (0 == humidity || humidity > 100)) || temp_c < -40.0 || temp_c > 140.0) {
-        decoder_logf(decoder, 1, __func__, "data error, id: %i, humidity:%i, temp:%f", id, humidity, temp_c);
+        decoder_logf(decoder, 1, __func__, "data error, id: %d, humidity:%d, temp:%f", id, humidity, temp_c);
         return DECODE_FAIL_SANITY;
     }
 

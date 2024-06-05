@@ -12,7 +12,7 @@
 // note: our unit header includes unistd.h for gethostname() via data.h
 #include "output_mqtt.h"
 #include "optparse.h"
-#include "util.h"
+#include "bit_util.h"
 #include "logger.h"
 #include "fatal.h"
 #include "r_util.h"

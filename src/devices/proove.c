@@ -29,7 +29,7 @@ Proove packet structure (32 bits or 36 bits with dimmer value):
 
     HHHH HHHH HHHH HHHH HHHH HHHH HHGO CCEE [DDDD]
 
-- H = The first 26 bits are transmitter unique codes, and it is this code that the receiver “learns” to recognize.
+- H = The first 26 bits are transmitter unique codes, and it is this code that the receiver "learns" to recognize.
 - G = Group command. Set to 1 for on, 0 for off.
 - O = On/Off bit. Set to 1 for on, 0 for off.
 - C = Channel bits (inverted).

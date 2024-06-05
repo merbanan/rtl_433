@@ -48,7 +48,7 @@ static int tpms_nissan_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
 
     // (PSI+THREE)*FOUR=8d
     int pressure_raw   = ((b[3] & 0x1F) << 3) | (b[4] >> 5);
-    float pressure_psi = (double)(pressure_raw / 4.0) - 3.0;
+    float pressure_psi = (float)pressure_raw / 4.0f;
 
     // UNKNOWN:2b
     int unknown = (b[4] & 0x1F) >> 3;
@@ -62,7 +62,7 @@ static int tpms_nissan_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,
             "mode",             "",             DATA_INT,    mode,
-            "pressure_psi",     "Pressure",     DATA_FORMAT, "%.1f PSI", DATA_DOUBLE, (double)(pressure_psi / 4.0) - 3.0,
+            "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.1f PSI", DATA_DOUBLE, pressure_psi,
             "unknown",          "",             DATA_INT,    unknown,
             NULL);
     /* clang-format on */
@@ -98,7 +98,7 @@ static char const *const output_fields[] = {
         "type",
         "id",
         "mode",
-        "pressure_psi",
+        "pressure_PSI",
         "unknown",
         NULL,
 };

@@ -29,7 +29,9 @@ set(LibRTLSDR_VERSION ${PC_LibRTLSDR_VERSION})
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set LibRTLSDR_FOUND to TRUE
 # if all listed variables are TRUE
+# Note that `FOUND_VAR LibRTLSDR_FOUND` is needed for cmake 3.2 and older.
 find_package_handle_standard_args(LibRTLSDR
+                                  FOUND_VAR LibRTLSDR_FOUND
                                   REQUIRED_VARS LibRTLSDR_LIBRARY LibRTLSDR_INCLUDE_DIR
                                   VERSION_VAR LibRTLSDR_VERSION)
 

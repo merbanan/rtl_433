@@ -22,6 +22,10 @@ Decoder for Bresser Weather Center 6-in-1.
 - also Bresser soil temperature and moisture meter, PN 7009972
 - also Bresser Thermo-/Hygro-Sensor 7 Channel 868 MHz, PN 7009999
 - also Bresser Pool / Spa Thermometer, PN 7009973 (STYPE = 3)
+- also SENCOR SWS 9898
+- also Ambient Weather TX-3110B Wireless Thermo-Hygrometer
+- also likely Ambient Weather TX-3102 Soil Moisture Meter & Thermometer (unconfirmed)
+- also likely Ambient Weather TX-3107 Floating Pool and Spa Thermometer (unconfirmed)
 
 There are at least two different message types:
 - 24 seconds interval for temperature, hum, uv and rain (alternating messages)
@@ -94,7 +98,6 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int const moisture_map[] = {0, 7, 13, 20, 27, 33, 40, 47, 53, 60, 67, 73, 80, 87, 93, 99}; // scale is 20/3
 
-    data_t *data;
     uint8_t msg[18];
 
     if (bitbuffer->num_rows != 1
@@ -104,15 +107,15 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY; // Unrecognized data
     }
 
-    unsigned start_pos = bitbuffer_search(bitbuffer, 0, 0,
-            preamble_pattern, sizeof (preamble_pattern) * 8);
+    unsigned const start_pos = bitbuffer_search(bitbuffer, 0, 0,
+            preamble_pattern, sizeof (preamble_pattern) * 8)
+            + sizeof (preamble_pattern) * 8;
 
     if (start_pos >= bitbuffer->bits_per_row[0]) {
         return DECODE_ABORT_LENGTH;
     }
-    start_pos += sizeof (preamble_pattern) * 8;
 
-    unsigned len = bitbuffer->bits_per_row[0] - start_pos;
+    unsigned const len = bitbuffer->bits_per_row[0] - start_pos;
     if (len < sizeof(msg) * 8) {
         decoder_logf(decoder, 2, __func__, "%u too short", len);
         return DECODE_ABORT_LENGTH; // message too short
@@ -123,30 +126,30 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_log_bitrow(decoder, 2, __func__, msg, sizeof(msg) * 8, "");
 
     // LFSR-16 digest, generator 0x8810 init 0x5412
-    int chkdgst = (msg[0] << 8) | msg[1];
-    int digest  = lfsr_digest16(&msg[2], 15, 0x8810, 0x5412);
+    int const chkdgst = (msg[0] << 8) | msg[1];
+    int const digest  = lfsr_digest16(&msg[2], 15, 0x8810, 0x5412);
     if (chkdgst != digest) {
         decoder_logf(decoder, 2, __func__, "Digest check failed %04x vs %04x", chkdgst, digest);
         return DECODE_FAIL_MIC;
     }
     // Checksum, add with carry
-    int chksum = msg[17];
-    int sum    = add_bytes(&msg[2], 16); // msg[2] to msg[17]
+    int const chksum = msg[17];
+    int const sum    = add_bytes(&msg[2], 16); // msg[2] to msg[17]
     if ((sum & 0xff) != 0xff) {
         decoder_logf(decoder, 2, __func__, "Checksum failed %04x vs %04x", chksum, sum);
         return DECODE_FAIL_MIC;
     }
 
-    uint32_t id = ((uint32_t)msg[2] << 24) | (msg[3] << 16) | (msg[4] << 8) | (msg[5]);
-    int s_type  = (msg[6] >> 4); // 1: weather station, 2: indoor?, 3: pool thermometer, 4: soil probe
-    int startup = (msg[6] >> 3) & 1; // s.a. #1214
-    int chan    = (msg[6] & 0x7);
-    int battery = (msg[13] >> 1) & 1; // b[13] & 0x02 is battery_good, s.a. #1993
+    uint32_t const id = ((uint32_t)msg[2] << 24) | (msg[3] << 16) | (msg[4] << 8) | (msg[5]);
+    int const s_type  = (msg[6] >> 4); // 1: weather station, 2: indoor?, 3: pool thermometer, 4: soil probe
+    int const startup = (msg[6] >> 3) & 1; // s.a. #1214
+    int const chan    = (msg[6] & 0x7);
+    int const battery = (msg[13] >> 1) & 1; // b[13] & 0x02 is battery_good, s.a. #1993
 
     // temperature, humidity, shared with rain counter, only if valid BCD digits
-    int temp_ok   = msg[12] <= 0x99 && (msg[13] & 0xf0) <= 0x90;
-    int temp_raw  = (msg[12] >> 4) * 100 + (msg[12] & 0x0f) * 10 + (msg[13] >> 4);
-    int temp_sign = (msg[13] >> 3) & 1;
+    int const temp_ok   = msg[12] <= 0x99 && (msg[13] & 0xf0) <= 0x90;
+    int const temp_raw  = (msg[12] >> 4) * 100 + (msg[12] & 0x0f) * 10 + (msg[13] >> 4);
+    int const temp_sign = (msg[13] >> 3) & 1;
     float temp_c  = temp_raw * 0.1f;
     if (temp_sign) {
         temp_c = (temp_raw - 1000) * 0.1f;
@@ -156,16 +159,16 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         temp_c = -temp_raw * 0.1f;
     }
 
-    int humidity    = (msg[14] >> 4) * 10 + (msg[14] & 0x0f);
+    int const humidity = (msg[14] >> 4) * 10 + (msg[14] & 0x0f);
 
     // apparently ff01 or 0000 if not available, ???0 if valid inverted BCD
     int uv_ok  = (msg[16] & 0x0f) == 0 && (~msg[15] & 0xff) <= 0x99 && (~msg[16] & 0xf0) <= 0x90;
-    int uv_raw = ((~msg[15] & 0xf0) >> 4) * 100 + (~msg[15] & 0x0f) * 10 + ((~msg[16] & 0xf0) >> 4);
-    float uv   = uv_raw * 0.1f;
-    int flags  = (msg[16] & 0x0f); // looks like some flags, not sure
+    int const uv_raw = ((~msg[15] & 0xf0) >> 4) * 100 + (~msg[15] & 0x0f) * 10 + ((~msg[16] & 0xf0) >> 4);
+    float const uv   = uv_raw * 0.1f;
+    int const flags  = (msg[16] & 0x0f); // looks like some flags, not sure
 
-    //int unk_ok  = (msg[16] & 0xf0) == 0xf0;
-    //int unk_raw = ((msg[15] & 0xf0) >> 4) * 10 + (msg[15] & 0x0f);
+    //int const unk_ok  = (msg[16] & 0xf0) == 0xf0;
+    //int const unk_raw = ((msg[15] & 0xf0) >> 4) * 10 + (msg[15] & 0x0f);
 
     // invert 3 bytes wind speeds
     msg[7] ^= 0xff;
@@ -173,21 +176,22 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     msg[9] ^= 0xff;
     int wind_ok = (msg[7] <= 0x99) && (msg[8] <= 0x99) && (msg[9] <= 0x99);
 
-    int gust_raw    = (msg[7] >> 4) * 100 + (msg[7] & 0x0f) * 10 + (msg[8] >> 4);
-    float wind_gust = gust_raw * 0.1f;
-    int wavg_raw    = (msg[9] >> 4) * 100 + (msg[9] & 0x0f) * 10 + (msg[8] & 0x0f);
-    float wind_avg  = wavg_raw * 0.1f;
-    int wind_dir    = ((msg[10] & 0xf0) >> 4) * 100 + (msg[10] & 0x0f) * 10 + ((msg[11] & 0xf0) >> 4);
+    int const gust_raw    = (msg[7] >> 4) * 100 + (msg[7] & 0x0f) * 10 + (msg[8] >> 4);
+    float const wind_gust = gust_raw * 0.1f;
+    int const wavg_raw    = (msg[9] >> 4) * 100 + (msg[9] & 0x0f) * 10 + (msg[8] & 0x0f);
+    float const wind_avg  = wavg_raw * 0.1f;
+    int const wind_dir    = ((msg[10] & 0xf0) >> 4) * 100 + (msg[10] & 0x0f) * 10 + ((msg[11] & 0xf0) >> 4);
 
     // rain counter, inverted 3 bytes BCD, shared with temp/hum, only if valid digits
     msg[12] ^= 0xff;
     msg[13] ^= 0xff;
     msg[14] ^= 0xff;
-    int rain_ok   = msg[12] <= 0x99 && msg[13] <= 0x99 && msg[14] <= 0x99;
-    int rain_raw  = (msg[12] >> 4) * 100000 + (msg[12] & 0x0f) * 10000
+    int const rain_ok   = msg[16] & 1;
+    //int const rain_ok   = msg[12] <= 0x99 && msg[13] <= 0x99 && msg[14] <= 0x99;
+    int const rain_raw  = (msg[12] >> 4) * 100000 + (msg[12] & 0x0f) * 10000
             + (msg[13] >> 4) * 1000 + (msg[13] & 0x0f) * 100
             + (msg[14] >> 4) * 10 + (msg[14] & 0x0f);
-    float rain_mm = rain_raw * 0.1f;
+    float const rain_mm = rain_raw * 0.1f;
 
     // the moisture sensor might present valid readings but does not have the hardware
     if (s_type == 4) {
@@ -200,7 +204,7 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         moisture = moisture_map[humidity - 1];
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Bresser-6in1",
             "id",               "",             DATA_FORMAT, "%08x", DATA_INT,    id,
             "channel",          "",             DATA_INT,    chan,

@@ -41,7 +41,6 @@ static int abmt_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_c;
     bitbuffer_t packet_bits = {0};
     unsigned int id;
-    data_t *data;
     unsigned bitpos = 0;
     uint8_t *b;
     int16_t temp;
@@ -71,10 +70,10 @@ static int abmt_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     temp_c = (float)temp;
 
     /* clang-format off */
-     data = data_make(
+    data_t *data = data_make(
              "model",         "",            DATA_STRING, "Basics-Meat",
              "id",            "Id",          DATA_INT,    id,
-             "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
+             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
              NULL);
     /* clang-format on */
     decoder_output_data(decoder, data);

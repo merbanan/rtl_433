@@ -1,50 +1,18 @@
-Makefile
-Makefile.in
-.deps
-.libs
-*.o
-*.lo
-*.la
-*.pc
-aclocal.m4
-acinclude.m4
-aminclude.am
-m4/*.m4
-autom4te.cache
-config.h*
-config.sub
-config.log
-config.status
-config.guess
-configure
-compile
-depcomp
-missing
-ltmain.sh
-install-sh
-stamp-h1
-libtool
-Doxyfile
-.dirstamp
-tags
-
-.tarball-version
-.version
-
-.*.swp
-
-doc/
-
-src/rtl_433
-
-CMakeCache.txt
-
+# CMake out-of-tree builds
 build*/
+
+# IDE files
 .cproject
 .settings
 .project
+.cache
+.vs
+.idea
+cmake-build-debug/
 
+# Editor files
 *.orig
+*.bak
 *~
 *.tlog
 *.ipdb
@@ -54,12 +22,10 @@ build*/
 *.db
 *.opendb
 
-_*/
+# Development files
+/_*/
+/rtl_433_tests
 
-rtl_433_tests
-
-.vs
-.idea
-cmake-build-debug/
-
+# File manager files
 .DS_Store
+.history

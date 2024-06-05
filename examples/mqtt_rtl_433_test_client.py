@@ -30,7 +30,10 @@ TIMEOUT_STALE_SENSOR = 600  # Seconds before showing a timeout indicator
 
 # log = logging.getLogger()  # Single process logger
 log = mp.log_to_stderr()  # Multiprocessing capable logger
-mqtt_client = mqtt.Client("RTL_433_Test")
+if hasattr(mqtt, 'CallbackAPIVersion'):  # paho >= 2.0.0
+    mqtt_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION1, client_id="RTL_433_Test")
+else:
+    mqtt_client = mqtt.Client(client_id="RTL_433_Test")
 
 sensor_state = dict()  # Dictionary containing accumulated sensor state
 

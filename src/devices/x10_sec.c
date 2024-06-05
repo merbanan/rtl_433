@@ -73,7 +73,7 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /* First row should be sync, second row should be 41 bit message */
     if (bitbuffer->bits_per_row[1] < 41) {
         if (bitbuffer->bits_per_row[1] != 0)
-            decoder_logf(decoder, 1, __func__, "DECODE_ABORT_LENGTH, Received message length=%i", bitbuffer->bits_per_row[1]);
+            decoder_logf(decoder, 1, __func__, "DECODE_ABORT_LENGTH, Received message length=%d", bitbuffer->bits_per_row[1]);
         return DECODE_ABORT_LENGTH;
     }
 

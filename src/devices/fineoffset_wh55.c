@@ -2,7 +2,7 @@
     Fine Offset / Ecowitt WH55 water leak sensor.
 
     Copyright (C) 2023 Christian W. Zuckschwerdt <zany@triq.net>
-    Protocol analysis by @cdavis289, test data by @AhrBee
+    Protocol analysis by \@cdavis289, test data by \@AhrBee
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

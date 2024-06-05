@@ -17,6 +17,7 @@
 
 /** Construct data output for CSV printer.
 
+    @param log_level the highest log level to process
     @param file the output stream
     @return The auxiliary data to pass along with data_csv_printer to data_print.
             You must release this object with data_output_free once you're done with it.

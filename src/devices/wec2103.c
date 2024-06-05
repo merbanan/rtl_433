@@ -74,7 +74,7 @@ static int wec2103_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "channel",          "Channel",      DATA_INT,    channel,
             "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "button",           "Button",       DATA_INT,    button,
-            "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,
+            "temperature_F",    "Temperature",  DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "flags",            "Flags",        DATA_INT,    flags,
             "mic",              "Integrity",    DATA_STRING, "CRC",

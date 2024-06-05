@@ -74,7 +74,7 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
                 "id",               "SID",          DATA_INT,       sid,
                 "channel",          "Channel",      DATA_INT,       channel,
                 "battery_ok",       "Battery",      DATA_INT,       !battery,
-                "temperature_C",    "Temperature",  DATA_FORMAT,    "%.01f C",              DATA_DOUBLE,    temp_c,
+                "temperature_C",    "Temperature",  DATA_FORMAT,    "%.1f C",              DATA_DOUBLE,    temp_c,
                 "mic",              "Integrity",    DATA_STRING,    "CHECKSUM",
                 NULL);
         /* clang-format on */

@@ -14,7 +14,7 @@
 #include "pulse_detect_fsk.h"
 #include "pulse_data.h"
 #include "baseband.h"
-#include "util.h"
+#include "c_util.h" // for MIN(), MAX()
 #include "logger.h"
 #include "fatal.h"
 #include <stdio.h>

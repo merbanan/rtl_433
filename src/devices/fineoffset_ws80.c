@@ -2,7 +2,7 @@
     Fine Offset Electronics WS80 weather station.
 
     Copyright (C) 2022 Christian W. Zuckschwerdt <zany@triq.net>
-    Protocol description by @davidefa
+    Protocol description by \@davidefa
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

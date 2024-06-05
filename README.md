@@ -134,7 +134,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [44]  CurrentCost Current Sensor
     [45]  emonTx OpenEnergyMonitor
     [46]  HT680 Remote control
-    [47]  Conrad S3318P, FreeTec NC-5849-913 temperature humidity sensor
+    [47]  Conrad S3318P, FreeTec NC-5849-913 temperature humidity sensor, ORIA WA50 ST389 temperature sensor
     [48]  Akhan 100F14 remote keyless entry
     [49]  Quhwa
     [50]  OSv1 Temperature Sensor
@@ -207,7 +207,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [119]  Bresser Weather Center 5-in-1
     [120]  Digitech XC-0324 / AmbientWeather FT005TH temp/hum sensor
     [121]  Opus/Imagintronix XT300 Soil Moisture
-    [122]* FS20
+    [122]  FS20 / FHT
     [123]* Jansite TPMS Model TY02S
     [124]  LaCrosse/ELV/Conrad WS7000/WS2500 weather sensors
     [125]  TS-FT002 Wireless Ultrasonic Tank Liquid Level Meter With Temperature Sensor
@@ -258,7 +258,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [170]  LaCrosse Technology View LTV-WR1 Multi Sensor
     [171]  LaCrosse Technology View LTV-TH Thermo/Hygro Sensor
     [172]  Bresser Weather Center 6-in-1, 7-in-1 indoor, soil, new 5-in-1, 3-in-1 wind gauge, Froggit WH6000, Ventus C8488A
-    [173]  Bresser Weather Center 7-in-1, Air Quality PM2.5/PM10 7009970, CO2 7009977, HCHO/VOC 7009978
+    [173]  Bresser Weather Center 7-in-1, Air Quality PM2.5/PM10 7009970, CO2 7009977, HCHO/VOC 7009978 sensors
     [174]  EcoDHOME Smart Socket and MCEE Solar monitor
     [175]  LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1/W2 Wind Sensor
     [176]  BlueLine Innovations Power Cost Monitor
@@ -306,7 +306,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [218]  Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes (FSK)
     [219]  Fine Offset Electronics WH45 air quality sensor
     [220]  Maverick XR-30 BBQ Sensor
-    [221]  Fine Offset Electronics WN34 temperature sensor
+    [221]  Fine Offset Electronics WN34S/L/D and Froggit DP150/D35 temperature sensor
     [222]  Rubicson Pool Thermometer 48942
     [223]  Badger ORION water meter, 100kbps (-f 916.45M -s 1200k)
     [224]  GEO minim+ energy monitor
@@ -326,7 +326,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [238]  Wireless M-Bus, Mode T, 32.768kbps (-f 868.3M -s 1000k)
     [239]  Revolt NC-5642 Energy Meter
     [240]  LaCrosse TX31U-IT, The Weather Channel WS-1910TWC-IT
-    [241]  EezTire E618, Carchet TPMS
+    [241]  EezTire E618, Carchet TPMS, TST-507 TPMS
     [242]* Baldr / RainPoint rain gauge.
     [243]  Celsia CZC1 Thermostat
     [244]  Fine Offset Electronics WS90 weather station
@@ -335,11 +335,17 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [247]  Bresser water leakage
     [248]* Nissan TPMS
     [249]  Bresser lightning
-    [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge
+    [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge, TFA Dostmann 30.3252.01/47.3006.01 Rain Gauge and Thermometer, ADE WS1907
     [251]  Fine Offset / Ecowitt WH55 water leak sensor
-    [252]  Landis & Gyr Gridstream Power Meters 9.6k
-    [253]  Landis & Gyr Gridstream Power Meters 19.2k
-    [254]  Landis & Gyr Gridstream Power Meters 38.4k
+    [252]  BMW Gen4-Gen5 TPMS and Audi TPMS Pressure Alert, multi-brand HUF/Beru, Continental, Schrader/Sensata, Audi
+    [253]  Watts WFHT-RF Thermostat
+    [254]  Thermor DG950 weather station
+    [255]  Mueller Hot Rod water meter
+    [256]  ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill
+    [257]  BMW Gen3 TPMS
+    [258]  Landis & Gyr Gridstream Power Meters 9.6k
+    [259]  Landis & Gyr Gridstream Power Meters 19.2k
+    [260]  Landis & Gyr Gridstream Power Meters 38.4k
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -525,6 +531,16 @@ Some examples:
 | `rtl_433 -K FILE -r file_name` | Read a saved data file instead of receiving live data. Tag output with filenames.
 | `rtl_433 -F json -M utc \| mosquitto_pub -t home/rtl_433 -l` | Will pipe the output to network as JSON formatted MQTT messages. A test MQTT client can be found in `examples/mqtt_rtl_433_test_client.py`.
 | `rtl_433 -f 433.53M -f 434.02M -H 15` | Will poll two frequencies with 15 seconds hop interval.
+
+## Security
+
+Please note: We aim to make `rtl_433` safe to use, but it should not be assumed secure.
+There is no reason to e.g. run with `sudo`, we do read and write files without any checks.
+
+The output is literally pulled from thin air, it's not to be trusted.
+If you feed downstream systems with data make sure edge cases are checked and handled.
+Network inputs and outputs are for use in a trusted local network, will contain unfiltered data, and might overload the recipient
+(know that e.g. the MQTT output can be controlled by anyone with a radio sender).
 
 ## Google Group
 

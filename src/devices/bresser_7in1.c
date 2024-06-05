@@ -229,8 +229,8 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     } else if (s_type == SENSOR_TYPE_AIR_PM) {
         int pm_2_5      = (msg[10] & 0x0f) * 1000 + (msg[11] >> 4) * 100 + (msg[11] & 0x0f) * 10 + (msg[12] >> 4);
         int pm_10       = (msg[12] & 0x0f) * 1000 + (msg[13] >> 4) * 100 + (msg[13] & 0x0f) * 10 + (msg[14] >> 4);
-        int pm_2_5_init = ((msg[12] >> 4) & 0x0f) == 0x0f;
-        int pm_10_init  = ((msg[14] >> 4) & 0x0f) == 0x0f;
+        int pm_2_5_init = (msg[10] & 0x0f) == 0x0f; // confirmed by https://github.com/merbanan/rtl_433/issues/2816#issuecomment-1935439318
+        int pm_10_init  = (msg[12] & 0x0f) == 0x0f; // confirmed by https://github.com/merbanan/rtl_433/issues/2816#issuecomment-1935439318
 
         /* clang-format off */
         data = data_make(
@@ -259,7 +259,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "channel",          "",                         DATA_INT,    chan,
                 "startup",          "Startup",                  DATA_COND,   !nstartup,  DATA_INT, !nstartup,
                 "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
-                "co2_ppm",          "Carbon Dioxide",           DATA_COND,   !co2_init,     DATA_FORMAT, "%i ppm", DATA_INT, co2,
+                "co2_ppm",          "Carbon Dioxide",           DATA_COND,   !co2_init,     DATA_FORMAT, "%d ppm", DATA_INT, co2,
                 "mic",              "Integrity",                DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
@@ -275,13 +275,13 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",            "",                           DATA_STRING, "Bresser-HCHO-VOC",
+                "model",            "",                           DATA_STRING, "Bresser-HCHOVOC",
                 "id",               "",                           DATA_INT,    id,
                 "channel",          "",                           DATA_INT,    chan,
                 "startup",          "Startup",                    DATA_COND,   !nstartup,  DATA_INT, !nstartup,
                 "battery_ok",       "Battery",                    DATA_INT,    !battery_low,
-                "hcho_ppb",         "Formaldehyde",               DATA_COND,   !hcho_init, DATA_FORMAT, "%i ppb", DATA_INT, hcho,
-                "voc_level",        "Volatile Organic Compounds", DATA_COND,   !voc_init,  DATA_FORMAT, "%i",     DATA_INT, voc, // from 1 bad air quality to 5 very good air quality
+                "hcho_ppb",         "Formaldehyde",               DATA_COND,   !hcho_init, DATA_FORMAT, "%d ppb", DATA_INT, hcho,
+                "voc_level",        "Volatile Organic Compounds", DATA_COND,   !voc_init,  DATA_FORMAT, "%d",     DATA_INT, voc, // from 1 bad air quality to 5 very good air quality
                 "mic",              "Integrity",                  DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */

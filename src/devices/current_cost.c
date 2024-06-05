@@ -55,7 +55,7 @@ static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         start_pos += 45;
     }
 
-    start_pos = bitbuffer_manchester_decode(bitbuffer, 0, start_pos, &packet, 0);
+    bitbuffer_manchester_decode(bitbuffer, 0, start_pos, &packet, 0);
 
     if (packet.bits_per_row[0] < 64) {
         return DECODE_ABORT_EARLY;

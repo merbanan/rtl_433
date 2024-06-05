@@ -85,7 +85,6 @@ static int lacrosse_breezepro_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble_pattern[] = {0xd2, 0xaa, 0x2d, 0xd4};
 
-    data_t *data;
     uint8_t b[11];
     uint32_t id;
     int flags, seq, offset, chk;
@@ -129,13 +128,14 @@ static int lacrosse_breezepro_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     speed_kmh = raw_speed * 0.1f;
 
     if (humidity < 0 || humidity > 100
-        || temp_c < -40 || temp_c > 70
-        || direction < 0 || direction > 360
-        || speed_kmh < 0 || speed_kmh > 200)
-      return DECODE_FAIL_SANITY;
+            || temp_c < -40 || temp_c > 70
+            || direction < 0 || direction > 360
+            || speed_kmh < 0 || speed_kmh > 200) {
+        return DECODE_FAIL_SANITY;
+    }
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",                 DATA_STRING, "LaCrosse-BreezePro",
             "id",               "Sensor ID",        DATA_FORMAT, "%06x", DATA_INT, id,
             "seq",              "Sequence",         DATA_FORMAT, "%01x", DATA_INT, seq,

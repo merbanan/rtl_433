@@ -153,6 +153,7 @@ alloc_error:
 
 // the static analyzer can't prove the allocs to be correct
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wanalyzer-malloc-leak"
 
 static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key, va_list ap)

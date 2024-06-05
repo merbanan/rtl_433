@@ -259,6 +259,12 @@
     DECL(bresser_lightning) \
     DECL(schou_72543_rain) \
     DECL(fineoffset_wh55) \
+    DECL(tpms_bmw) \
+    DECL(watts_thermostat) \
+    DECL(thermor) \
+    DECL(mueller_hotrod) \
+    DECL(thermopro_tp28b) \
+    DECL(tpms_bmwg3) \
     DECL(gridstream96) \
     DECL(gridstream192) \
     DECL(gridstream384) \

@@ -81,8 +81,8 @@ static int maverick_et73_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",            "",                 DATA_STRING, "Maverick-ET73",
             "id",               "Random Id",        DATA_INT, device,
-            "temperature_1_C",  "Temperature 1",    DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp1_c,
-            "temperature_2_C",  "Temperature 2",    DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp2_c,
+            "temperature_1_C",  "Temperature 1",    DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp1_c,
+            "temperature_2_C",  "Temperature 2",    DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp2_c,
             NULL);
     /* clang-format on */
 

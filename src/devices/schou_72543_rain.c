@@ -111,7 +111,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const schou_72543_rain = {
-        .name        = "Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge",
+        .name        = "Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge, TFA Dostmann 30.3252.01/47.3006.01 Rain Gauge and Thermometer, ADE WS1907",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 972,
         .long_width  = 2680,

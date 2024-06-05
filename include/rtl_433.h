@@ -116,11 +116,20 @@ typedef struct r_cfg {
     char const *sr_filename;
     int sr_execopen;
     int watchdog; ///< SDR acquire stall watchdog
-    /* stats*/
-    time_t frames_since; ///< stats start time
-    unsigned frames_count; ///< stats counter for interval
-    unsigned frames_fsk; ///< stats counter for interval
-    unsigned frames_events; ///< stats counter for interval
+    /* global stats */
+    time_t running_since;           ///< program start time statistic
+    unsigned total_frames_count;    ///< total frames recieved statistic
+    unsigned total_frames_squelch;  ///< total frames with noise only statistic
+    unsigned total_frames_ook;      ///< total frames with ook demod statistic
+    unsigned total_frames_fsk;      ///< total frames with fsk demod statistic
+    unsigned total_frames_events;   ///< total frames with decoder events statistic
+    /* sdr stats */
+    time_t sdr_since; ///< time of last SDR connect statistic
+    /* per report interval stats */
+    time_t frames_since;    ///< time at start of report interval statistic
+    unsigned frames_ook;    ///< counter of ook demods for report interval statistic
+    unsigned frames_fsk;    ///< counter of fsk demods for report interval statistic
+    unsigned frames_events; ///< counter of decoder events for report interval statistic
     struct mg_mgr *mgr;
 } r_cfg_t;
 

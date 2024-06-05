@@ -91,7 +91,7 @@ static int secplus_v2_decode_v2_half(r_device *decoder, bitbuffer_t *bits, uint8
     // bitrow_debug(&invert, 8);
 
     bitbuffer_extract_bytes(bits, 0, start_pos, buffy, 30);
-    start_pos += 30;
+    // start_pos += 30;
 
     // copy 30 bits of data into 32bit int then shift >> 2
     // memcpy(&dat, buffy, 4);
@@ -268,7 +268,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         bitbuffer_clear(&bits);
         bitbuffer_manchester_decode(bitbuffer, row, search_index + 26, &bits, 80);
-        search_index += 20;
+        // search_index += 20;
         if (bits.bits_per_row[0] < 42) {
             continue; // DECODE_ABORT_LENGTH;
         }

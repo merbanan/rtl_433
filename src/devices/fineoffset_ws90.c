@@ -2,7 +2,7 @@
     Fine Offset Electronics WS90 weather station.
 
     Copyright (C) 2022 Christian W. Zuckschwerdt <zany@triq.net>
-    Protocol description by @davidefa
+    Protocol description by \@davidefa
 
     Copy of fineoffset_ws80.c with changes made to support Fine Offset WS90
     sensor array.  Changes made by John Pochmara <john@zoiedog.com>
