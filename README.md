@@ -135,7 +135,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [45]  emonTx OpenEnergyMonitor
     [46]  HT680 Remote control
     [47]  Conrad S3318P, FreeTec NC-5849-913 temperature humidity sensor, ORIA WA50 ST389 temperature sensor
-    [48]  Akhan 100F14 remote keyless entry
+    [48]* Akhan 100F14 remote keyless entry
     [49]  Quhwa
     [50]  OSv1 Temperature Sensor
     [51]  Proove / Nexa / KlikAanKlikUit Wireless Switch
@@ -171,7 +171,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [83]  Oil Ultrasonic STANDARD ASK
     [84]  Thermopro TP11 Thermometer
     [85]  Solight TE44/TE66, EMOS E0107T, NX-6876-917
-    [86]  Wireless Smoke and Heat Detector GS 558
+    [86]* Wireless Smoke and Heat Detector GS 558
     [87]  Generic wireless motion sensor
     [88]  Toyota TPMS
     [89]  Ford TPMS
