@@ -49,8 +49,6 @@ Data layouts:
 */
 
 #include "decoder.h"
-#include <stdbool.h>
-#include <stdlib.h>
 #include <time.h>
 
 struct crc_init {
@@ -84,7 +82,7 @@ static struct crc_init known_crc_init[] = {
 static int gridstream_checksum(int fulllength, uint16_t length, uint8_t *bits, int adjust)
 {
     uint16_t crc_count = 0;
-    bool crc_ok        = false;
+    int crc_ok         = 0;
     uint16_t crc;
 
     if ((fulllength - 4 + adjust) < length) {
@@ -93,12 +91,12 @@ static int gridstream_checksum(int fulllength, uint16_t length, uint8_t *bits, i
     crc = (bits[2 + length + adjust] << 8) | bits[3 + length + adjust];
     do {
         if (crc16(&bits[4 + adjust], length - 2, 0x1021, known_crc_init[crc_count].value) == crc) {
-            crc_ok = true;
+            crc_ok = 1;
         }
         else {
             crc_count++;
         }
-    } while (crc_count < (sizeof(known_crc_init) / sizeof(struct crc_init)) && crc_ok == false);
+    } while (crc_count < (sizeof(known_crc_init) / sizeof(struct crc_init)) && crc_ok == 0);
     if (!crc_ok) {
         return DECODE_FAIL_MIC;
     }
@@ -132,7 +130,7 @@ static int gridstream_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char srcwanaddress_str[13]  = "";
     char srcaddress_str[9]      = "";
     char destaddress_str[9]     = "";
-    bool srcwanaddress          = false;
+    int srcwanaddress           = 0;
     uint32_t uptime             = 0;
     time_t clock;
     char clock_str[80];
@@ -182,7 +180,7 @@ static int gridstream_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             case 0x55:
                 sprintf(destwanaddress_str, "%02x%02x%02x%02x%02x%02x", b[5], b[6], b[7], b[8], b[9], b[10]);
                 sprintf(srcwanaddress_str, "%02x%02x%02x%02x%02x%02x", b[11], b[12], b[13], b[14], b[15], b[16]);
-                srcwanaddress = true;
+                srcwanaddress = 1;
                 sprintf(srcaddress_str, "%02x%02x%02x%02x", b[24], b[25], b[26], b[27]);
                 uptime = ((uint32_t)b[18] << 24) | (b[19] << 16) | (b[20] << 8) | b[21];
                 break;
@@ -193,7 +191,7 @@ static int gridstream_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     clock  = ((uint32_t)b[14] << 24) | (b[15] << 16) | (b[16] << 8) | b[17];
                     uptime = ((uint32_t)b[22] << 24) | (b[23] << 16) | (b[24] << 8) | b[25];
                     sprintf(srcwanaddress_str, "%02x%02x%02x%02x%02x%02x", b[30], b[31], b[32], b[33], b[34], b[35]);
-                    srcwanaddress = true;
+                    srcwanaddress = 1;
                     strftime(clock_str, sizeof(clock_str), "%a %Y-%m-%d %H:%M:%S %Z", localtime(&clock));
                 }
                 break;
@@ -209,7 +207,7 @@ static int gridstream_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "protoversion", "",                     DATA_INT,       protocol_version,
                 "mic",          "Integrity",            DATA_STRING,    "CRC",
                 "id",           "Source Meter ID",      DATA_COND,      subtype != 0xD2, DATA_STRING, srcaddress_str,
-                "wanaddress",   "Source Meter WAN ID",  DATA_COND,      srcwanaddress, DATA_STRING, srcwanaddress_str,
+                "wanaddress",   "Source Meter WAN ID",  DATA_COND,      srcwanaddress == 1, DATA_STRING, srcwanaddress_str,
                 "destaddress",  "Target Meter WAN ID",  DATA_COND,      subtype == 0x55, DATA_STRING, destwanaddress_str,
                 "destaddress",  "Target Meter ID",      DATA_COND,      subtype == 0xD5, DATA_STRING, destaddress_str,
                 "timestamp",    "Timestamp",            DATA_COND,      subtype == 0xD5 && stream_len == 0x47, DATA_STRING, clock_str,
