@@ -179,9 +179,7 @@ void decoder_log_bitbuffer(r_device *decoder, int level, char const *func, const
         /* clang-format on */
 
         if (decoder->verbose_bits) {
-            data_append(data,
-                    "bits", "", DATA_ARRAY, data_array(num_rows, DATA_STRING, row_bits),
-                    NULL);
+            data = data_ary(data, "bits", "", NULL, data_array(num_rows, DATA_STRING, row_bits));
         }
 
         decoder_output_log(decoder, level, data);
@@ -229,9 +227,7 @@ void decoder_log_bitrow(r_device *decoder, int level, char const *func, uint8_t 
 
         if (decoder->verbose_bits) {
             row_bits = bitrow_asprint_bits(bitrow, bit_len);
-            data_append(data,
-                    "bits", "", DATA_STRING, row_bits,
-                    NULL);
+            data = data_str(data, "bits", "", NULL, row_bits);
         }
 
         decoder_output_log(decoder, level, data);

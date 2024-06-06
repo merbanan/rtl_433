@@ -852,23 +852,19 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
     }
 
     if (cfg->report_meta && cfg->demod->fsk_pulse_data.fsk_f2_est) {
-        data_append(data,
-                "mod",   "Modulation",  DATA_STRING, "FSK",
-                "freq1", "Freq1",       DATA_FORMAT, "%.1f MHz", DATA_DOUBLE, cfg->demod->fsk_pulse_data.freq1_hz / 1000000.0,
-                "freq2", "Freq2",       DATA_FORMAT, "%.1f MHz", DATA_DOUBLE, cfg->demod->fsk_pulse_data.freq2_hz / 1000000.0,
-                "rssi",  "RSSI",        DATA_FORMAT, "%.1f dB", DATA_DOUBLE, cfg->demod->fsk_pulse_data.rssi_db,
-                "snr",   "SNR",         DATA_FORMAT, "%.1f dB", DATA_DOUBLE, cfg->demod->fsk_pulse_data.snr_db,
-                "noise", "Noise",       DATA_FORMAT, "%.1f dB", DATA_DOUBLE, cfg->demod->fsk_pulse_data.noise_db,
-                NULL);
+        data = data_str(data, "mod",   "Modulation",  NULL,         "FSK");
+        data = data_dbl(data, "freq1", "Freq1",       "%.1f MHz",   cfg->demod->fsk_pulse_data.freq1_hz / 1000000.0);
+        data = data_dbl(data, "freq2", "Freq2",       "%.1f MHz",   cfg->demod->fsk_pulse_data.freq2_hz / 1000000.0);
+        data = data_dbl(data, "rssi",  "RSSI",        "%.1f dB",    cfg->demod->fsk_pulse_data.rssi_db);
+        data = data_dbl(data, "snr",   "SNR",         "%.1f dB",    cfg->demod->fsk_pulse_data.snr_db);
+        data = data_dbl(data, "noise", "Noise",       "%.1f dB",    cfg->demod->fsk_pulse_data.noise_db);
     }
     else if (cfg->report_meta) {
-        data_append(data,
-                "mod",   "Modulation",  DATA_STRING, "ASK",
-                "freq",  "Freq",        DATA_FORMAT, "%.1f MHz", DATA_DOUBLE, cfg->demod->pulse_data.freq1_hz / 1000000.0,
-                "rssi",  "RSSI",        DATA_FORMAT, "%.1f dB", DATA_DOUBLE, cfg->demod->pulse_data.rssi_db,
-                "snr",   "SNR",         DATA_FORMAT, "%.1f dB", DATA_DOUBLE, cfg->demod->pulse_data.snr_db,
-                "noise", "Noise",       DATA_FORMAT, "%.1f dB", DATA_DOUBLE, cfg->demod->pulse_data.noise_db,
-                NULL);
+        data = data_str(data, "mod",   "Modulation",  NULL,         "ASK");
+        data = data_dbl(data, "freq",  "Freq",        "%.1f MHz",   cfg->demod->pulse_data.freq1_hz / 1000000.0);
+        data = data_dbl(data, "rssi",  "RSSI",        "%.1f dB",    cfg->demod->pulse_data.rssi_db);
+        data = data_dbl(data, "snr",   "SNR",         "%.1f dB",    cfg->demod->pulse_data.snr_db);
+        data = data_dbl(data, "noise", "Noise",       "%.1f dB",    cfg->demod->pulse_data.noise_db);
     }
 
     // prepend "time" if requested
@@ -919,25 +915,15 @@ data_t *create_report_data(r_cfg_t *cfg, int level)
                 NULL);
 
         if (r_dev->decode_fails[-DECODE_FAIL_OTHER])
-            data_append(data,
-                    "fail_other",   "", DATA_INT, r_dev->decode_fails[-DECODE_FAIL_OTHER],
-                    NULL);
+            data = data_int(data, "fail_other",   "", NULL, r_dev->decode_fails[-DECODE_FAIL_OTHER]);
         if (r_dev->decode_fails[-DECODE_ABORT_LENGTH])
-            data_append(data,
-                    "abort_length", "", DATA_INT, r_dev->decode_fails[-DECODE_ABORT_LENGTH],
-                    NULL);
+            data = data_int(data, "abort_length", "", NULL, r_dev->decode_fails[-DECODE_ABORT_LENGTH]);
         if (r_dev->decode_fails[-DECODE_ABORT_EARLY])
-            data_append(data,
-                    "abort_early",  "", DATA_INT, r_dev->decode_fails[-DECODE_ABORT_EARLY],
-                    NULL);
+            data = data_int(data, "abort_early",  "", NULL, r_dev->decode_fails[-DECODE_ABORT_EARLY]);
         if (r_dev->decode_fails[-DECODE_FAIL_MIC])
-            data_append(data,
-                    "fail_mic",     "", DATA_INT, r_dev->decode_fails[-DECODE_FAIL_MIC],
-                    NULL);
+            data = data_int(data, "fail_mic",     "", NULL, r_dev->decode_fails[-DECODE_FAIL_MIC]);
         if (r_dev->decode_fails[-DECODE_FAIL_SANITY])
-            data_append(data,
-                    "fail_sanity",  "", DATA_INT, r_dev->decode_fails[-DECODE_FAIL_SANITY],
-                    NULL);
+            data = data_int(data, "fail_sanity",  "", NULL, r_dev->decode_fails[-DECODE_FAIL_SANITY]);
 
         list_push(&dev_data_list, data);
     }
