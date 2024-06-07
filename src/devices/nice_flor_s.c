@@ -21,6 +21,9 @@ A packet is made of 52 bits (13 nibbles S0 to S12):
 - S1: retransmission count starting from 1, xored with ~S0
 - S2 and S7-S12: 28 bit encrypted serial number
 - S3-S6: 16 bits encrypted rolling code
+
+Nice One remotes repeat the Nice Flor-s protocol with 20 additional bytes:
+a packet is made of 72 bits
 */
 
 #include "decoder.h"
@@ -30,7 +33,7 @@ static int nice_flor_s_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->num_rows != 2 || bitbuffer->bits_per_row[1] != 0) {
         return DECODE_ABORT_EARLY;
     }
-    if (bitbuffer->bits_per_row[0] != 52) {
+    if (bitbuffer->bits_per_row[0] != 52 && bitbuffer->bits_per_row[0] != 72) {
         return DECODE_ABORT_LENGTH;
     }
 
