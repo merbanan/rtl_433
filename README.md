@@ -343,6 +343,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [255]  Mueller Hot Rod water meter
     [256]  ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill
     [257]  BMW Gen3 TPMS
+    [258]  Chamberlain CWPIRC PIR Sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
