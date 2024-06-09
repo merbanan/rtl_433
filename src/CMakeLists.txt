@@ -253,6 +253,7 @@ add_library(r_433 STATIC
     devices/tpms_toyota.c
     devices/tpms_truck.c
     devices/tpms_tyreguard400.c
+    devices/tr_502msv.c
     devices/ts_ft002.c
     devices/ttx201.c
     devices/vaillant_vrt340f.c
