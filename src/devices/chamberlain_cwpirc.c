@@ -21,19 +21,19 @@ The pir sensor have a learn feature for pairing purpose with the base station up
 
 Data layout :
 
-Byte position                  00 01 02 03 04 05 06 07 08 09 10 11 12 13
-      55 55 ... 55 55 55 2D D4 00 xx xx xx xx xx 01 yy yy yy yy yy CC CC
-     |                  |     |                 |                 |     |
-     |               ,--'     |                 |                 |     '--------,
-     |Sync           |Preamble|Message 0        |Message 1        |CRC-16/XMODEM |
+    Byte position                00 01 02 03 04 05 06 07 08 09 10 11 12 13
+        55 55 ... 55 55 55 2D D4 00 xx xx xx xx xx 01 yy yy yy yy yy CC CC
+       |                  |     |                 |                 |     |
+       |               ,--'     |                 |                 |     '--------,
+       |Sync           |Preamble|Message 0        |Message 1        |CRC-16/XMODEM |
 
-Message 0   {48} 00 xx xx xx xx xx, always starting with 0x00
-Message 1   {48} 01 yy yy yy yy yy, always starting with 0x01
-CRC-16XModem{16} cc cc  from 00 to 11 byte
+- Message 0   {48} 00 xx xx xx xx xx, always starting with 0x00
+- Message 1   {48} 01 yy yy yy yy yy, always starting with 0x01
+- CRC-16XModem{16} cc cc  from 00 to 11 byte
 
 - Message 0 and 1 change regularly (every 30 / 35 minutes) , ID is not yet decoded from these 2 messages, tbd.
 - Could be a rolling code and the learn feature could help to get the key ?
-- In case of low battery the base emit a short beep, every 35 minutes. So the low battery information is coded into the 2 messages.
+- In case of low battery the base emits a short beep, every 35 minutes. So the low battery information is coded into the 2 messages.
 */
 static int chamberlain_cwpirc_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
