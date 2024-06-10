@@ -74,7 +74,7 @@ struct flex_get {
     const char *format;
 };
 
-#define GETTER_SLOTS 8
+#define GETTER_SLOTS 12
 
 struct flex_params {
     char *name;
