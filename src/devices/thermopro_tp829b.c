@@ -70,8 +70,7 @@ static int thermopro_tp829b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     offset += sizeof(preamble_pattern) * 8;
     bitbuffer_extract_bytes(bitbuffer, 0, offset, b, 9 * 8);
 
-    // checksum is a Galois bit reflect and byte reflect
-    // need first to reverse byte order then the galois bit reflect.
+    // checksum is a Galois bit reflect and byte reflect, gen 0x98, key 0x55, final XOR 00
     uint8_t b_reflect[8];
     for (int p = 7; p != -1; p += -1)
         b_reflect[7 - p] = b[p];
@@ -83,20 +82,24 @@ static int thermopro_tp829b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     decoder_log_bitrow(decoder, 2, __func__, b, 72, "MSG");
 
-    uint16_t id     = b[0] << 8 | b[1];
-    float p1_temp   = ((b[2] << 4 | (b[3] & 0xF0) >> 4) - 500) * 0.1f;
-    float p2_temp   = (((b[3] & 0x0F) << 8 | b[4]) - 500) * 0.1f;
-    float p3_temp   = ((b[5] << 4 | (b[6] & 0xF0) >> 4) - 500) * 0.1f;
-    float p4_temp   = (((b[6] & 0x0F) << 8 | b[7]) - 500) * 0.1f;
+    uint16_t id   = b[0] << 8 | b[1];
+    int p1_raw    = b[2] << 4 | (b[3] & 0xF0) >> 4;
+    int p2_raw    = (b[3] & 0x0F) << 8 | b[4];
+    int p3_raw    = b[5] << 4 | (b[6] & 0xF0) >> 4;
+    int p4_raw    = (b[6] & 0x0F) << 8 | b[7];
+    float p1_temp = (p1_raw - 500) * 0.1f;
+    float p2_temp = (p2_raw - 500) * 0.1f;
+    float p3_temp = (p3_raw - 500) * 0.1f;
+    float p4_temp = (p4_raw - 500) * 0.1f;
 
     /* clang-format off */
     data_t *data = data_make(
             "model",                "",                             DATA_STRING,    "ThermoPro-TP829b",
             "id",                   "",                             DATA_FORMAT,    "%04x",   DATA_INT,    id,
-            "temperature_1_C",      "Temperature 1",                DATA_COND, p1_temp != 330.5 , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p1_temp,
-            "temperature_2_C",      "Temperature 2",                DATA_COND, p2_temp != 330.5 , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p2_temp,
-            "temperature_3_C",      "Temperature 3",                DATA_COND, p3_temp != 330.5 , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p3_temp,
-            "temperature_4_C",      "Temperature 4",                DATA_COND, p4_temp != 330.5 , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p4_temp,
+            "temperature_1_C",      "Temperature 1",                DATA_COND, p1_raw != 0xedd , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p1_temp, // if 0xedd then no probe
+            "temperature_2_C",      "Temperature 2",                DATA_COND, p2_raw != 0xedd , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p2_temp, // if 0xedd then no probe
+            "temperature_3_C",      "Temperature 3",                DATA_COND, p3_raw != 0xedd , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p3_temp, // if 0xedd then no probe
+            "temperature_4_C",      "Temperature 4",                DATA_COND, p4_raw != 0xedd , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p4_temp, // if 0xedd then no probe
             "mic",                  "Integrity",                    DATA_STRING,    "CHECKSUM",
             NULL);
     /* clang-format on */
