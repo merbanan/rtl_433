@@ -149,6 +149,28 @@ mappings = {
             "state_class": "measurement"
         }
     },
+    "temperature_3_C": {
+        "device_type": "sensor",
+        "object_suffix": "T3",
+        "config": {
+            "device_class": "temperature",
+            "name": "Temperature 3",
+            "unit_of_measurement": "°C",
+            "value_template": "{{ value|float|round(1) }}",
+            "state_class": "measurement"
+        }
+    },
+    "temperature_4_C": {
+        "device_type": "sensor",
+        "object_suffix": "T4",
+        "config": {
+            "device_class": "temperature",
+            "name": "Temperature 4",
+            "unit_of_measurement": "°C",
+            "value_template": "{{ value|float|round(1) }}",
+            "state_class": "measurement"
+        }
+    },
     "temperature_F": {
         "device_type": "sensor",
         "object_suffix": "F",

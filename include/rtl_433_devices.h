@@ -266,6 +266,7 @@
     DECL(thermopro_tp28b) \
     DECL(tpms_bmwg3) \
     DECL(chamberlain_cwpirc) \
+    DECL(thermopro_tp829b) \
 
     /* Add new decoders here. */
 
