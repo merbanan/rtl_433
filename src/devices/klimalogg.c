@@ -9,8 +9,12 @@
     (at your option) any later version.
 */
 
+#include "decoder.h"
+
 /**
 Klimalogg/30.3180.IT sensor decoder.
+
+Also Klimalogg/30.3181.IT (no humidity) sensor decoder.
 
 Working decoder and information from https://github.com/baycom/tfrec
 
@@ -26,7 +30,7 @@ Data layout:
 -  II(15) is either 1 or 0 (fixed, depends on the sensor)
 -  s(3:0): Learning sequence 0...f, after learning fixed 8
 -  TTT: Temperature in BCD in .1degC steps, offset +40degC (-> -40...+60)
--  HH(6:0): rel. Humidity in % (binary coded, no BCD!)
+-  HH(6:0): rel. Humidity in % (binary coded, no BCD!), 0x6a when saturated or n/a
 -  BB(7): Low battery if =1
 -  BB(6:4): 110 or 111 (for 3199)
 -  SS(7:4): sequence number (0...f)
@@ -39,12 +43,9 @@ play with the -l option (5000-15000 range) or a high sample rate.
 
 */
 
-#include "decoder.h"
-
 static int klimalogg_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble_pattern[] = {0xB4, 0x2B}; // 0x2d, 0xd4 bit reflected
-    uint8_t b[9] = {0};
 
     if (bitbuffer->bits_per_row[0] < 11 * 8) {
         return DECODE_ABORT_LENGTH;
@@ -55,24 +56,32 @@ static int klimalogg_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
+    uint8_t b[9];
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, 9 * 8);
 
-    if (b[7] != 0x6a) // 0x56 bit reflected
+    if (b[7] != 0x6a) { // 0x56 bit reflected
         return DECODE_FAIL_SANITY;
+    }
 
     reflect_bytes(b, 9);
 
     int crc = crc8(b, 9, 0x31, 0);
-    if (crc)
+    if (crc) {
         return DECODE_FAIL_MIC;
+    }
 
     /* Extract parameters */
     int id            = (b[0] & 0x7f) << 8 | b[1];
     int temp_raw      = (b[2] & 0x0f) * 100 + (b[3] >> 4) * 10 + (b[3] & 0x0f);
     float temperature = (temp_raw - 400) * 0.1f;
-    int humidity      = (b[4] & 0x7f);
+    int humidity      = (b[4] & 0x7f); // fixed 0x6a when saturated or n/a
     int battery_low   = (b[5] & 0x80) >> 7;
     int sequence_nr   = (b[6] & 0xf0) >> 4;
+
+    // Set humidity error code to 100%
+    if (humidity == 0x6a) {
+        humidity = 100;
+    }
 
     /* clang-format off */
     data_t *data = data_make(
