@@ -23,6 +23,9 @@ Decoder for Bresser Weather Center 6-in-1.
 - also Bresser Thermo-/Hygro-Sensor 7 Channel 868 MHz, PN 7009999
 - also Bresser Pool / Spa Thermometer, PN 7009973 (STYPE = 3)
 - also SENCOR SWS 9898
+- also Ambient Weather TX-3110B Wireless Thermo-Hygrometer
+- also likely Ambient Weather TX-3102 Soil Moisture Meter & Thermometer (unconfirmed)
+- also likely Ambient Weather TX-3107 Floating Pool and Spa Thermometer (unconfirmed)
 
 There are at least two different message types:
 - 24 seconds interval for temperature, hum, uv and rain (alternating messages)

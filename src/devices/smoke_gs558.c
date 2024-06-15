@@ -105,7 +105,7 @@ static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data_t *data = data_make(
             "model",        "",             DATA_STRING, "Smoke-GS558",
-            "id"   ,        "",             DATA_INT, id,
+            "id",           "",             DATA_INT, id,
             "unit",         "",             DATA_INT, unit,
             "learn",        "",             DATA_INT, learn > 1,
             "code",         "Raw Code",     DATA_STRING, code_str,
@@ -134,4 +134,5 @@ r_device const smoke_gs558 = {
         .reset_limit = 11764 * 1.2f, // Maximum gap size before End Of Message [us]
         .decode_fn   = &smoke_gs558_callback,
         .fields      = output_fields,
+        .disabled    = 1, // false positives with generic EV1527 devices
 };

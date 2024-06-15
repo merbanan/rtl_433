@@ -74,7 +74,7 @@ struct flex_get {
     const char *format;
 };
 
-#define GETTER_SLOTS 8
+#define GETTER_SLOTS 12
 
 struct flex_params {
     char *name;
@@ -125,22 +125,12 @@ static void render_getters(data_t *data, uint8_t *bits, struct flex_params *para
         int m;
         for (m = 0; getter->map[m].val; m++) {
             if (getter->map[m].key == val) {
-                data_append(data,
-                        getter->name, "", DATA_STRING, getter->map[m].val,
-                        NULL);
+                data_str(data, getter->name, "", NULL, getter->map[m].val);
                 break;
             }
         }
         if (!getter->map[m].val) {
-            if (getter->format) {
-                data_append(data,
-                    getter->name, "", DATA_FORMAT, getter->format, DATA_INT, val,
-                    NULL);
-            } else {
-                data_append(data,
-                        getter->name, "", DATA_INT, val,
-                        NULL);
-            }
+            data_int(data, getter->name, "", getter->format, val);
         }
     }
 }

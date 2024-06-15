@@ -446,8 +446,8 @@ mappings = {
         "config": {
             "device_class": "precipitation_intensity",
             "name": "Rain Rate",
-            "unit_of_measurement": "mm/h",
-            "value_template": "{{ (float(value|float) * 25.4) | round(2) }}",
+            "unit_of_measurement": "in/h",
+            "value_template": "{{ value|float|round(2) }}",
             "state_class": "measurement"
         }
     },
@@ -563,7 +563,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "kwh",
         "config": {
-            "device_class": "power",
+            "device_class": "energy",
             "name": "Energy",
             "unit_of_measurement": "kWh",
             "value_template": "{{ value|float }}",
@@ -587,7 +587,7 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "V",
         "config": {
-            "device_class": "power",
+            "device_class": "voltage",
             "name": "Voltage",
             "unit_of_measurement": "V",
             "value_template": "{{ value|float }}",
@@ -624,7 +624,7 @@ mappings = {
         "config": {
             "name": "UV Index",
             "unit_of_measurement": "UV Index",
-            "value_template": "{{ value|int }}",
+            "value_template": "{{ value|float|round(1) }}",
             "state_class": "measurement"
         }
     },
@@ -634,7 +634,7 @@ mappings = {
         "config": {
             "name": "UV Index",
             "unit_of_measurement": "UV Index",
-            "value_template": "{{ value|int }}",
+            "value_template": "{{ value|float|round(1) }}",
             "state_class": "measurement"
         }
     },
@@ -984,7 +984,10 @@ def bridge_event_to_hass(mqttc, topic_prefix, data):
 def rtl_433_bridge():
     """Run a MQTT Home Assistant auto discovery bridge for rtl_433."""
 
-    mqttc = mqtt.Client()
+    if hasattr(mqtt, 'CallbackAPIVersion'):  # paho >= 2.0.0
+        mqttc = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION1)
+    else:
+        mqttc = mqtt.Client()
 
     if args.debug:
         mqttc.enable_logger()

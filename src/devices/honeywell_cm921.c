@@ -53,18 +53,6 @@ typedef struct {
     uint8_t crc;
 } message_t;
 
-#ifdef _DEBUG
-static data_t *add_hex_string(data_t *data, const char *name, const uint8_t *buf, size_t buf_sz)
-{
-    if (buf && buf_sz > 0) {
-        char tstr[256];
-        bitrow_snprint(buf, buf_sz * 8, tstr, sizeof (tstr));
-        data = data_append(data, name, "", DATA_STRING, tstr, NULL);
-    }
-    return data;
-}
-#endif
-
 /*
 typedef struct {
     int t;
@@ -256,9 +244,7 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",    "",             DATA_STRING, "Honeywell-CM921",
-            NULL);
+    data_t *data = data_str(NULL, "model",    "",             NULL, "Honeywell-CM921");
     /* clang-format on */
 
     // Sources of inspiration:
@@ -285,26 +271,26 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         strcat(ds, buf);
     }
 
-    data = data_append(data, "ids", "Device IDs", DATA_STRING, ds, NULL);
+    data = data_str(data, "ids", "Device IDs", NULL, ds);
 
     // Interpret Message
 
     switch (msg.command) {
     case 0x1030: {
         if (msg.payload_length != 16) {
-            data_append(data, "unknown", "", DATA_FORMAT, "%04x", DATA_INT, msg.command, NULL);
+            data = data_int(data, "unknown", "", "%04x", msg.command);
             break;
         }
-        data = data_append(data, "zone_idx", "", DATA_FORMAT, "%02x", DATA_INT, msg.payload[0], NULL);
+        data = data_int(data, "zone_idx", "", "%02x", msg.payload[0]);
         for (unsigned i = 0; i < 5; i++) { // order fixed?
             const uint8_t *p = &msg.payload[1 + 3 * i];
             // *(p+1) == 0x01 always?
             int value = *(p + 2);
             switch (*p) {
-            case 0xC8: data = data_append(data, "max_flow_temp", "", DATA_INT, value, NULL); break;
-            case 0xC9: data = data_append(data, "pump_run_time", "", DATA_INT, value, NULL); break;
-            case 0xCA: data = data_append(data, "actuator_run_time", "", DATA_INT, value, NULL); break;
-            case 0xCB: data = data_append(data, "min_flow_temp", "", DATA_INT, value, NULL); break;
+            case 0xC8: data = data_int(data, "max_flow_temp", "", NULL, value); break;
+            case 0xC9: data = data_int(data, "pump_run_time", "", NULL, value); break;
+            case 0xCA: data = data_int(data, "actuator_run_time", "", NULL, value); break;
+            case 0xCB: data = data_int(data, "min_flow_temp", "", NULL, value); break;
             case 0xCC: /* Unknown, always 0x01? */ break;
             default:
                 decoder_logf(decoder, 1, __func__, "Unknown parameter to 0x1030: %x02d=%04d", *p, value);
@@ -314,12 +300,12 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     case 0x313F: {
         if (msg.payload_length != 1 && msg.payload_length != 9) {
-            data_append(data, "unknown", "", DATA_FORMAT, "%04x", DATA_INT, msg.command, NULL);
+            data = data_int(data, "unknown", "", "%04x", msg.command);
             break;
         }
         switch (msg.payload_length) {
         case 1:
-            data = data_append(data, "time_request", "", DATA_INT, msg.payload[0], NULL);
+            data = data_int(data, "time_request", "", NULL, msg.payload[0]);
             break;
         case 9: {
             // uint8_t const unknown_0 = msg.payload[0]; /* always == 0? */
@@ -333,7 +319,7 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             uint8_t const year[2] = {msg.payload[7], msg.payload[8]};
             char time_str[256];
             snprintf(time_str, sizeof(time_str), "%02d:%02d:%02d %02d-%02d-%04d", hour, minute, second, day, month, (year[0] << 8) | year[1]);
-            data = data_append(data, "datetime", "", DATA_STRING, time_str, NULL);
+            data = data_str(data, "datetime", "", NULL, time_str);
             break;
         }
         }
@@ -341,72 +327,72 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     case 0x0008: {
         if (msg.payload_length != 2) {
-            data_append(data, "unknown", "", DATA_FORMAT, "%04x", DATA_INT, msg.command, NULL);
+            data = data_int(data, "unknown", "", "%04x", msg.command);
             break;
         }
-        data = data_append(data, "domain_id", "", DATA_INT, msg.payload[0], NULL);
-        data = data_append(data, "demand", "", DATA_DOUBLE, msg.payload[1] * (1 / 200.0F) /* 0xC8 */, NULL);
+        data = data_int(data, "domain_id", "", NULL, msg.payload[0]);
+        data = data_dbl(data, "demand", "", NULL, msg.payload[1] * (1 / 200.0F) /* 0xC8 */);
         break;
     }
     case 0x3ef0: {
         if (msg.payload_length != 3 && msg.payload_length != 6) {
-            data_append(data, "unknown", "", DATA_FORMAT, "%04x", DATA_INT, msg.command, NULL);
+            data = data_int(data, "unknown", "", "%04x", msg.command);
             break;
         }
         switch (msg.payload_length) {
         case 3:
-            data = data_append(data, "status", "", DATA_DOUBLE, msg.payload[1] * (1 / 200.0F) /* 0xC8 */, NULL);
+            data = data_dbl(data, "status", "", NULL, msg.payload[1] * (1 / 200.0F) /* 0xC8 */);
             break;
         case 6:
-            data = data_append(data, "boiler_modulation_level", "", DATA_DOUBLE, msg.payload[1] * (1 / 200.0F) /* 0xC8 */, NULL);
-            data = data_append(data, "flame_status", "", DATA_INT, msg.payload[3], NULL);
+            data = data_dbl(data, "boiler_modulation_level", "", NULL, msg.payload[1] * (1 / 200.0F) /* 0xC8 */);
+            data = data_int(data, "flame_status", "", NULL, msg.payload[3]);
             break;
         }
         break;
     }
     case 0x2309: {
         if (msg.payload_length != 3) {
-            data_append(data, "unknown", "", DATA_FORMAT, "%04x", DATA_INT, msg.command, NULL);
+            data = data_int(data, "unknown", "", "%04x", msg.command);
             break;
         }
-        data = data_append(data, "zone", "", DATA_INT, msg.payload[0], NULL);
+        data = data_int(data, "zone", "", NULL, msg.payload[0]);
         // Observation: CM921 reports a very high setpoint during binding (0x7eff); packet: 143255c1230903017efff7
-        data = data_append(data, "setpoint", "", DATA_DOUBLE, ((msg.payload[1] << 8) | msg.payload[2]) * (1 / 100.0F), NULL);
+        data = data_dbl(data, "setpoint", "", NULL, ((msg.payload[1] << 8) | msg.payload[2]) * (1 / 100.0F));
         break;
     }
     case 0x1100: {
         if (msg.payload_length != 5 && msg.payload_length != 8) {
-            data_append(data, "unknown", "", DATA_FORMAT, "%04x", DATA_INT, msg.command, NULL);
+            data = data_int(data, "unknown", "", "%04x", msg.command);
             break;
         }
-        data = data_append(data, "domain_id", "", DATA_INT, msg.payload[0], NULL);
-        data = data_append(data, "cycle_rate", "", DATA_DOUBLE, msg.payload[1] * (1 / 4.0F), NULL);
-        data = data_append(data, "minimum_on_time", "", DATA_DOUBLE, msg.payload[2] * (1 / 4.0F), NULL);
-        data = data_append(data, "minimum_off_time", "", DATA_DOUBLE, msg.payload[3] * (1 / 4.0F), NULL);
+        data = data_int(data, "domain_id", "", NULL, msg.payload[0]);
+        data = data_dbl(data, "cycle_rate", "", NULL, msg.payload[1] * (1 / 4.0F));
+        data = data_dbl(data, "minimum_on_time", "", NULL, msg.payload[2] * (1 / 4.0F));
+        data = data_dbl(data, "minimum_off_time", "", NULL, msg.payload[3] * (1 / 4.0F));
         if (msg.payload_length == 8)
-            data = data_append(data, "proportional_band_width", "", DATA_DOUBLE, (msg.payload[5] << 8 | msg.payload[6]) * (1 / 100.0F), NULL);
+            data = data_dbl(data, "proportional_band_width", "", NULL, (msg.payload[5] << 8 | msg.payload[6]) * (1 / 100.0F));
         break;
     }
     case 0x0009: {
         if (msg.payload_length != 3) {
-            data_append(data, "unknown", "", DATA_FORMAT, "%04x", DATA_INT, msg.command, NULL);
+            data = data_int(data, "unknown", "", "%04x", msg.command);
             break;
         }
-        data = data_append(data, "device_number", "", DATA_INT, msg.payload[0], NULL);
+        data = data_int(data, "device_number", "", NULL, msg.payload[0]);
         switch (msg.payload[1]) {
-        case 0: data = data_append(data, "failsafe_mode", "", DATA_STRING, "off", NULL); break;
-        case 1: data = data_append(data, "failsafe_mode", "", DATA_STRING, "20-80", NULL); break;
-        default: data = data_append(data, "failsafe_mode", "", DATA_STRING, "unknown", NULL);
+        case 0: data = data_str(data, "failsafe_mode", "", NULL, "off"); break;
+        case 1: data = data_str(data, "failsafe_mode", "", NULL, "20-80"); break;
+        default: data = data_str(data, "failsafe_mode", "", NULL, "unknown");
         }
         break;
     }
     case 0x3B00: {
         if (msg.payload_length != 2) {
-            data_append(data, "unknown", "", DATA_FORMAT, "%04x", DATA_INT, msg.command, NULL);
+            data = data_int(data, "unknown", "", "%04x", msg.command);
             break;
         }
-        data = data_append(data, "domain_id", "", DATA_INT, msg.payload[0], NULL);
-        data = data_append(data, "state", "", DATA_DOUBLE, msg.payload[1] * (1 / 200.0F) /* 0xC8 */, NULL);
+        data = data_int(data, "domain_id", "", NULL, msg.payload[0]);
+        data = data_dbl(data, "state", "", NULL, msg.payload[1] * (1 / 200.0F) /* 0xC8 */);
         break;
     }
     case 0x30C9: {
@@ -415,41 +401,40 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             char name[256];
             snprintf(name, sizeof(name), "temperature (zone %u)", msg.payload[3 * i]);
             int16_t temp = msg.payload[3 * i + 1] << 8 | msg.payload[3 * i + 2];
-            data         = data_append(data, name, "", DATA_DOUBLE, temp * (1 / 100.0F), NULL);
+            data         = data_dbl(data, name, "", NULL, temp * (1 / 100.0F));
         }
         break;
     }
     case 0x1fd4: {
         int temp = (msg.payload[1] << 8) | msg.payload[2];
-        data     = data_append(data, "ticker", "", DATA_INT, temp, NULL);
+        data     = data_int(data, "ticker", "", NULL, temp);
         break;
     }
     case 0x3150: {
         // example packet Heat Demand: 18 28ad9a 884dd3 3150 0200c6 88
-        data = data_append(data, "zone", "", DATA_INT, msg.payload[0], NULL);
-        data = data_append(data, "heat_demand", "", DATA_INT, msg.payload[1], NULL);
+        data = data_int(data, "zone", "", NULL, msg.payload[0]);
+        data = data_int(data, "heat_demand", "", NULL, msg.payload[1]);
         break;
     }
     default: /* Unknown command */
-        data_append(data, "unknown", "", DATA_FORMAT, "%04x", DATA_INT, msg.command, NULL);
+        data = data_int(data, "unknown", "", "%04x", msg.command);
         break;
     }
 
 #ifdef _DEBUG
-    data = add_hex_string(data, "Packet", packet.bb[row], packet.bits_per_row[row] / 8);
-    data = add_hex_string(data, "Header", &msg.header, 1);
+    char tstr[256];
+    data = data_hex(data, "Packet", NULL, NULL, packet.bb[row], packet.bits_per_row[row] / 8, tstr);
+    data = data_hex(data, "Header", NULL, NULL, &msg.header, 1, tstr);
     uint8_t cmd[2] = {msg.command >> 8, msg.command & 0x00FF};
-    data = add_hex_string(data, "Command", cmd, 2);
-    data = add_hex_string(data, "Payload", msg.payload, msg.payload_length);
-    data = add_hex_string(data, "Unparsed", msg.unparsed, msg.unparsed_length);
-    data = add_hex_string(data, "CRC", &msg.crc, 1);
-    data = data_append(data, "# man errors", "", DATA_INT, man_errors, NULL);
+    data = data_hex(data, "Command", NULL, NULL, cmd, 2, tstr);
+    data = data_hex(data, "Payload", NULL, NULL, msg.payload, msg.payload_length, tstr);
+    data = data_hex(data, "Unparsed", NULL, NULL, msg.unparsed, msg.unparsed_length, tstr);
+    data = data_hex(data, "CRC", NULL, NULL, &msg.crc, 1, tstr);
+    data = data_int(data, "# man errors", "", NULL, man_errors);
 #endif
 
     /* clang-format off */
-    data = data_append(data,
-            "mic",      "Integrity",    DATA_STRING, "CHECKSUM",
-            NULL);
+    data = data_str(data, "mic",      "Integrity",    NULL, "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);
