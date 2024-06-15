@@ -139,30 +139,6 @@ static char const *acurite_getChannel(uint8_t byte)
     return channel_strs[channel];
 }
 
-// Add exception and raw message bytes to message to enable
-// later analysis of unexpected/possibly undecoded data
-static data_t *data_append_exception(data_t *data, int exception, uint8_t const *bb, int browlen)
-{
-    char raw_str[31], *rawp;
-
-    rawp = (char *)raw_str;
-    for (int i = 0; i < browlen && (size_t)i < sizeof(raw_str) / 2; i++) {
-        sprintf(rawp,"%02x",bb[i]);
-        rawp += 2;
-    }
-    *rawp = '\0';
-
-    /* clang-format off */
-    data = data_append(data,
-            "exception",        "Data Exception",   DATA_INT,    exception,
-            "raw_msg",          "Raw Message",      DATA_STRING, raw_str,
-            NULL);
-    /* clang-format on */
-
-    return data;
-}
-
-
 /**
 Acurite 896 rain gauge
 
@@ -873,10 +849,8 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
 
         /* clang-format off */
-        data = data_append(data,
-                "temperature_F",    "Temperature",  DATA_FORMAT,    "%.1f F",       DATA_DOUBLE, tempf,
-                "humidity",         NULL,           DATA_FORMAT,    "%u %%",        DATA_INT,    humidity,
-                NULL);
+        data = data_dbl(data, "temperature_F",  "Temperature",  "%.1f F",   tempf);
+        data = data_int(data, "humidity",       NULL,           "%u %%",    humidity);
         /* clang-format on */
     }
 
@@ -905,10 +879,8 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
         int raincounter = ((bb[5] & 0x03) << 7) | (bb[6] & 0x7F);
 
         /* clang-format off */
-        data = data_append(data,
-                "wind_dir_deg",     NULL,           DATA_FORMAT,    "%.1f",         DATA_DOUBLE, wind_dir,
-                "rain_in",          "Rainfall Accumulation", DATA_FORMAT, "%.2f in", DATA_DOUBLE, raincounter * 0.01f,
-                NULL);
+        data = data_dbl(data, "wind_dir_deg",   NULL,                       "%.1f",     wind_dir);
+        data = data_dbl(data, "rain_in",        "Rainfall Accumulation",    "%.2f in",  raincounter * 0.01f);
         /* clang-format on */
     }
 
@@ -929,10 +901,8 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
         }
 
         /* clang-format off */
-        data = data_append(data,
-                "uv",               NULL,           DATA_INT, uv,
-                "lux",              NULL,           DATA_INT, lux * 10,
-                NULL);
+        data = data_int(data, "uv",     NULL,   NULL,   uv);
+        data = data_int(data, "lux",    NULL,   NULL,   lux * 10);
         /* clang-format on */
     }
 
@@ -945,18 +915,14 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
         int strike_distance = bb[8] & 0x1f;
 
         /* clang-format off */
-        data = data_append(data,
-                "strike_count",         NULL,           DATA_INT, strike_count,
-                "strike_distance",      NULL,           DATA_INT, strike_distance,
-                NULL);
+        data = data_int(data, "strike_count",       NULL,   NULL,   strike_count);
+        data = data_int(data, "strike_distance",    NULL,   NULL,   strike_distance);
         /* clang-format on */
     }
 
     // @todo only do this if exception != 0, but would be somewhat incompatible
-    data = data_append(data,
-            "exception",        "Data Exception",   DATA_INT,    exception,
-            "raw_msg",          "Raw Message",      DATA_STRING, raw_str,
-            NULL);
+    data = data_int(data, "exception",  "Data Exception",   NULL,   exception);
+    data = data_str(data, "raw_msg",    "Raw Message",      NULL,   raw_str);
 
     decoder_output_data(decoder, data);
 
@@ -1045,7 +1011,13 @@ static int acurite_tower_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8
     /* clang-format on */
 
     if (exception) {
-        data = data_append_exception(data, exception, bb, ACURITE_TXR_BYTELEN);
+        // Add exception and raw message bytes to message to enable
+        // later analysis of unexpected/possibly undecoded data
+        /* clang-format off */
+        data = data_int(data, "exception",  "Data Exception",   NULL,   exception);
+        char buf_str[31];
+        data = data_hex(data, "raw_msg",    "Raw Message",      NULL,   bb, ACURITE_TXR_BYTELEN, buf_str);
+        /* clang-format on */
     }
 
     decoder_output_data(decoder, data);
@@ -1173,7 +1145,13 @@ static int acurite_515_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t
     /* clang-format on */
 
     if (exception) {
-        data = data_append_exception(data, exception, bb, ACURITE_515_BYTELEN);
+        // Add exception and raw message bytes to message to enable
+        // later analysis of unexpected/possibly undecoded data
+        /* clang-format off */
+        data = data_int(data, "exception",  "Data Exception",   NULL,   exception);
+        char buf_str[31];
+        data = data_hex(data, "raw_msg",    "Raw Message",      NULL,   bb, ACURITE_515_BYTELEN, buf_str);
+        /* clang-format on */
     }
 
     decoder_output_data(decoder, data);

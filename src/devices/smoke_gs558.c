@@ -134,4 +134,5 @@ r_device const smoke_gs558 = {
         .reset_limit = 11764 * 1.2f, // Maximum gap size before End Of Message [us]
         .decode_fn   = &smoke_gs558_callback,
         .fields      = output_fields,
+        .disabled    = 1, // false positives with generic EV1527 devices
 };
