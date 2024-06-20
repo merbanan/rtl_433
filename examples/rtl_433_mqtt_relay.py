@@ -35,6 +35,8 @@ MQTT_USERNAME = None
 MQTT_PASSWORD = None
 MQTT_TLS = False
 MQTT_PREFIX = "sensor/rtl_433"
+MQTT_INDIVIDUAL_TOPICS = True
+MQTT_JSON_TOPIC = True
 
 def mqtt_connect(client, userdata, flags, rc):
     """Handle MQTT connection callback."""
@@ -76,22 +78,23 @@ def publish_sensor_to_mqtt(mqttc, data, line):
     elif "id" in data:
         path += "/" + str(data["id"])
 
-    # Publish some specific items on subtopics.
-    if "battery_ok" in data:
-        mqttc.publish(path + "/battery", data["battery_ok"])
+    if MQTT_INDIVIDUAL_TOPICS:
+        # Publish some specific items on subtopics.
+        if "battery_ok" in data:
+            mqttc.publish(path + "/battery", data["battery_ok"])
 
-    if "humidity" in data:
-        mqttc.publish(path + "/humidity", data["humidity"])
+        if "humidity" in data:
+            mqttc.publish(path + "/humidity", data["humidity"])
 
-    if "temperature_C" in data:
-        mqttc.publish(path + "/temperature", data["temperature_C"])
+        if "temperature_C" in data:
+            mqttc.publish(path + "/temperature", data["temperature_C"])
 
-    if "depth_cm" in data:
-        mqttc.publish(path + "/depth", data["depth_cm"])
+        if "depth_cm" in data:
+            mqttc.publish(path + "/depth", data["depth_cm"])
 
-    # Publish the entire json string on the main topic.
-    mqttc.publish(path, line)
-
+    if MQTT_JSON_TOPIC:
+        # Publish the entire json string on the main topic.
+        mqttc.publish(path, line)
 
 def parse_syslog(line):
     """Try to extract the payload from a syslog line."""
