@@ -89,11 +89,6 @@ lead to better understanding, and bits of code may be useful..
   - rtl_433_http_stream.py: Custom data handling example for rtl_433's HTTP (line) streaming API of JSON events
   - rtl_433_http_ws.py: Custom data handling example for rtl_433's HTTP WebSocket API of JSON events
 
-## Not Understood
-
-  - sigrok-conv.sh: print a hint
-  - sigrok-open.sh: print a hint
-
 ## Uncategorized
 
 These scripts are in the directory but have not been sorted and described.
