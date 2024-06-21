@@ -19,7 +19,7 @@ Product web page : https://buythermopro.com/product/tp829/
 
 Flex decoder:
 
-    rtl_433 -X "n=tp829b,m=FSK_PCM,s=102,l=102,r=5500,preamble=d2552dd4" *.cu8 2>&1 | grep codes
+    rtl_433 -X "n=tp829b,m=FSK_PCM,s=102,l=102,r=5500,preamble=552dd4" *.cu8 2>&1 | grep codes
 
     codes     : {164}082f2efeddeddedde8d2d2d2d2d20000000000000
 
@@ -40,7 +40,8 @@ Data layout:
 */
 static int thermopro_tp829b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const preamble_pattern[] = {0xd2, 0x55, 0x2d, 0xd4};
+    uint8_t const preamble_pattern[] = { // 0xd2, removed to increase success
+                                        0x55, 0x2d, 0xd4};
 
     uint8_t b[9];
 
@@ -62,7 +63,7 @@ static int thermopro_tp829b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
     }
 
-    if ((msg_len - offset ) < 104 ) {
+    if ((msg_len - offset ) < 96 ) {
         decoder_logf(decoder, 1, __func__, "Packet too short: %d bits", msg_len);
         return DECODE_ABORT_LENGTH;
     }
@@ -82,7 +83,9 @@ static int thermopro_tp829b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     decoder_log_bitrow(decoder, 2, __func__, b, 72, "MSG");
 
-    uint16_t id   = b[0] << 8 | b[1];
+    int id        = b[0];
+    int display_u = (b[1] & 0xF0) >> 4;
+    int flags     = b[1] & 0xF;
     int p1_raw    = b[2] << 4 | (b[3] & 0xF0) >> 4;
     int p2_raw    = (b[3] & 0x0F) << 8 | b[4];
     int p3_raw    = b[5] << 4 | (b[6] & 0xF0) >> 4;
@@ -95,11 +98,14 @@ static int thermopro_tp829b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data_t *data = data_make(
             "model",                "",                             DATA_STRING,    "ThermoPro-TP829b",
-            "id",                   "",                             DATA_FORMAT,    "%04x",   DATA_INT,    id,
+            "id",                   "",                             DATA_FORMAT,    "%02x",      DATA_INT,    id,
+            "display_u",            "Display Unit",                 DATA_COND, display_u == 0x2, DATA_STRING, "Fahrenheit",
+            "display_u",            "Display Unit",                 DATA_COND, display_u == 0x0, DATA_STRING, "Celcius",
             "temperature_1_C",      "Temperature 1",                DATA_COND, p1_raw != 0xedd , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p1_temp, // if 0xedd then no probe
             "temperature_2_C",      "Temperature 2",                DATA_COND, p2_raw != 0xedd , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p2_temp, // if 0xedd then no probe
             "temperature_3_C",      "Temperature 3",                DATA_COND, p3_raw != 0xedd , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p3_temp, // if 0xedd then no probe
             "temperature_4_C",      "Temperature 4",                DATA_COND, p4_raw != 0xedd , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p4_temp, // if 0xedd then no probe
+            "flags",                "Flags",                        DATA_FORMAT,    "%01x",      DATA_INT,    flags,
             "mic",                  "Integrity",                    DATA_STRING,    "CHECKSUM",
             NULL);
     /* clang-format on */
@@ -111,10 +117,12 @@ static int thermopro_tp829b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
+        "display_u",
         "temperature_1_C",
         "temperature_2_C",
         "temperature_3_C",
         "temperature_4_C",
+        "flags",
         "mic",
         NULL,
 };
