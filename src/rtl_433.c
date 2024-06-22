@@ -1669,9 +1669,13 @@ int main(int argc, char **argv) {
     for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
         r_device *r_dev = *iter;
         if (r_dev->modulation >= FSK_DEMOD_MIN_VAL) {
-          demod->enable_FM_demod = 1;
-          break;
+            demod->enable_FM_demod = 1;
+            break;
         }
+    }
+    // if any dumpers are requested the FM demod might be needed
+    if (cfg->demod->dumper.len) {
+        demod->enable_FM_demod = 1;
     }
 
     {
