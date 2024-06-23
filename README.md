@@ -344,6 +344,9 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [256]  ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill
     [257]  BMW Gen3 TPMS
     [258]  Chamberlain CWPIRC PIR Sensor
+    [259]  Landis & Gyr Gridstream Power Meters 9.6k
+    [260]  Landis & Gyr Gridstream Power Meters 19.2k
+    [261]  Landis & Gyr Gridstream Power Meters 38.4k
 
 * Disabled by default, use -R n or a conf file to enable
 

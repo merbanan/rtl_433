@@ -266,6 +266,9 @@
     DECL(thermopro_tp28b) \
     DECL(tpms_bmwg3) \
     DECL(chamberlain_cwpirc) \
+    DECL(gridstream96) \
+    DECL(gridstream192) \
+    DECL(gridstream384) \
 
     /* Add new decoders here. */
 
