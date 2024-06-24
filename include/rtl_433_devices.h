@@ -267,6 +267,7 @@
     DECL(tpms_bmwg3) \
     DECL(chamberlain_cwpirc) \
     DECL(thermopro_tp829b) \
+    DECL(arad_ms_meter) \
 
     /* Add new decoders here. */
 
