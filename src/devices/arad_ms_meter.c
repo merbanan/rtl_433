@@ -1,5 +1,7 @@
 /** @file
+
     Arad/Master Meter Dialog3G water utility meter.
+    
     Copyright (C) 2022 avicarmeli
     Credits to all users of mentioned forum below!
     This program is free software; you can redistribute it and/or modify
@@ -9,11 +11,11 @@
 */
 
 /**
+
 Arad/Master Meter Dialog3G water utility meter.
+
 FCC-Id: TKCET-733
-
 Massage is being sent once every 30 second.
-
 The massage look like that:
 
 00000000FFFFFFFFFFFFFFSSSSSSSSXXCCCCCCXXXF?????????XFF
@@ -76,8 +78,8 @@ static int arad_mm_dialog3g_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, row,start_pos, mdata, 120);
   
     
-    uint32_t serno= mdata[0]| (mdata[1] << 8) | (mdata[2] << 16) | (0 << 24); //24 bit little endian Meter Serial number
-    uint32_t wreadraw= mdata[5]| (mdata[6] << 8) | (mdata[7] << 16) | (0 << 24); //24 bit little endian Meter water consumption reading
+    uint32_t serno = mdata[0]| (mdata[1] << 8) | (mdata[2] << 16) | (0 << 24); //24 bit little endian Meter Serial number
+    uint32_t wreadraw = mdata[5]| (mdata[6] << 8) | (mdata[7] << 16) | (0 << 24); //24 bit little endian Meter water consumption reading
     
     char sernoout[10];
     
@@ -89,7 +91,7 @@ static int arad_mm_dialog3g_callback(r_device *decoder, bitbuffer_t *bitbuffer)
   
      /* clang-format off */
         data = data_make(
-                "model",            "",               DATA_STRING,    "ARAD-MS-Meter",
+                "model",            "",               DATA_STRING,    "Arad-MsMeter",
                 "id",               "Serial No",      DATA_STRING,    sernoout,
                 "waterread",        "Water Reading",  DATA_FORMAT,    "%.1f M^3", DATA_DOUBLE, wread,
                 "mic",              "Integrity",      DATA_STRING,    "CHECKSUM",
@@ -116,7 +118,7 @@ r_device arad_ms_meter = {
         .short_width = 8.4,
         .long_width  = 0, //not used
         .reset_limit = 30,
-        .decode_fn   = &arad_mm_dialog3g_callback,
+        .decode_fn   = &arad_mm_dialog3g_decode,
         .disabled       = 1, // stop debug output from spamming unsuspecting users
         .fields      = output_fields,
 };
