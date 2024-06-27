@@ -19,6 +19,7 @@ Security+ 2.0  is described in [US patent application US20110317835A1](https://p
 */
 
 #include "decoder.h"
+#include "compat_time.h"
 
 /**
 Security+ 2.0 rolling code.
@@ -237,6 +238,18 @@ static int secplus_v2_decode_v2_half(r_device *decoder, bitbuffer_t *bits, uint8
 static const uint8_t _preamble[] = {0xaa, 0xaa, 0x95, 0x60};
 unsigned _preamble_len           = 28;
 
+struct secplus_v2_half {
+    struct timeval tv;
+
+    bitbuffer_t fixed;
+    uint8_t rolling[16];
+};
+
+static struct secplus_v2_half secplus_v2_half_1;
+static struct secplus_v2_half secplus_v2_half_2;
+
+#define CACHE_MAX_AGE 800000
+
 /**
 Security+ 2.0 rolling code.
 @sa secplus_v2_decode_v2_half()
@@ -246,14 +259,18 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned search_index = 0;
     bitbuffer_t bits = {0};
     // int i            = 0;
+    struct timeval cur_tv;
+    struct timeval res_tv;
 
-    //bitbuffer_t bits_1    = {0};
-    bitbuffer_t fixed_1   = {0};
-    uint8_t rolling_1[16] = {0};
+    gettimeofday(&cur_tv, NULL);
 
-    //bitbuffer_t bits_2    = {0};
-    bitbuffer_t fixed_2   = {0};
-    uint8_t rolling_2[16] = {0};
+    timeval_subtract(&res_tv, &cur_tv, &secplus_v2_half_1.tv);
+    if (res_tv.tv_sec > 0 || res_tv.tv_usec > CACHE_MAX_AGE)
+        memset(&secplus_v2_half_1, 0, sizeof(secplus_v2_half_1));
+
+    timeval_subtract(&res_tv, &cur_tv, &secplus_v2_half_2.tv);
+    if (res_tv.tv_sec > 0 || res_tv.tv_usec > CACHE_MAX_AGE)
+        memset(&secplus_v2_half_2, 0, sizeof(secplus_v2_half_2));
 
     for (uint16_t row = 0; row < bitbuffer->num_rows; ++row) {
         if (bitbuffer->bits_per_row[row] < 110) {
@@ -284,21 +301,25 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // 2nd bit indicates with half of the data
         if (bits.bb[0][0] & 0xC0) {
             decoder_log(decoder, 1, __func__, "Set 2");
-            secplus_v2_decode_v2_half(decoder, &bits, rolling_2, &fixed_2);
+            if (secplus_v2_decode_v2_half(decoder, &bits, secplus_v2_half_2.rolling, &secplus_v2_half_2.fixed) == 0)
+                secplus_v2_half_2.tv = cur_tv;
         }
         else {
             decoder_log(decoder, 1, __func__, "Set 1");
-            secplus_v2_decode_v2_half(decoder, &bits, rolling_1, &fixed_1);
+            if (secplus_v2_decode_v2_half(decoder, &bits, secplus_v2_half_1.rolling, &secplus_v2_half_1.fixed) == 0)
+                secplus_v2_half_1.tv = cur_tv;
         }
 
         // break if we've received both halves
-        if (fixed_1.bits_per_row[0] > 1 && fixed_2.bits_per_row[0] > 1) {
+        if (secplus_v2_half_1.fixed.bits_per_row[0] > 1 && secplus_v2_half_2.fixed.bits_per_row[0] > 1) {
             break;
         }
     }
 
     // Do we have what we need ??
-    if (fixed_1.bits_per_row[0] == 0 || fixed_2.bits_per_row[0] == 0) {
+    if (secplus_v2_half_1.fixed.bits_per_row[0] == 0 || secplus_v2_half_2.fixed.bits_per_row[0] == 0) {
+        decoder_logf(decoder, 1, __func__, "dont have what we need %d %d",
+	    secplus_v2_half_1.fixed.bits_per_row[0] == 0, secplus_v2_half_2.fixed.bits_per_row[0] == 0);
         return DECODE_FAIL_SANITY;
     }
 
@@ -307,20 +328,20 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *r;
 
     r    = rolling_digits;
-    *r++ = rolling_2[8];
-    *r++ = rolling_1[8];
+    *r++ = secplus_v2_half_2.rolling[8];
+    *r++ = secplus_v2_half_1.rolling[8];
     for (int i = 4; i < 8; i++) {
-        *r++ = rolling_2[i];
+        *r++ = secplus_v2_half_2.rolling[i];
     }
     for (int i = 4; i < 8; i++) {
-        *r++ = rolling_1[i];
+        *r++ = secplus_v2_half_1.rolling[i];
     }
 
     for (int i = 0; i < 4; i++) {
-        *r++ = rolling_2[i];
+        *r++ = secplus_v2_half_2.rolling[i];
     }
     for (int i = 0; i < 4; i++) {
-        *r++ = rolling_1[i];
+        *r++ = secplus_v2_half_1.rolling[i];
     }
 
     // compute rolling_total from rolling_digits[]
@@ -333,6 +354,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Max value = 2^28 (268435456)
     if (rolling_temp >= 0x10000000) {
+        decoder_log(decoder, 1, __func__, "rolling temp too high");
         return DECODE_FAIL_SANITY;
     }
 
@@ -343,12 +365,12 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Assemble "fixed" data part
     uint64_t fixed_total = 0;
     uint8_t *bb;
-    bb = fixed_1.bb[0];
+    bb = secplus_v2_half_1.fixed.bb[0];
     fixed_total ^= ((uint64_t)bb[0]) << 32;
     fixed_total ^= ((uint64_t)bb[1]) << 24;
     fixed_total ^= ((uint64_t)bb[2]) << 16;
 
-    bb = fixed_2.bb[0];
+    bb = secplus_v2_half_2.fixed.bb[0];
     fixed_total ^= ((uint64_t)bb[0]) << 12;
     fixed_total ^= ((uint64_t)bb[1]) << 4;
     fixed_total ^= (bb[2] >> 4) & 0x0f;
@@ -375,6 +397,9 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "rolling",     "Rolling_Code",    DATA_STRING,    rolling_str,
             NULL);
     /* clang-format on */
+
+    memset(&secplus_v2_half_1, 0, sizeof(secplus_v2_half_1));
+    memset(&secplus_v2_half_2, 0, sizeof(secplus_v2_half_2));
 
     decoder_output_data(decoder, data);
     return 1;
