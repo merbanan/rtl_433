@@ -72,13 +72,13 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     wread=wread/10;
 
      /* clang-format off */
-        data = data_make(
-                "model",            "",               DATA_STRING,    "Arad-MsMeter",
-                "id",               "Serial No",      DATA_STRING,    sernoout,
-                "waterread",        "Water Reading",  DATA_FORMAT,    "%.1f M^3", DATA_DOUBLE, wread,
-                "mic",              "Integrity",      DATA_STRING,    "CHECKSUM",
-                NULL);
-        /* clang-format on */
+    data = data_make(
+        "model",       "",               DATA_STRING,    "Arad-MsMeter",
+        "id",          "Serial No",      DATA_STRING,    sernoout,
+        "waterread",   "Water Reading",  DATA_FORMAT,    "%.1f M^3", DATA_DOUBLE, wread,
+        "mic",         "Integrity",      DATA_STRING,    "CHECKSUM",
+        NULL);
+     /* clang-format on */
  
     decoder_output_data(decoder, data);
     return 1;
