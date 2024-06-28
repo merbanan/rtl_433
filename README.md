@@ -345,6 +345,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [257]  BMW Gen3 TPMS
     [258]  Chamberlain CWPIRC PIR Sensor
     [259]  ThermoPro TP829b Meat Thermometer 4 coated probes
+    [260]* Arad/Master Meter Dialog3G water utility meter
 
 * Disabled by default, use -R n or a conf file to enable
 
