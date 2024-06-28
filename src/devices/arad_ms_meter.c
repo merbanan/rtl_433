@@ -88,15 +88,15 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "waterread",
-        "mic",
+        //"mic",
         NULL,
 };
 
-r_device arad_ms_meter = {
+r_device const arad_ms_meter = {
         .name        = "Arad/Master Meter Dialog3G water utility meter",
         .modulation  = FSK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 8.4,
