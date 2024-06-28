@@ -1,9 +1,9 @@
 /** @file
 
     Arad/Master Meter Dialog3G water utility meter.
-    
+
     Copyright (C) 2022 avicarmeli
-    
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -35,15 +35,14 @@ FF is fixed in time and the same for other meters in the neighborhood.With paylo
 
 static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const preamble_pattern[] = {0x96,0xf5,0x13,0x85,0x37,0xb4}; // 48 bit preamble
+    uint8_t const preamble_pattern[] = {0x96, 0xf5, 0x13, 0x85, 0x37, 0xb4}; // 48 bit preamble
     int row;
     data_t *data;
     uint8_t mdata[15];
     bitbuffer_t databits = {0};
 
-
-   // fprintf(stderr,"arad_mm_dialog3g callback was triggered :-) \n");
-   // bitbuffer_print(bitbuffer);
+    // fprintf(stderr,"arad_mm_dialog3g callback was triggered :-) \n");
+    // bitbuffer_print(bitbuffer);
 
     row = bitbuffer_find_repeated_row(bitbuffer, 1, 168); // expected 1 row with minimum of 48+120= 168 bits.
     if (row < 0)
@@ -57,20 +56,20 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_invert(bitbuffer);
 
-    //bitbuffer_print(bitbuffer);
+    // bitbuffer_print(bitbuffer);
 
-    bitbuffer_extract_bytes(bitbuffer, row,start_pos, mdata, 120);
+    bitbuffer_extract_bytes(bitbuffer, row, start_pos, mdata, 120);
 
-    uint32_t serno = mdata[0]| (mdata[1] << 8) | (mdata[2] << 16) | (0 << 24); //24 bit little endian Meter Serial number
-    uint32_t wreadraw = mdata[5]| (mdata[6] << 8) | (mdata[7] << 16) | (0 << 24); //24 bit little endian Meter water consumption reading
+    uint32_t serno    = mdata[0] | (mdata[1] << 8) | (mdata[2] << 16) | (0 << 24); // 24 bit little endian Meter Serial number
+    uint32_t wreadraw = mdata[5] | (mdata[6] << 8) | (mdata[7] << 16) | (0 << 24); // 24 bit little endian Meter water consumption reading
 
     char sernoout[10];
 
-    sprintf(sernoout, "%08u%c", serno, mdata[3]-32);
+    sprintf(sernoout, "%08u%c", serno, mdata[3] - 32);
 
     float wread = wreadraw;
 
-    wread=wread/10;
+    wread = wread / 10;
 
     /* clang-format off */
     data = data_make(
@@ -79,8 +78,8 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         "waterread",   "Water Reading",  DATA_FORMAT,    "%.1f M^3", DATA_DOUBLE, wread,
         "mic",         "Integrity",      DATA_STRING,    "CHECKSUM",
         NULL);
-     /* clang-format on */
- 
+    /* clang-format on */
+
     decoder_output_data(decoder, data);
     return 1;
 }
@@ -97,9 +96,9 @@ r_device arad_ms_meter = {
         .name        = "Arad/Master Meter Dialog3G water utility meter",
         .modulation  = FSK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 8.4,
-        .long_width  = 0, //not used
+        .long_width  = 0, // not used
         .reset_limit = 30,
         .decode_fn   = &arad_mm_dialog3g_decode,
-        .disabled       = 1, // stop debug output from spamming unsuspecting users
+        .disabled    = 1, // stop debug output from spamming unsuspecting users
         .fields      = output_fields,
 };
