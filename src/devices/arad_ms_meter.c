@@ -38,6 +38,7 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t const preamble_pattern[] = {0x96,0xf5,0x13,0x85,0x37,0xb4}; // 48 bit preamble
     int row;
     data_t *data;
+    uint8_t mdata[15];
     bitbuffer_t databits = {0};
 
 
@@ -71,7 +72,7 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     wread=wread/10;
 
-     /* clang-format off */
+    /* clang-format off */
     data = data_make(
         "model",       "",               DATA_STRING,    "Arad-MsMeter",
         "id",          "Serial No",      DATA_STRING,    sernoout,
