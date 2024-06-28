@@ -79,7 +79,7 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
         "model",       "",               DATA_STRING,    "AradMsMeter-Dialog3G",
         "id",          "Serial No",      DATA_STRING,    sernoout,
-        "waterread",   "Water Reading",  DATA_FORMAT,    "%.1f M^3", DATA_DOUBLE, wread,
+        "volume_m3",    "Volume",        DATA_FORMAT,    "%.1f m3",  DATA_DOUBLE, wread,
         //"mic",         "Integrity",      DATA_STRING,    "CHECKSUM",
         NULL);
     /* clang-format on */
