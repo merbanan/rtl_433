@@ -29,6 +29,10 @@ F  is fixed in time and the same for other meters in the neighborhood. With payl
 ????????? probably some kind of CRC or checksum - here is where I need help.
 X is getting either 8 or 0 same for other meters in the neighborhood.
 FF is fixed in time and the same for other meters in the neighborhood.With payload f8.
+
+Format string:
+56x SERIAL: <24dc 8x COUNTER: <24d hhhhhhhhhhhhhh  SUFFIX:hh
+
 */
 
 #include "decoder.h"
@@ -73,10 +77,10 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-        "model",       "",               DATA_STRING,    "Arad-MsMeter",
+        "model",       "",               DATA_STRING,    "AradMsMeter-Dialog3G",
         "id",          "Serial No",      DATA_STRING,    sernoout,
         "waterread",   "Water Reading",  DATA_FORMAT,    "%.1f M^3", DATA_DOUBLE, wread,
-        "mic",         "Integrity",      DATA_STRING,    "CHECKSUM",
+        //"mic",         "Integrity",      DATA_STRING,    "CHECKSUM",
         NULL);
     /* clang-format on */
 
