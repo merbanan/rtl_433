@@ -121,7 +121,6 @@ static int tpms_eezrv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Mystery flag at (flags2 & 0x20) showed up during low batt testing
 
     char id_str[7];
-
     snprintf(id_str, sizeof(id_str), "%02x%02x%02x", b[0], b[1], b[2]);
 
     char flags_str[5];

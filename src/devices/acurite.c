@@ -879,7 +879,6 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
         int raincounter = ((bb[5] & 0x03) << 7) | (bb[6] & 0x7F);
 
         /* clang-format off */
-
         data = data_dbl(data, "wind_dir_deg",   NULL,                       "%.1f",     wind_dir);
         data = data_dbl(data, "rain_in",        "Rainfall Accumulation",    "%.2f in",  raincounter * 0.01f);
         /* clang-format on */
