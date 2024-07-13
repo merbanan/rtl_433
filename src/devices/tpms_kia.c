@@ -84,8 +84,8 @@ static int tpms_kia_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned r
     char raw[9 * 2 + 1]; // 9 bytes in hex notation
     snprintf(raw, sizeof(raw), "%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8]);
 
-    float pressure_float    = pressure / 5.0;
-    float temperature_float = temperature - 50.0;
+    float pressure_float    = pressure / 5.0f;
+    float temperature_float = temperature - 50.0f;
 
     /* clang-format off */
     data_t *data = data_make(

@@ -89,7 +89,7 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // - red led (every 30s):    bytes[3]=64 (0100 0000)
     // - orange led (every 60s): bytes[3]=80 (0101 0000)
     // - green led (every 90s):  bytes[3]=96 (0110 0000)
-    float seconds = (((bytes[3] & 0x30) >> 4) + 1) * 30.0;
+    float seconds = (((bytes[3] & 0x30) >> 4) + 1) * 30.0f;
 
     int pulsecount = bytes[8];
 
