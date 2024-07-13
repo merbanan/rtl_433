@@ -25,6 +25,8 @@ Payload format:
 - Payload           {n}
 - Checksum          {16} CRC16 poly=0x8005 init=0xffff
 
+Usual payload lengths seem to be 37 (0x25), 105 (0x69), 66 (0x42).
+
 To get raw data:
 
     ./rtl_433 -f 868.3M -X 'n=Marlec,m=FSK_PCM,s=20,l=20,g=350,r=600,preamble=aad391d391'
@@ -61,14 +63,15 @@ static int marlec_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t len;
     bitbuffer_extract_bytes(bitbuffer, row, start_pos + sizeof (preamble) * 8, &len, 8);
 
-    if (len > 60) {
+    // usual lengths seem to be 37 (0x25), 105 (0x69), 66 (0x42)
+    if (len > 105) {
         decoder_logf(decoder, 1, __func__, "packet to large (%d bytes), drop it", len);
         return DECODE_ABORT_LENGTH;
     }
 
-    uint8_t frame[63] = {0}; // TODO check max size, I have no idea, arbitrary limit of 60 bytes + 2 bytes crc
+    uint8_t frame[108] = {0}; // arbitrary limit of 1 len byte + 105 data bytes + 2 bytes crc
     frame[0] = len;
-    // Get frame (len don't include the length byte and the crc16 bytes)
+    // Get frame (len doesn't include the length byte or the crc16 bytes)
     bitbuffer_extract_bytes(bitbuffer, row,
             start_pos + (sizeof (preamble) + 1) * 8,
             &frame[1], (len + 2) * 8);
@@ -83,15 +86,45 @@ static int marlec_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    char frame_str[63 * 2 + 1]   = {0};
+    int const SAVED_TODAY     = 0xCA;
+    int const SAVED_YESTERDAY = 0xCB;
+    int const SAVED_LAST_7    = 0xCC;
+    int const SAVED_LAST_28   = 0xCD;
+    int const SAVED_TOTAL     = 0xCE;
+
+    int frame_type  = frame[3];
+    // if (frame[3] == 0x22) {
+    int boost_time  = frame[6]; // boost time remaining (minutes)
+    int solar_off   = frame[7];
+    int tank_hot    = frame[8];
+    int battery_low = frame[13];
+    int heating     = (int16_t)((frame[17]) | (frame[18] << 8));
+    int import_val  = (frame[19]) | (frame[20] << 8) | (frame[21] << 16) | (frame[22] << 24);
+    int saved_type  = frame[25];
+    int saved_val   = (frame[26]) | (frame[27] << 8) | (frame[28] << 16) | (frame[29] << 24);
+    //}
+
+    char frame_str[sizeof(frame) * 2 + 1]   = {0};
     for (int i = 0; i < len; ++i)
         sprintf(&frame_str[i * 2], "%02x", frame[i + 1]);
 
+    int is_data = frame_type == 0x22;
     /* clang-format off */
     data = data_make(
-            "model",        "",                 DATA_STRING, "Marlec-Solar",
-            "raw",          "Raw data",         DATA_STRING, frame_str,
-            "mic",          "Integrity",        DATA_STRING, "CRC",
+            "model",            "",             DATA_STRING, "Marlec-Solar",
+            "boost_time",       "",             DATA_COND, is_data, DATA_INT, boost_time,
+            "solar_off",        "",             DATA_COND, is_data, DATA_INT, solar_off,
+            "tank_hot",         "",             DATA_COND, is_data, DATA_INT, tank_hot,
+            "battery_low",      "",             DATA_COND, is_data, DATA_INT, battery_low,
+            "heating",          "",             DATA_COND, is_data, DATA_INT, heating,
+            "import_val",       "",             DATA_COND, is_data, DATA_INT, import_val,
+            "saved_today",      "",             DATA_COND, is_data && saved_type == SAVED_TODAY, DATA_INT, saved_val,
+            "saved_yesterday",  "",             DATA_COND, is_data && saved_type == SAVED_YESTERDAY, DATA_INT, saved_val,
+            "saved_last_7",     "",             DATA_COND, is_data && saved_type == SAVED_LAST_7, DATA_INT, saved_val,
+            "saved_last_28",    "",             DATA_COND, is_data && saved_type == SAVED_LAST_28, DATA_INT, saved_val,
+            "saved_total",      "",             DATA_COND, is_data && saved_type == SAVED_TOTAL, DATA_INT, saved_val,
+            "raw",              "Raw data",     DATA_STRING, frame_str,
+            "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
     decoder_output_data(decoder, data);
@@ -100,6 +133,17 @@ static int marlec_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char const *const output_fields[] = {
         "model",
+        "boost_time",
+        "solar_off",
+        "tank_hot",
+        "battery_low",
+        "heating",
+        "import_val",
+        "saved_today",
+        "saved_yesterday",
+        "saved_last_7",
+        "saved_last_28",
+        "saved_total",
         "raw",
         "mic",
         NULL,

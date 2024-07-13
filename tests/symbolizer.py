@@ -154,9 +154,9 @@ def process_source(path, name):
             m = re.match(r'(?:static)?\s?char\s?\*\s?[^\*\s]+\s?=\s?(?:{|")', line)
             if m:
                 err(f"::error file={name},line={i}::char * variable should be char const * when being given a constant value")
-                
+
             # look for output fields declarations that must be static char const *const
-            m = re.match(r'static\s?char\s+const\s*\*\s*[^\*\s]+\[\]\s*=\s*\{', line) 
+            m = re.match(r'static\s?char\s+const\s*\*\s*[^\*\s]+\[\]\s*=\s*\{', line)
             if m:
                 err(f"::error file={name},line={i}::output fields static variable should be 'static char const *const'")
 
@@ -240,8 +240,12 @@ def process_source(path, name):
                     links[fName].update({"doc_line": dLine, "doc": doc})
                     doc = None
                 continue
+            # Match the prefix string up to "TheModelName"
             # "model", "", DATA_STRING, "Schrader",
             m = re.match(r'\s*"model"\s*,.*DATA_STRING', line)
+            if not m:
+                # data_t *data = data_str(NULL, "model", "", NULL, "Honeywell-CM921");
+                m = re.match(r'.*data_str\([^,]*\s*,\s*"model"\s*,[^,]*,[^,]*,', line)
             if m:
                 prefix = m.group(0)
                 s = line[len(prefix):]

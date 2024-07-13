@@ -68,7 +68,7 @@ and ANDing the result with 0x0f.
 
 static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char const * const command_names[] = {
+    char const *const command_names[] = {
             /* 0  */ "invalid",
             /* 1  */ "fan_speed",
             /* 2  */ "fan_speed",
@@ -106,7 +106,7 @@ static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // Calculate nibble sum and compare
         int checksum = add_nibbles(bytes, 2) & 0x0f;
         if (checksum != bytes[2]) { // Sum is in byte 2
-            decoder_logf(decoder, 2, __func__, "Checksum failure: expected %0x, got %0x", bytes[2], checksum);
+            decoder_logf(decoder, 2, __func__, "Checksum failure: expected %x, got %x", bytes[2], checksum);
             continue;
         }
 
@@ -119,23 +119,23 @@ static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         switch (command) {
         case 1: // 1 is the command to STOP
-            sprintf(value_string, "stop");
+            snprintf(value_string, sizeof(value_string), "stop");
             break;
 
         case 2: // 2 is the command to change fan speed
-            sprintf(value_string, "speed %d", value);
+            snprintf(value_string, sizeof(value_string), "speed %d", value);
             break;
 
         case 4: // 4 is the command to change the light intensity
-            sprintf(value_string, "%d %%", value);
+            snprintf(value_string, sizeof(value_string), "%d %%", value);
             break;
 
         case 5: // 5 is the command to set the light delay
-            sprintf(value_string, "%s", value == 0 ? "off" : "on");
+            snprintf(value_string, sizeof(value_string), "%s", value == 0 ? "off" : "on");
             break;
 
         case 6: // 6 is the command to change fan direction
-            sprintf(value_string, "%s", value == 0x07 ? "clockwise" : "counter-clockwise");
+            snprintf(value_string, sizeof(value_string), "%s", value == 0x07 ? "clockwise" : "counter-clockwise");
             break;
 
         default:

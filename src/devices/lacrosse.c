@@ -128,7 +128,7 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (msg_nybbles[5] != msg_nybbles[8]
                 || msg_nybbles[6] != msg_nybbles[9]) {
             decoder_logf(decoder, 1, __func__,
-                    "Sensor %02x, type: %d: message value mismatch int(%3.1f) != %d?\n",
+                    "Sensor %02x, type: %d: message value mismatch int(%.1f) != %d?\n",
                     sensor_id, msg_type, msg_value, msg_value_int);
             result = DECODE_FAIL_SANITY;
             continue; // DECODE_FAIL_SANITY

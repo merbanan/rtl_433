@@ -13,6 +13,7 @@
 #include "pulse_data.h"
 #include "rfraw.h"
 #include "r_util.h"
+#include "fatal.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -74,13 +75,17 @@ static inline void chk_ret(int ret)
 
 void pulse_data_print_vcd_header(FILE *file, uint32_t sample_rate)
 {
+    if (!file) {
+        FATAL("Invalid stream in pulse_data_print_vcd_header()");
+    }
+
     char time_str[LOCAL_TIME_BUFLEN];
     char *timescale;
     if (sample_rate <= 500000)
         timescale = "1 us";
     else
         timescale = "100 ns";
-    chk_ret(fprintf(file, "$date %s $end\n", format_time_str(time_str, NULL, 0, 0)));
+    chk_ret(fprintf(file, "$date %s $end\n", usecs_time_str(time_str, NULL, 0, 0)));
     chk_ret(fprintf(file, "$version rtl_433 0.1.0 $end\n"));
     chk_ret(fprintf(file, "$comment Acquisition at %s Hz $end\n", nice_freq(sample_rate)));
     chk_ret(fprintf(file, "$timescale %s $end\n", timescale));
@@ -161,20 +166,28 @@ void pulse_data_load(FILE *file, pulse_data_t *data, uint32_t sample_rate)
 
 void pulse_data_print_pulse_header(FILE *file)
 {
+    if (!file) {
+        FATAL("Invalid stream in pulse_data_print_pulse_header()");
+    }
+
     char time_str[LOCAL_TIME_BUFLEN];
 
     chk_ret(fprintf(file, ";pulse data\n"));
     chk_ret(fprintf(file, ";version 1\n"));
     chk_ret(fprintf(file, ";timescale 1us\n"));
     // chk_ret(fprintf(file, ";samplerate %u\n", data->sample_rate));
-    chk_ret(fprintf(file, ";created %s\n", format_time_str(time_str, NULL, 1, 0)));
+    chk_ret(fprintf(file, ";created %s\n", usecs_time_str(time_str, NULL, 1, 0)));
 }
 
 void pulse_data_dump(FILE *file, pulse_data_t const *data)
 {
+    if (!file) {
+        FATAL("Invalid stream in pulse_data_dump()");
+    }
+
     char time_str[LOCAL_TIME_BUFLEN];
 
-    chk_ret(fprintf(file, ";received %s\n", format_time_str(time_str, NULL, 1, 0)));
+    chk_ret(fprintf(file, ";received %s\n", usecs_time_str(time_str, NULL, 1, 0)));
     if (data->fsk_f2_est) {
         chk_ret(fprintf(file, ";fsk %u pulses\n", data->num_pulses));
         chk_ret(fprintf(file, ";freq1 %.0f\n", data->freq1_hz));

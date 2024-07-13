@@ -14,7 +14,6 @@
 // note: our unit header includes unistd.h for gethostname() via data.h
 #include "output_influx.h"
 #include "optparse.h"
-#include "util.h"
 #include "logger.h"
 #include "fatal.h"
 #include "r_util.h"
@@ -91,8 +90,7 @@ static void influx_client_event(struct mg_connection *nc, int ev, void *ev_data)
 
 static influx_client_t *influx_client_init(influx_client_t *ctx, char const *url, char const *token)
 {
-    strncpy(ctx->url, url, sizeof(ctx->url));
-    ctx->url[sizeof(ctx->url) - 1] = '\0';
+    snprintf(ctx->url, sizeof(ctx->url), "%s", url);
     snprintf(ctx->extra_headers, sizeof (ctx->extra_headers), "Authorization: Token %s\r\n", token);
 
     return ctx;
@@ -373,7 +371,6 @@ static void R_API_CALLCONV print_influx_data(data_output_t *output, data_t *data
                 str++;
             end = &buf->buf[buf->len - 1];
             influx_sanitize_tag(str, end);
-            str = end + 1;
             print_value(output, data->type, data->value, data->format);
             comma = true;
         }
@@ -459,6 +456,9 @@ struct data_output *data_output_influx_create(struct mg_mgr *mgr, char *opts)
     char *token = NULL;
 
     // param/opts starts with URL
+    if (!opts) {
+        opts = "";
+    }
     char *url = opts;
     opts = strchr(opts, ',');
     if (opts) {
@@ -516,5 +516,5 @@ struct data_output *data_output_influx_create(struct mg_mgr *mgr, char *opts)
     influx->mgr = mgr;
     influx_client_init(influx, url, token);
 
-    return &influx->output;
+    return (struct data_output *)influx;
 }

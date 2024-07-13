@@ -34,12 +34,9 @@ Packet payload: 1 sync nibble and 8 bytes data, 17 nibbles:
 
 static int schraeder_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
     uint8_t b[8];
     int serial_id;
-    char id_str[9];
     int flags;
-    char flags_str[3];
     int pressure;    // mbar/hectopascal
     int temperature; // deg C
 
@@ -60,11 +57,14 @@ static int schraeder_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     flags       = (b[0] & 0x0F) << 4 | b[1] >> 4;
     pressure    = b[5] * 25;
     temperature = b[6] - 50;
-    sprintf(id_str, "%07X", serial_id);
-    sprintf(flags_str, "%02x", flags);
+
+    char id_str[9];
+    snprintf(id_str, sizeof(id_str), "%07X", serial_id);
+    char flags_str[3];
+    snprintf(flags_str, sizeof(flags_str), "%02x", flags);
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Schrader",
             "type",             "",             DATA_STRING, "TPMS",
             "flags",            "",             DATA_STRING, flags_str,
@@ -133,8 +133,8 @@ static int schrader_EG53MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     flags       = ((unsigned)b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
     pressure    = b[7] * 25;
     temperature = b[8];
-    sprintf(id_str, "%06X", serial_id);
-    sprintf(flags_str, "%08x", flags);
+    snprintf(id_str, sizeof(id_str), "%06X", serial_id);
+    snprintf(flags_str, sizeof(flags_str), "%08x", flags);
 
     /* clang-format off */
     data = data_make(
@@ -267,7 +267,7 @@ static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     char id_str[9];
-    sprintf(id_str, "%06X", serial_id);
+    snprintf(id_str, sizeof(id_str), "%06X", serial_id);
 
     /* clang-format off */
     data_t *data = data_make(

@@ -107,7 +107,7 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
 
     char str_buf[64];
     for (unsigned i = probes + 1; i <= probes + analogs; ++i) {
-        snprintf(str_buf, 64, " analog-1-%u-1", i);
+        snprintf(str_buf, sizeof(str_buf), " analog-1-%u-1", i);
         strcat_s(cmd_line, MAX_PATH, str_buf);
     }
 
@@ -158,15 +158,17 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
         argv[arg++] = "logic-1-1";
     }
 
+    char *argv_dups[30] = {0}; // store only dups to help the checker match the free()
     char **argv_analog = &argv[arg];
     char str_buf[64];
     for (unsigned i = probes + 1; i <= probes + analogs; ++i) {
         snprintf(str_buf, sizeof(str_buf), "analog-1-%u-1", i);
         char* dup = strdup(str_buf);
         if (!dup) {
-          FATAL_STRDUP("write_sigrok()");
+            FATAL_STRDUP("write_sigrok()");
         }
         argv[arg++] = dup;
+        argv_dups[arg++] = dup;
     }
 
     int status = 0;
@@ -178,8 +180,9 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
         // child process because return value zero
         execvp(argv[0], argv);
         // execvp() returns only on error
-        for (int i = 0; i < arg; ++i)
+        for (int i = 0; i < arg; ++i) {
             fprintf(stderr, "%s ", argv[i]);
+        }
         fprintf(stderr, "\n");
         perror("execvp");
         exit(1);
@@ -211,8 +214,11 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
         if (unlink(argv_analog[i])) {
             perror("unlinking Sigrok \"analog-1-N-1\" file");
         }
-        free(argv_analog[i]);
     }
+    for (int i = 0; i < arg; ++i) {
+        free(argv_dups[i]);
+    }
+
 #endif // !_WIN32
 }
 

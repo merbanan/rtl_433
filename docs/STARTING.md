@@ -135,7 +135,7 @@ Any number of outputs can be selected:
 - `-F mqtt` sends to MQTT
 - `-F influx` sends to InfluxDB
 - `-F syslog` send UDP messages
-- `-F trigger` puts a `1` to the given file, can be used to e.g. on a Raspberyy Pi flash the LED.
+- `-F trigger` puts a `1` to the given file, can be used to e.g. on a Raspberry Pi flash the LED.
 
 Append output to file with `:<filename>` (e.g. `-F csv:log.csv`), default is to print to stdout.
 Specify host/port for `mqtt`, `influx`, `syslog`, with e.g. `-F syslog:127.0.0.1:1514`

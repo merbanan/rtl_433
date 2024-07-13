@@ -11,14 +11,15 @@
 
 #include "decoder.h"
 
-static uint16_t AD_POP(uint8_t *bb, uint8_t bits, uint8_t bit)
+static uint16_t AD_POP(uint8_t const *bb, uint8_t bits, uint8_t bit)
 {
     uint16_t val = 0;
-    uint8_t i, byte_no, bit_no;
-    for (i=0;i<bits;i++) {
-        byte_no=   (bit+i)/8 ;
-        bit_no =7-((bit+i)%8);
-        if (bb[byte_no]&(1<<bit_no)) val = val | (1<<i);
+    for (uint8_t i = 0; i < bits; i++) {
+        uint8_t byte_no = (bit + i) / 8;
+        uint8_t bit_no  = 7 - ((bit + i) % 8);
+        if (bb[byte_no] & (1 << bit_no)) {
+            val = val | (1 << i);
+        }
     }
     return val;
 }
@@ -30,15 +31,13 @@ based on fs20.c
 */
 static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
     bitrow_t *bb = bitbuffer->bb;
     uint8_t dec[10];
-    uint8_t bit=18; // preamble
+    uint8_t bit = 18; // preamble
     uint8_t bb_p[14];
     //char* types[] = {"EM 1000-S", "EM 1000-?", "EM 1000-GZ"};
     uint8_t checksum_calculated = 0;
     uint8_t i;
-    uint8_t stopbit;
     uint8_t checksum_received;
 
     // check and combine the 3 repetitions
@@ -55,17 +54,17 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     for (i = 0; i < 9; i++) {
         dec[i] = AD_POP(bb_p, 8, bit);
         bit += 8;
-        stopbit = AD_POP(bb_p, 1, bit);
+        uint8_t stopbit = AD_POP(bb_p, 1, bit);
         bit += 1;
         if (!stopbit) {
-//            decoder_logf(decoder, 0, __func__, "!stopbit: %i", i);
+//            decoder_logf(decoder, 0, __func__, "!stopbit: %d", i);
             return DECODE_ABORT_EARLY;
         }
         checksum_calculated ^= dec[i];
     }
 
     // Read checksum
-    checksum_received = AD_POP (bb_p, 8, bit); bit+=8;
+    checksum_received = AD_POP(bb_p, 8, bit); // bit+=8;
     if (checksum_received != checksum_calculated) {
 //        decoder_logf(decoder, 0, __func__, "checksum_received != checksum_calculated: %d %d", checksum_received, checksum_calculated);
         return DECODE_FAIL_MIC;
@@ -81,7 +80,8 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int current   = dec[5] | dec[6] << 8;
     int peak      = dec[7] | dec[8] << 8;
 
-    data = data_make(
+    /* clang-format off */
+    data_t *data = data_make(
             "model",    "", DATA_STRING, "ELV-EM1000",
             "id",       "", DATA_INT, code,
             "seq",      "", DATA_INT, seqno,
@@ -89,9 +89,9 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "current",  "", DATA_INT, current,
             "peak",     "", DATA_INT, peak,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
-
     return 1;
 }
 
@@ -170,20 +170,19 @@ The type consists of 3 bits encoded as follows.
  */
 static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
     bitrow_t *bb = bitbuffer->bb;
     uint8_t dec[16]= {0};
     uint8_t nibbles=0;
     uint8_t bit=11; // preamble
-    char const *types[]={"!AS3", "AS2000/ASH2000/S2000/S2001A/S2001IA/ASH2200/S300IA", "!S2000R", "!S2000W", "S2001I/S2001ID", "!S2500H", "!Pyrano", "KS200/KS300"};
-    uint8_t length[16] = {5, 8, 5, 8, 12, 9, 8, 14, 8};
+    char const *const types[]={"!AS3", "AS2000/ASH2000/S2000/S2001A/S2001IA/ASH2200/S300IA", "!S2000R", "!S2000W", "S2001I/S2001ID", "!S2500H", "!Pyrano", "KS200/KS300"};
+    uint8_t const length[16] = {5, 8, 5, 8, 12, 9, 8, 14, 8};
     uint8_t check_calculated=0, sum_calculated=0;
     uint8_t i;
     uint8_t stopbit;
     uint8_t sum_received;
 
-    dec[0] = AD_POP (bb[0], 4, bit); bit+=4;
-    stopbit= AD_POP (bb[0], 1, bit); bit+=1;
+    dec[0] = AD_POP(bb[0], 4, bit); bit+=4;
+    stopbit= AD_POP(bb[0], 1, bit); bit+=1;
     if (!stopbit) {
         decoder_log(decoder, 1, __func__, "!stopbit");
         return DECODE_ABORT_EARLY;
@@ -193,10 +192,10 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // read nibbles with stopbit ...
     for (i = 1; i <= length[dec[0]]; i++) {
-        dec[i] = AD_POP (bb[0], 4, bit); bit+=4;
-        stopbit= AD_POP (bb[0], 1, bit); bit+=1;
+        dec[i] = AD_POP(bb[0], 4, bit); bit+=4;
+        stopbit= AD_POP(bb[0], 1, bit); bit+=1;
         if (!stopbit) {
-            decoder_logf(decoder, 1, __func__, "!stopbit %i", bit);
+            decoder_logf(decoder, 1, __func__, "!stopbit %d", bit);
             return DECODE_ABORT_EARLY;
         }
         check_calculated ^= dec[i];
@@ -211,7 +210,7 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Read sum
-    sum_received = AD_POP (bb[0], 4, bit); bit+=4;
+    sum_received = AD_POP(bb[0], 4, bit); // bit+=4;
     sum_calculated+=5;
     sum_calculated&=0xF;
     if (sum_received != sum_calculated) {
@@ -243,7 +242,7 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "", DATA_STRING, "ELV-WS2000",
             "subtype",          "", DATA_STRING, subtype,
             "id",               "", DATA_INT,    code,

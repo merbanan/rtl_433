@@ -71,7 +71,7 @@ static int burnhardbbq_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         float temp_c     = (temp_raw - 500) * 0.1f;
 
         char timer_str[6];
-        sprintf(timer_str, "%02x:%02x", b[3], b[4] & 0x7f);
+        snprintf(timer_str, sizeof(timer_str), "%02x:%02x", b[3], b[4] & 0x7f);
 
         char const *meat;
         switch (b[5] >> 4) {
@@ -101,7 +101,7 @@ static int burnhardbbq_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",             "",                     DATA_STRING, "BurnhardBBQ",
                 "id",                "ID",                   DATA_INT,    id,
                 "channel",           "Channel",              DATA_INT,    channel,
-                "temperature_C",     "Temperature",          DATA_COND,   temp_raw != 0, DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
+                "temperature_C",     "Temperature",          DATA_COND,   temp_raw != 0, DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
                 "setpoint_C",        "Temperature setpoint", DATA_FORMAT, "%.0f C", DATA_DOUBLE, setpoint_c,
                 "temperature_alarm", "Temperature alarm",    DATA_INT,    temp_alarm,
                 "timer",             "Timer",                DATA_STRING, timer_str,

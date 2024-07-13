@@ -31,13 +31,10 @@ Packet nibbles:
 
 static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    data_t *data;
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
     int state;
-    char state_str[3];
     unsigned id;
-    char id_str[9];
     int flags;
     int repeat;
     int pressure;
@@ -63,18 +60,21 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
         return DECODE_FAIL_MIC; // bad checksum
     }
 
-    state = b[0]; // not covered by CRC
-    sprintf(state_str, "%02x", state);
-    id = (unsigned)b[1] << 24 | b[2] << 16 | b[3] << 8 | b[4];
-    sprintf(id_str, "%08x", id);
+    state         = b[0]; // not covered by CRC
+    id            = (unsigned)b[1] << 24 | b[2] << 16 | b[3] << 8 | b[4];
     flags         = b[5] >> 4;
     repeat        = b[5] & 0x0f;
     pressure      = b[6];
     temperature   = b[7];
     maybe_battery = b[8];
 
+    char state_str[3];
+    snprintf(state_str, sizeof(state_str), "%02x", state);
+    char id_str[9];
+    snprintf(id_str, sizeof(id_str), "%08x", id);
+
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Citroen",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,

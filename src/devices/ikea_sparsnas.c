@@ -9,6 +9,8 @@
 /**
 IKEA Sparsnäs Energy Meter Monitor.
 
+@warning This decoder is not stateless.
+
 The IKEA Sparsnäs consists of a display unit, and a sender unit. The display unit
 displays and stores the values sent by the sender unit. It is not needed for this
 decoder. The sender unit is placed by the energy meter. The sender unit has an
@@ -84,19 +86,19 @@ detail. Many thanks to kodarn!
 
 #define IKEA_SPARSNAS_ID_KEY_SUB 0x5D38E8CB
 
-static uint16_t ikea_sparsnas_pulses_per_kwh = 1000;
+static uint16_t const ikea_sparsnas_pulses_per_kwh = 1000;
 static uint32_t ikea_sparsnas_sensor_id = 0;
 
 static uint32_t ikea_sparsnas_brute_force_encryption(uint8_t buffer[18])
 {
-    const uint8_t b5 = buffer[5 + 0];
-    const uint8_t b6 = buffer[5 + 1];
-    const uint8_t b7 = buffer[5 + 2];
-    const uint8_t b8 = buffer[5 + 3];
-    const uint8_t battery_enc = buffer[17];
+    uint8_t const b5 = buffer[5 + 0];
+    uint8_t const b6 = buffer[5 + 1];
+    uint8_t const b7 = buffer[5 + 2];
+    uint8_t const b8 = buffer[5 + 3];
+    uint8_t const battery_enc = buffer[17];
 
     uint8_t d0, d1, d2;
-    const uint8_t d3 = b8 ^ 0x47;
+    uint8_t const d3 = b8 ^ 0x47;
 
     uint32_t dec_sensor_id, key_sensor_id;
     uint8_t battery_dec, k0, k1, k2, k4;
@@ -129,7 +131,7 @@ static uint32_t ikea_sparsnas_brute_force_encryption(uint8_t buffer[18])
             }
         }
     }
-   return 0;
+    return 0;
 }
 
 static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -137,10 +139,8 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t const preamble_pattern[4] = {0xAA, 0xAA, 0xD2, 0x01};
 
     if ((bitbuffer->bits_per_row[0] < IKEA_SPARSNAS_MESSAGE_BITLEN) || (bitbuffer->bits_per_row[0] > IKEA_SPARSNAS_MESSAGE_BITLEN_MAX)) {
-        if (decoder->verbose > 1) {
-            decoder_log_bitbuffer(decoder, 2, __func__, bitbuffer, "");
-            decoder_logf(decoder, 2, __func__, "Too short or too long packet received. Expected %d, received %d", IKEA_SPARSNAS_MESSAGE_BITLEN, bitbuffer->bits_per_row[0]);
-        }
+        decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer,
+                "Too short or too long packet received. Expected %d, received %d", IKEA_SPARSNAS_MESSAGE_BITLEN, bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH;
     }
 
@@ -148,10 +148,7 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint16_t bitpos = bitbuffer_search(bitbuffer, 0, 0, preamble_pattern, IKEA_SPARSNAS_PREAMBLE_BITLEN);
 
     if ((bitbuffer->bits_per_row[0] == bitpos) || (bitpos + IKEA_SPARSNAS_MESSAGE_BITLEN > bitbuffer->bits_per_row[0])) {
-        if (decoder->verbose > 1) {
-            decoder_log_bitbuffer(decoder, 2, __func__, bitbuffer, "");
-            decoder_log(decoder, 2, __func__, "malformed package, preamble not found. (Expected 0xAAAAD201)");
-        }
+        decoder_log_bitbuffer(decoder, 2, __func__, bitbuffer, "malformed package, preamble not found. (Expected 0xAAAAD201)");
         return DECODE_ABORT_EARLY;
     }
 
@@ -159,10 +156,8 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t buffer[IKEA_SPARSNAS_MESSAGE_BYTELEN];
     bitbuffer_extract_bytes(bitbuffer, 0, bitpos + IKEA_SPARSNAS_PREAMBLE_BITLEN, buffer, IKEA_SPARSNAS_MESSAGE_BITLEN);
 
-    if (decoder->verbose > 1) {
-        decoder_log_bitbuffer(decoder, 2, __func__, bitbuffer, "");
-        decoder_log_bitrow(decoder, 2, __func__, buffer, IKEA_SPARSNAS_MESSAGE_BITLEN, "Encrypted message");
-    }
+    decoder_log_bitbuffer(decoder, 2, __func__, bitbuffer, "");
+    decoder_log_bitrow(decoder, 2, __func__, buffer, IKEA_SPARSNAS_MESSAGE_BITLEN, "Encrypted message");
     // CRC check
     uint16_t crc_calculated = crc16(buffer, IKEA_SPARSNAS_MESSAGE_BYTELEN - 2, IKEA_SPARSNAS_CRC_POLY, IKEA_SPARSNAS_CRC_INIT);
     uint16_t crc_received = buffer[18] << 8 | buffer[19];
@@ -187,7 +182,7 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t decrypted[18];
 
     uint8_t key[5];
-    const uint32_t sensor_id_sub = ikea_sparsnas_sensor_id - IKEA_SPARSNAS_ID_KEY_SUB;
+    uint32_t const sensor_id_sub = ikea_sparsnas_sensor_id - IKEA_SPARSNAS_ID_KEY_SUB;
 
     key[0] = (uint8_t)(sensor_id_sub >> 24);
     key[1] = (uint8_t)(sensor_id_sub);
@@ -204,12 +199,10 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Additional integrity checks
     uint32_t rcv_sensor_id = (unsigned)decrypted[5] << 24 | decrypted[6] << 16 | decrypted[7] << 8 | decrypted[8];
 
-    if (decoder->verbose > 1) {
-        decoder_logf(decoder, 2, __func__, "CRC OK (%X == %X)", crc_calculated, crc_received);
-        decoder_logf(decoder, 2, __func__, "Encryption key: 0x%X%X%X%X%X", key[0], key[1], key[2], key[3], key[4]);
-        decoder_log_bitrow(decoder, 2, __func__, decrypted, 18 * 8, "Decrypted");
-        decoder_logf(decoder, 2, __func__, "Received sensor id: %06u", rcv_sensor_id);
-    }
+    decoder_logf(decoder, 2, __func__, "CRC OK (%X == %X)", crc_calculated, crc_received);
+    decoder_logf(decoder, 2, __func__, "Encryption key: 0x%X%X%X%X%X", key[0], key[1], key[2], key[3], key[4]);
+    decoder_log_bitrow(decoder, 2, __func__, decrypted, 18 * 8, "Decrypted");
+    decoder_logf(decoder, 2, __func__, "Received sensor id: %06u", rcv_sensor_id);
 
     if (rcv_sensor_id != ikea_sparsnas_sensor_id) {
         decoder_logf(decoder, 2, __func__, "Malformed package, or wrong sensor id. Received sensor id (%06u) not the same as sender (%d)", rcv_sensor_id, ikea_sparsnas_sensor_id);

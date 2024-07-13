@@ -28,16 +28,12 @@ Packet nibbles:
 
 static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    data_t *data;
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
     int flags;
-    char flags_str[3];
     unsigned id;
-    char id_str[7];
     int pressure_raw, temp_c, unknown;
     double pressure_kpa;
-    char code_str[5];
 
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
     // require 72 data bits
@@ -51,20 +47,22 @@ static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
         return 0;
     }
 
-    flags = b[0] >> 2;
-    sprintf(flags_str, "%02x", flags);
-
-    id = b[5] << 16 | b[4] << 8 | b[3]; // little-endian
-    sprintf(id_str, "%06x", id);
-
+    flags        = b[0] >> 2;
+    id           = b[5] << 16 | b[4] << 8 | b[3]; // little-endian
     pressure_raw = (b[0] & 0x03) << 8 | b[1];
     pressure_kpa = pressure_raw * 0.75;
     temp_c       = b[2] - 30;
     unknown      = b[7] << 8 | b[6]; // little-endian, fixed 0xffff?
-    sprintf(code_str, "%04x", unknown);
+
+    char flags_str[3];
+    snprintf(flags_str, sizeof(flags_str), "%02x", flags);
+    char id_str[7];
+    snprintf(id_str, sizeof(id_str), "%06x", id);
+    char code_str[5];
+    snprintf(code_str, sizeof(code_str), "%04x", unknown);
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Renault",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,

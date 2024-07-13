@@ -2,7 +2,7 @@
     Fine Offset Electronics WS90 weather station.
 
     Copyright (C) 2022 Christian W. Zuckschwerdt <zany@triq.net>
-    Protocol description by @davidefa
+    Protocol description by \@davidefa
 
     Copy of fineoffset_ws80.c with changes made to support Fine Offset WS90
     sensor array.  Changes made by John Pochmara <john@zoiedog.com>
@@ -62,8 +62,8 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t const preamble[] = {0xaa, 0xaa, 0x2d, 0xd4}; // 32 bit, part of preamble and sync word
     uint8_t b[32];
 
-    // Validate package, WS90 nominal size is 330 bit periods
-    if (bitbuffer->bits_per_row[0] < 168 || bitbuffer->bits_per_row[0] > 330) {
+    // Validate package, WS90 nominal size is 345 bit periods
+    if (bitbuffer->bits_per_row[0] < 168 || bitbuffer->bits_per_row[0] > 400) {
         decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "abort length" );
         return DECODE_ABORT_LENGTH;
     }
@@ -108,12 +108,12 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int rain_raw    = (b[19] << 8 ) | (b[20]);
     int supercap_V  = (b[21] & 0x3f);
     int firmware    = b[29];
-    char extra[31];
 
     if (battery_lvl > 100) // More then 100%?
         battery_lvl = 100;
 
-    sprintf(extra, "%02x%02x%02x%02x%02x------%02x%02x%02x%02x%02x%02x%02x", b[14], b[15], b[16], b[17], b[18], /* b[19,20] is the rain sensor, b[21] is supercap_V */ b[22], b[23], b[24], b[25], b[26], b[27], b[28]);
+    char extra[31];
+    snprintf(extra, sizeof(extra), "%02x%02x%02x%02x%02x------%02x%02x%02x%02x%02x%02x%02x", b[14], b[15], b[16], b[17], b[18], /* b[19,20] is the rain sensor, b[21] is supercap_V */ b[22], b[23], b[24], b[25], b[26], b[27], b[28]);
 
     /* clang-format off */
     data_t *data = data_make(

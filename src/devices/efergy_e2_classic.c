@@ -90,7 +90,7 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t interval = (((bytes[3] & 0x30) >> 4) + 1) * 6;
     uint8_t battery  = (bytes[3] & 0x40) >> 6;
     uint8_t fact     = -(int8_t)bytes[6] + 15;
-    if (fact < 7 || fact > 20) // full range unknown so far
+    if (fact < 7 || fact > 23) // full range unknown so far
         return DECODE_FAIL_SANITY; // invalid exponent
     float current_adc = (float)(bytes[4] << 8 | bytes[5]) / (1 << fact);
 

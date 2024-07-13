@@ -8,6 +8,7 @@ add_library(r_433 STATIC
     abuf.c
     am_analyze.c
     baseband.c
+    bit_util.c
     bitbuffer.c
     compat_paths.c
     compat_time.c
@@ -41,7 +42,6 @@ add_library(r_433 STATIC
     samp_grab.c
     sdr.c
     term_ctl.c
-    util.c
     write_sigrok.c
     devices/abmt.c
     devices/acurite.c
@@ -52,6 +52,7 @@ add_library(r_433 STATIC
     devices/ambientweather_tx8300.c
     devices/ambientweather_wh31e.c
     devices/ant_antplus.c
+    devices/arad_ms_meter.c
     devices/archos_tbh.c
     devices/atech_ws308.c
     devices/auriol_4ld5661.c
@@ -68,6 +69,8 @@ add_library(r_433 STATIC
     devices/bresser_5in1.c
     devices/bresser_6in1.c
     devices/bresser_7in1.c
+    devices/bresser_leakage.c
+    devices/bresser_lightning.c
     devices/bt_rain.c
     devices/burnhardbbq.c
     devices/calibeur.c
@@ -75,6 +78,7 @@ add_library(r_433 STATIC
     devices/cavius.c
     devices/ced7000.c
     devices/celsia_czc1.c
+    devices/chamberlain_cwpirc.c
     devices/chuango.c
     devices/cmr113.c
     devices/companion_wtr001.c
@@ -108,6 +112,7 @@ add_library(r_433 STATIC
     devices/fineoffset_wh1080.c
     devices/fineoffset_wh31l.c
     devices/fineoffset_wh45.c
+    devices/fineoffset_wh55.c
     devices/fineoffset_wn34.c
     devices/fineoffset_ws80.c
     devices/fineoffset_ws90.c
@@ -168,6 +173,7 @@ add_library(r_433 STATIC
     devices/mebus.c
     devices/megacode.c
     devices/missil_ml0757.c
+    devices/mueller_hotrod.c
     devices/neptune_r900.c
     devices/new_template.c
     devices/newkaku.c
@@ -199,6 +205,7 @@ add_library(r_433 STATIC
     devices/rubicson_48659.c
     devices/rubicson_pool_48942.c
     devices/s3318p.c
+    devices/schou_72543_rain.c
     devices/schraeder.c
     devices/scmplus.c
     devices/secplus_v1.c
@@ -224,10 +231,15 @@ add_library(r_433 STATIC
     devices/tfa_twin_plus_30.3049.c
     devices/thermopro_tp11.c
     devices/thermopro_tp12.c
+    devices/thermopro_tp28b.c
+    devices/thermopro_tp829b.c
     devices/thermopro_tx2.c
     devices/thermopro_tx2c.c
+    devices/thermor.c
     devices/tpms_abarth124.c
     devices/tpms_ave.c
+    devices/tpms_bmw.c
+    devices/tpms_bmw_g3.c
     devices/tpms_citroen.c
     devices/tpms_eezrv.c
     devices/tpms_elantra2012.c
@@ -236,6 +248,7 @@ add_library(r_433 STATIC
     devices/tpms_jansite.c
     devices/tpms_jansite_solar.c
     devices/tpms_kia.c
+    devices/tpms_nissan.c
     devices/tpms_pmv107j.c
     devices/tpms_porsche.c
     devices/tpms_renault.c
@@ -248,6 +261,7 @@ add_library(r_433 STATIC
     devices/vaillant_vrt340f.c
     devices/vauno_en8822c.c
     devices/visonic_powercode.c
+    devices/watts_thermostat.c
     devices/waveman.c
     devices/wec2103.c
     devices/wg_pb12v1.c

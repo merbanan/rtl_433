@@ -84,8 +84,8 @@ static int ced7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",    "Model",       DATA_STRING, "CED7000",
             "id",       "ID",          DATA_FORMAT, "%04u",    DATA_INT, id,
             "count",    "Shot Count",  DATA_INT,    count,
-            "final",    "Final Time",  DATA_FORMAT, "%.02f s", DATA_DOUBLE, final,
-            "split",    "Split Time",  DATA_FORMAT, "%.02f s", DATA_DOUBLE, split,
+            "final",    "Final Time",  DATA_FORMAT, "%.2f s", DATA_DOUBLE, final,
+            "split",    "Split Time",  DATA_FORMAT, "%.2f s", DATA_DOUBLE, split,
             NULL);
     /* clang-format on */
 

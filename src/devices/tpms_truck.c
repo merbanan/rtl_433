@@ -74,7 +74,7 @@ static int tpms_truck_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned
     int temperature = b[7];
 
     char id_str[4 * 2 + 1];
-    sprintf(id_str, "%08x", id);
+    snprintf(id_str, sizeof(id_str), "%08x", id);
 
     /* clang-format off */
     data_t *data = data_make(

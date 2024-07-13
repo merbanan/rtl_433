@@ -120,6 +120,8 @@ static int somfy_iohc_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int msg_len = b[0] & 0x1f;
     if (len < msg_len + 3)
         return DECODE_ABORT_LENGTH;
+    if (msg_len < 8)
+        return DECODE_ABORT_LENGTH;
     len = msg_len + 3;
 
     int msg_end_flag      = (b[0] & 0x80) >> 7;

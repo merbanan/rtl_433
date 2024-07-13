@@ -25,30 +25,33 @@
 
 int main(void)
 {
-	data_t *data = data_make("label"      , "",		DATA_STRING, "1.2.3",
-				 "house_code" , "House Code",	DATA_INT, 42,
-				 "temp"	      , "Temperature",	DATA_DOUBLE, 99.9,
-				 "array"      , "Array",	DATA_ARRAY, data_array(2, DATA_STRING, (char*[2]){"hello", "world"}),
-				 "array2"     , "Array 2",	DATA_ARRAY, data_array(2, DATA_INT, (int[2]){4, 2}),
-				 "array3"     , "Array 3",	DATA_ARRAY, data_array(2, DATA_ARRAY, (data_array_t*[2]){
-				 				 data_array(2, DATA_INT, (int[2]){4, 2}),
-				 					 data_array(2, DATA_INT, (int[2]){5, 5}) }),
-				 "data"       , "Data",        DATA_DATA, data_make("Hello", "hello", DATA_STRING, "world", NULL),
-				 NULL);
-	const char *fields[] = { "label", "house_code", "temp", "array", "array2", "array3", "data", "house_code" };
+    /* clang-format off */
+    data_t *data = data_make(
+            "label",        "",             DATA_STRING, "1.2.3",
+            "house_code",   "House Code",   DATA_INT,    42,
+            "temp",         "Temperature",  DATA_DOUBLE, 99.9,
+            "array",        "Array",        DATA_ARRAY, data_array(2, DATA_STRING, (char*[2]){"hello", "world"}),
+            "array2",       "Array 2",      DATA_ARRAY, data_array(2, DATA_INT, (int[2]){4, 2}),
+            "array3",       "Array 3",      DATA_ARRAY, data_array(2, DATA_ARRAY, (data_array_t*[2]){
+                                                            data_array(2, DATA_INT, (int[2]){4, 2}),
+                                                            data_array(2, DATA_INT, (int[2]){5, 5}) }),
+            "data",         "Data",        DATA_DATA, data_make("Hello", "hello", DATA_STRING, "world", NULL),
+            NULL);
+    /* clang-format on */
+    const char *fields[] = { "label", "house_code", "temp", "array", "array2", "array3", "data", "house_code" };
 
-	void *json_output = data_output_json_create(0, stdout);
-	void *kv_output = data_output_kv_create(0, stdout);
-	void *csv_output = data_output_csv_create(0, stdout);
-	data_output_start(csv_output, fields, sizeof fields / sizeof *fields);
+    void *json_output = data_output_json_create(0, stdout);
+    void *kv_output = data_output_kv_create(0, stdout);
+    void *csv_output = data_output_csv_create(0, stdout);
+    data_output_start(csv_output, fields, sizeof fields / sizeof *fields);
 
-	data_output_print(json_output, data); fprintf(stdout, "\n");
-	data_output_print(kv_output, data);
-	data_output_print(csv_output, data);
+    data_output_print(json_output, data); fprintf(stdout, "\n");
+    data_output_print(kv_output, data);
+    data_output_print(csv_output, data);
 
-	data_output_free(json_output);
-	data_output_free(kv_output);
-	data_output_free(csv_output);
+    data_output_free(json_output);
+    data_output_free(kv_output);
+    data_output_free(csv_output);
 
-	data_free(data);
+    data_free(data);
 }

@@ -56,7 +56,7 @@ all following bytes are transmitted with a decrementing index count with the fin
 #include "decoder.h"
 
 // 1100111010101010
-static const uint8_t insteon_preamble[] = {0xCE, 0xAA};
+static uint8_t const insteon_preamble[] = {0xCE, 0xAA};
 
 #define INSTEON_PACKET_MIN 10
 #define INSTEON_PACKET_MAX 13
@@ -182,16 +182,15 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
         min_pkt_len = INSTEON_PACKET_MIN_EXT;
     }
 
-    if (decoder->verbose) {
-        decoder_logf(decoder, 1, __func__, "start_pos %u row_length %hu =  %u",
-                start_pos, bits->bits_per_row[row], (bits->bits_per_row[row] - start_pos));
-        decoder_logf(decoder, 1, __func__, "%s %-5s %s %s %s",
-                "pkt_i", "pkt_d", "next", "length", "count");
+    decoder_logf(decoder, 1, __func__, "start_pos %u row_length %hu =  %u",
+            start_pos, bits->bits_per_row[row], (bits->bits_per_row[row] - start_pos));
 
-        uint8_t buffy[4];
-        bitbuffer_extract_bytes(bits, row, start_pos - 2, buffy, 30);
-        decoder_logf_bitrow(decoder, 1, __func__, buffy, 30, "%2d %02X %03u %u %2d",
-                pkt_i, pkt_d, next_pos, (next_pos - start_pos), 0);
+    {
+    decoder_log(decoder, 1, __func__, "pkt_i pkt_d next length count");
+    uint8_t buffy[4];
+    bitbuffer_extract_bytes(bits, row, start_pos - 2, buffy, 30);
+    decoder_logf_bitrow(decoder, 1, __func__, buffy, 30, "%2d %02X %03u %u %2d",
+            pkt_i, pkt_d, next_pos, (next_pos - start_pos), 0);
     }
 
     /*   Is this overkill ??
@@ -236,13 +235,12 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
 
         results[results_len++] = pkt_d;
 
-        if (decoder->verbose) {
-            uint8_t buffy[4];
-            bitbuffer_extract_bytes(bits, row, start_pos - 2, buffy, 30);
-            // decoder_logf_bitrow(decoder, 1, __func__, buffy, 30, "%s: %2d  %02X  %3u %d %d",
-            decoder_logf_bitrow(decoder, 1, __func__, buffy, 30, "%2d %02X %03u %u %2d",
-                    pkt_i, pkt_d, next_pos, (next_pos - start_pos), j);
-            // parse_insteon_pkt: curr packet (3f) { 1} d6 : 1
+        {
+        uint8_t buffy[4];
+        bitbuffer_extract_bytes(bits, row, start_pos - 2, buffy, 30);
+        decoder_logf_bitrow(decoder, 1, __func__, buffy, 30, "%2d %02X %03u %u %2d",
+                pkt_i, pkt_d, next_pos, (next_pos - start_pos), j);
+        // parse_insteon_pkt: curr packet (3f) { 1} d6 : 1
         }
 
         // packet index should decrement
@@ -321,7 +319,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
     //         (results[0] >> 2) & 0x03);
 
     int pkt_type = (results[0] >> 5) & 0x07;
-    char const *messsage_text[8] = {
+    char const *const messsage_text[8] = {
             "Direct Message",                         // 000
             "ACK of Direct Message",                  // 001
             "Group Cleanup Direct Message",           // 010
@@ -339,7 +337,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
 
     // Format data
     /*
-    static int data_payload[35];
+    int data_payload[35];
     for (int j = 0; j < min_pkt_len; j++) {
         data_payload[j] = (int)results[j];
     }

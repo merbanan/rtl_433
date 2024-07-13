@@ -36,7 +36,7 @@ static int elro_db286a_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // 32 bits, trailing bit is dropped
     char id_str[4 * 2 + 1];
-    sprintf(id_str, "%02x%02x%02x%02x", b[0], b[1], b[2], b[3]);
+    snprintf(id_str, sizeof(id_str), "%02x%02x%02x%02x", b[0], b[1], b[2], b[3]);
 
     /* clang-format off */
     data_t *data = data_make(
