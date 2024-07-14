@@ -268,6 +268,7 @@
     DECL(chamberlain_cwpirc) \
     DECL(thermopro_tp829b) \
     DECL(arad_ms_meter) \
+    DECL(geevon) \
 
     /* Add new decoders here. */
 
