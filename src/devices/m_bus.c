@@ -25,7 +25,7 @@ for further processing by an Application layer (outside this program).
 // Convert two BCD encoded nibbles to an integer
 static unsigned bcd2int(uint8_t bcd)
 {
-    return 10*(bcd>>4) + (bcd & 0xF);
+    return 10 * (bcd >> 4) + (bcd & 0xf);
 }
 
 // Mapping from 6 bits to 4 bits. "3of6" coding used for Mode T
@@ -155,6 +155,8 @@ typedef struct {
     uint8_t     l_npci;
     uint8_t     tpci;
     uint8_t     apci;
+    /* Q-walk_by */
+    int         q_mode;
 } m_bus_block2_t;
 
 // Data structure for block 1
@@ -666,6 +668,58 @@ static int m_bus_decode_records(data_t **inout_data, const uint8_t *b, uint8_t d
 
 static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bus_data_t *out)
 {
+    // check for vendor specific non-standard payload
+
+    /* Q-walk_by */
+    /* 000: CI:0x78 Vendor spec (not used for OMS) */
+    /* 000: 0x780dff5f Magic for QUNDIS walk_by */
+    /* 004: 0x35 L:53 Length of walk_by field? */
+    /* 005: 0x00 ST:0 Status 0= No Error */
+    /* 006: 0x82 unknown */
+    /* 007: AC AccessNumber, inc by 1 each message */
+    /* 008: 0x0000 CW:0 no encryption */
+    /* 015: 0xffff  V:total_follows */
+    /* 017: 0x67452301 V:total - BCD LSB first -> 01234567 */
+    /* 021: 0xff2c  V:lastyear 31.12 follows */
+    /* 023: 0x00000000 V:lastyear - BCD LSB first */
+    /* 027: e.g. 0x1e36 V:lastmonth 30.6 follows */
+    /* 029: 0x00000000 V:lastmonth - BCD LSB first */
+    /* timestamps follow */
+    /* 068: 046d dif (32 Bit Integer/Binary Instantaneous value) vif (Date and time type) */
+    /* 070: 02090F37 ("meter_datetime":"2024-07-15 09:02") */
+    if (block1->block2.q_mode) {
+        uint8_t const *b = out->data + BLOCK1A_SIZE - 2; // start of block2
+
+        int q_total     = bcd2int(b[20]) * 1000000 + bcd2int(b[19]) * 10000 + bcd2int(b[18]) * 100 + bcd2int(b[17]);
+        int q_lastyear  = bcd2int(b[26]) * 1000000 + bcd2int(b[25]) * 10000 + bcd2int(b[24]) * 100 + bcd2int(b[23]);
+        int q_lastmonth = bcd2int(b[32]) * 1000000 + bcd2int(b[31]) * 10000 + bcd2int(b[30]) * 100 + bcd2int(b[29]);
+
+        if (block1->A_DevType == 6) {
+            /* WarmWater */
+            // Value factor is 0.001, e.g. 123.456 m3
+
+            /* clang-format off */
+            data = data_dbl(data, "Q_total_m3",     "Q_total_m3",       "%.3f m3",  q_total * 0.001f);
+            data = data_dbl(data, "Q_lastyear_m3",  "Q_lastyear_m3",    "%.3f m3",  q_lastyear * 0.001f);
+            data = data_dbl(data, "Q_lastmonth_m3", "Q_lastmonth_m3",   "%.3f m3",  q_lastmonth * 0.001f);
+            /* clang-format on */
+        }
+        if (block1->A_DevType == 8) {
+            /* Heat Cost Allocator */
+            // Value factor is K (from an invoice), e.g. 123456*K kWh
+
+            /* clang-format off */
+            data = data_dbl(data, "Q_total",        "Q_total",          NULL,       q_total);
+            data = data_dbl(data, "Q_lastyear",     "Q_lastyear",       NULL,       q_lastyear);
+            data = data_dbl(data, "Q_lastmonth",    "Q_lastmonth",      NULL,       q_lastmonth);
+            /* clang-format on */
+        }
+
+        return; // do not process the payload any further
+    }
+
+    // standard payload
+
     uint8_t off = block1->block2.pl_offset;
     const uint8_t *b = out->data;
 
@@ -760,6 +814,18 @@ static int parse_block2(const m_bus_data_t *in, m_bus_block1_t *block1)
             b2->CW = b[4]<<8 | b[3];
             b2->pl_offset = BLOCK1A_SIZE-2 + 5;
         }
+
+        /* Q-walk_by */
+        /* 000: CI:0x78 Vendor spec (not used for OMS) */
+        /* 000: 0x780dff5f Magic for QUNDIS walk_by */
+        uint32_t ci_magic = ((uint32_t)b[0] << 24) | (b[1] << 16) | (b[2] << 8) | (b[3]);
+        if (ci_magic == 0x780dff5f) {
+            b2->AC          = b[7];
+            b2->ST          = b[5];
+            b2->CW          = (b[9] << 8) | (b[8]);
+            b2->pl_offset   = BLOCK1A_SIZE - 2 + 8;
+            b2->q_mode      = 1;
+        }
     //    fprintf(stderr, "Instantaneous Value: %02x%02x : %f\n",b[9],b[10],((b[10]<<8)|b[9])*0.01);
     }
     return 0;
@@ -767,7 +833,6 @@ static int parse_block2(const m_bus_data_t *in, m_bus_block1_t *block1)
 
 static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bus_data_t *out, m_bus_block1_t *block1)
 {
-
     // Get Block 1
     block1->L         = in->data[0];
     block1->C         = in->data[1];
@@ -883,7 +948,6 @@ static int m_bus_output_data(r_device *decoder, bitbuffer_t *bitbuffer, const m_
                 "apci",     "APCI",         DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.apci,
                 "data_length","Data Length",DATA_INT,       out->length,
                 "data",     "Data",         DATA_STRING,    str_buf,
-                "mic",      "Integrity",    DATA_STRING,    "CRC",
                 NULL);
         /* clang-format on */
     } else {
@@ -900,7 +964,6 @@ static int m_bus_output_data(r_device *decoder, bitbuffer_t *bitbuffer, const m_
 //                "L",        "Length",       DATA_INT,       block1->L,
                 "data_length",  "Data Length",          DATA_INT,           out->length,
                 "data",     "Data",         DATA_STRING,    str_buf,
-                "mic",      "Integrity",    DATA_STRING,    "CRC",
                 NULL);
         /* clang-format on */
     }
@@ -908,7 +971,7 @@ static int m_bus_output_data(r_device *decoder, bitbuffer_t *bitbuffer, const m_
         /* clang-format off */
         data = data_int(data, "CI",     "Control Info",         "0x%02X",   block1->block2.CI);
         data = data_int(data, "AC",     "Access number",        "0x%02X",   block1->block2.AC);
-        data = data_int(data, "ST",     "Device Type",          "0x%02X",   block1->block2.ST);
+        data = data_int(data, "ST",     "Status",               "0x%02X",   block1->block2.ST);
         data = data_int(data, "CW",     "Configuration Word",   "0x%04X",   block1->block2.CW);
         /* clang-format on */
     }
@@ -920,6 +983,8 @@ static int m_bus_output_data(r_device *decoder, bitbuffer_t *bitbuffer, const m_
         data = data_int(data, "payload_encrypted", "Payload Encrypted", NULL, 1);
         /* clang-format on */
     }
+
+    data = data_str(data, "mic", "Integrity", NULL, "CRC");
     decoder_output_data(decoder, data);
     return 1;
 }
