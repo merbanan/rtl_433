@@ -347,7 +347,7 @@ R_API data_t *data_hex(data_t *first, char const *key, char const *pretty_key, c
     }
     *p = '\0';
 
-    return data_append(first, key, pretty_key, DATA_FORMAT, format, DATA_STRING, val, NULL);
+    return data_append(first, key, pretty_key, DATA_FORMAT, NULL, DATA_STRING, buf, NULL);
 }
 
 R_API void data_array_free(data_array_t *array)
