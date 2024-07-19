@@ -423,7 +423,8 @@ static int m_bus_decode_val(const uint8_t *b, uint8_t dif_coding, int64_t *out_v
             }
             return 6;
         case 13: // variable len
-            return -1;
+            // consume given bytes to skip ahead
+            return b[0] + 1;
         case 12: // 8 digit BCD
             for (int i=3; i >= 0;--i) {
                 *out_value = (*out_value * 10) + (b[i] >> 4);
@@ -517,7 +518,7 @@ static int m_bus_decode_records(data_t **inout_data, const uint8_t *b, uint8_t d
     ret = m_bus_decode_val(b, dif_coding, &val);
 
     // for reverse engineering
-    // fprintf(stderr, "**decoding dif_coding=%d, vif=0x%02x, vif_uam=0x%02x, dif_ff=%d, dif_sn=%d, dif_su=%d, b[3]=0x%02X, b[2]=0x%02X,b[1]=0x%02X, b[0]=0x%02X, val=%ld**\n",
+    // fprintf(stderr, "**decoding dif_coding=%d, vif=0x%02x, vif_uam=0x%02x, dif_ff=%d, dif_sn=%d, dif_su=%d, b[3]=0x%02X, b[2]=0x%02X,b[1]=0x%02X, b[0]=0x%02X, val=%lld**\n",
     //                  dif_coding, vif_linear, vif_uam, dif_ff, dif_sn, dif_su, b[3], b[2], b[1], b[0], val);
 
     switch (vif_linear) {
@@ -659,6 +660,9 @@ static int m_bus_decode_records(data_t **inout_data, const uint8_t *b, uint8_t d
                     break;
             }
             break;
+        case 0x7F:
+            // fprintf(stderr, "Manufacturer specific VIFE: %02x\n", vif_uam);
+            break;
         default:
             break;
     }
@@ -673,7 +677,10 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
     /* Q-walk_by */
     /* 000: CI:0x78 Vendor spec (not used for OMS) */
     /* 000: 0x780dff5f Magic for QUNDIS walk_by */
-    /* 004: 0x35 L:53 Length of walk_by field? */
+    // 001: 0x0D DIF (variable length Instantaneous value)
+    // 002: 0xFF VIF (Manufacturer specific)
+    // 003: 0x5F VIFE (Manufacturer specific VIFE)
+    /* 004: 0x35 varlen:53 Length of walk_by field */
     /* 005: 0x00 ST:0 Status 0= No Error */
     /* 006: 0x82 unknown */
     /* 007: AC AccessNumber, inc by 1 each message */
@@ -714,11 +721,9 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
             data = data_dbl(data, "Q_lastmonth",    "Q_lastmonth",      NULL,       q_lastmonth);
             /* clang-format on */
         }
-
-        return; // do not process the payload any further
     }
 
-    // standard payload
+    // process standard payload
 
     uint8_t off = block1->block2.pl_offset;
     const uint8_t *b = out->data;
@@ -780,6 +785,9 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
         } else if (vif  == 0xFD) {
             vif_linear = 0x7D;
             vif_uam = vife_array[0];
+        } else if (vif  == 0xFF) { // Manufacturer specific
+            vif_linear = 0x7F;
+            vif_uam = vife_array[0]; // Manufacturer specific VIFE
         } else {
             vif_linear = 0;
             vif_uam = vif&0x7F;
@@ -823,7 +831,7 @@ static int parse_block2(const m_bus_data_t *in, m_bus_block1_t *block1)
             b2->AC          = b[7];
             b2->ST          = b[5];
             b2->CW          = (b[9] << 8) | (b[8]);
-            b2->pl_offset   = BLOCK1A_SIZE - 2 + 8;
+            b2->pl_offset   = BLOCK1A_SIZE - 2 + 1;
             b2->q_mode      = 1;
         }
     //    fprintf(stderr, "Instantaneous Value: %02x%02x : %f\n",b[9],b[10],((b[10]<<8)|b[9])*0.01);
