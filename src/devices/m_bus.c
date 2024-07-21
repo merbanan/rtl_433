@@ -156,7 +156,7 @@ typedef struct {
     uint8_t     tpci;
     uint8_t     apci;
     /* Q-walk_by */
-    int         q_mode;
+    int         qds_walk_by; // QDS walk_by DRH found
 } m_bus_block2_t;
 
 // Data structure for block 1
@@ -343,6 +343,7 @@ static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_t
     return append_str(data, unit_type, value_type, sn, key_extra, pretty_extra, buffer_val);
 }
 
+// output_size requirement is 18 bytes including terminating nul.
 static size_t m_bus_tm_decode(const uint8_t *data, size_t data_size, char *output, size_t output_size)
 {
     size_t out_len = 0;
@@ -424,7 +425,28 @@ static int m_bus_decode_val(const uint8_t *b, uint8_t dif_coding, int64_t *out_v
             return 6;
         case 13: // variable len
             // consume given bytes to skip ahead
-            return b[0] + 1;
+            // LVAR = 00h .. BFh : ASCII string with LVAR characters
+            if (b[0] <= 0xbf) {
+                return b[0] + 1;
+            }
+            // LVAR = C0h .. CFh : positive BCD number with (LVAR - C0h) * 2 digits
+            if (b[0] <= 0xcf) {
+                return (b[0] - 0xc0) * 2;
+            }
+            // LVAR = D0h .. DFH : negative BCD number with (LVAR - D0h) * 2 digits
+            if (b[0] <= 0xdf) {
+                return (b[0] - 0xd0) * 2;
+            }
+            // LVAR = E0h .. EFh : binary number with (LVAR - E0h) bytes
+            if (b[0] <= 0xef) {
+                return b[0] - 0xe0;
+            }
+            // LVAR = F0h .. FAh : floating point number with (LVAR - F0h) bytes [to be defined]
+            if (b[0] <= 0xfa) {
+                return b[0] - 0xf0;
+            }
+            // LVAR = FBh .. FFh : Reserved
+            return -1;
         case 12: // 8 digit BCD
             for (int i=3; i >= 0;--i) {
                 *out_value = (*out_value * 10) + (b[i] >> 4);
@@ -524,25 +546,24 @@ static int m_bus_decode_records(data_t **inout_data, const uint8_t *b, uint8_t d
     switch (vif_linear) {
         case 0:
             if ((vif_uam&0xF8) == 0) {
-                // E000 0nnn Energy 10nnn-3 Wh  0.001Wh to 10000Wh
+                // E000 0nnn Energy 10^nnn-3 Wh  0.001Wh to 10000Wh
                 data = append_val(data, kEnergy_Wh, dif_ff, dif_sn, "", "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x08) {
-                // E000 1nnn    Energy  10nnn J 0.001kJ to 10000kJ
+                // E000 1nnn    Energy  10^nnn-3 J 0.001kJ to 10000kJ
                 data = append_val(data, kEnergy_J, dif_ff, dif_sn, "", "", val, vif_uam&0x7);
             } else if ((vif_uam&0xF8) == 0x10) {
-                // E001 0nnn    Volume  10nnn-6 m3  0.001l to 10000l
+                // E001 0nnn    Volume  10^nnn-6 m3  0.001l to 10000l
 
-                if (dif_sn == 0) {
+                if (dif_sn < 8) {
                     data = append_val(data, kVolume, dif_ff, dif_sn, "", "", val, -6 + (vif_uam&0x7));
-                } else
-                if (dif_sn >= 8 && dif_sn <= 19) {
+                } else if (dif_sn <= 19) {
                     dif_sn -= 8;
                     data = append_val(data, kVolume, dif_ff, dif_sn,
                         history_months[dif_sn][0], history_months[dif_sn][1], val, -6 + (vif_uam&0x7));
                 }
 
             } else if ((vif_uam&0xF8) == 0x18) {
-                // E001 1nnn    Mass    10nnn-3 kg  0.001kg to 10000kg
+                // E001 1nnn    Mass    10^nnn-3 kg  0.001kg to 10000kg
                 data = append_val(data, kEnergy_J, dif_ff, dif_sn, "", "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xFC) == 0x20) {
                 /* E010 00nn    On Time nn = 00 seconds
@@ -566,42 +587,42 @@ static int m_bus_decode_records(data_t **inout_data, const uint8_t *b, uint8_t d
                     default: break;
                 }
             } else if ((vif_uam&0xF8) == 0x28) {
-                // E010 1nnn    Power  10nnn-3 W    0.001W to 10000W
+                // E010 1nnn    Power  10n^nn-3 W    0.001W to 10000W
                 data = append_val(data, kPower_W, dif_ff, dif_sn, "", "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x30) {
-                // E011 0nnn    Power   10nnn J/h   0.001kJ/h to 10000kJ/h
+                // E011 0nnn    Power   10^nnn J/h   0.001kJ/h to 10000kJ/h
                 data = append_val(data, kPower_Jh, dif_ff, dif_sn, "", "", val, vif_uam&0x7);
             } else if ((vif_uam&0xF8) == 0x38) {
-                // E011 1nnn    Volume Flow 10nnn-6 m3/h   0.001l/h to 10000l/h
+                // E011 1nnn    Volume Flow 10^nnn-6 m3/h   0.001l/h to 10000l/h
                 data = append_val(data, kVolumeFlow_h, dif_ff, dif_sn, "", "", val, -6 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x40) {
-                // E100 0nnn    Volume Flow ext.    10nnn-7 m3/min  0.0001l/min to 1000l/min
+                // E100 0nnn    Volume Flow ext.    10^nnn-7 m3/min  0.0001l/min to 1000l/min
                 data = append_val(data, kVolumeFlow_min, dif_ff, dif_sn, "", "", val, -7 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x48) {
-                // E100 1nnn    Volume Flow ext.   10nnn-9 m³/s    0.001ml/s to 10000ml/s
+                // E100 1nnn    Volume Flow ext.   10^nnn-9 m³/s    0.001ml/s to 10000ml/s
                 // in litres so exp -3
                 data = append_val(data, kVolumeFlow_s, dif_ff, dif_sn, "", "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x50) {
-                // E101 0nnn    Mass flow   10nnn-3 kg/h    0.001kg/h to 10000kg/h
+                // E101 0nnn    Mass flow   10^nnn-3 kg/h    0.001kg/h to 10000kg/h
                 data = append_val(data, kMassFlow, dif_ff, dif_sn, "", "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xFC) == 0x58) {
-                // E101 10nn    Flow Temperature 10nn-3 °C 0.001°C to 1°C
+                // E101 10nn    Flow Temperature 10^nn-3 °C 0.001°C to 1°C
                 data = append_val(data, kTemperatureFlow, dif_ff, dif_sn, "", "", val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFC) == 0x5C) {
-                // E101 11nn    Return Temperature 10nn-3 °C    0.001°C to 1°C
+                // E101 11nn    Return Temperature 10^nn-3 °C    0.001°C to 1°C
                 data = append_val(data, kTemperatureReturn, dif_ff, dif_sn, "", "", val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFC) == 0x60) {
-                // E110 00nn    Temperature Difference  10nn-3 K    1mK to 1000mK
+                // E110 00nn    Temperature Difference  10^nn-3 K    1mK to 1000mK
                 data = append_val(data, kTemperatureDiff, dif_ff, dif_sn, "", "", val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFC) == 0x64) {
-                // E110 01nn    External temperature    10 nn-3 ° C 0.001 ° C to 1 ° C
+                // E110 01nn    External temperature    10^nn-3 ° C 0.001 ° C to 1 ° C
                 data = append_val(data, kTemperatureExtern, dif_ff, dif_sn, "", history_hours[dif_sn&0x3], val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFC) == 0x68) {
-                // E110 10nn    Pressure    10nn-3 bar 1mbar to 1000mbar
+                // E110 10nn    Pressure    10^nn-3 bar 1mbar to 1000mbar
                 data = append_val(data, kPressure, dif_ff, dif_sn, "", "", val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFE) == 0x6C) {
                 // E110 110n    Time Point  n = 0 date, n = 1 time & date
-                char buff_time[256] = {0};
+                char buff_time[18] = {0};
 
                 if (vif_uam&1) {
                     if (m_bus_tm_decode(b, dif_coding, buff_time, sizeof(buff_time))) {
@@ -674,52 +695,47 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
 {
     // check for vendor specific non-standard payload
 
-    /* Q-walk_by */
-    /* 000: CI:0x78 Vendor spec (not used for OMS) */
-    /* 000: 0x780dff5f Magic for QUNDIS walk_by */
+    // Q-walk_by
+    // 000: CI:0x78 Vendor spec (not used for OMS)
+    // 000: 0x780dff5f Magic for QUNDIS walk_by
     // 001: 0x0D DIF (variable length Instantaneous value)
     // 002: 0xFF VIF (Manufacturer specific)
     // 003: 0x5F VIFE (Manufacturer specific VIFE)
-    /* 004: 0x35 varlen:53 Length of walk_by field */
-    /* 005: 0x00 ST:0 Status 0= No Error */
-    /* 006: 0x82 unknown */
-    /* 007: AC AccessNumber, inc by 1 each message */
-    /* 008: 0x0000 CW:0 no encryption */
-    /* 015: 0xffff  V:total_follows */
-    /* 017: 0x67452301 V:total - BCD LSB first -> 01234567 */
-    /* 021: 0xff2c  V:lastyear 31.12 follows */
-    /* 023: 0x00000000 V:lastyear - BCD LSB first */
-    /* 027: e.g. 0x1e36 V:lastmonth 30.6 follows */
-    /* 029: 0x00000000 V:lastmonth - BCD LSB first */
-    /* timestamps follow */
-    /* 068: 046d dif (32 Bit Integer/Binary Instantaneous value) vif (Date and time type) */
-    /* 070: 02090F37 ("meter_datetime":"2024-07-15 09:02") */
-    if (block1->block2.q_mode) {
-        uint8_t const *b = out->data + BLOCK1A_SIZE - 2; // start of block2
+    // 004: 0x35 LVAR:53 Length of walk_by field
+    // 005: 0x00 ST:0 Status 0= No Error
+    // 006: 0x82 unknown
+    // 007: AC AccessNumber, inc by 1 each message
+    // 008: 0x0000 CW:0 no encryption
+    // 015: 0xffff  V:total_follows
+    // 017: 0x67452301 V:total - BCD LSB first -> 01234567 -- 0C13 total Volume
+    // 021: 0xff2c  V:lastyear 31.12 follows -- 426C due Date
+    // 023: 0x00000000 V:lastyear - BCD LSB first -- 4C13 due_date Volume
+    // 027: e.g. 0x1e36 V:lastmonth 30.6 follows -- C2086C due_17 Date
+    // 029: 0x00000000 V:lastmonth - BCD LSB first -- CC0813 due_17_date Volume
+    // timestamps follow
+    // 068: DRH:046d  DIF (32 Bit Integer/Binary Instantaneous value) VIF (Date and time type)
+    // 070: 02090F37 ("meter_datetime":"2024-07-15 09:02")
 
-        int q_total     = bcd2int(b[20]) * 1000000 + bcd2int(b[19]) * 10000 + bcd2int(b[18]) * 100 + bcd2int(b[17]);
-        int q_lastyear  = bcd2int(b[26]) * 1000000 + bcd2int(b[25]) * 10000 + bcd2int(b[24]) * 100 + bcd2int(b[23]);
-        int q_lastmonth = bcd2int(b[32]) * 1000000 + bcd2int(b[31]) * 10000 + bcd2int(b[30]) * 100 + bcd2int(b[29]);
+    if (block1->block2.qds_walk_by) {
+        uint8_t const *b = out->data + BLOCK1A_SIZE - 2; // start of block2
 
         if (block1->A_DevType == 6) {
             /* WarmWater */
             // Value factor is 0.001, e.g. 123.456 m3
-
-            /* clang-format off */
-            data = data_dbl(data, "Q_total_m3",     "Q_total_m3",       "%.3f m3",  q_total * 0.001f);
-            data = data_dbl(data, "Q_lastyear_m3",  "Q_lastyear_m3",    "%.3f m3",  q_lastyear * 0.001f);
-            data = data_dbl(data, "Q_lastmonth_m3", "Q_lastmonth_m3",   "%.3f m3",  q_lastmonth * 0.001f);
-            /* clang-format on */
+            m_bus_decode_records(&data, &b[17], 0x0c, 0x00, 0x13, 0, 0, 0); // DRH:0C13 total Volume
+            m_bus_decode_records(&data, &b[21], 0x02, 0x00, 0x6c, 1, 0, 0); // DRH:426C due Date
+            m_bus_decode_records(&data, &b[23], 0x0c, 0x00, 0x13, 1, 0, 0); // DRH:4C13 due_date Volume
+            m_bus_decode_records(&data, &b[27], 0x02, 0x00, 0x6c, 17, 0, 0); // DRH:C2086C due_17 Date
+            m_bus_decode_records(&data, &b[29], 0x0c, 0x00, 0x13, 17, 0, 0); // DRH:CC0813 due_17_date Volume
         }
         if (block1->A_DevType == 8) {
             /* Heat Cost Allocator */
             // Value factor is K (from an invoice), e.g. 123456*K kWh
-
-            /* clang-format off */
-            data = data_dbl(data, "Q_total",        "Q_total",          NULL,       q_total);
-            data = data_dbl(data, "Q_lastyear",     "Q_lastyear",       NULL,       q_lastyear);
-            data = data_dbl(data, "Q_lastmonth",    "Q_lastmonth",      NULL,       q_lastmonth);
-            /* clang-format on */
+            m_bus_decode_records(&data, &b[17], 0x0c, 0x00, 0x6e, 0, 0, 0); // DRH:0C13 total Volume
+            m_bus_decode_records(&data, &b[21], 0x02, 0x00, 0x6c, 1, 0, 0); // DRH:426C due Date
+            m_bus_decode_records(&data, &b[23], 0x0c, 0x00, 0x6e, 1, 0, 0); // DRH:4C13 due_date Volume
+            m_bus_decode_records(&data, &b[27], 0x02, 0x00, 0x6c, 17, 0, 0); // DRH:C2086C due_17 Date
+            m_bus_decode_records(&data, &b[29], 0x0c, 0x00, 0x6e, 17, 0, 0); // DRH:CC0813 due_17_date Volume
         }
     }
 
@@ -728,9 +744,17 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
     uint8_t off = block1->block2.pl_offset;
     const uint8_t *b = out->data;
 
+    // Data Record Header DRH, contains Data Information Block DIB and Value Information Block VIB
+
     /* Align offset pointer, there might be 2 0x2F bytes */
     if (b[off] == 0x2F) off++;
     if (b[off] == 0x2F) off++;
+    // DIF Function for Special Functions (data field = 1111b):
+    // - 0Fh Start of manufacturer specific data structures to end of user data
+    // - 1Fh Same meaning as DIF = 0Fh + More records follow in next telegram
+    // - 2Fh Idle Filler (not to be interpreted), following byte = DIF
+    // - 3Fh..6Fh Reserved
+    // - 7Fh Global readout request (all storage#, units, tariffs, function fields)
 
 // [02 65] 9f08 [42 65] 9e08 [8201 65] 8f08 [02 fb1a] 3601 [42 fb1a] 3701 [8201 fb1a] 3001
 
@@ -754,7 +778,11 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
         dife_cnt = 0;
         vife_cnt = 0;
 
-        /* Parse DIF */
+        // Data Information Block (DIB)
+        // The Data Information Block (DIB) contains as a minimum one Data Information Field (DIF).
+        // This byte can be extended by a further 10 Data Information Field Extension Bytes (DIFE).
+        // DIF is ESFFDDDD: Extension, Storage LSB, Function, Data
+        // DIFE is EUTTSSSS: Extension, Unit, Tariff, Storage
         dif = b[off];
         dif_sn = (dif&0x40) >> 6;
         while (b[off]&0x80) {
@@ -769,7 +797,9 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
         dif_coding = dif&0x0F;
         dif_ff = (dif&0x30) >> 4;
 
-        /* Parse VIF */
+        // Value Information Block (VIB)
+        // The Value Information Block (VIB) contains as a minimum one Value Information Field (VIF).
+        // This byte can be extended by a further 10 Value Information Field Extension Bytes (VIFE).
         vif = b[off];
 
         while (b[off]&0x80) {
@@ -805,6 +835,12 @@ static int parse_block2(const m_bus_data_t *in, m_bus_block1_t *block1)
     m_bus_block2_t *b2 = &block1->block2;
     const uint8_t *b = in->data+BLOCK1A_SIZE;
 
+    // CI=0x72: long data header, CI=0x7a: short data header, CI=0x78: no data header.
+    // A short header contains: Access number (1 byte), Status (1 byte), Configuration (2 bytes)
+    // A long data header contains the secondary address of the meter in addition to all the fields of the short header.
+    // Long header for CI-fields 0x5B, 0x60, 0x64, 0x6C, 0x6D, 0x72, 0x7C, 0x7E, 0x80 and 0x8B.
+    // Short header for CI-fields 0x5A, 0x61, 0x65, 0x7A, 0x7D, 0x7F and 0x8A.
+
     if (block1->knx_mode) {
         b2->knx_ctrl = b[0];
         b2->src = b[1]<< 8 | b[2];
@@ -823,16 +859,22 @@ static int parse_block2(const m_bus_data_t *in, m_bus_block1_t *block1)
             b2->pl_offset = BLOCK1A_SIZE-2 + 5;
         }
 
-        /* Q-walk_by */
-        /* 000: CI:0x78 Vendor spec (not used for OMS) */
-        /* 000: 0x780dff5f Magic for QUNDIS walk_by */
-        uint32_t ci_magic = ((uint32_t)b[0] << 24) | (b[1] << 16) | (b[2] << 8) | (b[3]);
-        if (ci_magic == 0x780dff5f) {
+        // QDS walk_by
+        // 000: CI:0x78   (no data header, not used for OMS)
+        // 001: DIF:0x0D  (variable length Instantaneous value)
+        // 002: VIF:0xFF  (Manufacturer specific)
+        // 003: VIFE:0x5F (Manufacturer specific VIFE)
+        // 004: LVAR:0x35 (53 bytes Length of walk_by field
+        // 005: 0x00 ST:0 Status 0= No Error
+        // 006: 0x82 unknown (maybe ST MSB),  0x8210 -> "Battery Voltage Low"
+        // 007: AC AccessNumber, inc by 1 each message
+        // 008: 0x0000 CW:0 no encryption
+        if (b2->CI == 0x78 && b[1] == 0x0d && b[2] == 0xff && b[3] == 0x5f && b[4] == 0x35) {
             b2->AC          = b[7];
             b2->ST          = b[5];
             b2->CW          = (b[9] << 8) | (b[8]);
             b2->pl_offset   = BLOCK1A_SIZE - 2 + 1;
-            b2->q_mode      = 1;
+            b2->qds_walk_by = 1;
         }
     //    fprintf(stderr, "Instantaneous Value: %02x%02x : %f\n",b[9],b[10],((b[10]<<8)|b[9])*0.01);
     }
