@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Copyright (C) 2024 Olliver Schinagl <oliver@schinagl.nl>
+
+ARG ALPINE_VERSION="latest"
+ARG TARGET_ARCH="library"
+
+FROM docker.io/${TARGET_ARCH}/alpine:${ALPINE_VERSION} AS builder
+
+WORKDIR /src
+
+COPY . /src/
+
+RUN apk add --no-cache \
+        'build-base' \
+        'cmake' \
+        'git' \
+        'librtlsdr-dev' \
+        'libusb-dev' \
+        'ninja' \
+        'openssl-dev>3' \
+        'soapy-sdr-dev' \
+    && \
+    cmake -B '.build' -GNinja \
+          -DFORCE_COLORED_BUILD:BOOL=ON \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX='/usr' \
+          -DCMAKE_INSTALL_SYSCONFDIR='/etc' \
+          -DENABLE_OPENSSL=ON \
+    && \
+    cmake --build '.build' -j $(($(nproc) -1 )) && \
+    DESTDIR='/rtl_433' cmake --build '.build' --target install && \
+    rm -f -r '/rtl_433/include' && \
+    rm -f -r '/rtl_433/usr/share'
+
+FROM docker.io/${TARGET_ARCH}/alpine:${ALPINE_VERSION}
+
+LABEL maintainer="Olliver Schinagl <oliver@schinagl.nl>"
+
+RUN apk add --no-cache \
+        'librtlsdr' \
+        'libusb' \
+        'openssl' \
+        'soapy-sdr-libs' \
+        'tini' \
+        'tzdata' \
+    ;
+
+COPY --from=builder "/rtl_433" "/"
+COPY "dist/container-entrypoint.sh" "/init"
+
+ENTRYPOINT [ "/sbin/tini", "--", "/init" ]

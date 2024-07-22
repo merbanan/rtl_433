@@ -25,7 +25,24 @@ On FreeBSD, `pkg install rtl-433`.
 
 On MacOS, `brew install rtl_433`.
 
-Docker images with rtl_433 are available [on the github page of hertzg](https://github.com/hertzg/rtl_433_docker).
+## Docker
+
+Running the application through docker is easy with the offical docker image from this repository. Either use `latest` for the latest stable, a tagged version or `master` for the latest build from master. See https://github.com/merbanan/rtl_433/pkgs/container/rtl_433 for available releases.
+
+```console
+$ docker run \
+         --device '/dev/bus/usb:/dev/bus/usb' \
+         --interactive \
+         --rm \
+         --tty \
+         --volume '/path/for/dumps:/dumps' \
+         --workdir '/dumps' \
+         ghcr.io/merbanan/rtl_433/rtl_433:latest --help
+```
+
+> __Note:__ The volume (and workdir) arguments are only needed to store (and load) dumps.
+
+> __Warning:__ The `--device` flag still exposes all usb devices to the container, this can be trimmed down by using the exact endpoint for more security, the trouble is that this changes every time a dongle is put in a different USB port. The `--privileged` flag might be needed instead of the `--device` flag in certain cases if the USB devices cannot be enumerated and accessed from within the container. Also the container could be run as the current user by using `--user "$(id -u):$(id -g)"`, but then care with user mapping and the use of udev rules is needed. This left as an exercise to the reader.
 
 ## How to add support for unsupported sensors
 
