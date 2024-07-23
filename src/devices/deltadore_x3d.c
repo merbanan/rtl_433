@@ -389,21 +389,15 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (head.unknown_header_flags3 == DELTADORE_X3D_HEADER_FLAG3_TEMP) {
         float temperature = head.temperature / 100.0f;
         /* clang-format off */
-        data = data_append(data,
-                "temperature_C",    "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
-                "temperature_type", "Temp Type",   DATA_FORMAT, "%s",      DATA_STRING, temp_type,
-                NULL);
+        data = data_dbl(data, "temperature_C",    "Temperature", "%.1f", temperature);
+        data = data_str(data, "temperature_type", "Temp Type",   NULL,   temp_type);
         /* clang-format on */
     }
 
     if (head.header_flags & DELTADORE_X3D_HEADER_FLAG_NO_PAYLOAD) {
         // Window stat from window sensor
         if (strlen(wnd_stat) > 0) {
-            /* clang-format off */
-            data = data_append(data,
-                    "wnd_stat", "Window Status", DATA_FORMAT, "%s", DATA_STRING, wnd_stat,
-                    NULL);
-            /* clang-format on */
+            data = data_str(data, "wnd_stat", "Window Status", NULL, wnd_stat);
         }
     }
     else {
@@ -419,17 +413,15 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         /* clang-format off */
-        data = data_append(data,
-                "retry",         "Retry",             DATA_INT,    body.retry,
-                "transfer",      "Transfer",          DATA_INT,    body.transfer,
-                "transfer_ack",  "Transfer Ack",      DATA_INT,    body.transfer_ack,
-                "target",        "Target",            DATA_INT,    body.target,
-                "target_ack",    "Target Ack",        DATA_INT,    body.target_ack,
-                "action",        "Action",            DATA_INT,    body.action,
-                "register_high", "Reg High",          DATA_INT,    body.register_high,
-                "register_low",  "Reg Low",           DATA_INT,    body.register_low,
-                "raw",           "Raw Register Data", DATA_FORMAT, "%s", DATA_STRING, raw_data,
-                NULL);
+        data = data_int(data, "retry",         "Retry",             NULL, body.retry);
+        data = data_int(data, "transfer",      "Transfer",          NULL, body.transfer);
+        data = data_int(data, "transfer_ack",  "Transfer Ack",      NULL, body.transfer_ack);
+        data = data_int(data, "target",        "Target",            NULL, body.target);
+        data = data_int(data, "target_ack",    "Target Ack",        NULL, body.target_ack);
+        data = data_int(data, "action",        "Action",            NULL, body.action);
+        data = data_int(data, "register_high", "Reg High",          NULL, body.register_high);
+        data = data_int(data, "register_low",  "Reg Low",           NULL, body.register_low);
+        data = data_str(data, "raw",           "Raw Register Data", NULL, raw_data);
         /* clang-format on */
     }
 
