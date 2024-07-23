@@ -269,6 +269,7 @@
     DECL(thermopro_tp829b) \
     DECL(arad_ms_meter) \
     DECL(geevon) \
+    DECL(deltadore_x3d) \
 
     /* Add new decoders here. */
 
