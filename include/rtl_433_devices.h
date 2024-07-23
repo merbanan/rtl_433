@@ -261,6 +261,14 @@
     DECL(fineoffset_wh55) \
     DECL(tpms_bmw) \
     DECL(watts_thermostat) \
+    DECL(thermor) \
+    DECL(mueller_hotrod) \
+    DECL(thermopro_tp28b) \
+    DECL(tpms_bmwg3) \
+    DECL(chamberlain_cwpirc) \
+    DECL(thermopro_tp829b) \
+    DECL(arad_ms_meter) \
+    DECL(geevon) \
     DECL(deltadore_x3d) \
 
     /* Add new decoders here. */

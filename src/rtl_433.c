@@ -1316,6 +1316,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
 }
 
 static r_cfg_t g_cfg;
+static volatile sig_atomic_t sig_hup;
 
 // TODO: SIGINFO is not in POSIX...
 #ifndef SIGINFO
@@ -1352,6 +1353,10 @@ static void sighandler(int signum)
         // NOTE: we already ignore most network SIGPIPE's, this might be a STDOUT/STDERR problem.
         // Printing is likely not the correct way to handle this.
         write_err("Ignoring received signal SIGPIPE, Broken pipe.\n");
+        return;
+    }
+    else if (signum == SIGHUP) {
+        sig_hup = 1;
         return;
     }
     else if (signum == SIGINFO/* TODO: maybe SIGUSR1 */) {
@@ -1393,28 +1398,22 @@ static void sdr_handler(struct mg_connection *nc, int ev_type, void *ev_data)
     data_t *data = NULL;
     if (ev->ev & SDR_EV_RATE) {
         // cfg->samp_rate = ev->sample_rate;
-        data = data_append(data,
-                "sample_rate", "", DATA_INT, ev->sample_rate,
-                NULL);
+        data = data_int(data, "sample_rate", "", NULL, ev->sample_rate);
     }
     if (ev->ev & SDR_EV_CORR) {
         // cfg->ppm_error = ev->freq_correction;
-        data = data_append(data,
-                "freq_correction", "", DATA_INT, ev->freq_correction,
-                NULL);
+        data = data_int(data, "freq_correction", "", NULL, ev->freq_correction);
     }
     if (ev->ev & SDR_EV_FREQ) {
         // cfg->center_frequency = ev->center_frequency;
-        data = data_append(data,
-                "center_frequency", "", DATA_INT, ev->center_frequency,
-                "frequencies", "", DATA_COND, cfg->frequencies > 1, DATA_ARRAY, data_array(cfg->frequencies, DATA_INT, cfg->frequency),
-                "hop_times", "", DATA_COND, cfg->frequencies > 1, DATA_ARRAY, data_array(cfg->hop_times, DATA_INT, cfg->hop_time),
-                NULL);
+        data = data_int(data, "center_frequency", "", NULL, ev->center_frequency);
+        if (cfg->frequencies > 1) {
+            data = data_ary(data, "frequencies", "", NULL, data_array(cfg->frequencies, DATA_INT, cfg->frequency));
+            data = data_ary(data, "hop_times", "", NULL, data_array(cfg->hop_times, DATA_INT, cfg->hop_time));
+        }
     }
     if (ev->ev & SDR_EV_GAIN) {
-        data = data_append(data,
-                "gain", "", DATA_STRING, ev->gain_str,
-                NULL);
+        data = data_str(data, "gain", "", NULL, ev->gain_str);
     }
     if (data) {
         event_occurred_handler(cfg, data);
@@ -1511,6 +1510,10 @@ static void timer_handler(struct mg_connection *nc, int ev, void *ev_data)
 {
     //fprintf(stderr, "%s: %d, %d, %p, %p\n", __func__, nc->sock, ev, nc->user_data, ev_data);
     r_cfg_t *cfg = (r_cfg_t *)nc->user_data;
+    if (sig_hup) {
+        reopen_dumpers(cfg);
+        sig_hup = 0;
+    }
     switch (ev) {
     case MG_EV_TIMER: {
         double now  = *(double *)ev_data;
@@ -1666,9 +1669,13 @@ int main(int argc, char **argv) {
     for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
         r_device *r_dev = *iter;
         if (r_dev->modulation >= FSK_DEMOD_MIN_VAL) {
-          demod->enable_FM_demod = 1;
-          break;
+            demod->enable_FM_demod = 1;
+            break;
         }
+    }
+    // if any dumpers are requested the FM demod might be needed
+    if (cfg->demod->dumper.len) {
+        demod->enable_FM_demod = 1;
     }
 
     {
@@ -1996,6 +2003,7 @@ int main(int argc, char **argv) {
     sigact.sa_handler = sighandler;
     sigemptyset(&sigact.sa_mask);
     sigact.sa_flags = 0;
+    sigaction(SIGHUP, &sigact, NULL);
     sigaction(SIGINT, &sigact, NULL);
     sigaction(SIGTERM, &sigact, NULL);
     sigaction(SIGQUIT, &sigact, NULL);

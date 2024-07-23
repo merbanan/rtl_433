@@ -114,7 +114,7 @@ static int tpms_eezrv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int infl_detected      = (flags1 & 0x20) >> 5; // inflating - reports every 15 - 20 sec
 
     int fast_leak      = fast_leak_detected && !infl_detected;
-    float pressure_kPa = (((flags2 & 0x01) << 8) + b[3]) * 2.5;
+    float pressure_kPa = (((flags2 & 0x01) << 8) + b[3]) * 2.5f;
 
     // Low batt = 0x8000;
     int low_batt = flags1 >> 7; // Low batt flag is MSB (activated at V < 3.15 V)(Device fails at V < 3.10 V)

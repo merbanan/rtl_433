@@ -22,6 +22,10 @@ Decoder for Bresser Weather Center 6-in-1.
 - also Bresser soil temperature and moisture meter, PN 7009972
 - also Bresser Thermo-/Hygro-Sensor 7 Channel 868 MHz, PN 7009999
 - also Bresser Pool / Spa Thermometer, PN 7009973 (STYPE = 3)
+- also SENCOR SWS 9898
+- also Ambient Weather TX-3110B Wireless Thermo-Hygrometer
+- also likely Ambient Weather TX-3102 Soil Moisture Meter & Thermometer (unconfirmed)
+- also likely Ambient Weather TX-3107 Floating Pool and Spa Thermometer (unconfirmed)
 
 There are at least two different message types:
 - 24 seconds interval for temperature, hum, uv and rain (alternating messages)
@@ -182,7 +186,8 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     msg[12] ^= 0xff;
     msg[13] ^= 0xff;
     msg[14] ^= 0xff;
-    int const rain_ok   = msg[12] <= 0x99 && msg[13] <= 0x99 && msg[14] <= 0x99;
+    int const rain_ok   = msg[16] & 1;
+    //int const rain_ok   = msg[12] <= 0x99 && msg[13] <= 0x99 && msg[14] <= 0x99;
     int const rain_raw  = (msg[12] >> 4) * 100000 + (msg[12] & 0x0f) * 10000
             + (msg[13] >> 4) * 1000 + (msg[13] & 0x0f) * 100
             + (msg[14] >> 4) * 10 + (msg[14] & 0x0f);

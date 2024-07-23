@@ -100,7 +100,7 @@ static unsigned cm180i_power(uint8_t const *msg, unsigned int offset)
     val = (msg[4+offset*2] << 8) | (msg[3+offset*2] & 0xF0);
     // tested across situations varying from 700 watt to more than 8000 watt to
     // get same value as showed in physical CM180 panel (exactly equals to 1+1/160)
-    val *= 1.00625;
+    val *= 1.00625f;
     return val;
 }
 
@@ -130,7 +130,7 @@ static unsigned cm180_power(uint8_t const *msg)
     val = (msg[4] << 8) | (msg[3] & 0xF0);
     // tested across situations varying from 700 watt to more than 8000 watt to
     // get same value as showed in physical CM180 panel (exactly equals to 1+1/160)
-    val *= 1.00625;
+    val *= 1.00625f;
     return val;
 }
 
@@ -657,7 +657,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         float temp_c = get_os_temperature(msg);
         int humidity = get_os_humidity(msg);
         // Sanity check values
-        if (temp_c > 70 || temp_c < -50 || humidity < 0 || humidity > 98) {
+        if (temp_c > 70 || temp_c < -50) {
             decoder_logf(decoder, 1, __func__, "THGR810 Message failed values sanity check: temperature_C %.1fC humidity %d%%.", temp_c, humidity);
             return DECODE_FAIL_SANITY;
         }
@@ -772,12 +772,12 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
             return DECODE_FAIL_SANITY;
         }
 
-        float gustWindspeed = (msg[5]&0x0f) /10.0F + ((msg[6]>>4)&0x0f) *1.0F + (msg[6]&0x0f) * 10.0F;
-        float avgWindspeed = ((msg[7]>>4)&0x0f) / 10.0F + (msg[7]&0x0f) *1.0F + ((msg[8]>>4)&0x0f) * 10.0F;
-        float quadrant = (0x0f&(msg[4]>>4))*22.5F;
+        float gustWindspeed = (msg[5] & 0x0f) / 10.0f + ((msg[6] >> 4) & 0x0f) * 1.0f + (msg[6] & 0x0f) * 10.0f;
+        float avgWindspeed  = ((msg[7] >> 4) & 0x0f) / 10.0f + (msg[7] & 0x0f) * 1.0f + ((msg[8] >> 4) & 0x0f) * 10.0f;
+        float quadrant      = ((msg[4] >> 4) & 0x0f) * 22.5f;
 
         // Sanity check values
-        if (gustWindspeed < 0 || gustWindspeed > 56 || avgWindspeed < 0 || avgWindspeed > 56 || quadrant < 0 || quadrant > 337.5) {
+        if (gustWindspeed < 0 || gustWindspeed > 56 || avgWindspeed < 0 || avgWindspeed > 56) {
             decoder_logf(decoder, 1, __func__, "WGR800 Message failed values sanity check: wind_max_m_s %.1f wind_avg_m_s %.1f wind_dir_deg %.1f.", gustWindspeed, avgWindspeed, quadrant);
             return DECODE_FAIL_SANITY;
         }
@@ -841,7 +841,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
 
         unsigned ipower = cm180_power(msg);
         uint64_t itotal = cm180_total(msg);
-        float total_energy        = itotal / 3600.0 / 1000.0;
+        float total_energy        = itotal / 3600.0f / 1000.0f;
         if (valid == 0) {
             /* clang-format off */
             data = data_make(
@@ -878,7 +878,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         if (msg_len >= 140) itotal= cm180i_total(msg);
 
         // Convert `itotal` which is in Ws (or J) to kWh unit.
-        float total_energy        = itotal / 3600.0 / 1000.0;
+        float total_energy        = itotal / 3600.0f / 1000.0f;
 
         if (valid == 0) {
             /* clang-format off */

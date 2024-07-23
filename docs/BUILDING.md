@@ -38,12 +38,11 @@ Depending on your system, you may need to install the following libraries.
 
 Debian:
 
-* If you require TLS connections, install `libssl-dev`.
-
 ````
 sudo apt-get install libtool libusb-1.0-0-dev librtlsdr-dev rtl-sdr build-essential cmake pkg-config
 ````
 
+* If you require TLS connections, also install `libssl-dev` (`sudo apt-get install libssl-dev`).
 
 Centos/Fedora/RHEL with EPEL repo using cmake:
 
@@ -93,6 +92,14 @@ Use CMake with `-DENABLE_SOAPYSDR=ON` (default: `AUTO`) to require SoapySDR (e.g
 E.g. use:
 
     cmake -DENABLE_SOAPYSDR=ON ..
+
+::: tip
+If you use CMake older than 3.13 (check `cmake --version`), you need to build using e.g. `mkdir build ; cd build ; cmake .. && cmake --build .`
+:::
+
+::: tip
+In CMake 3.6 or older the OpenSSL search seems broken, you need to use `cmake -DENABLE_OPENSSL=NO ..`
+:::
 
 ::: warning
 If you experience trouble with SoapySDR when compiling or running: you likely mixed version 0.7 and version 0.8 headers and libs.

@@ -134,8 +134,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [44]  CurrentCost Current Sensor
     [45]  emonTx OpenEnergyMonitor
     [46]  HT680 Remote control
-    [47]  Conrad S3318P, FreeTec NC-5849-913 temperature humidity sensor
-    [48]  Akhan 100F14 remote keyless entry
+    [47]  Conrad S3318P, FreeTec NC-5849-913 temperature humidity sensor, ORIA WA50 ST389 temperature sensor
+    [48]* Akhan 100F14 remote keyless entry
     [49]  Quhwa
     [50]  OSv1 Temperature Sensor
     [51]  Proove / Nexa / KlikAanKlikUit Wireless Switch
@@ -171,7 +171,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [83]  Oil Ultrasonic STANDARD ASK
     [84]  Thermopro TP11 Thermometer
     [85]  Solight TE44/TE66, EMOS E0107T, NX-6876-917
-    [86]  Wireless Smoke and Heat Detector GS 558
+    [86]* Wireless Smoke and Heat Detector GS 558
     [87]  Generic wireless motion sensor
     [88]  Toyota TPMS
     [89]  Ford TPMS
@@ -306,7 +306,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [218]  Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes (FSK)
     [219]  Fine Offset Electronics WH45 air quality sensor
     [220]  Maverick XR-30 BBQ Sensor
-    [221]  Fine Offset Electronics WN34 temperature sensor
+    [221]  Fine Offset Electronics WN34S/L/D and Froggit DP150/D35 temperature sensor
     [222]  Rubicson Pool Thermometer 48942
     [223]  Badger ORION water meter, 100kbps (-f 916.45M -s 1200k)
     [224]  GEO minim+ energy monitor
@@ -335,10 +335,18 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [247]  Bresser water leakage
     [248]* Nissan TPMS
     [249]  Bresser lightning
-    [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge
+    [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge, TFA Dostmann 30.3252.01/47.3006.01 Rain Gauge and Thermometer, ADE WS1907
     [251]  Fine Offset / Ecowitt WH55 water leak sensor
-    [252]  BMW Gen5 TPMS, multi-brand HUF, Continental, Schrader/Sensata
+    [252]  BMW Gen4-Gen5 TPMS and Audi TPMS Pressure Alert, multi-brand HUF/Beru, Continental, Schrader/Sensata, Audi
     [253]  Watts WFHT-RF Thermostat
+    [254]  Thermor DG950 weather station
+    [255]  Mueller Hot Rod water meter
+    [256]  ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill
+    [257]  BMW Gen3 TPMS
+    [258]  Chamberlain CWPIRC PIR Sensor
+    [259]  ThermoPro TP829b Meat Thermometer 4 coated probes
+    [260]* Arad/Master Meter Dialog3G water utility meter
+    [261]  Geevon TX16-3 outdoor sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
