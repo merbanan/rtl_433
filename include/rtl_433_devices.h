@@ -269,6 +269,7 @@
     DECL(thermopro_tp829b) \
     DECL(arad_ms_meter) \
     DECL(geevon) \
+    DECL(bresser_garden) \
 
     /* Add new decoders here. */
 
