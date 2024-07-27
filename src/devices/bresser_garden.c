@@ -65,6 +65,8 @@ Data layout:
     Sensor Send T/H       e9105e51 88 16 00 01 1f 05 00 47 02 03 07 05 09 88 00 85 27 03 00 00 00 00 00 00 00 00 00 00 00 00 00 67 22 0
 
     Base acknowledge T/H  e9105e51 1f 05 00 47 88 16 00 01 02 83 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 dc c9 0
+                                                                    ID?05 ?? BB 88 HH 85 TEMP
+    Water to Base         e9105e51 88 16 00 01 52 12 00 1f 0f 0a 09 0b 05 10 09 88 00 85 10 03 00 00 00 00 00 00 00 00 00 00 00 8f 1b 0
 
 Global Message data layout:
 
@@ -94,14 +96,27 @@ Sub Message SEND Temp Hum: (0x03)
 - BB:{8} Battery information, 0x09 = Full battery, 0x11 = Low Battery.
          Last nibble probably the battery level, 1 for 3.6 / 3.8V , 9 for 4.5 V
          First nibble probably the low battery flag.
-- 88:{8} Fixed value 0x88, not yet identify
+- 88:{8} Fixed value 0x88, not yet identify, always follow by humidity, could be humidity metric id.
 - HH:{8} Humidity / Moisture %
-- 85:{8} Fixed value 0x85, not yet identify
+- 85:{8} Fixed value 0x85, not yet identify, always follow by temperature, could be temp metric id.
 - TEMP:{16} Temperature_F, little indian, scale 10.
 
-Sub Message Acknowlegement/Temp Hum: (0x83)
+Sub Message Acknowlegement: (0x83, 0x89, 0x8a)
 
 - sub Message is always empty with zeros.
+
+Sub Message WaterTimer to BaseStation: (0x0a)
+
+- ID:{8} Device type ID, 0x0b for Water Timer Actuator (To be confirmed)
+- 05:{8} Fixed value 0x05, not yet identify, could be Sensor num paired with Soil Moisture Sensor ?
+- ??:{8} Variable, value changes each message
+- BB:{8} Battery information, 0x09 = Full battery, 0x11 = Low Battery.
+         Last nibble probably the battery level, 1 for 3.6 / 3.8V , 9 for 4.5 V
+         First nibble probably the low battery flag.
+- 88:{8} Fixed value 0x88, not yet identify, always follow by humidity, could be humidity metric id.
+- HH:{8} Humidity / Moisture %, value always 0x00, (to be confirmed)
+- 85:{8} Fixed value 0x85, not yet identify, always follow by temperature, could be temp metric id.
+- TEMP:{16} Temperature_F, little indian, scale 10.
 
 */
 
@@ -155,42 +170,14 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int msg_length     = b[10];
     int acknowledgement = (msg_type & 0xf0) >> 7;
 
-    // if Soil Moisture Sensor message ?
-    if (msg_type == 0x03 && msg_length == 0x07) {
-
-        int sensor_number = b[11];
-        int battery_low   = (b[12] & 0x10) >> 4;
-        int battery_level = (b[12] & 0x0f);
-        int flag1         = b[13];
-        int moisture      = b[14];
-        int flag2         = b[15];
-        int temperature_f = (b[17] << 8) | b[16];
-
-        /* clang-format off */
-        data_t *data = data_make(
-                "model",         "",              DATA_STRING, "Bresser-SoilMoisture",
-                "id",            "",              DATA_FORMAT, "%u",   DATA_INT,    source_id,
-                "sensor_number", "",              DATA_FORMAT, "%u",   DATA_INT,    sensor_number,
-                "station_id",    "",              DATA_FORMAT, "%u",   DATA_INT,    target_id,
-                "msg_counter",   "Msg Counter",   DATA_INT,    counter,
-                "temperature_F", "Temperature",   DATA_FORMAT, "%.1f F", DATA_DOUBLE, temperature_f * 0.1f,
-                "moisture",      "Moisture",      DATA_FORMAT, "%u %%",DATA_INT,    moisture,
-                "flag1",         "Flag1",         DATA_FORMAT, "%01x", DATA_INT,    flag1,
-                "flag2",         "Flag2",         DATA_FORMAT, "%01x", DATA_INT,    flag2,
-                "battery_ok",    "Battery OK",    DATA_FORMAT, "%u",   DATA_INT,    !battery_low,
-                "battery_level", "Battery Level", DATA_INT, battery_level,
-                "mic",           "Integrity",     DATA_STRING,    "CRC",
-                NULL);
-        /* clang-format on */
-
-        decoder_output_data(decoder, data);
-        return 1;
-    }
-    // if Soil Moisture Init message ?
-    else if (msg_type == 0x01 && msg_length == 0x08) {
+    // if Soil Moisture Init/Pairing message ?, all the submessage not fully decoded
+    if (msg_type == 0x01 && msg_length == 0x08) {
 
         int sensor_number = b[11];
         int firmware      = b[17];
+        char msg[17];
+        snprintf(msg, 17, "%02x%02x%02x%02x%02x%02x%02x%02x",
+                 b[11],b[12],b[13],b[14],b[15],b[16],b[17],b[18]);
 
         /* clang-format off */
         data_t *data = data_make(
@@ -199,6 +186,9 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id",            "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "sensor_number", "",            DATA_FORMAT, "%u", DATA_INT, sensor_number,
                 "firmware",      "Firmware",    DATA_FORMAT, "%u", DATA_INT, firmware,
+                "msg_type",      "",            DATA_FORMAT, "%0X", DATA_INT, msg_type & 0xf,
+                "msg_length",    "",            DATA_FORMAT, "%02X", DATA_INT, msg_length,
+                "msg",           "",            DATA_STRING, msg,
                 "mic",           "Integrity",   DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
@@ -206,7 +196,7 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_output_data(decoder, data);
         return 1;
     }
-
+    // Basestation Acknowledgement for Soil Moisture init message
     else if (msg_type == 0x81 && msg_length == 0x10) {
 
         // Acknowledgement but message answer not yet decoded, not always same values, could be date and time information ?
@@ -241,12 +231,144 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
     }
 
+    // if message from Soil Moisture Sensor message to Basestation?
+    else if (msg_type == 0x03 && msg_length == 0x07) {
+
+        int sensor_number = b[11];
+        int battery_low   = (b[12] & 0x10) >> 4;
+        int battery_level = (b[12] & 0x0f);
+        int flag1         = b[13];
+        int moisture      = b[14];
+        int flag2         = b[15];
+        int temperature_f = (b[17] << 8) | b[16];
+
+        /* clang-format off */
+        data_t *data = data_make(
+                "model",         "",              DATA_STRING, "Bresser-SoilMoisture",
+                "id",            "",              DATA_FORMAT, "%u",   DATA_INT,    source_id,
+                "sensor_number", "",              DATA_FORMAT, "%u",   DATA_INT,    sensor_number,
+                "station_id",    "",              DATA_FORMAT, "%u",   DATA_INT,    target_id,
+                "msg_counter",   "Msg Counter",   DATA_INT,    counter,
+                "temperature_F", "Temperature",   DATA_FORMAT, "%.1f F", DATA_DOUBLE, temperature_f * 0.1f,
+                "moisture",      "Moisture",      DATA_FORMAT, "%u %%",DATA_INT,    moisture,
+                "flag1",         "Flag1",         DATA_FORMAT, "%02x", DATA_INT,    flag1,
+                "flag2",         "Flag2",         DATA_FORMAT, "%02x", DATA_INT,    flag2,
+                "battery_ok",    "Battery OK",    DATA_FORMAT, "%u",   DATA_INT,    !battery_low,
+                "battery_level", "Battery Level", DATA_INT, battery_level,
+                "mic",           "Integrity",     DATA_STRING,    "CRC",
+                NULL);
+        /* clang-format on */
+
+        decoder_output_data(decoder, data);
+        return 1;
+    }
+    // Acknowledgement for Soil Moisture normal message
     else if (msg_type == 0x83 && msg_length == 0x01) {
 
         /* clang-format off */
         data_t *data = data_make(
                 "model",           "",            DATA_STRING, "Bresser-Garden",
-                "status",          "",            DATA_STRING, "Pairing Acknowledgement",
+                "status",          "",            DATA_STRING, "Acknowledgement Soil Moisture msg",
+                "id",              "",            DATA_FORMAT, "%u", DATA_INT, source_id,
+                "target_id",       "",            DATA_FORMAT, "%u", DATA_INT, target_id,
+                "msg_counter",     "Msg Counter", DATA_INT,    counter,
+                "acknowledgement", "",            DATA_INT,    acknowledgement,
+                "msg_type",        "",            DATA_FORMAT, "%0X", DATA_INT, msg_type & 0xf,
+                "msg_length",      "",            DATA_FORMAT, "%02X", DATA_INT, msg_length,
+                "mic",             "Integrity",   DATA_STRING, "CRC",
+                NULL);
+        /* clang-format on */
+
+        decoder_output_data(decoder, data);
+        return 1;
+    }
+
+    // WaterTimer to Base message
+    else if (msg_type == 0x0a && msg_length == 0x09) {
+
+        int sensor_number = b[11]; // 0x0b
+        int flag1         = (b[12] << 8) | b[13];
+        int battery_low   = (b[14] & 0x10) >> 4;
+        int battery_level = (b[14] & 0x0f);
+        int flag2         = b[15];
+        int moisture      = b[16];
+        int flag3         = b[17];
+        int temperature_f = (b[19] << 8) | b[18];
+
+        /* clang-format off */
+        data_t *data = data_make(
+                "model",         "",              DATA_STRING, "Bresser-WaterTimer",
+                "id",            "",              DATA_FORMAT, "%u",   DATA_INT,    source_id,
+                "sensor_number", "",              DATA_FORMAT, "%u",   DATA_INT,    sensor_number,
+                "station_id",    "",              DATA_FORMAT, "%u",   DATA_INT,    target_id,
+                "msg_counter",   "Msg Counter",   DATA_INT,    counter,
+                "temperature_F", "Temperature",   DATA_FORMAT, "%.1f F", DATA_DOUBLE, temperature_f * 0.1f,
+                "moisture",      "Moisture",      DATA_FORMAT, "%u %%",DATA_INT,    moisture,
+                "flag1",         "Flag1",         DATA_FORMAT, "%04x", DATA_INT,    flag1,
+                "flag2",         "Flag2",         DATA_FORMAT, "%02x", DATA_INT,    flag2,
+                "flag3",         "Flag3",         DATA_FORMAT, "%02x", DATA_INT,    flag3,
+                "battery_ok",    "Battery OK",    DATA_FORMAT, "%u",   DATA_INT,    !battery_low,
+                "battery_level", "Battery Level", DATA_INT, battery_level,
+                "mic",           "Integrity",     DATA_STRING,    "CRC",
+                NULL);
+        /* clang-format on */
+
+        decoder_output_data(decoder, data);
+        return 1;
+    }
+    // BaseStation Acknowledgement for Water Timer normal message
+    else if (msg_type == 0x8a && msg_length == 0x01) {
+
+        /* clang-format off */
+        data_t *data = data_make(
+                "model",           "",            DATA_STRING, "Bresser-Garden",
+                "status",          "",            DATA_STRING, "Acknowledgement Soil Moisture msg",
+                "id",              "",            DATA_FORMAT, "%u", DATA_INT, source_id,
+                "target_id",       "",            DATA_FORMAT, "%u", DATA_INT, target_id,
+                "msg_counter",     "Msg Counter", DATA_INT,    counter,
+                "acknowledgement", "",            DATA_INT,    acknowledgement,
+                "msg_type",        "",            DATA_FORMAT, "%0X", DATA_INT, msg_type & 0xf,
+                "msg_length",      "",            DATA_FORMAT, "%02X", DATA_INT, msg_length,
+                "mic",             "Integrity",   DATA_STRING, "CRC",
+                NULL);
+        /* clang-format on */
+
+        decoder_output_data(decoder, data);
+        return 1;
+    }
+
+    // Soil Moisture message to Water Timer, not yet captured, only acknowledgement
+    else if (msg_type == 0x09) { //  && msg_length == 0x01
+
+        // Not yet decoded message type
+        char msg[41];
+        snprintf(msg, 41, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+                 b[11],b[12],b[13],b[14],b[15],b[16],b[17],b[18],b[19],b[20],b[21],b[22],b[23],b[24],b[25],b[26],b[27],b[28],b[29],b[30]);
+
+        /* clang-format off */
+        data_t *data = data_make(
+                "model",           "",            DATA_STRING, "Bresser-SoilMoisture",
+                "status",          "",            DATA_STRING, "Unknown msg to Water Timer",
+                "id",              "",            DATA_FORMAT, "%u", DATA_INT, source_id,
+                "target_id",       "",            DATA_FORMAT, "%u", DATA_INT, target_id,
+                "msg_counter",     "Msg Counter", DATA_INT,    counter,
+                "msg_type",        "",            DATA_FORMAT, "%0X", DATA_INT, msg_type & 0xf,
+                "msg_length",      "",            DATA_FORMAT, "%02X", DATA_INT, msg_length,
+                "msg",             "",            DATA_STRING, msg,
+                "mic",             "Integrity",   DATA_STRING, "CRC",
+                NULL);
+        /* clang-format on */
+
+        decoder_output_data(decoder, data);
+        return 1;
+    }
+    // WaterTimer Acknowledgement for Soil Moisture unknown message
+    else if (msg_type == 0x89 && msg_length == 0x01) {
+
+        /* clang-format off */
+        data_t *data = data_make(
+                "model",           "",            DATA_STRING, "Bresser-WaterTimer",
+                "status",          "",            DATA_STRING, "Acknowledgement Soil Moisture msg",
                 "id",              "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",       "",            DATA_FORMAT, "%u", DATA_INT, target_id,
                 "msg_counter",     "Msg Counter", DATA_INT,    counter,
@@ -263,7 +385,7 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     else {
 
-        // Not yet decoded the Water Timer actuator
+        // Not yet decoded message type
         //decoder_log_bitrow(decoder, 0, __func__, &b[11], msg_length * 8 , "Unknown MSG");
         char msg[41];
         snprintf(msg, 41, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
@@ -277,7 +399,7 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "target_id",       "",            DATA_FORMAT, "%u", DATA_INT, target_id,
                 "msg_counter",     "Msg Counter", DATA_INT,    counter,
                 "acknowledgement", "",            DATA_INT,    acknowledgement,
-                "msg_type",        "",            DATA_FORMAT, "%0X", DATA_INT, msg_type & 0xf,
+                "msg_type",        "",            DATA_FORMAT, "%02X", DATA_INT, msg_type,
                 "msg_length",      "",            DATA_FORMAT, "%02X", DATA_INT, msg_length,
                 "msg",             "",            DATA_STRING, msg,
                 "mic",             "Integrity",   DATA_STRING, "CRC",
@@ -301,12 +423,9 @@ static char const *const output_fields[] = {
         "firmware",
         "moisture",
         "humidity",
-        "flag1",
-        "flag2",
-        "battery_ok",
-        "battery_level",
-        "msg_type",
-        "msg_length",
+        "flag1", "flag2", "flag3",
+        "battery_ok", "battery_level",
+        "acknowledgement", "msg_type", "msg_length",
         "msg",
         "mic",
         NULL,
