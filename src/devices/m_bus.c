@@ -525,6 +525,7 @@ static int m_bus_decode_val(const uint8_t *b, uint8_t dif_coding, int64_t *out_v
  * @param dif_coding    Data Information - Length and coding of data (2=16bit,4=32bit, etc)
  * @param vif_linear    Value Information Field
  * @param vif_uam       Value Information Field - unit type + multiplier
+ * @param vif_combinable    Value Information Field - combinable extension
  * @param dif_sn        Data Information Field - storage number
  * @param dif_ff        Data Information Field - function field (00b    Instantaneous value
  *                                                               01b    Maximum value
