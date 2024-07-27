@@ -282,6 +282,7 @@ static char const *unit_names[][3] = {
 // index                        0      1     2    3  4   5    6     7
 static double const pow10_table[8] = { 0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000 };
 
+// Note: this should process and vif_combinable from a table
 static data_t *append_str(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn,
     char const *key_extra, char const *pretty_extra, char const *value)
 {
@@ -306,6 +307,8 @@ static data_t *append_str(data_t *data, enum UnitType unit_type, uint8_t value_t
 
 }
 
+// key_extra and pretty_extra args only used for history_months and history_hours.
+// Note: this should process and vif_combinable from a table
 static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn,
     char const *key_extra, char const *pretty_extra, int64_t val, int exp)
 {
@@ -530,7 +533,7 @@ static int m_bus_decode_val(const uint8_t *b, uint8_t dif_coding, int64_t *out_v
  * @param dif_su        Data Information Field -
  * @return int
  */
-static int m_bus_decode_records(data_t **inout_data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam, uint8_t dif_sn, uint8_t dif_ff, uint8_t dif_su)
+static int m_bus_decode_records(data_t **inout_data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam, uint8_t vif_combinable, uint8_t dif_sn, uint8_t dif_ff, uint8_t dif_su)
 {
     data_t *data = *inout_data;
     int ret = 0;
@@ -626,7 +629,12 @@ static int m_bus_decode_records(data_t **inout_data, const uint8_t *b, uint8_t d
 
                 if (vif_uam&1) {
                     if (m_bus_tm_decode(b, dif_coding, buff_time, sizeof(buff_time))) {
-                        data = append_str(data, kTimeDate, dif_ff, dif_sn, "", "", buff_time);
+                        // 0x39 combinable vif (StartDateTimeOfAB)
+                        if (vif_combinable == 0x39) {
+                            data = append_str(data, kTimeDate, dif_ff, dif_sn, "start", "Start", buff_time);
+                        } else {
+                            data = append_str(data, kTimeDate, dif_ff, dif_sn, "", "", buff_time);
+                        }
                     }
                 } else {
                     if (m_bus_tm_decode(b, dif_coding, buff_time, sizeof(buff_time))) {
@@ -665,6 +673,18 @@ static int m_bus_decode_records(data_t **inout_data, const uint8_t *b, uint8_t d
             break;
         case 0x7D:
             switch(vif_uam) {
+                case 0x0c:
+                    data  = data_int(data, "model_version", "Model/Version", NULL, val);
+                    break;
+                case 0x0d:
+                    data = data_int(data, "hardware_version", "Hardware Version", NULL, val);
+                    break;
+                case 0x0e:
+                    data = data_int(data, "firmware_version", "Firmware Version", NULL, val);
+                    break;
+                case 0x0f:
+                    data = data_int(data, "software_version", "Software Version", NULL, val);
+                    break;
                 case 0x1b:
                     // If tamper is triggered the bit 0 and 4 is set
                     // Open  sets bits 2 and 6 to 1
@@ -696,7 +716,7 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
     // check for vendor specific non-standard payload
 
     // Q-walk_by
-    // 000: CI:0x78 Vendor spec (not used for OMS)
+    // 000: CI:0x78 Vendor spec (not used by OMS)
     // 000: 0x780dff5f Magic for QUNDIS walk_by
     // 001: 0x0D DIF (variable length Instantaneous value)
     // 002: 0xFF VIF (Manufacturer specific)
@@ -722,20 +742,20 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
         if (block1->A_DevType == 6) {
             /* WarmWater */
             // Value factor is 0.001, e.g. 123.456 m3
-            m_bus_decode_records(&data, &b[17], 0x0c, 0x00, 0x13, 0, 0, 0); // DRH:0C13 total Volume
-            m_bus_decode_records(&data, &b[21], 0x02, 0x00, 0x6c, 1, 0, 0); // DRH:426C due Date
-            m_bus_decode_records(&data, &b[23], 0x0c, 0x00, 0x13, 1, 0, 0); // DRH:4C13 due_date Volume
-            m_bus_decode_records(&data, &b[27], 0x02, 0x00, 0x6c, 17, 0, 0); // DRH:C2086C due_17 Date
-            m_bus_decode_records(&data, &b[29], 0x0c, 0x00, 0x13, 17, 0, 0); // DRH:CC0813 due_17_date Volume
+            m_bus_decode_records(&data, &b[17], 0x0c, 0x00, 0x13, 0, 0, 0, 0); // DRH:0C13 total Volume
+            m_bus_decode_records(&data, &b[21], 0x02, 0x00, 0x6c, 0, 1, 0, 0); // DRH:426C due Date
+            m_bus_decode_records(&data, &b[23], 0x0c, 0x00, 0x13, 0, 1, 0, 0); // DRH:4C13 due_date Volume
+            m_bus_decode_records(&data, &b[27], 0x02, 0x00, 0x6c, 0, 17, 0, 0); // DRH:C2086C due_17 Date
+            m_bus_decode_records(&data, &b[29], 0x0c, 0x00, 0x13, 0, 17, 0, 0); // DRH:CC0813 due_17_date Volume
         }
         if (block1->A_DevType == 8) {
             /* Heat Cost Allocator */
             // Value factor is K (from an invoice), e.g. 123456*K kWh
-            m_bus_decode_records(&data, &b[17], 0x0c, 0x00, 0x6e, 0, 0, 0); // DRH:0C13 total Volume
-            m_bus_decode_records(&data, &b[21], 0x02, 0x00, 0x6c, 1, 0, 0); // DRH:426C due Date
-            m_bus_decode_records(&data, &b[23], 0x0c, 0x00, 0x6e, 1, 0, 0); // DRH:4C13 due_date Volume
-            m_bus_decode_records(&data, &b[27], 0x02, 0x00, 0x6c, 17, 0, 0); // DRH:C2086C due_17 Date
-            m_bus_decode_records(&data, &b[29], 0x0c, 0x00, 0x6e, 17, 0, 0); // DRH:CC0813 due_17_date Volume
+            m_bus_decode_records(&data, &b[17], 0x0c, 0x00, 0x6e, 0, 0, 0, 0); // DRH:0C6E total Volume
+            m_bus_decode_records(&data, &b[21], 0x02, 0x00, 0x6c, 0, 1, 0, 0); // DRH:426C due Date
+            m_bus_decode_records(&data, &b[23], 0x0c, 0x00, 0x6e, 0, 1, 0, 0); // DRH:4C6E due_date Volume
+            m_bus_decode_records(&data, &b[27], 0x02, 0x00, 0x6c, 0, 17, 0, 0); // DRH:C2086C due_17 Date
+            m_bus_decode_records(&data, &b[29], 0x0c, 0x00, 0x6e, 0, 17, 0, 0); // DRH:CC086E due_17_date Volume
         }
     }
 
@@ -774,6 +794,7 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
         uint8_t vife_cnt;
         uint8_t vif_uam;
         uint8_t vif_linear;
+        uint8_t vif_combinable = 0;
 
         dife_cnt = 0;
         vife_cnt = 0;
@@ -821,9 +842,10 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
         } else {
             vif_linear = 0;
             vif_uam = vif&0x7F;
+            vif_combinable = vife_array[0]; // Combinable (Orthogonal) VIFE-Code Extension table (Following primary VIF)
         }
 
-        int consumed = m_bus_decode_records(&data, &b[off], dif_coding, vif_linear, vif_uam, dif_sn, dif_ff, dif_su);
+        int consumed = m_bus_decode_records(&data, &b[off], dif_coding, vif_linear, vif_uam, vif_combinable, dif_sn, dif_ff, dif_su);
         if (consumed == -1) return;
 
         off +=consumed;
@@ -860,7 +882,7 @@ static int parse_block2(const m_bus_data_t *in, m_bus_block1_t *block1)
         }
 
         // QDS walk_by
-        // 000: CI:0x78   (no data header, not used for OMS)
+        // 000: CI:0x78   (no data header, not used by OMS)
         // 001: DIF:0x0D  (variable length Instantaneous value)
         // 002: VIF:0xFF  (Manufacturer specific)
         // 003: VIFE:0x5F (Manufacturer specific VIFE)
@@ -976,10 +998,8 @@ static int m_bus_output_data(r_device *decoder, bitbuffer_t *bitbuffer, const m_
 
     data_t  *data;
 
-    // Make data string
+    // Buffer for data string
     char str_buf[1024];
-    sprintf(str_buf, "%02x", out->data[0]-2);  // Adjust telegram length
-    for (unsigned n=1; n<out->length+2; n++) { sprintf(str_buf+n*2, "%02x", out->data[n]); }
 
     // Output data
     if (block1->knx_mode) {
@@ -996,8 +1016,6 @@ static int m_bus_output_data(r_device *decoder, bitbuffer_t *bitbuffer, const m_
                 "l_npci",   "L/NPCI",       DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.l_npci,
                 "tpci",     "TPCI",         DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.tpci,
                 "apci",     "APCI",         DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.apci,
-                "data_length","Data Length",DATA_INT,       out->length,
-                "data",     "Data",         DATA_STRING,    str_buf,
                 NULL);
         /* clang-format on */
     } else {
@@ -1012,11 +1030,11 @@ static int m_bus_output_data(r_device *decoder, bitbuffer_t *bitbuffer, const m_
                 "type_string",  "Device Type String",   DATA_STRING,        m_bus_device_type_str(block1->A_DevType),
                 "C",        "Control",      DATA_FORMAT,    "0x%02X",   DATA_INT, block1->C,
 //                "L",        "Length",       DATA_INT,       block1->L,
-                "data_length",  "Data Length",          DATA_INT,           out->length,
-                "data",     "Data",         DATA_STRING,    str_buf,
                 NULL);
         /* clang-format on */
     }
+    data = data_hex(data, "data", "Data", NULL, out->data, out->length, str_buf);
+
     if (block1->block2.CI) {
         /* clang-format off */
         data = data_int(data, "CI",     "Control Info",         "0x%02X",   block1->block2.CI);
