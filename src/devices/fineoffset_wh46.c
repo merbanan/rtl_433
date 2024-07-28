@@ -61,15 +61,15 @@ static int fineoffset_wh46_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble[] = {0xaa, 0x2d, 0xd4}; // 24 bit, part of preamble and sync word
     uint8_t b[21];
-    
+
     // Find a data package and extract data buffer
     unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
-    
+
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) { // Did not find a big enough package
         decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "short package at %u", bit_offset);
         return DECODE_ABORT_LENGTH;
     }
-    
+
     // Extract package data
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
 

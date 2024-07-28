@@ -270,7 +270,7 @@
     DECL(arad_ms_meter) \
     DECL(geevon) \
     DECL(fineoffset_wh46) \
-    
+
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
