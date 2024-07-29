@@ -75,7 +75,7 @@ def publish_sensor_to_mqtt(mqttc, data, line):
         path += "/" + sanitize(data["model"])
     if "channel" in data:
         path += "/" + str(data["channel"])
-    elif "id" in data:
+    if "id" in data:
         path += "/" + str(data["id"])
 
     if MQTT_INDIVIDUAL_TOPICS:
