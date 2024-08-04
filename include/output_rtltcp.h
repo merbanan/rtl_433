@@ -22,6 +22,7 @@ struct r_cfg;
 
     @param host the server host to bind
     @param port the server port to bind
+    @param opts additional options, currently "control" enables write access
     @param cfg the r_api config to use
     @return The initialized rtltcp output instance.
             You must release this object with raw_output_free once you're done with it.

@@ -4,7 +4,7 @@
     Copyright (C) 2018 Christian W. Zuckschwerdt <zany@triq.net>
     based on protocol analysis by James Cuff and Michele Clamp,
     EcoWitt WH40 analysis by Helmut Bachmann,
-    Ecowitt WS68 analysis by Tolip Wen.
+    Ecowitt WS68 analysis by Tolip Wen improved by Bruno Octau,
     EcoWitt WH31B analysis by Michael Turk.
 
     This program is free software; you can redistribute it and/or modify
@@ -155,20 +155,23 @@ Samples with 0.9V battery (last 3 samples contain 1 manual bucket tip)
     4000 cd6f 10 0001  55 e2 ; 00 027b 0000
     4000 cd6f 10 0001  55 e2 ; 00 027b 0000
 
-Ecowitt WS68 Anemometer protocol.
+Ecowitt WS68 Anemometer protocol with LUX and UVI.
+
+Units confirmed from issue #2786 , LUX and UVI decoding as well
+Wind unit and decoding from issue #2867
 
 Data layout:
 
-    TYPE:8h ?8h ID:16h LUX:16h BATT:8h WDIR_H:4h 4h8h8h WSPEED:8h WDIR_LO:8h WGUST:8h ?8h CRC:8h SUM:8h ?8h4h
+    TYPE:8h ?8h ID:16h LUX:16h BATT:8d ?1b WGUST_MSB:1b WDIR_MSB:1b WSPEED_MSB:1b ?4h 8h8h WSPEED_LSB:8d WDIR_LSB:8h WGUST_LSB:8d UVI:8h CRC:8h SUM:8h ?8h4h
 
 Some payloads:
-
-    68 0000 c5 0000 4b 0f ffff 00 5a 00 00 d0af 104
-    68 0000 c5 0000 4b 0f ffff 00 b4 00 00 79b2 102
-    68 0000 c5 0000 4b 0f ffff 7e e0 94 00 75ec 102
-    68 0000 c5 0000 4b 2f ffff 00 0e 00 00 8033 208
-    68 0000 c5 000f 4b 0f ffff 00 2e 00 00 d395 108
-    68 0000 c5 0107 4b 0f ffff 00 2e 00 02 a663 100
+    TT ?? IIII LLLL BB WH f ffff WSL WDL WGL UV CC SS ???
+    68 00 00c5 0000 4b  0 f ffff  00  5a  00 00 d0 af 104
+    68 00 00c5 0000 4b  0 f ffff  00  b4  00 00 79 b2 102
+    68 00 00c5 0000 4b  0 f ffff  7e  e0  94 00 75 ec 102
+    68 00 00c5 0000 4b  2 f ffff  00  0e  00 00 80 33 208
+    68 00 00c5 000f 4b  0 f ffff  00  2e  00 00 d3 95 108
+    68 00 00c5 0107 4b  0 f ffff  00  2e  00 02 a6 63 100
 
 */
 
@@ -222,7 +225,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             data_t *data = data_make(
                     "model",            "",             DATA_COND, msg_type == 0x30, DATA_STRING, "AmbientWeather-WH31E",
                     "model",            "",             DATA_COND, msg_type == 0x37, DATA_STRING, "AmbientWeather-WH31B",
-                    "id" ,              "",             DATA_INT,    id,
+                    "id",               "",             DATA_INT,    id,
                     "channel",          "Channel",      DATA_INT,    channel,
                     "battery_ok",       "Battery",      DATA_INT,    !batt_low,
                     "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
@@ -264,7 +267,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             /* clang-format off */
             data_t *data = data_make(
                     "model",        "",             DATA_STRING,    "AmbientWeather-WH31E",
-                    "id" ,          "Station ID",   DATA_INT,       id,
+                    "id",           "Station ID",   DATA_INT,       id,
                     "data",         "Unknown",      DATA_INT,       unknown,
                     "radio_clock",  "Radio Clock",  DATA_STRING,    clock_str,
                     "mic",          "Integrity",    DATA_STRING,    "CRC",
@@ -300,7 +303,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             /* clang-format off */
             data_t *data = data_make(
                     "model",            "",                DATA_STRING, "EcoWitt-WH40",
-                    "id" ,              "",                DATA_INT,    id,
+                    "id",               "",                DATA_INT,    id,
                     "battery_V",        "Battery Voltage", DATA_COND, battery_v != 0, DATA_FORMAT, "%f V", DATA_DOUBLE, battery_v * 0.1f,
                     "battery_ok",       "Battery",         DATA_COND, battery_v != 0, DATA_DOUBLE, battery_lvl * 0.01f,
                     "rain_mm",          "Total Rain",      DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1,
@@ -317,34 +320,37 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             // WS68
             uint8_t c_crc = crc8(b, 15, 0x31, 0x00);
             if (c_crc) {
-                decoder_log(decoder, 1, __func__, "WH68 bad CRC");
+                decoder_log(decoder, 1, __func__, "WS68 bad CRC");
                 continue; // DECODE_FAIL_MIC
             }
             uint8_t c_sum = add_bytes(b, 15) - b[15];
             if (c_sum) {
-                decoder_log(decoder, 1, __func__, "WH68 bad SUM");
+                decoder_log(decoder, 1, __func__, "WS68 bad SUM");
                 continue; // DECODE_FAIL_MIC
             }
 
             int id      = (b[2] << 8) | b[3];
-            int lux     = (b[4] << 8) | b[5];
+            int lux_raw = ((b[4] << 8) | b[5]);
+            int light_lux = lux_raw * 10;
             int batt    = b[6];
-            int batt_ok = batt > 0x30; // wild guess
-            int wspeed  = b[10];
-            int wgust   = b[12];
-            int wdir    = ((b[7] & 0x20) >> 5) | b[11];
-            char extra[7];
-            snprintf(extra, sizeof(extra), "%02x %02x%01x", b[13], b[16], b[17] >> 4);
+            int batt_ok = batt > 0x20; // wild guess
+            int wspeed  = ((b[7] & 0x10) << 4) | (b[10]);
+            int wdir    = ((b[7] & 0x20) << 3) | (b[11]);
+            int wgust   = ((b[7] & 0x40) << 2) | (b[12]);
+            int uvindex = (int)b[13] * 0.1f;
+            char extra[4];
+            snprintf(extra, sizeof(extra), "%02x%01x", b[16], b[17] >> 4);
 
             /* clang-format off */
             data_t *data = data_make(
                     "model",            "",             DATA_STRING, "EcoWitt-WS68",
-                    "id" ,              "",             DATA_INT,    id,
+                    "id",               "",             DATA_INT,    id,
                     "battery_raw",      "Battery Raw",  DATA_INT,    batt,
-                    "battery_ok",       "Battery",      DATA_INT,    batt_ok,
-                    "lux_raw",          "lux",          DATA_INT,    lux,
-                    "wind_avg_raw",     "Wind Speed",   DATA_INT,    wspeed,
-                    "wind_max_raw",     "Wind Gust",    DATA_INT,    wgust,
+                    "battery_ok",       "Battery OK",   DATA_INT,    batt_ok,
+                    "light_lux",        "Lux",          DATA_FORMAT, "%u lux",   DATA_INT,    light_lux,
+                    "wind_avg_m_s",     "Wind Speed",   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wspeed * 0.1f,
+                    "wind_max_m_s",     "Wind Gust",    DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wgust * 0.1f,
+                    "uvi",              "UVI",          DATA_INT,    uvindex,
                     "wind_dir_deg",     "Wind dir",     DATA_INT,    wdir,
                     "data",             "Extra Data",   DATA_STRING, extra,
                     "mic",              "Integrity",    DATA_STRING, "CRC",
@@ -366,13 +372,14 @@ static char const *const output_fields[] = {
         "id",
         "channel",
         "battery_ok",
-        "battery_v",
+        "battery_V",
         "temperature_C",
         "humidity",
         "rain_mm",
-        "lux",
-        "wind_avg_km_h",
-        "wind_max_km_h",
+        "uvi",
+        "light_lux",
+        "wind_avg_m_s",
+        "wind_max_m_s",
         "wind_dir_deg",
         "data",
         "radio_clock",
@@ -381,7 +388,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const ambientweather_wh31e = {
-        .name        = "Ambient Weather WH31E Thermo-Hygrometer Sensor, EcoWitt WH40 rain gauge",
+        .name        = "Ambient Weather WH31E Thermo-Hygrometer Sensor, EcoWitt WH40 rain gauge, WS68 weather station",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 56,
         .long_width  = 56,

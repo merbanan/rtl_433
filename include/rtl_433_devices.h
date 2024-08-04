@@ -258,6 +258,18 @@
     DECL(tpms_nissan) \
     DECL(bresser_lightning) \
     DECL(schou_72543_rain) \
+    DECL(fineoffset_wh55) \
+    DECL(tpms_bmw) \
+    DECL(watts_thermostat) \
+    DECL(thermor) \
+    DECL(mueller_hotrod) \
+    DECL(thermopro_tp28b) \
+    DECL(tpms_bmwg3) \
+    DECL(chamberlain_cwpirc) \
+    DECL(thermopro_tp829b) \
+    DECL(arad_ms_meter) \
+    DECL(geevon) \
+    DECL(fineoffset_wh46) \
 
     /* Add new decoders here. */
 

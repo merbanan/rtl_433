@@ -34,8 +34,8 @@ A complete message is 445 bits:
 54-bit data packet format
 
     0    1   2    3   4    5   6    7   8    9   10   11  12   13  (nibbles #, aligned to 8-bit values)
-    ..LL LLKKKKKK IIIIIIII StttBCCC 0XXXTTTT TTTTTTTT MMMMMMMM JJJJ	(temperature)
-or  ..LL LLKKKKKK zyyyyyyy 0tttmmmm dddddHHH HHMMMMMM 0SSSSSS? JJJJ	(date/time)
+    ..LL LLKKKKKK IIIIIIII StttBCCC 0XXXTTTT TTTTTTTT MMMMMMMM JJJJ (temperature)
+or  ..LL LLKKKKKK zyyyyyyy 0tttmmmm dddddHHH HHMMMMMM 0SSSSSS? JJJJ (date/time)
 
 - L = 4-bit start of packet, always 0
 - K = 6-bit checksum, sum of nibbles 3-12
@@ -129,16 +129,14 @@ static int ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row
     data_t *data;
 
     if (bits != MSG_PACKET_MIN_BITS && bits != MSG_PACKET_BITS) {
-        if (decoder->verbose > 1) {
-            if (row == 0) {
-                if (bits < MSG_PREAMBLE_BITS) {
-                    decoder_logf(decoder, 2, __func__, "Short preamble: %d bits (expected %d)",
-                            bits, MSG_PREAMBLE_BITS);
-                }
-            } else if (row != (unsigned)bitbuffer->num_rows - 1 && bits == 1) {
-                decoder_logf(decoder, 2, __func__, "Wrong packet #%u length: %d bits (expected %d)",
-                        row, bits, MSG_PACKET_BITS);
+        if (row == 0) {
+            if (bits < MSG_PREAMBLE_BITS) {
+                decoder_logf(decoder, 2, __func__, "Short preamble: %d bits (expected %d)",
+                        bits, MSG_PREAMBLE_BITS);
             }
+        } else if (row != (unsigned)bitbuffer->num_rows - 1 && bits == 1) {
+            decoder_logf(decoder, 2, __func__, "Wrong packet #%u length: %d bits (expected %d)",
+                    row, bits, MSG_PACKET_BITS);
         }
         return DECODE_ABORT_LENGTH;
     }
@@ -151,7 +149,7 @@ static int ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row
     data_type = (b[2] & 0x70) >> 4;
     postmark = b[5];
 
-    if (decoder->verbose > 1) {
+    if (decoder_verbose(decoder) > 1) {
         decoder_log(decoder, 0, __func__, "TTX201 received raw data");
         decoder_log_bitbuffer(decoder, 0, __func__, bitbuffer, "");
         decoder_logf(decoder, 0, __func__, "Data decoded:" \
@@ -234,7 +232,7 @@ static int ttx201_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             ret = ttx201_decode(decoder, bitbuffer, row, 0);
             if (ret > 0)
                 events += ret;
-            if (events && !decoder->verbose)
+            if (events && !decoder_verbose(decoder))
                 return events; // for now, break after first successful message
         }
     }

@@ -33,14 +33,14 @@ http://jeelabs.org/2011/06/09/rf12-packet-format-and-design/
 The RFM69 chip misses out the zero bit at the end of the
 0xAA 0xAA 0xAA preamble; the receivers only use it to set
 up the bit timing, and they look for the 0x2D at the start
-of the packet. So we'll do the same — except since we're
+of the packet. So we'll do the same -- except since we're
 specifically looking for emonTx packets, we can require a
 little bit more. We look for a group of 0xD2, and we
 expect the CDA bits in the header to all be zero:
 */
-static unsigned char preamble[3] = { 0xaa, 0xaa, 0xaa };
-static unsigned char pkt_hdr_inverted[3] = { 0xd2, 0x2d, 0xc0 };
-static unsigned char pkt_hdr[3] = { 0x2d, 0xd2, 0x00 };
+static unsigned char const preamble[3] = { 0xaa, 0xaa, 0xaa };
+static unsigned char const pkt_hdr_inverted[3] = { 0xd2, 0x2d, 0xc0 };
+static unsigned char const pkt_hdr[3] = { 0x2d, 0xd2, 0x00 };
 
 static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -110,7 +110,7 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (crc != words[13])
             continue; // DECODE_FAIL_MIC
 
-        vrms = (float)words[4] / 100.0;
+        vrms = (float)words[4] / 100.0f;
 
         /* clang-format off */
         data = data_make(

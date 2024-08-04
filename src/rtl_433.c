@@ -155,10 +155,10 @@ static void usage(int exit_code)
             "  [-t <settings>] apply a list of keyword=value settings to the SDR device\n"
             "       e.g. for SoapySDR -t \"antenna=A,bandwidth=4.5M,rfnotch_ctrl=false\"\n"
             "       for RTL-SDR use \"direct_samp[=1]\", \"offset_tune[=1]\", \"digital_agc[=1]\", \"biastee[=1]\"\n"
-            "  [-f <frequency>] Receive frequency(s) (default: %i Hz)\n"
-            "  [-H <seconds>] Hop interval for polling of multiple frequencies (default: %i seconds)\n"
+            "  [-f <frequency>] Receive frequency(s) (default: %d Hz)\n"
+            "  [-H <seconds>] Hop interval for polling of multiple frequencies (default: %d seconds)\n"
             "  [-p <ppm_error>] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
-            "  [-s <sample rate>] Set sample rate (default: %i Hz)\n"
+            "  [-s <sample rate>] Set sample rate (default: %d Hz)\n"
             "  [-D restart | pause | quit | manual] Input device run mode options.\n"
             "\t\t= Demodulator options =\n"
             "  [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)\n"
@@ -281,11 +281,13 @@ static void help_output(void)
             "\tSpecify MQTT server with e.g. -F mqtt://localhost:1883\n"
             "\tAdd MQTT options with e.g. -F \"mqtt://host:1883,opt=arg\"\n"
             "\tMQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]\n"
+            "\tDefault user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.\n"
+            "\tA base topic can be set with base=<topic>, default is \"rtl_433/HOSTNAME\".\n"
             "\tSupported MQTT formats: (default is all)\n"
             "\t  events: posts JSON event data\n"
             "\t  states: posts JSON state data\n"
             "\t  devices: posts device and sensor info in nested topics\n"
-            "\tThe topic string will expand keys like [/model]\n"
+            "\tAny topic string overrides the base topic and will expand keys like [/model]\n"
             "\tE.g. -F \"mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]\"\n"
             "\tWith MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client-ID is computed from the driver string.\n"
             "\tIf you use multiple RTL-SDR, perhaps set a serial and select by that (helps not to get the wrong antenna).\n"
@@ -392,6 +394,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     char time_str[LOCAL_TIME_BUFLEN];
     unsigned long n_samples;
 
+    if (!demod) {
+        // might happen when the demod closed and we get a last data frame
+        return; // ignore the data
+    }
+
     // do this here and not in sdr_handler so realtime replay can use rtl_tcp output
     for (void **iter = cfg->raw_handler.elems; iter && *iter; ++iter) {
         raw_output_t *output = *iter;
@@ -453,7 +460,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     int noise_only = avg_db < demod->noise_level + 3.0f; // or demod->min_level_auto?
     // always process frames if loader, dumper, or analyzers are in use, otherwise skip silent frames
     int process_frame = demod->squelch_offset <= 0 || !noise_only || demod->load_info.format || demod->analyze_pulses || demod->dumper.len || demod->samp_grab;
+    cfg->total_frames_count += 1;
     if (noise_only) {
+        cfg->total_frames_squelch += 1;
         demod->noise_level = (demod->noise_level * 7 + avg_db) / 8; // fast fall over 8 frames
         // If auto_level and noise level well below min_level and significant change in noise level
         if (demod->auto_level > 0 && demod->noise_level < demod->min_level - 3.0f
@@ -472,8 +481,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 noise_only ? "noise" : "signal", avg_db, demod->noise_level);
     }
 
-    if (process_frame)
-    baseband_low_pass_filter(demod->buf.temp, demod->am_buf, n_samples, &demod->lowpass_filter_state);
+    if (process_frame) {
+        baseband_low_pass_filter(demod->buf.temp, demod->am_buf, n_samples, &demod->lowpass_filter_state);
+    }
 
     // FM demodulation
     // Select the correct fsk pulse detector
@@ -532,7 +542,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t%s\n", time_pos_str(cfg, demod->pulse_data.start_ago, time_str));
 
                 p_events += run_ook_demods(&demod->r_devs, &demod->pulse_data);
-                cfg->frames_count++;
+                cfg->total_frames_ook += 1;
+                cfg->total_frames_events += p_events > 0;
+                cfg->frames_ook +=1;
                 cfg->frames_events += p_events > 0;
 
                 for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
@@ -557,7 +569,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 if (demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t%s\n", time_pos_str(cfg, demod->fsk_pulse_data.start_ago, time_str));
 
                 p_events += run_fsk_demods(&demod->r_devs, &demod->fsk_pulse_data);
-                cfg->frames_fsk++;
+                cfg->total_frames_fsk +=1;
+                cfg->total_frames_events += p_events > 0;
+                cfg->frames_fsk += 1;
                 cfg->frames_events += p_events > 0;
 
                 for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
@@ -1302,6 +1316,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
 }
 
 static r_cfg_t g_cfg;
+static volatile sig_atomic_t sig_hup;
 
 // TODO: SIGINFO is not in POSIX...
 #ifndef SIGINFO
@@ -1340,6 +1355,10 @@ static void sighandler(int signum)
         write_err("Ignoring received signal SIGPIPE, Broken pipe.\n");
         return;
     }
+    else if (signum == SIGHUP) {
+        sig_hup = 1;
+        return;
+    }
     else if (signum == SIGINFO/* TODO: maybe SIGUSR1 */) {
         g_cfg.stats_now++;
         return;
@@ -1365,6 +1384,7 @@ static void sighandler(int signum)
 }
 #endif
 
+// NOTE: this handler might be called while already in `r_free_cfg()`.
 static void sdr_handler(struct mg_connection *nc, int ev_type, void *ev_data)
 {
     //fprintf(stderr, "%s: %d, %d, %p, %p\n", __func__, nc->sock, ev_type, nc->user_data, ev_data);
@@ -1378,28 +1398,22 @@ static void sdr_handler(struct mg_connection *nc, int ev_type, void *ev_data)
     data_t *data = NULL;
     if (ev->ev & SDR_EV_RATE) {
         // cfg->samp_rate = ev->sample_rate;
-        data = data_append(data,
-                "sample_rate", "", DATA_INT, ev->sample_rate,
-                NULL);
+        data = data_int(data, "sample_rate", "", NULL, ev->sample_rate);
     }
     if (ev->ev & SDR_EV_CORR) {
         // cfg->ppm_error = ev->freq_correction;
-        data = data_append(data,
-                "freq_correction", "", DATA_INT, ev->freq_correction,
-                NULL);
+        data = data_int(data, "freq_correction", "", NULL, ev->freq_correction);
     }
     if (ev->ev & SDR_EV_FREQ) {
         // cfg->center_frequency = ev->center_frequency;
-        data = data_append(data,
-                "center_frequency", "", DATA_INT, ev->center_frequency,
-                "frequencies", "", DATA_COND, cfg->frequencies > 1, DATA_ARRAY, data_array(cfg->frequencies, DATA_INT, cfg->frequency),
-                "hop_times", "", DATA_COND, cfg->frequencies > 1, DATA_ARRAY, data_array(cfg->hop_times, DATA_INT, cfg->hop_time),
-                NULL);
+        data = data_int(data, "center_frequency", "", NULL, ev->center_frequency);
+        if (cfg->frequencies > 1) {
+            data = data_ary(data, "frequencies", "", NULL, data_array(cfg->frequencies, DATA_INT, cfg->frequency));
+            data = data_ary(data, "hop_times", "", NULL, data_array(cfg->hop_times, DATA_INT, cfg->hop_time));
+        }
     }
     if (ev->ev & SDR_EV_GAIN) {
-        data = data_append(data,
-                "gain", "", DATA_STRING, ev->gain_str,
-                NULL);
+        data = data_str(data, "gain", "", NULL, ev->gain_str);
     }
     if (data) {
         event_occurred_handler(cfg, data);
@@ -1439,6 +1453,13 @@ static void acquire_callback(sdr_event_t *ev, void *ctx)
 static int start_sdr(r_cfg_t *cfg)
 {
     int r;
+    if (cfg->dev) {
+        r = sdr_close(cfg->dev);
+        cfg->dev = NULL;
+        if (r < 0) {
+            print_logf(LOG_ERROR, "Input", "Closing SDR failed (%d)", r);
+        }
+    }
     r = sdr_open(&cfg->dev, cfg->dev_query, cfg->verbosity);
     if (r < 0) {
         return -1; // exit(2);
@@ -1448,18 +1469,18 @@ static int start_sdr(r_cfg_t *cfg)
     // cfg->demod->sample_signed = sdr_get_sample_signed(cfg->dev);
 
     /* Set the sample rate */
-    r = sdr_set_sample_rate(cfg->dev, cfg->samp_rate, 1); // always verbose
+    sdr_set_sample_rate(cfg->dev, cfg->samp_rate, 1); // always verbose
 
     if (cfg->verbosity || cfg->demod->level_limit < 0.0)
         print_logf(LOG_NOTICE, "Input", "Bit detection level set to %.1f%s.", cfg->demod->level_limit, (cfg->demod->level_limit < 0.0 ? "" : " (Auto)"));
 
-    r = sdr_apply_settings(cfg->dev, cfg->settings_str, 1); // always verbose for soapy
+    sdr_apply_settings(cfg->dev, cfg->settings_str, 1); // always verbose for soapy
 
     /* Enable automatic gain if gain_str empty (or 0 for RTL-SDR), set manual gain otherwise */
-    r = sdr_set_tuner_gain(cfg->dev, cfg->gain_str, 1); // always verbose
+    sdr_set_tuner_gain(cfg->dev, cfg->gain_str, 1); // always verbose
 
     if (cfg->ppm_error) {
-        r = sdr_set_freq_correction(cfg->dev, cfg->ppm_error, 1); // always verbose
+        sdr_set_freq_correction(cfg->dev, cfg->ppm_error, 1); // always verbose
     }
 
     /* Reset endpoint before we start reading from it (mandatory) */
@@ -1467,18 +1488,18 @@ static int start_sdr(r_cfg_t *cfg)
     if (r < 0) {
         print_log(LOG_ERROR, "Input", "Failed to reset buffers.");
     }
-    r = sdr_activate(cfg->dev);
+    sdr_activate(cfg->dev);
 
     if (cfg->verbosity) {
         print_log(LOG_NOTICE, "Input", "Reading samples in async mode...");
     }
 
-    r = sdr_set_center_freq(cfg->dev, cfg->center_frequency, 1); // always verbose
+    sdr_set_center_freq(cfg->dev, cfg->center_frequency, 1); // always verbose
 
     r = sdr_start(cfg->dev, acquire_callback, (void *)get_mgr(cfg),
             DEFAULT_ASYNC_BUF_NUMBER, cfg->out_block_size);
     if (r < 0) {
-        print_logf(LOG_ERROR, "Input", "async start failed (%i).", r);
+        print_logf(LOG_ERROR, "Input", "async start failed (%d).", r);
     }
 
     cfg->dev_state = DEVICE_STATE_STARTING;
@@ -1489,6 +1510,10 @@ static void timer_handler(struct mg_connection *nc, int ev, void *ev_data)
 {
     //fprintf(stderr, "%s: %d, %d, %p, %p\n", __func__, nc->sock, ev, nc->user_data, ev_data);
     r_cfg_t *cfg = (r_cfg_t *)nc->user_data;
+    if (sig_hup) {
+        reopen_dumpers(cfg);
+        sig_hup = 0;
+    }
     switch (ev) {
     case MG_EV_TIMER: {
         double now  = *(double *)ev_data;
@@ -1502,6 +1527,7 @@ static void timer_handler(struct mg_connection *nc, int ev, void *ev_data)
             if (cfg->dev_state == DEVICE_STATE_STARTING
                     || cfg->dev_state == DEVICE_STATE_GRACE) {
                 cfg->dev_state = DEVICE_STATE_STARTED;
+                time(&cfg->sdr_since);
             }
             cfg->watchdog = 0;
             break;
@@ -1643,9 +1669,13 @@ int main(int argc, char **argv) {
     for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
         r_device *r_dev = *iter;
         if (r_dev->modulation >= FSK_DEMOD_MIN_VAL) {
-          demod->enable_FM_demod = 1;
-          break;
+            demod->enable_FM_demod = 1;
+            break;
         }
+    }
+    // if any dumpers are requested the FM demod might be needed
+    if (cfg->demod->dumper.len) {
+        demod->enable_FM_demod = 1;
     }
 
     {
@@ -1880,8 +1910,9 @@ int main(int argc, char **argv) {
                     }
                 }
 
-                if (in_file != stdin)
-                    fclose(in_file = stdin);
+                if (in_file != stdin) {
+                    fclose(in_file);
+                }
 
                 continue;
             }
@@ -1949,8 +1980,9 @@ int main(int argc, char **argv) {
                 print_logf(LOG_NOTICE, "Input", "Test mode file issued %d packets", n_blocks);
             }
 
-            if (in_file != stdin)
-                fclose(in_file = stdin);
+            if (in_file != stdin) {
+                fclose(in_file);
+            }
         }
 
         close_dumpers(cfg);
@@ -1971,6 +2003,7 @@ int main(int argc, char **argv) {
     sigact.sa_handler = sighandler;
     sigemptyset(&sigact.sa_mask);
     sigact.sa_flags = 0;
+    sigaction(SIGHUP, &sigact, NULL);
     sigaction(SIGINT, &sigact, NULL);
     sigaction(SIGTERM, &sigact, NULL);
     sigaction(SIGQUIT, &sigact, NULL);

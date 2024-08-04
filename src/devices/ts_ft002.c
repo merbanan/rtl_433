@@ -91,7 +91,7 @@ static int ts_ft002_decoder(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",                     DATA_STRING, "TS-FT002",
             "id",               "Id",                   DATA_INT,    id,
             "depth_cm",         "Depth",                DATA_INT,    depth,
-            "temperature_C",    "Temperature",          DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
+            "temperature_C",    "Temperature",          DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "transmit_s",       "Transmit Interval",    DATA_INT,    transmit,
             //"battery_ok",       "Battery",              DATA_INT,    batt_low,
             "flags",            "Battery Flag?",        DATA_INT,    batt_low,

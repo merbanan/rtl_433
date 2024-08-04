@@ -49,6 +49,8 @@ weather data as usual.
 
 TFA 30.3151 Sensor is FSK version and decodes here. See issue #2538: Preamble is aaaa2dd4 and Temperature is not offset and rain gauge is 0.5 mm by pulse.
 
+Note there is a collision with WH55 which starts with `aa aa aa 2d d4 55`
+
 To recognize which message is received (weather or time) you can use the 'msg_type' field on json output:
 - msg_type 5 = weather data
 - msg_type 6 = time data
@@ -147,11 +149,11 @@ static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
                 "id",               "Station ID",       DATA_FORMAT, "%02X",    DATA_INT,    device_id,
                 "msg_type",         "Msg type",         DATA_INT,    msg_type,
                 "battery_ok",       "Battery",          DATA_INT,    !battery_low,
-                "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
+                "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
                 "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
-                "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.02f km/h",   DATA_DOUBLE, speed,
-                "wind_max_km_h",    "Wind gust",        DATA_FORMAT, "%.02f km/h ",   DATA_DOUBLE, gust,
-                "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.01f mm",   DATA_DOUBLE, rain,
+                "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.2f km/h",   DATA_DOUBLE, speed,
+                "wind_max_km_h",    "Wind gust",        DATA_FORMAT, "%.2f km/h ",   DATA_DOUBLE, gust,
+                "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",   DATA_DOUBLE, rain,
                 "mic",              "Integrity",        DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
@@ -270,5 +272,6 @@ r_device const tfa_303151 = {
         .long_width  = 60,
         .reset_limit = 2500,
         .decode_fn   = &fineoffset_wh1050_callback,
+        .priority    = 10, // Eliminate false positives by letting Fineoffset/Ecowitt WH55 go earlier
         .fields      = output_fields,
 };

@@ -112,7 +112,7 @@ static int badger_orion_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint16_t crc_calc = ~crc16(data_in, 8, 0x3D65, 0);
     if (crc_calc != crc_read) {
         decoder_logf(decoder, 1, __func__,
-                "Badger ORION: CRC error: Calculated 0x%0X, Read 0x%0X",
+                "Badger ORION: CRC error: Calculated 0x%X, Read 0x%X",
                 (unsigned)crc_calc, (unsigned) crc_read);
         return DECODE_FAIL_MIC;
     }
@@ -134,7 +134,7 @@ static int badger_orion_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format on */
 
     decoder_output_data(decoder, data);
-    return 0;
+    return 1;
 }
 
 // Note: At this time the exact meaning of the flags is not known.

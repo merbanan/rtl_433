@@ -138,12 +138,10 @@ static int tpms_tyreguard400_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     for (int row = 0; row < bitbuffer->num_rows; ++row) {
         if (bitbuffer->bits_per_row[row] < TPMS_TYREGUARD400_MESSAGE_BITLEN) {
             // bail out of this "too short" row early
-            if (decoder->verbose >= 2) {
-                // Output the bad row, only for message level debug / deciphering.
-                decoder_logf_bitrow(decoder, 2, __func__, bitbuffer->bb[row], bitbuffer->bits_per_row[row],
-                        "Bad message in row %d need %d bits got %d",
-                        row, TPMS_TYREGUARD400_MESSAGE_BITLEN, bitbuffer->bits_per_row[row]);
-            }
+            // Output the bad row, only for message level debug / deciphering.
+            decoder_logf_bitrow(decoder, 2, __func__, bitbuffer->bb[row], bitbuffer->bits_per_row[row],
+                    "Bad message in row %d need %d bits got %d",
+                    row, TPMS_TYREGUARD400_MESSAGE_BITLEN, bitbuffer->bits_per_row[row]);
             continue; // DECODE_ABORT_LENGTH
         }
 
@@ -153,10 +151,8 @@ static int tpms_tyreguard400_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos, tyreguard_frame_sync, 28)) + TPMS_TYREGUARD400_MESSAGE_BITLEN <=
                 bitbuffer->bits_per_row[row]) {
 
-            if (decoder->verbose >= 2) {
-                decoder_logf_bitrow(decoder, 2, __func__, bitbuffer->bb[row], bitbuffer->bits_per_row[row],
-                        "Find bitpos with preamble row %d at %u", row, bitpos);
-            }
+            decoder_logf_bitrow(decoder, 2, __func__, bitbuffer->bb[row], bitbuffer->bits_per_row[row],
+                    "Find bitpos with preamble row %d at %u", row, bitpos);
 
             ret = tpms_tyreguard400_decode(decoder, bitbuffer, row, bitpos);
             if (ret > 0)
@@ -166,7 +162,7 @@ static int tpms_tyreguard400_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
     // (Only) for future regression tests.
-    if ((decoder->verbose >= 3) & (events == 0)) {
+    if (events == 0) {
         decoder_logf(decoder, 3, __func__, "Bad transmission");
     }
 

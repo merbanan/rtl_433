@@ -30,7 +30,7 @@ Sensible Living uses a speed of 1000, i.e. 1000 us per bit.
 // into 6 bit symbols for transmission. Each 6-bit symbol has 3 1s and 3 0s
 // with at most 3 consecutive identical bits.
 // Concatenated symbols have runs of at most 4 identical bits.
-static uint8_t symbols[] = {
+static uint8_t const symbols[] = {
         0x0d, 0x0e, 0x13, 0x15, 0x16, 0x19, 0x1a, 0x1c,
         0x23, 0x25, 0x26, 0x29, 0x2a, 0x2c, 0x32, 0x34
 };

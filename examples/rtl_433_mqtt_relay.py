@@ -24,17 +24,52 @@ import socket
 import json
 import paho.mqtt.client as mqtt
 
-# Syslog socket configuration
-UDP_IP = "127.0.0.1"
-UDP_PORT = 1433
+# The config class represents a config object.  The constructor takes
+# an optional pathname, and will switch on the suffix (.yaml for now)
+# and read a dictionary.
+class rtlconfig(object):
 
-# MQTT broker configuration
-MQTT_HOST = "127.0.0.1"
-MQTT_PORT = 1883
-MQTT_USERNAME = None
-MQTT_PASSWORD = None
-MQTT_TLS = False
-MQTT_PREFIX = "sensor/rtl_433"
+    # Initialize with default values.
+    c = {
+        # Syslog socket configuration
+        'UDP_IP': "127.0.0.1",
+        'UDP_PORT': 1433,
+        
+        # MQTT broker configuration
+        'MQTT_HOST': "127.0.0.1",
+        'MQTT_PORT': 1883,
+        'MQTT_USERNAME': None,
+        'MQTT_PASSWORD': None,
+        'MQTT_TLS': False,
+        'MQTT_PREFIX': "sensor/rtl_433",
+        'MQTT_INDIVIDUAL_TOPICS': True,
+        'MQTT_JSON_TOPIC': True,
+    }
+    
+    def __init__(self, f=None):
+        fdict = None
+
+        # Try to read a dictionary from f.
+        if f:
+            try:
+                # Assume yaml. \todo Check and support other formats
+                import yaml
+                with open(f) as fh:
+                    fdict = yaml.safe_load(fh)
+            except:
+                print('Did not read {f} (no yaml, not found, bad?).'.format(f=f))
+            
+        # Merge fdict into configdict.
+        if fdict:
+            for (k, v) in fdict.items():
+                self.c[k] = v
+
+    # Support c['name'] references.
+    def __getitem__(self, k):
+        return self.c[k]
+
+# Create a config object, defaults modified by the config file if present.
+c = rtlconfig("rtl_433_mqtt_relay.yaml")
 
 def mqtt_connect(client, userdata, flags, rc):
     """Handle MQTT connection callback."""
@@ -48,7 +83,7 @@ def mqtt_disconnect(client, userdata, rc):
 
 # Create listener for incoming json string packets.
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-sock.bind((UDP_IP, UDP_PORT))
+sock.bind((c['UDP_IP'], c['UDP_PORT']))
 
 
 # Map characters that will cause problems or be confusing in mqtt
@@ -68,30 +103,31 @@ def publish_sensor_to_mqtt(mqttc, data, line):
     # Construct a topic from the information that identifies which
     # device this frame is from.
     # NB: id is only used if channel is not present.
-    path = MQTT_PREFIX
+    path = c['MQTT_PREFIX']
     if "model" in data:
         path += "/" + sanitize(data["model"])
     if "channel" in data:
         path += "/" + str(data["channel"])
-    elif "id" in data:
+    if "id" in data:
         path += "/" + str(data["id"])
 
-    # Publish some specific items on subtopics.
-    if "battery_ok" in data:
-        mqttc.publish(path + "/battery", data["battery_ok"])
+    if c['MQTT_INDIVIDUAL_TOPICS']:
+        # Publish some specific items on subtopics.
+        if "battery_ok" in data:
+            mqttc.publish(path + "/battery", data["battery_ok"])
 
-    if "humidity" in data:
-        mqttc.publish(path + "/humidity", data["humidity"])
+        if "humidity" in data:
+            mqttc.publish(path + "/humidity", data["humidity"])
 
-    if "temperature_C" in data:
-        mqttc.publish(path + "/temperature", data["temperature_C"])
+        if "temperature_C" in data:
+            mqttc.publish(path + "/temperature", data["temperature_C"])
 
-    if "depth_cm" in data:
-        mqttc.publish(path + "/depth", data["depth_cm"])
+        if "depth_cm" in data:
+            mqttc.publish(path + "/depth", data["depth_cm"])
 
-    # Publish the entire json string on the main topic.
-    mqttc.publish(path, line)
-
+    if c['MQTT_JSON_TOPIC']:
+        # Publish the entire json string on the main topic.
+        mqttc.publish(path, line)
 
 def parse_syslog(line):
     """Try to extract the payload from a syslog line."""
@@ -111,14 +147,17 @@ def rtl_433_probe():
     """Run a rtl_433 UDP listener."""
 
     ## Connect to MQTT
-    mqttc = mqtt.Client()
+    if hasattr(mqtt, 'CallbackAPIVersion'):  # paho >= 2.0.0
+        mqttc = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION1)
+    else:
+        mqttc = mqtt.Client()
     mqttc.on_connect = mqtt_connect
     mqttc.on_disconnect = mqtt_disconnect
-    if MQTT_USERNAME != None:
-        mqttc.username_pw_set(MQTT_USERNAME, password=MQTT_PASSWORD)
-    if MQTT_TLS:
+    if c['MQTT_USERNAME'] != None:
+        mqttc.username_pw_set(c['MQTT_USERNAME'], password=c['MQTT_PASSWORD'])
+    if c['MQTT_TLS']:
         mqttc.tls_set()
-    mqttc.connect_async(MQTT_HOST, MQTT_PORT, 60)
+    mqttc.connect_async(c['MQTT_HOST'], c['MQTT_PORT'], 60)
     mqttc.loop_start()
 
     ## Receive UDP datagrams, extract json, and publish.

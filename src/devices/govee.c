@@ -182,7 +182,7 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     chk     = (chk >> 4) ^ (chk & 0xf);
 
     // Parity arguments were discovered using revdgst's RevSum and the data packets included at the top of this file.
-    // 	 https://github.com/triq-org/revdgst
+    // https://github.com/triq-org/revdgst
     if (chk != parity) {
         decoder_log(decoder, 1, __func__, "Parity did NOT match.");
         return DECODE_FAIL_MIC;
@@ -233,7 +233,7 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data = data_make(
             "model",        "",                 DATA_COND,   model_num == GOVEE_WATER,   DATA_STRING, "Govee-Water",
             "model",        "",                 DATA_COND,   model_num == GOVEE_CONTACT, DATA_STRING, "Govee-Contact",
-            "id"   ,        "",                 DATA_INT,    id,
+            "id",           "",                 DATA_INT,    id,
             "battery_ok",   "Battery level",    DATA_COND,   battery, DATA_DOUBLE, battery_level,
             "battery_mV",   "Battery",          DATA_COND,   battery, DATA_FORMAT, "%d mV", DATA_INT, battery_mv,
             "detect_wet",   "",                 DATA_COND,   wet >= 0, DATA_INT, wet,
@@ -394,7 +394,7 @@ static int govee_h5054_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data_t *data = data_make(
             "model",        "",                 DATA_STRING, "Govee-Water",
-            "id"   ,        "",                 DATA_INT,    id,
+            "id",           "",                 DATA_INT,    id,
             "battery_ok",   "Battery level",    DATA_COND,   battery >= 0, DATA_DOUBLE, battery_level,
             "battery_mV",   "Battery",          DATA_COND,   battery >= 0, DATA_FORMAT, "%d mV", DATA_INT, battery_mv,
             "event",        "",                 DATA_STRING, event_str,

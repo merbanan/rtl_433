@@ -25,8 +25,9 @@ Rebrand and devices decoded :
 - Orium Pro Atlanta 13093, Helios 13123
 - Protmex PT3390A
 - Jula Marquant 014331 weather station /014332 temp hum sensor
+- TechniSat IMETEO X6 76-4924-00 weather station without UV/LUX/Gust  #2753
 
-S.a. issue #2000 #2299 #2326 #2373 PR #2300 #2346 #2374
+S.a. issue #2000 #2299 #2326 #2375 PR #2300 #2346 #2374
 
 - Likely a rebranded device, sold by Altronics
 - Data length is 32 bytes with a preamble of 10 bytes (33 bytes for Rain/Wind Station)
@@ -68,10 +69,11 @@ Emax Rain / Wind speed / Wind Direction / Temp / Hum / UV / Lux
 
 Weather Rain/Wind station : humidity not at same byte position as temp/hum sensor.
 - With UV Lux without Wind Gust
-    AA 04 II IB 0T TT HH 0W WW 0D DD RR RR UU LL LL 04 05 06 07 08 09 10 11 12 13 14 15 16 17 xx SS yy
+    AA KC II IB 0T TT HH 0W WW 0D DD RR RR UU LL LL 04 05 06 07 08 09 10 11 12 13 14 15 16 17 xx SS yy
+- Without UV LUX Wind Gust
+    AA KC II IB 0T TT HH 0W WW 0D DD RR RR D9 01 01 04 05 06 07 08 09 10 11 12 13 14 15 16 17 xx SS yy
 - Without UV / Lux , with Wind Gust
-    AA 04 II IB 0T TT HH 0W WW 0D DD RR RR ?0 01 01 GG 04 05 06 07 08 09 10 11 12 13 14 15 16 xx SS yy
-
+    AA KC II IB 0T TT HH 0W WW 0D DD RR RR ?0 01 01 GG 04 05 06 07 08 09 10 11 12 13 14 15 16 xx SS yy
 
 default empty/null = 0x01 => value = 0
 
@@ -200,10 +202,11 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 if (lux_multi == 1) {
                     light_lux = light_lux * 10;
                 }
-
+                int tag           = ((b[13] - 1) & 0xC0)>>6;  // if tag = 3 = model IMETEO X6 without UV and LUX #2753
                 /* clang-format off */
                 data_t *data = data_make(
-                        "model",            "",                 DATA_STRING, "Emax-W6",
+                        "model",            "",                 DATA_COND, tag !=3, DATA_STRING, "Emax-W6",
+                        "model",            "",                 DATA_COND, tag ==3, DATA_STRING, "IMETEO-X6",
                         "id",               "",                 DATA_FORMAT, "%03x", DATA_INT,    id,
                         "channel",          "Channel",          DATA_INT,    channel,
                         "battery_ok",       "Battery_OK",       DATA_INT,    !battery_low,
@@ -212,8 +215,8 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
                         "wind_dir_deg",     "Wind Direction",   DATA_INT,    direction_deg,
                         "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",  DATA_DOUBLE, rain_mm,
-                        "uv",               "UV Index",         DATA_FORMAT, "%u",       DATA_INT,    uv_index,
-                        "light_lux",        "Lux",              DATA_FORMAT, "%u",       DATA_INT,    light_lux,
+                        "uv",               "UV Index",         DATA_COND,   tag !=3, DATA_FORMAT, "%u", DATA_INT, uv_index,
+                        "light_lux",        "Lux",              DATA_COND,   tag !=3, DATA_FORMAT, "%u", DATA_INT, light_lux,
                         "pairing",          "Pairing?",         DATA_COND,   pairing,    DATA_INT,    !!pairing,
                         "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
                         NULL);
@@ -269,7 +272,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const emax = {
-        .name        = "Emax W6, rebrand Altronics x7063/4, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025, Protmex PT3390A, Jula Marquant 014331/32, Weather Station or temperature/humidity sensor",
+        .name        = "Emax W6, rebrand Altronics x7063/4, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025, Protmex PT3390A, Jula Marquant 014331/32, TechniSat IMETEO X6 76-4924-00, Weather Station or temperature/humidity sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 90,
         .long_width  = 90,

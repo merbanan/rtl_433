@@ -10,11 +10,17 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/**
+
+#include "decoder.h"
+
+/** @fn int infactory_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+inFactory outdoor temperature and humidity sensor.
+
 Outdoor sensor, transmits temperature and humidity data
 - inFactory NC-3982-913/NX-5817-902, Pearl (for FWS-686 station)
 - nor-tec 73383 (weather station + sensor), Schou Company AS, Denmark
 - DAY 73365 (weather station + sensor), Schou Company AS, Denmark
+- Tchibo NC-3982-675
 
 Known brand names: inFactory, nor-tec, GreenBlue, DAY. Manufacturer in China.
 
@@ -26,7 +32,7 @@ Transmissions includes an id. Every 60 seconds the sensor transmits 6 packets:
 
 - i: identification // changes on battery switch
 - c: CRC-4 // CCITT checksum, see below for computation specifics
-- u: unknown // (sometimes set at power-on, but not always)
+- u: TX-button, also set for 3 sec at power-up
 - b: battery low // flag to indicate low battery voltage
 - h: Humidity // BCD-encoded, each nibble is one digit, 'A0' means 100%rH
 - t: Temperature // in °F as binary number with one decimal place + 90 °F offset
@@ -45,8 +51,6 @@ Payload looks like this:
 (See below for more information about the signal timing.)
 */
 
-#include "decoder.h"
-
 static int infactory_crc_check(uint8_t *b)
 {
     uint8_t msg_crc, crc, msg[5];
@@ -60,14 +64,14 @@ static int infactory_crc_check(uint8_t *b)
     return (crc == msg_crc);
 }
 
-static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int infactory_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     if (bitbuffer->bits_per_row[0] != 40)
         return DECODE_ABORT_LENGTH;
 
     uint8_t *b = bitbuffer->bb[0];
 
-    /* Check that the last 4 bits of message are not 0 (channel number 1 - 3) */
+    // Check that the last 4 bits of message are not 0 (channel number 1 - 3)
     if (!(b[4] & 0x0F))
         return DECODE_ABORT_EARLY;
 
@@ -75,6 +79,7 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
 
     int id          = b[0];
+    int button      = (b[1] >> 3) & 1;
     int battery_low = (b[1] >> 2) & 1;
     int temp_raw    = (b[2] << 4) | (b[3] >> 4);
     int humidity    = (b[3] & 0x0F) * 10 + (b[4] >> 4); // BCD, 'A0'=100%rH
@@ -88,7 +93,8 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "ID",           DATA_INT,    id,
             "channel",          "Channel",      DATA_INT,    channel,
             "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,
+            "button",           "Button",       DATA_INT,    button,
+            "temperature_F",    "Temperature",  DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
@@ -103,6 +109,7 @@ static char const *const output_fields[] = {
         "id",
         "channel",
         "battery_ok",
+        "button",
         "temperature_F",
         "humidity",
         "mic",
@@ -138,6 +145,6 @@ r_device const infactory = {
         .long_width  = 4000, // Width of a '1' gap
         .reset_limit = 5000, // Maximum gap size before End Of Message [us]
         .tolerance   = 750,  // Width interval 0=[1250..2750] 1=[3250..4750], should be quite robust
-        .decode_fn   = &infactory_callback,
+        .decode_fn   = &infactory_decode,
         .fields      = output_fields,
 };

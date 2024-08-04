@@ -19,7 +19,7 @@
 #include "data.h"
 #include "list.h"
 #include "optparse.h"
-#include "util.h" // for MIN()
+#include "c_util.h" // for MIN()
 #include "fileformat.h"
 #include "fatal.h"
 
@@ -280,9 +280,7 @@ static data_t *append_filtered_json(data_t *data, char const *json, char const *
             int len = MIN(v->end - v->start, (int)sizeof(buf) - 1);
             memcpy(buf, json + v->start, len);
             buf[len] = '\0';
-            data = data_append(data,
-                    key, "", DATA_STRING, buf,
-                    NULL);
+            data = data_str(data, key, "", NULL, buf);
         }
     }
 
@@ -299,9 +297,7 @@ data_t *data_tag_apply(data_tag_t *tag, data_t *data, char const *filename)
                 // wrap tag includes
                 data_t *obj = append_filtered_json(NULL, val, tag->includes);
                 // append tag wrapper
-                data = data_append(data,
-                        tag->key, "", DATA_DATA, obj,
-                        NULL);
+                data = data_dat(data, tag->key, "", NULL, obj);
             }
             else {
                 // append tag includes
@@ -310,9 +306,7 @@ data_t *data_tag_apply(data_tag_t *tag, data_t *data, char const *filename)
         }
         else {
             // append tag string
-            data = data_append(data,
-                    tag->key, "", DATA_STRING, val,
-                    NULL);
+            data = data_str(data, tag->key, "", NULL, val);
         }
         return data;
     }
