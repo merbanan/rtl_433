@@ -14,13 +14,13 @@
 // TODO: Add sample and textual description of protocol
 
 
-static int dickert_mahs_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int dickert_pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t b[40];
     data_t *data;
-    char dips[40] = {0}; // changed from 20 to 40
-    char dips_s[40] = {0}; // changed from 20 to 40
-    char facs_s[40] = {0}; // changed from 20 to 40
+    char dips[40] = {0}; 
+    char dips_s[40] = {0}; 
+    char facs_s[40] = {0}; 
 
     const int MSG_LEN = 37;
 
@@ -42,13 +42,13 @@ static int dickert_mahs_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 	return DECODE_ABORT_LENGTH;
     }
 
-    bitbuffer_print(bitbuffer);
+    // bitbuffer_print(bitbuffer);
 
     // Remove the first bit and store in b
     bitbuffer_extract_bytes(bitbuffer, 0, 1, b, MSG_LEN);
 
     // Get dip switches
-    for (int idx=0; idx<9; idx++) { // changed from 5 to 9
+    for (int idx=0; idx<9; idx++) {
         uint8_t byte = b[idx];
 
 	for (int nib=3; nib>=0; nib--) {
@@ -63,15 +63,15 @@ static int dickert_mahs_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wstringop-truncation"
-    strncat(dips_s, dips, 10); // changed from 10 to 18
-    strncat(facs_s, dips+10, 8); // changed from 10 to 18
+    strncat(dips_s, dips, 10);
+    strncat(facs_s, dips+10, 8);
     #pragma GCC diagnostic pop
 
     /* clang-format off */
     data = data_make(
-            "model",        "",      DATA_STRING, "Dickert MAHS433-01 remote control",
+            "model",        "", DATA_STRING, "Dickert MAHS433-01 remote control",
             "dipswitches",  "DIP switches configuration", DATA_STRING, dips_s,
-            "facswitches",  "Factory code", DATA_STRING, facs_s,
+	    "facswitches",  "Factory code", DATA_STRING, facs_s,
             NULL);
     /* clang-format on */
 
@@ -86,7 +86,7 @@ static char const *const output_fields[] = {
         NULL,
 };
 
-r_device const dickert_mahs = {
+r_device const dickert_pwm = {
         .name        = "Dickert MAHS433-01 garage door remote control",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 362,
@@ -94,7 +94,7 @@ r_device const dickert_mahs = {
         .gap_limit   = 1064,
         .reset_limit = 12000,
 	.disabled    = 1,
-        .decode_fn   = &dickert_mahs_decode,
+        .decode_fn   = &dickert_pwm_decode,
         .fields      = output_fields,
 };
 
