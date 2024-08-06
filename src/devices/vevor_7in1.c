@@ -24,7 +24,7 @@ Data Layout:
 
     Byte Position   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34
     Sample         AA 00 f8 f7 9d 02 e3 32 01 0e 03 02 0b 01 38 02 39 7a 86 e0 87 21 85 6a d0 08 da fa ab 2f 64 4a e3 00 00
-                   AA KC II II BF TT TT HH 0G GG WW WD DD RR RR UU LL LL xx SS yy ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??
+                   AA KC II II BF TT TT HH 0W WW GG 0D DD RR RR UU LL LL xx SS yy ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??
 
 - K:  {4} Type of sensor, = 0x0
 - C:  {4} Channel, = 0x0
@@ -32,11 +32,11 @@ Data Layout:
 - BF: {8} Battery Flag 0x9d = battery low, 0x1d = normal battery, may be pairing button to be confirmed ?
 - T: {12} temperature in C, offset 500, scale 10
 - H:  {8} humidity %
-- G: {12} Wind Gust (16/12 bit?)
-- W: {12} Wind speed
+- W: {12} Wind speed, 0 kmh or 0 m/s = 0x0101, need to remove 1 to each byte
+- G:  {8} Wind Gust m/s scale 6 or kmh scale 0.6
 - D: {12} Wind Direction offset 257
-- R: {16} Rain , 0.2 mm to be defined/confirmed ?
-- U:  {5} UV index from 0 to 16
+- R: {16} Total Rain mm/m2,   0 mm = 0x0100, need to remove 1 to first byte.
+- U:  {5} UV index from 0 to 16, offset 1
 - L: {1 + 15 bit} Lux value, if first bit = 1 , then x 10 the 15 bit.
 - ?: unknown, fixed values
 - A:  {4} fixed values of 0xA
@@ -97,10 +97,10 @@ static int vevor_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             int temp_raw      = (b[5] << 8) | b[6];
             float temp_c      = (temp_raw - 500) * 0.1f;
             int humidity      = b[7];
-            int gust_raw      = (b[8] & 0x0f) << 8 | b[9];
-            float gust_kmh    = gust_raw * 0.2f;
-            int wind_raw      = (b[10] << 4) | ((b[11] & 0xf0) >> 4);
+            int wind_raw      = (((b[8] - 1) & 0xff) << 8) | ((b[9] - 1) & 0xff);   // need to remove 1 from byte , 0x01 - 1 = 0 , 0x02 - 1 = 1 ... 0xff -1 = 254 , 0x00 - 1 = 255.
             float speed_kmh   = wind_raw * 0.2f;
+            int gust_raw      = b[10];
+            float gust_kmh    = gust_raw * 0.6f; // 
             int direction_deg = (((b[11] & 0x0f) << 8) | b[12]) - 257;
             int rain_raw      = (b[13] << 8) | b[14];
             float rain_mm     = rain_raw * 0.2f;
