@@ -100,7 +100,7 @@ static int vevor_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             int wind_raw      = (((b[8] - 1) & 0xff) << 8) | ((b[9] - 1) & 0xff);   // need to remove 1 from byte , 0x01 - 1 = 0 , 0x02 - 1 = 1 ... 0xff -1 = 254 , 0x00 - 1 = 255.
             float speed_kmh   = wind_raw * 0.2f;
             int gust_raw      = b[10];
-            float gust_kmh    = gust_raw * 0.6f; // 
+            float gust_kmh    = gust_raw * 0.6f;
             int direction_deg = (((b[11] & 0x0f) << 8) | b[12]) - 257;
             int rain_raw      = (b[13] << 8) | b[14];
             float rain_mm     = rain_raw * 0.2f;
