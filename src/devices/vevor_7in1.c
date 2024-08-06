@@ -87,7 +87,7 @@ static int vevor_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             continue;
         }
 
-        int kind        = ((b[1] & 0xf0) >> 4);
+        //int kind        = ((b[1] & 0xf0) >> 4);
         int channel     = (b[1] & 0x0f);
         int id          = (b[2] << 8) | b[3];
         int battery_low = (b[4] & 0x80) >> 7;
@@ -97,13 +97,13 @@ static int vevor_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             int temp_raw      = (b[5] << 8) | b[6];
             float temp_c      = (temp_raw - 500) * 0.1f;
             int humidity      = b[7];
-            int wind_raw      = (((b[8] - 1) & 0xff) << 8) | ((b[9] - 1) & 0xff);   // need to remove 1 from byte , 0x01 - 1 = 0 , 0x02 - 1 = 1 ... 0xff -1 = 254 , 0x00 - 1 = 255.
-            float speed_kmh   = wind_raw * 0.2f;
+            int wind_raw      = ((b[8] << 8) | b[9]) - 257; // need to remove 0x0101.
+            float speed_kmh   = wind_raw * 0.02f * 3.6f ; // wind_raw * 0.02 for m/s
             int gust_raw      = b[10];
-            float gust_kmh    = gust_raw * 0.6f;
-            int direction_deg = (((b[11] & 0x0f) << 8) | b[12]) - 257;
-            int rain_raw      = (b[13] << 8) | b[14];
-            float rain_mm     = rain_raw * 0.2f;
+            float gust_kmh    = gust_raw / 6.0f * 3.6f ; // gust_raw / 6.0f for m/s
+            int direction_deg = (((b[11] & 0x0f) << 8) | b[12]) - 257; // need to remove 0x101.
+            int rain_raw      = ((b[13] << 8) | b[14]) - 257; // need to remove 0x101.
+            float rain_mm     = rain_raw * 0.69f;
             int uv_index      = (b[15] & 0x1f) - 1;
             int lux_multi     = (b[16] & 0x80) >> 7;
             int light_lux     = ((b[16] & 0x7F) << 8) | b[17];
