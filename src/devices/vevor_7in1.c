@@ -16,6 +16,12 @@
 /**
 Vevor Wireless Weather Station 7-in-1.
 
+Manufacturer : Fujian Youtong Industries Co., Ltd. rebrand under Vevor name.
+Reference:
+
+- YT60231, Vevor Weather Station 7-in-1
+- R53 / R56 Fujian Youtong Industries , FCC ID : https://fccid.io/2AQBD-R53, https://fccid.io/2AQBD-R56
+
 S.a. issue #3020
 
 Data Layout:
@@ -32,12 +38,12 @@ Data Layout:
 - BF: {8} Battery Flag 0x9d = battery low, 0x1d = normal battery, may be pairing button to be confirmed ?
 - T: {12} temperature in C, offset 500, scale 10
 - H:  {8} humidity %
-- W: {12} Wind speed, 0 kmh or 0 m/s = 0x0101, need to remove 1 to each byte
-- G:  {8} Wind Gust m/s scale 6 or kmh scale 0.6
-- D: {12} Wind Direction offset 257
-- R: {16} Total Rain mm/m2,   0 mm = 0x0100, need to remove 1 to first byte.
+- W: {16} Wind speed, scale 10, offset 257 (0x0101)
+- G:  {8} Wind Gust m/s scale 1.5
+- D: {12} Wind Direction, offset 257
+- R: {16} Total Rain mm/m2, 0.4 mm/m²/tips , offset 257
 - U:  {5} UV index from 0 to 16, offset 1
-- L: {1 + 15 bit} Lux value, if first bit = 1 , then x 10 the 15 bit.
+- L: {1 + 15 bit} Lux value, if first bit = 1 , then x 10 the 15 bit (offset 257).
 - ?: unknown, fixed values
 - A:  {4} fixed values of 0xA
 - 0:  {4} fixed values of 0x0
@@ -98,17 +104,18 @@ static int vevor_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             float temp_c      = (temp_raw - 500) * 0.1f;
             int humidity      = b[7];
             int wind_raw      = ((b[8] << 8) | b[9]) - 257; // need to remove 0x0101.
-            float speed_kmh   = wind_raw * 0.02f * 3.6f ; // wind_raw * 0.02 for m/s
+            float speed_kmh   = wind_raw / 10.0f  ; // wind_raw / 36.0f for m/s
             int gust_raw      = b[10];
-            float gust_kmh    = gust_raw / 6.0f * 3.6f ; // gust_raw / 6.0f for m/s
+            float gust_kmh    = gust_raw / 1.5f ; // gust_raw / 1.5f / 3.6f m/s
             int direction_deg = (((b[11] & 0x0f) << 8) | b[12]) - 257; // need to remove 0x101.
             int rain_raw      = ((b[13] << 8) | b[14]) - 257; // need to remove 0x101.
-            float rain_mm     = rain_raw * 0.69f;
+            float rain_mm     = rain_raw * 0.43f;
             int uv_index      = (b[15] & 0x1f) - 1;
-            int lux_multi     = (b[16] & 0x80) >> 7;
-            int light_lux     = ((b[16] & 0x7F) << 8) | b[17];
+            int light_lux     = ((b[16] << 8) | b[17]) - 257; // need to remove 0x0101.
+            int lux_multi     = (light_lux & 0x8000) >> 15;
+
             if (lux_multi == 1) {
-                light_lux = light_lux * 10;
+                light_lux = (light_lux & 0x7fff) * 10;
             }
 
             /* clang-format off */
