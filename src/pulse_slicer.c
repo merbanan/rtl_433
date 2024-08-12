@@ -14,7 +14,7 @@
 #include "pulse_slicer.h"
 #include "pulse_data.h"
 #include "bitbuffer.h"
-#include "util.h"
+#include "c_util.h" // for MIN()
 #include "logger.h"
 #include "decoder_util.h" // TODO: this should be refactored
 #include <stdio.h>
@@ -64,7 +64,7 @@ static int account_event(r_device *device, bitbuffer_t *bits, char const *demod_
 
 int pulse_slicer_pcm(pulse_data_t const *pulses, r_device *device)
 {
-    float samples_per_us = pulses->sample_rate / 1.0e6;
+    float samples_per_us = pulses->sample_rate / 1.0e6f;
     int s_short = device->short_width * samples_per_us;
     int s_long  = device->long_width * samples_per_us;
     int s_reset = device->reset_limit * samples_per_us;
@@ -84,8 +84,8 @@ int pulse_slicer_pcm(pulse_data_t const *pulses, r_device *device)
     }
 
     // precision reciprocals
-    float f_short = device->short_width > 0.0 ? 1.0 / (device->short_width * samples_per_us) : 0;
-    float f_long  = device->long_width > 0.0 ? 1.0 / (device->long_width * samples_per_us) : 0;
+    float f_short = device->short_width > 0.0f ? 1.0f / (device->short_width * samples_per_us) : 0;
+    float f_long  = device->long_width > 0.0f ? 1.0f / (device->long_width * samples_per_us) : 0;
 
     int events = 0;
     bitbuffer_t bits = {0};
@@ -120,7 +120,7 @@ int pulse_slicer_pcm(pulse_data_t const *pulses, r_device *device)
             min_count = count;
             preamble_len = count;
             if (device->verbose > 1) {
-                float to_us = 1e6 / pulses->sample_rate;
+                float to_us = 1e6f / pulses->sample_rate;
                 print_logf(LOG_INFO, __func__, "Exact bit width (in us) is %.2f vs %.2f (pulse width %.2f vs %.2f), %d bit preamble",
                         to_us / f_long, to_us * s_long,
                         to_us / f_short, to_us * s_short, count);
@@ -169,7 +169,7 @@ int pulse_slicer_pcm(pulse_data_t const *pulses, r_device *device)
             min_count = count;
             preamble_len = count;
             if (device->verbose > 1) {
-                float to_us = 1e6 / pulses->sample_rate;
+                float to_us = 1e6f / pulses->sample_rate;
                 print_logf(LOG_INFO, __func__, "Exact bit width (in us) is %.2f vs %.2f, %d bit preamble",
                         to_us / f_short, to_us * s_short, count);
             }
@@ -212,10 +212,10 @@ int pulse_slicer_pcm(pulse_data_t const *pulses, r_device *device)
 
     for (unsigned n = 0; n < pulses->num_pulses; ++n) {
         // Determine number of high bit periods for NRZ coding, where bits may not be separated
-        int highs = (pulses->pulse[n]) * f_short + 0.5;
+        int highs = (pulses->pulse[n]) * f_short + 0.5f;
         // Determine number of low bit periods in current gap length (rounded)
         // for RZ subtract the nominal bit-gap
-        int lows = (pulses->gap[n] + s_short - s_long) * f_long + 0.5;
+        int lows = (pulses->gap[n] + s_short - s_long) * f_long + 0.5f;
 
         // Add run of ones (1 for RZ, many for NRZ)
         for (int i = 0; i < highs; ++i) {
@@ -258,7 +258,7 @@ int pulse_slicer_pcm(pulse_data_t const *pulses, r_device *device)
 
 int pulse_slicer_ppm(pulse_data_t const *pulses, r_device *device)
 {
-    float samples_per_us = pulses->sample_rate / 1.0e6;
+    float samples_per_us = pulses->sample_rate / 1.0e6f;
 
     int s_short = device->short_width * samples_per_us;
     int s_long  = device->long_width * samples_per_us;
@@ -337,7 +337,7 @@ int pulse_slicer_ppm(pulse_data_t const *pulses, r_device *device)
 
 int pulse_slicer_pwm(pulse_data_t const *pulses, r_device *device)
 {
-    float samples_per_us = pulses->sample_rate / 1.0e6;
+    float samples_per_us = pulses->sample_rate / 1.0e6f;
 
     int s_short = device->short_width * samples_per_us;
     int s_long  = device->long_width * samples_per_us;
@@ -450,7 +450,7 @@ int pulse_slicer_pwm(pulse_data_t const *pulses, r_device *device)
 
 int pulse_slicer_manchester_zerobit(pulse_data_t const *pulses, r_device *device)
 {
-    float samples_per_us = pulses->sample_rate / 1.0e6;
+    float samples_per_us = pulses->sample_rate / 1.0e6f;
 
     int s_short = device->short_width * samples_per_us;
     int s_long  = device->long_width * samples_per_us;
@@ -537,7 +537,7 @@ static inline int pulse_slicer_get_symbol(pulse_data_t const *pulses, unsigned i
 
 int pulse_slicer_dmc(pulse_data_t const *pulses, r_device *device)
 {
-    float samples_per_us = pulses->sample_rate / 1.0e6;
+    float samples_per_us = pulses->sample_rate / 1.0e6f;
 
     int s_short = device->short_width * samples_per_us;
     int s_long  = device->long_width * samples_per_us;
@@ -597,7 +597,7 @@ int pulse_slicer_dmc(pulse_data_t const *pulses, r_device *device)
 
 int pulse_slicer_piwm_raw(pulse_data_t const *pulses, r_device *device)
 {
-    float samples_per_us = pulses->sample_rate / 1.0e6;
+    float samples_per_us = pulses->sample_rate / 1.0e6f;
 
     int s_short = device->short_width * samples_per_us;
     int s_long  = device->long_width * samples_per_us;
@@ -618,7 +618,7 @@ int pulse_slicer_piwm_raw(pulse_data_t const *pulses, r_device *device)
     }
 
     // precision reciprocal
-    float f_short = device->short_width > 0.0 ? 1.0 / (device->short_width * samples_per_us) : 0;
+    float f_short = device->short_width > 0.0f ? 1.0f / (device->short_width * samples_per_us) : 0;
 
     int w;
 
@@ -659,7 +659,7 @@ int pulse_slicer_piwm_raw(pulse_data_t const *pulses, r_device *device)
 
 int pulse_slicer_piwm_dc(pulse_data_t const *pulses, r_device *device)
 {
-    float samples_per_us = pulses->sample_rate / 1.0e6;
+    float samples_per_us = pulses->sample_rate / 1.0e6f;
 
     int s_short = device->short_width * samples_per_us;
     int s_long  = device->long_width * samples_per_us;
@@ -715,7 +715,7 @@ int pulse_slicer_piwm_dc(pulse_data_t const *pulses, r_device *device)
 
 int pulse_slicer_nrzs(pulse_data_t const *pulses, r_device *device)
 {
-    float samples_per_us = pulses->sample_rate / 1.0e6;
+    float samples_per_us = pulses->sample_rate / 1.0e6f;
 
     int s_short = device->short_width * samples_per_us;
     int s_long  = device->long_width * samples_per_us;
@@ -775,7 +775,7 @@ int pulse_slicer_nrzs(pulse_data_t const *pulses, r_device *device)
 
 int pulse_slicer_osv1(pulse_data_t const *pulses, r_device *device)
 {
-    float samples_per_us = pulses->sample_rate / 1.0e6;
+    float samples_per_us = pulses->sample_rate / 1.0e6f;
 
     int s_short = device->short_width * samples_per_us;
     int s_long  = device->long_width * samples_per_us;

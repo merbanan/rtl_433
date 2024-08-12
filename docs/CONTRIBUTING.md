@@ -34,11 +34,11 @@ Other commit messages should follow the common format of
 Area of work is optional and may be one of the following:
 
 - `minor`: other small changes that do not warrant a changelog entry
-- `build`: for build/build system related work
+- `build`: for build / build system / ci related work
 - `docs`: for documentation related work, both in code and readme/docs folder
-- `ci`: for work related to continuous integration
 - `test`: for test related work
 - `deps`: for changes related to (external) dependencies (e.g. soapysdr is updated or mongoose is updated)
+- `examples`: for changes related to examples and scripts
 - `cosmetics`: for housekeeping work, code style changes
 
 ## Supporting Additional Devices and Test Data

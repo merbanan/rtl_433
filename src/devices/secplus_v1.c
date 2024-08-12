@@ -10,7 +10,12 @@
     (at your option) any later version.
 */
 
-/**
+/** @fn int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+Security+ 1.0 rolling code
+
+@warning This decoder is not stateless.
+@warning This decoder is dependent on elapsed time.
+
 Freq 310, 315 and 390 MHz.
 
 Security+ 1.0  is described in [US patent application US6980655B2](https://patents.google.com/patent/US6980655B2/)
@@ -97,9 +102,9 @@ Find index of next bursts/packets in bitbuffer.
 
 The transmissions do not have a magic number or preamble.
 
-They all start with a '0' or a '2'  represented at 0001. and 0111.
+They all start with a '0' or a '2' represented at 0001. and 0111.
 since all nibbles start with 0 we can look for bytes
-000 + 0001 + 0 and 000 + 0111 + 0 for the start of a transmission
+000 + 0001 + 0 and 000 + 0111 + 0 for the start of a transmission
 (or just the 0001 and 0111 at the start of a bitbuffer)
 */
 

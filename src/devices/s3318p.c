@@ -15,6 +15,8 @@ Largely the same as esperanza_ews, kedsum.
 
 Also NC-5849-913 from Pearl (for FWS-310 station).
 
+Also ST389 sensor for ORIA WA50 Wireless Digital Freezer Thermometer (no humidity)
+
 Transmit Interval: every ~50s.
 Message Format: 40 bits (10 nibbles).
 
@@ -101,8 +103,8 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "ID",           DATA_INT,    id,
             "channel",          "Channel",      DATA_INT,    channel,
             "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,
-            "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "temperature_F",    "Temperature",  DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
+            "humidity",         "Humidity",     DATA_COND,   humidity != 0, DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "button",           "Button",       DATA_INT,    button,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
@@ -125,7 +127,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const s3318p = {
-        .name        = "Conrad S3318P, FreeTec NC-5849-913 temperature humidity sensor",
+        .name        = "Conrad S3318P, FreeTec NC-5849-913 temperature humidity sensor, ORIA WA50 ST389 temperature sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1900,
         .long_width  = 3800,

@@ -20,7 +20,7 @@ endif()
 ########################################################################
 # target_compile_definitions was only added in CMake 2.8.11
 add_definitions(-D_TEST)
-foreach(testSrc bitbuffer.c fileformat.c optparse.c util.c)
+foreach(testSrc bitbuffer.c fileformat.c optparse.c bit_util.c)
     get_filename_component(testName ${testSrc} NAME_WE)
 
     add_executable(test_${testName} ../src/${testSrc})
@@ -63,6 +63,5 @@ add_test(clang-analyzer
     -Xanalyzer
     -analyzer-output=text
     -Xanalyzer
-    -analyzer-disable-checker=deadcode.DeadStores
     ${ANALYZER_CHECK_FILES})
 endif()

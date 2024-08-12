@@ -14,14 +14,15 @@
 /**
 EezTire E618 TPMS and Carchet TPMS (same protocol).
 
-Eez RV supported TPMS sensor model E618 : https://eezrvproducts.com/shop/ols/products/tpms-system-e518-anti-theft-replacement-sensor-1-ea
-Carchet TPMS: http://carchet.easyofficial.com/carchet-rv-trailer-car-solar-tpms-tire-pressure-monitoring-system-6-sensor-lcd-display-p6.html
+- Eez RV supported TPMS sensor model E618 : https://eezrvproducts.com/shop/ols/products/tpms-system-e518-anti-theft-replacement-sensor-1-ea
+- Carchet TPMS: http://carchet.easyofficial.com/carchet-rv-trailer-car-solar-tpms-tire-pressure-monitoring-system-6-sensor-lcd-display-p6.html
+- TST (Truck Systems Technologies) 507 Series TPMS : https://github.com/cterwilliger/tst_tpms
 
 The device uses OOK (ASK) encoding.
 The device sends a transmission every 1 second when quick deflation is detected, every 13 - 23 sec when quick inflation is detected, and every 4 min 40 s under steady state pressure.
 A transmission starts with a preamble of 0x0000 and the packet is sent twice.
 
-S.a issue #2384, #2657, #2063, #2677
+S.a issue #2384, #2657, #2063, #2677, #2819
 
 Data collection parameters on URH software were as follows:
     Sensor frequency: 433.92 MHz
@@ -113,7 +114,7 @@ static int tpms_eezrv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int infl_detected      = (flags1 & 0x20) >> 5; // inflating - reports every 15 - 20 sec
 
     int fast_leak      = fast_leak_detected && !infl_detected;
-    float pressure_kPa = (((flags2 & 0x01) << 8) + b[3]) * 2.5;
+    float pressure_kPa = (((flags2 & 0x01) << 8) + b[3]) * 2.5f;
 
     // Low batt = 0x8000;
     int low_batt = flags1 >> 7; // Low batt flag is MSB (activated at V < 3.15 V)(Device fails at V < 3.10 V)
@@ -159,7 +160,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const tpms_eezrv = {
-        .name        = "EezTire E618, Carchet TPMS",
+        .name        = "EezTire E618, Carchet TPMS, TST-507 TPMS",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 50,
         .long_width  = 50,

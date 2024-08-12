@@ -2,7 +2,7 @@
     Fine Offset Electronics WS90 weather station.
 
     Copyright (C) 2022 Christian W. Zuckschwerdt <zany@triq.net>
-    Protocol description by @davidefa
+    Protocol description by \@davidefa
 
     Copy of fineoffset_ws80.c with changes made to support Fine Offset WS90
     sensor array.  Changes made by John Pochmara <john@zoiedog.com>
@@ -63,7 +63,7 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t b[32];
 
     // Validate package, WS90 nominal size is 345 bit periods
-    if (bitbuffer->bits_per_row[0] < 168 || bitbuffer->bits_per_row[0] > 350) {
+    if (bitbuffer->bits_per_row[0] < 168 || bitbuffer->bits_per_row[0] > 400) {
         decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "abort length" );
         return DECODE_ABORT_LENGTH;
     }

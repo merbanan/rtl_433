@@ -164,8 +164,8 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "temperature_2_F",  "Temperature in",   DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp2_f,
             "humidity_2",       "Humidity in",      DATA_FORMAT, "%u %%", DATA_INT, humidity2,
-            "pressure_hPa",     "Pressure",         DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure * 0.1f,
-            //"rain_rate_mm_h",   "Rain Rate",        DATA_FORMAT, "%.02f mm/h", DATA_DOUBLE, rain_rate * 0.1f,
+            "pressure_hPa",     "Pressure",         DATA_FORMAT, "%.1f hPa", DATA_DOUBLE, pressure * 0.1f,
+            //"rain_rate_mm_h",   "Rain Rate",        DATA_FORMAT, "%.2f mm/h", DATA_DOUBLE, rain_rate * 0.1f,
             "rain_mm",          "Rain",             DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_tot * 0.1f,
             "wind_dir_deg",     "Wind direction",   DATA_INT,    wind_dir,
             "wind_avg_m_s",     "Wind",             DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind * 0.1f,
@@ -179,7 +179,7 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             //"battery_ok",       "Battery",          DATA_INT,    !batt_low,
             "temperature_2_F",  "Temperature in",   DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp2_f,
             "humidity_2",       "Humidity in",      DATA_FORMAT, "%u %%", DATA_INT, humidity2,
-            "pressure_hPa",     "Pressure",         DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure * 0.1f,
+            "pressure_hPa",     "Pressure",         DATA_FORMAT, "%.1f hPa", DATA_DOUBLE, pressure * 0.1f,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     }

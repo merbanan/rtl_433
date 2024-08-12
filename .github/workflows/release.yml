@@ -16,7 +16,7 @@ jobs:
     #runs-on: ubuntu-latest
     runs-on: windows-latest
     steps:
-    - uses: actions/cache@v3
+    - uses: actions/cache@v4
       id: downloads
       with:
         path: ${{ runner.workspace }}/${{ env.pothos-exe }}
@@ -34,7 +34,7 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       release_version: ${{ env.RELEASE_VERSION }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Create Release info
@@ -53,7 +53,7 @@ jobs:
         echo "RELEASE_NAME=Pre-Release ${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
         echo "PRERELEASE=true" >> $GITHUB_ENV
         ./.deploy/gen_nightly_info.sh
-    - uses: softprops/action-gh-release@v1
+    - uses: softprops/action-gh-release@v2
       id: create_release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -63,6 +63,167 @@ jobs:
         body_path: RELEASEINFO.md
         #draft: true
         prerelease: ${{ env.PRERELEASE }}
+
+  macos_build_job:
+    needs: release_job
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-12, macos-14]
+        feat: [rtlsdr, soapysdr]
+        include:
+          - os: macos-12
+            arch: x86_64
+          - os: macos-14
+            arch: arm64
+    runs-on: ${{ matrix.os }}
+    name: Build ${{ matrix.feat }} on ${{ matrix.os }} for ${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup tools
+        run: brew install librtlsdr openssl@3
+      - name: Setup SoapySDR deps
+        if: matrix.feat == 'soapysdr'
+        run: brew install soapysdr
+      - name: Configure
+        run: cmake -B build
+      - name: Build
+        run: cmake --build build
+      - name: Adjust binary to run with MacPorts or Homebrew
+        # Homebrew has x86 in /usr/local and arm64 in /opt/homebrew
+        run: >
+          install_name_tool
+          -change /opt/homebrew/opt/openssl@3/lib/libssl.3.dylib @rpath/libssl.3.dylib
+          -change /opt/homebrew/opt/openssl@3/lib/libcrypto.3.dylib @rpath/libcrypto.3.dylib
+          -change /opt/homebrew/opt/libusb/lib/libusb-1.0.0.dylib @rpath/libusb-1.0.0.dylib
+          -change /opt/homebrew/opt/librtlsdr/lib/librtlsdr.2.dylib @rpath/librtlsdr.2.dylib
+          -change /opt/homebrew/opt/soapysdr/lib/libSoapySDR.0.8.dylib @rpath/libSoapySDR.0.8.dylib
+          -change /usr/local/opt/openssl@3/lib/libssl.3.dylib @rpath/libssl.3.dylib
+          -change /usr/local/opt/openssl@3/lib/libcrypto.3.dylib @rpath/libcrypto.3.dylib
+          -change /usr/local/opt/libusb/lib/libusb-1.0.0.dylib @rpath/libusb-1.0.0.dylib
+          -change /usr/local/opt/librtlsdr/lib/librtlsdr.2.dylib @rpath/librtlsdr.2.dylib
+          -change /usr/local/opt/soapysdr/lib/libSoapySDR.0.8.dylib @rpath/libSoapySDR.0.8.dylib
+          -add_rpath /opt/homebrew/opt/openssl@3/lib
+          -add_rpath /opt/homebrew/opt/libusb/lib
+          -add_rpath /opt/homebrew/opt/librtlsdr/lib
+          -add_rpath /opt/homebrew/opt/soapysdr/lib
+          -add_rpath /usr/local/opt/openssl@3/lib
+          -add_rpath /usr/local/opt/libusb/lib
+          -add_rpath /usr/local/opt/librtlsdr/lib
+          -add_rpath /usr/local/opt/soapysdr/lib
+          -add_rpath /opt/local/libexec/openssl3/lib
+          -add_rpath /opt/local/lib
+          build/src/rtl_433
+      - name: Check final binary
+        run: otool -L build/src/rtl_433
+      - name: "Upload Release Asset"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ZIP_FILE: rtl_433-${{ matrix.feat }}-MacOS-${{ matrix.arch }}-${{ needs.release_job.outputs.release_version }}.zip
+        run: |
+          zip --junk-paths $ZIP_FILE build/src/rtl_433
+          gh release upload ${{ needs.release_job.outputs.release_version }} $ZIP_FILE
+
+  # 22.04 jammy / bookworm uses OpenSSL 3
+  # 20.04 focal / bullseye uses OpenSSL 1.1
+  native_build_job:
+    needs: release_job
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04]
+        feat: [rtlsdr, soapysdr]
+        include:
+          - os: ubuntu-20.04
+            libs: openssl11
+          - os: ubuntu-22.04
+            libs: openssl3
+    runs-on: ${{ matrix.os }}
+    name: Build ${{ matrix.feat }} on ${{ matrix.os }} for amd64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup tools
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -y --no-install-recommends cmake ninja-build
+      - name: Setup deps
+        run: |
+          sudo apt-get install -q -y librtlsdr-dev libssl-dev
+      - name: Setup SoapySDR deps
+        if: matrix.feat == 'soapysdr'
+        run: |
+          sudo apt-get install -q -y libsoapysdr-dev
+      - name: Configure
+        run: cmake -GNinja -B build
+      - name: Build
+        run: cmake --build build
+      - name: Check final binary
+        run: ldd build/src/rtl_433
+      - name: "Upload Release Asset"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ZIP_FILE: rtl_433-${{ matrix.feat }}-${{ matrix.libs }}-Linux-amd64-${{ needs.release_job.outputs.release_version }}.zip
+        run: |
+          zip --junk-paths $ZIP_FILE build/src/rtl_433
+          gh release upload ${{ needs.release_job.outputs.release_version }} $ZIP_FILE
+
+  cross_build_job:
+    needs: release_job
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04]
+        arch: [armhf, arm64]
+        feat: [rtlsdr, soapysdr]
+        include:
+          - arch: armhf
+            compiler: arm-linux-gnueabihf
+          - arch: arm64
+            compiler: aarch64-linux-gnu
+          - os: ubuntu-20.04
+            libs: openssl11
+          - os: ubuntu-22.04
+            libs: openssl3
+    runs-on: ${{ matrix.os }}
+    name: Build ${{ matrix.feat }} on ${{ matrix.os }} for ${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup tools
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -y --no-install-recommends cmake ninja-build
+      - name: Purge conflicting dev that confuse cross linking
+        run: |
+          sudo apt-get purge -y libssl-dev libusb-1.0-0-dev
+      - name: Setup compiler
+        run: |
+          sudo apt-get install -q -y gcc-${{ matrix.compiler }} g++-${{ matrix.compiler }}
+      - name: Restrict sources.list
+        run: |
+          sudo sed -i'' -E 's/^(deb|deb-src) mirror\+file/\1 [arch=amd64,i386] mirror\+file/' /etc/apt/sources.list
+      - uses: ryankurte/action-apt@v0.4.0
+        if: matrix.feat != 'soapysdr'
+        with:
+          arch: ${{ matrix.arch }}
+          packages: "librtlsdr-dev:${{ matrix.arch }} libssl-dev:${{ matrix.arch }}"
+      - uses: ryankurte/action-apt@v0.4.0
+        if: matrix.feat == 'soapysdr'
+        with:
+          arch: ${{ matrix.arch }}
+          packages: "librtlsdr-dev:${{ matrix.arch }} libssl-dev:${{ matrix.arch }} libsoapysdr-dev:${{ matrix.arch }}"
+      - name: Configure
+        run: cmake -DCMAKE_TOOLCHAIN_FILE="$(pwd)/cmake/Toolchain-${{ matrix.compiler }}.cmake" -GNinja -B build
+      - name: Build
+        run: cmake --build build
+      - name: Check final binary
+        run: ${{ matrix.compiler }}-readelf -a build/src/rtl_433 | grep "Shared library:"
+      - name: "Upload Release Asset"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ZIP_FILE: rtl_433-${{ matrix.feat }}-${{ matrix.libs }}-Linux-${{ matrix.arch }}-${{ needs.release_job.outputs.release_version }}.zip
+        run: |
+          zip --junk-paths $ZIP_FILE build/src/rtl_433
+          gh release upload ${{ needs.release_job.outputs.release_version }} $ZIP_FILE
 
   build_mingw_job:
     needs: release_job
@@ -74,32 +235,33 @@ jobs:
     runs-on: ubuntu-latest
     name: Build with Mingw-w64 on ${{ matrix.arch }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: "Install Mingw-w64"
       run: |
         sudo apt-get update -q -y
         sudo apt-get install -q -y gcc-mingw-w64-base binutils-mingw-w64-${{ matrix.arch }} gcc-mingw-w64-${{ matrix.arch }} mingw-w64-${{ matrix.arch }}-dev gcc-mingw-w64 gcc-multilib p7zip-full
+    - name: "Configure with Mingw-w64"
+      run: cmake -DCMAKE_TOOLCHAIN_FILE=cmake/Toolchain-gcc-mingw-w64-${{ matrix.arch }}.cmake -DENABLE_RTLSDR=OFF -B build
     - name: "Build with Mingw-w64"
-      env:
-        RTLSDR: OFF
-        CMAKE_TOOLCHAIN_FILE: cmake/Toolchain-gcc-mingw-w64-${{ matrix.arch }}.cmake
-      run: ./.ci/scripts/do_build.sh
+      run: cmake --build build
     - name: "Sysroot Build with Mingw-w64"
       run: ./.ci/scripts/do_sysroot.sh
     - name: "Upload Release Asset"
       if: matrix.arch == 'x86-64'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        ZIP_FILE: rtl_433-win-x64-${{ needs.release_job.outputs.release_version }}.zip
       run: |
-        mv rtl_433-win-x64.zip rtl_433-win-x64-${{ needs.release_job.outputs.release_version }}.zip
-        gh release upload ${{ needs.release_job.outputs.release_version }} rtl_433-win-x64-${{ needs.release_job.outputs.release_version }}.zip
+        mv rtl_433-win-x64.zip $ZIP_FILE
+        gh release upload ${{ needs.release_job.outputs.release_version }} $ZIP_FILE
     - name: "Upload Release Asset"
       if: matrix.arch == 'x86-64'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        ZIP_FILE: rtl_433-win-x32-${{ needs.release_job.outputs.release_version }}.zip
       run: |
-        mv rtl_433-win-x32.zip rtl_433-win-x32-${{ needs.release_job.outputs.release_version }}.zip
-        gh release upload ${{ needs.release_job.outputs.release_version }} rtl_433-win-x32-${{ needs.release_job.outputs.release_version }}.zip
+        mv rtl_433-win-x32.zip $ZIP_FILE
+        gh release upload ${{ needs.release_job.outputs.release_version }} $ZIP_FILE
 
   build_msvc_job:
     needs: [downloads_job, release_job]
@@ -119,10 +281,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.generator }} ${{ matrix.platform }} CMake (MSBuild) on ${{ matrix.os }}
     steps:
-    - run: choco install openssl
+    - run: choco install openssl --yes --no-progress
       if: matrix.platform == 'x64'
-    - uses: actions/checkout@v3
-    - uses: actions/cache@v3
+    - uses: actions/checkout@v4
+    - uses: actions/cache@v4
       id: downloads
       if: matrix.platform == 'x64'
       with:
@@ -212,41 +374,12 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GH_TOKEN: ${{ github.token }}
         GH_REPO: ${{ github.repository }}
+        ZIP_FILE: rtl_433-win-msvc-x64-${{ needs.release_job.outputs.release_version }}.zip
       shell: bash
       working-directory: ${{ runner.workspace }}
       run: |
-        mv rtl_433-win-msvc-x64.zip rtl_433-win-msvc-x64-${{ needs.release_job.outputs.release_version }}.zip
-        gh release upload ${{ needs.release_job.outputs.release_version }} rtl_433-win-msvc-x64-${{ needs.release_job.outputs.release_version }}.zip
-
-  build_linux_job:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-20.04, ubuntu-22.04]
-    runs-on: ${{ matrix.os }}
-    name: Build with CMake on ${{ matrix.os }}
-    steps:
-    - uses: actions/checkout@v3
-    - name: Install SDR
-      run: |
-        sudo apt-get update -q
-        sudo apt-get install -y librtlsdr-dev libsoapysdr-dev libssl-dev
-    - name: Get latest CMake and Ninja
-      uses: lukka/get-cmake@latest
-    - name: Run CMake+Ninja
-      uses: lukka/run-cmake@v10
-      with:
-        configurePreset: dummy
-        configurePresetCmdString: "[`-B`, `${{ runner.workspace }}/b/ninja`, `-GNinja`, `-DENABLE_RTLSDR=ON`, `-DENABLE_SOAPYSDR=ON`, `-DENABLE_OPENSSL=ON`]"
-        buildPreset: dummy
-        buildPresetCmdString: "[`--build`, `${{ runner.workspace }}/b/ninja`, `--config`, `Release`]"
-    - name: Run CMake+UnixMakefiles
-      uses: lukka/run-cmake@v10
-      with:
-        configurePreset: dummy
-        configurePresetCmdString: "[`-B`, `${{ runner.workspace }}/b/unixmakefiles`, `-GUnix Makefiles`, `-DENABLE_RTLSDR=ON`, `-DENABLE_SOAPYSDR=ON`, `-DENABLE_OPENSSL=ON`]"
-        buildPreset: dummy
-        buildPresetCmdString: "[`--build`, `${{ runner.workspace }}/b/unixmakefiles`, `--config`, `Release`]"
+        mv rtl_433-win-msvc-x64.zip $ZIP_FILE
+        gh release upload ${{ needs.release_job.outputs.release_version }} $ZIP_FILE
 
   build_arch_job:
     if: ${{ false }}  # disable for now
@@ -273,7 +406,7 @@ jobs:
             distro: buster
     name: Build on ${{ matrix.distro }} ${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: uraimo/run-on-arch-action@v2.0.8
         id: runcmd
         with:
@@ -309,11 +442,9 @@ jobs:
             uname -a
             lsb_release -sc || echo NO lsb_release
             echo Release ${{ needs.release_job.outputs.release_version }}
-            mkdir build
-            cd build
-            cmake -DCMAKE_INSTALL_PREFIX:PATH=../dist ..
-            cmake --build .
-            cmake --build . --target install
+            cmake -DCMAKE_INSTALL_PREFIX:PATH=../dist -B build
+            cmake --build build
+            cmake --build build --target install
 
       - name: Install FPM
         run: |

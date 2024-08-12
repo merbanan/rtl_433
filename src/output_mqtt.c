@@ -12,7 +12,7 @@
 // note: our unit header includes unistd.h for gethostname() via data.h
 #include "output_mqtt.h"
 #include "optparse.h"
-#include "util.h"
+#include "bit_util.h"
 #include "logger.h"
 #include "fatal.h"
 #include "r_util.h"
@@ -505,16 +505,18 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
     snprintf(client_id, sizeof(client_id), "rtl_433-%04x%04x%04x", host_crc, devq_crc, parm_crc);
 
     // default base topic
-    char base_topic[8 + sizeof(mqtt->hostname)];
-    snprintf(base_topic, sizeof(base_topic), "rtl_433/%s", mqtt->hostname);
+    char default_base_topic[8 + sizeof(mqtt->hostname)];
+    snprintf(default_base_topic, sizeof(default_base_topic), "rtl_433/%s", mqtt->hostname);
+    char const *base_topic = default_base_topic;
 
     // default topics
     char const *path_devices = "devices[/type][/model][/subtype][/channel][/id]";
     char const *path_events = "events";
     char const *path_states = "states";
 
-    char *user = NULL;
-    char *pass = NULL;
+    // get user and pass from env vars if available.
+    char *user = getenv("MQTT_USERNAME");
+    char *pass = getenv("MQTT_PASSWORD");
     int retain = 0;
     int qos = 0;
 
@@ -544,6 +546,8 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
             retain = atobv(val, 1);
         else if (!strcasecmp(key, "q") || !strcasecmp(key, "qos"))
             qos = atoiv(val, 1);
+        else if (!strcasecmp(key, "b") || !strcasecmp(key, "base"))
+            base_topic = val;
         // Simple key-topic mapping
         else if (!strcasecmp(key, "d") || !strcasecmp(key, "devices"))
             mqtt->devices = mqtt_topic_default(val, base_topic, path_devices);

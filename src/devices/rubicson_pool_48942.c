@@ -30,7 +30,7 @@ Sync pulses:
     730  730 730 730 730 730 730 730    [us]
 
 The device's transmission interval depends on the configured
-channel. The interval is 55 + <device channel> seconds.
+channel. The interval is 55 + `device channel` seconds.
 
 Data format:
     71       ba       4e       60       ba       0

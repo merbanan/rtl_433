@@ -14,7 +14,7 @@
 #include "pulse_detect_fsk.h"
 #include "pulse_data.h"
 #include "baseband.h"
-#include "util.h"
+#include "c_util.h" // for MIN(), MAX()
 #include "logger.h"
 #include "fatal.h"
 #include <stdio.h>
@@ -61,7 +61,7 @@ pulse_detect_t *pulse_detect_create(void)
         return NULL;
     }
 
-    pulse_detect_set_levels(pulse_detect, 0, 0.0, -12.1442, 9.0, 0);
+    pulse_detect_set_levels(pulse_detect, 0, 0.0f, -12.1442f, 9.0f, 0);
 
     return pulse_detect;
 }
