@@ -14,7 +14,7 @@
     The line code is a coding of the bitstream data and referred to as the Coding of the data.
 
     We however use the well known terms to refer to the combinations of this.
-    E.g. the term PWM is well known as anlog or discrete range modulation, but here used
+    E.g. the term PWM is well known as analog or discrete range modulation, but here used
     to refer to a binary Coding of bits to on and off states (or mark and space) of the carrier.
     It should be thought of as Pulse-Width-Coding, then modulated on OOK or FSK.
     I.e. it is not truly Pulse-Width-Modulation but Pulse-Width-Coding then OOK or FSK modulation.
