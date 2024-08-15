@@ -270,6 +270,7 @@
     DECL(arad_ms_meter) \
     DECL(geevon) \
     DECL(fineoffset_wh46) \
+    DECL(denso_key) \
 
     /* Add new decoders here. */
 
