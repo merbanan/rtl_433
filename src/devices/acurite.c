@@ -1671,28 +1671,26 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
-Acurite 590TX temperature/humidity sensor
+Acurite 590TX temperature/humidity sensor.
+
+The signal is OOK PPM with pulses of 500 us.
+There is a sync pulse with a 3000 us gap, then 24 bits with 500 us / 1500 us gaps.
+There is no packet gap -- the sync pulse will look like the 25th bit with 500 us gap.
+A transmission contains 14 repeats.
+
+We'll read the packet after the sync and treat the next sync as a trailing 0 bit
 
 */
 static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t *b;
-    int row;
-    int sensor_id;  // the sensor ID - basically a random number that gets reset whenever the battery is removed
-    int battery_ok; // the battery status: 1 is good, 0 is low
-    int channel;
-    int humidity;
-    int temp_raw; // temperature as read from the data packet
-    float temp_c; // temperature in C
-
-    row = bitbuffer_find_repeated_row(bitbuffer, 3, 25); // expected are min 3 rows
+    int row = bitbuffer_find_repeated_row(bitbuffer, 3, 25); // expected are min 3 rows
     if (row < 0)
         return DECODE_ABORT_EARLY;
 
     if (bitbuffer->bits_per_row[row] > 25)
         return DECODE_ABORT_LENGTH;
 
-    b = bitbuffer->bb[row];
+    uint8_t *b = bitbuffer->bb[row];
 
     if (b[4] != 0) // last byte should be zero
         return DECODE_FAIL_SANITY;
@@ -1714,23 +1712,21 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    // Processing the temperature:
-    // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
-    // upper 4 bits of nibble 1 are reserved for other usages (e.g. battery status)
-    sensor_id = b[0] & 0xFE; //first 6 bits and it changes each time it resets or change the battery
-    battery_ok = (b[0] & 0x01); //1=ok, 0=low battery
-    //next 2 bits are checksum
-    //next two bits are identify ID (maybe channel ?)
-    channel = (b[1] >> 4) & 0x03;
+    // the sensor ID - basically a random number that gets reset whenever the battery is removed
+    int sensor_id  = b[0] & 0xFE;   // first 6 bits and it changes each time it resets or change the battery
+    int battery_ok = (b[0] & 0x01); // 1=ok, 0=low battery
+    // upper 4 bits of byte 1 are parity and channel
+    int channel = (b[1] >> 4) & 0x03;
 
-    temp_raw = (int16_t)(((b[1] & 0x0F) << 12) | (b[2] << 4));
-    temp_raw = temp_raw >> 4;
-    temp_c   = (temp_raw - 500) * 0.1f; // NOTE: there seems to be a 50 degree offset?
+    // Upper 4 temperature bits are stored in byte 1, lower 8 bits are stored in byte 2
+    int temp_raw = (int16_t)(((b[1] & 0x0F) << 12) | (b[2] << 4));
+    temp_raw     = temp_raw >> 4; // sign-extend
+    float temp_c = (temp_raw - 500) * 0.1f; // a 50 degree offset
 
-    if (temp_raw >= 0 && temp_raw <= 100) // NOTE: no other way to differentiate humidity from temperature?
+    int humidity = -1;
+    if (temp_raw >= 0 && temp_raw <= 100) { // NOTE: no other way to differentiate humidity from temperature?
         humidity = temp_raw;
-    else
-        humidity = -1;
+    }
 
     /* clang-format off */
     data_t *data = data_make(
@@ -2028,12 +2024,11 @@ r_device const acurite_00275rm = {
 
 r_device const acurite_590tx = {
         .name        = "Acurite 590TX Temperature with optional Humidity",
-        .modulation  = OOK_PULSE_PPM, // OOK_PULSE_PWM,
-        .short_width = 500,           // short pulse is 232 us
-        .long_width  = 1500,          // long pulse is 420 us
-        .gap_limit   = 1484,          // long gap is 384 us, sync gap is 592 us
-        .reset_limit = 3000,          // no packet gap, sync gap is 592 us
-        .sync_width  = 500,           // sync pulse is 632 us
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 500,  // short gap is 500 us
+        .long_width  = 1500, // long gap is 1500 us
+        .gap_limit   = 2000, // (preceeding) sync gap is 3000 us
+        .reset_limit = 3500, // no packet gap, sync gap is 500 us
         .decode_fn   = &acurite_590tx_decode,
         .fields      = acurite_590_output_fields,
 };

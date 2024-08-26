@@ -99,7 +99,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const maverick_et73 = {
-        .name        = "Maverick et73",
+        .name        = "Maverick ET73",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1050,
         .long_width  = 2050,
