@@ -9,8 +9,16 @@
     (at your option) any later version.
 */
 
+#include "decoder.h"
+
 /**
 Cotech 36-7959 Weatherstation, 433Mhz.
+
+Also: SwitchDoc Labs Weather FT020T.
+Also: Sainlogic Weather Station WS019T
+Also: Sainlogic Weather Station FT0300
+Also: Ragova WiFi Weather Station FT-0310
+Also: NicetyMeter Weather Station 0366 (without Lux or UV index)
 
 OOK modulated with Manchester encoding, halfbit-width 500 us.
 Message length is 112 bit, every second time it will transmit two identical messages, packet gap 5400 us.
@@ -39,9 +47,12 @@ Message layout
 - O : 16 bit: Sunlight intensity, 0 to 200,000 lumens
 - P : 8 bit: UV index (1-15)
 - X : 8 bit: CRC, poly 0x31, init 0xc0
-*/
 
-#include "decoder.h"
+Data format:
+
+    TYPE:h ID:8h FLAGS:h WIND:8d GUST:8d DIR:8d ?:h RAIN:12d FLAGS:h TEMP:12d HUM:8d LIGHT:16d UV:8d CRC:8h
+
+*/
 
 static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -71,16 +82,12 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (r < 0) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: Couldn't find preamble\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "Couldn't find preamble");
         return DECODE_FAIL_SANITY;
     }
 
     if (crc8(b, 14, 0x31, 0xc0)) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: CRC8 fail\n", __func__);
-        }
+        decoder_log(decoder, 2, __func__, "CRC8 fail");
         return DECODE_FAIL_MIC;
     }
 
@@ -94,16 +101,19 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int wind      = (wind_msb << 8) | b[2];                       // [16:8]
     int gust      = (gust_msb << 8) | b[3];                       // [24:8]
     int wind_dir  = (deg_msb << 8) | b[4];                        // [32:8]
-    //int unk1      = (b[5] >> 4);                                  // [40:4]
+    //int rain_msb  = (b[5] >> 4);                                  // [40:4]
     int rain      = ((b[5] & 0x0f) << 8) | (b[6]);                // [44:12]
-    int flags     = (b[7] & 0xf0) >> 4;                           // [56:4]
+    //int flags     = (b[7] & 0xf0) >> 4;                           // [56:4]
     int temp_raw  = ((b[7] & 0x0f) << 8) | (b[8]);                // [60:12]
     int humidity  = (b[9]);                                       // [72:8]
-    int light_lux = (b[10] << 8) + b[11] + ((flags & 0x08) << 9); // [80:16]
+    int light_lux = (b[10] << 8) | b[11] | ((b[7] & 0x80) << 9);  // [56:1][80:16]
     int uv        = (b[12]);                                      // [96:8]
-    //int unk3      = (b[13]);                                      // [104:8]
+    //int crc       = (b[13]);                                      // [104:8]
 
     float temp_c = (temp_raw - 400) * 0.1f;
+
+    // On models without a light sensor, the value read for UV index is out of bounds with its top bits set
+    int light_is_valid = (uv <= 150); // error value seems to be 0xfb, lux would be 0xfffb
 
     /* clang-format off */
     data = data_make(
@@ -117,8 +127,8 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "wind_dir_deg",     "Wind direction",   DATA_INT,    wind_dir,
             "wind_avg_m_s",     "Wind",             DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind * 0.1f,
             "wind_max_m_s",     "Gust",             DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust * 0.1f,
-            "light_lux",        "Light Intensity",  DATA_FORMAT, "%u lux", DATA_INT, light_lux,
-            "uv",               "UV Index",         DATA_FORMAT, "%u", DATA_INT, uv,
+            "light_lux",        "Light Intensity",  DATA_COND, light_is_valid, DATA_FORMAT, "%u lux", DATA_INT, light_lux,
+            "uv",               "UV Index",         DATA_COND, light_is_valid, DATA_FORMAT, "%.1f", DATA_DOUBLE, uv * 0.1f,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -127,7 +137,7 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *cotech_36_7959_output_fields[] = {
+static char const *const cotech_36_7959_output_fields[] = {
         "model",
         //"subtype",
         "id",
@@ -144,11 +154,11 @@ static char *cotech_36_7959_output_fields[] = {
         NULL,
 };
 
-r_device cotech_36_7959 = {
-        .name        = "Cotech 36-7959 wireless weather station with USB",
+r_device const cotech_36_7959 = {
+        .name        = "Cotech 36-7959, SwitchDocLabs FT020T wireless weather station with USB",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 500,
-        .long_width  = 500,  // Not used
+        .long_width  = 0,    // not used
         .gap_limit   = 1200, // Not used
         .reset_limit = 1200, // Packet gap is 5400 us.
         .decode_fn   = &cotech_36_7959_decode,

@@ -13,7 +13,8 @@ Nexus sensor protocol with ID, temperature and optional humidity
 also FreeTec (Pearl) NC-7345 sensors for FreeTec Weatherstation NC-7344,
 also infactory/FreeTec (Pearl) NX-3980 sensors for infactory/FreeTec NX-3974 station,
 also Solight TE82S sensors for Solight TE76/TE82/TE83/TE84 stations,
-also TFA 30.3209.02 temperature/humidity sensor.
+also TFA 30.3209.02 temperature/humidity sensor,
+also Unmarked sensor form Rossmann Poland, board markings XS1043 REV02.
 
 The sensor sends 36 bits 12 times,
 the packets are ppm modulated (distance coding) with a pulse of ~500 us
@@ -63,7 +64,7 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
     // So less then 0.5% which should be acceptable.
     if ((b[0] == 0 && b[2] == 0 && b[3] == 0)
-            || ( b[0] == 0xff &&  b[2] == 0xff && b[3] == 0xFF)
+            || (b[0] == 0xff &&  b[2] == 0xff && b[3] == 0xFF)
             || rubicson_crc_check(b))
         return DECODE_ABORT_EARLY;
 
@@ -77,22 +78,22 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (humidity == 0x00) { // Thermo
         /* clang-format off */
         data = data_make(
-                "model",         "",            DATA_STRING, _X("Nexus-T","Nexus Temperature"),
-                "id",            "House Code",  DATA_INT, id,
-                "channel",       "Channel",     DATA_INT, channel,
-                "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
-                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                "model",         "",            DATA_STRING, "Nexus-T",
+                "id",            "House Code",  DATA_INT,    id,
+                "channel",       "Channel",     DATA_INT,    channel,
+                "battery_ok",    "Battery",     DATA_INT,    !!battery,
+                "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 NULL);
         /* clang-format on */
     }
     else { // Thermo/Hygro
         /* clang-format off */
         data = data_make(
-                "model",         "",            DATA_STRING, _X("Nexus-TH","Nexus Temperature/Humidity"),
-                "id",            "House Code",  DATA_INT, id,
-                "channel",       "Channel",     DATA_INT, channel,
-                "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
-                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                "model",         "",            DATA_STRING, "Nexus-TH",
+                "id",            "House Code",  DATA_INT,    id,
+                "channel",       "Channel",     DATA_INT,    channel,
+                "battery_ok",    "Battery",     DATA_INT,    !!battery,
+                "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 NULL);
         /* clang-format on */
@@ -102,17 +103,17 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "humidity",
         NULL,
 };
 
-r_device nexus = {
+r_device const nexus = {
         .name        = "Nexus, FreeTec NC-7345, NX-3980, Solight TE82S, TFA 30.3209 temperature/humidity sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1000,

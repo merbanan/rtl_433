@@ -2,11 +2,13 @@
     TFA-Twin-Plus-30.3049
     also Conrad KW9010 (perhaps just rebranded), Ea2 BL999.
 
-    Copyright (C) 2015 Paul Ortyl
+    Copyright (C) 2019 Christian W. Zuckschwerdt <zany@triq.net>
+    original implementation 2015 Paul Ortyl
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 3 as
-    published by the Free Software Foundation.
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 */
 /**
 Decode TFA-Twin-Plus-30.3049, Conrad KW9010 (perhaps just rebranded), Ea2 BL999.
@@ -32,7 +34,7 @@ Protocol as reverse engineered by https://github.com/iotzo
 
     [04] {36} e4 4b 70 73 00 : 111001000100 101101110 000 0111001 10000 ---> temp/hum:23.7/50
     temp num-->13-21bit(9bits) in reverse order in this case "011101101"=237
-    positive temps ( with 000 in bits 22-24) : temp=num/10 (in this case 23.7 C)
+    positive temps (with 000 in bits 22-24) : temp=num/10 (in this case 23.7 C)
     negative temps (with 111 in bits 22-24) : temp=(512-num)/10
     negative temps example:
     [03] {36} e4 4c 1f 73 f0 : 111001000100 110000011 111 0111001 11111 temp: -12.4
@@ -87,41 +89,42 @@ static int tfa_twin_plus_303049_callback(r_device *decoder, bitbuffer_t *bitbuff
     int battery_low   = b[1] >> 7;
     int channel       = (b[0]>>2) & 3;
 
-    float tempC = (negative_sign ? -( (1<<9) - temp ) : temp ) * 0.1F;
+    float tempC = (negative_sign ? -((1 << 9) - temp) : temp) * 0.1F;
 
+    /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, _X("TFA-TwinPlus","TFA-Twin-Plus-30.3049"),
-            "id",            "Id",          DATA_INT, sensor_id,
-            "channel",       "Channel",     DATA_INT, channel,
-            "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
+            "model",         "",            DATA_STRING, "TFA-TwinPlus",
+            "id",            "Id",          DATA_INT,    sensor_id,
+            "channel",       "Channel",     DATA_INT,    channel,
+            "battery_ok",    "Battery",     DATA_INT,    !battery_low,
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempC,
             "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
             NULL);
-    decoder_output_data(decoder, data);
+    /* clang-format on */
 
+    decoder_output_data(decoder, data);
     return 1;
 }
 
-static char *output_fields[] = {
-    "model",
-    "id",
-    "channel",
-    "battery",
-    "temperature_C",
-    "humidity",
-    "mic",
-    NULL
+static char const *const output_fields[] = {
+        "model",
+        "id",
+        "channel",
+        "battery_ok",
+        "temperature_C",
+        "humidity",
+        "mic",
+        NULL,
 };
 
-r_device tfa_twin_plus_303049 = {
-    .name          = "TFA-Twin-Plus-30.3049, Conrad KW9010, Ea2 BL999",
-    .modulation    = OOK_PULSE_PPM,
-    .short_width   = 2000,
-    .long_width    = 4000,
-    .gap_limit     = 6000,
-    .reset_limit   = 10000,
-    .decode_fn     = &tfa_twin_plus_303049_callback,
-    .disabled      = 0,
-    .fields         = output_fields
+r_device const tfa_twin_plus_303049 = {
+        .name        = "TFA-Twin-Plus-30.3049, Conrad KW9010, Ea2 BL999",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 2000,
+        .long_width  = 4000,
+        .gap_limit   = 6000,
+        .reset_limit = 10000,
+        .decode_fn   = &tfa_twin_plus_303049_callback,
+        .fields      = output_fields,
 };

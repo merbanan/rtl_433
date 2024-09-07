@@ -67,12 +67,12 @@ Data Seen:
     52315c6a 7700 565a 007b00
     52315c6a 7700 565a 007a00
 
-Removing the first 1 or 2 bits gives a prefix of 55a8aaaaaa2dd4, the leading bits are likely warmup or garbage.
+Removing the first 1 or 2 bits gives a prefix of 55a8aaaaaa2dd4, the leading bits are likely warm-up or garbage.
 
 The next bytes of 5231 5c6a 7700 are likely a serial number (id).
 
 Then we have messages with 414b or 565a or 5053 which likely is a message type.
-On 414b the two byte (little endian) power value follows. For the other types it is unknonwn, maybe kWh or state.
+On 414b the two byte (little endian) power value follows. For the other types it is unknown, maybe kWh or state.
 Lastly there is a fixed 53 (status? stop?) and a checksum byte.
 
 Interesting to note that 414b, 565a, and 53 are "AK", "VZ", and "S" which might not be a coincidence.
@@ -88,8 +88,7 @@ static int ecodhome_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t msg[13];
 
     if (bitbuffer->num_rows != 1 || bitbuffer->bits_per_row[0] < 128) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "%s: to few bits (%u)\n", __func__, bitbuffer->bits_per_row[0]);
+        decoder_logf(decoder, 2, __func__, "to few bits (%u)", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH; // unrecognized
     }
 
@@ -98,21 +97,17 @@ static int ecodhome_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     start_pos += sizeof(preamble_pattern) * 8;
 
     if (start_pos >= bitbuffer->bits_per_row[0]) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "%s: preamble not found\n", __func__);
+        decoder_log(decoder, 2, __func__, "preamble not found");
         return DECODE_ABORT_EARLY; // no preamble found
     }
     //if (start_pos + sizeof (msg) * 8 >= bitbuffer->bits_per_row[0]) {
     if (start_pos + 12 * 8 >= bitbuffer->bits_per_row[0]) {
-        if (decoder->verbose > 1)
-            fprintf(stderr, "%s: message too short (%u)\n", __func__, bitbuffer->bits_per_row[0] - start_pos);
+        decoder_logf(decoder, 2, __func__, "message too short (%u)", bitbuffer->bits_per_row[0] - start_pos);
         return DECODE_ABORT_LENGTH; // message too short
     }
 
     bitbuffer_extract_bytes(bitbuffer, 0, start_pos, msg, sizeof(msg) * 8);
-    if (decoder->verbose > 1) {
-        bitrow_printf(msg, sizeof(msg) * 8, "%s: MSG: ", __func__);
-    }
+    decoder_log_bitrow(decoder, 2, __func__, msg, sizeof(msg) * 8, "MSG");
 
     uint32_t id   = ((uint32_t)msg[0] << 24) | (msg[1] << 16) | (msg[2] << 8) | (msg[3]);
     int m_type    = (msg[4] << 8) | (msg[5]);
@@ -121,13 +116,11 @@ static int ecodhome_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (m_type == 0x7700) {
         int sum = add_bytes(msg, 11); // socket
         if ((sum & 0xff) != msg[11]) {
-            if (decoder->verbose > 1)
-                fprintf(stderr, "%s: checksum fail %02x vs %02x\n", __func__, sum, msg[9]);
+            decoder_logf(decoder, 2, __func__, "checksum fail %02x vs %02x", sum, msg[9]);
             return DECODE_FAIL_MIC;
         }
         if (msg[10] != 0x53) {
-            if (decoder->verbose > 1)
-                fprintf(stderr, "%s: wrong stop byte %02x\n", __func__, msg[10]);
+            decoder_logf(decoder, 2, __func__, "wrong stop byte %02x", msg[10]);
             return DECODE_FAIL_SANITY;
         }
         int raw     = (msg[8] << 8) | (msg[9]);
@@ -148,18 +141,15 @@ static int ecodhome_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     else {
         int sum = add_bytes(msg, 9) + 0x35; // transmitter
         if ((sum & 0xff) != msg[9]) {
-            if (decoder->verbose > 1)
-                fprintf(stderr, "%s: checksum fail %02x vs %02x\n", __func__, sum, msg[9]);
+            decoder_logf(decoder, 2, __func__, "checksum fail %02x vs %02x", sum, msg[9]);
             return DECODE_FAIL_MIC;
         }
         if (msg[10] != 0x55) {
-            if (decoder->verbose > 1)
-                fprintf(stderr, "%s: wrong stop byte %02x\n", __func__, msg[10]);
+            decoder_logf(decoder, 2, __func__, "wrong stop byte %02x", msg[10]);
             return DECODE_FAIL_SANITY;
         }
         if (msg[11] != 0x00) {
-            if (decoder->verbose > 1)
-                fprintf(stderr, "%s: wrong poststop byte %02x\n", __func__, msg[11]);
+            decoder_logf(decoder, 2, __func__, "wrong poststop byte %02x", msg[11]);
             return DECODE_FAIL_SANITY;
         }
         int raw     = (msg[6] << 16) | (msg[7] << 8) | (msg[8]);
@@ -181,7 +171,7 @@ static int ecodhome_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "message_type",
@@ -192,7 +182,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ecodhome = {
+r_device const ecodhome = {
         .name        = "EcoDHOME Smart Socket and MCEE Solar monitor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 250,

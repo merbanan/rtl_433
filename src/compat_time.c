@@ -3,22 +3,12 @@
 // issue: <sys/time.h> is not available on Windows systems
 // solution: provide a compatible version for Windows systems
 
-#ifndef _WIN32
-// Linux variant
+#include "compat_time.h"
 
-// just so the compilation unit isn't empty
-int _compat_time(void)
-{
-    return 0;
-}
-
-#else
-// Windows variant
+#ifdef _WIN32
 
 #include <stdbool.h>
 #include <stddef.h>
-
-#include "compat_time.h"
 
 #if defined(_MSC_VER) || defined(_MSC_EXTENSIONS)
 #define DELTA_EPOCH_IN_MICROSECS 11644473600000000Ui64
@@ -43,4 +33,29 @@ int gettimeofday(struct timeval *tv, void *tz)
     return 0;
 }
 
-#endif // _WIN32 / !_WIN32
+#endif // _WIN32
+
+int timeval_subtract(struct timeval *result, struct timeval const *x, struct timeval const *y)
+{
+    // Copy one input
+    struct timeval yy = *y;
+
+    // Perform the carry for the later subtraction by updating y
+    if (x->tv_usec < yy.tv_usec) {
+        int nsec = (yy.tv_usec - x->tv_usec) / 1000000 + 1;
+        yy.tv_usec -= 1000000 * nsec;
+        yy.tv_sec += nsec;
+    }
+    if (x->tv_usec - yy.tv_usec > 1000000) {
+        int nsec = (x->tv_usec - yy.tv_usec) / 1000000;
+        yy.tv_usec += 1000000 * nsec;
+        yy.tv_sec -= nsec;
+    }
+
+    // Compute the time difference, tv_usec is certainly positive
+    result->tv_sec  = x->tv_sec - yy.tv_sec;
+    result->tv_usec = x->tv_usec - yy.tv_usec;
+
+    // Return 1 if result is negative
+    return x->tv_sec < yy.tv_sec;
+}

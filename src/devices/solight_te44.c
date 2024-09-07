@@ -70,11 +70,11 @@ static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, _X("Solight-TE44","Solight TE44"),
+            "model",            "",             DATA_STRING, "Solight-TE44",
             "id",               "Id",           DATA_INT,    id,
             "channel",          "Channel",      DATA_INT,    channel + 1,
-//            "battery",          "Battery",      DATA_STRING, battery ? "OK" : "LOW",
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+//            "battery_ok",       "Battery",      DATA_INT,    !!battery,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -83,17 +83,17 @@ static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
-        //"battery",
+        //"battery_ok",
         "temperature_C",
         "mic",
         NULL,
 };
 
-r_device solight_te44 = {
+r_device const solight_te44 = {
         .name        = "Solight TE44/TE66, EMOS E0107T, NX-6876-917",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 972,  // short gap = 972 us

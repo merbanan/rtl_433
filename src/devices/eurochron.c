@@ -73,7 +73,7 @@ static int eurochron_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, "Eurochron-TH",
             "id",               "",             DATA_INT,    device,
             "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",     DATA_INT,    humidity,
             "button",           "Button",       DATA_INT,    button,
             NULL);
@@ -83,7 +83,7 @@ static int eurochron_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
@@ -93,14 +93,14 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device eurochron = {
-        .name          = "Eurochron temperature and humidity sensor",
-        .modulation    = OOK_PULSE_PPM,
-        .short_width   = 1016,
-        .long_width    = 2024,
-        .gap_limit     = 2100,
-        .reset_limit   = 8200,
-        .decode_fn     = &eurochron_decode,
-        .disabled      = 1,
-        .fields        = output_fields,
+r_device const eurochron = {
+        .name        = "Eurochron temperature and humidity sensor",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 1016,
+        .long_width  = 2024,
+        .gap_limit   = 2100,
+        .reset_limit = 8200,
+        .decode_fn   = &eurochron_decode,
+        .disabled    = 1,
+        .fields      = output_fields,
 };

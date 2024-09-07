@@ -97,18 +97,18 @@ void samp_grab_write(samp_grab_t *g, unsigned grab_len, unsigned grab_end)
     char f_name[64] = {0};
     FILE *fp;
 
-    char *format = *g->sample_size == 1 ? "cu8" : "cs16";
+    char *format = *g->sample_size == 2 ? "cu8" : "cs16";
     double freq_mhz = *g->frequency / 1000000.0;
     double rate_khz = *g->samp_rate / 1000.0;
     while (1) {
-        sprintf(f_name, "g%03u_%gM_%gk.%s", g->sg_counter, freq_mhz, rate_khz, format);
+        snprintf(f_name, sizeof(f_name), "g%03u_%gM_%gk.%s", g->sg_counter, freq_mhz, rate_khz, format);
         g->sg_counter++;
         if (access(f_name, F_OK) == -1) {
             break;
         }
     }
 
-    signal_bsize = *g->sample_size * 2 * grab_len;
+    signal_bsize = *g->sample_size * grab_len;
     signal_bsize += BLOCK_SIZE - (signal_bsize % BLOCK_SIZE);
 
     if (signal_bsize > g->sg_len) {
@@ -117,7 +117,7 @@ void samp_grab_write(samp_grab_t *g, unsigned grab_len, unsigned grab_end)
     }
 
     // relative end in bytes from current sg_index down
-    end_pos = *g->sample_size * 2 * grab_end;
+    end_pos = *g->sample_size * grab_end;
     if (g->sg_index >= end_pos)
         end_pos = g->sg_index - end_pos;
     else

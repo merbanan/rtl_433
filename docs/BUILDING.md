@@ -25,7 +25,7 @@ The usual update mechanism will now keep the rtl_433 version current.
 
 ### Fedora
 
-Fedora users (31, 32 and Rawhide) can add the following copr repository to get nightly builds:
+Fedora users (38, 39 and Rawhide) can add the following copr repository to get nightly builds:
 
     $ sudo dnf copr enable tvass/rtl_433
     $ sudo dnf install rtl_433
@@ -38,19 +38,28 @@ Depending on your system, you may need to install the following libraries.
 
 Debian:
 
-    sudo apt-get install libtool libusb-1.0-0-dev librtlsdr-dev rtl-sdr build-essential autoconf cmake pkg-config
+````
+sudo apt-get install libtool libusb-1.0-0-dev librtlsdr-dev rtl-sdr build-essential cmake pkg-config
+````
+
+* If you require TLS connections, also install `libssl-dev` (`sudo apt-get install libssl-dev`).
 
 Centos/Fedora/RHEL with EPEL repo using cmake:
 
   * If `dnf` doesn't exist, use `yum`.
+  * If you require TLS connections, install `openssl-devel`.
 
 ````
-sudo dnf install libtool libusbx-devel rtl-sdr-devel rtl-sdr cmake
+sudo dnf install libtool libusb1-devel rtl-sdr-devel rtl-sdr cmake
 ````
 
 Mac OS X with MacPorts:
 
-    sudo port install rtl-sdr cmake
+* If you require TLS connections, install `openssl` from either MacPorts or Homebrew.
+
+````
+sudo port install rtl-sdr cmake
+````
 
 Mac OS X with Homebrew:
 
@@ -58,41 +67,90 @@ Mac OS X with Homebrew:
 
 ### CMake
 
-Installation using CMake:
+Get the `rtl_433` git repository if needed:
+
+    git clone https://github.com/merbanan/rtl_433.git
+
+Installation using CMake and Make (commonly available):
 
     cd rtl_433/
-    mkdir build
-    cd build
-    cmake ..
-    make
-    make install
+    cmake -B build
+    cmake --build build --target install
+
+Installation using CMake and Ninja (newer and faster):
+
+    cd rtl_433/
+    cmake -DFORCE_COLORED_BUILD:BOOL=ON -GNinja -B build
+    cmake --build build -j 4
+    cmake --build build --target install
+
+If installing to a global prefix (e.g. the default `/usr/local`) then instead run `make install` with privileges, .i.e.
+
+    sudo cmake --build build --target install
 
 Use CMake with `-DENABLE_SOAPYSDR=ON` (default: `AUTO`) to require SoapySDR (e.g. with Debian needs the package `libsoapysdr-dev`), use `-DENABLE_RTLSDR=OFF` (default: `ON`) to disable RTL-SDR if needed.
 E.g. use:
 
     cmake -DENABLE_SOAPYSDR=ON ..
 
-### Autotools (Autoconf, Automake)
+::: tip
+If you use CMake older than 3.13 (check `cmake --version`), you need to build using e.g. `mkdir build ; cd build ; cmake .. && cmake --build .`
+:::
 
-Installation using Autotools:
+::: tip
+In CMake 3.6 or older the OpenSSL search seems broken, you need to use `cmake -DENABLE_OPENSSL=NO ..`
+:::
 
-    cd rtl_433/
-    autoreconf --install
-    ./configure
-    make
-    make install
+::: warning
+If you experience trouble with SoapySDR when compiling or running: you likely mixed version 0.7 and version 0.8 headers and libs.
+Purge all SoapySDR packages and source installation from /usr/local.
+Then install only from packages (version 0.7) or only from source (version 0.8).
+:::
 
-The final 'make install' step should be run as a user with appropriate permissions - if in doubt, 'sudo' it.
+## Package maintainers
+
+To properly configure builds without relying on automatic feature detection you should set all options explicitly, e.g.
+
+    cmake -DENABLE_RTLSDR=ON -DENABLE_SOAPYSDR=ON -DENABLE_OPENSSL=ON -DBUILD_DOCUMENTATION=OFF -DCMAKE_BUILD_TYPE=Release -GNinja -B build
+    cmake --build build -j 10
+    DESTDIR=/tmp/destdir cmake --build build --target install
 
 ## Windows
+
+### Visual Studio 2017
+
+You need [PothosSDR](https://downloads.myriadrf.org/builds/PothosSDR/) installed to get RTL-SDR and SoapySDR libraries.
+Any recent version should work, e.g. [2021.07.25-vc16](https://downloads.myriadrf.org/builds/PothosSDR/PothosSDR-2021.07.25-vc16-x64.exe).
+
+When installing PothosSDR choose "Add PothosSDR to the system PATH for the current user".
+
+For TLS support (mqtts and influxs) you need OpenSSL installed.
+E.g. [install Chocolatey](https://chocolatey.org/install) then open a Command Prompt and
+
+    choco install openssl
+
+Clone the project, e.g. open Visual Studio, change to "Team Explorer" > "Projects" > "Manage Connections" > "Clone"
+and enter `https://github.com/merbanan/rtl_433.git`
+
+If you want to change options, in the menu select "CMake" > "Change CMake Settings" > "rtl433", select e.g. "x64-Release", change e.g.
+
+    "buildRoot": "${workspaceRoot}\\build",
+    "installRoot": "${workspaceRoot}\\install",
+
+To start a build use in the menu e.g. "CMake" > "Build all"
+
+Or build at the Command Prompt without opening Visual Studio. Clone rtl_433 sources, then
+
+    cd rtl_433
+    cmake -G "Visual Studio 15 2017 Win64" -B build
+    cmake --build build
 
 ### MinGW-w64
 
 You'll probably want librtlsdr and libusb.
 
-libusb has prebuilt binaries for windows, 
-librtlsdr needs to be built (at least for the latest version, some binaries 
-of older versions seem to be floating around)
+libusb has prebuilt binaries for windows,
+librtlsdr needs to be built (or extracted from the PothosSDR installer)
 
 #### librtlsdr
 
@@ -115,7 +173,7 @@ taken and adapted from here: https://www.onetransistor.eu/2017/03/compile-librtl
 ```
 SET(CMAKE_THREAD_LIBS_INIT "-lpthread")
 SET(CMAKE_HAVE_THREADS_LIBRARY 1)
-SET(THREADS_FOUND TRUE)
+SET(Threads_FOUND TRUE)
 ```
 
 * go into the cmake/modules folder and open FindLibUSB.cmake with a text editor
@@ -140,15 +198,13 @@ SET(THREADS_FOUND TRUE)
 ```
 
 * open a MinGW terminal in the librtlsdr folder
-* create build folder and go into it: `mkdir build && cd build`
-* generate makefiles for MinGW: `cmake -G "MinGW Makefiles" ..`
-* build the librtlsdr library: `mingw32-make`
+* generate makefiles for MinGW: `cmake -G "MinGW Makefiles" -B build`
+* build the librtlsdr library: `cmake --build build`
 
 #### rtl_433
 
 * clone the rtl_433 repository and cd into it
-* create a build folder and go into it: `mkdir build && cd build`
-* run `cmake -G "MinGW Makefiles" .. ` in the build directory
+* run `cmake -G "MinGW Makefiles" -B build` in the build directory
 * run cmake-gui (this is easiest)
 * set the source (the rtl_433 source code directory) and the build directory (one might create a build directory in the source directory)
 * click configure
@@ -157,30 +213,10 @@ SET(THREADS_FOUND TRUE)
 * point the `LIBRTLSDR_INCLUDE_DIRS` to the include folder of the librtlsdr source
 * point the `LIBRTLSDR_LIBRARIES` to the `librtlsdr.dll.a` file in the <librtlsdr_source>/build/src folder
     * that's the one you've built earlier
-* start a MinGW terminal and run `mingw32-make` to build
+* start a MinGW terminal and run `cmake --build build` to build
     * when something in the tests folder doesn't build, you can disable it by commenting out `add_subdirectory(tests)` in the CMakeLists.txt file in the source folder of rtl_433
 * rtl_433.exe should be built now
 * you need to place it in the same folder as librtlsdr.dll and libusb-1.0.dll (you should have seen both of them by now)
 * good luck!
-
-### Visual Studio 2017 CMake MSBuild
-
-    cd rtl_433
-    mkdir build
-    cd build
-    cmake -G "Visual Studio 15 2017 Win64" ..
-    MSBuild.exe rtl433.sln
-
-* -or- open the `rtl433.sln`
-
-### Visual Studio 2017 supplied project/solution
-
-* Open the `rtl_433.sln` from the `vs15` folder -or-
-
-```
-cd rtl_433
-cd vs15
-MSBuild.exe rtl_433.sln
-```
 
 If your system is missing or you find these steps are outdated please PR an update or open an issue.

@@ -17,8 +17,8 @@
 #include <time.h>
 #include "compat_time.h"
 
-#if defined _MSC_VER // Microsoft Visual Studio
-    // MSC has something like C99 restrict as __restrict
+#if defined _MSC_VER || defined __cplusplus // Microsoft Visual Studio or C++ compilers (G++ is used by ESP32, ESP8266...)
+    // MSC and C++ compilers have something like C99 restrict as __restrict
     #ifndef restrict
     #define restrict  __restrict
     #endif

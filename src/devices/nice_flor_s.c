@@ -21,6 +21,9 @@ A packet is made of 52 bits (13 nibbles S0 to S12):
 - S1: retransmission count starting from 1, xored with ~S0
 - S2 and S7-S12: 28 bit encrypted serial number
 - S3-S6: 16 bits encrypted rolling code
+
+Nice One remotes repeat the Nice Flor-s protocol with 20 additional bytes:
+a packet is made of 72 bits
 */
 
 #include "decoder.h"
@@ -30,7 +33,7 @@ static int nice_flor_s_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->num_rows != 2 || bitbuffer->bits_per_row[1] != 0) {
         return DECODE_ABORT_EARLY;
     }
-    if (bitbuffer->bits_per_row[0] != 52) {
+    if (bitbuffer->bits_per_row[0] != 52 && bitbuffer->bits_per_row[0] != 72) {
         return DECODE_ABORT_LENGTH;
     }
 
@@ -60,7 +63,7 @@ static int nice_flor_s_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "button",
         "serial",
@@ -75,7 +78,7 @@ static char *output_fields[] = {
 // model     : Nice Flor-s  Button ID : 1             Serial (enc.): 56bc8d1    Code (enc.): 89f4
 // count     : 6
 
-r_device nice_flor_s = {
+r_device const nice_flor_s = {
         .name        = "Nice Flor-s remote control for gates",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 500,  // short pulse is ~500 us + ~1000 us gap

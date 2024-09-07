@@ -17,10 +17,12 @@
 void list_ensure_size(list_t *list, size_t min_size)
 {
     if (!list->elems || list->size < min_size) {
-        list->elems = realloc(list->elems, min_size * sizeof(*list->elems));
-        if (!list->elems) {
+        // the input pointer is still valid if reallocation fails
+        void *elems_realloc = realloc(list->elems, min_size * sizeof(*list->elems));
+        if (!elems_realloc) {
             FATAL_REALLOC("list_ensure_size()");
         }
+        list->elems = elems_realloc;
         list->size  = min_size;
 
         list->elems[list->len] = NULL; // ensure a terminating NULL
@@ -57,6 +59,10 @@ void list_remove(list_t *list, size_t idx, list_elem_free_fn elem_free)
     list->len--;
 }
 
+#if defined(__clang__)
+    // ignore "call to function _free through pointer to incorrect function type"
+    __attribute__((no_sanitize("undefined")))
+#endif
 void list_clear(list_t *list, list_elem_free_fn elem_free)
 {
     if (elem_free) {

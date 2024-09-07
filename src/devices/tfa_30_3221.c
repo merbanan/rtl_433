@@ -11,20 +11,22 @@
 /**
 Temperature/Humidity outdoor sensor TFA 30.3221.02.
 
+This is the same as LaCrosse-TX141THBv2 and should be merged.
+
 S.a. https://github.com/RFD-FHEM/RFFHEM/blob/master/FHEM/14_SD_WS.pm
 
     0    4    | 8    12   | 16   20   | 24   28   | 32   36
     --------- | --------- | --------- | --------- | ---------
     0000 1001 | 0001 0110 | 0001 0000 | 0000 0111 | 0100 1001
-    iiii iiii | bscc tttt | tttt tttt | hhhh hhhh | ???? ????
+    IIII IIII | BSCC TTTT | TTTT TTTT | HHHH HHHH | XXXX XXXX
 
-- i:  8 bit random id (changes on power-loss)
-- b:  1 bit battery indicator (0=>OK, 1=>LOW)
-- s:  1 bit sendmode (0=>auto, 1=>manual)
-- c:  2 bit channel valid channels are 0-2 (1-3)
-- t: 12 bit unsigned temperature, offset 500, scaled by 10
-- h:  8 bit relative humidity percentage
-- ?:  8 bit checksum digest 0x31, 0xf4
+- I:  8 bit random id (changes on power-loss)
+- B:  1 bit battery indicator (0=>OK, 1=>LOW)
+- S:  1 bit sendmode (0=>auto, 1=>manual)
+- C:  2 bit channel valid channels are 0-2 (1-3)
+- T: 12 bit unsigned temperature, offset 500, scaled by 10
+- H:  8 bit relative humidity percentage
+- X:  8 bit checksum digest 0x31, 0xf4
 
 The sensor sends 3 repetitions at intervals of about 60 seconds.
 */
@@ -45,13 +47,13 @@ static int tfa_303221_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
 
     // Checking for right number of bits per row
-    if (bitbuffer->bits_per_row[row] != 41)
+    if (bitbuffer->bits_per_row[row] > 41)
         return DECODE_ABORT_LENGTH;
 
     bitbuffer_invert(bitbuffer);
     b = bitbuffer->bb[row];
 
-    device      = b[0];
+    device = b[0];
 
     // Sanity Check
     if (device == 0)
@@ -65,7 +67,7 @@ static int tfa_303221_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     temp_raw    = ((b[1] & 0x0F) << 8) | b[2];
-    temp_c      = (float)(temp_raw - 500) * 0.1f;
+    temp_c      = (temp_raw - 500) * 0.1f;
     humidity    = b[3];
     battery_low = b[1] >> 7;
     channel     = ((b[1] >> 4) & 3) + 1;
@@ -88,7 +90,7 @@ static int tfa_303221_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
@@ -100,7 +102,7 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tfa_30_3221 = {
+r_device const tfa_30_3221 = {
         .name        = "TFA Dostmann 30.3221.02 T/H Outdoor Sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 235,
@@ -108,5 +110,6 @@ r_device tfa_30_3221 = {
         .reset_limit = 850,
         .sync_width  = 836,
         .decode_fn   = &tfa_303221_callback,
+        .priority    = 10, // This is the same as LaCrosse-TX141THBv2
         .fields      = output_fields,
 };

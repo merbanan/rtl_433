@@ -255,6 +255,7 @@ typedef int bool;
 #define snprintf _snprintf
 #define vsnprintf _vsnprintf
 #define to64(x) _atoi64(x)
+#define rmdir _rmdir
 #if !defined(__MINGW32__) && !defined(__MINGW64__)
 #define popen(x, y) _popen((x), (y))
 #define pclose(x) _pclose(x)
@@ -403,7 +404,6 @@ unsigned int sleep(unsigned int seconds);
 #include <math.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <pthread.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -3845,7 +3845,7 @@ extern "C" {
 struct mg_ssl_if_ctx;
 struct mg_connection;
 
-void mg_ssl_if_init();
+void mg_ssl_if_init(void);
 
 enum mg_ssl_if_result {
   MG_SSL_OK = 0,
@@ -4657,6 +4657,9 @@ size_t mg_fwrite(const void *ptr, size_t size, size_t count, FILE *f);
 #endif /* MG_ENABLE_FILESYSTEM */
 
 #if MG_ENABLE_THREADS
+#if CS_PLATFORM == CS_P_UNIX
+#include <pthread.h>
+#endif
 /*
  * Starts a new detached thread.
  * Arguments and semantics are the same as pthead's `pthread_create()`.

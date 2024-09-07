@@ -1,8 +1,423 @@
 # Changelog
 
-## [Unreleased]
+## Release 23.11 (2023-11-28)
 
-- GPS meta data
+### Breaking Changes
+
+- Changed conf dir defaults to just SYSCONFDIR (#2660)
+- Changed verbosity of Protocols Registered output (#1700)
+- Changed example conf file to use defaults (#2670)
+- Changed help texts to print to stdout (#2542)
+- Fixed Oregon Scientific channel renumbering, BREAKING change to THN132N channel 3 (#2033)
+- Changed MQTT client ID to contain all params (#1129)
+- Fixed GEO-minim matching, BREAKING change to id field (#2363)
+- Changed Inkbird-ITH20R temperature2_C to temperature_2_C BREAKING change (#2220)
+
+### Highlights
+
+- Added support for Schou 72543 rain sensor (#2686)
+- Added support for Bresser Lightning and Bresser Air Quality (#2698)
+- Added support for Tekelek oil gauge (#2306)
+- Added support for Nissan Leaf TPMS (#2536)
+- Added support for Carchet TPMS (#2677)
+- Added support for Bresser water leakage sensor PN: 7009975 (#2590)
+- Added support for discovering Govee water sensors to rtl_433_mqtt_hass (#2605)
+- Added support for newer Chuango DWC-102 close command (#2630)
+- Added support for TFA Stratos 30.3151 and improve Fineoffset WH1050 (#2549)
+- Added support for IROX ETS69 to Ewig Emos-TTX201 (#2547)
+- Added support for ThermoPro TX-2C (#2466)
+- Added support for Fineoffset WS90 (#2448)
+- Added support for Acurite 592TX (#2457)
+- Added support for Oregon Scientific AWR129 BBQ thermometer (#2439)
+- Added support for Celsia CZC1 (#2391)
+- Added support for Baldr/Rainpoint rain gauge (#2394)
+- Added support for EezTire-E618 TPMS10ATC (#2387)
+- Added support for LaCrosse TX31U-IT (#2386)
+- Added support for Revolt Energy Monitor NC-5462 (#2361)
+- Added support for Emax EM3551H with Gust without UV/Lux to Emax-W6 (#2376)
+- Added support for Wireless M-Bus Mode T Downlink (#2366)
+- Added support for Gasmate-BA1008 (#2359)
+- Added support for Oil-SonicSmart (#2279)
+- Added support for Watchman Sonic Advanced / Plus decoder (#2323)
+- Added support for CED7000 timer (#2319)
+- Added support for Emax Weather Sensor, improves Altronics X7064 sensor (#2300)
+- Added support for TFA Dostmann 14.1504 Radio-controlled grill and meat thermometer (#2296)
+- Added support for new revision of Govee H5054 water leak detector (#2273)
+- Added support for Vauno EN8822C (#2231)
+- Added support for WEC-2103 temperature/humidity sensor (#2185)
+- Added support for Neptune R900 flow meters (#2180)
+- Added support for SRSmith SRS-2C-TX Pool Remote Control (#2147)
+- Added support for Kia Rio III (UB) and Hyundai TPMS sensors (#2083)
+- Added support for TyreGuard 400 TPMS (#1976)
+- Added support for GEO minim+ energy monitor (#1970)
+- Added support for longer EFTH800 messages (#2278)
+- Added decoder conf for PHOX garage gate opener (#2560)
+- Added decoder conf for Driveway alarm motion sensor I8-W1901 (#2493)
+- Added decoder conf for Reolink doorbell (#2277)
+- Added decoder conf for SWETUP garage door remote (#2403)
+- Added decoder conf for ELRO AB440 remote (#2066)
+- Added decoder conf for xmas tree remote 2APJZ-CW002 (#2250)
+- Added decoder conf for GE Smartremote Plus (#2249)
+- Added standardized detect key for Govee-Water (#2625)
+- Added restartable SDR device (#2411)
+- Changed to async SDR acquire thread (#1978)
+- Changed to second Ctrl-C is a hard abort
+- Added log output, log redirect, colored KV log (#2254)
+
+### Changed
+
+- Changed rtl_433_mqtt_hass.py to use moisture class (#2726)
+- Changed rtl_433_mqtt_hass.py to add battery_mV (#2725)
+- Changed Fineoffset-WS90 packet size check (#2702)
+- Fixed logging message in HA script (#2696)
+- Added Pool/Spa Thermometer PN 7009973 note to Bresser-6in1 (#2689)
+- Added php example stream script (#2687)
+- Added checksum and battery_ok to WEC-2103 (#2662)
+- Changed version number to exclude nightly tag
+- Changed EezTire-E618 checksum, include flags (#2664)
+- Changed startup help text to the actual help page (#2659)
+- Improved some strcpy strncpy to snprintf
+- Improved all plain sprintf to snprintf
+- Fixed Somfy-IOHC length check (#2655)
+- Added warning if firewall blocks loopback (#2621)
+- Improved HA script with precipitation and wind speed class (#2643)
+- Fixed Honeywell-CM921 temperature msg (#2637)
+- Added Lidl Auriol 4-LD6313 and 4-LD5972 temperature/rain sensor (#2633)
+- Improved HA script with current class (#2626)
+- Improved handling of units within HA UI (#2624)
+- Improved HA script with detailed units (#2607)
+- Fixed HA script allow list id typo (#2602)
+- Fixed Fineoffset-WH1050 return value (#2600)
+- Fixed Inkbird-ITH20R battery_ok key and range (#2596)
+- Fixed HA script remove device name from entities (#2594)
+- Fixed HA script topics (#2593)
+- Fixed malformed json on empty row print (#2588)
+- Fixed Ecowitt-WS90 extra data output (#2585)
+- Added description of startup bit to Bresser-5in1 (#2583)
+- Fixed various spelling (#2579)
+- Added lower temp bounds to Acurite-5n1, Acurite-Atlas (#2571)
+- Added humidity_1, humidity_2 to rtl_433_mqtt_hass (#2567)
+- Added timestamp to logs in rtl_433_mqtt_hass (#2566)
+- Fixed HASS script rain_rate_mm_h typo (#2565)
+- Fixed Eurochron-EFTH800 radio_clock hour decoding (#2526)
+- Changed Fineoffset-WS90 to add firmware version (#2517)
+- Changed ThermoPro TX-2C to enable humidity (#2514)
+- Added radio clock to Fineoffset-WH1050 (#2463)
+- Added battery voltage to EcoWitt-WH40 (#2488)
+- Changed EMOS-E6016 wind speed and battery  (#2484)
+- Improved Holman ws5029, Add support for AOK-5056 and correction for Emax (#2419)
+- Fixed current frequency and sample rate info (#2468)
+- Changed rtl_433_mqtt_hass to enable passing custom topics (PR #2289)
+- Added extra digit to Oregon Scientific for AWR129 (#2446)
+- Changed Acurite 896 rain gauge to default enabled (#2430)
+- Changed CM160 output to double (#2428)
+- Fixed CM160 energy calculation factor (#2427)
+- Changed r_device.fields to constant pointer (#2421)
+- Added total energy kWh to CM160 readings (#2418)
+- Fixed Fitipower FC0012 gain quirk (#2417)
+- Added unlockable rtl_tcp control (#2412)
+- Fixed rtl_tcp for slow send buffers
+- Fixed LibreSSL PSK error (#1569)
+- Fixed Oil-SonicAdv missing messages
+- Fixed LaCrosse-R1/LaCrosse-R3 rain value (#2313)
+- Added char const check to symbolizer (#2390)
+- Fixed flowis protocol decoding, alarm and back flow parameters.
+- Changed literals to string const for strict discarded-qualifiers warnings (#2379)
+- Added Schrader 3039 TPMS for Infiniti Nissan Renault note to Schrader-SMD3MA4
+- Fixed Emax units (#2374)
+- Added TLS debug info for influxs and mqtts
+- Fixed Emax LUX decoding (#2346)
+- Fixed Vauno-EN8822C false positives (#2364)
+- Added Flowis protocol decoder (#2357)
+- Added Wireless M-Bus, Mode T Downlink (#2366)
+- Fixed out-of-bounds in Klimalogg-Pro (#2362)
+- Fixed Somfy-RTS for wrong bitrate (#2356)
+- Changed all r_device declarations to const (#2352)
+- Fixed pointer restrict for C++ compilers (#2351)
+- Fixed TFA-141504v2 decoder length check (#2339)
+- Added radio clock decode to Eurochron-EFTH800 (#2331)
+- Changed Somfy-IOHC to recognize more messages (#2258)
+- Fixed Oregon Scientific negative temp, add BCD sanity checks (#2086)
+- Added ESIC/SCMplus fields to rtl_433_mqtt_hass (#2114)
+- Changed LaCrosse TX invalid humidity handling (#2335)
+- Fixed json keys for wmbus to be unique (#2316)
+- Fixed Bresser-ProRainGauge rain digits (#2312)
+- Fixed light reading on Cotech-367959 when no sensor installed (#2305)
+- Fixed HCS200 serial ID decoding (#2308)
+- Added TLS options to InfluxDB output
+- Added output log level options (#2282)
+- Added ANSI colors for Windows 10 (#2280)
+- Fixed to use pthread compat on WIN32 always
+- Fixed battery flag in AmbientWeather-WH31E/WH31B (#2272)
+- Changed more fprintf to log prints
+- Changed fprintf to log prints (#2266)
+- Changed verbosity to match log level (#2264)
+- Added basic logger (#2263)
+- Fixed JSON output string escaping
+- Fixed Win32 thread calling convention
+- Added decode_dm flex option (#2241)
+
+## Release 22.11 (2022-11-19)
+
+### Breaking Changes
+
+- Fixed irregular model names (#1883)
+    - "Inkbird ITH-20R" -> "Inkbird-ITH20R"
+    - "LaCrosse-WS7000-27/28" -> "LaCrosse-WS700027"
+    - "LaCrosse-WS7000-22/25" -> "LaCrosse-WS700022"
+    - "LaCrosse-WS7000-16" -> "LaCrosse-WS700016"
+    - "LaCrosse-WS7000-15" -> "LaCrosse-WS700015"
+    - "LaCrosse-WS7000-20" -> "LaCrosse-WS700020"
+    - "LaCrosse-WS2500-19" -> "LaCrosse-WS250019"
+    - "Abarth 124 Spider" -> "Abarth-124Spider"
+    - "Jansite Solar" -> "Jansite-Solar"
+    - "Klimalogg Pro" -> "Klimalogg-Pro"
+    - "Secplus_v1" -> "Secplus-v1"
+    - "SCM+" -> "SCMplus"
+- Changed light_klx to light_lux in Bresser-7in1 (#2061)
+- Removed VS15 project files
+
+### Highlights
+
+- Added rtl_tcp pass-through output (#1915)
+- Added realtime replay option for file inputs
+- Added support for Badger ORION water meter (#2089)
+- Added support for Rubicson pool thermometer 48942 (#2137)
+- Added support for Fine Offset WN34 temperature sensor (#2122)
+- Added support for KS200/KS300 to ELV WS2000 (#2103)
+- Added support for Maverick XR-30 (#2090)
+- Added support for Fine Offset WH45 air quality sensor
+- Added support for HCS200/HCS300 based remotes with FSK transmitters (#2052)
+- Added support for Emos E6016 Rain Gauge (#2032)
+- Added support for ANT and ANT+ devices (#2004)
+- Added support for Altronics X7064 sensor (#2000)
+- Added support for EMOS 6016 (#1983)
+- Added support for FineOffset WS80 weather station (#1965)
+- Added support for Renault-0435R TPMS (#1924)
+- Added support for AcuRite 01190 Leak Detector (#1953)
+- Added support for Regency ceiling fans (#1948)
+- Added support for Microchip HCS300 KeeLoq remotes BREAKING CHANGE (#1752)
+- Added support for Yale HSA (#1929)
+- Added support for SimpliSafe-Gen3 (#1257)
+- Added support for AVE TPMS (#1909)
+- Added decoder conf for sgooway door detector (#1707)
+- Added decoder conf for ContinentalRemote (#2125)
+- Added decoder conf for Mondeo remote (#1282)
+- Added decoder conf for LeakDetector
+- Added decoder conf for Heatilator-Gas-Log (#1963)
+- Added decoder conf for Honeywell-Fan (#1962)
+- Added decoder conf for DrivewayAlert (#1928)
+- Added decoder conf for GhostControls (#1922)
+- Added Threads if available
+
+### Changed
+
+- Added note regarding WH51 915MHz decoding (#2236)
+- Added publish secret knocks as device automations
+- Added time, channel, and button device automation triggers
+- Improved false positives for acurite_01185m (#2214)
+- Changed rtl_433_mqtt_hass rain value template round to two digits (#2210)
+- Changed rtl_433_mqtt_hass value templates round to one digit (#2209)
+- Fixed Chuango devices with some zeroes in their ID (#2205)
+- Changed Proove/Nexa/Kaku to support Smartwares SH4-90152 (#2174)
+- Changed Acurite TXR decoder to improve validation (#2162)
+- Fixed Efergy-e2CT current above 53 Amp (#2166)
+- Added sanity check to Ambient Weather F007th (#2155)
+- Added decode symbol helper and flex option (#2161)
+- Added InFactory PT-310 support to Rubicson (#2123)
+- Added HTTP API example scripts
+- Changed rain gauge multiplier for Auriol-4LD5661 (#2129)
+- Added CSV names for flex getters with unique mode
+- Added php example script (#2087)
+- Improved Ford TPMS decoder (#2071)
+- Fixed crash when reading a conf file (#2068)
+- Changed SDR data buffers to persist valid
+- Added ERT-SCM consumption data to mqtt hass mappings (#2023)
+- Added id filter to mqtt hass (#1988)
+- Fixed overflow in Acurite-00275rm (#2012)
+- Changed the PCM/NRZ/RZ naming
+- Added cmake option to select IPv6 support
+- Fixed EMOS-6016 checksum, add DCF77
+- Added bitbuffer_find_repeated_prefix function
+- Fixed pulse reset on spurious pulses (#1982)
+- Removed confusing -G register all option
+- Changed hass script duplicate dict key 'light_lux' back to 'lux' for legacy reasons (#1989)
+- Added Honeywell-cm921 Ticker and Heat Demand commands (#1985)
+- Changed most decoder-verbose to log level
+- Changed fprintf in decoders to decoder_log
+- Added decoder log to replace bitbuffer bitrow print
+- Added decoder log to replace fprintf
+- Fixed Digitech-XC0324 humidity readings (FT-005TH Sensor) (#1971)
+- Changed wt0124 to use additional checksum (#1959)
+- Added diagnostic entity category to mqtt hass example (#1952)
+- Removed invalid "weather" device class in HASS script (#1584)
+- Added trigger stream output (#1910)
+- Changed Hideki to accept short sync (#1908)
+
+## Release 21.12 (2021-12-14)
+
+### Highlights
+
+- Added noise stats, autolevel, and squelch (#1763)
+- Added automatic file format detection from filename
+- Added support for SmartFire Proflame 2 remote control (#1905)
+- Added support for Lacrosse TX34 rain gauge (#1890)
+- Added support for Telldus-FT0385R (#1841)
+- Added support for GE Choice Alert wireless alarm sensors (#1768)
+- Added support for Porsche Boxter/Cayman TPMS
+- Added support for Funkbus/Instafunk (#1896)
+- Added support for Truck TPMS (#1893)
+- Added support for LaCrosse LTV-W1 wind sensor (#1855)
+- Added support for Auriol 4-LD5661 temperature/rain sensor (#1843)
+- Added support for Linear Megacode Remote (#1834)
+- Added support for EnOcean ERP1 decoder (#1829)
+- Added support for Acurite-01185M (#1824)
+- Added support for ATech-WS308 temperature sensor (#1605)
+- Added support for RainPoint sensor (#1781)
+- Added support for Inkbird ITH-20R
+- Added support for Clipsal CMR112 cent-a-meter power meter (#1814)
+- Added support for Govee Water Leak Detector H5054 and Govee Contact Sensor B5023 (#1653)
+- Added support for Markisol curtain remote (#1775)
+- Added support for Oregon Scientific BTHR918 (#1767)
+- Added UV index add decimals to Bresser-7in1 (#1789)
+- Changed InfluxDB output of 'mic' from field to tag (#1773)
+- Added biastee, digital_agc, direct_samp, offset_tune option for rtlsdr and rtl_tcp (#1788)
+- Added QoS to MQTT options (#1769)
+
+### Changed
+
+- Changed PCM slicer to measure bit length in more cases (#1897)
+- Added CS8 as file input format
+- Added decoder priority stages (#1895)
+- Fixed fprintf to use an unsigned marker when an unsigned value is given (#1872)
+- Added RTL_433_REDUCE_STACK_USE to reduce size of bitbuffers (#1863)
+- Fixed rainpoint msg buffer must be initialized (#1862)
+- Fixed Reduce stack use in slicers (#1860)
+- Fixed Windows CreateTimerQueueTimer alarm handle is not valid for CloseHandle (#1859)
+- Changed HASS script to logging (#1851)
+- Added SwitchDocLabs SM23 note
+- Added SwitchDocLabs F016TH note
+- Added SwitchDocLabs FT020T note
+- Fixed Inovalley-kw9015b rain bits (#1660)
+- Added battery_ok to Bresser-7in1 (#1795)
+- Added HASS long term statistics (#1835)
+- Added bitbuffer row spill
+- Updated Govee Leak Sensor with new parity check (#1810)
+- Fixed Springfield-Soil/AlectoV1 false positives
+- Fixed LaCrosse-TH3 checksum (#1398)
+- Added cmake found lib versions output
+
+## Release 21.05 (2021-05-09)
+
+### Highlights
+
+- Last release to support Autotools (autoconf, automake) builds (#1644)
+- Last release to offer "oldmodel" keys (deprecated since 2020)
+- Added Github Release builds for Windows
+- Added GPSd tags option (#1636)
+- Added optional TLS support to MQTT (#1633)
+- Added OpenSSL support for influxs TLS (#1569)
+- Added support for ELK-319DWM, Alula RE101 to Interlogix (#1711)
+- Added conf for Tesla charge port opener (#1704)
+- Added support for  Hyundai-VDO TPMS (#1643)
+- Added support for TX25U dual channel temp sensor
+- Added support for Honeywell CM921/BDR91/Evohome (#1336)
+- Added support for Auriol AFT 77 B2
+- Added support for Auriol AHFL (#1683)
+- Added support for Bresser Professional Rain Gauge (#1676)
+- Added support for TFA Marbella pool thermometer (#1675)
+- Added support for Amazon Basics Meat Thermometer (#1671)
+- Added support for Owl 180i support
+- Added support for Jansite TPMS Model Solar (#1663)
+- Added support for Cavius alarms (#1648)
+- Added support for Security plus v1 (#1483)
+- Added conf for Skylink HA-434TL motion sensor (s.a. #814)
+- Added support for Burnhard BBQ thermometer (#1624)
+- Added support for wmbus water meter Maddalena (#1610)
+- Added conf for ATC Technology LMT-430 (#1600)
+- Added support for Blueline PowerCost Monitor
+- Added conf for FAN-53T (#1588)
+- Added support for Acurite 515 fridge/freezer sensors (#1579)
+- Added support for TelFix-RadioLoop (#1571)
+- Added conf for Salus RT300RF thermostat, Heatmiser PRT-W thermostat (#1573)
+
+### Changed
+
+- Added Release build workflow
+- Added pressure_kPa key for HA (#1712)
+- Added support for ELK-319DWM, Alula RE101 to Interlogix (#1711)
+- Fixed and style Honeywell CM921
+- Added option to set force_update for all sensors (#1695)
+- Added Tesla charge port opener decoder conf (#1704)
+- Added battery flags to Bresser 7in1 (#1703)
+- Fixed Hyundai-VDO TPMS
+- Added Hyundai-VDO TPMS (#1643)
+- Added X10 Dim, Bright, All Lights ON, and All Off commands (#1687)
+- Added support for TX25U dual channel temp sensor
+- Fixed code warnings
+- Fixed code style
+- Added forgotten id
+- Added Honeywell CM921/BDR91/Evohome decoder (#1336)
+- Added Auriol AFT 77 B2 protocol decoder
+- Fixed Holman-WS5029 rain count (#1686)
+- Fixed explanation of supposed PM10 (estimated) value (#1678)
+- Added support for Auriol AHFL protocol (#1683)
+- Fixed PSI calculation for Ford TPMS
+- Added support for higher pressure range in Ford TPMS
+- Fixed secplus_v1 endless loop (#1662)
+- Fixed secplus_v1 overflow
+- Added support for some Ecowitt WH41 sensor signals
+- Added comment regarding PM10 readings in the FineOffset WH0290 decoder
+- Added support for Bresser Professional Rain Gauge (#1676)
+- Added TFA Marbella pool thermometer protocol decoder (#1675)
+- Added Amazon Basics Meat Thermometer decoder (#1671)
+- Fixed exit if http server can't start
+- Fixed missing sdr_stop for WIN32
+- Added Owl 180i support
+- Added website and sensor specifications for Jansite TPMS Model Solar (#1666)
+- Added decoder for jansite solar tpms (#1663)
+- Added Ford TPMS pressure and temperature (#1654)
+- Fixed http redirect to index for Chrome
+- Added support for Cavius alarms (#1648)
+- Added mqtt token slash accepts any character
+- Added variable fm low pass filter option
+- Added support for Security plus v1 (#1483)
+- Added GPSd tags option (#1636)
+- Added FineOffset WH0290 extra fields (#1639)
+- Fixed Hideki Gust speed by Udo Kirsten
+- Added option for multiple data tags
+- Added optional TLS support to MQTT (#1633)
+- Added OpenSSL support for influxs TLS (#1569)
+- Added LaCrosse TX141TH-Bv2 checksum
+- Changed rain field format for WS2032
+- Added m_bus decoded values + HCA (#1630)
+- Changed battery_ok, rain field for WS2032
+- Fixed m_bus Show invalid dates as invalid (#1628)
+- Fixed mqtt retain on hass script (#1602)
+- Added Skylink HA-434TL motion sensor conf (s.a. #814)
+- Added support for Burnhard BBQ thermometer (#1624)
+- Added TFA 30.3208.02 note (#1622)
+- Added raw pulse printing mode
+- Added support for parsing timedate in wbus (#1616)
+- Added Battery Level for Fineoffset WH0290 Wireless Air Quality Monitor (#1617)
+- Fixed Blueline tweaks and improvements (#1590)
+- Added support for wmbus water meter Maddalena (#1610)
+- Changed soil moisture to percent display (#1595)
+- Added ATC Technology LMT-430 conf (#1600)
+- Fixed buffer length in honeywell (#1598)
+- Fixed buffer size error (#1596)
+- Fixed FineOffset WH1050 field widths (#1592)
+- Added support for Blueline PowerCost Monitor
+- Added FAN-53T decoder conf (#1588)
+- Added support for Acurite 515 fridge/freezer sensors (#1579)
+- Fixed invalid HASS "weather" device_class (#1548)
+- Fixed rtlsdr_read_async() abort on read stall (#1581)
+- Fixed rtlsdr_set_freq_correction non-error code
+- Added support for UV index and light intensity readings in Cotech (#1575)
+- Fixed false positive bug in Nexus (#1576)
+- Added support for TelFix-RadioLoop to Somfy (#1571)
+- Added Thermostat example conf files with mqtt outputs (#1573)
+- Added lacrosse decoder sanity checks
 
 ## Release 20.11 (2020-11-13)
 
@@ -117,7 +532,7 @@
 - Added came top432 flex decoder config (#1474)
 - Fixed wmbus raw telegram output, mainly for wmbusmeters use
 - Fixed efergy_e2_classic False Trigger (#1475)
-- FIXed check manchester_decode check decoded bit length in a constent method, removed superfluous comment
+- FIXed check manchester_decode check decoded bit length in a consistent method, removed superfluous comment
 - FIXed check manchester_decode result length
 - Fixed current_cost 8 bytes required
 - Fixed TPMS Abarth124 false positive (#1466)
@@ -222,31 +637,31 @@
 - Added mic to csv output in the ert decoder
 - Added subtype to DSC (#1318)
 - Added meta to OOK output
-- Fixed json escaping (closes #1299)
+- Fixed json escaping (#1299)
 - Added ERT SCM protocol decoder
 - Added return codes for most devices
 - Changed remaining wind dir keys (see #1019)
 - Fixed optparse strtod with rounding (#1308)
 - Fixed for wmbus records parser
 - Added integrity check for Thermopro TP11 and TP12
-- Fixed conf eol comments (closes #1307)
+- Fixed conf eol comments (#1307)
 - Added config for unknown car key.
 - Fixed sync word for Honeywell CMI alarm systems
 - Fixed Wno-format-security for nixos gcc9 (#1306)
 - Fixed negative length in data_array (#1305)
 - Added native Sigrok writer (#1297)
 - Added checksum check for Rubicson 48659 meat thermometer
-- Change Updated Fan 11t conf (#1287)
-- Fixed failure on low sample rates (closes #1290)
+- Changed Updated Fan 11t conf (#1287)
+- Fixed failure on low sample rates (#1290)
 - Improved format conversions
-- Fixed radiohead-ask buffer overflow (closes #1289)
+- Fixed radiohead-ask buffer overflow (#1289)
 - Changed Enable IKEA Sparsnäs by default
 - Changed cmake build to static lib
 - Changed to newmodel keys default
 - Changed model TFA-Drop-30.3233.01 to TFA-Drop
 - Added config for Fan-11T fan remote (#1284)
 - Added preliminary EcoWitt WS68 Anemometer support (#1283)
-- Added EcoWitt WH40 support (closes #1275)
+- Added EcoWitt WH40 support (#1275)
 - Improved PCM RZ bit width detection
 - Fixed for #1114 DSC Security Contact WS4945 (#1188)
 - Fixed LaCrosse TX145wsdth repeat requirement
@@ -256,7 +671,7 @@
 - Changed flex decode to count as successful output
 - Added Nexus compatible sensor descriptions
 - Improved LaCrosse TX29-IT support (#1279)
-- Added LaCrosse TX145wsdth support (closes #1272)
+- Added LaCrosse TX145wsdth support (#1272)
 - Changed KNX-RF output
 - Added support for Lansen wmbus door/window sensor
 - Improved PCM bit period detection
@@ -278,23 +693,23 @@
 - Added Archos-TBH support (#1199)
 - Added Oregon ID_THGR810a ID_WGR800a version ids (#1258)
 - Improved OWL CM180 support (#1247)
-- Added Holman iWeather WS5029 older PWM (closes #947)
+- Added Holman iWeather WS5029 older PWM (#947)
 - Added support for FineOffset/ECOWITT WH51 (#1242)
 - Added config for 21 key remote
 - Added rtlsdr_find_tuner_gain for exact gains
 - Improved fineoffset more heuristics to separate WH65B and WH24
 - Fixed missing csv fields on default disabled
 - Improved Efergy Optical decoder (#1229)
-- Added TX-button to some decoders (closes #1205)
+- Added TX-button to some decoders (#1205)
 - Improved for TFA pool temperature sensor (#1219)
 - Added pulse analyzer support for read OOK data (#1216)
 - Fixed ook input support bug from a9de888 (#1215)
-- Fixed missing hop_time when reading file (closes #1211)
+- Fixed missing hop_time when reading file (#1211)
 - Fixed Acurite 899 rain_mm conversion value (#1203)
-- Fixed build files (closes #1201)
+- Fixed build files (#1201)
 - Added more input format validation
 - Changed FSK pulse detector mode option
-- Fixed overlong msg in Radiohead (closes #1190)
+- Fixed overlong msg in Radiohead (#1190)
 - Added optional CSA checker to tests
 - Added InfluxDB output (#1192)
 - Fixed Hondaremote for missing first bit
@@ -331,7 +746,7 @@
 - Fixed Acurite 899 rain_mm format (#1154)
 - Added gt_tmbbq05 parity check
 - Changed GT-WT-03 added checksum (#1149)
-- Change Updated QUIGG GT-TMBBQ-05 with MIC
+- Changed Updated QUIGG GT-TMBBQ-05 with MIC
 - Changed GT-TMBBQ-05 added ID, finetuned pulse lengths (#1152)
 - Added Sonoff RM433 conf example (#1150)
 - Added support for Globaltronics GT-WT-03 (#1149)

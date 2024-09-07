@@ -42,42 +42,40 @@ static int fordremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             continue; // DECODE_ABORT_EARLY
         }
 
-        if (decoder->verbose) {
-            bitbuffer_print(bitbuffer);
-        }
+        decoder_log_bitbuffer(decoder, 1, __func__, bitbuffer, "");
 
-        bytes = bitbuffer->bb[i];
-        device_id = (bytes[0]<<16) | (bytes[1]<<8) | bytes[2];
-        code = bytes[7];
+        bytes     = bitbuffer->bb[i];
+        device_id = (bytes[0] << 16) | (bytes[1] << 8) | bytes[2];
+        code      = bytes[7];
 
-        /* Get time now */
+        /* clang-format off */
         data = data_make(
-                "model",    "model",    DATA_STRING, _X("Ford-CarRemote","Ford Car Remote"),
-                "id",       "device-id",    DATA_INT, device_id,
-                "code",     "data",     DATA_INT, code,
+                "model",    "model",        DATA_STRING, "Ford-CarRemote",
+                "id",       "device-id",    DATA_INT,    device_id,
+                "code",     "data",         DATA_INT,    code,
                 NULL);
         decoder_output_data(decoder, data);
+        /* clang-format on */
 
         found++;
     }
     return found;
 }
 
-static char *output_fields[] = {
-    "model",
-    "id",
-    "code",
-    NULL
+static char const *const output_fields[] = {
+        "model",
+        "id",
+        "code",
+        NULL,
 };
 
-r_device fordremote = {
-    .name           = "Ford Car Key",
-    .modulation     = OOK_PULSE_DMC,
-    .short_width    = 250,  // half-bit width is 250 us
-    .long_width     = 500,  // bit width is 500 us
-    .reset_limit    = 4000, // sync gap is 3500 us, preamble gap is 38400 us, packet gap is 52000 us
-    .tolerance      = 50,
-    .decode_fn      = &fordremote_callback,
-    .disabled       = 0,
-    .fields         = output_fields
+r_device const fordremote = {
+        .name        = "Ford Car Key",
+        .modulation  = OOK_PULSE_DMC,
+        .short_width = 250,  // half-bit width is 250 us
+        .long_width  = 500,  // bit width is 500 us
+        .reset_limit = 4000, // sync gap is 3500 us, preamble gap is 38400 us, packet gap is 52000 us
+        .tolerance   = 50,
+        .decode_fn   = &fordremote_callback,
+        .fields      = output_fields,
 };

@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdlib.h>
 #ifndef _WIN32
 #include <unistd.h>
 #include <sys/ioctl.h>
@@ -20,10 +21,10 @@
 #include "term_ctl.h"
 
 #ifdef _WIN32
-#include <stdlib.h>
 #include <io.h>
 #include <limits.h>
 #include <windows.h>
+#include <lm.h>
 
 #ifndef STDOUT_FILENO
 #define STDOUT_FILENO   1
@@ -40,6 +41,7 @@
 typedef struct console {
     CONSOLE_SCREEN_BUFFER_INFO info;
     BOOL                       redirected;
+    BOOL                       ansi;
     HANDLE                     hnd;
     FILE                      *file;
     WORD                       fg, bg;
@@ -47,11 +49,12 @@ typedef struct console {
 
 static WORD _term_get_win_color(BOOL fore, term_color_t color)
 {
+    // applies intensity only on foreground,
+    // i.e. background will fallback to dim
     switch (color) {
        case TERM_COLOR_RESET: /* Cannot occur; just to suppress a warning */
             break;
        case TERM_COLOR_BLACK:
-       case TERM_COLOR_BRIGHT_BLACK:
             return (0);
        case TERM_COLOR_BLUE:
             return (1);
@@ -67,20 +70,22 @@ static WORD _term_get_win_color(BOOL fore, term_color_t color)
             return (6);
        case TERM_COLOR_WHITE:
             return (7);
+       case TERM_COLOR_BRIGHT_BLACK:
+            return (fore ? 0 + FOREGROUND_INTENSITY : 0);
        case TERM_COLOR_BRIGHT_BLUE:
-            return (1 + FOREGROUND_INTENSITY);
+            return (fore ? 1 + FOREGROUND_INTENSITY : 1);
        case TERM_COLOR_BRIGHT_GREEN:
-            return (2 + FOREGROUND_INTENSITY);
+            return (fore ? 2 + FOREGROUND_INTENSITY : 2);
        case TERM_COLOR_BRIGHT_CYAN:
-            return (3 + FOREGROUND_INTENSITY);
+            return (fore ? 3 + FOREGROUND_INTENSITY : 3);
        case TERM_COLOR_BRIGHT_RED:
-            return (4 + FOREGROUND_INTENSITY);
+            return (fore ? 4 + FOREGROUND_INTENSITY : 4);
        case TERM_COLOR_BRIGHT_MAGENTA:
-            return (5 + FOREGROUND_INTENSITY);
+            return (fore ? 5 + FOREGROUND_INTENSITY : 5);
        case TERM_COLOR_BRIGHT_YELLOW:
-            return (6 + FOREGROUND_INTENSITY);
+            return (fore ? 6 + FOREGROUND_INTENSITY : 6);
        case TERM_COLOR_BRIGHT_WHITE:
-            return (7 + FOREGROUND_INTENSITY);
+            return (fore ? 7 + FOREGROUND_INTENSITY : 7);
     }
     fprintf(stderr,"FATAL: No mapping for TERM_COLOR_x=%d (fore: %d)\n", color, fore);
     return (0);
@@ -100,7 +105,8 @@ static void _term_set_color(console_t *console, BOOL fore, term_color_t color)
     else if (fore) {
         console->fg = _term_get_win_color(TRUE, color);
     }
-    else if (color <= TERM_COLOR_WHITE) {
+    else if (color <= TERM_COLOR_WHITE ||
+            (color >= TERM_COLOR_BRIGHT_BLACK && color <= TERM_COLOR_BRIGHT_WHITE)) {
         console->bg = 16 * _term_get_win_color(FALSE, color);
     }
     else
@@ -160,6 +166,33 @@ static void *_term_init(FILE *fp)
                          (!GetConsoleScreenBufferInfo(console->hnd, &console->info)) ||
                          (GetFileType(console->hnd) != FILE_TYPE_CHAR);
 
+    // Test for Windows 10 to enable ANSI output, needs netapi32.dll
+    LPWKSTA_INFO_100 pBuf = NULL;
+    NET_API_STATUS nStatus;
+    nStatus = NetWkstaGetInfo(NULL, 100, (LPBYTE *)&pBuf);
+    if (nStatus == NERR_Success) {
+        console->ansi = (pBuf->wki100_platform_id == 500) && (pBuf->wki100_ver_major >= 10);
+    }
+    if (pBuf != NULL) {
+        NetApiBufferFree(pBuf);
+    }
+
+    // Windows 10 version 1511 added ANSI filters to cmd and terminal.
+    // To use ANSI colors in Windows versions 1511 to 1903 requires setting VirtualTerminalLevel
+    // by calling the SetConsoleMode API with the ENABLE_VIRTUAL_TERMINAL_PROCESSING flag.
+    // ANSI colors are available by default in Windows version 1909 or newer
+    if (console->ansi) {
+        DWORD dwMode = 0;
+        GetConsoleMode(console->hnd, &dwMode);
+        dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+        SetConsoleMode(console->hnd, dwMode);
+        // Check if it worked, it will fail for Legacy console-mode
+        GetConsoleMode (console->hnd, &dwMode);
+        if (!(dwMode & ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+            console->ansi = 0;
+        }
+    }
+
     _term_set_color(console, FALSE, TERM_COLOR_RESET); /* Set 'console->fg' and 'console->bg' */
 
     return console;
@@ -190,13 +223,58 @@ int term_get_columns(void *ctx)
 #endif
 }
 
+/**
+Returns wether the environment suggests a dark or light
+terminal background.
+
+Our default color theme is for dark backgrounds.
+
+Check the COLORFGBG environment variable, which should
+be 15;0 for a dark theme and 0;15 for a light theme.
+
+If the last value is 7 or 9 to 15 then assume a light theme.
+
+@return 1 if a light background was detected, 0 for a dark background otherwise
+*/
+static int term_get_bg(void)
+{
+    char const *colorfgbg = getenv("COLORFGBG");
+    if (!colorfgbg) {
+        return 0; // default dark theme
+    }
+    char *p = strrchr(colorfgbg, ';');
+    if (!p) {
+        return 0; // default dark theme
+    }
+
+    // Check if the last value is 7 or 9 to 15.
+    if (p[1] == '7' || p[1] == '9'
+            || (p[1] == '1' && p[2] != '\0')) {
+        return 1; // light theme
+    }
+    return 0; // dark theme
+}
+
 int term_has_color(void *ctx)
 {
 #ifdef _WIN32
     return _term_has_color(ctx);
 #else
+    char const *color = getenv("RTL433_COLOR");
+    if (color && strcmp(color, "always") == 0) {
+        return 1;
+    }
+    if (color && strcmp(color, "never") == 0) {
+        return 0;
+    }
+
+    char const *no_color = getenv("NO_COLOR");
+    if (no_color && no_color[0] != '\0') {
+        return 0;
+    }
+
     FILE *fp = (FILE *)ctx;
-    return isatty(fileno(fp)); // || get_env("force_color")
+    return isatty(fileno(fp));
 #endif
 }
 
@@ -235,28 +313,74 @@ void term_ring_bell(void *ctx)
 
 void term_set_fg(void *ctx, term_color_t color)
 {
+    // Cache the detected terminal background color
+    static int light_bg = -1;
+    if (light_bg == -1) {
+        light_bg = term_get_bg();
+    }
+
 #ifdef _WIN32
-   _term_set_color(ctx, TRUE, color);
+    console_t *console = (console_t *)ctx;
+    if (!console->ansi) {
+        _term_set_color(ctx, TRUE, color);
+        return;
+    }
+    FILE *fp = console->file;
 #else
     FILE *fp = (FILE *)ctx;
-    if (color == TERM_COLOR_RESET)
-        fprintf(fp, "\033[0m");
-    else
-        fprintf(fp, "\033[%d;1m", color);
 #endif
+    if (color == TERM_COLOR_RESET) {
+        fprintf(fp, "\033[0m");
+    }
+    else if (light_bg) {
+        fprintf(fp, "\033[%dm", color); // normal colors on light backgrounds
+    }
+    else {
+        fprintf(fp, "\033[%d;1m", color); // bright/bold colors on dark backgrounds
+    }
 }
 
-void term_set_bg(void *ctx, term_color_t color)
+void term_set_bg(void *ctx, term_color_t bg, term_color_t fg)
 {
+    // Cache the detected terminal background color
+    static int light_bg = -1;
+    if (light_bg == -1) {
+        light_bg = term_get_bg();
+    }
+    if (light_bg && fg >= TERM_COLOR_BRIGHT_BLACK && fg <= TERM_COLOR_BRIGHT_WHITE) {
+        fg -= 60; // remove bright/bold foreground on light backgrounds
+    }
+
+    if (bg < TERM_COLOR_BLACK
+            || (bg > TERM_COLOR_WHITE && bg < TERM_COLOR_BRIGHT_BLACK)
+            || bg > TERM_COLOR_BRIGHT_WHITE) {
+        bg = 0;
+    }
+    if (fg < TERM_COLOR_BLACK
+            || (fg > TERM_COLOR_WHITE && fg < TERM_COLOR_BRIGHT_BLACK)
+            || fg > TERM_COLOR_BRIGHT_WHITE) {
+        fg = 0;
+    }
+
 #ifdef _WIN32
-    _term_set_color(ctx, FALSE, color);
+    console_t *console = (console_t *)ctx;
+    if (!console->ansi) {
+        if (bg)
+            _term_set_color(ctx, FALSE, bg);
+        if (fg)
+            _term_set_color(ctx, TRUE, fg);
+        return;
+    }
+    FILE *fp = console->file;
 #else
     FILE *fp = (FILE *)ctx;
-    if (color == TERM_COLOR_RESET)
-        fprintf(fp, "\033[0m");
-    else
-        fprintf(fp, "\033[%d;1m", color + 10);
 #endif
+    if (bg && fg)
+        fprintf(fp, "\033[%d;%dm", bg + 10, fg);
+    else if (bg)
+        fprintf(fp, "\033[%dm", bg + 10);
+    else if (fg)
+        fprintf(fp, "\033[%dm", fg);
 }
 
 #define DIM(array) (int) (sizeof(array) / sizeof(array[0]))
@@ -328,7 +452,7 @@ int term_puts(void *ctx, char const *buf)
     return len;
 }
 
-int term_printf(void *ctx, char const *format, ...)
+int term_printf(void *ctx, _Printf_format_string_ char const *format, ...)
 {
     int len;
     va_list args;
@@ -344,14 +468,17 @@ int term_printf(void *ctx, char const *format, ...)
     return len;
 }
 
-int term_help_puts(void *ctx, char const *buf)
+int term_help_fputs(void *ctx, char const *buf, FILE *fp)
 {
     char const *p = buf;
     int i, len, buf_len, color, state = 0, set_color = -1, next_color = -1;
-    FILE *fp;
+    if (!fp) {
+        fp = stderr;
+    }
 
-    if (!ctx)
-        return fprintf(stderr, "%s", buf);
+    if (!ctx) {
+        return fprintf(fp, "%s", buf);
+    }
 
 #ifdef _WIN32
     console_t *console = (console_t *)ctx;
@@ -359,9 +486,6 @@ int term_help_puts(void *ctx, char const *buf)
 #else
     fp = (FILE *)ctx;
 #endif
-
-    if (!fp)
-        fp = stderr;
 
     buf_len = (int)strlen(buf);
     for (i = len = 0; *p && i < buf_len; i++, p++) {
@@ -377,7 +501,7 @@ int term_help_puts(void *ctx, char const *buf)
             state = 1;
             next_color = 5;
         }
-        else if ((state == 1 || state == 2) && *p == ']' && (p[1] == ' ' || p[1] == '\n' || p[1] == '\0')) {
+        else if ((state == 1 || state == 2) && *p == ']' && (p[1] == ',' || (p[1] == ' ' && p[2] != '|') || p[1] == '\n' || p[1] == '\0')) {
             state = 0;
             set_color = 0;
         }
@@ -431,7 +555,7 @@ int term_help_puts(void *ctx, char const *buf)
     return len;
 }
 
-int term_help_printf(char const *format, ...)
+int term_help_fprintf(FILE *fp, _Printf_format_string_ char const *format, ...)
 {
     int len;
     va_list args;
@@ -439,7 +563,7 @@ int term_help_printf(char const *format, ...)
 
     va_start(args, format);
 
-    void *term = term_init(stderr);
+    void *term = term_init(fp);
     if (!term_has_color(term)) {
         term_free(term);
         term = NULL;
@@ -448,7 +572,7 @@ int term_help_printf(char const *format, ...)
     // Terminate first in case a buggy '_MSC_VER < 1900' is used.
     buf[sizeof(buf) - 1] = '\0';
     vsnprintf(buf, sizeof(buf) - 1, format, args);
-    len = term_help_puts(term, buf);
+    len = term_help_fputs(term, buf, fp);
 
     term_free(term);
 

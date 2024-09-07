@@ -34,6 +34,7 @@ typedef SSIZE_T ssize_t;
 
 #include <time.h>
 
+#include "fatal.h"
 #include "baseband.h"
 
 #define MEASURE(label, block)                                              \
@@ -45,7 +46,7 @@ typedef SSIZE_T ssize_t;
         printf("Time elapsed in ms: %f for: %s\n", elapsed, label);        \
     } while (0)
 
-int read_buf(const char *filename, void *buf, size_t nbyte)
+static int read_buf(const char *filename, void *buf, size_t nbyte)
 {
     int fd = open(filename, O_RDONLY);
     if (fd < 0) {
@@ -57,7 +58,7 @@ int read_buf(const char *filename, void *buf, size_t nbyte)
     return ret;
 }
 
-int write_buf(const char *filename, const void *buf, size_t nbyte)
+static int write_buf(const char *filename, const void *buf, size_t nbyte)
 {
     int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0) {
@@ -94,6 +95,9 @@ int main(int argc, char *argv[])
     filename = argv[1];
 
     cu8_buf  = malloc(sizeof(uint8_t) * 2 * max_block_size);
+    if (!cu8_buf) {
+        FATAL_MALLOC("main()");
+    }
     n_read = read_buf(filename, cu8_buf, sizeof(uint8_t) * 2 * max_block_size);
     if (n_read < 1) {
         free(cu8_buf);
@@ -101,12 +105,33 @@ int main(int argc, char *argv[])
     }
 
     y16_buf  = malloc(sizeof(uint16_t) * max_block_size);
+    if (!y16_buf) {
+        FATAL_MALLOC("main()");
+    }
     cs16_buf = malloc(sizeof(int16_t) * 2 * max_block_size);
+    if (!cs16_buf) {
+        FATAL_MALLOC("main()");
+    }
     y32_buf  = malloc(sizeof(uint32_t) * max_block_size);
+    if (!y32_buf) {
+        FATAL_MALLOC("main()");
+    }
     u16_buf  = malloc(sizeof(uint16_t) * max_block_size);
+    if (!u16_buf) {
+        FATAL_MALLOC("main()");
+    }
     u32_buf  = malloc(sizeof(uint32_t) * max_block_size);
+    if (!u32_buf) {
+        FATAL_MALLOC("main()");
+    }
     s16_buf  = malloc(sizeof(int16_t) * max_block_size);
+    if (!s16_buf) {
+        FATAL_MALLOC("main()");
+    }
     s32_buf  = malloc(sizeof(int32_t) * max_block_size);
+    if (!s32_buf) {
+        FATAL_MALLOC("main()");
+    }
 
     n_samples = n_read / (sizeof(uint8_t) * 2);
 
@@ -135,7 +160,7 @@ int main(int argc, char *argv[])
     );
     write_buf("bb.lp.am.s16", u16_buf, sizeof(int16_t) * n_samples);
     MEASURE("baseband_demod_FM",
-        baseband_demod_FM(cu8_buf, s16_buf, n_samples, &fm_state, 0);
+        baseband_demod_FM(cu8_buf, s16_buf, n_samples, 250000, 0.1f, &fm_state);
     );
     write_buf("bb.fm.s16", s16_buf, sizeof(int16_t) * n_samples);
 
@@ -161,7 +186,7 @@ int main(int argc, char *argv[])
     //write_buf("bb.fm.s32", s32_buf, sizeof(int32_t) * n_samples);
 
     MEASURE("baseband_demod_FM_cs16",
-        baseband_demod_FM_cs16(cs16_buf, s16_buf, n_samples, &fm_state, 0);
+        baseband_demod_FM_cs16(cs16_buf, s16_buf, n_samples, 250000, 0.1f, &fm_state);
     );
     write_buf("bb.cs16.fm.s16", s16_buf, sizeof(int16_t) * n_samples);
 

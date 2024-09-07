@@ -14,6 +14,9 @@
 
 #include <stdint.h>
 
+#define SDR_DEFAULT_BUF_NUMBER 15
+#define SDR_DEFAULT_BUF_LENGTH 0x40000
+
 typedef struct sdr_dev sdr_dev_t;
 
 typedef enum sdr_event_flags {
@@ -40,14 +43,17 @@ typedef void (*sdr_event_cb_t)(sdr_event_t *ev, void *ctx);
 /** Find the closest matching device, optionally report status.
 
     @param out_dev device output returned
-    @param sample_size stream output sample width returned
     @param dev_query a string to be parsed as device spec
     @param verbose the verbosity level for reports to stderr
     @return dev 0 if successful
 */
-int sdr_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose);
+int sdr_open(sdr_dev_t **out_dev, char const *dev_query, int verbose);
 
 /** Close the device.
+
+    @note
+    All previous sdr_event_t buffers will be invalid after calling sdr_close().
+    Make sure none are in use anymore.
 
     @param dev the device handle
     @return 0 on success
@@ -60,6 +66,20 @@ int sdr_close(sdr_dev_t *dev);
     @return JSON device info string
 */
 char const *sdr_get_dev_info(sdr_dev_t *dev);
+
+/** Get sample size.
+
+    @param dev the device handle
+    @return Sample size of I/Q elements in bytes (CU8: 2, CS16: 4, ...)
+*/
+int sdr_get_sample_size(sdr_dev_t *dev);
+
+/** Get sample signedness.
+
+    @param dev the device handle
+    @return 1 if the samples are signed (CS8, CS16, ...), 0 otherwise (CU8, ...)
+*/
+int sdr_get_sample_signed(sdr_dev_t *dev);
 
 /** Set device frequency, optionally report status.
 
@@ -159,7 +179,35 @@ int sdr_deactivate(sdr_dev_t *dev);
 */
 int sdr_reset(sdr_dev_t *dev, int verbose);
 
-int sdr_start(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len);
+/** Start the SDR data acquisition.
+
+    @note
+    All previous sdr_event_t buffers will be invalid if @p buf_num or @p buf_len changed.
+    Make sure none are in use anymore.
+
+    @param dev the device handle
+    @param async_cb a callback for sdr_event_t messages
+    @param async_ctx a user context to be passed to @p async_cb
+    @param buf_num the number of buffers to keep
+    @param buf_len the size in bytes of each buffer
+    @return 0 on success
+*/
+int sdr_start(sdr_dev_t *dev, sdr_event_cb_t async_cb, void *async_ctx, uint32_t buf_num, uint32_t buf_len);
+int sdr_start_sync(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len);
+
+/** Stop the SDR data acquisition.
+
+    @note
+    All previous sdr_event_t buffers will remain valid until sdr_close().
+
+    @param dev the device handle
+    @return 0 on success
+*/
 int sdr_stop(sdr_dev_t *dev);
+int sdr_stop_sync(sdr_dev_t *dev);
+
+/** Redirect SoapySDR library logging.
+*/
+void sdr_redirect_logging(void);
 
 #endif /* INCLUDE_SDR_H_ */

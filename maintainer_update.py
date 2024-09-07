@@ -76,7 +76,7 @@ def parse_devices(devices_text):
     devices = []
     for line in devices_text.splitlines():
         # match the [123] device number
-        device_info = re.search("\[(\d{1,5})\](.) (.*)", line)
+        device_info = re.search(r'\[(\d{1,5})\](.) (.*)', line)
         if not device_info:
             continue
         device_number = int(device_info.group(1).strip(), base=10)
@@ -130,13 +130,6 @@ repl = '\n    ' + ('\n    '.join(repl)) + '\n'
 replace_block(r'add_library\(r_433 STATIC$',
               r'^\)', repl, 'src/CMakeLists.txt')
 
-# src/Makefile.am
-# replace everything between 'rtl_433_SOURCES = ' and \n\n with *.c and devices/*.c from src
-repl = src_files + device_files
-repl = (' \\\n                       '.join(repl)) + '\n'
-replace_block(r'rtl_433_SOURCES      = ',
-              r'^$', repl, 'src/Makefile.am')
-
 # include/rtl_433.h
 # update '#define MAX_PROTOCOLS ?' with actual count
 #replace_text(r'(?m)(#define\s+MAX_PROTOCOLS\s+)\d+',
@@ -145,45 +138,6 @@ replace_block(r'rtl_433_SOURCES      = ',
 # include/rtl_433_devices.h
 # check that everything between '#define DEVICES' and \n\n with DECL(device_name) matches r_devices
 # TODO: implement the check...
-
-# vs15/rtl_433.vcxproj
-#  <ItemGroup>
-#    <ClInclude Include="..\include\baseband.h" />
-#    ...
-#  </ItemGroup>
-repl = (r'" />\n    <ClInclude Include="..\\include\\'.join(include_files))
-replace_block(r'^  <ItemGroup>\n    <ClInclude Include="..\\include\\',
-              r'" />\n    <ClInclude Include="..\\src\\getopt', repl, 'vs15/rtl_433.vcxproj')
-#  <ItemGroup>
-#    <ClCompile Include="..\src\baseband.c" />
-#    ...
-#  </ItemGroup>
-repl = src_files + device_files
-repl = [p.replace('/', r'\\') for p in repl]
-repl = (r'" />\n    <ClCompile Include="..\\src\\'.join(repl))
-replace_block(r'^  <ItemGroup>\n    <ClCompile Include="..\\src\\',
-              r'" />\n    <ClCompile Include="..\\src\\getopt', repl, 'vs15/rtl_433.vcxproj')
-
-# vs15/rtl_433.vcxproj.filters
-#  <ItemGroup>
-#    <ClInclude Include="..\include\baseband.h">
-#      <Filter>Header Files</Filter>
-#    </ClInclude>
-#    ...
-#  </ItemGroup>
-# "Header Files"
-repl = (r'">\n      <Filter>Header Files</Filter>\n    </ClInclude>\n    <ClInclude Include="..\\include\\'.join(include_files))
-replace_block(r'^  <ItemGroup>\n    <ClInclude Include="..\\include\\',
-              r'">\n      <Filter>Header Files</Filter>\n    </ClInclude>\n    <ClInclude Include="..\\src\\getopt', repl, 'vs15/rtl_433.vcxproj.filters')
-# "Source Files"
-repl = (r'">\n      <Filter>Source Files</Filter>\n    </ClCompile>\n    <ClCompile Include="..\\src\\'.join(src_files))
-replace_block(r'^  <ItemGroup>\n    <ClCompile Include="..\\src\\',
-              r'">\n      <Filter>Source Files</Filter>\n    </ClCompile>\n    <ClCompile Include="..\\src\\getopt', repl, 'vs15/rtl_433.vcxproj.filters')
-# "Source Files\devices"
-repl = [p.replace('devices/', '') for p in device_files]
-repl = (r'">\n      <Filter>Source Files\\devices</Filter>\n    </ClCompile>\n    <ClCompile Include="..\\src\\devices\\'.join(repl))
-replace_block(r'^    <ClCompile Include="..\\src\\devices\\',
-              r'">\n      <Filter>Source Files\\devices</Filter>\n    </ClCompile>\n  </ItemGroup>', repl, 'vs15/rtl_433.vcxproj.filters')
 
 if (not os.path.isfile("./build/src/rtl_433")):
     print("\nWARNING: rtl_433 binary not found: skipping README/man generation!\n")
@@ -213,7 +167,7 @@ for dev_num, dev_descr, disabled in parsed_devices:
     conf_text += text
     #print(dev_num, "-" if disabled else "+", dev_descr)
 print(conf_text)
-replace_block("## Protocols to enable \(command line option \"-R\"\)\n",
+replace_block(r'## Protocols to enable \(command line option \"-R\"\)\n',
         "## Flex devices", "\n" + conf_text + "\n", "conf/rtl_433.example.conf")
 
 # MAN pages
