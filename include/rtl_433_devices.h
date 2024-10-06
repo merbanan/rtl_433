@@ -271,6 +271,7 @@
     DECL(geevon) \
     DECL(fineoffset_wh46) \
     DECL(vevor_7in1) \
+    DECL(arexx_ml) \
 
     /* Add new decoders here. */
 
