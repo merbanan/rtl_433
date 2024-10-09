@@ -349,6 +349,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [261]  Geevon TX16-3 outdoor sensor
     [262]  Fine Offset Electronics WH46 air quality sensor
     [263]  Vevor Wireless Weather Station 7-in-1
+    [264]  Arexx Multilogger IP-HA90, IP-TH78EXT, TSN-70E
 
 * Disabled by default, use -R n or a conf file to enable
 
