@@ -11,7 +11,7 @@
 
 #include "decoder.h"
 
-/**
+/** @fn int risco_agility_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 Risco 2 way Agility protocol.
 
 Manufacturer :
@@ -91,31 +91,18 @@ Bitbench:
 
 */
 
+static int gray_decode(int n) {
+    int p = n;
+    while (n >>= 1) p ^= n;
+    return p;
+}
+
 static int risco_agility_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     bitbuffer_t decoded = { 0 };
     uint8_t *b;
     uint8_t const preamble_pattern[] = {0x55, 0x5a};
     uint8_t len_msg = 16; // default for sensor message, could be 33 bytes for other Agility message not yet decoded
-    // 4 bits reversed then gray decoded
-    int const gray_map[] = {
-        0,  // 0, 0
-        15, // 1, F
-        7,  // 2, 7
-        8,  // 3, 8
-        3,  // 4, 3
-        12, // 5, C
-        4,  // 6, 4
-        11, // 7, B
-        1,  // 8, 1
-        14, // 9, E
-        6,  // A, 6
-        9,  // B, 9
-        2,  // C, 2
-        13, // D, D
-        5,  // E, 5
-        10, // F, A
-    };
 
     if (bitbuffer->num_rows != 1) {
         return DECODE_ABORT_EARLY;
@@ -151,29 +138,28 @@ static int risco_agility_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // expected 0xFF60 short message, 0xFEF8 message not yet decoded properly
     int message_type = (b[0] << 8)| b[1];
     if ( message_type != 0xFF60) {
-        decoder_logf(decoder, 1, __func__, "Wrong message type %02x", message_type);
+        decoder_logf(decoder, 1, __func__, "Wrong message type %04x", message_type);
         return DECODE_ABORT_LENGTH;
     }
 
-    // ID is not Gray decoded as not yet identified from QR W ID number.
-    int id    = (b[6] << 16) | (b [7] << 8) | b[8];
+    // ID is probably not well decoded as bit not reverse and not Gray decoded
+    int id = (b[6] << 16) | (b [7] << 8) | b[8];
+
+    reflect_bytes(b,16);
 
     // Alarm state, 0x6 = Tampered, 0xA = Tampered_motion, 0xC = Motion, 0x0 = Clear, not detection.
-    int state    = gray_map[(b[12] & 0xF0) >> 4];
-    int tamper   = (state & 0x4) >> 2;
-    int motion   = (state & 0x2) >> 1;
-    int low_batt = ((gray_map[b[12] & 0xF]) & 0x8)>> 3;
-    int counter1  = gray_map[(b[4] & 0xF0) >> 4];
-    int counter2  = gray_map[(b[4] & 0xF)];
-    int counter3  = gray_map[(b[5] & 0xF0) >> 4];
-    int counter4  = gray_map[(b[5] & 0xF)];
-    int counter   = (counter4 << 12) | (counter3 << 8) | (counter2 << 4) | counter1;
+    int state        = gray_decode(b[12] & 0xF);
+    int tamper       = (state & 0x4) >> 2;
+    int motion       = (state & 0x2) >> 1;
+    int low_batt     = (gray_decode((b[12] & 0xF0) >> 4) & 0x8)>> 3;
+    int counter_raw  = (b[5] << 8) | b[4];
+    int counter   = gray_decode(counter_raw);
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",       "",                 DATA_STRING, "Risco-PIR",
-            "id",          "",                 DATA_FORMAT, "%06x", DATA_INT, id,
-            "counter",     "Counter",          DATA_FORMAT, "%04x", DATA_INT, counter,
+            "model",       "",                 DATA_STRING, "Risco-RWX95P",
+            "id",          "",                 DATA_INT, id,
+            "counter",     "Counter",          DATA_INT, counter,
             "tamper",      "Tamper",           DATA_COND,   tamper, DATA_INT, 1,
             "motion",      "Motion",           DATA_COND,   motion, DATA_INT, 1,
             "battery_ok",  "Battery_OK",       DATA_INT,    !low_batt,
@@ -197,7 +183,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const risco_agility = {
-        .name        = "Risco 2 Way Agility protocol, Risco PIR/PET Sensor RWX95PA",
+        .name        = "Risco 2 Way Agility protocol, Risco PIR/PET Sensor RWX95P",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 175,
         .long_width  = 175,
