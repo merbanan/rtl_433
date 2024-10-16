@@ -1,5 +1,5 @@
 /** @file
-    Rosstech Digital Control Unit DCU-706/Sundance
+    Rosstech Digital Control Unit DCU-706/Sundance.
 
     Copyright (C) 2023 suaveolent
 
@@ -12,7 +12,7 @@
 #include "decoder.h"
 
 /** @fn int rosstech_dcu706_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-Rosstech Digital Control Unit DCU-706/Sundance/Jacuzzi
+Rosstech Digital Control Unit DCU-706/Sundance/Jacuzzi.
 
 Supported Models:
 Sundance DCU-6560-131, SD-880 Series, PN 6560-131
@@ -53,9 +53,9 @@ static uint8_t calculateChecksum(const uint8_t *data, size_t size)
 
 static int rosstech_dcu706_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const preambleDataTransmission[] = {0xDD, 0x40};
+    uint8_t const preamble_data_transmission[] = {0xDD, 0x40};
     // The Bond command also contains the temperature
-    uint8_t const preambleBond[] = {0xCD, 0x00};
+    uint8_t const preamble_Bond[] = {0xCD, 0x00};
     int const preamble_length = 11;
 
     // We need 55 bits
@@ -68,11 +68,11 @@ static int rosstech_dcu706_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY; // Unrecognized data
     }
 
-    unsigned start_pos = bitbuffer_search(bitbuffer, 0, 0, preambleDataTransmission, preamble_length);
+    unsigned start_pos = bitbuffer_search(bitbuffer, 0, 0, preamble_data_transmission, preamble_length);
 
     if (start_pos == bitbuffer->bits_per_row[0]) {
 
-        start_pos = bitbuffer_search(bitbuffer, 0, 0, preambleBond, preamble_length);
+        start_pos = bitbuffer_search(bitbuffer, 0, 0, preamble_Bond, preamble_length);
 
         if (start_pos == bitbuffer->bits_per_row[0]) {
             return DECODE_ABORT_LENGTH;
@@ -85,35 +85,33 @@ static int rosstech_dcu706_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_extract_bytes(bitbuffer, 0, start_pos, msg, sizeof(msg) * 8);
 
-    uint8_t transmissionType = (msg[0] << 1) | (msg[1] >> 7); //S
-    uint8_t id_high = (msg[1] << 4) | (msg[2] >> 4);
-    uint8_t id_low = (msg[2] << 7) | (msg[3] >> 1);
-    uint16_t id = (uint16_t)(id_high << 8) | id_low; // I
-    uint8_t temp = (msg[4] << 2) | (msg[5] >> 6); // T
-    uint8_t checkSum = (msg[5] << 5) | (msg[6] >> 3); // C
+    uint8_t msg_type = (msg[0] << 1) | (msg[1] >> 7); // S
+    uint8_t id_high  = (msg[1] << 4) | (msg[2] >> 4);
+    uint8_t id_low   = (msg[2] << 7) | (msg[3] >> 1);
+    uint16_t id      = (id_high << 8) | id_low;       // I
+    uint8_t temp_f   = (msg[4] << 2) | (msg[5] >> 6); // T
+    uint8_t checksum = (msg[5] << 5) | (msg[6] >> 3); // C
 
     // Create a uint8_t array to hold the extracted values
-    uint8_t extractedData[4];
-    extractedData[0] = transmissionType;
-    extractedData[1] = id_high;
-    extractedData[2] = id_low;
-    extractedData[3] = temp;
+    uint8_t extracted_data[4];
+    extracted_data[0] = msg_type;
+    extracted_data[1] = id_high;
+    extracted_data[2] = id_low;
+    extracted_data[3] = temp_f;
 
-    uint8_t calculatedChecksum = calculateChecksum(extractedData, sizeof(extractedData) / sizeof(extractedData[0]));
-    if (calculatedChecksum != checkSum) {
-        decoder_logf(decoder, 2, __func__, "Sanity Check failed. Expected: %04x, Calculated: %04x. Maybe sanity function calculated wrong!", checkSum, calculatedChecksum);
-        // return DECODE_FAIL_SANITY;
+    uint8_t calculated_checksum = calculateChecksum(extracted_data, sizeof(extracted_data) / sizeof(extracted_data[0]));
+    if (calculated_checksum != checksum) {
+        decoder_logf(decoder, 2, __func__, "Checksum failed. Expected: %02x, Calculated: %02x.", checksum, calculated_checksum);
+        return DECODE_FAIL_MIC;
     }
-
-    uint8_t temp_c = ((temp-32)*5)/9;
 
     /* clang-format off */
     data_t *data = data_make(
         "model",            "Model",              DATA_STRING,   "Rosstech-Spa",
-        "id",               "ID",                 DATA_FORMAT,   "%04x",   DATA_INT,    id,
-        "transmissionType", "Transmission Type",  DATA_STRING,   transmissionType == 0xba ? "Data" : "Bond",    
-        "temperature_C",    "Temperature",        DATA_FORMAT,   "%d °C",  DATA_INT,     temp_c,
-        "mic",              "Integrity",          DATA_STRING,   "CHECKSUM", 
+        "id",               "ID",                 DATA_FORMAT,   "%04x",    DATA_INT,   id,
+        "msg_type",         "Transmission Type",  DATA_STRING,   msg_type == 0xba ? "Data" : "Bond",
+        "temperature_F",    "Temperature",        DATA_FORMAT,   "%d F",    DATA_INT,   temp_f,
+        "mic",              "Integrity",          DATA_STRING,   "CHECKSUM",
         NULL);
     /* clang-format on */
 
@@ -124,8 +122,8 @@ static int rosstech_dcu706_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
-        "transmissionType",
-        "temperature_C",
+        "msg_type",
+        "temperature_F",
         "mic",
         NULL,
 };
