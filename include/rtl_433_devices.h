@@ -272,6 +272,7 @@
     DECL(fineoffset_wh46) \
     DECL(vevor_7in1) \
     DECL(arexx_ml) \
+    DECL(rosstech_dcu706) \
 
     /* Add new decoders here. */
 

@@ -350,6 +350,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [262]  Fine Offset Electronics WH46 air quality sensor
     [263]  Vevor Wireless Weather Station 7-in-1
     [264]  Arexx Multilogger IP-HA90, IP-TH78EXT, TSN-70E
+    [265]  Rosstech Digital Control Unit DCU-706/Sundance/Jacuzzi
 
 * Disabled by default, use -R n or a conf file to enable
 
