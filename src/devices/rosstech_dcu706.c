@@ -18,6 +18,10 @@ Supported Models:
 Sundance DCU-6560-131, SD-880 Series, PN 6560-131
 Jacuzzi DCU-2560-131, Jac-J300/J400 and SD-780 series, PN 6560-132/2560-131
 
+Data coding:
+
+UART 8o1: 11 bits/byte: 1 start bit (1), odd parity, 1 stop bit (0).
+
 Data layout:
 
     SS IIII TT CC
@@ -28,28 +32,7 @@ Data layout:
 - C: 8 bit Checksum: Count 1s for each bit of each element:
                      Set bit to 1 if number is even 0 if odd
 
-11 bits/byte: 1 start bit, 0 stop bits and odd parity
-
 */
-
-static uint8_t calculateChecksum(const uint8_t *data, size_t size)
-{
-    uint8_t checksum = 0;
-
-    for (int bit = 0; bit < 8; bit++) {
-        int count = 0;
-
-        for (size_t i = 0; i < size; i++) {
-            count += (data[i] >> bit) & 1;
-        }
-
-        if (count % 2 == 0) {
-            checksum |= (1 << bit);
-        }
-    }
-
-    return checksum;
-}
 
 static int rosstech_dcu706_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -85,23 +68,21 @@ static int rosstech_dcu706_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_extract_bytes(bitbuffer, 0, start_pos, msg, sizeof(msg) * 8);
 
-    uint8_t msg_type = (msg[0] << 1) | (msg[1] >> 7); // S
-    uint8_t id_high  = (msg[1] << 4) | (msg[2] >> 4);
-    uint8_t id_low   = (msg[2] << 7) | (msg[3] >> 1);
-    uint16_t id      = (id_high << 8) | id_low;       // I
-    uint8_t temp_f   = (msg[4] << 2) | (msg[5] >> 6); // T
-    uint8_t checksum = (msg[5] << 5) | (msg[6] >> 3); // C
+    uint8_t b[5] = {0};
+    unsigned r   = extract_bytes_uart_parity(msg, 0, 55, b);
+    if (r != 5) {
+        decoder_logf(decoder, 2, __func__, "UART decoding failed. Got %d of 5 bytes", r);
+        return DECODE_ABORT_LENGTH;
+    }
 
-    // Create a uint8_t array to hold the extracted values
-    uint8_t extracted_data[4];
-    extracted_data[0] = msg_type;
-    extracted_data[1] = id_high;
-    extracted_data[2] = id_low;
-    extracted_data[3] = temp_f;
+    int msg_type = b[0];                 // S
+    int id       = (b[1] << 8) | (b[2]); // I
+    int temp_f   = b[3];                 // T
+    int checksum = b[4];                 // C
 
-    uint8_t calculated_checksum = calculateChecksum(extracted_data, sizeof(extracted_data) / sizeof(extracted_data[0]));
-    if (calculated_checksum != checksum) {
-        decoder_logf(decoder, 2, __func__, "Checksum failed. Expected: %02x, Calculated: %02x.", checksum, calculated_checksum);
+    uint8_t calculated = 0xff ^ xor_bytes(b, 4);
+    if (calculated != checksum) {
+        decoder_logf(decoder, 2, __func__, "Checksum failed. Expected: %02x, Calculated: %02x", checksum, calculated);
         return DECODE_FAIL_MIC;
     }
 

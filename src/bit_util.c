@@ -26,7 +26,7 @@ uint8_t reverse8(uint8_t x)
 uint32_t reverse32(uint32_t x)
 {
     uint32_t ret;
-    uint8_t* xp = (uint8_t*)&x;
+    uint8_t const* xp = (uint8_t*)&x;
     ret = (uint32_t) reverse8(xp[0]) << 24 | reverse8(xp[1]) << 16 | reverse8(xp[2]) << 8 | reverse8(xp[3]);
     return ret;
 }
@@ -52,7 +52,7 @@ void reflect_nibbles(uint8_t message[], unsigned num_bytes)
     }
 }
 
-unsigned extract_nibbles_4b1s(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst)
+unsigned extract_nibbles_4b1s(uint8_t const *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst)
 {
     unsigned ret = 0;
 
@@ -70,7 +70,7 @@ unsigned extract_nibbles_4b1s(uint8_t *message, unsigned offset_bits, unsigned n
     return ret;
 }
 
-unsigned extract_bytes_uart(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst)
+unsigned extract_bytes_uart(uint8_t const *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst)
 {
     unsigned ret = 0;
 
@@ -97,7 +97,39 @@ unsigned extract_bytes_uart(uint8_t *message, unsigned offset_bits, unsigned num
     return ret;
 }
 
-static unsigned symbol_match(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint32_t symbol)
+unsigned extract_bytes_uart_parity(uint8_t const *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst)
+{
+    unsigned ret = 0;
+
+    while (num_bits >= 11) {
+        int startb = message[offset_bits / 8] >> (7 - (offset_bits % 8));
+        offset_bits += 1;
+        int datab = message[offset_bits / 8];
+        if (offset_bits % 8) {
+            datab = (message[offset_bits / 8] << 8) | message[offset_bits / 8 + 1];
+            datab >>= 8 - (offset_bits % 8);
+        }
+        offset_bits += 8;
+        int parityb = message[offset_bits / 8] >> (7 - (offset_bits % 8));
+        offset_bits += 1;
+        int stopb = message[offset_bits / 8] >> (7 - (offset_bits % 8));
+        offset_bits += 1;
+        int data_parity = parity8(datab);
+        if ((startb & 1) != 1)
+            break; // start-bit error
+        if ((parityb & 1) != data_parity)
+            break; // parity-bit error
+        if ((stopb & 1) != 0)
+            break; // stop-bit error
+        *dst++ = (datab & 0xff);
+        ret += 1;
+        num_bits -= 11;
+    }
+
+    return ret;
+}
+
+static unsigned symbol_match(uint8_t const *message, unsigned offset_bits, unsigned num_bits, uint32_t symbol)
 {
     unsigned symbol_len = symbol & 0x1f;
 
@@ -119,7 +151,7 @@ static unsigned symbol_match(uint8_t *message, unsigned offset_bits, unsigned nu
     return symbol_len;
 }
 
-unsigned extract_bits_symbols(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint32_t zero, uint32_t one, uint32_t sync, uint8_t *dst)
+unsigned extract_bits_symbols(uint8_t const *message, unsigned offset_bits, unsigned num_bits, uint32_t zero, uint32_t one, uint32_t sync, uint8_t *dst)
 {
     unsigned zero_len = zero & 0x1f;
     unsigned one_len  = one & 0x1f;
