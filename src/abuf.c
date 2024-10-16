@@ -45,7 +45,7 @@ void abuf_cat(abuf_t *buf, char const *str)
 {
     size_t len = strlen(str);
     if (buf->left >= len + 1) {
-        strcpy(buf->tail, str);
+        memcpy(buf->tail, str, len + 1);
         buf->tail += len;
         buf->left -= len;
     }

@@ -49,8 +49,6 @@ Protocol cribbed from:
 static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t msg[32];
-    data_t *data;
-    char id[7];
     uint8_t lrc;
 
     // 37 bits expected, 6 packet repetitions, accept 4
@@ -81,13 +79,13 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_logf(decoder, 2, __func__, "data byte is %02x", msg[3]);
 
     // format device id
-    sprintf(id, "%02x%02x%02x", msg[0], msg[1], msg[2]);
+    char id_str[7];
+    snprintf(id_str, sizeof(id_str), "%02x%02x%02x", msg[0], msg[1], msg[2]);
 
-    // populate data byte fields
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",        "Model",        DATA_STRING, "Visonic-Powercode",
-            "id",           "ID",           DATA_STRING, id,
+            "id",           "ID",           DATA_STRING, id_str,
             "tamper",       "Tamper",       DATA_INT,    ((0x80 & msg[3]) == 0x80) ? 1 : 0,
             "alarm",        "Alarm",        DATA_INT,    ((0x40 & msg[3]) == 0x40) ? 1 : 0,
             "battery_ok",   "Battery",      DATA_INT,    ((0x20 & msg[3]) == 0x20) ? 0 : 1,

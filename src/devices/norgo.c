@@ -80,7 +80,7 @@ pulse_count/(n_imp_per_kwh)
 
 #include "decoder.h"
 
-static uint16_t checksum_taps[] = {
+static uint16_t const checksum_taps[] = {
         0x4880, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
         0x2080, 0x4000, 0x4000, 0x4000, 0x4000, 0x4000, 0x4000,
 };
@@ -141,10 +141,10 @@ static int norgo_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
     }
 
-    int xor = xor_bytes(b + 1, (bitbuffer->bits_per_row[0] - 15) / 8);
-    if (xor != 0xff) { // before invert 0 is ff
+    int xor_byte = xor_bytes(b + 1, (bitbuffer->bits_per_row[0] - 15) / 8);
+    if (xor_byte != 0xff) { // before invert 0 is ff
         decoder_logf_bitrow(decoder, 1, __func__, b, bitbuffer->bits_per_row[0], "XOR fail (%02x)",
-                    xor);
+                    xor_byte);
         return DECODE_FAIL_MIC;
     }
 

@@ -10,7 +10,12 @@
     (at your option) any later version.
 */
 
-/**
+/** @fn int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+Security+ 1.0 rolling code
+
+@warning This decoder is not stateless.
+@warning This decoder is dependent on elapsed time.
+
 Freq 310, 315 and 390 MHz.
 
 Security+ 1.0  is described in [US patent application US6980655B2](https://patents.google.com/patent/US6980655B2/)
@@ -97,9 +102,9 @@ Find index of next bursts/packets in bitbuffer.
 
 The transmissions do not have a magic number or preamble.
 
-They all start with a '0' or a '2'  represented at 0001. and 0111.
+They all start with a '0' or a '2' represented at 0001. and 0111.
 since all nibbles start with 0 we can look for bytes
-000 + 0001 + 0 and 000 + 0111 + 0 for the start of a transmission
+000 + 0001 + 0 and 000 + 0111 + 0 for the start of a transmission
 (or just the 0001 and 0111 at the start of a bitbuffer)
 */
 
@@ -206,7 +211,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         gettimeofday(&cur_tv, NULL);
         timeval_subtract(&res_tv, &cur_tv, &cached_tv);
 
-        decoder_logf(decoder, 2, __func__, "res %12ld %8ld", res_tv.tv_sec, (long)res_tv.tv_usec);
+        decoder_logf(decoder, 2, __func__, "res %12ld %8ld", (long)res_tv.tv_sec, (long)res_tv.tv_usec);
 
         // is the data not expired
         if (res_tv.tv_sec == 0 && res_tv.tv_usec < CACHE_MAX_AGE) {
@@ -319,7 +324,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             snprintf(pin_s, sizeof(pin_s), "%04d", pin);
         }
         else if (10000 <= pin && pin <= 11029) {
-            strcat(pin_s, "enter");
+            strcat(pin_s, "enter"); // NOLINT
         }
 
         int pin_suffix = 0;
@@ -327,9 +332,9 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         pin_suffix = (fixed / 1162261467) % 3;
 
         if (pin_suffix == 1)
-            strcat(pin_s, "#");
+            strcat(pin_s, "#"); // NOLINT
         else if (pin_suffix == 2)
-            strcat(pin_s, "*");
+            strcat(pin_s, "*"); // NOLINT
 
         // decoder_logf(decoder, 1, __func__, "pad_id=%d pin=%d pin_s=%s", pad_id, pin, pin_s);
     }

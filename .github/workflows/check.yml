@@ -1,52 +1,83 @@
 name: Build Analyze Check
 on: [push, pull_request]
 jobs:
+  macos_check_job:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-12, macos-14]
+    runs-on: ${{ matrix.os }}
+    name: Build on ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup
+        run: brew install soapysdr librtlsdr
+      - name: Configure
+        run: cmake -B build
+      - name: Build
+        run: cmake --build build
+
   build_check_job:
     runs-on: ubuntu-latest
     name: Build with CMake
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-    - name: Get latest CMake and Ninja
-      uses: lukka/get-cmake@latest
-    - name: Run CMake+Ninja
-      uses: lukka/run-cmake@v10
-      with:
-        configurePreset: dummy
-        configurePresetCmdString: "[`-B`, `${{ runner.workspace }}/b/ninja`, `-GNinja`, `-DENABLE_RTLSDR=OFF`, `-DENABLE_SOAPYSDR=OFF`]"
-        buildPreset: dummy
-        buildPresetCmdString: "[`--build`, `${{ runner.workspace }}/b/ninja`]"
-    - name: Run CMake+UnixMakefiles
-      uses: lukka/run-cmake@v10
-      with:
-        configurePreset: dummy
-        configurePresetCmdString: "[`-B`, `${{ runner.workspace }}/b/unixmakefiles`, `-G`, `Unix Makefiles`, `-DENABLE_RTLSDR=OFF`, `-DENABLE_SOAPYSDR=OFF`]"
-        buildPreset: dummy
-        buildPresetCmdString: "[`--build`, `${{ runner.workspace }}/b/unixmakefiles`]"
+      - uses: actions/checkout@v4
+      - name: Setup
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y --no-install-recommends cmake ninja-build
+          sudo apt-get install -q -y libsoapysdr-dev librtlsdr-dev
+      - name: Configure CMake+Ninja
+        run: cmake -GNinja -B ${{ runner.workspace }}/b/ninja -DENABLE_RTLSDR=OFF -DENABLE_SOAPYSDR=OFF
+      - name: Build CMake+Ninja
+        run: cmake --build ${{ runner.workspace }}/b/ninja
+      - name: Configure CMake+UnixMakefiles
+        run: cmake -G"Unix Makefiles" -B ${{ runner.workspace }}/b/unixmakefiles -DENABLE_RTLSDR=OFF -DENABLE_SOAPYSDR=OFF
+      - name: Build CMake+UnixMakefiles
+        run: cmake --build ${{ runner.workspace }}/b/unixmakefiles
+
+  doc_check_job:
+    runs-on: ubuntu-latest
+    name: Build documentation
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Doxygen
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y --no-install-recommends cmake ninja-build
+          sudo apt-get install -q -y doxygen
+      - name: Configure CMake+Ninja
+        run: cmake -GNinja -B ${{ runner.workspace }}/b/ninja -DBUILD_DOCUMENTATION=ON -DENABLE_RTLSDR=OFF -DENABLE_SOAPYSDR=OFF
+      - name: Build CMake+Ninja
+        run: cmake --build ${{ runner.workspace }}/b/ninja -- doc_doxygen
+
   style_check_job:
     runs-on: ubuntu-latest
     name: Check code style
     steps:
-    - uses: actions/checkout@v3
-    - name: Style Check
-      uses: ./.github/actions/style-check
+      - uses: actions/checkout@v4
+      - name: Style Check
+        uses: ./.github/actions/style-check
+
   maintainer_update_check_job:
     runs-on: ubuntu-latest
     name: Needs maintainer_update
     steps:
-    - uses: actions/checkout@v3
-    - name: Working directory clean excluding untracked files
-      run: |
-        ./maintainer_update.py
-        [ -z "$(git status --untracked-files=no --porcelain)" ]
+      - uses: actions/checkout@v4
+      - name: Working directory clean excluding untracked files
+        run: |
+          ./maintainer_update.py
+          [ -z "$(git status --untracked-files=no --porcelain)" ]
+
   symbolizer_check_job:
     runs-on: ubuntu-latest
     name: Check symbol errors
     steps:
-    - uses: actions/checkout@v3
-    - name: Symbolizer report
-      run: |
-        ./tests/symbolizer.py check
+      - uses: actions/checkout@v4
+      - name: Symbolizer report
+        run: |
+          ./tests/symbolizer.py check
+
   analyzer_check_job:
     # https://github.com/actions/virtual-environments
     # - Ubuntu 22.04 ubuntu-22.04
@@ -58,16 +89,16 @@ jobs:
     runs-on: ubuntu-22.04
     name: Analyze with Clang
     steps:
-    - uses: actions/checkout@v3
-    - name: Install Clang
-      run: |
-        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key 2>/dev/null | sudo apt-key add -
-        sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-14 main' -y
-        sudo apt-get update -q
-        sudo apt-get install -y clang-14 lld-14 libc++-14-dev libc++abi-14-dev clang-tools-14
-    - name: Clang Analyzer
-      # excludes include/mongoose.h src/mongoose.c include/jsmn.h src/jsmn.c
-      # exit code 1 if there is output
-      run: |
-        clang -Iinclude -DTHREADS --analyze -Xanalyzer -analyzer-output=text -Xanalyzer -analyzer-disable-checker=deadcode.DeadStores include/[a-ikln-z]*.h src/[a-ikln-z]*.c src/devices/*.c 2>&1 | tee analyzer.out
-        [ ! -s analyzer.out ]
+      - uses: actions/checkout@v4
+      - name: Install Clang
+        run: |
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key 2>/dev/null | sudo apt-key add -
+          sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main' -y
+          sudo apt-get update -q
+          sudo apt-get install -q -y clang-18 lld-18 libc++-18-dev libc++abi-18-dev clang-tools-18
+      - name: Clang Analyzer
+        # excludes include/mongoose.h src/mongoose.c include/jsmn.h src/jsmn.c
+        # exit code 1 if there is output
+        run: |
+          clang -Iinclude -DTHREADS --analyze -Xanalyzer -analyzer-output=text -Xanalyzer -analyzer-disable-checker=deadcode.DeadStores include/[a-ikln-z]*.h src/[a-ikln-z]*.c src/devices/*.c 2>&1 | tee analyzer.out
+          [ ! -s analyzer.out ]

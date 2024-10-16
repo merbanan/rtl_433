@@ -76,16 +76,16 @@ static int ced7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* Read the values */
     int id = (b[1] & 0xF) * 1000 + (b[1] >> 4) * 100 + (b[0] & 0xF) * 10 + (b[0] >> 4);
     int count = (b[2] & 0xF) * 10 + (b[2] >> 4);
-    float final = (b[5] >> 4) * 100 + (b[4] & 0xF) * 10 + (b[4] >> 4) + (b[3] & 0xF) * 0.1 + (b[3] >> 4) * 0.01;
-    float split = (b[7] & 0xF) * 100 + (b[7] >> 4) * 10 + (b[6] & 0xF) + (b[6] >> 4) * 0.1 + (b[5] & 0xF) * 0.01;
+    float final = (b[5] >> 4) * 100 + (b[4] & 0xF) * 10 + (b[4] >> 4) + (b[3] & 0xF) * 0.1 + (b[3] >> 4) * 0.01f;
+    float split = (b[7] & 0xF) * 100 + (b[7] >> 4) * 10 + (b[6] & 0xF) + (b[6] >> 4) * 0.1 + (b[5] & 0xF) * 0.01f;
 
     /* clang-format off */
     data_t *data = data_make(
             "model",    "Model",       DATA_STRING, "CED7000",
             "id",       "ID",          DATA_FORMAT, "%04u",    DATA_INT, id,
             "count",    "Shot Count",  DATA_INT,    count,
-            "final",    "Final Time",  DATA_FORMAT, "%.02f s", DATA_DOUBLE, final,
-            "split",    "Split Time",  DATA_FORMAT, "%.02f s", DATA_DOUBLE, split,
+            "final",    "Final Time",  DATA_FORMAT, "%.2f s", DATA_DOUBLE, final,
+            "split",    "Split Time",  DATA_FORMAT, "%.2f s", DATA_DOUBLE, split,
             NULL);
     /* clang-format on */
 

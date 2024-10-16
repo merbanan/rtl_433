@@ -37,6 +37,10 @@ PlutoSDR, HackRF One (using SoapySDR drivers), as well as SoapyRemote.
 A summary of options is included below.
 Detailed information on some options follows.
 .\" body
+
+
+  A "rtl_433.conf" file is searched in "./", XDG_CONFIG_HOME e.g. "$HOME/.config/rtl_433/",
+  SYSCONFDIR e.g. "/usr/local/etc/rtl_433/", then command line args will be parsed in order.
 .SS "General options"
 .TP
 [ \fB\-V\fI\fP ]
@@ -340,6 +344,12 @@ Add MQTT options with e.g. \-F "mqtt://host:1883,opt=arg"
 MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
 .RE
 .RS
+Default user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.
+.RE
+.RS
+A base topic can be set with base=<topic>, default is "rtl_433/HOSTNAME".
+.RE
+.RS
 Supported MQTT formats: (default is all)
 .RE
 .RS
@@ -352,7 +362,7 @@ Supported MQTT formats: (default is all)
   devices: posts device and sensor info in nested topics
 .RE
 .RS
-The topic string will expand keys like [/model]
+Any topic string overrides the base topic and will expand keys like [/model]
 .RE
 .RS
 E.g. \-F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"

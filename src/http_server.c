@@ -733,6 +733,75 @@ static void handle_redirect(struct mg_connection *nc, struct http_message *hm)
             "\r\n\r\n");
 }
 
+static void handle_openmetrics(struct mg_connection *nc, struct http_message *hm)
+{
+    if (mg_vcmp(&hm->method, "GET") != 0) {
+        mg_http_send_error(nc, 405, NULL); // 405 Method Not Allowed
+        return;
+    }
+
+    struct http_server_context *ctx = nc->user_data;
+    r_cfg_t *cfg = ctx->cfg;
+
+    time_t now;
+    time(&now);
+
+    char buf[2000];
+    int len = snprintf(buf, sizeof(buf),
+            "# TYPE uptime_seconds counter\n"
+            "# UNIT uptime_seconds seconds\n"
+            "# HELP uptime_seconds Program uptime.\n"
+            "uptime_seconds_total %.1f\n"
+            "uptime_seconds_created %.1f\n"
+            "# TYPE decoder_enabled gauge\n"
+            "# HELP decoder_enabled Number of enabled decoders.\n"
+            "decoder_enabled %u\n"
+            "# TYPE input_uptime_seconds counter\n"
+            "# UNIT input_uptime_seconds seconds\n"
+            "# HELP input_uptime_seconds SDR Receiver uptime.\n"
+            "input_uptime_seconds_total %.1f\n"
+            "input_uptime_seconds_created %.1f\n"
+            "# TYPE input_count_frames counter\n"
+            "# UNIT input_count_frames frames\n"
+            "# HELP input_count_frames Number of SDR frames received.\n"
+            "input_count_frames_total %u\n"
+            "# TYPE input_squelch_frames counter\n"
+            "# UNIT input_squelch_frames frames\n"
+            "# HELP input_squelch_frames Number of SDR frames skipped by squelch.\n"
+            "input_squelch_frames_total %u\n"
+            "# TYPE input_ook_frames counter\n"
+            "# UNIT input_ook_frames frames\n"
+            "# HELP input_ook_frames Number of SDR frames with OOK demodulation.\n"
+            "input_ook_frames_total %u\n"
+            "# TYPE input_fsk_frames counter\n"
+            "# UNIT input_fsk_frames frames\n"
+            "# HELP input_fsk_frames Number of SDR frames with FSK demodulation.\n"
+            "input_fsk_frames_total %u\n"
+            "# TYPE input_event_frames counter\n"
+            "# UNIT input_event_frames frames\n"
+            "# HELP input_event_frames Number of SDR frames with decode events.\n"
+            "input_event_frames_total %u\n"
+            "# EOF\n",
+            (float)(now - cfg->running_since), // uptime_seconds_total,
+            (float)cfg->running_since,         // uptime_seconds_created,
+            (unsigned)cfg->demod->r_devs.len,  // decoder_enabled,
+            (float)(now - cfg->sdr_since),     // input_uptime_seconds_total,
+            (float)cfg->sdr_since,             // input_uptime_seconds_created,
+            cfg->total_frames_count,           // input_count_frames_total,
+            cfg->total_frames_squelch,         // input_squelch_frames_total,
+            cfg->total_frames_ook,             // input_ook_frames_total,
+            cfg->total_frames_fsk,             // input_fsk_frames_total,
+            cfg->total_frames_events);         // input_event_frames_total,
+
+    mg_printf(nc,
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Length: %u\r\n"
+            "\r\n",
+            len);
+    mg_send(nc, buf, (size_t)len);
+    nc->flags |= MG_F_SEND_AND_CLOSE;
+}
+
 // reply to ws command
 static void rpc_response_ws(rpc_t *rpc, int ret_code, char const *message, int arg)
 {
@@ -1039,6 +1108,9 @@ static void ev_handler(struct mg_connection *nc, int ev, void *ev_data)
         else if (mg_vcmp(&hm->uri, "/stream") == 0) {
             handle_json_stream(nc, hm);
         }
+        else if (mg_vcmp(&hm->uri, "/metrics") == 0) {
+            handle_openmetrics(nc, hm);
+        }
         else if (mg_vcmp(&hm->uri, "/api") == 0) {
             //handle_api_query(nc, hm);
         }
@@ -1130,6 +1202,7 @@ static struct http_server_context *http_server_start(struct mg_mgr *mgr, char co
     if (ctx->conn == NULL) {
         print_logf(LOG_ERROR, __func__, "Error starting server on address %s: %s", address,
                 *bind_opts.error_string);
+        ring_list_free(ctx->history);
         free(ctx);
         return NULL;
     }
@@ -1253,5 +1326,5 @@ struct data_output *data_output_http_create(struct mg_mgr *mgr, char const *host
         exit(1);
     }
 
-    return &http->output;
+    return (struct data_output *)http;
 }

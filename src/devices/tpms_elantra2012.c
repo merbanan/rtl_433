@@ -8,6 +8,9 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
+
+#include "decoder.h"
+
 /**
 FSK 8 byte Manchester encoded TPMS with CRC8 checksum.
 Seen on Hyundai Elantra, Honda Civic.
@@ -47,47 +50,35 @@ Preamble is 111 0001 0101 0101 (0x7155).
 
 */
 
-#include "decoder.h"
-
 static int tpms_elantra2012_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    data_t *data;
     bitbuffer_t packet_bits = {0};
-    uint8_t *b;
-    uint32_t id;
-    char id_str[9];
-    int flags;
-    char flags_str[3];
-    int pressure_kpa;
-    int temperature_c;
-    int triggered, battery_low, storage;
-
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 64);
     // require 64 data bits
     if (packet_bits.bits_per_row[0] < 64) {
         return DECODE_ABORT_LENGTH;
     }
-    b = packet_bits.bb[0];
+    uint8_t *b = packet_bits.bb[0];
 
     if (crc8(b, 8, 0x07, 0x00)) {
         return DECODE_FAIL_MIC;
     }
 
-    id = ((uint32_t)b[2] << 24) | (b[3] << 16) | (b[4] << 8) | (b[5]);
-    sprintf(id_str, "%08x", id);
+    uint32_t id       = ((uint32_t)b[2] << 24) | (b[3] << 16) | (b[4] << 8) | (b[5]);
+    int flags         = b[6];
+    int pressure_kpa  = b[0] + 60;
+    int temperature_c = b[1] - 50;
+    int storage       = (b[6] & 0x04) >> 2;
+    int battery_low   = (b[6] & 0x02) >> 1;
+    int triggered     = (b[6] & 0x01) >> 0;
 
-    flags = b[6];
-    sprintf(flags_str, "%x", flags);
-
-    pressure_kpa  = b[0] + 60;
-    temperature_c = b[1] - 50;
-
-    storage     = (b[6] & 0x04) >> 2;
-    battery_low = (b[6] & 0x02) >> 1;
-    triggered   = (b[6] & 0x01) >> 0;
+    char id_str[9];
+    snprintf(id_str, sizeof(id_str), "%08x", id);
+    char flags_str[3];
+    snprintf(flags_str, sizeof(flags_str), "%x", flags);
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Elantra2012",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,
@@ -153,7 +144,7 @@ r_device const tpms_elantra2012 = {
         .modulation  = FSK_PULSE_PCM,
         .short_width = 49,  // 12-13 samples @250k
         .long_width  = 49,  // FSK
-        .reset_limit = 150, // Maximum gap size before End Of Message [us].
+        .reset_limit = 200, // Maximum gap size before End Of Message [us].
         .decode_fn   = &tpms_elantra2012_callback,
         .fields      = output_fields,
 };

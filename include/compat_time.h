@@ -23,7 +23,7 @@
     @param y second time value
     @return 1 if the difference is negative, otherwise 0.
 */
-int timeval_subtract(struct timeval *result, struct timeval *x, struct timeval *y);
+int timeval_subtract(struct timeval *result, struct timeval const *x, struct timeval const *y);
 
 // platform-specific functions
 

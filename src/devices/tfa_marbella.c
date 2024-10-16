@@ -13,14 +13,13 @@
 TFA Dostmann Marbella (30.3238.06).
 
 Main display cat no: 3066.01
-￼
-￼External links
-￼
-￼https://www.tfa-dostmann.de/produkt/funk-poolthermometer-marbella-30-3066/
-￼￼https://clientmedia.trade-server.net/1768_tfadost/media/3/52/21352.pdf
+
+External links:
+- https://www.tfa-dostmann.de/produkt/funk-poolthermometer-marbella-30-3066/
+- https://clientmedia.trade-server.net/1768_tfadost/media/3/52/21352.pdf
 
 The Marbella sensor operates at 868MHz frequency band.
-￼
+
 FSK_PCM with 105 us long high durations
 
 AA 2D D4 68 3F 16 0A 31 9A AA XX
@@ -43,8 +42,7 @@ L - lsfr, byte reflected reverse galois with 0x31 key and generator
 static int tfa_marbella_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     unsigned bitpos = 0;
-    uint8_t msg[11], ic;
-    char serialnr_str[6 * 2 + 1];
+    uint8_t msg[11];
 
     uint8_t const preamble_pattern[] = {0xaa, 0x2d, 0xd4};
 
@@ -60,7 +58,7 @@ static int tfa_marbella_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
 
     // Rev-Galois with gen 0x31 and key 0x31
-    ic = lfsr_digest8_reflect(&msg[3], 7, 0x31, 0x31);
+    uint8_t ic = lfsr_digest8_reflect(&msg[3], 7, 0x31, 0x31);
     if (ic != msg[10]) {
         return DECODE_FAIL_MIC;
     }
@@ -71,7 +69,9 @@ static int tfa_marbella_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_c = (temp_raw - 400) * 0.1f;
     int counter  = (msg[6] & 0xF) >> 1;
     int serialnr = msg[3] << 16 | msg[4] << 8 | msg[5];
-    sprintf(serialnr_str, "%06x", serialnr);
+
+    char serialnr_str[6 * 2 + 1];
+    snprintf(serialnr_str, sizeof(serialnr_str), "%06x", serialnr);
 
     /* clang-format off */
     data_t *data = data_make(

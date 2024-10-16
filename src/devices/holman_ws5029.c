@@ -96,9 +96,7 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t b[18];
 
     if (bitbuffer->num_rows != 1) {
-        if (decoder->verbose) {
-            decoder_logf(decoder, 1, __func__, "Wrong number of rows (%d)", bitbuffer->num_rows);
-        }
+        decoder_logf(decoder, 1, __func__, "Wrong number of rows (%d)", bitbuffer->num_rows);
         return DECODE_ABORT_EARLY;
     }
 
@@ -136,8 +134,9 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int rain_raw      = ((b[4] & 0x0f) << 8) | b[5];
     float speed_kmh   = (float)b[6];
     int direction_deg = wind_dir_degr[(b[7] & 0xf0) >> 4];
+    int light_lux    = ((b[8] & 0x7F) << 10) | (b[9] << 2) | ((b[10] & 0xC0) >> 6);
 
-    if (bits < 200) {                 // model without UV LUX
+    if (bits < 200 && light_lux == 0) {                 // model without UV LUX
         float rain_mm     = rain_raw * 0.79f;
 
         /* clang-format off */
@@ -159,7 +158,6 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     else if (bits < 221) {                         // model with UV LUX
         float rain_mm    = rain_raw * 1.0f;
         int uv_index     = ((b[7] & 0x07) << 1) | ((b[8] & 0x80) >> 7);
-        int light_lux    = ((b[8] & 0x7F) << 10) | (b[9] << 2) | ((b[10] & 0xC0) >> 6);
         int battery_low  = ((b[10] & 0x30) >> 4);
         int counter      = ((b[10] & 0x0f) << 8 | b[11]);
         /* clang-format off */

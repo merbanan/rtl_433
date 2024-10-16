@@ -36,11 +36,11 @@ Sample Data:
 
     [00] {42} af 0f a2 7c 01 c0 : 10101111 00001111 10100010 01111100 00000001 11
 
-- Sensor ID	= 175 = 0xaf
-- Channel		= 0
-- temp		= -93 = 0x111110100010
-- TemperatureC	= -9.3
-- hum    = 62% = 0x0111110
+- Sensor ID = 175 = 0xaf
+- Channel = 0
+- temp = -93 = 0x111110100010
+- TemperatureC = -9.3
+- hum = 62% = 0x0111110
 
 */
 

@@ -55,13 +55,10 @@ Packet nibbles:
 
 static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    data_t *data;
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
     unsigned id;
-    char id_str[9];
     int code;
-    char code_str[7], unknown_str[3], unknown_3_str[2];
     float pressure_psi;
     int temperature_c, temperature_valid;
     int psibits;
@@ -83,11 +80,9 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     }
 
     id = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
-    sprintf(id_str, "%08x", id);
 
     /* Extract and log code to aid in debugging. */
     code = b[4] << 16 | b[5] << 8 | b[6];
-    sprintf(code_str, "%06x", code);
 
     /*
      * Formula is a combination of regression and plausible, observed
@@ -142,7 +137,7 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
              * pattern.  Therefore set all of them as the unknown
              * syndrome.
              */
-        unknown |= 0x4c;
+        unknown = (b[6] & 0x4c);
         break;
     }
 
@@ -153,14 +148,21 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
      * so that leaves 0x80 and 0x10, which are expected to be 0.
      */
     unknown |= (b[6] & 0x90);
-    sprintf(unknown_str, "%02x", unknown);
 
     /* Low-order 2 bits are variously 01, 10. */
     unknown_3 = b[6] & 0x3;
-    sprintf(unknown_3_str, "%01x", unknown_3);
+
+    char id_str[9];
+    snprintf(id_str, sizeof(id_str), "%08x", id);
+    char code_str[7];
+    snprintf(code_str, sizeof(code_str), "%06x", code);
+    char unknown_str[3];
+    snprintf(unknown_str, sizeof(unknown_str), "%02x", unknown);
+    char unknown_3_str[2];
+    snprintf(unknown_3_str, sizeof(unknown_3_str), "%01x", unknown_3);
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Ford",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,

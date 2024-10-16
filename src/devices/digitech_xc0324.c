@@ -75,7 +75,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
         unsigned row, uint16_t bitpos, const int latest_event, data_t **data)
 {
     uint8_t b[XC0324_MESSAGE_BYTELEN];
-    char id[4] = {0};
+    char id[3] = {0};
     double temperature;
     int humidity;
     uint8_t chksum; // == 0x00 for a good message
@@ -91,17 +91,15 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     // NB : b[0] ^ b[1] ^ b[2] ^ b[3] ^ b[4] ^ b[5] == 0x00 for a clean message
     chksum = xor_bytes(b, 6);
     if (chksum != 0x00) {
-        if (decoder->verbose > 1) {
-            // Output the "bad" message (only for message level deciphering!)
-            decoder_logf_bitrow(decoder, 2, __func__, b, XC0324_MESSAGE_BITLEN,
-                    "chksum = 0x%02X not 0x00, row %d bit %d",
-                    chksum, row, bitpos);
-        }
+        // Output the "bad" message (only for message level deciphering!)
+        decoder_logf_bitrow(decoder, 2, __func__, b, XC0324_MESSAGE_BITLEN,
+                "chksum = 0x%02X not 0x00, row %d bit %d",
+                chksum, row, bitpos);
         return DECODE_FAIL_MIC; // No message was able to be decoded
     }
 
     // Extract the id as hex string
-    snprintf(id, 3, "%02X", b[1]);
+    snprintf(id, sizeof(id), "%02X", b[1]);
 
     // Decode temperature (b[2]), plus 1st 4 bits b[3], LSB first order!
     // Tenths of degrees C, offset from the minimum possible (-40.0 degrees)
@@ -113,9 +111,9 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     humidity = reverse8(b[4]);
 
     // Create the data structure, ready for the decoder_output_data function.
-    // Separate production output (decoder->verbose == 0)
-    // from (simulated) deciphering stage output (decoder->verbose > 0)
-    if (!decoder->verbose) { // production output
+    // Separate production output (decoder_verbose == 0)
+    // from (simulated) deciphering stage output (decoder_verbose > 0)
+    if (!decoder_verbose(decoder)) { // production output
         /* clang-format off */
         *data = data_make(
                 "model",            "Device Type",      DATA_STRING, "Digitech-XC0324",
@@ -128,13 +126,11 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     }
 
     // Output (simulated) message level deciphering information..
-    if (decoder->verbose > 1) {
-        decoder_logf_bitrow(decoder, 2, __func__, b, XC0324_MESSAGE_BITLEN,
-                "Temp was %4.1f, row %03d bit %03d",
-                temperature, row, bitpos);
-    }
+    decoder_logf_bitrow(decoder, 2, __func__, b, XC0324_MESSAGE_BITLEN,
+            "Temp was %4.1f, row %03d bit %03d",
+            temperature, row, bitpos);
     // Output "finished deciphering" reference values for future regression tests.
-    if ((decoder->verbose == 3) & (latest_event == 0)) {
+    if (latest_event == 0) {
         //info from this first successful message is enough
         decoder_logf(decoder, 3, __func__,
                 "Temperature %4.1f C; sensor id %s",
@@ -158,27 +154,19 @@ static int digitech_xc0324_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data = NULL;
 
     // Only for simulating initial package level deciphering / debug.
-    if (decoder->verbose > 1) {
-        // Verbosely output the bitbuffer
-        decoder_log_bitbuffer(decoder, 2, __func__, bitbuffer, "hex(/binary) version of bitbuffer");
-        // And then output each row to csv, json or whatever was specified.
-        for (r = 0; r < bitbuffer->num_rows; ++r) {
-            decoder_logf_bitrow(decoder, 2, __func__, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
-                    "row %03d", r);
-        }
-    }
+    // Verbosely output the bitbuffer
+    decoder_log_bitbuffer(decoder, 2, __func__, bitbuffer, "hex(/binary) version of bitbuffer");
+
     //A clean XC0324 transmission contains 3 repeats of a message in a single row.
     //But in case of transmission or demodulation glitches,
     //loop over all rows and check for salvageable messages.
     for (r = 0; r < bitbuffer->num_rows; ++r) {
         if (bitbuffer->bits_per_row[r] < XC0324_MESSAGE_BITLEN) {
             // bail out of this "too short" row early
-            if (decoder->verbose) {
-                // Output the bad row, only for message level debug / deciphering.
-                decoder_logf_bitrow(decoder, 1, __func__, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
-                        "Bad message need %d bits got %d, row %d bit %d",
-                        XC0324_MESSAGE_BITLEN, bitbuffer->bits_per_row[r], r, 0);
-            }
+            // Output the bad row, only for message level debug / deciphering.
+            decoder_logf_bitrow(decoder, 1, __func__, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
+                    "Bad message need %d bits got %d, row %d bit %d",
+                    XC0324_MESSAGE_BITLEN, bitbuffer->bits_per_row[r], r, 0);
             continue; // DECODE_ABORT_LENGTH
         }
         // We have enough bits so search for a message preamble followed by
@@ -190,11 +178,10 @@ static int digitech_xc0324_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     r, bitpos, events, &data);
             if (ret > 0)
                 events += ret;
-            // Keep production output (decoder->verbose == 0) separate from
-            // (simulated) development stage output (decoder->verbose > 0)
-            if (events > 0 && !decoder->verbose) { // Production output
-                data_append(data,
-                        "message_num", "Message repeat count", DATA_INT, events, NULL);
+            // Keep production output (decoder_verbose == 0) separate from
+            // (simulated) development stage output (decoder_verbose > 0)
+            if (events > 0 && !decoder_verbose(decoder)) { // Production output
+                data = data_int(data, "message_num", "Message repeat count", NULL, events);
                 decoder_output_data(decoder, data);
                 return events; // in production, first successful decode is enough
             }
@@ -202,7 +189,7 @@ static int digitech_xc0324_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
     // (Only) for future regression tests.
-    if ((decoder->verbose == 3) & (events == 0)) {
+    if (events == 0) {
         decoder_log(decoder, 3, __func__, "Bad transmission");
     }
     return events > 0 ? events : ret;

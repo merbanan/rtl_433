@@ -9,21 +9,24 @@
     (at your option) any later version.
 */
 
-/**
-Funkbus / Instafunk
-used by Berker, Gira, Jung and may more
+#include "decoder.h"
+
+/** @fn int funkbus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+Funkbus / Instafunk.
+
+Used by Berker, Gira, Jung and may more
 developed by Insta GmbH.
 
 - Frequency: 433.42MHz
 - Preamble: 4000us
 - Short: 500us
 - Long: 1000us
-- Encoding: Differential Manchester Biphase–Mark (BP-M)
+- Encoding: Differential Manchester Biphase-Mark (BP-M)
 
       __ __       __    __ __    __
      |     |     |  |  |     |  |  |
     _|     |__ __|  |__|     |__|  |__.....
-     |  0  |  0  | 	1  |  0  |  1  |
+     |  0  |  0  |  1  |  0  |  1  |
 
 - Mic: parity + lfsr with 8bit mask 0x8C shifted left by 2 bit
 - Bits: 48
@@ -51,12 +54,6 @@ Data layout:
 Some details can be found by searching  "instafunk RX/TX-Modul pdf".
 */
 
-#include "decoder.h"
-#include <limits.h>
-
-#define BIT_MASK(x) \
-    ((((unsigned)x) >= sizeof(unsigned) * CHAR_BIT) ? (unsigned)-1 : (1U << (x)) - 1)
-
 static uint32_t get_bits_reflect(uint8_t const *bitrow, unsigned start, unsigned len)
 {
     unsigned end = start + len - 1;
@@ -74,12 +71,12 @@ static uint8_t calc_checksum(uint8_t const *bitrow, unsigned len)
     const uint8_t full_bytes = len / 8;
     const uint8_t bits_left  = len % 8;
 
-    uint8_t xor = xor_bytes(bitrow, full_bytes);
-    if (bits_left) {
-        xor ^= bitrow[full_bytes] & ~BIT_MASK(8 - bits_left);
-    }
+    uint8_t xor_byte = xor_bytes(bitrow, full_bytes);
+    // Mask out all unused lower bits from the last (partial) byte
+    uint8_t mask = 0xff << (8 - bits_left);
+    xor_byte ^= bitrow[full_bytes] & mask;
 
-    const uint8_t xor_nibble = ((xor&0xF0) >> 4) ^ (xor&0x0F);
+    const uint8_t xor_nibble = ((xor_byte & 0xF0) >> 4) ^ (xor_byte & 0x0F);
 
     uint8_t result = 0;
     if (xor_nibble & 0x8) {
@@ -96,7 +93,7 @@ static uint8_t calc_checksum(uint8_t const *bitrow, unsigned len)
     }
 
     result = result & 0xF;
-    result |= (parity8(xor) << 4);
+    result |= (parity8(xor_byte) << 4);
 
     return result;
 }

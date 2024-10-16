@@ -56,7 +56,7 @@ static int mebus433_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "battery_ok",       "Battery",      DATA_INT,    !!battery,
                 "unknown1",         "Unknown 1",    DATA_INT,    unknown1,
                 "unknown2",         "Unknown 2",    DATA_INT,    unknown2,
-                "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp * 0.1f,
+                "temperature_C",    "Temperature",  DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp * 0.1f,
                 "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, hum,
                 NULL);
         /* clang-format on */

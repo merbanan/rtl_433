@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdlib.h>
 #ifndef _WIN32
 #include <unistd.h>
 #include <sys/ioctl.h>
@@ -20,7 +21,6 @@
 #include "term_ctl.h"
 
 #ifdef _WIN32
-#include <stdlib.h>
 #include <io.h>
 #include <limits.h>
 #include <windows.h>
@@ -223,13 +223,58 @@ int term_get_columns(void *ctx)
 #endif
 }
 
+/**
+Returns wether the environment suggests a dark or light
+terminal background.
+
+Our default color theme is for dark backgrounds.
+
+Check the COLORFGBG environment variable, which should
+be 15;0 for a dark theme and 0;15 for a light theme.
+
+If the last value is 7 or 9 to 15 then assume a light theme.
+
+@return 1 if a light background was detected, 0 for a dark background otherwise
+*/
+static int term_get_bg(void)
+{
+    char const *colorfgbg = getenv("COLORFGBG");
+    if (!colorfgbg) {
+        return 0; // default dark theme
+    }
+    char *p = strrchr(colorfgbg, ';');
+    if (!p) {
+        return 0; // default dark theme
+    }
+
+    // Check if the last value is 7 or 9 to 15.
+    if (p[1] == '7' || p[1] == '9'
+            || (p[1] == '1' && p[2] != '\0')) {
+        return 1; // light theme
+    }
+    return 0; // dark theme
+}
+
 int term_has_color(void *ctx)
 {
 #ifdef _WIN32
     return _term_has_color(ctx);
 #else
+    char const *color = getenv("RTL433_COLOR");
+    if (color && strcmp(color, "always") == 0) {
+        return 1;
+    }
+    if (color && strcmp(color, "never") == 0) {
+        return 0;
+    }
+
+    char const *no_color = getenv("NO_COLOR");
+    if (no_color && no_color[0] != '\0') {
+        return 0;
+    }
+
     FILE *fp = (FILE *)ctx;
-    return isatty(fileno(fp)); // || get_env("force_color")
+    return isatty(fileno(fp));
 #endif
 }
 
@@ -268,6 +313,12 @@ void term_ring_bell(void *ctx)
 
 void term_set_fg(void *ctx, term_color_t color)
 {
+    // Cache the detected terminal background color
+    static int light_bg = -1;
+    if (light_bg == -1) {
+        light_bg = term_get_bg();
+    }
+
 #ifdef _WIN32
     console_t *console = (console_t *)ctx;
     if (!console->ansi) {
@@ -278,14 +329,28 @@ void term_set_fg(void *ctx, term_color_t color)
 #else
     FILE *fp = (FILE *)ctx;
 #endif
-    if (color == TERM_COLOR_RESET)
+    if (color == TERM_COLOR_RESET) {
         fprintf(fp, "\033[0m");
-    else
-        fprintf(fp, "\033[%d;1m", color);
+    }
+    else if (light_bg) {
+        fprintf(fp, "\033[%dm", color); // normal colors on light backgrounds
+    }
+    else {
+        fprintf(fp, "\033[%d;1m", color); // bright/bold colors on dark backgrounds
+    }
 }
 
 void term_set_bg(void *ctx, term_color_t bg, term_color_t fg)
 {
+    // Cache the detected terminal background color
+    static int light_bg = -1;
+    if (light_bg == -1) {
+        light_bg = term_get_bg();
+    }
+    if (light_bg && fg >= TERM_COLOR_BRIGHT_BLACK && fg <= TERM_COLOR_BRIGHT_WHITE) {
+        fg -= 60; // remove bright/bold foreground on light backgrounds
+    }
+
     if (bg < TERM_COLOR_BLACK
             || (bg > TERM_COLOR_WHITE && bg < TERM_COLOR_BRIGHT_BLACK)
             || bg > TERM_COLOR_BRIGHT_WHITE) {
@@ -403,14 +468,17 @@ int term_printf(void *ctx, _Printf_format_string_ char const *format, ...)
     return len;
 }
 
-int term_help_puts(void *ctx, char const *buf)
+int term_help_fputs(void *ctx, char const *buf, FILE *fp)
 {
     char const *p = buf;
     int i, len, buf_len, color, state = 0, set_color = -1, next_color = -1;
-    FILE *fp;
+    if (!fp) {
+        fp = stderr;
+    }
 
-    if (!ctx)
-        return fprintf(stderr, "%s", buf);
+    if (!ctx) {
+        return fprintf(fp, "%s", buf);
+    }
 
 #ifdef _WIN32
     console_t *console = (console_t *)ctx;
@@ -418,9 +486,6 @@ int term_help_puts(void *ctx, char const *buf)
 #else
     fp = (FILE *)ctx;
 #endif
-
-    if (!fp)
-        fp = stderr;
 
     buf_len = (int)strlen(buf);
     for (i = len = 0; *p && i < buf_len; i++, p++) {
@@ -436,7 +501,7 @@ int term_help_puts(void *ctx, char const *buf)
             state = 1;
             next_color = 5;
         }
-        else if ((state == 1 || state == 2) && *p == ']' && ((p[1] == ' ' && p[2] != '|') || p[1] == '\n' || p[1] == '\0')) {
+        else if ((state == 1 || state == 2) && *p == ']' && (p[1] == ',' || (p[1] == ' ' && p[2] != '|') || p[1] == '\n' || p[1] == '\0')) {
             state = 0;
             set_color = 0;
         }
@@ -490,7 +555,7 @@ int term_help_puts(void *ctx, char const *buf)
     return len;
 }
 
-int term_help_printf(_Printf_format_string_ char const *format, ...)
+int term_help_fprintf(FILE *fp, _Printf_format_string_ char const *format, ...)
 {
     int len;
     va_list args;
@@ -498,7 +563,7 @@ int term_help_printf(_Printf_format_string_ char const *format, ...)
 
     va_start(args, format);
 
-    void *term = term_init(stderr);
+    void *term = term_init(fp);
     if (!term_has_color(term)) {
         term_free(term);
         term = NULL;
@@ -507,7 +572,7 @@ int term_help_printf(_Printf_format_string_ char const *format, ...)
     // Terminate first in case a buggy '_MSC_VER < 1900' is used.
     buf[sizeof(buf) - 1] = '\0';
     vsnprintf(buf, sizeof(buf) - 1, format, args);
-    len = term_help_puts(term, buf);
+    len = term_help_fputs(term, buf, fp);
 
     term_free(term);
 

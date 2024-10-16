@@ -64,7 +64,7 @@ static int eurochron_efth800_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int dcf77_mth  = (b[6] & 0x0f);
 
         if (!crc8(b, 8, 0x31, 0x00)) {
-            sprintf(dcf77_str, "%4d-%02d-%02dT%02d:%02d:%02d", dcf77_year + 2000, dcf77_mth, dcf77_day, dcf77_hour, dcf77_min, dcf77_sec);
+            snprintf(dcf77_str, sizeof(dcf77_str), "%4d-%02d-%02dT%02d:%02d:%02d", dcf77_year + 2000, dcf77_mth, dcf77_day, dcf77_hour, dcf77_min, dcf77_sec);
         }
     }
 
@@ -111,7 +111,7 @@ static int eurochron_efth800_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "",             DATA_INT,    id,
             "channel",          "",             DATA_INT,    channel + 1,
             "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",     DATA_INT,    humidity,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             "radio_clock",      "Radio Clock",  DATA_COND,   *dcf77_str, DATA_STRING, dcf77_str,

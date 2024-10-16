@@ -4,7 +4,8 @@
 /** @fn int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 Prologue sensor protocol,
 also FreeTec NC-7104 sensor for FreeTec Weatherstation NC-7102,
-and Pearl NC-7159-675.
+also Pearl NC-7159-675,
+also TFA pool thermometer 30.3240.10 #2651
 The sensor can be bought at Clas Ohlson.
 
 Note: this is a false positive for AlectoV1.
@@ -76,7 +77,7 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",            "",            DATA_INT,    id,
             "channel",       "Channel",     DATA_INT,    channel,
             "battery_ok",    "Battery",     DATA_INT,    !!battery,
-            "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_raw * 0.1,
+            "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_raw * 0.1,
             "humidity",      "Humidity",    DATA_COND,   humidity != 0xcc, DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "button",        "Button",      DATA_INT,    button,
             NULL);
