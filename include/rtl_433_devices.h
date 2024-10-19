@@ -273,6 +273,7 @@
     DECL(vevor_7in1) \
     DECL(arexx_ml) \
     DECL(rosstech_dcu706) \
+    DECL(tpms_aston_martin) \
 
     /* Add new decoders here. */
 
