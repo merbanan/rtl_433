@@ -351,7 +351,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [263]  Vevor Wireless Weather Station 7-in-1
     [264]  Arexx Multilogger IP-HA90, IP-TH78EXT, TSN-70E
     [265]  Rosstech Digital Control Unit DCU-706/Sundance/Jacuzzi
-    [266]  Aston Martin Smartire TPMS sensor, Vantage DB9 protocol
+    [266]  SmarTire TPMS sensor, Aston Martin/Vantage DB9 protocol
 
 * Disabled by default, use -R n or a conf file to enable
 

@@ -241,7 +241,6 @@ add_library(r_433 STATIC
     devices/thermopro_tx2c.c
     devices/thermor.c
     devices/tpms_abarth124.c
-    devices/tpms_aston_martin.c
     devices/tpms_ave.c
     devices/tpms_bmw.c
     devices/tpms_bmw_g3.c
@@ -258,6 +257,7 @@ add_library(r_433 STATIC
     devices/tpms_porsche.c
     devices/tpms_renault.c
     devices/tpms_renault_0435r.c
+    devices/tpms_smartire.c
     devices/tpms_toyota.c
     devices/tpms_truck.c
     devices/tpms_tyreguard400.c
