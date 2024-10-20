@@ -257,6 +257,7 @@ add_library(r_433 STATIC
     devices/tpms_porsche.c
     devices/tpms_renault.c
     devices/tpms_renault_0435r.c
+    devices/tpms_smartire.c
     devices/tpms_toyota.c
     devices/tpms_truck.c
     devices/tpms_tyreguard400.c
