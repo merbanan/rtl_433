@@ -52,7 +52,7 @@ void reflect_nibbles(uint8_t message[], unsigned num_bytes);
 /// @param num_bits message length in bits
 /// @param dst target buffer for extracted nibbles, at least num_bits/5 size
 /// @return number of successfully unstuffed nibbles.
-unsigned extract_nibbles_4b1s(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst);
+unsigned extract_nibbles_4b1s(uint8_t const *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst);
 
 /// UART "8n1" (10-to-8) decoder with 1 start bit (0), no parity, 1 stop bit (1), LSB-first bit-order.
 ///
@@ -61,7 +61,16 @@ unsigned extract_nibbles_4b1s(uint8_t *message, unsigned offset_bits, unsigned n
 /// @param num_bits message length in bits
 /// @param dst target buffer for extracted bytes, at least num_bits/10 size
 /// @return number of successful decoded bytes
-unsigned extract_bytes_uart(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst);
+unsigned extract_bytes_uart(uint8_t const *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst);
+
+/// UART "8o1" (11-to-8) decoder with 1 start bit (1), odd parity, 1 stop bit (0), MSB-first bit-order.
+///
+/// @param message bytes of message data
+/// @param offset_bits start offset of message in bits
+/// @param num_bits message length in bits
+/// @param dst target buffer for extracted bytes, at least num_bits/11 size
+/// @return number of successful decoded bytes
+unsigned extract_bytes_uart_parity(uint8_t const *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst);
 
 /// Decode symbols to bits.
 ///
@@ -73,7 +82,7 @@ unsigned extract_bytes_uart(uint8_t *message, unsigned offset_bits, unsigned num
 /// @param sync symbol for sync bit, ignored at start, terminates at end
 /// @param dst target buffer for extracted bits, at least num_bits/symbol_x_len size
 /// @return number of successful decoded bits
-unsigned extract_bits_symbols(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint32_t zero, uint32_t one, uint32_t sync, uint8_t *dst);
+unsigned extract_bits_symbols(uint8_t const *message, unsigned offset_bits, unsigned num_bits, uint32_t zero, uint32_t one, uint32_t sync, uint8_t *dst);
 
 /// CRC-4.
 ///

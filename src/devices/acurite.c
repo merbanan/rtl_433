@@ -2028,7 +2028,7 @@ r_device const acurite_590tx = {
         .short_width = 500,  // short gap is 500 us
         .long_width  = 1500, // long gap is 1500 us
         .gap_limit   = 2000, // (preceeding) sync gap is 3000 us
-        .reset_limit = 3500, // no packet gap, sync gap is 500 us
+        .reset_limit = 3500, // no packet gap, gap before sync is 500 us
         .decode_fn   = &acurite_590tx_decode,
         .fields      = acurite_590_output_fields,
 };

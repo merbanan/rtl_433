@@ -498,6 +498,16 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
     else if (sensor_id == ID_BTHGN129) {
         if (validate_os_v2_message(decoder, msg, 92, msg_bits, 19) != 0)
             return 0;
+        // int comfort = msg[7] >> 4;
+        // char *comfort_str = "Normal";
+        // if      (comfort == 0x4)   comfort_str = "Comfortable";
+        // else if (comfort == 0x8)   comfort_str = "Dry";
+        // else if (comfort == 0xc) comfort_str = "Humid";
+        // int forecast = msg[9] >> 4;
+        // char *forecast_str = "Cloudy";
+        // if      (forecast == 0x3)   forecast_str = "Rainy";
+        // else if (forecast == 0x6)   forecast_str = "Partly Cloudy";
+        // else if (forecast == 0xc) forecast_str = "Sunny";
         float temp_c = get_os_temperature(msg);
         // Pressure is given in hPa. You may need to adjust the offset
         // according to your altitude level (600 is a good starting point)
