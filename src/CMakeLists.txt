@@ -203,6 +203,7 @@ add_library(r_433 STATIC
     devices/regency_fan.c
     devices/revolt_nc5462.c
     devices/rftech.c
+    devices/risco_agility.c
     devices/rojaflex.c
     devices/rosstech_dcu706.c
     devices/rubicson.c
