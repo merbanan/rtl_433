@@ -147,7 +147,7 @@ static int risco_agility_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     reflect_bytes(b,16);
 
-    // Alarm state, 0x6 = Tampered, 0xA = Tampered_motion, 0xC = Motion, 0x0 = Clear, not detection.
+    // Alarm state, 0x4 = Tampered, 0x6 = Tampered_motion, 0x2 = Motion, 0x0 = Clear, not detection.
     int state        = gray_decode(b[12] & 0xF);
     int tamper       = (state & 0x4) >> 2;
     int motion       = (state & 0x2) >> 1;
