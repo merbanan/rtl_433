@@ -103,26 +103,47 @@ static int arexx_ml_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Extract data from buffer
     int id       = (b[2] << 8) | (b[1]); // little-endian
     int sens_val = (b[3] << 8) | (b[4]); // big-endian?
-    int is_humi  = id & 1; // even number: Temperature, odd number: Humidity
 
-    // MCP9808 Ambient Temperature Register "5-4":
-    int temp_alert = (sens_val >> 13) & 7;
-    int temp_raw   = (int16_t)(sens_val << 3); // uses sign-extend
-    float temp_c   = temp_raw / 128;
+    // Decode readings
+    float temp_c = 0.0;
+    float humidity = 0.0;
+    int is_humi = 0;
+    int is_temp = 0;
+    int is_alert = 0;
+    int temp_alert = 0;
 
-    if (msg_len == 5) { // not sure if this is the proper check
+    if (msg_len == 5 && (id & 0xF000) == 0x2000) {
+        // temperature reading from TL-3TSN, TSN-33MN, etc.
+        is_temp = 1;
+        temp_c = (int16_t)sens_val * 0.0078125f;
+    }
+    else if (msg_len == 5 && (id & 0xF001) == 0x4000) {
+        // temperature reading from TSN-TH70E, IP-TH70EXT, etc.
+        is_temp = 1;
         // SHT10 Temperature
         temp_c = sens_val * 0.01f - 40.0f; // offset actually varies by Vdd
     }
-    // SHT10 Humidity
-    float humidity = -2.0468 + 0.0367 * sens_val - 1.5955E-6 * sens_val * sens_val;
+    else if (msg_len == 5 && (id & 0xF001) == 0x4001) {
+        // humidity reading from TSN-TH70E, IP-TH70EXT, etc.
+        is_humi = 1;
+        sens_val = (int16_t)sens_val;
+        // SHT10 Humidity
+        humidity = -2.0468 + 0.0367 * sens_val - 1.5955E-6 * sens_val * sens_val;
+    }
+    else if (msg_len == 6) {
+        is_temp = is_alert = 1;
+        // MCP9808 Ambient Temperature Register "5-4":
+        temp_alert = (sens_val >> 13) & 7;
+        int temp_raw = (int16_t)(sens_val << 3); // uses sign-extend
+        temp_c = temp_raw / 128;
+    }
 
     /* clang-format off */
     data_t *data = data_make(
             "model",            "",                 DATA_STRING, "Arexx-ML",
             "id",               "ID",               DATA_FORMAT, "%04x",    DATA_INT, id,
-            "temperature_C",    "Temperature",      DATA_COND, !is_humi,    DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-            "temperature_alert",  "Alert",          DATA_COND, !is_humi,    DATA_FORMAT, "%x", DATA_INT, temp_alert,
+            "temperature_C",    "Temperature",      DATA_COND, is_temp,     DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
+            "temperature_alert","Alert",            DATA_COND, is_alert,    DATA_FORMAT, "%x", DATA_INT, temp_alert,
             "humidity",         "Humidity",         DATA_COND, is_humi,     DATA_FORMAT, "%.1f %%", DATA_DOUBLE, humidity,
             "sensor_raw",       "Sensor Raw",       DATA_FORMAT, "%04x",    DATA_INT, sens_val,
             "mic",              "Integrity",        DATA_STRING, "CRC",
