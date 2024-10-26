@@ -142,7 +142,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [52]  Bresser Thermo-/Hygro-Sensor 3CH
     [53]  Springfield Temperature and Soil Moisture
     [54]  Oregon Scientific SL109H Remote Thermal Hygro Sensor
-    [55]  Acurite 606TX Temperature Sensor
+    [55]  Acurite 606TX / Technoline TX960 Temperature Sensor
     [56]  TFA pool temperature sensor
     [57]  Kedsum Temperature & Humidity Sensor, Pearl NC-7415
     [58]  Blyss DC5-UK-WH
