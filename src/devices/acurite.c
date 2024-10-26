@@ -22,7 +22,7 @@ Devices decoded:
 - Acurite 609TXC "TH" temperature and humidity sensor (609A1TX)
 - Acurite 986 Refrigerator / Freezer Thermometer
 - Acurite 515 Refrigerator / Freezer Thermometer
-- Acurite 606TX temperature sensor, optional with channels and [TX]Button
+- Acurite 606TX / Technoline TX960 temperature sensor, optional with channels and [TX]Button
 - Acurite 6045M Lightning Detector
 - Acurite 00275rm and 00276rm temp. and humidity with optional probe.
 - Acurite 1190/1192 leak/water detector
@@ -1608,8 +1608,29 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
-Acurite 606 Temperature sensor
+Acurite 606TX / Technoline TX960 Temperature sensor decoder.
 
+Specs:
+- Temperature -40 to 158 F / -40 to 70 C
+
+Status Information sent
+- button pressed
+- low battery
+- channel
+- id
+
+Message format:
+
+    Byte 0   Byte 1   Byte 2   Byte 3   Byte 4
+    IIIIIIII BbCCTTTT TTTTTTTT KKKKKKKK f
+
+- I = Sensor ID (8 bits, changes with every battery replacement)
+- B = Battery OK (cleared for low)
+- b = Button pressed
+- C = Channel (2 bits, Channels 0, 1 or 2)
+- T = Temperature (12 bits)
+- K = Checksum (8 bits)
+- f = Final bit (== 0 for Acurite sensor, == !B for Technoline sensor)
 */
 static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -1630,9 +1651,6 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
 
     b = bitbuffer->bb[row];
-
-    if (b[4] != 0)
-        return DECODE_FAIL_SANITY;
 
     // reject all blank messages
     if (b[0] == 0 && b[1] == 0 && b[2] == 0 && b[3] == 0)
@@ -1986,7 +2004,7 @@ static char const *const acurite_590_output_fields[] = {
 //.gap_limit      = 1200,
 //.reset_limit    = 12000,
 r_device const acurite_606 = {
-        .name        = "Acurite 606TX Temperature Sensor",
+        .name        = "Acurite 606TX / Technoline TX960 Temperature Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,
         .long_width  = 4000,
