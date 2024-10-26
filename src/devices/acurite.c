@@ -22,7 +22,7 @@ Devices decoded:
 - Acurite 609TXC "TH" temperature and humidity sensor (609A1TX)
 - Acurite 986 Refrigerator / Freezer Thermometer
 - Acurite 515 Refrigerator / Freezer Thermometer
-- Acurite 606TX temperature sensor, optional with channels and [TX]Button
+- Acurite 606TX / Technoline TX960 temperature sensor, optional with channels and [TX]Button
 - Acurite 6045M Lightning Detector
 - Acurite 00275rm and 00276rm temp. and humidity with optional probe.
 - Acurite 1190/1192 leak/water detector
