@@ -375,7 +375,6 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
 {
     float tempf;
     uint8_t humidity;
-    char raw_str[31], *rawp;
     uint16_t sensor_id;
     uint8_t strike_count, strike_distance;
     int battery_low, active, rfi_detect;
@@ -424,21 +423,6 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     strike_distance = bb[7] & 0x1f;
     rfi_detect = (bb[7] & 0x20) == 0x20;
 
-
-    /*
-     * 2018-04-21 rct - There are still a number of unknown bits in the
-     * message that need to be figured out. Add the raw message hex to
-     * to the structured data output to allow future analysis without
-     * having to enable debug for long running rtl_433 processes.
-     */
-    rawp = (char *)raw_str;
-    for (int i=0; i < MIN(browlen, 15); i++) {
-        sprintf(rawp,"%02x",bb[i]);
-        rawp += 2;
-    }
-    *rawp = '\0';
-
-
     // Flag whether this message might need further analysis
     if ((bb[4] & 0x20) != 0) // unknown status bits, always off
         exception++;
@@ -456,9 +440,17 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
             "active",           "Active Mode",      DATA_INT,    active,
             "rfi",              "RFI Detect",       DATA_INT,    rfi_detect,
             "exception",        "Data Exception",   DATA_INT,    exception,
-            "raw_msg",          "Raw Message",      DATA_STRING, raw_str,
             NULL);
     /* clang-format on */
+
+    /*
+     * 2018-04-21 rct - There are still a number of unknown bits in the
+     * message that need to be figured out. Add the raw message hex to
+     * to the structured data output to allow future analysis without
+     * having to enable debug for long running rtl_433 processes.
+     */
+    char raw_str[31];
+    data = data_hex(data, "raw_msg", "Raw Message", NULL, bb, MIN(browlen, 15), raw_str);
 
     decoder_output_data(decoder, data);
 
@@ -769,18 +761,6 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
     uint16_t sensor_id = ((bb[0] & 0x03) << 8) | bb[1];
     char const *channel_str = acurite_getChannel(bb[0]);
 
-    // There are still a few unknown/unused bits in the message that
-    // message that could possibly hold some data. Add the raw message hex to
-    // to the structured data output to allow future analysis without
-    // having to enable debug for long running rtl_433 processes.
-    char raw_str[31], *rawp;
-    rawp = (char *)raw_str;
-    for (int i=0; i < MIN(browlen, 15); i++) {
-        sprintf(rawp,"%02x",bb[i]);
-        rawp += 2;
-    }
-    *rawp = '\0';
-
     // The sensor sends the same data three times, each of these have
     // an indicator of which one of the three it is. This means the
     // checksum and first byte will be different for each one.
@@ -922,7 +902,12 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
     // @todo only do this if exception != 0, but would be somewhat incompatible
     data = data_int(data, "exception",  "Data Exception",   NULL,   exception);
-    data = data_str(data, "raw_msg",    "Raw Message",      NULL,   raw_str);
+    // There are still a few unknown/unused bits in the message that
+    // message that could possibly hold some data. Add the raw message hex to
+    // to the structured data output to allow future analysis without
+    // having to enable debug for long running rtl_433 processes.
+    char raw_str[31];
+    data = data_hex(data, "raw_msg", "Raw Message", NULL, bb, MIN(browlen, 15), raw_str);
 
     decoder_output_data(decoder, data);
 
