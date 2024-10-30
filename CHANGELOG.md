@@ -1,5 +1,112 @@
 # Changelog
 
+## Release 24.10 (2024-10-30)
+
+### Breaking Changes
+
+- Changed to pm_2_5_ug_m3, pm_10_ug_m3, BREAKING change to Bresser-7in1 (#2953)
+- Changed Smoke-GS558, Akhan-100F14 to default disabled BREAKING CHANGE (#2958)
+- Changed distance_km to storm_dist_km, BREAKING change to Bresser-Lightning (#2855)
+
+### Highlights
+
+- Added support for Technoline TX960 to Acurite-606TX decoder (#3078)
+- Added support for Risco 2 way Agility protocol, Risco PIR/PET Sensor RWX95PA (#3066)
+- Added support for Rosstech Digital Control Unit DCU-706/Sundance/Jacuzzi (#2612)
+- Added support for Arexx Multilogger (#2487)
+- Updated Fineoffset-WS90 to new FW timings (#3063)
+- Added decoder conf for oma blind remote (#3058)
+- Added decoder conf for iVac Pro remote (#3049)
+- Added Vevor Weather Station 7-in-1 (#3023)
+- Added support for Ecowitt WH46 air quality sensor (#3010)
+- Added open in browser script (#2158)
+- Added decoder conf for Hornbach MSRC-SAL Awning remote (#3009)
+- Added support for Geevon TX16-3 outdoor sensor (#2910)
+- Added support for Arad Master Meter water utility meter (#2984)
+- Added support for ThermoPro TP829b and Improve rtl_433_mqtt_hass.py (#2964)
+- Added Support for Chamberlain CWPIRC pir sensor (#2962)
+- Added support for Nice One to Nice-FlorS (#2960)
+- Added Support for Ecowitt WN34D and improve FineOffset WN34 (#2944)
+- Added decoder conf for rolleaseacmedia blind controller (#2947)
+- Added decoder conf for Thomson kinetic doorbell (#2940)
+- Added ST389 temperature sensor for ORIA WA50 freezer thermometer (#2937)
+- Added decoder conf for Dewenwils BH-V (#2926)
+- Added Support BMW Gen3 TPMS (#2900)
+- Added decoder conf for self powered QX-305 & QX-302 switches (#2903)
+- Improved BMW Gen4-Gen5 TPMS and Add Support Audi TPMS Pressure Alert (#2901)
+- Added support for Audi TPMS and BMW Gen4 TPMS (#2897)
+- Added support for ThermoPro TP28b (#2882)
+- Added Support for Mueller Hot Rod water meter (#2887)
+- Added Support for Thermor DG950 Weather Station (#2886)
+- Added darker colors for light terminal backgrounds (#2864)
+- Added support for Watts WFHT-RF thermostat (#2648)
+- Added honor the NO_COLOR env var
+- Added RTL433_COLOR=always/never/auto env var
+- Added support for BMW Gen5 TPMS multi-brand HUF, Continental, Schrader/Sensata (#2834)
+- Added support for Bresser CO2 PN 7009977 and HCHO/VOC PN 7009978 sensors (#2815)
+- Added support for Fine Offset WN32B (closes #2303)
+- Added support for Fine Offset / Ecowitt WH55 water leak sensor (closes #2756)
+- Added support for TechniSat IMETEO X6 and improve Holman-AOK (#2759)
+- Added Motonet MTX, MarQuant Rain note to Schou-72543 (#2686)
+
+### Changed
+
+- Added extract_bytes_uart_parity utility function
+- Fixed Acurite-590TX timings (closes #3039)
+- Changed rtl_433_mqtt_hass.py to add supercap_V key
+- examples: Added dup filtering to mqtt_relay (#3018)
+- Fixed wmbus raw data output length (#2749)
+- examples: Added ability for mqtt_relay to use a config file (#3013)
+- Added MQTT dedup republish filter example (closes #2990)
+- Added TX-Button to inFactory-TH
+- examples: Changed mqtt_relay to always use id in topic (#3014) (#3014)
+- examples: Improved mqtt_relay to make individual and json topics optional (#2975)
+- examples: Removed obsolete sigrok example scripts (#2979)
+- Changed Klimalogg-Pro max humidity (closes #2967)
+- Changed to type-safe data_append alternative (#2667)
+- Fixed rain_rate_in_h template in HA script (#2782)
+- Improved Ecowitt WH53 (#2934)
+- Fixed Bresser-5in1 omit temp/hum on error
+- Improved Wireless-MBus 3of6 decoding (#2883)
+- Added HA script compat for paho-mqtt 2.0.0 via legacy callback API (#2916)
+- Fixed Nissan TPMS pressure_PSI key (#2915)
+- Changed HA script power to energy and UV index to float (#2913)
+- Fixed Cotech-367959 lux and uv value (#2073)
+- Fixed TPMS Nissan pressure_psi value (#2906)
+- Fixed Bresser-6in1 rain vs temp (closes #2184)
+- Changed a HA script device trigger to avoid duplicate trigger (#2829)
+- Added some known fields to Marlec-Solar
+- Added log rotate support for dumper files (#2876)
+- Added contact_open reed_open mappings to rtl_433_mqtt_hass.py (#2881)
+- Added microseconds to OOK pulse data outputs
+- Added OpenMetrics/Prometheus API (#2863)
+- Added strict checks to flex argument parsing
+- Fixed EcoWitt-WS68 wind unit and decoding (#2871)
+- Fixed event callback on shutdown (closes #2869)
+- Fixed Badger-ORION return on decode success (#2854)
+- Improved Bresser lightning correct msg length and lfsr digest check
+- Improved FS20 decoding, add FHT support (#1783)
+- Fixed properly install to /etc for /usr prefix (closes #2827)
+- Added compatible model TST-507 TPMS to EezTire E618 (#2832)
+- Fixed Bresser-7in1 to exclude unavailable sensor values (#2817)
+- Added HTTP cmd API examples
+- Fixed TPMS Elantra2012 for longer desync (closes #2806)
+- Fixed KlikAanKlikUit-Switch for DIO remotes (#2789)
+- Fixed rtl_433_mqtt_hass.py rain_in value template (#2801)
+- Fixed Bresser-Lightning decoding of 'count' (#2797)
+- Fixed detection of Bresser-ProRainGauge (#2431)
+- Improved EcoWitt-WS68 LUX and UVI decoding and add units (#2790)
+- Fixed Fineoffset-WS90 to support newer firmware (closes #2732)
+- Added Ecowitt air quality sensors to rtl_433_mqtt_hass.py (#2772)
+- Added mqtt base topic option (closes #2768)
+- Added reading mqtt auth from env vars (closes #2769)
+- Fixed converting inches to mm (#2755)
+- Changed rtl_433_mqtt_hass.py to support storm_dist_km from WH31L (#2748)
+- Added channel/button to Acurite-606TX
+- Fixed TFA-303151 negative temps (closes #2538)
+- Fixed temperature for Bresser 3-in-1 Wind Gauge (closes #2523)
+- Improved code and annotations for cpplint (#2683)
+
 ## Release 23.11 (2023-11-28)
 
 ### Breaking Changes
