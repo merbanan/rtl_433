@@ -115,7 +115,7 @@ static int thermopro_tp82xb_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             decoder_logf(decoder, 1, __func__, "Checksum error, calculated %x, expected %x, not tp829b model", checksum, b[8]);
             ret = DECODE_FAIL_MIC;
         }
-        else 
+        else
             model = 9; // ie tp829b
     }
 
@@ -128,7 +128,7 @@ static int thermopro_tp82xb_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             decoder_logf(decoder, 1, __func__, "Checksum error, calculated %x, expected %x, not tp828b model", checksum, b[11]);
             ret = DECODE_FAIL_MIC;
         }
-        else 
+        else
             model = 8; // ie tp828b
     }
 
