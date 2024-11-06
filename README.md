@@ -344,7 +344,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [256]  ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill
     [257]  BMW Gen3 TPMS
     [258]  Chamberlain CWPIRC PIR Sensor
-    [259]  ThermoPro TP829b Meat Thermometer 4 coated probes
+    [259]  ThermoPro Meat Thermometers, TP828B 2 probes with Temp, LO and HI, TP829B 4 probes with temp only
     [260]* Arad/Master Meter Dialog3G water utility meter
     [261]  Geevon TX16-3 outdoor sensor
     [262]  Fine Offset Electronics WH46 air quality sensor

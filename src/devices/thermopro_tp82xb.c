@@ -234,7 +234,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const thermopro_tp82xb = {
-        .name        = "ThermoPro Meat Thermometer ",
+        .name        = "ThermoPro Meat Thermometers, TP828B 2 probes with Temp, LO and HI, TP829B 4 probes with temp only",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 102,
         .long_width  = 102,
