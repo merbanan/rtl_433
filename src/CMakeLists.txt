@@ -237,7 +237,7 @@ add_library(r_433 STATIC
     devices/thermopro_tp11.c
     devices/thermopro_tp12.c
     devices/thermopro_tp28b.c
-    devices/thermopro_tp829b.c
+    devices/thermopro_tp82xb.c
     devices/thermopro_tx2.c
     devices/thermopro_tx2c.c
     devices/thermor.c
