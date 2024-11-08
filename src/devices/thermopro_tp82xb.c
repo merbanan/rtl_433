@@ -7,7 +7,9 @@
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
+*/
 
+/*
 ThermoPro TP82xB Meat Thermometer probes.
 
 Devices decoded:
@@ -18,7 +20,7 @@ Devices decoded:
 #include "decoder.h"
 
 /**
-ThermoPro TP828P 2 Probes
+ThermoPro TP828P 2 Probes.
 
 - Current Temperature of probes, BBQ Target LO and HI temperatures
 - Issue #3082 open by Ryan Bray (\@rbray89)
@@ -134,7 +136,7 @@ static int thermopro_tp828b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
-ThermoPro TP829B 4 Probes
+ThermoPro TP829B 4 Probes.
 
 - Current Temperature of probes only.
 - Issue #2961 open by \@AryehGielchinsky
