@@ -274,6 +274,7 @@
     DECL(arexx_ml) \
     DECL(rosstech_dcu706) \
     DECL(risco_agility) \
+    DECL(thermopro_tp828b) \
 
     /* Add new decoders here. */
 
