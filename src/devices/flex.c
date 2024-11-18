@@ -14,9 +14,9 @@
 #include "fatal.h"
 #include <stdlib.h>
 
-static inline int bit(const uint8_t *bytes, unsigned bit)
+static inline int bit(const uint8_t *bytes, unsigned b)
 {
-    return bytes[bit >> 3] >> (7 - (bit & 7)) & 1;
+    return bytes[b >> 3] >> (7 - (b & 7)) & 1;
 }
 
 /// extract all mask bits skipping unmasked bits of a number up to 32/64 bits

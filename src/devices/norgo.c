@@ -88,15 +88,15 @@ static uint16_t const checksum_taps[] = {
 static uint16_t next_mask(uint32_t mask)
 {
     uint16_t i;
-    uint16_t next_mask;
+    uint16_t n_mask;
 
-    next_mask = mask >> 1;
+    n_mask = mask >> 1;
     for (i = 0; i < 15; i++) {
         if (mask & (1 << i)) {
-            next_mask ^= checksum_taps[i];
+            n_mask ^= checksum_taps[i];
         }
     }
-    return next_mask;
+    return n_mask;
 }
 
 static uint8_t calc_checksum(uint8_t *data, uint8_t datalen)
