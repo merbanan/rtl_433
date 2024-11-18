@@ -14,6 +14,8 @@ Bresser sensor protocol.
 
 The protocol is for the wireless Temperature/Humidity sensor
 - Bresser Thermo-/Hygro-Sensor 3CH
+  Another sensor sold under the same generic name is handled by
+  bresser_st1005h.c.
 - also works for Renkforce DM-7511
 
 The sensor sends 15 identical packages of 40 bits each ~60s.
