@@ -353,6 +353,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [265]  Rosstech Digital Control Unit DCU-706/Sundance/Jacuzzi
     [266]  Risco 2 Way Agility protocol, Risco PIR/PET Sensor RWX95P
     [267]  ThermoPro Meat Thermometers, TP828B 2 probes with Temp, BBQ Target LO and HI
+    [268]  Quinetic Switches and Sensors
 
 * Disabled by default, use -R n or a conf file to enable
 
