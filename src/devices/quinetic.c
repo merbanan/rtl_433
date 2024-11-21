@@ -63,7 +63,7 @@ static int quinetic_switch_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint8_t b[5];
     bitbuffer_extract_bytes(bitbuffer, 0, syncword_bitindex + 16, b, sizeof(b) * 8);
-    
+
     int crc = crc16(b, 5, 0x1021, 0x1D0F);
     if (crc != 0) {
         decoder_logf(decoder, 1, __func__, "CRC failure");
