@@ -61,46 +61,38 @@ static int quinetic_switch_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
     }
 
-    // DEBUG
-    // decoder_logf(decoder, 1, __func__, "Sync-Word Index: %d", syncword_bitindex);
-    // decoder_logf(decoder, 1, __func__, "Bits in Row: %d", bitbuffer->bits_per_row[0]);
-
     uint8_t b[5];
     bitbuffer_extract_bytes(bitbuffer, 0, syncword_bitindex + 16, b, sizeof(b) * 8);
     
-    char checksum_data_str[24];
-    snprintf(checksum_data_str, sizeof(checksum_data_str), "%02x%02x%02x", b[0], b[1], b[2]);
-    
-    char checksum_str[16];
-    snprintf(checksum_str, sizeof(checksum_str), "%02x%02x", b[3], b[4]);
-
-    uint16_t crc;
-    uint8_t checksum_data[] = {b[0], b[1], b[2]};
-    crc = crc16(checksum_data, 3, 0x1021, 0x1D0F);
-    
-    char checksum_crc[16];
-    snprintf(checksum_crc, sizeof(checksum_crc), "%x", crc);
-    if (strcmp(checksum_crc, checksum_str) != 0) {
-        decoder_logf(decoder, 1, __func__, "Checksum failed. Expected: %s, Calculated: %s.", checksum_str, checksum_crc);
+    int crc = crc16(b, 5, 0x1021, 0x1D0F);
+    if (crc != 0) {
+        decoder_logf(decoder, 1, __func__, "CRC failure");
         return DECODE_FAIL_MIC;
     }
 
-    int id = (b[0] << 8 | b[1]);
-
-    // handle button_code value
-    // 128=release, 1=press B1, 2=press B2, 3=press B3, 4=press B4
-    int button_code = b[2];
-    char *button_action = "release";
-    if (button_code < 192) {
-        button_action = "press";
+    // Process Switch-Channel (Button) nibble: b[2]
+    //
+    // Determine button number in switch (B1/B2/B3) when pressed.
+    // Typical Int Values:
+    //
+    // 192 = generic release
+    // 01 = press ( B1 )
+    // 02 = press ( B2 )
+    // 03 = press ( B3 )
+    int switch_channel = b[2];
+    if (switch_channel == 192) {
+        // Ignore "button release": button number unknown.
+        return DECODE_ABORT_EARLY;
     }
+
+    // Process Switch-ID nibbles: b[0] and b[1]
+    int id = (b[0] << 8) | (b[1]);
 
     /* clang-format off */
     data_t *data = data_make(
         "model",         "Model",           DATA_STRING, "Quinetic",
         "id",            "ID",              DATA_FORMAT, "%04x", DATA_INT, id,
-        "button_action", "Button Action",   DATA_STRING, button_action,
-        "button_code",   "Button Code",     DATA_INT,    button_code,
+        "channel",       "Channel",         DATA_INT,    switch_channel,
         "mic",           "Integrity",       DATA_STRING, "CRC",
         NULL);
     /* clang-format on */
@@ -112,8 +104,7 @@ static int quinetic_switch_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
-        "button_action",
-        "button_code",
+        "channnel",
         "mic",
         NULL,
 };
