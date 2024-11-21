@@ -1,5 +1,5 @@
 /** @file
-    Quinetic Switches and Sensors
+    Quinetic Switches and Sensors.
 
     Copyright (C) 2024 Nick Parrott
 
@@ -10,40 +10,37 @@
 */
 
 /**
-################################
-Frame Layout
+Quinetic Switches and Sensors.
 
-...PPPP SS IISCC
+## Frame Layout
 
-P: 48-bits+ of Preamble
-S: 16-bits of Sync-Word (0xA4, 0x23)
-I: 16-bits of Device ID
-S: 8-bits of Device Action
-C: 16-bits of In-Packet Checksum (CRC-16 AUG-CCITT)
+    ...PPPP SS IISCC
 
-################################
-CRC Checksum Method
+- P: 48-bits+ of Preamble
+- S: 16-bits of Sync-Word (0xA4, 0x23)
+- I: 16-bits of Device ID
+- S: 8-bits of Device Action
+- C: 16-bits of In-Packet Checksum (CRC-16 AUG-CCITT)
 
-    In-Packet Checksum: CC
-    24-bits of data to CRC-check: IIS
+## CRC Checksum Method
 
-################################
-Signal Summary
+- In-Packet Checksum: CC
+- 24-bits of data to CRC-check: IIS
 
-Frequency: 433.3 Mhz, +/- 50Khz
-Nominal pulse width: 10us
-Modulation: FSK_PCM
-Checksum: CRC-16/AUG-CCITT
+## Signal Summary
 
-################################
-Device Characteristics
+- Frequency: 433.3 Mhz, +/- 50Khz
+- Nominal pulse width: 10us
+- Modulation: FSK_PCM
+- Checksum: CRC-16/AUG-CCITT
 
-A switch emits 3-4 pulses when button is pressed.
-A switch emits 3-4 pulses when button is released.
-This duplication of packets is expected.
+## Device Characteristics
 
-Device ID is preserved as 16-bit Hex.
-It is printed on device rear-label (some models).
+- A switch emits 3-4 pulses when button is pressed.
+- A switch emits 3-4 pulses when button is released.
+- This duplication of packets is expected.
+- Device ID is preserved as 16-bit Hex.
+- It is printed on device rear-label (some models).
 */
 
 #include "decoder.h"
@@ -68,44 +65,43 @@ static int quinetic_switch_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // decoder_logf(decoder, 1, __func__, "Sync-Word Index: %d", syncword_bitindex);
     // decoder_logf(decoder, 1, __func__, "Bits in Row: %d", bitbuffer->bits_per_row[0]);
 
-    uint8_t payload[5];
-    bitbuffer_extract_bytes(bitbuffer, 0, syncword_bitindex + 16, payload, sizeof(payload) * 8);
+    uint8_t b[5];
+    bitbuffer_extract_bytes(bitbuffer, 0, syncword_bitindex + 16, b, sizeof(b) * 8);
     
     char checksum_data_str[24];
-    snprintf(checksum_data_str, sizeof(checksum_data_str), "%02x%02x%02x", payload[0], payload[1], payload[2]);
+    snprintf(checksum_data_str, sizeof(checksum_data_str), "%02x%02x%02x", b[0], b[1], b[2]);
     
     char checksum_str[16];
-    snprintf(checksum_str, sizeof(checksum_str), "%02x%02x", payload[3], payload[4]);
+    snprintf(checksum_str, sizeof(checksum_str), "%02x%02x", b[3], b[4]);
 
     uint16_t crc;
-    uint8_t checksum_data[] = {payload[0], payload[1], payload[2]};
+    uint8_t checksum_data[] = {b[0], b[1], b[2]};
     crc = crc16(checksum_data, 3, 0x1021, 0x1D0F);
     
     char checksum_crc[16];
     snprintf(checksum_crc, sizeof(checksum_crc), "%x", crc);
-    if ( strcmp(checksum_crc, checksum_str) != 0 ) {
+    if (strcmp(checksum_crc, checksum_str) != 0) {
         decoder_logf(decoder, 1, __func__, "Checksum failed. Expected: %s, Calculated: %s.", checksum_str, checksum_crc);
         return DECODE_FAIL_MIC;
     }
 
-    char id_hex[16];
-    snprintf(id_hex, sizeof(id_hex), "%02X%02X", payload[0], payload[1]);
-    // uint16_t id_int = (payload[0] << 8 | payload[1]);
-    
-    char action_str[] = "release";
-    if ((payload[2] >> 7) == 0) {
-        strcpy(action_str, "press");
+    int id = (b[0] << 8 | b[1]);
+
+    // handle button_code value
+    // 128=release, 1=press B1, 2=press B2, 3=press B3, 4=press B4
+    int button_code = b[2];
+    char *button_action = "release";
+    if (button_code < 192) {
+        button_action = "press";
     }
 
     /* clang-format off */
     data_t *data = data_make(
-        "model",       "Model",           DATA_STRING, "Quinetic",
-        "id",          "ID",              DATA_STRING, id_hex,
-        "action",      "Action",          DATA_STRING, action_str,
-        "action_int",  "Action Integer",  DATA_INT,    payload[2],
-        "checksum",    "In-Pkt Checksum", DATA_STRING, checksum_str,
-        "checksumdata", "Checksum Data",  DATA_STRING, checksum_data_str,
-        "mic",         "Integrity",       DATA_STRING, "CRC",
+        "model",         "Model",           DATA_STRING, "Quinetic",
+        "id",            "ID",              DATA_FORMAT, "%04x", DATA_INT, id,
+        "button_action", "Button Action",   DATA_STRING, button_action,
+        "button_code",   "Button Code",     DATA_INT,    button_code,
+        "mic",           "Integrity",       DATA_STRING, "CRC",
         NULL);
     /* clang-format on */
 
@@ -116,10 +112,8 @@ static int quinetic_switch_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
-        "action",
-        "action_int",
-        "checksum",
-        "checksumdata",
+        "button_action",
+        "button_code",
         "mic",
         NULL,
 };
