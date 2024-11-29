@@ -275,6 +275,7 @@
     DECL(rosstech_dcu706) \
     DECL(risco_agility) \
     DECL(thermopro_tp828b) \
+    DECL(quinetic) \
 
     /* Add new decoders here. */
 
