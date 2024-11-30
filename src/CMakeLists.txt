@@ -72,6 +72,7 @@ add_library(r_433 STATIC
     devices/bresser_7in1.c
     devices/bresser_leakage.c
     devices/bresser_lightning.c
+    devices/bresser_st1005h.c
     devices/bt_rain.c
     devices/burnhardbbq.c
     devices/calibeur.c
