@@ -796,6 +796,7 @@ static void handle_openmetrics(struct mg_connection *nc, struct http_message *hm
     mg_printf(nc,
             "HTTP/1.1 200 OK\r\n"
             "Content-Length: %u\r\n"
+            "Content-Type: text/plain; version=0.0.4; charset=utf-8\r\n"
             "\r\n",
             len);
     mg_send(nc, buf, (size_t)len);
