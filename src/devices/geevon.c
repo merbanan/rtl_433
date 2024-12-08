@@ -67,7 +67,7 @@ Example packets for TX19-1 (in the last nibble only the most significant bit is 
 */
 
 static int geevon_callback_generic(r_device *decoder, bitbuffer_t *bitbuffer,
-                                   bool validate_crc, const char *model)
+                                   bool validate_crc)
 {
     // invert all the bits
     bitbuffer_invert(bitbuffer);
@@ -107,13 +107,14 @@ static int geevon_callback_generic(r_device *decoder, bitbuffer_t *bitbuffer,
     // Store the decoded data
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "",             DATA_STRING, model,
+            "model",            "",             DATA_COND, validate_crc,  DATA_STRING, "Geevon-TX163",
+            "model",            "",             DATA_COND, !validate_crc, DATA_STRING, "Geevon-TX191",
             "id",               "",             DATA_INT,    b[0],
             "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "channel",          "Channel",      DATA_INT,    channel,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,     humidity,
-            "mic",              "Integrity",    DATA_STRING, validate_crc ? "CRC" : "NONE",
+            "mic",              "Integrity",    DATA_COND, validate_crc,  DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -121,12 +122,14 @@ static int geevon_callback_generic(r_device *decoder, bitbuffer_t *bitbuffer,
     return 1;
 }
 
-static int geevon_callback_tx16_3(r_device *decoder, bitbuffer_t *bitbuffer) {
-    return geevon_callback_generic(decoder, bitbuffer, true, "Geevon-TX163");
+static int geevon_callback_tx16_3(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    return geevon_callback_generic(decoder, bitbuffer, true);
 }
 
-static int geevon_callback_tx19_1(r_device *decoder, bitbuffer_t *bitbuffer) {
-    return geevon_callback_generic(decoder, bitbuffer, false, "Geevon-TX191");
+static int geevon_callback_tx19_1(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    return geevon_callback_generic(decoder, bitbuffer, false);
 }
 
 static char const *const output_fields[] = {
