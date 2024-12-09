@@ -66,7 +66,7 @@ Example packets for TX19-1 (in the last nibble only the most significant bit is 
 
 */
 
-static int geevon_callback_generic(r_device *decoder, bitbuffer_t *bitbuffer,
+static int geevon_decode(r_device *decoder, bitbuffer_t *bitbuffer,
                                    bool validate_crc)
 {
     // invert all the bits
@@ -122,14 +122,16 @@ static int geevon_callback_generic(r_device *decoder, bitbuffer_t *bitbuffer,
     return 1;
 }
 
-static int geevon_callback_tx16_3(r_device *decoder, bitbuffer_t *bitbuffer)
+/** @sa geevon_decode() */
+static int geevon_tx16_3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    return geevon_callback_generic(decoder, bitbuffer, true);
+    return geevon_decode(decoder, bitbuffer, true);
 }
 
-static int geevon_callback_tx19_1(r_device *decoder, bitbuffer_t *bitbuffer)
+/** @sa geevon_decode() */
+static int geevon_tx19_1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    return geevon_callback_generic(decoder, bitbuffer, false);
+    return geevon_decode(decoder, bitbuffer, false);
 }
 
 static char const *const output_fields[] = {
@@ -150,7 +152,7 @@ r_device const geevon_tx16_3 = {
         .sync_width  = 750,  // sync pulse is 728 us + 728 us gap
         .gap_limit   = 625,  // long gap (with short pulse) is ~472 us, sync gap is ~728 us
         .reset_limit = 1700, // maximum gap is 1250 us (long gap + longer sync gap on last repeat)
-        .decode_fn   = &geevon_callback_tx16_3,
+        .decode_fn   = &geevon_tx16_3_decode,
         .fields      = output_fields,
 };
 
@@ -162,6 +164,6 @@ r_device const geevon_tx19_1 = {
         .sync_width  = 750,  // sync pulse is ~728 us + ~728 us gap
         .gap_limit   = 625,  // long gap (with short pulse) is ~472 us, sync gap is ~728 us
         .reset_limit = 1700, // maximum gap is 1250 us (long gap + longer sync gap on last repeat)
-        .decode_fn   = &geevon_callback_tx19_1,
+        .decode_fn   = &geevon_tx19_1_decode,
         .fields      = output_fields,
 };
