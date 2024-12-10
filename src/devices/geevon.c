@@ -9,12 +9,13 @@
     (at your option) any later version.
 */
 
+#include <stdbool.h>
 #include "decoder.h"
 
 /**
-Geevon TX16-3 Remote Outdoor Sensor with LCD Display.
+Geevon TX16-3 and TX19-1 Remote Outdoor Sensor with LCD Display.
 
-This device is a simple temperature/humidity transmitter with a small LCD display for local viewing.
+These devices are a simple temperature/humidity transmitter, TX16-3 has a small LCD display for local viewing.
 
 The test packet represents:
 - channel 1
@@ -22,11 +23,16 @@ The test packet represents:
 - temperature of 62.6 Fahrenheit or 17 Celsius
 - 43% relative humidity.
 
-Data layout:
+Data layout for TX16-3:
 
     Byte 0   Byte 1   Byte 2   Byte 3   Byte 4   Byte 5   Byte 6   Byte 7   Byte 8
     IIIIIIII BxCCxxxx TTTTTTTT TTTT0000 HHHHHHHH FFFFFFFF FFFFFFFF FFFFFFFF CCCCCCCC
        87       00       29       e0       2b       aa       55       aa       e8
+
+Data layout for TX19-1:
+    Byte 0   Byte 1   Byte 2   Byte 3   Byte 4   Byte 5   Byte 6   Byte 7   Byte 8   Byte 9
+    IIIIIIII BxCCxxxx TTTTTTTT TTTT0000 HHHHHHHH FFFFFFFF FFFFFFFF FFFFFFFF CCCCCCCC M
+       b5       00       2d       40       2c       aa       55       aa       af
 
 - I: ID?
 - B: Battery low status (0 = good, 1 = low battery)
@@ -35,21 +41,64 @@ Data layout:
 - H: Relative humidity - represented as percentage %
 - F: Integrity check - 3 bytes are always 0xAA 0x55 0xAA
 - X: CRC checksum (CRC-8 poly 0x31 init=0x7b)
+- M: set if it's a middle packet (3rd out of 5)
 
 Format string:
 
     ID:8h BATT:b ?:b CHAN:2h FLAGS:4h TEMP_C:12d PAD:4h HUM:8d FIX:24h CRC:8h 1x
 
-Example packets:
+Example packets for TX16-3:
 
     f4002ac039aa55aa11
     f4002ab039aa55aa54
     f4002aa039aa55aa28
     f4002a9039aa55aaac
 
+Example packets for TX19-1 (in the last nibble only the most significant bit is used)
+
+    b5002d402caa55aaf20
+    b5002d402caa55aaf28
+    01102d402daa55aa130
+    01102d402eaa55aaea0
+    01002d302daa55aaf20
+    01002d302daa55aaf20
+    01202d302daa55aa8b0
+
 */
 
-static int geevon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+enum checksum_type {
+    CRC8,
+    LFSR,
+};
+
+// Checksum is actually an "LFSR-based Toeplitz hash"
+// gen needs to includes the msb if the lfsr is rolling, key is the initial key
+static uint8_t lfsr_digest8_galois(uint8_t const *message, int bytes, uint8_t gen, uint8_t key)
+{
+    uint8_t sum = 0;
+    // Process message from last byte to first byte (reflected)
+    for (int k = bytes - 1; k >= 0; --k) {
+        uint8_t data = message[k];
+        // Process individual bits of each byte (reflected)
+        for (int i = 7; i >= 0; --i) {
+            // XOR key into sum if data bit is set
+            if ((data >> i) & 1) {
+                sum ^= key;
+            }
+
+            // shift the key right (not roll, the lsb is dropped)
+            // and apply the gen (needs to include the dropped lsb as msb)
+            if (key & 1)
+                key = (key >> 1) ^ gen;
+            else
+                key = (key >> 1);
+        }
+    }
+    return sum;
+}
+
+static int geevon_decode(r_device *decoder, bitbuffer_t *bitbuffer,
+                                   enum checksum_type checksum_type)
 {
     // invert all the bits
     bitbuffer_invert(bitbuffer);
@@ -73,10 +122,20 @@ static int geevon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    // Verify CRC checksum
-    uint8_t chk = crc8(b, 9, 0x31, 0x7b);
-    if (chk) {
-        return DECODE_FAIL_MIC;
+    // Verify checksum
+    switch (checksum_type) {
+        case CRC8:
+            if (crc8(b, 9, 0x31, 0x7b)) {
+                return DECODE_FAIL_MIC;
+            }
+            break;
+        case LFSR:
+            if (b[8] != lfsr_digest8_galois(b, 8, 0x98, 0x25)) {
+                return DECODE_FAIL_MIC;
+            }
+            break;
+        default:
+            break;
     }
 
     // Extract the data from the packet
@@ -89,7 +148,8 @@ static int geevon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Store the decoded data
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Geevon-TX163",
+            "model",            "",             DATA_COND, checksum_type == CRC8,  DATA_STRING, "Geevon-TX163",
+            "model",            "",             DATA_COND, checksum_type == LFSR,  DATA_STRING, "Geevon-TX191",
             "id",               "",             DATA_INT,    b[0],
             "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "channel",          "Channel",      DATA_INT,    channel,
@@ -103,6 +163,18 @@ static int geevon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
+/** @sa geevon_decode() */
+static int geevon_tx16_3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    return geevon_decode(decoder, bitbuffer, CRC8);
+}
+
+/** @sa geevon_decode() */
+static int geevon_tx19_1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    return geevon_decode(decoder, bitbuffer, LFSR);
+}
+
 static char const *const output_fields[] = {
         "model",
         "battery",
@@ -113,7 +185,7 @@ static char const *const output_fields[] = {
         NULL,
 };
 
-r_device const geevon = {
+r_device const geevon_tx16_3 = {
         .name        = "Geevon TX16-3 outdoor sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 250,
@@ -121,6 +193,18 @@ r_device const geevon = {
         .sync_width  = 750,  // sync pulse is 728 us + 728 us gap
         .gap_limit   = 625,  // long gap (with short pulse) is ~472 us, sync gap is ~728 us
         .reset_limit = 1700, // maximum gap is 1250 us (long gap + longer sync gap on last repeat)
-        .decode_fn   = &geevon_callback,
+        .decode_fn   = &geevon_tx16_3_decode,
+        .fields      = output_fields,
+};
+
+r_device const geevon_tx19_1 = {
+        .name        = "Geevon TX19-1 outdoor sensor",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 250,
+        .long_width  = 500,
+        .sync_width  = 750,  // sync pulse is ~728 us + ~728 us gap
+        .gap_limit   = 625,  // long gap (with short pulse) is ~472 us, sync gap is ~728 us
+        .reset_limit = 1700, // maximum gap is 1250 us (long gap + longer sync gap on last repeat)
+        .decode_fn   = &geevon_tx19_1_decode,
         .fields      = output_fields,
 };
