@@ -66,8 +66,39 @@ Example packets for TX19-1 (in the last nibble only the most significant bit is 
 
 */
 
+enum checksum_type {
+    CRC8,
+    LFSR,
+};
+
+// Checksum is actually an "LFSR-based Toeplitz hash"
+// gen needs to includes the msb if the lfsr is rolling, key is the initial key
+static uint8_t lfsr_digest8_galois(uint8_t const *message, int bytes, uint8_t gen, uint8_t key)
+{
+    uint8_t sum = 0;
+    // Process message from last byte to first byte (reflected)
+    for (int k = bytes - 1; k >= 0; --k) {
+        uint8_t data = message[k];
+        // Process individual bits of each byte (reflected)
+        for (int i = 7; i >= 0; --i) {
+            // XOR key into sum if data bit is set
+            if ((data >> i) & 1) {
+                sum ^= key;
+            }
+
+            // shift the key right (not roll, the lsb is dropped)
+            // and apply the gen (needs to include the dropped lsb as msb)
+            if (key & 1)
+                key = (key >> 1) ^ gen;
+            else
+                key = (key >> 1);
+        }
+    }
+    return sum;
+}
+
 static int geevon_decode(r_device *decoder, bitbuffer_t *bitbuffer,
-                                   bool validate_crc)
+                                   enum checksum_type checksum_type)
 {
     // invert all the bits
     bitbuffer_invert(bitbuffer);
@@ -91,10 +122,20 @@ static int geevon_decode(r_device *decoder, bitbuffer_t *bitbuffer,
         return DECODE_FAIL_MIC;
     }
 
-    // Verify CRC checksum
-    uint8_t chk = crc8(b, 9, 0x31, 0x7b);
-    if (validate_crc && chk) {
-        return DECODE_FAIL_MIC;
+    // Verify checksum
+    switch (checksum_type) {
+        case CRC8:
+            if (crc8(b, 9, 0x31, 0x7b)) {
+                return DECODE_FAIL_MIC;
+            }
+            break;
+        case LFSR:
+            if (b[8] != lfsr_digest8_galois(b, 8, 0x98, 0x25)) {
+                return DECODE_FAIL_MIC;
+            }
+            break;
+        default:
+            break;
     }
 
     // Extract the data from the packet
@@ -107,14 +148,14 @@ static int geevon_decode(r_device *decoder, bitbuffer_t *bitbuffer,
     // Store the decoded data
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "",             DATA_COND, validate_crc,  DATA_STRING, "Geevon-TX163",
-            "model",            "",             DATA_COND, !validate_crc, DATA_STRING, "Geevon-TX191",
+            "model",            "",             DATA_COND, checksum_type == CRC8,  DATA_STRING, "Geevon-TX163",
+            "model",            "",             DATA_COND, checksum_type == LFSR,  DATA_STRING, "Geevon-TX191",
             "id",               "",             DATA_INT,    b[0],
             "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "channel",          "Channel",      DATA_INT,    channel,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,     humidity,
-            "mic",              "Integrity",    DATA_COND, validate_crc,  DATA_STRING, "CRC",
+            "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -125,13 +166,13 @@ static int geevon_decode(r_device *decoder, bitbuffer_t *bitbuffer,
 /** @sa geevon_decode() */
 static int geevon_tx16_3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    return geevon_decode(decoder, bitbuffer, true);
+    return geevon_decode(decoder, bitbuffer, CRC8);
 }
 
 /** @sa geevon_decode() */
 static int geevon_tx19_1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    return geevon_decode(decoder, bitbuffer, false);
+    return geevon_decode(decoder, bitbuffer, LFSR);
 }
 
 static char const *const output_fields[] = {
