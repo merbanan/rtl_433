@@ -90,23 +90,21 @@ enum WATTSTHERMO_FLAGS {
 
 static int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const preamble_pattern[] = {0xa5}; // inverted and reflected, raw value is 0x5a
+    uint8_t const preamble_pattern[] = {0xa5}; // inverted, raw value is 0x5a
 
     bitbuffer_invert(bitbuffer);
 
     // We're expecting a single row
     for (uint16_t row = 0; row < bitbuffer->num_rows; ++row) {
-
         uint16_t row_len = bitbuffer->bits_per_row[row];
-        unsigned bitpos  = 0;
 
-        bitpos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, WATTSTHERMO_PREAMBLE_BITLEN);
+        unsigned bitpos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, WATTSTHERMO_PREAMBLE_BITLEN);
         if (bitpos >= row_len) {
             decoder_log(decoder, 2, __func__, "Preamble not found");
             return DECODE_ABORT_EARLY;
         }
 
-        if (row_len < WATTSTHERMO_BITLEN) {
+        if (bitpos + WATTSTHERMO_BITLEN > row_len) {
             decoder_log(decoder, 2, __func__, "Message too short");
             return DECODE_ABORT_LENGTH;
         }
@@ -115,7 +113,7 @@ static int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t id_raw[2];
         bitbuffer_extract_bytes(bitbuffer, row, bitpos, id_raw, WATTSTHERMO_ID_BITLEN);
         reflect_bytes(id_raw, 2);
-        int id  = (id_raw[1] << 8) | id_raw[0];
+        int id = (id_raw[1] << 8) | id_raw[0];
         bitpos += WATTSTHERMO_ID_BITLEN;
 
         uint8_t flags[1];
@@ -147,6 +145,11 @@ static int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (chk[0] != chksum) {
             decoder_log_bitbuffer(decoder, 1, __func__, bitbuffer, "Checksum fail");
             return DECODE_FAIL_MIC;
+        }
+
+        if (id == 0 && flags[0] == 0 && temp == 0 && setp == 0 && chk[0] == 0) {
+            decoder_log(decoder, 2, __func__, "Rejecting false positive");
+            return DECODE_ABORT_EARLY;
         }
 
         /* clang-format off */

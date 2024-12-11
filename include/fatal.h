@@ -12,6 +12,8 @@
 #ifndef INCLUDE_FATAL_H_
 #define INCLUDE_FATAL_H_
 
+#include <stdio.h> // fprintf
+
 #define STRINGIFYX(x) #x
 #define STRINGIFY(x) STRINGIFYX(x)
 #define FILE_LINE __FILE__ ":" STRINGIFY(__LINE__)
@@ -30,8 +32,9 @@
     Use like this:
 
     char *buf = malloc(size);
-    if (!buf)
+    if (!buf) {
         FATAL_MALLOC("my_func()");
+    }
 
 */
 

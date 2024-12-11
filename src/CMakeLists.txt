@@ -54,6 +54,7 @@ add_library(r_433 STATIC
     devices/ant_antplus.c
     devices/arad_ms_meter.c
     devices/archos_tbh.c
+    devices/arexx_ml.c
     devices/atech_ws308.c
     devices/auriol_4ld5661.c
     devices/auriol_aft77b2.c
@@ -71,6 +72,7 @@ add_library(r_433 STATIC
     devices/bresser_7in1.c
     devices/bresser_leakage.c
     devices/bresser_lightning.c
+    devices/bresser_st1005h.c
     devices/bt_rain.c
     devices/burnhardbbq.c
     devices/calibeur.c
@@ -113,6 +115,7 @@ add_library(r_433 STATIC
     devices/fineoffset_wh1080.c
     devices/fineoffset_wh31l.c
     devices/fineoffset_wh45.c
+    devices/fineoffset_wh46.c
     devices/fineoffset_wh55.c
     devices/fineoffset_wn34.c
     devices/fineoffset_ws80.c
@@ -202,7 +205,9 @@ add_library(r_433 STATIC
     devices/regency_fan.c
     devices/revolt_nc5462.c
     devices/rftech.c
+    devices/risco_agility.c
     devices/rojaflex.c
+    devices/rosstech_dcu706.c
     devices/rubicson.c
     devices/rubicson_48659.c
     devices/rubicson_pool_48942.c
@@ -234,7 +239,7 @@ add_library(r_433 STATIC
     devices/thermopro_tp11.c
     devices/thermopro_tp12.c
     devices/thermopro_tp28b.c
-    devices/thermopro_tp829b.c
+    devices/thermopro_tp82xb.c
     devices/thermopro_tx2.c
     devices/thermopro_tx2c.c
     devices/thermor.c
@@ -262,6 +267,7 @@ add_library(r_433 STATIC
     devices/ttx201.c
     devices/vaillant_vrt340f.c
     devices/vauno_en8822c.c
+    devices/vevor_7in1.c
     devices/visonic_powercode.c
     devices/watts_thermostat.c
     devices/waveman.c

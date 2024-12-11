@@ -142,7 +142,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [52]  Bresser Thermo-/Hygro-Sensor 3CH
     [53]  Springfield Temperature and Soil Moisture
     [54]  Oregon Scientific SL109H Remote Thermal Hygro Sensor
-    [55]  Acurite 606TX Temperature Sensor
+    [55]  Acurite 606TX / Technoline TX960 Temperature Sensor
     [56]  TFA pool temperature sensor
     [57]  Kedsum Temperature & Humidity Sensor, Pearl NC-7415
     [58]  Blyss DC5-UK-WH
@@ -199,7 +199,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [111]  Emos TTX201 Temperature Sensor
     [112]  Ambient Weather TX-8300 Temperature/Humidity Sensor
     [113]  Ambient Weather WH31E Thermo-Hygrometer Sensor, EcoWitt WH40 rain gauge, WS68 weather station
-    [114]  Maverick et73
+    [114]  Maverick ET73
     [115]  Honeywell ActivLink, Wireless Doorbell
     [116]  Honeywell ActivLink, Wireless Doorbell (FSK)
     [117]* ESA1000 / ESA2000 Energy Monitor
@@ -344,9 +344,15 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [256]  ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill
     [257]  BMW Gen3 TPMS
     [258]  Chamberlain CWPIRC PIR Sensor
-    [259]  ThermoPro TP829b Meat Thermometer 4 coated probes
+    [259]  ThermoPro Meat Thermometers, TP829B 4 probes with temp only
     [260]* Arad/Master Meter Dialog3G water utility meter
     [261]  Geevon TX16-3 outdoor sensor
+    [262]  Fine Offset Electronics WH46 air quality sensor
+    [263]  Vevor Wireless Weather Station 7-in-1
+    [264]  Arexx Multilogger IP-HA90, IP-TH78EXT, TSN-70E
+    [265]  Rosstech Digital Control Unit DCU-706/Sundance/Jacuzzi
+    [266]  Risco 2 Way Agility protocol, Risco PIR/PET Sensor RWX95P
+    [267]  ThermoPro Meat Thermometers, TP828B 2 probes with Temp, BBQ Target LO and HI
 
 * Disabled by default, use -R n or a conf file to enable
 

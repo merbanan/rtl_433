@@ -150,6 +150,8 @@ R_API data_t *data_dat(data_t *first, char const *key, char const *pretty_key, c
 
     Type-safe alternative to `data_make()` and `data_append()`.
 
+    If `format` is NULL or empty then a default of "%02x" is used.
+
     Caller needs to provide a sufficiently sized buffer.
 */
 R_API data_t *data_hex(data_t *first, char const *key, char const *pretty_key, char const *format, uint8_t const *val, unsigned len, char *buf);

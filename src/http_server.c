@@ -796,6 +796,7 @@ static void handle_openmetrics(struct mg_connection *nc, struct http_message *hm
     mg_printf(nc,
             "HTTP/1.1 200 OK\r\n"
             "Content-Length: %u\r\n"
+            "Content-Type: text/plain; version=0.0.4; charset=utf-8\r\n"
             "\r\n",
             len);
     mg_send(nc, buf, (size_t)len);
@@ -951,6 +952,9 @@ static void handle_json_stream(struct mg_connection *nc, struct http_message *hm
 // curl -D - -d "cmd=report_meta&arg=level" -X POST 'http://127.0.0.1:8433/cmd'
 // http :8433/cmd cmd==center_frequency val==868000000'
 // http --form POST :8433/cmd cmd=report_meta arg=level val=1
+// xh :8433/cmd cmd==center_frequency val==433920123
+// xh :8433/cmd cmd==sample_rate val==250000
+// xh :8433/cmd cmd==gain arg==10
 static void handle_cmd_rpc(struct mg_connection *nc, struct http_message *hm)
 {
     struct http_server_context *ctx = nc->user_data;

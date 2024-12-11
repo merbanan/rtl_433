@@ -37,10 +37,11 @@ https://www.bresser.de/en/Weather-Time/Accessories/EXPLORE-SCIENTIFIC-Soil-Moist
 Moisture:
 
     f16e 187000e34 7 ffffff0000 252 2 16 fff 004 000 [25,2, 99%, CH 7]
-    DIGEST:8h8h ID?8h8h8h8h STYPE:4h STARTUP:1b CH:3d 8h 8h8h 8h8h TEMP:12h TSIGN:1b ?1b BATT:1b ?1b MOIST:8h UV?~12h ?4h CHKSUM:8h
+    DIGEST:16h ID?32h STYPE:4h STARTUP:1b CH:3d WSPEED?~8h~4h ~4h~8h WDIR?12h ?4h | TEMP:8h.4h TNEG:1b ?1b BATT:1b ?1b MOIST:8h | UV?~12h ?4h CHKSUM:8h
 
 Moisture is transmitted in the humidity field as index 1-16: 0, 7, 13, 20, 27, 33, 40, 47, 53, 60, 67, 73, 80, 87, 93, 99.
 The Wind speed and direction fields decode to valid zero but we exclude them from the output.
+A Moisture message is identical to a Temperature message but with a Sensor type of 4, wind data is not valid.
 
     aaaa2dd4e3ae1870079341ffffff0000221201fff279 [Batt ok]
     aaaa2dd43d2c1870079341ffffff0000219001fff2fc [Batt low]
@@ -75,8 +76,8 @@ The Wind speed and direction fields decode to valid zero but we exclude them fro
 
 Wind and Temperature/Humidity or Rain:
 
-    DIGEST:8h8h ID:8h8h8h8h STYPE:4h STARTUP:1b CH:3d WSPEED:~8h~4h ~4h~8h WDIR:12h ?4h TEMP:8h.4h TSIGN:1b ?1b BATT:1b ?1b HUM:8h UV?~12h ?4h CHKSUM:8h
-    DIGEST:8h8h ID:8h8h8h8h STYPE:4h STARTUP:1b CH:3d WSPEED:~8h~4h ~4h~8h WDIR:12h ?4h RAINFLAG:8h RAIN:8h8h UV:8h8h CHKSUM:8h
+    IF-TEMP: DIGEST:16h ID:32h STYPE:4h STARTUP:1b CH:3d WSPEED:~8h~4h ~4h~8h WDIR:12h ?4h | TEMP:8h.4h TNEG:1b ?1b BATT:1b ?1b HUM:8h . | UV?~12h RAINFLAG:4h CHKSUM:8h
+    IF-RAIN: DIGEST:16h ID:32h STYPE:4h STARTUP:1b CH:3d WSPEED:~8h~4h ~4h~8h WDIR:12h ?4h | RAIN:~24h .......................... | UV:12h RAINFLAG:4h CHKSUM:8h
 
 Digest is LFSR-16 gen 0x8810 key 0x5412, excluding the add-checksum and trailer.
 Checksum is 8-bit add (with carry) to 0xff.

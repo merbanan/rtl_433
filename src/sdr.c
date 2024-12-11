@@ -1796,6 +1796,11 @@ int sdr_stop(sdr_dev_t *dev)
 int sdr_start(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len)
 {
     UNUSED(dev);
+    UNUSED(cb);
+    UNUSED(ctx);
+    UNUSED(buf_num);
+    UNUSED(buf_len);
+    print_log(LOG_ERROR, __func__, "rtl_433 compiled without thread support, SDR inputs not available.");
     return -1;
 }
 int sdr_stop(sdr_dev_t *dev)

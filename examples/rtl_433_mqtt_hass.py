@@ -206,7 +206,7 @@ mappings = {
             "device_class": "battery",
             "name": "Battery",
             "unit_of_measurement": "%",
-            "value_template": "{{ float(value) * 99 + 1 }}",
+            "value_template": "{{ ((float(value) * 99)|round(0)) + 1 }}",
             "state_class": "measurement",
             "entity_category": "diagnostic"
         }
@@ -219,6 +219,19 @@ mappings = {
             "device_class": "voltage",
             "name": "Battery mV",
             "unit_of_measurement": "mV",
+            "value_template": "{{ float(value) }}",
+            "state_class": "measurement",
+            "entity_category": "diagnostic"
+        }
+    },
+
+    "supercap_V": {
+        "device_type": "sensor",
+        "object_suffix": "V",
+        "config": {
+            "device_class": "voltage",
+            "name": "Supercap V",
+            "unit_of_measurement": "V",
             "value_template": "{{ float(value) }}",
             "state_class": "measurement",
             "entity_category": "diagnostic"

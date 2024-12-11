@@ -22,7 +22,7 @@ Devices decoded:
 - Acurite 609TXC "TH" temperature and humidity sensor (609A1TX)
 - Acurite 986 Refrigerator / Freezer Thermometer
 - Acurite 515 Refrigerator / Freezer Thermometer
-- Acurite 606TX temperature sensor, optional with channels and [TX]Button
+- Acurite 606TX / Technoline TX960 temperature sensor, optional with channels and [TX]Button
 - Acurite 6045M Lightning Detector
 - Acurite 00275rm and 00276rm temp. and humidity with optional probe.
 - Acurite 1190/1192 leak/water detector
@@ -375,7 +375,6 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
 {
     float tempf;
     uint8_t humidity;
-    char raw_str[31], *rawp;
     uint16_t sensor_id;
     uint8_t strike_count, strike_distance;
     int battery_low, active, rfi_detect;
@@ -424,21 +423,6 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     strike_distance = bb[7] & 0x1f;
     rfi_detect = (bb[7] & 0x20) == 0x20;
 
-
-    /*
-     * 2018-04-21 rct - There are still a number of unknown bits in the
-     * message that need to be figured out. Add the raw message hex to
-     * to the structured data output to allow future analysis without
-     * having to enable debug for long running rtl_433 processes.
-     */
-    rawp = (char *)raw_str;
-    for (int i=0; i < MIN(browlen, 15); i++) {
-        sprintf(rawp,"%02x",bb[i]);
-        rawp += 2;
-    }
-    *rawp = '\0';
-
-
     // Flag whether this message might need further analysis
     if ((bb[4] & 0x20) != 0) // unknown status bits, always off
         exception++;
@@ -456,9 +440,17 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
             "active",           "Active Mode",      DATA_INT,    active,
             "rfi",              "RFI Detect",       DATA_INT,    rfi_detect,
             "exception",        "Data Exception",   DATA_INT,    exception,
-            "raw_msg",          "Raw Message",      DATA_STRING, raw_str,
             NULL);
     /* clang-format on */
+
+    /*
+     * 2018-04-21 rct - There are still a number of unknown bits in the
+     * message that need to be figured out. Add the raw message hex to
+     * to the structured data output to allow future analysis without
+     * having to enable debug for long running rtl_433 processes.
+     */
+    char raw_str[31];
+    data = data_hex(data, "raw_msg", "Raw Message", NULL, bb, MIN(browlen, 15), raw_str);
 
     decoder_output_data(decoder, data);
 
@@ -769,18 +761,6 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
     uint16_t sensor_id = ((bb[0] & 0x03) << 8) | bb[1];
     char const *channel_str = acurite_getChannel(bb[0]);
 
-    // There are still a few unknown/unused bits in the message that
-    // message that could possibly hold some data. Add the raw message hex to
-    // to the structured data output to allow future analysis without
-    // having to enable debug for long running rtl_433 processes.
-    char raw_str[31], *rawp;
-    rawp = (char *)raw_str;
-    for (int i=0; i < MIN(browlen, 15); i++) {
-        sprintf(rawp,"%02x",bb[i]);
-        rawp += 2;
-    }
-    *rawp = '\0';
-
     // The sensor sends the same data three times, each of these have
     // an indicator of which one of the three it is. This means the
     // checksum and first byte will be different for each one.
@@ -922,7 +902,12 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
     // @todo only do this if exception != 0, but would be somewhat incompatible
     data = data_int(data, "exception",  "Data Exception",   NULL,   exception);
-    data = data_str(data, "raw_msg",    "Raw Message",      NULL,   raw_str);
+    // There are still a few unknown/unused bits in the message that
+    // message that could possibly hold some data. Add the raw message hex to
+    // to the structured data output to allow future analysis without
+    // having to enable debug for long running rtl_433 processes.
+    char raw_str[31];
+    data = data_hex(data, "raw_msg", "Raw Message", NULL, bb, MIN(browlen, 15), raw_str);
 
     decoder_output_data(decoder, data);
 
@@ -1608,8 +1593,29 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
-Acurite 606 Temperature sensor
+Acurite 606TX / Technoline TX960 Temperature sensor decoder.
 
+Specs:
+- Temperature -40 to 158 F / -40 to 70 C
+
+Status Information sent
+- button pressed
+- low battery
+- channel
+- id
+
+Message format:
+
+    Byte 0   Byte 1   Byte 2   Byte 3   Byte 4
+    IIIIIIII BbCCTTTT TTTTTTTT KKKKKKKK f
+
+- I = Sensor ID (8 bits, changes with every battery replacement)
+- B = Battery OK (cleared for low)
+- b = Button pressed
+- C = Channel (2 bits, Channels 0, 1 or 2)
+- T = Temperature (12 bits)
+- K = Checksum (8 bits)
+- f = Final bit (== 0 for Acurite sensor, == !B for Technoline sensor)
 */
 static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -1630,9 +1636,6 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
 
     b = bitbuffer->bb[row];
-
-    if (b[4] != 0)
-        return DECODE_FAIL_SANITY;
 
     // reject all blank messages
     if (b[0] == 0 && b[1] == 0 && b[2] == 0 && b[3] == 0)
@@ -1671,28 +1674,26 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
-Acurite 590TX temperature/humidity sensor
+Acurite 590TX temperature/humidity sensor.
+
+The signal is OOK PPM with pulses of 500 us.
+There is a sync pulse with a 3000 us gap, then 24 bits with 500 us / 1500 us gaps.
+There is no packet gap -- the sync pulse will look like the 25th bit with 500 us gap.
+A transmission contains 14 repeats.
+
+We'll read the packet after the sync and treat the next sync as a trailing 0 bit
 
 */
 static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t *b;
-    int row;
-    int sensor_id;  // the sensor ID - basically a random number that gets reset whenever the battery is removed
-    int battery_ok; // the battery status: 1 is good, 0 is low
-    int channel;
-    int humidity;
-    int temp_raw; // temperature as read from the data packet
-    float temp_c; // temperature in C
-
-    row = bitbuffer_find_repeated_row(bitbuffer, 3, 25); // expected are min 3 rows
+    int row = bitbuffer_find_repeated_row(bitbuffer, 3, 25); // expected are min 3 rows
     if (row < 0)
         return DECODE_ABORT_EARLY;
 
     if (bitbuffer->bits_per_row[row] > 25)
         return DECODE_ABORT_LENGTH;
 
-    b = bitbuffer->bb[row];
+    uint8_t *b = bitbuffer->bb[row];
 
     if (b[4] != 0) // last byte should be zero
         return DECODE_FAIL_SANITY;
@@ -1714,23 +1715,21 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    // Processing the temperature:
-    // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
-    // upper 4 bits of nibble 1 are reserved for other usages (e.g. battery status)
-    sensor_id = b[0] & 0xFE; //first 6 bits and it changes each time it resets or change the battery
-    battery_ok = (b[0] & 0x01); //1=ok, 0=low battery
-    //next 2 bits are checksum
-    //next two bits are identify ID (maybe channel ?)
-    channel = (b[1] >> 4) & 0x03;
+    // the sensor ID - basically a random number that gets reset whenever the battery is removed
+    int sensor_id  = b[0] & 0xFE;   // first 6 bits and it changes each time it resets or change the battery
+    int battery_ok = (b[0] & 0x01); // 1=ok, 0=low battery
+    // upper 4 bits of byte 1 are parity and channel
+    int channel = (b[1] >> 4) & 0x03;
 
-    temp_raw = (int16_t)(((b[1] & 0x0F) << 12) | (b[2] << 4));
-    temp_raw = temp_raw >> 4;
-    temp_c   = (temp_raw - 500) * 0.1f; // NOTE: there seems to be a 50 degree offset?
+    // Upper 4 temperature bits are stored in byte 1, lower 8 bits are stored in byte 2
+    int temp_raw = (int16_t)(((b[1] & 0x0F) << 12) | (b[2] << 4));
+    temp_raw     = temp_raw >> 4; // sign-extend
+    float temp_c = (temp_raw - 500) * 0.1f; // a 50 degree offset
 
-    if (temp_raw >= 0 && temp_raw <= 100) // NOTE: no other way to differentiate humidity from temperature?
+    int humidity = -1;
+    if (temp_raw >= 0 && temp_raw <= 100) { // NOTE: no other way to differentiate humidity from temperature?
         humidity = temp_raw;
-    else
-        humidity = -1;
+    }
 
     /* clang-format off */
     data_t *data = data_make(
@@ -1990,7 +1989,7 @@ static char const *const acurite_590_output_fields[] = {
 //.gap_limit      = 1200,
 //.reset_limit    = 12000,
 r_device const acurite_606 = {
-        .name        = "Acurite 606TX Temperature Sensor",
+        .name        = "Acurite 606TX / Technoline TX960 Temperature Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,
         .long_width  = 4000,
@@ -2028,12 +2027,11 @@ r_device const acurite_00275rm = {
 
 r_device const acurite_590tx = {
         .name        = "Acurite 590TX Temperature with optional Humidity",
-        .modulation  = OOK_PULSE_PPM, // OOK_PULSE_PWM,
-        .short_width = 500,           // short pulse is 232 us
-        .long_width  = 1500,          // long pulse is 420 us
-        .gap_limit   = 1484,          // long gap is 384 us, sync gap is 592 us
-        .reset_limit = 3000,          // no packet gap, sync gap is 592 us
-        .sync_width  = 500,           // sync pulse is 632 us
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 500,  // short gap is 500 us
+        .long_width  = 1500, // long gap is 1500 us
+        .gap_limit   = 2000, // (preceeding) sync gap is 3000 us
+        .reset_limit = 3500, // no packet gap, gap before sync is 500 us
         .decode_fn   = &acurite_590tx_decode,
         .fields      = acurite_590_output_fields,
 };
