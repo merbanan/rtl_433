@@ -8,7 +8,7 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
  */
-/**
+/** @fn int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 Decoder for DeltaDore X3D devices.
 
 Note: work in progress
@@ -438,6 +438,7 @@ static const char *const output_fields[] = {
         "msg_id",
         "msg_no",
         "temperature_C",
+        "temperature_type",
         "wnd_stat",
         "retry",
         "transfer",
