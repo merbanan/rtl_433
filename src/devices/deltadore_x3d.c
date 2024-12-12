@@ -7,7 +7,10 @@
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
- */
+*/
+
+#include "decoder.h"
+
 /** @fn int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 Decoder for DeltaDore X3D devices.
 
@@ -136,8 +139,6 @@ To get raw data:
 
     ./rtl_433 -f 868.95M -X 'n=DeltaDore,m=FSK_PCM,s=25,l=25,r=800,preamble=aa8169967e'
 */
-
-#include "decoder.h"
 
 // ** DeltaDore X3D known message types
 #define DELTADORE_X3D_MSGTYPE_SENSOR          0x00
@@ -404,8 +405,8 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         struct deltadore_x3d_message_payload body = {0};
         bytes_read += deltadore_x3d_parse_message_payload(&frame[bytes_read], &body);
 
-        // Max Hex string len is 2 - (maximum packet length - crc) + EOS character
-        char raw_str[2 * (DELTADORE_X3D_MAX_PKT_LEN - 2) + 1] = {0};
+        // Max hex string len is 2 * (maximum packet length - crc) + NUL character
+        char raw_str[2 * (DELTADORE_X3D_MAX_PKT_LEN - 2) + 1];
 
         /* clang-format off */
         data = data_int(data, "retry",         "Retry",             NULL, body.retry);
