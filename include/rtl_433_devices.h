@@ -276,6 +276,7 @@
     DECL(risco_agility) \
     DECL(thermopro_tp828b) \
     DECL(bresser_st1005h) \
+    DECL(deltadore_x3d) \
 
     /* Add new decoders here. */
 
