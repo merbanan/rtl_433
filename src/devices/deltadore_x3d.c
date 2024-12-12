@@ -405,12 +405,7 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         bytes_read += deltadore_x3d_parse_message_payload(&frame[bytes_read], &body);
 
         // Max Hex string len is 2 - (maximum packet length - crc) + EOS character
-        char raw_data[2 * (DELTADORE_X3D_MAX_PKT_LEN - 2) + 1] = {0};
-
-        // do not put length and crc to raw data
-        for (int i = 0; i < len - bytes_read - 2; ++i) {
-            snprintf(&raw_data[i * 2], 3, "%02x", frame[i + bytes_read]); // NOLINT
-        }
+        char raw_str[2 * (DELTADORE_X3D_MAX_PKT_LEN - 2) + 1] = {0};
 
         /* clang-format off */
         data = data_int(data, "retry",         "Retry",             NULL, body.retry);
@@ -421,7 +416,7 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data = data_int(data, "action",        "Action",            NULL, body.action);
         data = data_int(data, "register_high", "Reg High",          NULL, body.register_high);
         data = data_int(data, "register_low",  "Reg Low",           NULL, body.register_low);
-        data = data_str(data, "raw",           "Raw Register Data", NULL, raw_data);
+        data = data_hex(data, "raw_msg",       "Raw Register Data", NULL, &frame[bytes_read], len - bytes_read - 2, raw_str);
         /* clang-format on */
     }
 
@@ -448,7 +443,7 @@ static const char *const output_fields[] = {
         "register_high",
         "register_low",
         "target_ack",
-        "raw",
+        "raw_msg",
         "mic",
         NULL,
 };
