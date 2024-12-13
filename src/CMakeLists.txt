@@ -72,6 +72,7 @@ add_library(r_433 STATIC
     devices/bresser_7in1.c
     devices/bresser_leakage.c
     devices/bresser_lightning.c
+    devices/bresser_st1005h.c
     devices/bt_rain.c
     devices/burnhardbbq.c
     devices/calibeur.c
@@ -86,6 +87,7 @@ add_library(r_433 STATIC
     devices/cotech_36_7959.c
     devices/current_cost.c
     devices/danfoss.c
+    devices/deltadore_x3d.c
     devices/digitech_xc0324.c
     devices/directv.c
     devices/dish_remote_6_3.c
