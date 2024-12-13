@@ -277,6 +277,7 @@
     DECL(thermopro_tp828b) \
     DECL(bresser_st1005h) \
     DECL(deltadore_x3d) \
+    DECL(quinetic) \
 
     /* Add new decoders here. */
 

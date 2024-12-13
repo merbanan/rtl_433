@@ -355,6 +355,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [267]  ThermoPro Meat Thermometers, TP828B 2 probes with Temp, BBQ Target LO and HI
     [268]  Bresser Thermo-/Hygro-Sensor Explore Scientific ST1005H
     [269]  DeltaDore X3D devices
+    [270]* Quinetic
 
 * Disabled by default, use -R n or a conf file to enable
 
