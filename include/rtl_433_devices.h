@@ -278,6 +278,8 @@
     DECL(bresser_st1005h) \
     DECL(deltadore_x3d) \
     DECL(quinetic) \
+    DECL(hcs362_pwm) \
+    DECL(hcs362_mc) \
 
     /* Add new decoders here. */
 

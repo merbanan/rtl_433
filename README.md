@@ -356,6 +356,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [268]  Bresser Thermo-/Hygro-Sensor Explore Scientific ST1005H
     [269]  DeltaDore X3D devices
     [270]* Quinetic
+    [271]  Microchip HCS362 KeeLoq Hopping Encoder based remotes (mode 0)
+    [272]  Microchip HCS362 KeeLoq Hopping Encoder based remotes (mode 1)
 
 * Disabled by default, use -R n or a conf file to enable
 
