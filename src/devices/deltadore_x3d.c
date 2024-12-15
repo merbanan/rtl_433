@@ -185,35 +185,6 @@ struct __attribute__((packed)) deltadore_x3d_message_payload {
     uint16_t target_ack;
 };
 
-static void ccitt_dewhitening(
-        uint8_t *whitening_key_msb_p,
-        uint8_t *whitening_key_lsb_p,
-        uint8_t *buffer,
-        uint16_t buffer_size)
-{
-    uint8_t whitening_key_msb = *whitening_key_msb_p;
-    uint8_t whitening_key_lsb = *whitening_key_lsb_p;
-    uint8_t whitening_key_msb_previous;
-    uint8_t reverted_whitening_key_lsb = whitening_key_lsb;
-
-    for (uint16_t buffer_pos = 0; buffer_pos < buffer_size; buffer_pos++) {
-        reverted_whitening_key_lsb = (whitening_key_lsb & 0xf0) >> 4 | (whitening_key_lsb & 0x0f) << 4;
-        reverted_whitening_key_lsb = (reverted_whitening_key_lsb & 0xcc) >> 2 | (reverted_whitening_key_lsb & 0x33) << 2;
-        reverted_whitening_key_lsb = (reverted_whitening_key_lsb & 0xaa) >> 1 | (reverted_whitening_key_lsb & 0x55) << 1;
-
-        buffer[buffer_pos] ^= reverted_whitening_key_lsb;
-
-        for (uint8_t rol_counter = 0; rol_counter < 8; rol_counter++) {
-            whitening_key_msb_previous = whitening_key_msb;
-            whitening_key_msb          = (whitening_key_lsb & 0x01) ^ ((whitening_key_lsb >> 5) & 0x01);
-            whitening_key_lsb          = ((whitening_key_msb_previous << 7) & 0x80) | ((whitening_key_lsb >> 1) & 0xff);
-        }
-    }
-
-    *whitening_key_msb_p = whitening_key_msb;
-    *whitening_key_lsb_p = whitening_key_lsb;
-}
-
 /* clang-format off */
 static uint32_t deltadore_x3d_read_le_u24(uint8_t **buffer)
 {
@@ -307,14 +278,12 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
-    uint8_t whitening_key_msb = 0x01;
-    uint8_t whitening_key_lsb = 0xff;
-
+    // read length byte in advance
     uint8_t len;
     bitbuffer_extract_bytes(bitbuffer, row, start_pos, &len, 8);
 
     // dewhite length
-    ccitt_dewhitening(&whitening_key_msb, &whitening_key_lsb, &len, 1);
+    ccitt_whitening(&len, 1);
 
     if (len > DELTADORE_X3D_MAX_PKT_LEN) {
         if (decoder->verbose) {
@@ -324,16 +293,14 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     uint8_t frame[65] = {0};
-    frame[0]          = len;
-
-    // Get frame (len includes the length byte)
-    bitbuffer_extract_bytes(bitbuffer, row, start_pos + 8, &frame[1], (len - 1) * 8);
+    // Get whole frame (len includes the length byte)
+    bitbuffer_extract_bytes(bitbuffer, row, start_pos, frame, len * 8);
 
     // dewhite the data
-    ccitt_dewhitening(&whitening_key_msb, &whitening_key_lsb, &frame[1], len - 1);
+    ccitt_whitening(frame, len);
 
     if (decoder->verbose > 1) {
-        decoder_log_bitrow(decoder, 0, __func__, frame, (len)*8, "frame data");
+        decoder_log_bitrow(decoder, 0, __func__, frame, len * 8, "frame data");
     }
 
     const uint16_t crc        = crc16(frame, len - 2, 0x1021, 0x0000);

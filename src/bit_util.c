@@ -396,6 +396,32 @@ uint16_t lfsr_digest16(uint8_t const message[], unsigned bytes, uint16_t gen, ui
     return sum;
 }
 
+// The CCITT data whitening process is built around a 9-bit Linear Feedback Shift Register (LFSR).
+// The LFSR polynomial is the same polynomial as for IBM data whitening (x9 + x5 + 1).
+// The initial value of the data whitening key is set to all ones, 0x1FF.
+// s.a. https://www.nxp.com/docs/en/application-note/AN5070.pdf s.5.2
+void ccitt_whitening(uint8_t *buffer, unsigned buffer_size)
+{
+    uint8_t key_msb = 0x01;
+    uint8_t key_lsb = 0xff;
+    uint8_t key_msb_previous;
+    uint8_t reflected_key_lsb = key_lsb;
+
+    for (unsigned buffer_pos = 0; buffer_pos < buffer_size; buffer_pos++) {
+        reflected_key_lsb = (key_lsb & 0xf0) >> 4 | (key_lsb & 0x0f) << 4;
+        reflected_key_lsb = (reflected_key_lsb & 0xcc) >> 2 | (reflected_key_lsb & 0x33) << 2;
+        reflected_key_lsb = (reflected_key_lsb & 0xaa) >> 1 | (reflected_key_lsb & 0x55) << 1;
+
+        buffer[buffer_pos] ^= reflected_key_lsb;
+
+        for (uint8_t rol_counter = 0; rol_counter < 8; rol_counter++) {
+            key_msb_previous = key_msb;
+            key_msb          = (key_lsb & 0x01) ^ ((key_lsb >> 5) & 0x01);
+            key_lsb          = ((key_msb_previous << 7) & 0x80) | ((key_lsb >> 1) & 0xff);
+        }
+    }
+}
+
 /*
 void lfsr_keys_fwd16(int rounds, uint16_t gen, uint16_t key)
 {
@@ -481,6 +507,23 @@ int add_nibbles(uint8_t const message[], unsigned num_bytes)
             fprintf(stderr, "FAIL: %d <> %d\n", (a), (b)); \
         } \
     } while (0)
+#define ASSERT_MATCH(a, b, n) \
+    do { \
+        if (memcmp(a, b, n) == 0) \
+            ++passed; \
+        else { \
+            ++failed; \
+            fprintf(stderr, "FAIL:"); \
+            for (size_t i = 0; i < n; i++) { \
+                fprintf(stderr, " %02x", a[i]); \
+            } \
+            fprintf(stderr, "\n   <>"); \
+            for (size_t i = 0; i < n; i++) { \
+                fprintf(stderr, " %02x", b[i]); \
+            } \
+            fprintf(stderr, "\n"); \
+        } \
+    } while (0)
 
 int main(void) {
     unsigned passed = 0;
@@ -516,6 +559,12 @@ int main(void) {
     ASSERT_EQUALS(bytes[4], 0x03);
 
     fprintf(stderr, "util:: test (%u/%u) passed, (%u) failed.\n", passed, passed + failed, failed);
+
+    fprintf(stderr, "util::ccitt_whitening():\n");
+    uint8_t buf[16] = {0};
+    uint8_t chk[16] = {0xff, 0x87, 0xb8, 0x59, 0xb7, 0xa1, 0xcc, 0x24, 0x57, 0x5e, 0x4b, 0x9c, 0x0e, 0xe9, 0xea, 0x50};
+    ccitt_whitening(buf, sizeof(buf)) ;
+    ASSERT_MATCH(buf, chk, sizeof(buf));
 
     return failed;
 }
