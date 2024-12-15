@@ -1,7 +1,7 @@
 /** @file
     Continental - Car Remote.
 
-    Copyright (C) 2023 Ethan Halsall
+    Copyright (C) 2024 Ethan Halsall
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
