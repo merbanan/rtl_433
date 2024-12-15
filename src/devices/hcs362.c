@@ -16,7 +16,7 @@ Microchip HCS362 KeeLoq Code Hopping Encoder based remotes.
 
 There are two transmissions modes: PWM (mode 0) and MC (mode 1).
 
-72 bits transmitted, LSB first.
+For MC with start+stop bit 71 bits are transmitted, LSB first.
 
 69-bit transmission code length
 - 32-bit hopping code
@@ -35,7 +35,7 @@ Hardware buttons might map to combinations of these bits.
 
 - Datasheet HCS362: https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ProductDocuments/DataSheets/40189E.pdf
 
-The preamble of 12 short pulses is followed by a long 850 us gap.
+The preamble of 12 short pulses is followed by a long sync gap.
 
 Raw data capture:
 
@@ -44,21 +44,41 @@ Raw data capture:
 
 static int hcs362_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    // Reject codes of wrong length
-    if (bitbuffer->bits_per_row[0] != 12 || bitbuffer->bits_per_row[1] != 72)
-        return DECODE_ABORT_LENGTH;
-
-    uint8_t *b = bitbuffer->bb[0];
-    // Reject codes with an incorrect preamble (expected 0xfff)
-    // Manchester decoding might read this as 0x000
-    if ((b[0] != 0xff || (b[1] & 0xf0) != 0xf0) && (b[0] != 0x00 || (b[1] & 0xf0) != 0x00)) {
+    // Check preamble
+    if (bitbuffer->bits_per_row[0] < 12 * 2 - 8 || bitbuffer->bits_per_row[0] > 12 * 2 + 8) {
         decoder_log(decoder, 2, __func__, "Preamble not found");
+        return DECODE_ABORT_LENGTH;
+    }
+    // Reject codes with an incorrect preamble (expected 0xaaaaaa)
+    uint8_t *b = bitbuffer->bb[0];
+    if (b[0] != 0xaa || b[1] != 0xaa || b[2] != 0xaa) {
+        decoder_log(decoder, 2, __func__, "Preamble invalid");
         return DECODE_ABORT_EARLY;
+    }
+    // Reject codes of wrong length
+    if (bitbuffer->bits_per_row[1] < 72 * 2 || bitbuffer->bits_per_row[1] > 72 * 2 + 4) {
+        return DECODE_ABORT_LENGTH;
     }
 
     // Second row is data
     b = bitbuffer->bb[1];
+    // Check for the start bit
+    if ((b[0] & 0xc0) != 0x80) {
+        decoder_log(decoder, 2, __func__, "Startbit not found");
+        return DECODE_ABORT_EARLY;
+    }
+    // Manchester decode, excluding startbit
+    bitbuffer_t msg = {0};
+    unsigned len = bitbuffer_manchester_decode(bitbuffer, 1, 2, &msg, 72);
+    decoder_log_bitbuffer(decoder, 1, __func__, &msg, "Decoded");
 
+    // Reject codes of wrong length
+    if (len < 69 + 1) {
+        return DECODE_ABORT_LENGTH;
+    }
+
+    bitbuffer_invert(&msg); // want G.E.Thomas, not IEEE 802.3
+    b = msg.bb[0];
     // No need to decode/extract values for simple test
     if (b[1] == 0xff && b[2] == 0xff && b[3] == 0xff && b[4] == 0xff
             && b[5] == 0xff && b[6] == 0xff && b[7] == 0xff) {
@@ -110,8 +130,8 @@ static char const *const output_fields[] = {
 r_device const hcs362_pwm = {
         .name        = "Microchip HCS362 KeeLoq Hopping Encoder based remotes (mode 0)",
         .modulation  = OOK_PULSE_PWM,
-        .short_width = 214,
-        .long_width  = 430,
+        .short_width = 200, // 100 us = 3333 bps, 200 us = 1667 bps, 400 us = 833 bps, 800 us = 417 bps
+        .long_width  = 400,
         .gap_limit   = 600,
         .reset_limit = 900,
         .tolerance   = 50, // us
@@ -121,9 +141,9 @@ r_device const hcs362_pwm = {
 
 r_device const hcs362_mc = {
         .name        = "Microchip HCS362 KeeLoq Hopping Encoder based remotes (mode 1)",
-        .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
-        .short_width = 214,
-        .long_width  = 214,
+        .modulation  = OOK_PULSE_PCM,
+        .short_width = 200, // 100 us = 5000 bps, 200 us = 2500 bps, 400 us = 1250 bps, 800 us = 625 bps
+        .long_width  = 200,
         .gap_limit   = 600,
         .reset_limit = 900,
         .tolerance   = 50, // us
