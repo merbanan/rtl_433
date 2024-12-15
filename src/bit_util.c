@@ -303,13 +303,40 @@ uint16_t crc16(uint8_t const message[], unsigned nBytes, uint16_t polynomial, ui
 uint8_t lfsr_digest8(uint8_t const message[], unsigned bytes, uint8_t gen, uint8_t key)
 {
     uint8_t sum = 0;
+    // Process message from first byte to last byte
     for (unsigned k = 0; k < bytes; ++k) {
         uint8_t data = message[k];
+        // Process individual bits of each byte (MSB to LSB)
         for (int i = 7; i >= 0; --i) {
-            // fprintf(stderr, "key is %02x\n", key);
+            // fprintf(stderr, "key at %d.%d : %02x\n", k, i, key);
             // XOR key into sum if data bit is set
             if ((data >> i) & 1)
                 sum ^= key;
+
+            // roll the key right (actually the lsb is dropped here)
+            // and apply the gen (needs to include the dropped lsb as msb)
+            if (key & 1)
+                key = (key >> 1) ^ gen;
+            else
+                key = (key >> 1);
+        }
+    }
+    return sum;
+}
+
+uint8_t lfsr_digest8_reverse(uint8_t const *message, int bytes, uint8_t gen, uint8_t key)
+{
+    uint8_t sum = 0;
+    // Process message from last byte to first byte (reflected)
+    for (int k = bytes - 1; k >= 0; --k) {
+        uint8_t data = message[k];
+        // Process individual bits of each byte (MSB to LSB)
+        for (int i = 7; i >= 0; --i) {
+            // fprintf(stderr, "key at %d.%d : %02x\n", k, i, key);
+            // XOR key into sum if data bit is set
+            if ((data >> i) & 1) {
+                sum ^= key;
+            }
 
             // roll the key right (actually the lsb is dropped here)
             // and apply the gen (needs to include the dropped lsb as msb)
@@ -330,14 +357,14 @@ uint8_t lfsr_digest8_reflect(uint8_t const message[], int bytes, uint8_t gen, ui
         uint8_t data = message[k];
         // Process individual bits of each byte (reflected)
         for (int i = 0; i < 8; ++i) {
-            // fprintf(stderr, "key is %02x\n", key);
+            // fprintf(stderr, "key at %d.%d : %02x\n", k, i, key);
             // XOR key into sum if data bit is set
             if ((data >> i) & 1) {
                 sum ^= key;
             }
 
-            // roll the key left (actually the lsb is dropped here)
-            // and apply the gen (needs to include the dropped lsb as msb)
+            // roll the key left (actually the msb is dropped here)
+            // and apply the gen (needs to include the dropped msb as lsb)
             if (key & 0x80)
                 key = (key << 1) ^ gen;
             else
