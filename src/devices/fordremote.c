@@ -104,7 +104,7 @@ static char const *const output_fields[] = {
         NULL,
 };
 
-r_device const ford_car_remote = {
+r_device const fordremote = {
         .name        = "Ford Car Remote",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 250,  // half-bit width is 250 us
