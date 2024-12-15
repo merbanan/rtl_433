@@ -337,23 +337,42 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [249]  Bresser lightning
     [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge, TFA Dostmann 30.3252.01/47.3006.01 Rain Gauge and Thermometer, ADE WS1907
     [251]  Fine Offset / Ecowitt WH55 water leak sensor
-    [252]  Astrostart 2000 Car Remote (-f 372.4M)
-    [253]  Compustar 1WG3R Car Remote
-    [254]  Chrysler Car Remote (-f 315.1M -s 920k)
-    [255]  Nidec Car Remote (-f 313.8M -s 1024k)
-    [256]  Audiovox PRO-OE3B Car Remote (-f 303.4M)
-    [257]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (Sync, 833 bit/s)
-    [258]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (Sync, 1667 bit/s)
-    [259]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (No Sync, 833 bit/s)
-    [260]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (No Sync, 1667 bit/s)
-    [261]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (PIWM, 2500 bit/s)
-    [262]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (PIWM, 5000 bit/s)
-    [263]  6SC2 Car Remote (-f 315.1M)
-    [264]  GM ABO1502T Car Remote (-f 314.9M)
-    [265]  Siemens 5WY72XX Car Remote (-f 315.1M)
-    [266]  Alps FWB1U545 Car Remote
-    [267]  Continental KR5V2X Car Remote (-f 313.8M -s 1024k)
-    [268]  Code Alarm FRDPC2002 Car Remote
+    [252]  BMW Gen4-Gen5 TPMS and Audi TPMS Pressure Alert, multi-brand HUF/Beru, Continental, Schrader/Sensata, Audi
+    [253]  Watts WFHT-RF Thermostat
+    [254]  Thermor DG950 weather station
+    [255]  Mueller Hot Rod water meter
+    [256]  ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill
+    [257]  BMW Gen3 TPMS
+    [258]  Chamberlain CWPIRC PIR Sensor
+    [259]  ThermoPro Meat Thermometers, TP829B 4 probes with temp only
+    [260]* Arad/Master Meter Dialog3G water utility meter
+    [261]  Geevon TX16-3 outdoor sensor
+    [262]  Fine Offset Electronics WH46 air quality sensor
+    [263]  Vevor Wireless Weather Station 7-in-1
+    [264]  Arexx Multilogger IP-HA90, IP-TH78EXT, TSN-70E
+    [265]  Rosstech Digital Control Unit DCU-706/Sundance/Jacuzzi
+    [266]  Risco 2 Way Agility protocol, Risco PIR/PET Sensor RWX95P
+    [267]  ThermoPro Meat Thermometers, TP828B 2 probes with Temp, BBQ Target LO and HI
+    [268]  Bresser Thermo-/Hygro-Sensor Explore Scientific ST1005H
+    [269]  DeltaDore X3D devices
+    [270]* Quinetic
+    [271]  Astrostart 2000 Car Remote (-f 372.4M)
+    [272]  Compustar 1WG3R Car Remote
+    [273]  Chrysler Car Remote (-f 315.1M -s 920k)
+    [274]  Nidec Car Remote (-f 313.8M -s 1024k)
+    [275]  Audiovox PRO-OE3B Car Remote (-f 303.4M)
+    [276]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (Sync, 833 bit/s)
+    [277]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (Sync, 1667 bit/s)
+    [278]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (No Sync, 833 bit/s)
+    [279]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (No Sync, 1667 bit/s)
+    [280]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (PIWM, 2500 bit/s)
+    [281]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (PIWM, 5000 bit/s)
+    [282]  6SC2 Car Remote (-f 315.1M)
+    [283]  GM ABO1502T Car Remote (-f 314.9M)
+    [284]  Siemens 5WY72XX Car Remote (-f 315.1M)
+    [285]  Alps FWB1U545 Car Remote
+    [286]  Continental KR5V2X Car Remote (-f 313.8M -s 1024k)
+    [287]  Code Alarm FRDPC2002 Car Remote
 
 * Disabled by default, use -R n or a conf file to enable
 
