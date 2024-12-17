@@ -174,7 +174,12 @@ struct deltadore_x3d_message_header {
     int16_t header_check;
 };
 
+#ifdef _MSC_VER
+#pragma pack(push, 1)
+struct deltadore_x3d_message_payload {
+#else
 struct __attribute__((packed)) deltadore_x3d_message_payload {
+#endif
     uint8_t retry;
     uint16_t transfer;
     uint16_t transfer_ack;
@@ -184,6 +189,9 @@ struct __attribute__((packed)) deltadore_x3d_message_payload {
     uint8_t register_low;
     uint16_t target_ack;
 };
+#ifdef _MSC_VER
+#pragma pack(pop)
+#endif
 
 /* clang-format off */
 static uint32_t deltadore_x3d_read_le_u24(uint8_t **buffer)
