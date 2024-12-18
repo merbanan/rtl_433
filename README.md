@@ -178,7 +178,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [90]  Renault TPMS
     [91]  inFactory, nor-tec, FreeTec NC-3982-913 temperature humidity sensor
     [92]  FT-004-B Temperature Sensor
-    [93]  Ford Car Key
+    [93]  Ford Car Remote
     [94]  Philips outdoor temperature sensor (type AJ3650)
     [95]  Schrader TPMS EG53MA4, PA66GF35
     [96]  Nexa
@@ -356,6 +356,23 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [268]  Bresser Thermo-/Hygro-Sensor Explore Scientific ST1005H
     [269]  DeltaDore X3D devices
     [270]* Quinetic
+    [271]  Astrostart 2000 Car Remote (-f 372.4M)
+    [272]  Compustar 1WG3R Car Remote
+    [273]  Chrysler Car Remote (-f 315.1M -s 920k)
+    [274]  Nidec Car Remote (-f 313.8M -s 1024k)
+    [275]  Audiovox PRO-OE3B Car Remote (-f 303.4M)
+    [276]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (Sync, 833 bit/s)
+    [277]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (Sync, 1667 bit/s)
+    [278]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (No Sync, 833 bit/s)
+    [279]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (No Sync, 1667 bit/s)
+    [280]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (PIWM, 2500 bit/s)
+    [281]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (PIWM, 5000 bit/s)
+    [282]  6SC2 Car Remote (-f 315.1M)
+    [283]  GM ABO1502T Car Remote (-f 314.9M)
+    [284]  Siemens 5WY72XX Car Remote (-f 315.1M)
+    [285]  Alps FWB1U545 Car Remote
+    [286]  Continental KR5V2X Car Remote (-f 313.8M -s 1024k)
+    [287]  Code Alarm FRDPC2002 Car Remote
 
 * Disabled by default, use -R n or a conf file to enable
 

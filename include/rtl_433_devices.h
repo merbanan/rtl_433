@@ -278,6 +278,23 @@
     DECL(bresser_st1005h) \
     DECL(deltadore_x3d) \
     DECL(quinetic) \
+    DECL(astrostart_2000) \
+    DECL(compustar_1wg3r) \
+    DECL(chrysler_car_remote) \
+    DECL(nidec_car_remote) \
+    DECL(audiovox_pro_oe3b) \
+    DECL(hcs361_txwak_0_bsel_0) \
+    DECL(hcs361_txwak_0_bsel_1) \
+    DECL(hcs361_txwak_1_bsel_0) \
+    DECL(hcs361_txwak_1_bsel_1) \
+    DECL(hcs361_vpwm_1_bsel_0) \
+    DECL(hcs361_vpwm_1_bsel_1) \
+    DECL(six_sc_two_car_remote) \
+    DECL(gm_car_remote) \
+    DECL(siemens_5wy72xx_car_remote) \
+    DECL(alps_fwb1u545_car_remote) \
+    DECL(continental_car_remote) \
+    DECL(code_alarm_frdpc2000_car_remote)
 
     /* Add new decoders here. */
 
