@@ -65,6 +65,7 @@ add_library(r_433 STATIC
     devices/baldr_rain.c
     devices/blueline.c
     devices/blyss.c
+    devices/bm5.c
     devices/brennenstuhl_rcs_2044.c
     devices/bresser_3ch.c
     devices/bresser_5in1.c
