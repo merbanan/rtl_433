@@ -59,7 +59,7 @@ static int bm5_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, 0, 0, b, sizeof(b)*8);
 
     //check for valid checksum
-    if (b[10] != add_bytes(&b[0], 10)){
+    if ((unsigned char) add_bytes(&b[0], 10) != b[10]){
         return DECODE_FAIL_MIC; // failed checksum - invalid message
     }
 
