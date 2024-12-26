@@ -113,7 +113,7 @@ r_device const bm5 = {
         .modulation  = OOK_PULSE_PWM,
         .short_width = 225,
         .long_width  = 675,
-        .reset_limit = 2000,
+        .reset_limit = 6000,
         .decode_fn   = &bm5_decode,
         .fields      = output_fields,
 };
