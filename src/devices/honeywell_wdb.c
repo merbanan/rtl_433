@@ -25,7 +25,7 @@ Wireless Chimes
                                                                           recognize signal)
     XXXX XXXX XXXX XXXX XXXX .... .... .... .... .... .... .... KEY ID (different for each transmitter)
     .... .... .... .... .... 0000 0... 0000 0000 00.. 0... .... KEY UNKNOWN 0 (always 0 in devices I've tested)
-    .... .... .... .... .... .... .XXX .... .... .... .... .... DEVICE TYPE (10 = doorbell, 01 = PIR Motion sensor, 
+    .... .... .... .... .... .... .XXX .... .... .... .... .... DEVICE TYPE (10 = doorbell, 01 = PIR Motion sensor,
 									101 = door/window))
     .... .... .... .... .... .... .... .... .... ..XX .XXX XXX. FLAG DATA (may be modified for possible effects on
                                                                            receiver)
@@ -53,7 +53,7 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned int device, tmp, type;
     char const *class, *alert;
 
-    // The device transmits many rows, check for 4 matching rows. 
+    // The device transmits many rows, check for 4 matching rows.
     row = bitbuffer_find_repeated_row(bitbuffer, 4, 48);
     if (row < 0) {
         return DECODE_ABORT_EARLY;
