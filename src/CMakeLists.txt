@@ -206,6 +206,7 @@ add_library(r_433 STATIC
     devices/rainpoint.c
     devices/regency_fan.c
     devices/revolt_nc5462.c
+    devices/revolt_zx7717.c
     devices/rftech.c
     devices/risco_agility.c
     devices/rojaflex.c
