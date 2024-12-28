@@ -15,10 +15,13 @@ BM5 v2.0 12V Automotive Battery Monitor.  Sold as "ANCEL BM200" on Amazon, and "
 The sensor transmits a single message, with all relevant data about every 10 seconds at 433.92 MHz,
 
 The transmission is inverted from the normal OOK_PULSE_PWM decoder, with a "0" represented as a short pulse of 225us, and a 675us gap,
-and a "1" represented as a long 675us pulse, and a 225us gap.  The implementaion below initially inverters the buffer to correct for this.
+and a "1" represented as a long 675us pulse, and a 225us gap.  The implementation below initially inverters the buffer to correct for this.
 
 Each message consists of a preamble (long pulse, plus eight 50% symbol length pulses) sent at double the normal data rate, then a one byte pause (at regular data rate),
-then ten bytes of payload, and a one byte CRC.  The preamble is decoded as (0x7F 0x80) by rtl_433 (in the native, non-inverted state) due to the initial pulse.
+then ten bytes of payload, plus a one byte Checksum.  The preamble is decoded as (0x7F 0x80) by rtl_433 (in the native, non-inverted state) due to the initial pulse.
+
+Flex decoder:  `rtl_433 -R 0 -X 'n=bm5v2,m=OOK_PWM,s=227,l=675,r=6000,invert'`
+
 
 Payload:
 
@@ -31,11 +34,11 @@ Payload:
 - V = 16 bits, little endian for current battery voltage (Voltage is displayed as a float with 2 significant digits.  The 16 bit int represents this
       voltage, multiplied by 1600.)
 - v = 16 bits, little endian for previous low voltage during last start.  (Is probably used for the algorithm to determine battery health.  This value
-      will be closer to resting voltage for healthy batteries) Same 1600 muliplier as above.
+      will be closer to resting voltage for healthy batteries) Same 1600 multiplier as above.
 - R = 1 byte Checksum
 
     msg:    IIIIIIIIIIIIIIIIIIIIIIIISSSSSSSCssssssscTTTTTTTTVVVVVVVVVVVVVVVVvvvvvvvvvvvvvvvvRRRRRRRR
-    ID:24h SOH:7d CRANKING:1b SOC:7d CHARGING:1b TEMP:8s V_CUR:16d V_START:16d CRC:8h
+    ID:24h SOH:7d CHARGING:1b SOC:7d CRANKING:1b TEMP:8s V_CUR:16d V_START:16d CHECKSUM:8h
 
 */
 
@@ -85,7 +88,7 @@ static int bm5_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "charging",         "Charging System Error",  DATA_INT,       charging,
             "temperature_C",    "Temperature",            DATA_FORMAT,   "%d C",        DATA_INT,          temp,
             "cur_volt",         "Current Battery Voltage",DATA_FORMAT,   "%.2f",        DATA_DOUBLE,    cur_volt,
-            "start_volt",       "Starting Voltage",       DATA_FORMAT,   "$.2f",        DATA_DOUBLE,    start_volt,
+            "start_volt",       "Starting Voltage",       DATA_FORMAT,   "%.2f",        DATA_DOUBLE,    start_volt,
             "mic",              "Integrity",              DATA_STRING,   "CHECKSUM",
             NULL);
     /* clang-format on */
