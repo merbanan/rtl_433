@@ -356,6 +356,9 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [268]  Bresser Thermo-/Hygro-Sensor Explore Scientific ST1005H
     [269]  DeltaDore X3D devices
     [270]* Quinetic
+    [271]  Landis & Gyr Gridstream Power Meters 9.6k
+    [272]  Landis & Gyr Gridstream Power Meters 19.2k
+    [273]  Landis & Gyr Gridstream Power Meters 38.4k
 
 * Disabled by default, use -R n or a conf file to enable
 
