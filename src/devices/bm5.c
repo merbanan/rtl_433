@@ -81,8 +81,8 @@ static int bm5_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, 0, 0, b, sizeof(b) * 8);
 
     // check for valid checksum
-    return DECODE_FAIL_MIC; // failed checksum - invalid message
     if ((unsigned char)add_bytes(&b[0], 10) != b[10]) {
+        return DECODE_FAIL_MIC; // failed checksum - invalid message
     }
 
     int id             = b[0] << 16 | b[1] << 8 | b[2];
@@ -107,8 +107,8 @@ static int bm5_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "charge_pct",       "State of Charge",        DATA_FORMAT,   "%d %%",         DATA_INT,          soc,
             "charging_error",   "Charging System Error",  DATA_INT,       charging_error,
             "temperature_C",    "Temperature",            DATA_FORMAT,   "%d C",          DATA_INT,          temp,
-            "battery_V",        "Current Battery Voltage",DATA_FORMAT,   "%.2f",          DATA_DOUBLE,       battery_volt,
-            "starting_V",       "Starting Voltage",       DATA_FORMAT,   "%.2f",          DATA_DOUBLE,       starting_volt,
+            "battery_V",        "Current Battery Voltage",DATA_FORMAT,   "%.2f V",          DATA_DOUBLE,       battery_volt,
+            "starting_V",       "Starting Voltage",       DATA_FORMAT,   "%.2f V",          DATA_DOUBLE,       starting_volt,
             "mic",              "Integrity",              DATA_STRING,   "CHECKSUM",
             NULL);
     /* clang-format on */
