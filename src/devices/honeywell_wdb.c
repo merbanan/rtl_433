@@ -26,7 +26,7 @@ Wireless Chimes
     XXXX XXXX XXXX XXXX XXXX .... .... .... .... .... .... .... KEY ID (different for each transmitter)
     .... .... .... .... .... 0000 0... 0000 0000 00.. 0... .... KEY UNKNOWN 0 (always 0 in devices I've tested)
     .... .... .... .... .... .... .XXX .... .... .... .... .... DEVICE TYPE (10 = doorbell, 01 = PIR Motion sensor,
-									101 = door/window))
+                                                                            101 = door/window))
     .... .... .... .... .... .... .... .... .... ..XX .XXX XXX. FLAG DATA (may be modified for possible effects on
                                                                            receiver)
     .... .... .... .... .... .... .... .... .... ..XX .... .... ALERT (00 = normal, 01 or 10 = right-left halo light
