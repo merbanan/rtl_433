@@ -32,7 +32,8 @@ Payload:
 - c = 1 bit flag for cranking system error. (!CRANKING indicator on display - triggered if starting voltage drops for too long -- excessive cranking)
 - T = 8 byte (signed) for sensor temperature (degrees C, converted if necessary in display)
 - V = 16 bits, little endian for current battery voltage (Voltage is displayed as a float with 2 significant digits.  The 16 bit int represents this
-      voltage, multiplied by 1600.)
+      voltage, multiplied by 1600. -- note:  The display truncates the voltages to 2 decimal points.  I've chosen to round instead of truncate, as this
+      seems a better representation of the true value.)
 - v = 16 bits, little endian for previous low voltage during last start.  (Is probably used for the algorithm to determine battery health.  This value
       will be closer to resting voltage for healthy batteries) Same 1600 multiplier as above.
 - R = 1 byte Checksum
@@ -75,7 +76,7 @@ static int bm5_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int volt1  = b[7] << 8 | b[6]; // Current voltage
     int volt2 = b[9] << 8 | b[8]; // Previous starting voltage
 
-    float cur_volt = volt1 / 1600.0;   // Convert transmitted values to floats
+    float cur_volt = volt1 / 1600.0;   // Convert transmitted values to floats.  Rounded to 2 decimal places in "data_make" below.
     float start_volt = volt2 / 1600.0;
 
     /* clang-format off */
