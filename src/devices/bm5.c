@@ -101,7 +101,7 @@ static int bm5_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",            "",                       DATA_STRING,   "BM5-v2",
-            "device_id",        "Device_ID",              DATA_FORMAT,   "%X",            DATA_INT,          id,
+            "id",               "Device_ID",              DATA_FORMAT,   "%X",            DATA_INT,          id,
             "health_pct",       "State of Health",        DATA_FORMAT,   "%d %%",         DATA_INT,          soh,
             "cranking_error",   "Cranking System Error",  DATA_INT,       cranking_error,
             "charge_pct",       "State of Charge",        DATA_FORMAT,   "%d %%",         DATA_INT,          soc,
