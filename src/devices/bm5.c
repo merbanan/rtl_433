@@ -85,14 +85,14 @@ static int bm5_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC; // failed checksum - invalid message
     }
 
-    int id             = b[0] << 16 | b[1] << 8 | b[2];
+    int id             = (b[0] << 16) | (b[1] << 8) | b[2];
     int soh            = b[3] >> 1;        // State of Health encoded in 1st 7 bits
     int cranking_error = b[3] & 0x01;      // Cranking flag in bit 8 of byte 4
     int soc            = b[4] >> 1;        // State pf Charge encoded in 1st 7 bits
     int charging_error = b[4] & 0x01;      // Charging flag in bit 8 of byte 5
-    int temp           = b[5];             // Temperature in C, signed char in byte 6
-    int volt1          = b[7] << 8 | b[6]; // Current voltage
-    int volt2          = b[9] << 8 | b[8]; // Previous starting voltage
+    int temp           = (int8_t) b[5];             // Temperature in C, signed char in byte 6
+    int volt1          = (b[7] << 8) | b[6]; // Current voltage
+    int volt2          = (b[9] << 8) | b[8]; // Previous starting voltage
 
     float battery_volt = volt1 * 0.000625f; // Convert transmitted values to floats.  Rounded to 2
                                             // decimal places in "data_make" below.
