@@ -84,8 +84,8 @@ static int bm5_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "soc",              "State of Charge",        DATA_FORMAT,   "%d %%",       DATA_INT,          soc,
             "charging",         "Charging System Error",  DATA_INT,       charging,
             "temperature_C",    "Temperature",            DATA_FORMAT,   "%d C",        DATA_INT,          temp,
-            "cur_volt",         "Current Battery Voltage",DATA_DOUBLE,    cur_volt,
-            "start_volt",       "Starting Voltage",       DATA_DOUBLE,    start_volt,
+            "cur_volt",         "Current Battery Voltage",DATA_FORMAT,   "%.2f",        DATA_DOUBLE,    cur_volt,
+            "start_volt",       "Starting Voltage",       DATA_FORMAT,   "$.2f",        DATA_DOUBLE,    start_volt,
             "mic",              "Integrity",              DATA_STRING,   "CHECKSUM",
             NULL);
     /* clang-format on */
