@@ -40,8 +40,9 @@ triggered if running voltage below ~13v)
 - s = 7 bits for battery State of Charge (SOC) 0 to 100 percent
 - c = 1 bit flag for cranking system error. (!CRANKING indicator on display -
 triggered if starting voltage drops for too long -- excessive cranking)
-- T = 8 byte (signed) for sensor temperature (degrees C, converted if necessary
+- T = 7 bits for sensor temperature magnitude (degrees C, converted if necessary
 in display)
+- t = 1 bit for temperature sign (0 = positive, 1 = negative)
 - V = 16 bits, little endian for current battery voltage (Voltage is displayed
 as a float with 2 significant digits.  The 16 bit int represents this voltage,
 multiplied by 1600. -- note:  The display truncates the voltages to 2 decimal
@@ -53,7 +54,7 @@ closer to resting voltage for healthy batteries) Same 1600 multiplier as above.
 - R = 1 byte Checksum
 
     msg:
-IIIIIIIIIIIIIIIIIIIIIIIISSSSSSSCssssssscTTTTTTTTVVVVVVVVVVVVVVVVvvvvvvvvvvvvvvvvRRRRRRRR
+IIIIIIIIIIIIIIIIIIIIIIIISSSSSSSCssssssscTTTTTTTtVVVVVVVVVVVVVVVVvvvvvvvvvvvvvvvvRRRRRRRR
     ID:24h SOH:7d CHARGING:1b SOC:7d CRANKING:1b TEMP:8s V_CUR:16d V_START:16d
 CHECKSUM:8h
 
@@ -87,12 +88,17 @@ static int bm5_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int id             = (b[0] << 16) | (b[1] << 8) | b[2];
     int soh            = b[3] >> 1;          // State of Health encoded in 1st 7 bits
-    int cranking_error = b[3] & 0x01;        // Cranking flag in bit 8 of byte 4
+    int charging_error = b[3] & 0x01;        // Charging error flag in bit 8 of byte 4
     int soc            = b[4] >> 1;          // State pf Charge encoded in 1st 7 bits
-    int charging_error = b[4] & 0x01;        // Charging flag in bit 8 of byte 5
-    int temp           = (int8_t)b[5];       // Temperature in C, signed char in byte 6
+    int cranking_error = b[4] & 0x01;        // Cranking error flag in bit 8 of byte 5
+    int temp           = b[5] >> 1;          // Temperature magnitude in degrees C in first 7 bits of byte 6
+    int temp_sign      = b[5] & 0x01;        // Temperature sign in bit 8 of byte 6
     int volt1          = (b[7] << 8) | b[6]; // Current voltage
     int volt2          = (b[9] << 8) | b[8]; // Previous starting voltage
+                                             //
+    if (temp_sign == 1) {
+        temp = -temp; // Invert temp value
+    }
 
     float battery_volt = volt1 * 0.000625f; // Convert transmitted values to floats.  Rounded to 2
                                             // decimal places in "data_make" below.
@@ -107,8 +113,8 @@ static int bm5_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "charge_pct",       "State of Charge",        DATA_FORMAT,   "%d %%",         DATA_INT,          soc,
             "charging_error",   "Charging System Error",  DATA_INT,       charging_error,
             "temperature_C",    "Temperature",            DATA_FORMAT,   "%d C",          DATA_INT,          temp,
-            "battery_V",        "Current Battery Voltage",DATA_FORMAT,   "%.2f V",          DATA_DOUBLE,       battery_volt,
-            "starting_V",       "Starting Voltage",       DATA_FORMAT,   "%.2f V",          DATA_DOUBLE,       starting_volt,
+            "battery_V",        "Current Battery Voltage",DATA_FORMAT,   "%.2f V",        DATA_DOUBLE,       battery_volt,
+            "starting_V",       "Starting Voltage",       DATA_FORMAT,   "%.2f V",        DATA_DOUBLE,       starting_volt,
             "mic",              "Integrity",              DATA_STRING,   "CHECKSUM",
             NULL);
     /* clang-format on */
