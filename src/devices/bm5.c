@@ -112,7 +112,7 @@ static int bm5_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "cranking_error",   "Cranking System Error",  DATA_INT,       cranking_error,
             "charge_pct",       "State of Charge",        DATA_FORMAT,   "%d %%",         DATA_INT,          soc,
             "charging_error",   "Charging System Error",  DATA_INT,       charging_error,
-            "temperature_C",    "Temperature",            DATA_FORMAT,   "%d C",          DATA_INT,          temp,
+            "temperature_C",    "Temperature",            DATA_FORMAT,   "%.1f C",        DATA_DOUBLE,       (float) temp,
             "battery_V",        "Current Battery Voltage",DATA_FORMAT,   "%.2f V",        DATA_DOUBLE,       battery_volt,
             "starting_V",       "Starting Voltage",       DATA_FORMAT,   "%.2f V",        DATA_DOUBLE,       starting_volt,
             "mic",              "Integrity",              DATA_STRING,   "CHECKSUM",
