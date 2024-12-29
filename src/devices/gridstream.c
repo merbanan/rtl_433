@@ -66,7 +66,7 @@ Subtype 0x55 with a data length of 0x23 can be used for this.
 Known CRC init values can be added to the code via PR when they have been identified.
 
 */
-static struct const crc_init known_crc_init[] = {
+static const struct crc_init known_crc_init[] = {
         {0xe623, "Kansas City, MO", "Evergy-Missouri West"},
         {0x5fd6, "Dallas, TX", "Oncor"},
         {0xD553, "Austin, TX", "Austin Energy"},
@@ -76,7 +76,10 @@ static struct const crc_init known_crc_init[] = {
         {0x2C22, "Santa Barbara, CA", "Southern California Edison"},
         {0x142A, "Washington", "Puget Sound Energy"},
         {0x47F7, "Pennsylvania", "PPL Electric"},
-        {0x22c6, "Long Island, NY", "PSEG Long Island"}};
+        {0x22c6, "Long Island, NY", "PSEG Long Island"},
+        {0x8819, "Alameda, CA", "Alameda Municipal Power"},
+        {0x4E2D, "Milwaukee, WI", "We Energies"},
+        {0x1D65, "Phoenix, AZ", "APS"}};
 
 static int gridstream_checksum(int fulllength, uint16_t length, uint8_t *bits, int adjust)
 {
@@ -131,7 +134,7 @@ static int gridstream_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char destaddress_str[9]     = "";
     int srcwanaddress           = 0;
     uint32_t uptime             = 0;
-    int clock;
+    int clock                   = 0;
     int subtype;
     unsigned offset;
     int protocol_version;
