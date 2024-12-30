@@ -278,6 +278,7 @@
     DECL(bresser_st1005h) \
     DECL(deltadore_x3d) \
     DECL(quinetic) \
+    DECL(bm5) \
 
     /* Add new decoders here. */
 
