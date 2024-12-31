@@ -359,6 +359,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [271]  Landis & Gyr Gridstream Power Meters 9.6k
     [272]  Landis & Gyr Gridstream Power Meters 19.2k
     [273]  Landis & Gyr Gridstream Power Meters 38.4k
+    [274]  Revolt ZX-7717 power meter
 
 * Disabled by default, use -R n or a conf file to enable
 
