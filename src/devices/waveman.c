@@ -71,7 +71,7 @@ static int waveman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",       "",     DATA_STRING,    id_str,
             "channel",  "",     DATA_INT,       (nb[1] >> 2) + 1,
             "button",   "",     DATA_INT,       (nb[1] & 3) + 1,
-            "state",    "",     DATA_STRING,    (nb[2] == 0xe) ? "on" : "off",
+            "state",    "",     DATA_STRING,    (nb[2] == 0xe) ? "ON" : "OFF",
             NULL);
     /* clang-format on */
     decoder_output_data(decoder, data);
