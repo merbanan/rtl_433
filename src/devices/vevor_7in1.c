@@ -130,7 +130,7 @@ static int vevor_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "wind_max_km_h",    "Wind max speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, gust_kmh,
                     "wind_dir_deg",     "Wind Direction",   DATA_INT,    direction_deg,
                     "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",  DATA_DOUBLE, rain_mm,
-                    "uv",               "UV Index",         DATA_FORMAT, "%u", DATA_INT, uv_index,
+                    "uvi",              "UV Index",         DATA_FORMAT, "%.0f", DATA_DOUBLE, (double)uv_index,
                     "light_lux",        "Lux",              DATA_FORMAT, "%u", DATA_INT, light_lux,
                     "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
                     NULL);
@@ -155,7 +155,7 @@ static char const *const output_fields[] = {
         "wind_max_km_h",
         "rain_mm",
         "wind_dir_deg",
-        "uv",
+        "uvi",
         "light_lux",
         "mic",
         NULL,
