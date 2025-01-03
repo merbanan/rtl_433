@@ -1,7 +1,7 @@
 /** @file
-    Decoder for Martec ceiling fan remotes
+    Decoder for Martec MPLCD ceiling fan remotes
 
-    Copyright (C) 2024 Don Ashdown <>
+    Copyright (C) 2024 Don Ashdown
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -13,18 +13,19 @@
 #include <stdbool.h>
 
 /**
-Decoder for Martec ceiling fan remotes
+Decoder for Martec MPLCD ceiling fan remotes
+
+Remote keeps knowledge of fan state and sends combined light and fan setting on each button press.
 
 Data layout:
 
     22 bits
     PPPP IIII DDDDDDD SS U CCCC
 
-
-- P: 4 bit preamble of fixed value 1000
-- I: 4 bit channel ID
-- D: 7 bit dimmer
-- S: 2 bit speed
+- P: 4 bit fixed preamble 0x8
+- I: 4 bit channel ID - reflected and inverted
+- D: 7 bit dimmer - 0 is off, 1-41 is on with 1 being full brightness
+- S: 2 bit speed - 0: off, 1: high, 2: medium, 3: low
 - U: 1 bit unknown
 - C: 4 bit simple checksum
 
@@ -32,17 +33,13 @@ Format string:
 
     xxxx ID:4h LIGHT:7h FAN:2h x CRC:4b
 
-Dimmer value of 0 is off
-Dimmer value between 1 and 41 is on with 1 being full brightness
-
-Treat the data as 4 nibbles commencing with bit 2 to simplify checksum calculation
+Process the data as 3 bytes skipping the first bit to simplify checksum calculation
     P PPPIIIID DDDDDDSS UCCCC
 
-Checksum is simple sum over 4 nibbles
-
+Checksum is simple sum over 4 nibbles starting from bit 2
 */
 
-static int martec_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int martec_mplcd_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     char const *const speed_names[] = {
             /* 0  */ "off",
@@ -83,9 +80,9 @@ static int martec_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int channel = (~bytes[0] >> 1) & 0x0f;
         channel = reflect4(channel);
         int dimmer = (bytes[0] & 0x01) << 6;
-        // Dimmer ranges from 0 to 41 with 0 being full brightness
+        // Dimmer ranges from 1 to 41 with 1 being full brightness
         dimmer += (bytes[1] >> 2) & 0x3f;
-        //decoder_logf(decoder, 2, __func__, "Pre-dimmer: %02x", dimmer);
+        // Map dimmer to a continuous range from 0 to 41 with 0 being off and 41 being full brightness
         if (dimmer > 0) {
             dimmer = 42 - dimmer;
         }
@@ -93,7 +90,7 @@ static int martec_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data_t *data = data_make(
-                "model",            "",     DATA_STRING,    "Martec-Remote",
+                "model",            "",     DATA_STRING,    "Martec-MPLCD",
                 "id",               "",     DATA_INT,       channel,
                 "dimmer",           "",     DATA_INT,       dimmer,
                 "speed",            "",     DATA_STRING,    speed_names[speed],
@@ -121,13 +118,13 @@ static char const *const output_fields[] = {
         NULL,
 };
 
-r_device const martec_fan = {
-        .name        = "Martec Ceiling Fan Remote (-f 433.92M)",
+r_device const martec_mplcd = {
+        .name        = "Martec MPLCD Ceiling Fan Remote",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 292,
         .long_width  = 648,
         .gap_limit   = 850,
         .reset_limit = 12000,
-        .decode_fn   = &martec_fan_decode,
+        .decode_fn   = &martec_mplcd_decode,
         .fields      = output_fields,
 };
