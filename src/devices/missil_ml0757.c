@@ -106,23 +106,21 @@ static int missil_ml0757_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (flag_rwp) { // Rainwall and wind
         /* clang-format off */
-        data = data_make(
-                "model",            "",             DATA_STRING, "Missil-ML0757",
-                "id",               "ID",           DATA_INT,    id,
-                "battery_ok",       "Battery",      DATA_INT,    !flag_bat,
-                "rain_mm",          "Total rain",   DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rainfall,
-                "wind_avg_km_h",    "Wind speed",   DATA_FORMAT, "%.2f km/h", DATA_DOUBLE, wind_kph,
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",             NULL,         "Missil-ML0757");
+        data = data_int(data, "id",               "ID",           NULL,         id);
+        data = data_int(data, "battery_ok",       "Battery",      NULL,         !flag_bat);
+        data = data_dbl(data, "rain_mm",          "Total rain",   "%.2f mm",    rainfall);
+        data = data_dbl(data, "wind_avg_km_h",    "Wind speed",   "%.2f km/h",  wind_kph);
         /* clang-format on */
     }
     else { // Temperature
         /* clang-format off */
-        data = data_make(
-                "model",            "",             DATA_STRING, "Missil-ML0757",
-                "id",               "ID",           DATA_INT,    id,
-                "battery_ok",       "Battery",      DATA_INT,    !flag_bat,
-                "temperature_C",    "Temperature",  DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",             NULL,         "Missil-ML0757");
+        data = data_int(data, "id",               "ID",           NULL,         id);
+        data = data_int(data, "battery_ok",       "Battery",      NULL,         !flag_bat);
+        data = data_dbl(data, "temperature_C",    "Temperature",  "%.2f C",     temp_c);
         /* clang-format on */
     }
 

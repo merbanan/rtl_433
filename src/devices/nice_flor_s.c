@@ -50,13 +50,12 @@ static int nice_flor_s_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint16_t code = (b[1] << 12) | (b[2] << 4) | (b[3] >> 4);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",  "",              DATA_STRING, "Nice-FlorS",
-            "button", "Button ID",     DATA_INT,     button_id,
-            "serial", "Serial (enc.)", DATA_FORMAT, "%07x",        DATA_INT, serial,
-            "code",   "Code (enc.)",   DATA_FORMAT, "%04x",        DATA_INT, code,
-            "count",  "",              DATA_INT,     count,
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",  "",              NULL,         "Nice-FlorS");
+    data = data_int(data, "button", "Button ID",     NULL,         button_id);
+    data = data_int(data, "serial", "Serial (enc.)", "%07x",       serial);
+    data = data_int(data, "code",   "Code (enc.)",   "%04x",       code);
+    data = data_int(data, "count",  "",              NULL,         count);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

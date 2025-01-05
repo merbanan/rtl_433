@@ -170,12 +170,11 @@ static int rubicson_48659_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_f = ((b[1] & 0x04) >> 2) ? -1 : 1 * (((b[1] & 0x3) << 8) | b[2]);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",         "",            DATA_STRING, "Rubicson-48659",
-            "id",            "Id",          DATA_INT,    id,
-            "temperature_F", "Temperature", DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_f,
-            "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",         "",            NULL,         "Rubicson-48659");
+    data = data_int(data, "id",            "Id",          NULL,         id);
+    data = data_dbl(data, "temperature_F", "Temperature", "%.1f F",     temp_f);
+    data = data_str(data, "mic",           "Integrity",   NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

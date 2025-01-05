@@ -48,12 +48,11 @@ static int generic_temperature_sensor_callback(r_device *decoder, bitbuffer_t *b
     temp_f  = (temp_raw >> 4) * 0.1f;
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING,    "Generic-Temperature",
-            "id",               "Id",           DATA_INT,       device,
-            "battery_ok",       "Battery?",     DATA_INT,       battery,
-            "temperature_C",    "Temperature",  DATA_FORMAT,    "%.2f C",  DATA_DOUBLE,    temp_f,
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Generic-Temperature");
+    data = data_int(data, "id",               "Id",           NULL,         device);
+    data = data_int(data, "battery_ok",       "Battery?",     NULL,         battery);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.2f C",     temp_f);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

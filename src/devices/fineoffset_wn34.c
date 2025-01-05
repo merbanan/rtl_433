@@ -107,15 +107,18 @@ static int fineoffset_wn34_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float battery_ok  = (battery_bars - 1) * 0.25f;
 
     /* clang-format off */
-    data = data_make(
-            "model",         "",                DATA_COND, sub_type != 4, DATA_STRING, "Fineoffset-WN34",
-            "model",         "",                DATA_COND, sub_type == 4, DATA_STRING, "Fineoffset-WN34D",
-            "id",            "ID",              DATA_FORMAT, "%x",     DATA_INT,    id,
-            "battery_ok",    "Battery",         DATA_FORMAT, "%.1f",   DATA_DOUBLE, battery_ok,
-            "battery_mV",    "Battery Voltage", DATA_FORMAT, "%d mV",  DATA_INT,    battery_mv,
-            "temperature_C", "Temperature",     DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-            "mic",           "Integrity",       DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    if (sub_type != 4) {
+        data = data_str(data, "model",         "",                NULL,         "Fineoffset-WN34");
+    }
+    if (sub_type == 4) {
+        data = data_str(data, "model",         "",                NULL,         "Fineoffset-WN34D");
+    }
+    data = data_int(data, "id",            "ID",              "%x",         id);
+    data = data_dbl(data, "battery_ok",    "Battery",         "%.1f",       battery_ok);
+    data = data_int(data, "battery_mV",    "Battery Voltage", "%d mV",      battery_mv);
+    data = data_dbl(data, "temperature_C", "Temperature",     "%.1f C",     temperature);
+    data = data_str(data, "mic",           "Integrity",       NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

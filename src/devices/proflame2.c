@@ -112,23 +112,22 @@ static int proflame2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int flame      = (b[4] & 0x07);
 
         /* clang-format off */
-        data_t *data = data_make(
-                "model",        "",             DATA_STRING, "Proflame2-Remote",
-                "id",           "Id",           DATA_FORMAT, "%06x", DATA_INT,    id,
-                "cmd1",         "Cmd1",         DATA_FORMAT, "%02x", DATA_INT,    cmd1, // add chk then remove this
-                "cmd2",         "Cmd2",         DATA_FORMAT, "%02x", DATA_INT,    cmd2, // add chk then remove this
-                "err1",         "Err1",         DATA_FORMAT, "%02x", DATA_INT,    err1, // add chk then remove this
-                "err2",         "Err2",         DATA_FORMAT, "%02x", DATA_INT,    err2, // add chk then remove this
-                "pilot",        "Pilot",        DATA_INT,    pilot,
-                "light",        "Light",        DATA_INT,    light,
-                "thermostat",   "Thermostat",   DATA_INT,    thermostat,
-                "power",        "Power",        DATA_INT,    power,
-                "front",        "Front",        DATA_INT,    front,
-                "fan",          "Fan",          DATA_INT,    fan,
-                "aux",          "Aux",          DATA_INT,    aux,
-                "flame",        "Flame",        DATA_INT,    flame,
-                "mic",          "Integrity",    DATA_STRING, "CHECKSUM",
-                NULL);
+        data_t *data = NULL;
+        data = data_str(data, "model",        "",             NULL,         "Proflame2-Remote");
+        data = data_int(data, "id",           "Id",           "%06x",       id);
+        data = data_int(data, "cmd1",         "Cmd1",         "%02x",       cmd1); // add chk then remove this
+        data = data_int(data, "cmd2",         "Cmd2",         "%02x",       cmd2); // add chk then remove this
+        data = data_int(data, "err1",         "Err1",         "%02x",       err1); // add chk then remove this
+        data = data_int(data, "err2",         "Err2",         "%02x",       err2); // add chk then remove this
+        data = data_int(data, "pilot",        "Pilot",        NULL,         pilot);
+        data = data_int(data, "light",        "Light",        NULL,         light);
+        data = data_int(data, "thermostat",   "Thermostat",   NULL,         thermostat);
+        data = data_int(data, "power",        "Power",        NULL,         power);
+        data = data_int(data, "front",        "Front",        NULL,         front);
+        data = data_int(data, "fan",          "Fan",          NULL,         fan);
+        data = data_int(data, "aux",          "Aux",          NULL,         aux);
+        data = data_int(data, "flame",        "Flame",        NULL,         flame);
+        data = data_str(data, "mic",          "Integrity",    NULL,         "CHECKSUM");
         /* clang-format on */
 
         decoder_output_data(decoder, data);

@@ -71,16 +71,17 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     humidity = ((b[3] & 0x0F) << 4) | (b[4] >> 4);
 
     /* clang-format off */
-    data = data_make(
-            "model",         "",            DATA_STRING, "Prologue-TH",
-            "subtype",       "",            DATA_INT,    type,
-            "id",            "",            DATA_INT,    id,
-            "channel",       "Channel",     DATA_INT,    channel,
-            "battery_ok",    "Battery",     DATA_INT,    !!battery,
-            "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_raw * 0.1,
-            "humidity",      "Humidity",    DATA_COND,   humidity != 0xcc, DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "button",        "Button",      DATA_INT,    button,
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",         "",            NULL,         "Prologue-TH");
+    data = data_int(data, "subtype",       "",            NULL,         type);
+    data = data_int(data, "id",            "",            NULL,         id);
+    data = data_int(data, "channel",       "Channel",     NULL,         channel);
+    data = data_int(data, "battery_ok",    "Battery",     NULL,         !!battery);
+    data = data_dbl(data, "temperature_C", "Temperature", "%.2f C",     temp_raw * 0.1);
+    if (humidity != 0xcc) {
+        data = data_int(data, "humidity",      "Humidity",    "%u %%",      humidity);
+    }
+    data = data_int(data, "button",        "Button",      NULL,         button);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

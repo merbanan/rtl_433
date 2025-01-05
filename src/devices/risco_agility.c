@@ -156,15 +156,18 @@ static int risco_agility_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int counter   = gray_decode(counter_raw);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",       "",                 DATA_STRING, "Risco-RWX95P",
-            "id",          "",                 DATA_INT, id,
-            "counter",     "Counter",          DATA_INT, counter,
-            "tamper",      "Tamper",           DATA_COND,   tamper, DATA_INT, 1,
-            "motion",      "Motion",           DATA_COND,   motion, DATA_INT, 1,
-            "battery_ok",  "Battery_OK",       DATA_INT,    !low_batt,
-            "mic",         "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",       "",                 NULL,         "Risco-RWX95P");
+    data = data_int(data, "id",          "",                 NULL,         id);
+    data = data_int(data, "counter",     "Counter",          NULL,         counter);
+    if (tamper) {
+        data = data_int(data, "tamper",      "Tamper",           NULL,         1);
+    }
+    if (motion) {
+        data = data_int(data, "motion",      "Motion",           NULL,         1);
+    }
+    data = data_int(data, "battery_ok",  "Battery_OK",       NULL,         !low_batt);
+    data = data_str(data, "mic",         "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

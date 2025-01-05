@@ -49,11 +49,10 @@ static int fordremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         code      = bytes[7];
 
         /* clang-format off */
-        data = data_make(
-                "model",    "model",        DATA_STRING, "Ford-CarRemote",
-                "id",       "device-id",    DATA_INT,    device_id,
-                "code",     "data",         DATA_INT,    code,
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",    "model",        NULL,         "Ford-CarRemote");
+        data = data_int(data, "id",       "device-id",    NULL,         device_id);
+        data = data_int(data, "code",     "data",         NULL,         code);
         decoder_output_data(decoder, data);
         /* clang-format on */
 

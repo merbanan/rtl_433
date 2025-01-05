@@ -80,16 +80,15 @@ static int fineoffset_wh55_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int alarm = (b[7] >> 6) & 1;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",                 DATA_STRING, "Fineoffset-WH55",
-            "id",               "ID",               DATA_FORMAT, "%05X",    DATA_INT,    device_id,
-            "channel",          "Channel",          DATA_INT,    channel,
-            "battery_ok",       "Battery",          DATA_DOUBLE, battery,
-            "raw_value",        "Raw Value",        DATA_INT, raw_value,
-            "sensitivity",      "Sensitivity",      DATA_INT, sensitivity,
-            "alarm",            "Alarm",            DATA_INT, alarm,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "Fineoffset-WH55");
+    data = data_int(data, "id",               "ID",               "%05X",       device_id);
+    data = data_int(data, "channel",          "Channel",          NULL,         channel);
+    data = data_dbl(data, "battery_ok",       "Battery",          NULL,         battery);
+    data = data_int(data, "raw_value",        "Raw Value",        NULL,         raw_value);
+    data = data_int(data, "sensitivity",      "Sensitivity",      NULL,         sensitivity);
+    data = data_int(data, "alarm",            "Alarm",            NULL,         alarm);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

@@ -146,21 +146,32 @@ static int tpms_bmw_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",               "",                DATA_COND, len_msg == 11, DATA_STRING, "BMW-GEN5",
-            "model",               "",                DATA_COND, len_msg == 8, DATA_STRING, "Audi-PressureAlert",
-            "type",                "",                DATA_STRING, "TPMS",
-            "alert",               "Alert",           DATA_COND, len_msg == 8, DATA_STRING, "Alert Pressure increase/decrease !",
-            "brand",               "Brand",           DATA_INT,    brand_id,
-            "id",                  "",                DATA_STRING, id_str,
-            "pressure_kPa",        "Pressure",        DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, (double)pressure_kPa,
-            "temperature_C",       "Temperature",     DATA_FORMAT, "%.1f C",   DATA_DOUBLE, (double)temperature_C,
-            "flags1",              "",                DATA_COND, len_msg == 11, DATA_INT,    flags1,
-            "flags2",              "",                DATA_COND, len_msg == 11, DATA_INT,    flags2,
-            "flags3",              "",                DATA_COND, len_msg == 11, DATA_INT,    flags3, // Nominal Pressure for brand HUF 0x03
-            "msg",                 "msg",             DATA_STRING, msg_str, // To remove after guess all tags
-            "mic",                 "Integrity",       DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    if (len_msg == 11) {
+        data = data_str(data, "model",               "",                NULL,         "BMW-GEN5");
+    }
+    if (len_msg == 8) {
+        data = data_str(data, "model",               "",                NULL,         "Audi-PressureAlert");
+    }
+    data = data_str(data, "type",                "",                NULL,         "TPMS");
+    if (len_msg == 8) {
+        data = data_str(data, "alert",               "Alert",           NULL,         "Alert Pressure increase/decrease !");
+    }
+    data = data_int(data, "brand",               "Brand",           NULL,         brand_id);
+    data = data_str(data, "id",                  "",                NULL,         id_str);
+    data = data_dbl(data, "pressure_kPa",        "Pressure",        "%.1f kPa",   (double)pressure_kPa);
+    data = data_dbl(data, "temperature_C",       "Temperature",     "%.1f C",     (double)temperature_C);
+    if (len_msg == 11) {
+        data = data_int(data, "flags1",              "",                NULL,         flags1);
+    }
+    if (len_msg == 11) {
+        data = data_int(data, "flags2",              "",                NULL,         flags2);
+    }
+    if (len_msg == 11) {
+        data = data_int(data, "flags3",              "",                NULL,         flags3); // Nominal Pressure for brand HUF 0x03
+    }
+    data = data_str(data, "msg",                 "msg",             NULL,         msg_str); // To remove after guess all tags
+    data = data_str(data, "mic",                 "Integrity",       NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

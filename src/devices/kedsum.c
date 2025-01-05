@@ -77,16 +77,15 @@ static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     battery = battery == 2 ? 100 : battery * 10; // level 0,1,2 -> 0,10,100
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",                 DATA_STRING, "Kedsum-TH",
-            "id",               "ID",               DATA_INT,    id,
-            "channel",          "Channel",          DATA_INT,    channel,
-            "battery_ok",       "Battery level",    DATA_DOUBLE, battery * 0.01f,
-            "flags",            "Flags2",           DATA_INT,    flags,
-            "temperature_F",    "Temperature",      DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
-            "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "Kedsum-TH");
+    data = data_int(data, "id",               "ID",               NULL,         id);
+    data = data_int(data, "channel",          "Channel",          NULL,         channel);
+    data = data_dbl(data, "battery_ok",       "Battery level",    NULL,         battery * 0.01f);
+    data = data_int(data, "flags",            "Flags2",           NULL,         flags);
+    data = data_dbl(data, "temperature_F",    "Temperature",      "%.2f F",     temp_f);
+    data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

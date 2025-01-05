@@ -90,13 +90,12 @@ static int thermopro_tp12_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     temp2_c = (temp2_raw - 200) * 0.1f;
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",            DATA_STRING, "Thermopro-TP12",
-            "id",               "Id",          DATA_INT,    device,
-            "temperature_1_C",  "Temperature 1 (Food)", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp1_c,
-            "temperature_2_C",  "Temperature 2 (Barbecue)", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp2_c,
-            "mic",              "Integrity",   DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",            NULL,         "Thermopro-TP12");
+    data = data_int(data, "id",               "Id",          NULL,         device);
+    data = data_dbl(data, "temperature_1_C",  "Temperature 1 (Food)", "%.1f C",     temp1_c);
+    data = data_dbl(data, "temperature_2_C",  "Temperature 2 (Barbecue)", "%.1f C",     temp2_c);
+    data = data_str(data, "mic",              "Integrity",   NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

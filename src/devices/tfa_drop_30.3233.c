@@ -162,13 +162,12 @@ static int tfa_drop_303233_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int battery_low = (row_data[3] & 0x80) >> 7;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",      "",           DATA_STRING, "TFA-Drop",
-            "id",         "",           DATA_FORMAT, "%5x", DATA_INT,  sensor_id,
-            "battery_ok", "Battery",    DATA_INT,    !battery_low,
-            "rain_mm",    "Rain in MM", DATA_DOUBLE, rain_mm,
-            "mic",        "Integrity",  DATA_STRING, "CHECKSUM",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",      "",           NULL,         "TFA-Drop");
+    data = data_int(data, "id",         "",           "%5x",        sensor_id);
+    data = data_int(data, "battery_ok", "Battery",    NULL,         !battery_low);
+    data = data_dbl(data, "rain_mm",    "Rain in MM", NULL,         rain_mm);
+    data = data_str(data, "mic",        "Integrity",  NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

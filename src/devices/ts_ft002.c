@@ -87,16 +87,15 @@ static int ts_ft002_decoder(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",                     DATA_STRING, "TS-FT002",
-            "id",               "Id",                   DATA_INT,    id,
-            "depth_cm",         "Depth",                DATA_INT,    depth,
-            "temperature_C",    "Temperature",          DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "transmit_s",       "Transmit Interval",    DATA_INT,    transmit,
+    data = NULL;
+    data = data_str(data, "model",            "",                     NULL,         "TS-FT002");
+    data = data_int(data, "id",               "Id",                   NULL,         id);
+    data = data_int(data, "depth_cm",         "Depth",                NULL,         depth);
+    data = data_dbl(data, "temperature_C",    "Temperature",          "%.1f C",     temp_c);
+    data = data_int(data, "transmit_s",       "Transmit Interval",    NULL,         transmit);
             //"battery_ok",       "Battery",              DATA_INT,    batt_low,
-            "flags",            "Battery Flag?",        DATA_INT,    batt_low,
-            "mic",              "Integrity",            DATA_STRING, "CHECKSUM",
-            NULL);
+    data = data_int(data, "flags",            "Battery Flag?",        NULL,         batt_low);
+    data = data_str(data, "mic",              "Integrity",            NULL,         "CHECKSUM");
     decoder_output_data(decoder, data);
     /* clang-format on */
 

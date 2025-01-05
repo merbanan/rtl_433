@@ -82,13 +82,12 @@ static int ss_sensor_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
     }
 
     /* clang-format off */
-    data = data_make(
-            "model",        "",             DATA_STRING, "SimpliSafe-Sensor",
-            "id",           "Device ID",    DATA_STRING, id,
-            "seq",          "Sequence",     DATA_INT,    seq,
-            "state",        "State",        DATA_INT,    state,
-            "extradata",    "Extra Data",   DATA_STRING, extradata,
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",        "",             NULL,         "SimpliSafe-Sensor");
+    data = data_str(data, "id",           "Device ID",    NULL,         id);
+    data = data_int(data, "seq",          "Sequence",     NULL,         seq);
+    data = data_int(data, "state",        "State",        NULL,         state);
+    data = data_str(data, "extradata",    "Extra Data",   NULL,         extradata);
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -120,12 +119,11 @@ static int ss_pinentry_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row
     snprintf(extradata, sizeof(extradata), "Disarm Pin: %x%x%x%x", digits[0], digits[1], digits[2], digits[3]);
 
     /* clang-format off */
-    data = data_make(
-            "model",        "",             DATA_STRING, "SimpliSafe-Keypad",
-            "id",           "Device ID",    DATA_STRING, id,
-            "seq",          "Sequence",     DATA_INT,    b[9],
-            "extradata",    "Extra Data",   DATA_STRING, extradata,
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",        "",             NULL,         "SimpliSafe-Keypad");
+    data = data_str(data, "id",           "Device ID",    NULL,         id);
+    data = data_int(data, "seq",          "Sequence",     NULL,         b[9]);
+    data = data_str(data, "extradata",    "Extra Data",   NULL,         extradata);
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -159,12 +157,11 @@ static int ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row
     ss_get_id(id, b);
 
     /* clang-format off */
-    data = data_make(
-            "model",        "",             DATA_STRING, "SimpliSafe-Keypad",
-            "id",           "Device ID",    DATA_STRING, id,
-            "seq",          "Sequence",     DATA_INT,    b[9],
-            "extradata",    "Extra Data",   DATA_STRING, extradata,
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",        "",             NULL,         "SimpliSafe-Keypad");
+    data = data_str(data, "id",           "Device ID",    NULL,         id);
+    data = data_int(data, "seq",          "Sequence",     NULL,         b[9]);
+    data = data_str(data, "extradata",    "Extra Data",   NULL,         extradata);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

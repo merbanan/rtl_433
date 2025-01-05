@@ -134,14 +134,13 @@ static int srsmith_pool_srs_2c_tx_decode(r_device *decoder, bitbuffer_t *bitbuff
     }
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",                  "",                         DATA_STRING, "SRSmith-SRS2CTX",
-            "id",                     "Id",                       DATA_INT, reversed_pin, // technically peoples pins should be different on each remote
-            "button_press",           "Pushed Button ID",         DATA_FORMAT, "%02x", DATA_INT, button_id,
-            "button_press_name",      "Pushed Button String",     DATA_STRING, button_string,
-            "unknown",                "Unknown",                  DATA_FORMAT, "%08x", DATA_INT, unknown_field,
-            "mic",                    "Integrity",                DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",                  "",                         NULL,         "SRSmith-SRS2CTX");
+    data = data_int(data, "id",                     "Id",                       NULL,         reversed_pin); // technically peoples pins should be different on each remote
+    data = data_int(data, "button_press",           "Pushed Button ID",         "%02x",       button_id);
+    data = data_str(data, "button_press_name",      "Pushed Button String",     NULL,         button_string);
+    data = data_int(data, "unknown",                "Unknown",                  "%08x",       unknown_field);
+    data = data_str(data, "mic",                    "Integrity",                NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

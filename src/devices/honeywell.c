@@ -103,20 +103,19 @@ static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     heartbeat   = (event & 0x04) >> 2;
 
     /* clang-format off */
-    data = data_make(
-            "model",        "",         DATA_STRING, "Honeywell-Security",
-            "id",           "",         DATA_FORMAT, "%05x", DATA_INT, device_id,
-            "channel",      "",         DATA_INT,    channel,
-            "event",        "",         DATA_FORMAT, "%02x", DATA_INT, event,
-            "state",        "",         DATA_STRING, contact ? "open" : "closed", // Ignore the reed switch legacy.
-            "contact_open", "",         DATA_INT,    contact,
-            "reed_open",    "",         DATA_INT,    reed,
-            "alarm",        "",         DATA_INT,    alarm,
-            "tamper",       "",         DATA_INT,    tamper,
-            "battery_ok",   "Battery",  DATA_INT,    !battery_low,
-            "heartbeat",    "",         DATA_INT,    heartbeat,
-            "mic",          "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",        "",         NULL,         "Honeywell-Security");
+    data = data_int(data, "id",           "",         "%05x",       device_id);
+    data = data_int(data, "channel",      "",         NULL,         channel);
+    data = data_int(data, "event",        "",         "%02x",       event);
+    data = data_str(data, "state",        "",         NULL,         contact ? "open" : "closed"); // Ignore the reed switch legacy.
+    data = data_int(data, "contact_open", "",         NULL,         contact);
+    data = data_int(data, "reed_open",    "",         NULL,         reed);
+    data = data_int(data, "alarm",        "",         NULL,         alarm);
+    data = data_int(data, "tamper",       "",         NULL,         tamper);
+    data = data_int(data, "battery_ok",   "Battery",  NULL,         !battery_low);
+    data = data_int(data, "heartbeat",    "",         NULL,         heartbeat);
+    data = data_str(data, "mic",          "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

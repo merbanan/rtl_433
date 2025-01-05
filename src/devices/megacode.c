@@ -68,13 +68,12 @@ static int megacode_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int button   = raw & 0x7;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",    "",               DATA_STRING, "Megacode-Remote",
-            "id",       "Transmitter ID", DATA_INT,    id,
-            "raw",      "Raw",            DATA_FORMAT, "%06X", DATA_INT, raw,
-            "facility", "Facility Code",  DATA_INT,    facility,
-            "button",   "Button",         DATA_INT,    button,
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",    "",               NULL,         "Megacode-Remote");
+    data = data_int(data, "id",       "Transmitter ID", NULL,         id);
+    data = data_int(data, "raw",      "Raw",            "%06X",       raw);
+    data = data_int(data, "facility", "Facility Code",  NULL,         facility);
+    data = data_int(data, "button",   "Button",         NULL,         button);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

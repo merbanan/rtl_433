@@ -167,16 +167,17 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             int humidity    = b[7];
 
             /* clang-format off */
-            data_t *data = data_make(
-                    "model",            "",                 DATA_STRING, "Altronics-X7064",
-                    "id",               "",                 DATA_FORMAT, "%03x", DATA_INT,    id,
-                    "channel",          "Channel",          DATA_INT,    channel,
-                    "battery_ok",       "Battery_OK",       DATA_INT,    !battery_low,
-                    "temperature_F",    "Temperature",      DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_f,
-                    "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                    "pairing",          "Pairing?",         DATA_COND,   pairing,   DATA_INT,    !!pairing,
-                    "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-                    NULL);
+            data_t *data = NULL;
+            data = data_str(data, "model",            "",                 NULL,         "Altronics-X7064");
+            data = data_int(data, "id",               "",                 "%03x",       id);
+            data = data_int(data, "channel",          "Channel",          NULL,         channel);
+            data = data_int(data, "battery_ok",       "Battery_OK",       NULL,         !battery_low);
+            data = data_dbl(data, "temperature_F",    "Temperature",      "%.1f F",     temp_f);
+            data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+            if (pairing) {
+                data = data_int(data, "pairing",          "Pairing?",         NULL,         !!pairing);
+            }
+            data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
             /* clang-format on */
 
             decoder_output_data(decoder, data);
@@ -204,22 +205,31 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 }
                 int tag           = ((b[13] - 1) & 0xC0)>>6;  // if tag = 3 = model IMETEO X6 without UV and LUX #2753
                 /* clang-format off */
-                data_t *data = data_make(
-                        "model",            "",                 DATA_COND, tag !=3, DATA_STRING, "Emax-W6",
-                        "model",            "",                 DATA_COND, tag ==3, DATA_STRING, "IMETEO-X6",
-                        "id",               "",                 DATA_FORMAT, "%03x", DATA_INT,    id,
-                        "channel",          "Channel",          DATA_INT,    channel,
-                        "battery_ok",       "Battery_OK",       DATA_INT,    !battery_low,
-                        "temperature_F",    "Temperature",      DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_f,
-                        "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
-                        "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
-                        "wind_dir_deg",     "Wind Direction",   DATA_INT,    direction_deg,
-                        "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",  DATA_DOUBLE, rain_mm,
-                        "uv",               "UV Index",         DATA_COND,   tag !=3, DATA_FORMAT, "%u", DATA_INT, uv_index,
-                        "light_lux",        "Lux",              DATA_COND,   tag !=3, DATA_FORMAT, "%u", DATA_INT, light_lux,
-                        "pairing",          "Pairing?",         DATA_COND,   pairing,    DATA_INT,    !!pairing,
-                        "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-                        NULL);
+                data_t *data = NULL;
+                if (tag !=3) {
+                    data = data_str(data, "model",            "",                 NULL,         "Emax-W6");
+                }
+                if (tag ==3) {
+                    data = data_str(data, "model",            "",                 NULL,         "IMETEO-X6");
+                }
+                data = data_int(data, "id",               "",                 "%03x",       id);
+                data = data_int(data, "channel",          "Channel",          NULL,         channel);
+                data = data_int(data, "battery_ok",       "Battery_OK",       NULL,         !battery_low);
+                data = data_dbl(data, "temperature_F",    "Temperature",      "%.1f F",     temp_f);
+                data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+                data = data_dbl(data, "wind_avg_km_h",    "Wind avg speed",   "%.1f km/h",  speed_kmh);
+                data = data_int(data, "wind_dir_deg",     "Wind Direction",   NULL,         direction_deg);
+                data = data_dbl(data, "rain_mm",          "Total rainfall",   "%.1f mm",    rain_mm);
+                if (tag !=3) {
+                    data = data_int(data, "uv",               "UV Index",         "%u",         uv_index);
+                }
+                if (tag !=3) {
+                    data = data_int(data, "light_lux",        "Lux",              "%u",         light_lux);
+                }
+                if (pairing) {
+                    data = data_int(data, "pairing",          "Pairing?",         NULL,         !!pairing);
+                }
+                data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
                 /* clang-format on */
 
                 decoder_output_data(decoder, data);
@@ -228,20 +238,21 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             if (b[29] == 0x16) {                               //without UV/Lux with Wind Gust
                 float gust_kmh = b[16] / 1.5f;
                 /* clang-format off */
-                data_t *data = data_make(
-                        "model",            "",                 DATA_STRING, "Emax-EM3551H",
-                        "id",               "",                 DATA_FORMAT, "%03x", DATA_INT,    id,
-                        "channel",          "Channel",          DATA_INT,    channel,
-                        "battery_ok",       "Battery_OK",       DATA_INT,    !battery_low,
-                        "temperature_F",    "Temperature",      DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_f,
-                        "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
-                        "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
-                        "wind_max_km_h",    "Wind max speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, gust_kmh,
-                        "wind_dir_deg",     "Wind Direction",   DATA_INT,    direction_deg,
-                        "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",  DATA_DOUBLE, rain_mm,
-                        "pairing",          "Pairing?",         DATA_COND,   pairing,    DATA_INT,    !!pairing,
-                        "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-                        NULL);
+                data_t *data = NULL;
+                data = data_str(data, "model",            "",                 NULL,         "Emax-EM3551H");
+                data = data_int(data, "id",               "",                 "%03x",       id);
+                data = data_int(data, "channel",          "Channel",          NULL,         channel);
+                data = data_int(data, "battery_ok",       "Battery_OK",       NULL,         !battery_low);
+                data = data_dbl(data, "temperature_F",    "Temperature",      "%.1f F",     temp_f);
+                data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+                data = data_dbl(data, "wind_avg_km_h",    "Wind avg speed",   "%.1f km/h",  speed_kmh);
+                data = data_dbl(data, "wind_max_km_h",    "Wind max speed",   "%.1f km/h",  gust_kmh);
+                data = data_int(data, "wind_dir_deg",     "Wind Direction",   NULL,         direction_deg);
+                data = data_dbl(data, "rain_mm",          "Total rainfall",   "%.1f mm",    rain_mm);
+                if (pairing) {
+                    data = data_int(data, "pairing",          "Pairing?",         NULL,         !!pairing);
+                }
+                data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
                 /* clang-format on */
 
                 decoder_output_data(decoder, data);

@@ -81,15 +81,14 @@ static int oil_watchman_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         /* clang-format off */
-        data_t *data = data_make(
-                "model",                "", DATA_STRING, "Oil-SonicSmart",
-                "id",                   "", DATA_FORMAT, "%06x", DATA_INT, unit_id,
-                "flags",                "", DATA_FORMAT, "%02x", DATA_INT, flags,
-                "maybetemp",            "", DATA_INT,    maybetemp,
-                "temperature_C",        "", DATA_DOUBLE, temperature,
-                "binding_countdown",    "", DATA_INT,    binding_countdown,
-                "depth_cm",             "", DATA_INT,    depth,
-                NULL);
+        data_t *data = NULL;
+        data = data_str(data, "model",                "", NULL,         "Oil-SonicSmart");
+        data = data_int(data, "id",                   "", "%06x",       unit_id);
+        data = data_int(data, "flags",                "", "%02x",       flags);
+        data = data_int(data, "maybetemp",            "", NULL,         maybetemp);
+        data = data_dbl(data, "temperature_C",        "", NULL,         temperature);
+        data = data_int(data, "binding_countdown",    "", NULL,         binding_countdown);
+        data = data_int(data, "depth_cm",             "", NULL,         depth);
         /* clang-format on */
 
         decoder_output_data(decoder, data);

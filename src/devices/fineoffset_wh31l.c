@@ -138,16 +138,17 @@ static int fineoffset_wh31l_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         state_str = "unknown";
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",                 DATA_STRING, "FineOffset-WH31L",
-            "id",               "",                 DATA_INT,    id,
-            "battery_ok",       "Battery",          DATA_DOUBLE, battery_ok * 0.5f,
-            "state",            "State",            DATA_STRING, state_str,
-            "flags",            "Flags",            DATA_FORMAT, "%04x", DATA_INT,    flags,
-            "storm_dist_km",    "Storm Distance",   DATA_COND, s_dist != 63, DATA_FORMAT, "%d km", DATA_INT,    s_dist,
-            "strike_count",     "Strike Count",     DATA_INT,    s_count,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "FineOffset-WH31L");
+    data = data_int(data, "id",               "",                 NULL,         id);
+    data = data_dbl(data, "battery_ok",       "Battery",          NULL,         battery_ok * 0.5f);
+    data = data_str(data, "state",            "State",            NULL,         state_str);
+    data = data_int(data, "flags",            "Flags",            "%04x",       flags);
+    if (s_dist != 63) {
+        data = data_int(data, "storm_dist_km",    "Storm Distance",   "%d km",      s_dist);
+    }
+    data = data_int(data, "strike_count",     "Strike Count",     NULL,         s_count);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

@@ -98,16 +98,17 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int battery_low = (b[4] & 0x40) >> 6;
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "Conrad-S3318P",
-            "id",               "ID",           DATA_INT,    id,
-            "channel",          "Channel",      DATA_INT,    channel,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "temperature_F",    "Temperature",  DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
-            "humidity",         "Humidity",     DATA_COND,   humidity != 0, DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "button",           "Button",       DATA_INT,    button,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Conrad-S3318P");
+    data = data_int(data, "id",               "ID",           NULL,         id);
+    data = data_int(data, "channel",          "Channel",      NULL,         channel);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+    data = data_dbl(data, "temperature_F",    "Temperature",  "%.2f F",     temp_f);
+    if (humidity != 0) {
+        data = data_int(data, "humidity",         "Humidity",     "%u %%",      humidity);
+    }
+    data = data_int(data, "button",           "Button",       NULL,         button);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

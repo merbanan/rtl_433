@@ -121,27 +121,25 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
             if (humidity == LACROSSE_TX25_PROBE_FLAG)
                 sensor_id += 0x40;      // Change ID to distinguish between the main and probe channels
             /* clang-format off */
-            data = data_make(
-                    "model",            "",             DATA_STRING, (device29or35 == 29 ? "LaCrosse-TX29IT" : "LaCrosse-TX35DTHIT"),
-                    "id",               "",             DATA_INT,    sensor_id,
-                    "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-                    "newbattery",       "NewBattery",   DATA_INT,    new_batt,
-                    "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-                    "mic",              "Integrity",    DATA_STRING, "CRC",
-                    NULL);
+            data = NULL;
+            data = data_str(data, "model",            "",             NULL,         (device29or35 == 29 ? "LaCrosse-TX29IT" : "LaCrosse-TX35DTHIT"));
+            data = data_int(data, "id",               "",             NULL,         sensor_id);
+            data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+            data = data_int(data, "newbattery",       "NewBattery",   NULL,         new_batt);
+            data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+            data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
             /* clang-format on */
         }
         else {
             /* clang-format off */
-            data = data_make(
-                    "model",            "",             DATA_STRING, (device29or35 == 29 ? "LaCrosse-TX29IT" : "LaCrosse-TX35DTHIT"),
-                    "id",               "",             DATA_INT,    sensor_id,
-                    "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-                    "newbattery",       "NewBattery",   DATA_INT,    new_batt,
-                    "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-                    "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                    "mic",              "Integrity",    DATA_STRING, "CRC",
-                    NULL);
+            data = NULL;
+            data = data_str(data, "model",            "",             NULL,         (device29or35 == 29 ? "LaCrosse-TX29IT" : "LaCrosse-TX35DTHIT"));
+            data = data_int(data, "id",               "",             NULL,         sensor_id);
+            data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+            data = data_int(data, "newbattery",       "NewBattery",   NULL,         new_batt);
+            data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+            data = data_int(data, "humidity",         "Humidity",     "%u %%",      humidity);
+            data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
             /* clang-format on */
         }
 

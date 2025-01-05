@@ -105,17 +105,16 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     //rain_mm   = 0.0;  // dummy until we know what raw_rain1 and raw_rain2 mean
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",                 DATA_STRING, "LaCrosse-WR1",
-            "id",               "Sensor ID",        DATA_FORMAT, "%06x", DATA_INT, id,
-            "seq",              "Sequence",         DATA_INT,     seq,
-            "flags",            "unknown",          DATA_INT,     flags,
-            "wind_avg_km_h",        "Wind speed",       DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
-            "wind_dir_deg",     "Wind direction",   DATA_INT,    direction,
-            "rain1",            "raw_rain1",        DATA_FORMAT, "%03x", DATA_INT, raw_rain1,
-            "rain2",            "raw_rain2",        DATA_FORMAT, "%03x", DATA_INT, raw_rain2,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "LaCrosse-WR1");
+    data = data_int(data, "id",               "Sensor ID",        "%06x",       id);
+    data = data_int(data, "seq",              "Sequence",         NULL,         seq);
+    data = data_int(data, "flags",            "unknown",          NULL,         flags);
+    data = data_dbl(data, "wind_avg_km_h",        "Wind speed",       "%.1f km/h",  speed_kmh);
+    data = data_int(data, "wind_dir_deg",     "Wind direction",   NULL,         direction);
+    data = data_int(data, "rain1",            "raw_rain1",        "%03x",       raw_rain1);
+    data = data_int(data, "rain2",            "raw_rain2",        "%03x",       raw_rain2);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

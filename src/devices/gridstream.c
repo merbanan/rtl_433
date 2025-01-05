@@ -198,21 +198,32 @@ static int gridstream_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             }
 
             /* clang-format off */
-            data = data_make(
-                "model",        "",                     DATA_STRING,    "LandisGyr-GS",
-                "networkID",    "Network ID",           DATA_STRING,    found_crc,
-                "location",     "Location",             DATA_STRING,    known_crc_init[crcidx].location,
-                "provider",     "Provider",             DATA_STRING,    known_crc_init[crcidx].provider,
-                "subtype",      "",                     DATA_INT,       subtype,
-                "protoversion", "",                     DATA_INT,       protocol_version,
-                "mic",          "Integrity",            DATA_STRING,    "CRC",
-                "id",           "Source Meter ID",      DATA_COND,      subtype != 0xD2, DATA_STRING, srcaddress_str,
-                "wanaddress",   "Source Meter WAN ID",  DATA_COND,      srcwanaddress == 1, DATA_STRING, srcwanaddress_str,
-                "destaddress",  "Target Meter WAN ID",  DATA_COND,      subtype == 0x55, DATA_STRING, destwanaddress_str,
-                "destaddress",  "Target Meter ID",      DATA_COND,      subtype == 0xD5, DATA_STRING, destaddress_str,
-                "timestamp",    "Timestamp",            DATA_COND,      subtype == 0xD5 && stream_len == 0x47, DATA_INT, clock,
-                "uptime",       "Uptime",               DATA_COND,      uptime > 0, DATA_INT, uptime,
-                NULL);
+            data = NULL;
+            data = data_str(data, "model",        "",                     NULL,         "LandisGyr-GS");
+            data = data_str(data, "networkID",    "Network ID",           NULL,         found_crc);
+            data = data_str(data, "location",     "Location",             NULL,         known_crc_init[crcidx].location);
+            data = data_str(data, "provider",     "Provider",             NULL,         known_crc_init[crcidx].provider);
+            data = data_int(data, "subtype",      "",                     NULL,         subtype);
+            data = data_int(data, "protoversion", "",                     NULL,         protocol_version);
+            data = data_str(data, "mic",          "Integrity",            NULL,         "CRC");
+            if (subtype != 0xD2) {
+                data = data_str(data, "id",           "Source Meter ID",      NULL,         srcaddress_str);
+            }
+            if (srcwanaddress == 1) {
+                data = data_str(data, "wanaddress",   "Source Meter WAN ID",  NULL,         srcwanaddress_str);
+            }
+            if (subtype == 0x55) {
+                data = data_str(data, "destaddress",  "Target Meter WAN ID",  NULL,         destwanaddress_str);
+            }
+            if (subtype == 0xD5) {
+                data = data_str(data, "destaddress",  "Target Meter ID",      NULL,         destaddress_str);
+            }
+            if (subtype == 0xD5 && stream_len == 0x47) {
+                data = data_int(data, "timestamp",    "Timestamp",            NULL,         clock);
+            }
+            if (uptime > 0) {
+                data = data_int(data, "uptime",       "Uptime",               NULL,         uptime);
+            }
             /* clang-format on */
 
             decoder_output_data(decoder, data);

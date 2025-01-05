@@ -74,17 +74,16 @@ static int esic_emt7110_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float energy_kwh = energy_raw * 0.01f;
 
     /* clang-format off */
-    data = data_make(
-            "model",        "",             DATA_STRING, "ESIC-EMT7110",
-            "id",           "Sensor ID",    DATA_FORMAT, "%08x",     DATA_INT,    id,
-            "power_W",      "Power",        DATA_FORMAT, "%.1f W",   DATA_DOUBLE, power_w,
-            "current_A",    "Current",      DATA_FORMAT, "%.3f A",   DATA_DOUBLE, current_a,
-            "voltage_V",    "Voltage",      DATA_FORMAT, "%.1f V",   DATA_DOUBLE, voltage_v,
-            "energy_kWh",   "Energy",       DATA_FORMAT, "%.2f kWh", DATA_DOUBLE, energy_kwh,
-            "pairing",      "Pairing?",     DATA_INT,    pairing,
-            "connected",    "Connected?",   DATA_INT,    connected,
-            "mic",          "Integrity",    DATA_STRING, "CHECKSUM",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",        "",             NULL,         "ESIC-EMT7110");
+    data = data_int(data, "id",           "Sensor ID",    "%08x",       id);
+    data = data_dbl(data, "power_W",      "Power",        "%.1f W",     power_w);
+    data = data_dbl(data, "current_A",    "Current",      "%.3f A",     current_a);
+    data = data_dbl(data, "voltage_V",    "Voltage",      "%.1f V",     voltage_v);
+    data = data_dbl(data, "energy_kWh",   "Energy",       "%.2f kWh",   energy_kwh);
+    data = data_int(data, "pairing",      "Pairing?",     NULL,         pairing);
+    data = data_int(data, "connected",    "Connected?",   NULL,         connected);
+    data = data_str(data, "mic",          "Integrity",    NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

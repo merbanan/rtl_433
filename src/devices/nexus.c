@@ -77,25 +77,23 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (humidity == 0x00) { // Thermo
         /* clang-format off */
-        data = data_make(
-                "model",         "",            DATA_STRING, "Nexus-T",
-                "id",            "House Code",  DATA_INT,    id,
-                "channel",       "Channel",     DATA_INT,    channel,
-                "battery_ok",    "Battery",     DATA_INT,    !!battery,
-                "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",         "",            NULL,         "Nexus-T");
+        data = data_int(data, "id",            "House Code",  NULL,         id);
+        data = data_int(data, "channel",       "Channel",     NULL,         channel);
+        data = data_int(data, "battery_ok",    "Battery",     NULL,         !!battery);
+        data = data_dbl(data, "temperature_C", "Temperature", "%.2f C",     temp_c);
         /* clang-format on */
     }
     else { // Thermo/Hygro
         /* clang-format off */
-        data = data_make(
-                "model",         "",            DATA_STRING, "Nexus-TH",
-                "id",            "House Code",  DATA_INT,    id,
-                "channel",       "Channel",     DATA_INT,    channel,
-                "battery_ok",    "Battery",     DATA_INT,    !!battery,
-                "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-                "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",         "",            NULL,         "Nexus-TH");
+        data = data_int(data, "id",            "House Code",  NULL,         id);
+        data = data_int(data, "channel",       "Channel",     NULL,         channel);
+        data = data_int(data, "battery_ok",    "Battery",     NULL,         !!battery);
+        data = data_dbl(data, "temperature_C", "Temperature", "%.2f C",     temp_c);
+        data = data_int(data, "humidity",      "Humidity",    "%u %%",      humidity);
         /* clang-format on */
     }
 

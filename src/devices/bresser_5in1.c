@@ -139,30 +139,34 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // rescale the rain sensor readings
         rain = rain * 2.5f;
         /* clang-format off */
-        data = data_make(
-                "model",            "",             DATA_STRING, "Bresser-ProRainGauge",
-                "id",               "",             DATA_INT,    sensor_id,
-                "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-                "temperature_C",    "Temperature",  DATA_COND,   temp_ok,       DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-                "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm",     DATA_DOUBLE, rain,
-                "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",             NULL,         "Bresser-ProRainGauge");
+        data = data_int(data, "id",               "",             NULL,         sensor_id);
+        data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+        if (temp_ok) {
+            data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temperature);
+        }
+        data = data_dbl(data, "rain_mm",          "Rain",         "%.1f mm",    rain);
+        data = data_str(data, "mic",              "Integrity",    NULL,         "CHECKSUM");
         /* clang-format on */
     } else {
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",             DATA_STRING, "Bresser-5in1",
-                "id",               "",             DATA_INT,    sensor_id,
-                "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-                "temperature_C",    "Temperature",  DATA_COND,   temp_ok,       DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-                "humidity",         "Humidity",     DATA_COND,   humidity_ok,   DATA_INT,    humidity,
-                "wind_max_m_s",     "Wind Gust",    DATA_FORMAT, "%.1f m/s",    DATA_DOUBLE, wind_gust,
-                "wind_avg_m_s",     "Wind Speed",   DATA_FORMAT, "%.1f m/s",    DATA_DOUBLE, wind_avg,
-                "wind_dir_deg",     "Direction",    DATA_FORMAT, "%.1f",        DATA_DOUBLE, wind_direction_deg,
-                "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm",     DATA_DOUBLE, rain,
-                "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",             NULL,         "Bresser-5in1");
+        data = data_int(data, "id",               "",             NULL,         sensor_id);
+        data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+        if (temp_ok) {
+            data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temperature);
+        }
+        if (humidity_ok) {
+            data = data_int(data, "humidity",         "Humidity",     NULL,         humidity);
+        }
+        data = data_dbl(data, "wind_max_m_s",     "Wind Gust",    "%.1f m/s",   wind_gust);
+        data = data_dbl(data, "wind_avg_m_s",     "Wind Speed",   "%.1f m/s",   wind_avg);
+        data = data_dbl(data, "wind_dir_deg",     "Direction",    "%.1f",       wind_direction_deg);
+        data = data_dbl(data, "rain_mm",          "Rain",         "%.1f mm",    rain);
+        data = data_str(data, "mic",              "Integrity",    NULL,         "CHECKSUM");
         /* clang-format on */
     }
     decoder_output_data(decoder, data);

@@ -123,14 +123,15 @@ static int bresser_leakage_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Bresser-Leakage",
-            "id",               "",             DATA_FORMAT, "%08x",   DATA_INT,    sensor_id,
-            "channel",          "",             DATA_INT,    chan,
-            "battery_ok",       "Battery",      DATA_INT,    battery_ok,
-            "alarm",            "Alarm",        DATA_INT,    alarm,
-            "startup",          "Startup",      DATA_COND,   !nstartup,  DATA_INT,  !nstartup,
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Bresser-Leakage");
+    data = data_int(data, "id",               "",             "%08x",       sensor_id);
+    data = data_int(data, "channel",          "",             NULL,         chan);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         battery_ok);
+    data = data_int(data, "alarm",            "Alarm",        NULL,         alarm);
+    if (!nstartup) {
+        data = data_int(data, "startup",          "Startup",      NULL,         !nstartup);
+    }
     /* clang-format on */
 
     decoder_output_data(decoder, data);

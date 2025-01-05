@@ -212,24 +212,23 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         snprintf(esn_str, sizeof(esn_str), "%06x", esn);
 
         /* clang-format off */
-        data = data_make(
-                "model",        "",             DATA_STRING, "DSC-Security",
-                "id",           "",             DATA_INT,    esn,
-                "closed",       "",             DATA_INT,    s_closed, // @todo make bool
-                "event",        "",             DATA_INT,    s_event, // @todo make bool
-                "tamper",       "",             DATA_INT,    s_tamper, // @todo make bool
-                "battery_ok",   "Battery",      DATA_INT,    !s_battery_low,
-                "xactivity",    "",             DATA_INT,    s_xactivity, // @todo make bool
+        data = NULL;
+        data = data_str(data, "model",        "",             NULL,         "DSC-Security");
+        data = data_int(data, "id",           "",             NULL,         esn);
+        data = data_int(data, "closed",       "",             NULL,         s_closed); // @todo make bool
+        data = data_int(data, "event",        "",             NULL,         s_event); // @todo make bool
+        data = data_int(data, "tamper",       "",             NULL,         s_tamper); // @todo make bool
+        data = data_int(data, "battery_ok",   "Battery",      NULL,         !s_battery_low);
+        data = data_int(data, "xactivity",    "",             NULL,         s_xactivity); // @todo make bool
 
                 // Note: the following may change or be removed
-                "xtamper1",     "",             DATA_INT,    s_xtamper1, // @todo make bool
-                "xtamper2",     "",             DATA_INT,    s_xtamper2, // @todo make bool
-                "exception",    "",             DATA_INT,    s_exception, // @todo make bool
-                "esn",          "",             DATA_STRING, esn_str, // to be removed - transitional
-                "status",       "",             DATA_INT,    status,
-                "status_hex",   "",             DATA_STRING, status_str, // to be removed - once bits are output
-                "mic",          "Integrity",    DATA_STRING, "CRC",
-                NULL);
+        data = data_int(data, "xtamper1",     "",             NULL,         s_xtamper1); // @todo make bool
+        data = data_int(data, "xtamper2",     "",             NULL,         s_xtamper2); // @todo make bool
+        data = data_int(data, "exception",    "",             NULL,         s_exception); // @todo make bool
+        data = data_str(data, "esn",          "",             NULL,         esn_str); // to be removed - transitional
+        data = data_int(data, "status",       "",             NULL,         status);
+        data = data_str(data, "status_hex",   "",             NULL,         status_str); // to be removed - once bits are output
+        data = data_str(data, "mic",          "Integrity",    NULL,         "CRC");
         /* clang-format on */
         decoder_output_data(decoder, data);
 

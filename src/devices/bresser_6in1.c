@@ -205,25 +205,44 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         moisture = moisture_map[humidity - 1];
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Bresser-6in1",
-            "id",               "",             DATA_FORMAT, "%08x", DATA_INT,    id,
-            "channel",          "",             DATA_INT,    chan,
-            "battery_ok",       "Battery",      DATA_COND, !rain_ok, DATA_INT,    battery,
-            "temperature_C",    "Temperature",  DATA_COND, temp_ok, DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",     DATA_COND, temp_ok && moisture < 0, DATA_INT,    humidity,
-            "sensor_type",      "Sensor type",  DATA_INT,    s_type,
-            "moisture",         "Moisture",     DATA_COND, moisture >= 0, DATA_FORMAT, "%d %%", DATA_INT, moisture,
-            "wind_max_m_s",     "Wind Gust",    DATA_COND, wind_ok, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_gust,
-            "wind_avg_m_s",     "Wind Speed",   DATA_COND, wind_ok, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_avg,
-            "wind_dir_deg",     "Direction",    DATA_COND, wind_ok, DATA_INT,    wind_dir,
-            "rain_mm",          "Rain",         DATA_COND, rain_ok, DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Bresser-6in1");
+    data = data_int(data, "id",               "",             "%08x",       id);
+    data = data_int(data, "channel",          "",             NULL,         chan);
+    if (!rain_ok) {
+        data = data_int(data, "battery_ok",       "Battery",      NULL,         battery);
+    }
+    if (temp_ok) {
+        data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+    }
+    if (temp_ok && moisture < 0) {
+        data = data_int(data, "humidity",         "Humidity",     NULL,         humidity);
+    }
+    data = data_int(data, "sensor_type",      "Sensor type",  NULL,         s_type);
+    if (moisture >= 0) {
+        data = data_int(data, "moisture",         "Moisture",     "%d %%",      moisture);
+    }
+    if (wind_ok) {
+        data = data_dbl(data, "wind_max_m_s",     "Wind Gust",    "%.1f m/s",   wind_gust);
+    }
+    if (wind_ok) {
+        data = data_dbl(data, "wind_avg_m_s",     "Wind Speed",   "%.1f m/s",   wind_avg);
+    }
+    if (wind_ok) {
+        data = data_int(data, "wind_dir_deg",     "Direction",    NULL,         wind_dir);
+    }
+    if (rain_ok) {
+        data = data_dbl(data, "rain_mm",          "Rain",         "%.1f mm",    rain_mm);
+    }
             //"unknown",          "Unknown",      DATA_COND, unk_ok, DATA_INT,    unk_raw,
-            "uv",               "UV",           DATA_COND, uv_ok, DATA_FORMAT, "%.1f", DATA_DOUBLE,    uv,
-            "startup",          "Startup",      DATA_COND,   startup,   DATA_INT,    startup,
-            "flags",            "Flags",        DATA_INT,    flags,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    if (uv_ok) {
+        data = data_dbl(data, "uv",               "UV",           "%.1f",       uv);
+    }
+    if (startup) {
+        data = data_int(data, "startup",          "Startup",      NULL,         startup);
+    }
+    data = data_int(data, "flags",            "Flags",        NULL,         flags);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

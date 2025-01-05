@@ -336,15 +336,14 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 
     /* clang-format off */
-    data = data_make(
-            "model",   "",            DATA_STRING, "DeltaDore-X3D",
-            "id",      "",            DATA_INT,    head.device_id,
-            "network", "Net",         DATA_INT,    head.network,
-            "subtype", "Class",       DATA_FORMAT, "%s", DATA_STRING, class,
-            "msg_id",  "Message Id",  DATA_INT,    head.message_id,
-            "msg_no",  "Message No.", DATA_INT,    head.number,
-            "mic",     "Integrity",   DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",   "",            NULL,         "DeltaDore-X3D");
+    data = data_int(data, "id",      "",            NULL,         head.device_id);
+    data = data_int(data, "network", "Net",         NULL,         head.network);
+    data = data_str(data, "subtype", "Class",       "%s",         class);
+    data = data_int(data, "msg_id",  "Message Id",  NULL,         head.message_id);
+    data = data_int(data, "msg_no",  "Message No.", NULL,         head.number);
+    data = data_str(data, "mic",     "Integrity",   NULL,         "CRC");
     /* clang-format on */
 
     // message from thermostate

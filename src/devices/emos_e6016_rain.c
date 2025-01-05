@@ -86,13 +86,12 @@ static int emos_e6016_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float rain_mm = rain_raw * 0.7f;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",                 DATA_STRING, "EMOS-E6016R",
-            "id",               "House Code",       DATA_INT,    id,
-            "battery_ok",       "Battery_OK",       DATA_INT,    !!battery,
-            "rain_mm",          "Rain_mm",          DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
-            "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "EMOS-E6016R");
+    data = data_int(data, "id",               "House Code",       NULL,         id);
+    data = data_int(data, "battery_ok",       "Battery_OK",       NULL,         !!battery);
+    data = data_dbl(data, "rain_mm",          "Rain_mm",          "%.1f mm",    rain_mm);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

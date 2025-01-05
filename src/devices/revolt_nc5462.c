@@ -83,18 +83,17 @@ static int revolt_nc5462_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int energy    = b[10] | b[9] << 8;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Revolt-NC5462",
-            "id",               "House Code",   DATA_INT,    id,
-            "voltage_V",        "Voltage",      DATA_FORMAT, "%d V",        DATA_INT,    voltage,
-            "current_A",        "Current",      DATA_FORMAT, "%.2f A",      DATA_DOUBLE, current * 0.01,
-            "frequency_Hz",     "Frequency",    DATA_FORMAT, "%d Hz",       DATA_INT,    frequency,
-            "power_W",          "Power",        DATA_FORMAT, "%.2f W",      DATA_DOUBLE, power * 0.1,
-            "power_factor_VA",  "Power factor", DATA_FORMAT, "%.2f VA",     DATA_DOUBLE, pf * 0.01,
-            "energy_kWh",       "Energy",       DATA_FORMAT, "%.2f kWh",    DATA_DOUBLE, energy * 0.01,
-            "button",           "Button",       DATA_INT, button,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Revolt-NC5462");
+    data = data_int(data, "id",               "House Code",   NULL,         id);
+    data = data_int(data, "voltage_V",        "Voltage",      "%d V",       voltage);
+    data = data_dbl(data, "current_A",        "Current",      "%.2f A",     current * 0.01);
+    data = data_int(data, "frequency_Hz",     "Frequency",    "%d Hz",      frequency);
+    data = data_dbl(data, "power_W",          "Power",        "%.2f W",     power * 0.1);
+    data = data_dbl(data, "power_factor_VA",  "Power factor", "%.2f VA",    pf * 0.01);
+    data = data_dbl(data, "energy_kWh",       "Energy",       "%.2f kWh",   energy * 0.01);
+    data = data_int(data, "button",           "Button",       NULL,         button);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

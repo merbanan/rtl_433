@@ -138,18 +138,17 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     */
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",                 DATA_STRING, "SCMplus",
-            "id",               "",                 DATA_INT,    endpoint_id,
-            "ProtocolID",       "Protocol_ID",      DATA_STRING, protocol_id_str, // TODO: this should be int
-            "EndpointType",     "Endpoint_Type",    DATA_STRING, endpoint_type_str, // TODO: this should be int
-            "EndpointID",       "Endpoint_ID",      DATA_INT,    endpoint_id, // TODO: remove this (see "id")
-            "Consumption",      "",                 DATA_INT,    consumption_data,
-            "Tamper",           "",                 DATA_STRING, physical_tamper_str, // TODO: should be int
-            "PacketCRC",        "crc",              DATA_STRING, crc_str, // TODO: remove this
-            "MeterType",        "Meter_Type",       DATA_STRING, meter_type,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "SCMplus");
+    data = data_int(data, "id",               "",                 NULL,         endpoint_id);
+    data = data_str(data, "ProtocolID",       "Protocol_ID",      NULL,         protocol_id_str); // TODO: this should be int
+    data = data_str(data, "EndpointType",     "Endpoint_Type",    NULL,         endpoint_type_str); // TODO: this should be int
+    data = data_int(data, "EndpointID",       "Endpoint_ID",      NULL,         endpoint_id); // TODO: remove this (see "id")
+    data = data_int(data, "Consumption",      "",                 NULL,         consumption_data);
+    data = data_str(data, "Tamper",           "",                 NULL,         physical_tamper_str); // TODO: should be int
+    data = data_str(data, "PacketCRC",        "crc",              NULL,         crc_str); // TODO: remove this
+    data = data_str(data, "MeterType",        "Meter_Type",       NULL,         meter_type);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

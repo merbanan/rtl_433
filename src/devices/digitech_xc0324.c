@@ -115,13 +115,12 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
         int humidity = reverse8(b[4]);
 
         /* clang-format off */
-        data_t *data = data_make(
-                "model",            "Device Type",      DATA_STRING, "Digitech-XC0324",
-                "id",               "ID",               DATA_STRING, id,
-                "temperature_C",    "Temperature C",    DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
-                "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-                NULL);
+        data_t *data = NULL;
+        data = data_str(data, "model",            "Device Type",      NULL,         "Digitech-XC0324");
+        data = data_str(data, "id",               "ID",               NULL,         id);
+        data = data_dbl(data, "temperature_C",    "Temperature C",    "%.1f",       temperature);
+        data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+        data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
         /* clang-format on */
 
         *data_out = data;

@@ -99,14 +99,13 @@ static int vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         int battery_low        = b[11] != 0;      // if not zero, battery is low
 
         /* clang-format off */
-        data_t *data = data_make(
-                "model",        "",                     DATA_STRING, "Vaillant-VRT340f",
-                "id",           "Device ID",            DATA_FORMAT, "0x%04X", DATA_INT, device_id,
-                "heating",      "Heating Mode",         DATA_STRING, (heating_mode == 0 && target_temperature == 0) ? "OFF" : heating_mode ? "ON (2-point)" : "ON (analogue)",
-                "heating_temp", "Heating Water Temp.",  DATA_FORMAT, "%d", DATA_INT, target_temperature,
-                "water",        "Pre-heated Water",     DATA_STRING, water_preheated ? "ON" : "off",
-                "battery_ok",   "Battery",              DATA_INT,    !battery_low,
-                NULL);
+        data_t *data = NULL;
+        data = data_str(data, "model",        "",                     NULL,         "Vaillant-VRT340f");
+        data = data_int(data, "id",           "Device ID",            "0x%04X",     device_id);
+        data = data_str(data, "heating",      "Heating Mode",         NULL,         (heating_mode == 0 && target_temperature == 0) ? "OFF" : heating_mode ? "ON (2-point)" : "ON (analogue)");
+        data = data_int(data, "heating_temp", "Heating Water Temp.",  "%d",         target_temperature);
+        data = data_str(data, "water",        "Pre-heated Water",     NULL,         water_preheated ? "ON" : "off");
+        data = data_int(data, "battery_ok",   "Battery",              NULL,         !battery_low);
         /* clang-format on */
         decoder_output_data(decoder, data);
 
@@ -124,10 +123,9 @@ static int vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         int device_id = (b[11] << 8) | b[12];
 
         /* clang-format off */
-        data_t *data = data_make(
-                "model",        "",                     DATA_STRING, "Vaillant-VRT340f",
-                "id",           "Device ID",            DATA_INT,    device_id,
-                NULL);
+        data_t *data = NULL;
+        data = data_str(data, "model",        "",                     NULL,         "Vaillant-VRT340f");
+        data = data_int(data, "id",           "Device ID",            NULL,         device_id);
         /* clang-format on */
         decoder_output_data(decoder, data);
 

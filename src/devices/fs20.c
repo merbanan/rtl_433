@@ -249,16 +249,19 @@ static int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data = data_make(
-            "model",        "", DATA_COND,  (sum < 0xc),    DATA_STRING,    "FS20",
-            "model",        "", DATA_COND, !(sum < 0xc),    DATA_STRING,    "FHT",
-            "housecode",    "", DATA_FORMAT, "%x", DATA_INT, hc_b4,
-            "address",      "", DATA_FORMAT, "%x", DATA_INT, ad_b4,
-            "command",      "", DATA_STRING, (sum < 0xc) ? cmd_tab[cmd & 0x1f] : fht_cmd_tab[cmd & 0xf],
-            "flags",        "", DATA_STRING, (sum < 0xc) ? flags_tab[cmd >> 5] : fht_flags_tab[cmd >> 5],
-            "ext",          "", DATA_FORMAT, "%x", DATA_INT, ext,
-            "mic",          "Integrity",    DATA_STRING, "PARITY",
-            NULL);
+    data = NULL;
+    if ((sum < 0xc)) {
+        data = data_str(data, "model",        "", NULL,         "FS20");
+    }
+    if (!(sum < 0xc)) {
+        data = data_str(data, "model",        "", NULL,         "FHT");
+    }
+    data = data_int(data, "housecode",    "", "%x",         hc_b4);
+    data = data_int(data, "address",      "", "%x",         ad_b4);
+    data = data_str(data, "command",      "", NULL,         (sum < 0xc) ? cmd_tab[cmd & 0x1f] : fht_cmd_tab[cmd & 0xf]);
+    data = data_str(data, "flags",        "", NULL,         (sum < 0xc) ? flags_tab[cmd >> 5] : fht_flags_tab[cmd >> 5]);
+    data = data_int(data, "ext",          "", "%x",         ext);
+    data = data_str(data, "mic",          "Integrity",    NULL,         "PARITY");
     /* clang-format on */
     decoder_output_data(decoder, data);
 

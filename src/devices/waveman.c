@@ -66,13 +66,12 @@ static int waveman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     id_str[1] = '\0';
 
     /* clang-format off */
-    data = data_make(
-            "model",    "",     DATA_STRING,    "Waveman-Switch",
-            "id",       "",     DATA_STRING,    id_str,
-            "channel",  "",     DATA_INT,       (nb[1] >> 2) + 1,
-            "button",   "",     DATA_INT,       (nb[1] & 3) + 1,
-            "state",    "",     DATA_STRING,    (nb[2] == 0xe) ? "ON" : "OFF",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",    "",     NULL,         "Waveman-Switch");
+    data = data_str(data, "id",       "",     NULL,         id_str);
+    data = data_int(data, "channel",  "",     NULL,         (nb[1] >> 2) + 1);
+    data = data_int(data, "button",   "",     NULL,         (nb[1] & 3) + 1);
+    data = data_str(data, "state",    "",     NULL,         (nb[2] == 0xe) ? "ON" : "OFF");
     /* clang-format on */
     decoder_output_data(decoder, data);
 

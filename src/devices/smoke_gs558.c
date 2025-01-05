@@ -103,13 +103,12 @@ static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     snprintf(code_str, sizeof(code_str), "%02x%02x%02x", b[2], b[1], b[0]);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",        "",             DATA_STRING, "Smoke-GS558",
-            "id",           "",             DATA_INT, id,
-            "unit",         "",             DATA_INT, unit,
-            "learn",        "",             DATA_INT, learn > 1,
-            "code",         "Raw Code",     DATA_STRING, code_str,
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",        "",             NULL,         "Smoke-GS558");
+    data = data_int(data, "id",           "",             NULL,         id);
+    data = data_int(data, "unit",         "",             NULL,         unit);
+    data = data_int(data, "learn",        "",             NULL,         learn > 1);
+    data = data_str(data, "code",         "Raw Code",     NULL,         code_str);
     /* clang-format on */
     decoder_output_data(decoder, data);
 

@@ -55,15 +55,14 @@ static int newkaku_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint32_t dv        = (b[4] >> 4);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",        "",             DATA_STRING, "KlikAanKlikUit-Switch",
-            "id",           "",             DATA_INT,    id,
-            "unit",         "Unit",         DATA_INT,    unit,
-            "group_call",   "Group Call",   DATA_STRING, group_cmd ? "Yes" : "No",
-            "command",      "Command",      DATA_STRING, on_bit ? "On" : "Off",
-            "dim",          "Dim",          DATA_STRING, dim_cmd ? "Yes" : "No",
-            "dim_value",    "Dim Value",    DATA_INT,    dv,
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",        "",             NULL,         "KlikAanKlikUit-Switch");
+    data = data_int(data, "id",           "",             NULL,         id);
+    data = data_int(data, "unit",         "Unit",         NULL,         unit);
+    data = data_str(data, "group_call",   "Group Call",   NULL,         group_cmd ? "Yes" : "No");
+    data = data_str(data, "command",      "Command",      NULL,         on_bit ? "On" : "Off");
+    data = data_str(data, "dim",          "Dim",          NULL,         dim_cmd ? "Yes" : "No");
+    data = data_int(data, "dim_value",    "Dim Value",    NULL,         dv);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

@@ -60,16 +60,15 @@ static int tpms_jansite_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     snprintf(code_str, sizeof(code_str), "%02x%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5], b[6]); // figure out the checksum
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Jansite",
-            "type",             "",             DATA_STRING, "TPMS",
-            "id",               "",             DATA_STRING, id_str,
-            "flags",            "",             DATA_INT, flags,
-            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure * 1.7,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature - 50.0,
-            "code",             "",             DATA_STRING, code_str,
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Jansite");
+    data = data_str(data, "type",             "",             NULL,         "TPMS");
+    data = data_str(data, "id",               "",             NULL,         id_str);
+    data = data_int(data, "flags",            "",             NULL,         flags);
+    data = data_dbl(data, "pressure_kPa",     "Pressure",     "%.0f kPa",   (double)pressure * 1.7);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.0f C",     (double)temperature - 50.0);
+    data = data_str(data, "code",             "",             NULL,         code_str);
             //"mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-            NULL);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

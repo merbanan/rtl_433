@@ -97,16 +97,15 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     battery = (bytes[5] & 0x2) >> 1;
 
     /* clang-format off */
-    data = data_make(
-            "model",         "",            DATA_STRING, "Honeywell-ActivLink",
-            "subtype",       "Class",       DATA_STRING, class,
-            "id",            "Id",          DATA_FORMAT, "%x",   DATA_INT,    device,
-            "battery_ok",    "Battery",     DATA_INT,    !battery,
-            "alert",         "Alert",       DATA_STRING, alert,
-            "secret_knock",  "Secret Knock",DATA_FORMAT, "%d",   DATA_INT,    secret_knock,
-            "relay",         "Relay",       DATA_FORMAT, "%d",   DATA_INT,    relay,
-            "mic",           "Integrity",   DATA_STRING, "PARITY",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",         "",            NULL,         "Honeywell-ActivLink");
+    data = data_str(data, "subtype",       "Class",       NULL,         class);
+    data = data_int(data, "id",            "Id",          "%x",         device);
+    data = data_int(data, "battery_ok",    "Battery",     NULL,         !battery);
+    data = data_str(data, "alert",         "Alert",       NULL,         alert);
+    data = data_int(data, "secret_knock",  "Secret Knock","%d",         secret_knock);
+    data = data_int(data, "relay",         "Relay",       "%d",         relay);
+    data = data_str(data, "mic",           "Integrity",   NULL,         "PARITY");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

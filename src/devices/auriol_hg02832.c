@@ -73,16 +73,15 @@ static int auriol_hg02832_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     temp_c   = (temp_raw >> 4) * 0.1f;
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "Auriol-HG02832",
-            "id",               "",             DATA_INT,    id,
-            "channel",          "",             DATA_INT,    channel + 1,
-            "battery_ok",       "Battery",      DATA_INT,    !batt_low,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",     DATA_FORMAT, "%.0f %%", DATA_DOUBLE, (float)humidity,
-            "button",           "Button",       DATA_INT,    button,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Auriol-HG02832");
+    data = data_int(data, "id",               "",             NULL,         id);
+    data = data_int(data, "channel",          "",             NULL,         channel + 1);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !batt_low);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+    data = data_dbl(data, "humidity",         "Humidity",     "%.0f %%",    (float)humidity);
+    data = data_int(data, "button",           "Button",       NULL,         button);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

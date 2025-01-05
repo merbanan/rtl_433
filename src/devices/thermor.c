@@ -93,12 +93,11 @@ static int thermor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (b[0] == 0xff && b[1] == b[2] && b[1] == b[4] && b[1] == b[5] && b[1] == b[6] && b[1] == b[7] && b[1] == b[8] && b[1] == b[10]  ) {
         int new_id = ~b[1] & 0xff;
         /* clang-format off */
-        data_t *data = data_make(
-                "model",          "",           DATA_STRING, "Thermor-DG950",
-                "id",         "",               DATA_FORMAT, "%d", DATA_INT, new_id,
-                "pairing",         "Pairing?",  DATA_INT, 1,
-                "mic",            "Integrity",  DATA_STRING, "CHECKSUM",
-                NULL);
+        data_t *data = NULL;
+        data = data_str(data, "model",          "",           NULL,         "Thermor-DG950");
+        data = data_int(data, "id",         "",               "%d",         new_id);
+        data = data_int(data, "pairing",         "Pairing?",  NULL,         1);
+        data = data_str(data, "mic",            "Integrity",  NULL,         "CHECKSUM");
         /* clang-format on */
         decoder_output_data(decoder, data);
         return 1;
@@ -177,18 +176,23 @@ static int thermor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         /* clang-format off */
-        data_t *data = data_make(
-                "model",          "",               DATA_STRING, "Thermor-DG950",
-                "id",             "",               DATA_FORMAT, "%d",    DATA_INT,    id,
-                "temperature_C",  "Temperature",    DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_C,
-                "rain_rate_mm_h", "Rain Rate",      DATA_COND, have_rain, DATA_FORMAT, "%.1f mm/h", DATA_DOUBLE, rain_rate1 * 0.1f,
-                "wind_dir_deg",   "Wind Direction", DATA_COND, have_wdir, DATA_INT,     wind_dir_d,
-                "wind_avg_km_h",  "Wind avg speed", DATA_COND, have_wspd, DATA_FORMAT, "%.1f km/h", DATA_DOUBLE, wind_speed_kmh,
+        data_t *data = NULL;
+        data = data_str(data, "model",          "",               NULL,         "Thermor-DG950");
+        data = data_int(data, "id",             "",               "%d",         id);
+        data = data_dbl(data, "temperature_C",  "Temperature",    "%.1f C",     temp_C);
+        if (have_rain) {
+            data = data_dbl(data, "rain_rate_mm_h", "Rain Rate",      "%.1f mm/h",  rain_rate1 * 0.1f);
+        }
+        if (have_wdir) {
+            data = data_int(data, "wind_dir_deg",   "Wind Direction", NULL,         wind_dir_d);
+        }
+        if (have_wspd) {
+            data = data_dbl(data, "wind_avg_km_h",  "Wind avg speed", "%.1f km/h",  wind_speed_kmh);
+        }
                 //"wind_coef",      "Wind Coef",      DATA_COND, have_wspd, DATA_INT,     wind_coef,
                 //"wind_ratio",     "Wind Ratio",     DATA_COND, have_wspd, DATA_DOUBLE,  wind_ratio,
-                "pairing",         "Pairing?",      DATA_INT, 0,
-                "mic",            "Integrity",      DATA_STRING, "CHECKSUM",
-                NULL);
+        data = data_int(data, "pairing",         "Pairing?",      NULL,         0);
+        data = data_str(data, "mic",            "Integrity",      NULL,         "CHECKSUM");
         /* clang-format on */
         decoder_output_data(decoder, data);
         return 1;

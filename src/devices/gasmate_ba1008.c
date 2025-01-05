@@ -80,12 +80,11 @@ static int gasmate_ba1008_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int unknown1 = (b[2] << 4) | (b[3] >> 4);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",                 DATA_STRING, "Gasmate-BA1008",
-            "temperature_C",    "Temperature_C",    DATA_FORMAT, "%d C", DATA_INT, temp_c,
-            "unknown_1",        "Unknown Value",    DATA_FORMAT, "%03x", DATA_INT,    unknown1,
-            "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "Gasmate-BA1008");
+    data = data_int(data, "temperature_C",    "Temperature_C",    "%d C",       temp_c);
+    data = data_int(data, "unknown_1",        "Unknown Value",    "%03x",       unknown1);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

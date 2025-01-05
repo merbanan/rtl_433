@@ -120,12 +120,13 @@ static int celsia_czc1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int heat    = reverse8(b[3]); // command packet only
 
     /* clang-format off */
-    data_t *data = data_make(
-        "model",    "",             DATA_STRING, "Celsia-CZC1",
-        "id",       "",             DATA_FORMAT, "%x",    DATA_INT, id,
-        "heat",     "Heat",         DATA_COND,   heat_ok, DATA_INT, heat,
-        "mic",      "Integrity",    DATA_STRING, "CRC",
-        NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",    "",             NULL,         "Celsia-CZC1");
+    data = data_int(data, "id",       "",             "%x",         id);
+    if (heat_ok) {
+        data = data_int(data, "heat",     "Heat",         NULL,         heat);
+    }
+    data = data_str(data, "mic",      "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

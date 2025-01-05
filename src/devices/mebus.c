@@ -49,16 +49,15 @@ static int mebus433_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         unknown2 = (bb[1][3] & 0xf0) >> 4;
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",             DATA_STRING, "Mebus-433",
-                "id",               "Address",      DATA_INT,    address,
-                "channel",          "Channel",      DATA_INT,    channel,
-                "battery_ok",       "Battery",      DATA_INT,    !!battery,
-                "unknown1",         "Unknown 1",    DATA_INT,    unknown1,
-                "unknown2",         "Unknown 2",    DATA_INT,    unknown2,
-                "temperature_C",    "Temperature",  DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp * 0.1f,
-                "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, hum,
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",             NULL,         "Mebus-433");
+        data = data_int(data, "id",               "Address",      NULL,         address);
+        data = data_int(data, "channel",          "Channel",      NULL,         channel);
+        data = data_int(data, "battery_ok",       "Battery",      NULL,         !!battery);
+        data = data_int(data, "unknown1",         "Unknown 1",    NULL,         unknown1);
+        data = data_int(data, "unknown2",         "Unknown 2",    NULL,         unknown2);
+        data = data_dbl(data, "temperature_C",    "Temperature",  "%.2f C",     temp * 0.1f);
+        data = data_int(data, "humidity",         "Humidity",     "%u %%",      hum);
         /* clang-format on */
 
         decoder_output_data(decoder, data);

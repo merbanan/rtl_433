@@ -116,21 +116,24 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int light_is_valid = (uv <= 150); // error value seems to be 0xfb, lux would be 0xfffb
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",                 DATA_STRING, "Cotech-367959",
+    data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "Cotech-367959");
             //"subtype",          "Type code",        DATA_INT, subtype,
-            "id",               "ID",               DATA_INT,    id,
-            "battery_ok",       "Battery",          DATA_INT,    !batt_low,
-            "temperature_F",    "Temperature",      DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "rain_mm",          "Rain",             DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain * 0.1f,
-            "wind_dir_deg",     "Wind direction",   DATA_INT,    wind_dir,
-            "wind_avg_m_s",     "Wind",             DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind * 0.1f,
-            "wind_max_m_s",     "Gust",             DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust * 0.1f,
-            "light_lux",        "Light Intensity",  DATA_COND, light_is_valid, DATA_FORMAT, "%u lux", DATA_INT, light_lux,
-            "uv",               "UV Index",         DATA_COND, light_is_valid, DATA_FORMAT, "%.1f", DATA_DOUBLE, uv * 0.1f,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data = data_int(data, "id",               "ID",               NULL,         id);
+    data = data_int(data, "battery_ok",       "Battery",          NULL,         !batt_low);
+    data = data_dbl(data, "temperature_F",    "Temperature",      "%.1f F",     temp_c);
+    data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+    data = data_dbl(data, "rain_mm",          "Rain",             "%.1f mm",    rain * 0.1f);
+    data = data_int(data, "wind_dir_deg",     "Wind direction",   NULL,         wind_dir);
+    data = data_dbl(data, "wind_avg_m_s",     "Wind",             "%.1f m/s",   wind * 0.1f);
+    data = data_dbl(data, "wind_max_m_s",     "Gust",             "%.1f m/s",   gust * 0.1f);
+    if (light_is_valid) {
+        data = data_int(data, "light_lux",        "Light Intensity",  "%u lux",     light_lux);
+    }
+    if (light_is_valid) {
+        data = data_dbl(data, "uv",               "UV Index",         "%.1f",       uv * 0.1f);
+    }
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

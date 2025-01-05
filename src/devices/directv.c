@@ -345,14 +345,13 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Populate our return fields
     /* clang-format off */
-    data = data_make(
-            "model",         "",            DATA_STRING, "DirecTV-RC66RX",
-            "id",            "",            DATA_FORMAT, "%06d", DATA_INT, dtv_device_id,
-            "button_id",     "",            DATA_FORMAT, "0x%02X", DATA_INT, dtv_button_id,
-            "button_name",   "",            DATA_STRING, get_dtv_button_label(dtv_button_id),
-            "event",         "",            DATA_STRING, row_sync_len > ROW_SYNC_SHORT_LEN ? "INITIAL" : "REPEAT",
-            "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",         "",            NULL,         "DirecTV-RC66RX");
+    data = data_int(data, "id",            "",            "%06d",       dtv_device_id);
+    data = data_int(data, "button_id",     "",            "0x%02X",     dtv_button_id);
+    data = data_str(data, "button_name",   "",            NULL,         get_dtv_button_label(dtv_button_id));
+    data = data_str(data, "event",         "",            NULL,         row_sync_len > ROW_SYNC_SHORT_LEN ? "INITIAL" : "REPEAT");
+    data = data_str(data, "mic",           "Integrity",   NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

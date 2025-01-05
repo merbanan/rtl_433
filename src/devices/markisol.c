@@ -96,14 +96,13 @@ static int markisol_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     };
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",          "Model",          DATA_STRING, "Markisol",
-            "id",             "",               DATA_FORMAT, "%04X", DATA_INT, address,
-            "control",        "Control",        DATA_STRING, control_strs[control],
-            "channel",        "Channel",        DATA_INT,    channel,
-            "zone",           "Zone",           DATA_INT,    zone,
-            "mic",            "Integrity",      DATA_STRING, "CHECKSUM",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",          "Model",          NULL,         "Markisol");
+    data = data_int(data, "id",             "",               "%04X",       address);
+    data = data_str(data, "control",        "Control",        NULL,         control_strs[control]);
+    data = data_int(data, "channel",        "Channel",        NULL,         channel);
+    data = data_int(data, "zone",           "Zone",           NULL,         zone);
+    data = data_str(data, "mic",            "Integrity",      NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

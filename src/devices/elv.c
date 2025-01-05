@@ -81,14 +81,13 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int peak      = dec[7] | dec[8] << 8;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",    "", DATA_STRING, "ELV-EM1000",
-            "id",       "", DATA_INT, code,
-            "seq",      "", DATA_INT, seqno,
-            "total",    "", DATA_INT, total,
-            "current",  "", DATA_INT, current,
-            "peak",     "", DATA_INT, peak,
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",    "", NULL,         "ELV-EM1000");
+    data = data_int(data, "id",       "", NULL,         code);
+    data = data_int(data, "seq",      "", NULL,         seqno);
+    data = data_int(data, "total",    "", NULL,         total);
+    data = data_int(data, "current",  "", NULL,         current);
+    data = data_int(data, "peak",     "", NULL,         peak);
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -242,20 +241,31 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "", DATA_STRING, "ELV-WS2000",
-            "subtype",          "", DATA_STRING, subtype,
-            "id",               "", DATA_INT,    code,
-            "temperature_C",    "", DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temp,
-            "humidity",         "", DATA_FORMAT, "%.1f %%", DATA_DOUBLE, (double)humidity,
-            "pressure_hPa",     "", DATA_COND, pressure, DATA_FORMAT, "%d hPa", DATA_INT, pressure,
+    data_t *data = NULL;
+    data = data_str(data, "model",            "", NULL,         "ELV-WS2000");
+    data = data_str(data, "subtype",          "", NULL,         subtype);
+    data = data_int(data, "id",               "", NULL,         code);
+    data = data_dbl(data, "temperature_C",    "", "%.1f C",     (double)temp);
+    data = data_dbl(data, "humidity",         "", "%.1f %%",    (double)humidity);
+    if (pressure) {
+        data = data_int(data, "pressure_hPa",     "", "%d hPa",     pressure);
+    }
             //KS200 / KS300
-            "wind_avg_km_h",    "", DATA_COND, is_ksx00, DATA_FORMAT, "%.1f kmh", DATA_DOUBLE, (double)wind,
-            "rain_count",       "", DATA_COND, is_ksx00, DATA_FORMAT, "%d", DATA_INT, rainsum,
-            "rain_mm",          "", DATA_COND, is_ksx00, DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)rainsum * 0.295,
-            "is_raining",       "", DATA_COND, is_ksx00, DATA_FORMAT, "%d", DATA_INT, it_rains,
-            "unknown",          "", DATA_COND, is_ksx00, DATA_FORMAT, "%d", DATA_INT, unknown,
-            NULL);
+    if (is_ksx00) {
+        data = data_dbl(data, "wind_avg_km_h",    "", "%.1f kmh",   (double)wind);
+    }
+    if (is_ksx00) {
+        data = data_int(data, "rain_count",       "", "%d",         rainsum);
+    }
+    if (is_ksx00) {
+        data = data_dbl(data, "rain_mm",          "", "%.1f",       (double)rainsum * 0.295);
+    }
+    if (is_ksx00) {
+        data = data_int(data, "is_raining",       "", "%d",         it_rains);
+    }
+    if (is_ksx00) {
+        data = data_int(data, "unknown",          "", "%d",         unknown);
+    }
     /* clang-format on */
 
     decoder_output_data(decoder, data);

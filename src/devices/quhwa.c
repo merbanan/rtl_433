@@ -44,10 +44,9 @@ static int quhwa_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint32_t id = (b[0] << 8) | b[1];
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",  "",    DATA_STRING, "Quhwa-Doorbell",
-            "id",     "ID",  DATA_INT, id,
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",  "",    NULL,         "Quhwa-Doorbell");
+    data = data_int(data, "id",     "ID",  NULL,         id);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

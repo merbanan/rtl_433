@@ -77,17 +77,16 @@ static int tpms_truck_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned
     snprintf(id_str, sizeof(id_str), "%08x", id);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Truck",
-            "type",             "",             DATA_STRING, "TPMS",
-            "id",               "",             DATA_STRING, id_str,
-            "wheel",            "",             DATA_INT,    wheel,
-            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa",    DATA_DOUBLE, (float)pressure,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C",      DATA_DOUBLE, (float)temperature,
-            "state",            "State?",       DATA_FORMAT, "%x",          DATA_INT,    state,
-            "flags",            "Flags?",       DATA_FORMAT, "%x",          DATA_INT,    flags,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Truck");
+    data = data_str(data, "type",             "",             NULL,         "TPMS");
+    data = data_str(data, "id",               "",             NULL,         id_str);
+    data = data_int(data, "wheel",            "",             NULL,         wheel);
+    data = data_dbl(data, "pressure_kPa",     "Pressure",     "%.0f kPa",   (float)pressure);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.0f C",     (float)temperature);
+    data = data_int(data, "state",            "State?",       "%x",         state);
+    data = data_int(data, "flags",            "Flags?",       "%x",         flags);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

@@ -100,14 +100,13 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         float energy = (((float)pulsecount / imp_kwh[i]) * (3600 / seconds));
 
         /* clang-format off */
-        data_t *data = data_make(
-                "model",        "Model",        DATA_STRING, "Efergy-Optical",
-                "id",           "",             DATA_INT,   id,
-                "pulses",       "Pulse-rate",   DATA_INT, imp_kwh[i],
-                "pulsecount",   "Pulse-count",  DATA_INT, pulsecount,
-                "energy_kWh",   "Energy",       DATA_FORMAT, "%.3f kWh", DATA_DOUBLE, energy,
-                "mic",          "Integrity",    DATA_STRING, "CRC",
-                NULL);
+        data_t *data = NULL;
+        data = data_str(data, "model",        "Model",        NULL,         "Efergy-Optical");
+        data = data_int(data, "id",           "",             NULL,         id);
+        data = data_int(data, "pulses",       "Pulse-rate",   NULL,         imp_kwh[i]);
+        data = data_int(data, "pulsecount",   "Pulse-count",  NULL,         pulsecount);
+        data = data_dbl(data, "energy_kWh",   "Energy",       "%.3f kWh",   energy);
+        data = data_str(data, "mic",          "Integrity",    NULL,         "CRC");
         /* clang-format on */
         decoder_output_data(decoder, data);
     }

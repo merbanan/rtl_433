@@ -144,13 +144,12 @@ static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         /* clang-format off */
-        data_t *data = data_make(
-                "model",            "",     DATA_STRING,    "Regency-Remote",
-                "channel",          "",     DATA_INT,       channel,
-                "command",          "",     DATA_STRING,    command_names[command],
-                "value",            "",     DATA_STRING,    value_string,
-                "mic",              "",     DATA_STRING,    "CHECKSUM",
-                NULL);
+        data_t *data = NULL;
+        data = data_str(data, "model",            "",     NULL,         "Regency-Remote");
+        data = data_int(data, "channel",          "",     NULL,         channel);
+        data = data_str(data, "command",          "",     NULL,         command_names[command]);
+        data = data_str(data, "value",            "",     NULL,         value_string);
+        data = data_str(data, "mic",              "",     NULL,         "CHECKSUM");
         /* clang-format on */
 
         decoder_output_data(decoder, data);

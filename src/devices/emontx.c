@@ -113,24 +113,35 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         vrms = (float)words[4] / 100.0f;
 
         /* clang-format off */
-        data = data_make(
-                "model",        "",             DATA_STRING, "emonTx-Energy",
-                "node",         "",             DATA_FORMAT, "%02x", DATA_INT, pkt.p.node & 0x1f,
-                "ct1",          "",             DATA_FORMAT, "%d", DATA_INT, (int16_t)words[0],
-                "ct2",          "",             DATA_FORMAT, "%d", DATA_INT, (int16_t)words[1],
-                "ct3",          "",             DATA_FORMAT, "%d", DATA_INT, (int16_t)words[2],
-                "ct4",          "",             DATA_FORMAT, "%d", DATA_INT, (int16_t)words[3],
-                "batt_Vrms",    "",             DATA_FORMAT, "%.2f", DATA_DOUBLE, vrms,
-                "pulse",        "",             DATA_FORMAT, "%u", DATA_INT, words[11] | ((uint32_t)words[12] << 16),
+        data = NULL;
+        data = data_str(data, "model",        "",             NULL,         "emonTx-Energy");
+        data = data_int(data, "node",         "",             "%02x",       pkt.p.node & 0x1f);
+        data = data_int(data, "ct1",          "",             "%d",         (int16_t)words[0]);
+        data = data_int(data, "ct2",          "",             "%d",         (int16_t)words[1]);
+        data = data_int(data, "ct3",          "",             "%d",         (int16_t)words[2]);
+        data = data_int(data, "ct4",          "",             "%d",         (int16_t)words[3]);
+        data = data_dbl(data, "batt_Vrms",    "",             "%.2f",       vrms);
+        data = data_int(data, "pulse",        "",             "%u",         words[11] | ((uint32_t)words[12] << 16));
                 // Slightly horrid... a value of 300.0°C means 'no reading'. So omit them completely.
-                "temp1_C",      "",             DATA_COND, words[5] != 3000, DATA_FORMAT, "%.1f", DATA_DOUBLE, words[5] * 0.1f,
-                "temp2_C",      "",             DATA_COND, words[6] != 3000, DATA_FORMAT, "%.1f", DATA_DOUBLE, words[6] * 0.1f,
-                "temp3_C",      "",             DATA_COND, words[7] != 3000, DATA_FORMAT, "%.1f", DATA_DOUBLE, words[7] * 0.1f,
-                "temp4_C",      "",             DATA_COND, words[8] != 3000, DATA_FORMAT, "%.1f", DATA_DOUBLE, words[8] * 0.1f,
-                "temp5_C",      "",             DATA_COND, words[9] != 3000, DATA_FORMAT, "%.1f", DATA_DOUBLE, words[9] * 0.1f,
-                "temp6_C",      "",             DATA_COND, words[10] != 3000, DATA_FORMAT, "%.1f", DATA_DOUBLE, words[10] * 0.1f,
-                "mic",          "Integrity",    DATA_STRING, "CRC",
-                NULL);
+        if (words[5] != 3000) {
+            data = data_dbl(data, "temp1_C",      "",             "%.1f",       words[5] * 0.1f);
+        }
+        if (words[6] != 3000) {
+            data = data_dbl(data, "temp2_C",      "",             "%.1f",       words[6] * 0.1f);
+        }
+        if (words[7] != 3000) {
+            data = data_dbl(data, "temp3_C",      "",             "%.1f",       words[7] * 0.1f);
+        }
+        if (words[8] != 3000) {
+            data = data_dbl(data, "temp4_C",      "",             "%.1f",       words[8] * 0.1f);
+        }
+        if (words[9] != 3000) {
+            data = data_dbl(data, "temp5_C",      "",             "%.1f",       words[9] * 0.1f);
+        }
+        if (words[10] != 3000) {
+            data = data_dbl(data, "temp6_C",      "",             "%.1f",       words[10] * 0.1f);
+        }
+        data = data_str(data, "mic",          "Integrity",    NULL,         "CRC");
         /* clang-format on */
         decoder_output_data(decoder, data);
         events++;

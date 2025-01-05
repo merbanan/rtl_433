@@ -122,12 +122,11 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     battery_low = packet[PHILIPS_PACKETLEN - 1] & 0x40;
 
     /* clang-format off */
-    data = data_make(
-            "model",         "",            DATA_STRING, "Philips-Temperature",
-            "channel",       "Channel",     DATA_INT,    channel,
-            "battery_ok",    "Battery",     DATA_INT,    !battery_low,
-            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",         "",            NULL,         "Philips-Temperature");
+    data = data_int(data, "channel",       "Channel",     NULL,         channel);
+    data = data_int(data, "battery_ok",    "Battery",     NULL,         !battery_low);
+    data = data_dbl(data, "temperature_C", "Temperature", "%.1f C",     temperature);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

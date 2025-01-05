@@ -106,16 +106,17 @@ static int eurochron_efth800_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int humidity    = (b[4] >> 4) * 10 + (b[4] & 0xf); // BCD
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Eurochron-EFTH800",
-            "id",               "",             DATA_INT,    id,
-            "channel",          "",             DATA_INT,    channel + 1,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",     DATA_INT,    humidity,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            "radio_clock",      "Radio Clock",  DATA_COND,   *dcf77_str, DATA_STRING, dcf77_str,
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Eurochron-EFTH800");
+    data = data_int(data, "id",               "",             NULL,         id);
+    data = data_int(data, "channel",          "",             NULL,         channel + 1);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+    data = data_int(data, "humidity",         "Humidity",     NULL,         humidity);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
+    if (*dcf77_str) {
+        data = data_str(data, "radio_clock",      "Radio Clock",  NULL,         dcf77_str);
+    }
     /* clang-format on */
 
     decoder_output_data(decoder, data);

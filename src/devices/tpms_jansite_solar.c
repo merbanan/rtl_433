@@ -81,16 +81,15 @@ static int tpms_jansite_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer, 
     snprintf(code_str, sizeof(code_str), "%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10]);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Jansite-Solar",
-            "type",             "",             DATA_STRING, "TPMS",
-            "id",               "",             DATA_STRING, id_str,
-            "flags",            "",             DATA_INT, flags,
-            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (float)pressure * 1.6,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (float)temperature - 55.0,
-            "code",             "",             DATA_STRING, code_str,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Jansite-Solar");
+    data = data_str(data, "type",             "",             NULL,         "TPMS");
+    data = data_str(data, "id",               "",             NULL,         id_str);
+    data = data_int(data, "flags",            "",             NULL,         flags);
+    data = data_dbl(data, "pressure_kPa",     "Pressure",     "%.0f kPa",   (float)pressure * 1.6);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.0f C",     (float)temperature - 55.0);
+    data = data_str(data, "code",             "",             NULL,         code_str);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

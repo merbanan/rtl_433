@@ -205,22 +205,23 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         float uv_index = uv_raw * 0.1f;
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",             DATA_STRING, "Bresser-7in1",
-                "id",               "",             DATA_INT,    id,
-                "startup",          "Startup",      DATA_COND,   !nstartup,  DATA_INT, !nstartup,
-                "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-                "humidity",         "Humidity",     DATA_INT,    humidity,
-                "wind_max_m_s",     "Wind Gust",    DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wgst_raw * 0.1f,
-                "wind_avg_m_s",     "Wind Speed",   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wavg_raw * 0.1f,
-                "wind_dir_deg",     "Direction",    DATA_INT,    wdir,
-                "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
-                "light_klx",        "Light",        DATA_FORMAT, "%.3f klx", DATA_DOUBLE, light_klx, // TODO: remove this
-                "light_lux",        "Light",        DATA_FORMAT, "%.3f lux", DATA_DOUBLE, light_lux,
-                "uv",               "UV Index",     DATA_FORMAT, "%.1f", DATA_DOUBLE, uv_index,
-                "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-                "mic",              "Integrity",    DATA_STRING, "CRC",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",             NULL,         "Bresser-7in1");
+        data = data_int(data, "id",               "",             NULL,         id);
+        if (!nstartup) {
+            data = data_int(data, "startup",          "Startup",      NULL,         !nstartup);
+        }
+        data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+        data = data_int(data, "humidity",         "Humidity",     NULL,         humidity);
+        data = data_dbl(data, "wind_max_m_s",     "Wind Gust",    "%.1f m/s",   wgst_raw * 0.1f);
+        data = data_dbl(data, "wind_avg_m_s",     "Wind Speed",   "%.1f m/s",   wavg_raw * 0.1f);
+        data = data_int(data, "wind_dir_deg",     "Direction",    NULL,         wdir);
+        data = data_dbl(data, "rain_mm",          "Rain",         "%.1f mm",    rain_mm);
+        data = data_dbl(data, "light_klx",        "Light",        "%.3f klx",   light_klx); // TODO: remove this
+        data = data_dbl(data, "light_lux",        "Light",        "%.3f lux",   light_lux);
+        data = data_dbl(data, "uv",               "UV Index",     "%.1f",       uv_index);
+        data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+        data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
         /* clang-format on */
 
         decoder_output_data(decoder, data);
@@ -233,16 +234,21 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int pm_10_init  = (msg[12] & 0x0f) == 0x0f; // confirmed by https://github.com/merbanan/rtl_433/issues/2816#issuecomment-1935439318
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",                         DATA_STRING, "Bresser-7in1",  // should be Bresser-Air-PM
-                "id",               "",                         DATA_INT,    id,
-                "channel",          "",                         DATA_INT,    chan,
-                "startup",          "Startup",                  DATA_COND,   !nstartup,   DATA_INT, !nstartup,
-                "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
-                "pm2_5_ug_m3",      "PM2.5 Mass Concentration", DATA_COND,   !pm_2_5_init,   DATA_INT, pm_2_5,
-                "pm10_0_ug_m3",     "PM10 Mass Concentraton",   DATA_COND,   !pm_10_init,    DATA_INT, pm_10,
-                "mic",              "Integrity",                DATA_STRING, "CRC",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",                         NULL,         "Bresser-7in1"); // should be Bresser-Air-PM
+        data = data_int(data, "id",               "",                         NULL,         id);
+        data = data_int(data, "channel",          "",                         NULL,         chan);
+        if (!nstartup) {
+            data = data_int(data, "startup",          "Startup",                  NULL,         !nstartup);
+        }
+        data = data_int(data, "battery_ok",       "Battery",                  NULL,         !battery_low);
+        if (!pm_2_5_init) {
+            data = data_int(data, "pm2_5_ug_m3",      "PM2.5 Mass Concentration", NULL,         pm_2_5);
+        }
+        if (!pm_10_init) {
+            data = data_int(data, "pm10_0_ug_m3",     "PM10 Mass Concentraton",   NULL,         pm_10);
+        }
+        data = data_str(data, "mic",              "Integrity",                NULL,         "CRC");
         /* clang-format on */
 
         decoder_output_data(decoder, data);
@@ -253,15 +259,18 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int co2_init = (msg[5] & 0x0f) == 0x0f;
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",                         DATA_STRING, "Bresser-CO2",
-                "id",               "",                         DATA_INT,    id,
-                "channel",          "",                         DATA_INT,    chan,
-                "startup",          "Startup",                  DATA_COND,   !nstartup,  DATA_INT, !nstartup,
-                "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
-                "co2_ppm",          "Carbon Dioxide",           DATA_COND,   !co2_init,     DATA_FORMAT, "%d ppm", DATA_INT, co2,
-                "mic",              "Integrity",                DATA_STRING, "CRC",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",                         NULL,         "Bresser-CO2");
+        data = data_int(data, "id",               "",                         NULL,         id);
+        data = data_int(data, "channel",          "",                         NULL,         chan);
+        if (!nstartup) {
+            data = data_int(data, "startup",          "Startup",                  NULL,         !nstartup);
+        }
+        data = data_int(data, "battery_ok",       "Battery",                  NULL,         !battery_low);
+        if (!co2_init) {
+            data = data_int(data, "co2_ppm",          "Carbon Dioxide",           "%d ppm",     co2);
+        }
+        data = data_str(data, "mic",              "Integrity",                NULL,         "CRC");
         /* clang-format on */
 
         decoder_output_data(decoder, data);
@@ -274,16 +283,21 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int voc_init  = voc == 0x0f;
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",                           DATA_STRING, "Bresser-HCHOVOC",
-                "id",               "",                           DATA_INT,    id,
-                "channel",          "",                           DATA_INT,    chan,
-                "startup",          "Startup",                    DATA_COND,   !nstartup,  DATA_INT, !nstartup,
-                "battery_ok",       "Battery",                    DATA_INT,    !battery_low,
-                "hcho_ppb",         "Formaldehyde",               DATA_COND,   !hcho_init, DATA_FORMAT, "%d ppb", DATA_INT, hcho,
-                "voc_level",        "Volatile Organic Compounds", DATA_COND,   !voc_init,  DATA_FORMAT, "%d",     DATA_INT, voc, // from 1 bad air quality to 5 very good air quality
-                "mic",              "Integrity",                  DATA_STRING, "CRC",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",                           NULL,         "Bresser-HCHOVOC");
+        data = data_int(data, "id",               "",                           NULL,         id);
+        data = data_int(data, "channel",          "",                           NULL,         chan);
+        if (!nstartup) {
+            data = data_int(data, "startup",          "Startup",                    NULL,         !nstartup);
+        }
+        data = data_int(data, "battery_ok",       "Battery",                    NULL,         !battery_low);
+        if (!hcho_init) {
+            data = data_int(data, "hcho_ppb",         "Formaldehyde",               "%d ppb",     hcho);
+        }
+        if (!voc_init) {
+            data = data_int(data, "voc_level",        "Volatile Organic Compounds", "%d",         voc); // from 1 bad air quality to 5 very good air quality
+        }
+        data = data_str(data, "mic",              "Integrity",                  NULL,         "CRC");
         /* clang-format on */
 
         decoder_output_data(decoder, data);

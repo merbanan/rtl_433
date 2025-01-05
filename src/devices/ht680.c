@@ -62,15 +62,14 @@ static int ht680_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         int button4 = (b[2]>>0) & 0x03;
 
         /* clang-format off */
-        data = data_make(
-                "model",    "",                 DATA_STRING, "HT680-Remote",
-                "id",       "Address",          DATA_FORMAT, "0x%06X", DATA_INT, address,
-                "button1",  "Button 1",         DATA_STRING, button1 == 3 ? "PRESSED" : "",
-                "button2",  "Button 2",         DATA_STRING, button2 == 3 ? "PRESSED" : "",
-                "button3",  "Button 3",         DATA_STRING, button3 == 3 ? "PRESSED" : "",
-                "button4",  "Button 4",         DATA_STRING, button4 == 3 ? "PRESSED" : "",
-                "tristate", "Tristate code",    DATA_STRING, tristate,
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",    "",                 NULL,         "HT680-Remote");
+        data = data_int(data, "id",       "Address",          "0x%06X",     address);
+        data = data_str(data, "button1",  "Button 1",         NULL,         button1 == 3 ? "PRESSED" : "");
+        data = data_str(data, "button2",  "Button 2",         NULL,         button2 == 3 ? "PRESSED" : "");
+        data = data_str(data, "button3",  "Button 3",         NULL,         button3 == 3 ? "PRESSED" : "");
+        data = data_str(data, "button4",  "Button 4",         NULL,         button4 == 3 ? "PRESSED" : "");
+        data = data_str(data, "tristate", "Tristate code",    NULL,         tristate);
         /* clang-format on */
 
         decoder_output_data(decoder, data);

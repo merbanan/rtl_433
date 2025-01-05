@@ -162,16 +162,15 @@ static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         rh_data_payload[j] = (int)rh_payload[5 + j];
     }
     /* clang-format off */
-    data = data_make(
-            "model",        "",             DATA_STRING, "RadioHead-ASK",
-            "len",          "Data len",     DATA_INT, data_len,
-            "to",           "To",           DATA_INT, header_to,
-            "from",         "From",         DATA_INT, header_from,
-            "id",           "Id",           DATA_INT, header_id,
-            "flags",        "Flags",        DATA_INT, header_flags,
-            "payload",      "Payload",      DATA_ARRAY, data_array(data_len, DATA_INT, rh_data_payload),
-            "mic",          "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",        "",             NULL,         "RadioHead-ASK");
+    data = data_int(data, "len",          "Data len",     NULL,         data_len);
+    data = data_int(data, "to",           "To",           NULL,         header_to);
+    data = data_int(data, "from",         "From",         NULL,         header_from);
+    data = data_int(data, "id",           "Id",           NULL,         header_id);
+    data = data_int(data, "flags",        "Flags",        NULL,         header_flags);
+    data = data_ary(data, "payload",      "Payload",      NULL,         data_array(data_len, DATA_INT, rh_data_payload));
+    data = data_str(data, "mic",          "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -206,17 +205,16 @@ static int sensible_living_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     battery_voltage = (rh_payload[9] << 8) | rh_payload[10];
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",                 DATA_STRING,  "SensibleLiving-Moisture",
-            "house_id",         "House ID",         DATA_INT,     house_id,
-            "module_id",        "Module ID",        DATA_INT,     module_id,
-            "sensor_type",      "Sensor Type",      DATA_INT,     sensor_type,
-            "sensor_count",     "Sensor Count",     DATA_INT,     sensor_count,
-            "alarms",           "Alarms",           DATA_INT,     alarms,
-            "sensor_value",     "Sensor Value",     DATA_INT,     sensor_value,
-            "battery_mV",       "Battery Voltage",  DATA_INT,     battery_voltage * 10,
-            "mic",              "Integrity",        DATA_STRING,  "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "SensibleLiving-Moisture");
+    data = data_int(data, "house_id",         "House ID",         NULL,         house_id);
+    data = data_int(data, "module_id",        "Module ID",        NULL,         module_id);
+    data = data_int(data, "sensor_type",      "Sensor Type",      NULL,         sensor_type);
+    data = data_int(data, "sensor_count",     "Sensor Count",     NULL,         sensor_count);
+    data = data_int(data, "alarms",           "Alarms",           NULL,         alarms);
+    data = data_int(data, "sensor_value",     "Sensor Value",     NULL,         sensor_value);
+    data = data_int(data, "battery_mV",       "Battery Voltage",  NULL,         battery_voltage * 10);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

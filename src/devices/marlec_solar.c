@@ -110,22 +110,43 @@ static int marlec_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int is_data = frame_type == 0x22;
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "Marlec-Solar",
-            "boost_time",       "",             DATA_COND, is_data, DATA_INT, boost_time,
-            "solar_off",        "",             DATA_COND, is_data, DATA_INT, solar_off,
-            "tank_hot",         "",             DATA_COND, is_data, DATA_INT, tank_hot,
-            "battery_low",      "",             DATA_COND, is_data, DATA_INT, battery_low,
-            "heating",          "",             DATA_COND, is_data, DATA_INT, heating,
-            "import_val",       "",             DATA_COND, is_data, DATA_INT, import_val,
-            "saved_today",      "",             DATA_COND, is_data && saved_type == SAVED_TODAY, DATA_INT, saved_val,
-            "saved_yesterday",  "",             DATA_COND, is_data && saved_type == SAVED_YESTERDAY, DATA_INT, saved_val,
-            "saved_last_7",     "",             DATA_COND, is_data && saved_type == SAVED_LAST_7, DATA_INT, saved_val,
-            "saved_last_28",    "",             DATA_COND, is_data && saved_type == SAVED_LAST_28, DATA_INT, saved_val,
-            "saved_total",      "",             DATA_COND, is_data && saved_type == SAVED_TOTAL, DATA_INT, saved_val,
-            "raw",              "Raw data",     DATA_STRING, frame_str,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Marlec-Solar");
+    if (is_data) {
+        data = data_int(data, "boost_time",       "",             NULL,         boost_time);
+    }
+    if (is_data) {
+        data = data_int(data, "solar_off",        "",             NULL,         solar_off);
+    }
+    if (is_data) {
+        data = data_int(data, "tank_hot",         "",             NULL,         tank_hot);
+    }
+    if (is_data) {
+        data = data_int(data, "battery_low",      "",             NULL,         battery_low);
+    }
+    if (is_data) {
+        data = data_int(data, "heating",          "",             NULL,         heating);
+    }
+    if (is_data) {
+        data = data_int(data, "import_val",       "",             NULL,         import_val);
+    }
+    if (is_data && saved_type == SAVED_TODAY) {
+        data = data_int(data, "saved_today",      "",             NULL,         saved_val);
+    }
+    if (is_data && saved_type == SAVED_YESTERDAY) {
+        data = data_int(data, "saved_yesterday",  "",             NULL,         saved_val);
+    }
+    if (is_data && saved_type == SAVED_LAST_7) {
+        data = data_int(data, "saved_last_7",     "",             NULL,         saved_val);
+    }
+    if (is_data && saved_type == SAVED_LAST_28) {
+        data = data_int(data, "saved_last_28",    "",             NULL,         saved_val);
+    }
+    if (is_data && saved_type == SAVED_TOTAL) {
+        data = data_int(data, "saved_total",      "",             NULL,         saved_val);
+    }
+    data = data_str(data, "raw",              "Raw data",     NULL,         frame_str);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
     decoder_output_data(decoder, data);
     return 1;

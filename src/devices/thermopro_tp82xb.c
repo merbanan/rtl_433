@@ -116,20 +116,31 @@ static int thermopro_tp828b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float p2_t_hi = (p2_hi_raw - 500) * 0.1f;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",                "",                             DATA_STRING,    "ThermoPro-TP828b",
-            "id",                   "",                             DATA_FORMAT,    "%02x",         DATA_INT,    id,
-            "display_u",            "Display Unit",                 DATA_COND, display_u == 0x2,    DATA_STRING, "Fahrenheit",
-            "display_u",            "Display Unit",                 DATA_COND, display_u == 0x0,    DATA_STRING, "Celsius",
-            "temperature_1_C",      "Temperature 1",                DATA_COND, p1_raw != 0xedd ,    DATA_FORMAT, "%.1f C", DATA_DOUBLE, p1_temp, // if 0xedd then no probe
-            "temperature_1_LO_C",   "Temperature 1 LO",             DATA_COND, p1_lo_raw != 0xeaa , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p1_t_lo, // if 0xeaa then no LO
-            "temperature_1_HI_C",   "Temperature 1 HI",                                             DATA_FORMAT, "%.1f C", DATA_DOUBLE, p1_t_hi,
-            "temperature_2_C",      "Temperature 2",                DATA_COND, p2_raw != 0xedd ,    DATA_FORMAT, "%.1f C", DATA_DOUBLE, p2_temp, // if 0xedd then no probe
-            "temperature_2_LO_C",   "Temperature 2 LO",             DATA_COND, p2_lo_raw != 0xeaa , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p2_t_lo, // if 0xeaa then no LO
-            "temperature_2_HI_C",   "Temperature 2 HI",                                             DATA_FORMAT, "%.1f C", DATA_DOUBLE, p2_t_hi,
-            "flags",                "Flags",                        DATA_FORMAT,    "%01x",         DATA_INT,    flags,
-            "mic",                  "Integrity",                    DATA_STRING,    "CHECKSUM",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",                "",                             NULL,         "ThermoPro-TP828b");
+    data = data_int(data, "id",                   "",                             "%02x",       id);
+    if (display_u == 0x2) {
+        data = data_str(data, "display_u",            "Display Unit",                 NULL,         "Fahrenheit");
+    }
+    if (display_u == 0x0) {
+        data = data_str(data, "display_u",            "Display Unit",                 NULL,         "Celsius");
+    }
+    if (p1_raw != 0xedd ) {
+        data = data_dbl(data, "temperature_1_C",      "Temperature 1",                "%.1f C",     p1_temp); // if 0xedd then no probe
+    }
+    if (p1_lo_raw != 0xeaa ) {
+        data = data_dbl(data, "temperature_1_LO_C",   "Temperature 1 LO",             "%.1f C",     p1_t_lo); // if 0xeaa then no LO
+    }
+    data = data_dbl(data, "temperature_1_HI_C",   "Temperature 1 HI",                                             "%.1f C",     p1_t_hi);
+    if (p2_raw != 0xedd ) {
+        data = data_dbl(data, "temperature_2_C",      "Temperature 2",                "%.1f C",     p2_temp); // if 0xedd then no probe
+    }
+    if (p2_lo_raw != 0xeaa ) {
+        data = data_dbl(data, "temperature_2_LO_C",   "Temperature 2 LO",             "%.1f C",     p2_t_lo); // if 0xeaa then no LO
+    }
+    data = data_dbl(data, "temperature_2_HI_C",   "Temperature 2 HI",                                             "%.1f C",     p2_t_hi);
+    data = data_int(data, "flags",                "Flags",                        "%01x",       flags);
+    data = data_str(data, "mic",                  "Integrity",                    NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -224,18 +235,29 @@ static int thermopro_tp829b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float p4_temp = (p4_raw - 500) * 0.1f;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",                "",                             DATA_STRING,    "ThermoPro-TP829b",
-            "id",                   "",                             DATA_FORMAT,    "%02x",      DATA_INT,    id,
-            "display_u",            "Display Unit",                 DATA_COND, display_u == 0x2, DATA_STRING, "Fahrenheit",
-            "display_u",            "Display Unit",                 DATA_COND, display_u == 0x0, DATA_STRING, "Celsius",
-            "temperature_1_C",      "Temperature 1",                DATA_COND, p1_raw != 0xedd , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p1_temp, // if 0xedd then no probe
-            "temperature_2_C",      "Temperature 2",                DATA_COND, p2_raw != 0xedd , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p2_temp, // if 0xedd then no probe
-            "temperature_3_C",      "Temperature 3",                DATA_COND, p3_raw != 0xedd , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p3_temp, // if 0xedd then no probe
-            "temperature_4_C",      "Temperature 4",                DATA_COND, p4_raw != 0xedd , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p4_temp, // if 0xedd then no probe
-            "flags",                "Flags",                        DATA_FORMAT,    "%01x",      DATA_INT,    flags,
-            "mic",                  "Integrity",                    DATA_STRING,    "CHECKSUM",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",                "",                             NULL,         "ThermoPro-TP829b");
+    data = data_int(data, "id",                   "",                             "%02x",       id);
+    if (display_u == 0x2) {
+        data = data_str(data, "display_u",            "Display Unit",                 NULL,         "Fahrenheit");
+    }
+    if (display_u == 0x0) {
+        data = data_str(data, "display_u",            "Display Unit",                 NULL,         "Celsius");
+    }
+    if (p1_raw != 0xedd ) {
+        data = data_dbl(data, "temperature_1_C",      "Temperature 1",                "%.1f C",     p1_temp); // if 0xedd then no probe
+    }
+    if (p2_raw != 0xedd ) {
+        data = data_dbl(data, "temperature_2_C",      "Temperature 2",                "%.1f C",     p2_temp); // if 0xedd then no probe
+    }
+    if (p3_raw != 0xedd ) {
+        data = data_dbl(data, "temperature_3_C",      "Temperature 3",                "%.1f C",     p3_temp); // if 0xedd then no probe
+    }
+    if (p4_raw != 0xedd ) {
+        data = data_dbl(data, "temperature_4_C",      "Temperature 4",                "%.1f C",     p4_temp); // if 0xedd then no probe
+    }
+    data = data_int(data, "flags",                "Flags",                        "%01x",       flags);
+    data = data_str(data, "mic",                  "Integrity",                    NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

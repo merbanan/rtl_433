@@ -365,15 +365,14 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data;
-    data = data_make(
-            "model",       "Model",    DATA_STRING, "Secplus-v2",
-            "id",          "",       DATA_INT, (fixed_total & 0xffffffff),
-            "button_id",   "Button-ID",    DATA_INT,    (fixed_total >> 32),
-            "remote_id",   "Remote-ID",    DATA_INT,    (fixed_total & 0xffffffff),
+    data = NULL;
+    data = data_str(data, "model",       "Model",    NULL,         "Secplus-v2");
+    data = data_int(data, "id",          "",       NULL,         (fixed_total & 0xffffffff));
+    data = data_int(data, "button_id",   "Button-ID",    NULL,         (fixed_total >> 32));
+    data = data_int(data, "remote_id",   "Remote-ID",    NULL,         (fixed_total & 0xffffffff));
             // "fixed",       "",    DATA_INT,    fixed_total,
-            "fixed",       "Fixed_Code",    DATA_STRING,    fixed_str,
-            "rolling",     "Rolling_Code",    DATA_STRING,    rolling_str,
-            NULL);
+    data = data_str(data, "fixed",       "Fixed_Code",    NULL,         fixed_str);
+    data = data_str(data, "rolling",     "Rolling_Code",    NULL,         rolling_str);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

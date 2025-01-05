@@ -80,13 +80,12 @@ static int opus_xt300_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         /* clang-format off */
-        data = data_make(
-            "model",            "",             DATA_STRING, "Opus-XT300",
-            "channel",          "Channel",      DATA_INT,    channel,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temp,
-            "moisture",         "Moisture",     DATA_FORMAT, "%d %%", DATA_INT, moisture,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-            NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",             NULL,         "Opus-XT300");
+        data = data_int(data, "channel",          "Channel",      NULL,         channel);
+        data = data_dbl(data, "temperature_C",    "Temperature",  "%.0f C",     (double)temp);
+        data = data_int(data, "moisture",         "Moisture",     "%d %%",      moisture);
+        data = data_str(data, "mic",              "Integrity",    NULL,         "CHECKSUM");
         /* clang-format on */
 
         decoder_output_data(decoder, data);

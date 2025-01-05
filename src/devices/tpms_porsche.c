@@ -68,15 +68,14 @@ static int tpms_porsche_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     snprintf(id_str, sizeof(id_str), "%08x", id);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Porsche",
-            "type",             "",             DATA_STRING, "TPMS",
-            "id",               "",             DATA_STRING, id_str,
-            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa",    DATA_DOUBLE, (float)pressure_kpa,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C",      DATA_DOUBLE, (float)temperature_c,
-            "flags",            "",             DATA_FORMAT, "%04x",        DATA_INT,    flags,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Porsche");
+    data = data_str(data, "type",             "",             NULL,         "TPMS");
+    data = data_str(data, "id",               "",             NULL,         id_str);
+    data = data_dbl(data, "pressure_kPa",     "Pressure",     "%.1f kPa",   (float)pressure_kpa);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.0f C",     (float)temperature_c);
+    data = data_int(data, "flags",            "",             "%04x",       flags);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

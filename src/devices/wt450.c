@@ -100,15 +100,14 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     seq           = (b[4] >> 6);
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "WT450-TH",
-            "id",               "House Code",   DATA_INT,    house_code,
-            "channel",          "Channel",      DATA_INT,    channel,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp,
-            "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "seq",              "Sequence",     DATA_INT,    seq,
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "WT450-TH");
+    data = data_int(data, "id",               "House Code",   NULL,         house_code);
+    data = data_int(data, "channel",          "Channel",      NULL,         channel);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.2f C",     temp);
+    data = data_int(data, "humidity",         "Humidity",     "%u %%",      humidity);
+    data = data_int(data, "seq",              "Sequence",     NULL,         seq);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

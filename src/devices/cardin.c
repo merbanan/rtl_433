@@ -98,11 +98,10 @@ static int cardin_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",      "",                       DATA_STRING, "Cardin-S466",
-            "dipswitch",  "dipswitch",              DATA_STRING, dip,
-            "rbutton",    "right button switches",  DATA_STRING, rbutton[((b[2] & 15) / 3)-1],
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",      "",                       NULL,         "Cardin-S466");
+    data = data_str(data, "dipswitch",  "dipswitch",              NULL,         dip);
+    data = data_str(data, "rbutton",    "right button switches",  NULL,         rbutton[((b[2] & 15) / 3)-1]);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

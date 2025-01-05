@@ -133,14 +133,13 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "id=%s%d event_str=%s", housecode, bDeviceCode, event_str);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",        "",             DATA_STRING, "X10-RF",
-            "id",           "",             DATA_INT,    bDeviceCode,
-            "channel",      "",             DATA_STRING, housecode,
-            "state",        "State",        DATA_STRING, event_str,
-            "data",         "Data",         DATA_FORMAT, "%08x", DATA_INT, code,
-            "mic",          "Integrity",    DATA_STRING, "PARITY",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",        "",             NULL,         "X10-RF");
+    data = data_int(data, "id",           "",             NULL,         bDeviceCode);
+    data = data_str(data, "channel",      "",             NULL,         housecode);
+    data = data_str(data, "state",        "State",        NULL,         event_str);
+    data = data_int(data, "data",         "Data",         "%08x",       code);
+    data = data_str(data, "mic",          "Integrity",    NULL,         "PARITY");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

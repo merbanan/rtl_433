@@ -187,19 +187,18 @@ static int neptune_r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     snprintf(extra, sizeof(extra),"%02x%02x%02x", b[10], b[11], b[12]);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",       "",    DATA_STRING, "Neptune-R900",
-            "id",          "",    DATA_INT,    meter_id,
-            "unkn1",       "",    DATA_INT,    unkn1,
-            "unkn2",       "",    DATA_INT,    unkn2,
-            "nouse",       "",    DATA_INT,    nouse,
-            "backflow",    "",    DATA_INT,    backflow,
-            "consumption", "",    DATA_INT,    consumption,
-            "unkn3",       "",    DATA_INT,    unkn3,
-            "leak",        "",    DATA_INT,    leak,
-            "leaknow",     "",    DATA_INT,    leaknow,
-            "extra",       "",    DATA_STRING, extra,
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",       "",    NULL,         "Neptune-R900");
+    data = data_int(data, "id",          "",    NULL,         meter_id);
+    data = data_int(data, "unkn1",       "",    NULL,         unkn1);
+    data = data_int(data, "unkn2",       "",    NULL,         unkn2);
+    data = data_int(data, "nouse",       "",    NULL,         nouse);
+    data = data_int(data, "backflow",    "",    NULL,         backflow);
+    data = data_int(data, "consumption", "",    NULL,         consumption);
+    data = data_int(data, "unkn3",       "",    NULL,         unkn3);
+    data = data_int(data, "leak",        "",    NULL,         leak);
+    data = data_int(data, "leaknow",     "",    NULL,         leaknow);
+    data = data_str(data, "extra",       "",    NULL,         extra);
     /* clang-format on */
     decoder_output_data(decoder, data);
 

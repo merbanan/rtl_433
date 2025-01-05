@@ -68,14 +68,13 @@ static int wssensor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     temperature_c = (temperature >> 4) * 0.1f;
 
     /* clang-format off */
-    data = data_make(
-            "model",         "",            DATA_STRING, "Hyundai-WS",
-            "id",            "House Code",  DATA_INT, sensor_id,
-            "channel",       "Channel",     DATA_INT, channel,
-            "battery_ok",    "Battery",     DATA_INT,    !!battery_status,
-            "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temperature_c,
-            "button",           "Button",       DATA_INT, startup,
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",         "",            NULL,         "Hyundai-WS");
+    data = data_int(data, "id",            "House Code",  NULL,         sensor_id);
+    data = data_int(data, "channel",       "Channel",     NULL,         channel);
+    data = data_int(data, "battery_ok",    "Battery",     NULL,         !!battery_status);
+    data = data_dbl(data, "temperature_C", "Temperature", "%.2f C",     temperature_c);
+    data = data_int(data, "button",           "Button",       NULL,         startup);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

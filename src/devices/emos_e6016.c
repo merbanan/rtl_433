@@ -106,18 +106,17 @@ static int emos_e6016_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     snprintf(dcf77_str, sizeof(dcf77_str), "%4d-%02d-%02dT%02d:%02d:%02d", dcf77_year + 2000, dcf77_mth, dcf77_day, dcf77_hour, dcf77_min, dcf77_sec);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",                 DATA_STRING, "EMOS-E6016",
-            "id",               "House Code",       DATA_INT,    id,
-            "channel",          "Channel",          DATA_INT,    channel,
-            "battery_ok",       "Battery_OK",       DATA_INT,    battery,
-            "temperature_C",    "Temperature_C",    DATA_FORMAT, "%.1f", DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",         DATA_FORMAT, "%u", DATA_INT, humidity,
-            "wind_avg_m_s",     "WindSpeed m_s",    DATA_FORMAT, "%.1f",  DATA_DOUBLE, speed_ms,
-            "wind_dir_deg",     "Wind direction",   DATA_FORMAT, "%.1f",  DATA_DOUBLE, dir_deg,
-            "radio_clock",      "Radio Clock",      DATA_STRING, dcf77_str,
-            "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "EMOS-E6016");
+    data = data_int(data, "id",               "House Code",       NULL,         id);
+    data = data_int(data, "channel",          "Channel",          NULL,         channel);
+    data = data_int(data, "battery_ok",       "Battery_OK",       NULL,         battery);
+    data = data_dbl(data, "temperature_C",    "Temperature_C",    "%.1f",       temp_c);
+    data = data_int(data, "humidity",         "Humidity",         "%u",         humidity);
+    data = data_dbl(data, "wind_avg_m_s",     "WindSpeed m_s",    "%.1f",       speed_ms);
+    data = data_dbl(data, "wind_dir_deg",     "Wind direction",   "%.1f",       dir_deg);
+    data = data_str(data, "radio_clock",      "Radio Clock",      NULL,         dcf77_str);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

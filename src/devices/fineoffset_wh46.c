@@ -107,21 +107,20 @@ static int fineoffset_wh46_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int unknown      = (b[17] << 8) | b[18];
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Fineoffset-WH46",
-            "id",               "ID",           DATA_FORMAT, "%06x", DATA_INT, id,
-            "battery_ok",       "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "pm1_ug_m3",        "1um Fine PM",  DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm1,
-            "pm2_5_ug_m3",      "2.5um Fine PM",  DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm2_5,
-            "pm4_ug_m3",        "4um Coarse PM",  DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm4,
-            "pm10_ug_m3",       "10um Coarse PM",  DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm10,
-            "co2_ppm",          "Carbon Dioxide", DATA_FORMAT, "%d ppm", DATA_INT, co2,
-            "unknown",          "Do not know", DATA_FORMAT, "%d ?", DATA_INT, unknown,
-            "ext_power",        "External Power", DATA_INT, ext_power,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Fineoffset-WH46");
+    data = data_int(data, "id",               "ID",           "%06x",       id);
+    data = data_dbl(data, "battery_ok",       "Battery Level",  "%.1f",       battery_ok);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+    data = data_int(data, "humidity",         "Humidity",     "%u %%",      humidity);
+    data = data_dbl(data, "pm1_ug_m3",        "1um Fine PM",  "%.1f ug/m3", pm1);
+    data = data_dbl(data, "pm2_5_ug_m3",      "2.5um Fine PM",  "%.1f ug/m3", pm2_5);
+    data = data_dbl(data, "pm4_ug_m3",        "4um Coarse PM",  "%.1f ug/m3", pm4);
+    data = data_dbl(data, "pm10_ug_m3",       "10um Coarse PM",  "%.1f ug/m3", pm10);
+    data = data_int(data, "co2_ppm",          "Carbon Dioxide", "%d ppm",     co2);
+    data = data_int(data, "unknown",          "Do not know", "%d ?",       unknown);
+    data = data_int(data, "ext_power",        "External Power", NULL,         ext_power);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

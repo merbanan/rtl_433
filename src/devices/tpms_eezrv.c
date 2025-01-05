@@ -127,18 +127,17 @@ static int tpms_eezrv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     snprintf(flags_str, sizeof(flags_str), "%02x%02x", flags1, flags2);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "EezTire-E618",
-            "type",             "",             DATA_STRING, "TPMS",
-            "id",               "",             DATA_STRING, id_str,
-            "battery_ok",       "Battery_OK",   DATA_INT,    !low_batt,
-            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure_kPa,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temperature_C,
-            "flags",            "Flags",        DATA_STRING, flags_str,
-            "fast_leak",        "Fast Leak",    DATA_INT,    fast_leak,
-            "inflate",          "Inflate",      DATA_INT,    infl_detected,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "EezTire-E618");
+    data = data_str(data, "type",             "",             NULL,         "TPMS");
+    data = data_str(data, "id",               "",             NULL,         id_str);
+    data = data_int(data, "battery_ok",       "Battery_OK",   NULL,         !low_batt);
+    data = data_dbl(data, "pressure_kPa",     "Pressure",     "%.0f kPa",   (double)pressure_kPa);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     (double)temperature_C);
+    data = data_str(data, "flags",            "Flags",        NULL,         flags_str);
+    data = data_int(data, "fast_leak",        "Fast Leak",    NULL,         fast_leak);
+    data = data_int(data, "inflate",          "Inflate",      NULL,         infl_detected);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

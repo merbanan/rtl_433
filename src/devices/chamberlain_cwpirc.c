@@ -81,12 +81,11 @@ static int chamberlain_cwpirc_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     sprintf(msg1, "%02x%02x%02x%02x%02x", b[7], b[8], b[9], b[10], b[11]);
 
     /* clang-format off */
-    data = data_make(
-        "model",   "Model",     DATA_STRING,   "Chamberlain-CWPIRC",
-        "msg_0",   "Message 0", DATA_STRING,    msg0,
-        "msg_1",   "Message 1", DATA_STRING,    msg1,
-        "mic",     "Integrity", DATA_STRING,   "CRC",
-        NULL);
+    data = NULL;
+    data = data_str(data, "model",   "Model",     NULL,         "Chamberlain-CWPIRC");
+    data = data_str(data, "msg_0",   "Message 0", NULL,         msg0);
+    data = data_str(data, "msg_1",   "Message 1", NULL,         msg1);
+    data = data_str(data, "mic",     "Integrity", NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

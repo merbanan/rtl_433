@@ -234,17 +234,26 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",        "",                 DATA_COND,   model_num == GOVEE_WATER,   DATA_STRING, "Govee-Water",
-            "model",        "",                 DATA_COND,   model_num == GOVEE_CONTACT, DATA_STRING, "Govee-Contact",
-            "id",           "",                 DATA_INT,    id,
-            "battery_ok",   "Battery level",    DATA_COND,   battery, DATA_DOUBLE, battery_level,
-            "battery_mV",   "Battery",          DATA_COND,   battery, DATA_FORMAT, "%d mV", DATA_INT, battery_mv,
-            "detect_wet",   "",                 DATA_COND,   wet >= 0, DATA_INT, wet,
-            "event",        "",                 DATA_STRING, event_str,
-            "code",         "Raw Code",         DATA_STRING, code_str,
-            "mic",          "Integrity",        DATA_STRING, "PARITY",
-            NULL);
+    data_t *data = NULL;
+    if (model_num == GOVEE_WATER) {
+        data = data_str(data, "model",        "",                 NULL,         "Govee-Water");
+    }
+    if (model_num == GOVEE_CONTACT) {
+        data = data_str(data, "model",        "",                 NULL,         "Govee-Contact");
+    }
+    data = data_int(data, "id",           "",                 NULL,         id);
+    if (battery) {
+        data = data_dbl(data, "battery_ok",   "Battery level",    NULL,         battery_level);
+    }
+    if (battery) {
+        data = data_int(data, "battery_mV",   "Battery",          "%d mV",      battery_mv);
+    }
+    if (wet >= 0) {
+        data = data_int(data, "detect_wet",   "",                 NULL,         wet);
+    }
+    data = data_str(data, "event",        "",                 NULL,         event_str);
+    data = data_str(data, "code",         "Raw Code",         NULL,         code_str);
+    data = data_str(data, "mic",          "Integrity",        NULL,         "PARITY");
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -396,17 +405,24 @@ static int govee_h5054_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int battery_mv      = 1800 + 12 * battery;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",        "",                 DATA_STRING, "Govee-Water",
-            "id",           "",                 DATA_INT,    id,
-            "battery_ok",   "Battery level",    DATA_COND,   battery >= 0, DATA_DOUBLE, battery_level,
-            "battery_mV",   "Battery",          DATA_COND,   battery >= 0, DATA_FORMAT, "%d mV", DATA_INT, battery_mv,
-            "event",        "",                 DATA_STRING, event_str,
-            "detect_wet",   "",                 DATA_COND,   wet >= 0, DATA_INT, wet,
-            "leak_num",     "Leak Num",         DATA_COND,   leak_num >= 0, DATA_INT, leak_num,
-            "code",         "Raw Code",         DATA_STRING, code_str,
-            "mic",          "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",        "",                 NULL,         "Govee-Water");
+    data = data_int(data, "id",           "",                 NULL,         id);
+    if (battery >= 0) {
+        data = data_dbl(data, "battery_ok",   "Battery level",    NULL,         battery_level);
+    }
+    if (battery >= 0) {
+        data = data_int(data, "battery_mV",   "Battery",          "%d mV",      battery_mv);
+    }
+    data = data_str(data, "event",        "",                 NULL,         event_str);
+    if (wet >= 0) {
+        data = data_int(data, "detect_wet",   "",                 NULL,         wet);
+    }
+    if (leak_num >= 0) {
+        data = data_int(data, "leak_num",     "Leak Num",         NULL,         leak_num);
+    }
+    data = data_str(data, "code",         "Raw Code",         NULL,         code_str);
+    data = data_str(data, "mic",          "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

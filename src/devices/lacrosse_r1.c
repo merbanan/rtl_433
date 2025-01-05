@@ -171,20 +171,35 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float wspeed_kmh = raw_wind * 0.1f;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",                 DATA_COND,   rev == 1,  DATA_STRING, "LaCrosse-R1",
-            "model",            "",                 DATA_COND,   rev == 3,  DATA_STRING, "LaCrosse-R3",
-            "model",            "",                 DATA_COND,   rev == 9,  DATA_STRING, "LaCrosse-W1",
-            "id",               "Sensor ID",        DATA_FORMAT, "%06x",    DATA_INT,    id,
-            "battery_ok",       "Battery level",    DATA_INT,    !batt_low,
-            "startup",          "Startup",          DATA_COND,   startup,   DATA_INT,    startup,
-            "seq",              "Sequence",         DATA_INT,    seq,
-            "flags",            "Unknown",          DATA_COND,   flags,     DATA_INT,    flags,
-            "rain_mm",          "Total Rain",       DATA_COND,   rev != 9,  DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rain_mm,
-            "rain2_mm",         "Total Rain2",      DATA_COND,   rev == 3,  DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rain2_mm,
-            "wind_avg_km_h",    "Wind Speed",       DATA_COND,   rev == 9,  DATA_FORMAT, "%.1f km/h", DATA_DOUBLE, wspeed_kmh,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    if (rev == 1) {
+        data = data_str(data, "model",            "",                 NULL,         "LaCrosse-R1");
+    }
+    if (rev == 3) {
+        data = data_str(data, "model",            "",                 NULL,         "LaCrosse-R3");
+    }
+    if (rev == 9) {
+        data = data_str(data, "model",            "",                 NULL,         "LaCrosse-W1");
+    }
+    data = data_int(data, "id",               "Sensor ID",        "%06x",       id);
+    data = data_int(data, "battery_ok",       "Battery level",    NULL,         !batt_low);
+    if (startup) {
+        data = data_int(data, "startup",          "Startup",          NULL,         startup);
+    }
+    data = data_int(data, "seq",              "Sequence",         NULL,         seq);
+    if (flags) {
+        data = data_int(data, "flags",            "Unknown",          NULL,         flags);
+    }
+    if (rev != 9) {
+        data = data_dbl(data, "rain_mm",          "Total Rain",       "%.2f mm",    rain_mm);
+    }
+    if (rev == 3) {
+        data = data_dbl(data, "rain2_mm",         "Total Rain2",      "%.2f mm",    rain2_mm);
+    }
+    if (rev == 9) {
+        data = data_dbl(data, "wind_avg_km_h",    "Wind Speed",       "%.1f km/h",  wspeed_kmh);
+    }
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

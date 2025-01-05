@@ -151,15 +151,14 @@ static int hideki_ts04_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (sensortype == HIDEKI_TS04) {
             int humidity = ((packet[5] & 0xF0) >> 4) * 10 + (packet[5] & 0x0F);
             /* clang-format off */
-            data_t *data = data_make(
-                    "model",            "",                 DATA_STRING, "Hideki-TS04",
-                    "id",               "Rolling Code",     DATA_INT,    rc,
-                    "channel",          "Channel",          DATA_INT,    channel,
-                    "battery_ok",       "Battery",          DATA_INT,    battery_ok,
-                    "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp/10.f,
-                    "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                    "mic",              "Integrity",        DATA_STRING, "CRC",
-                    NULL);
+            data_t *data = NULL;
+            data = data_str(data, "model",            "",                 NULL,         "Hideki-TS04");
+            data = data_int(data, "id",               "Rolling Code",     NULL,         rc);
+            data = data_int(data, "channel",          "Channel",          NULL,         channel);
+            data = data_int(data, "battery_ok",       "Battery",          NULL,         battery_ok);
+            data = data_dbl(data, "temperature_C",    "Temperature",      "%.1f C",     temp/10.f);
+            data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+            data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
             /* clang-format on */
             decoder_output_data(decoder, data);
             return 1;
@@ -173,32 +172,30 @@ static int hideki_ts04_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             int wind_approach = ad[(packet[10] >> 2) & 0x03];
 
             /* clang-format off */
-            data_t *data = data_make(
-                    "model",            "",                 DATA_STRING, "Hideki-Wind",
-                    "id",               "Rolling Code",     DATA_INT,    rc,
-                    "channel",          "Channel",          DATA_INT,    channel,
-                    "battery_ok",       "Battery",          DATA_INT,    battery_ok,
-                    "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp * 0.1f,
-                    "wind_avg_mi_h",    "Wind Speed",       DATA_FORMAT, "%.2f mi/h", DATA_DOUBLE, wind_speed * 0.1f,
-                    "wind_max_mi_h",    "Gust Speed",       DATA_FORMAT, "%.2f mi/h", DATA_DOUBLE, gust_speed * 0.1f,
-                    "wind_approach",    "Wind Approach",    DATA_INT,    wind_approach,
-                    "wind_dir_deg",     "Wind Direction",   DATA_FORMAT, "%.1f", DATA_DOUBLE, wind_direction * 0.1f,
-                    "mic",              "Integrity",        DATA_STRING, "CRC",
-                    NULL);
+            data_t *data = NULL;
+            data = data_str(data, "model",            "",                 NULL,         "Hideki-Wind");
+            data = data_int(data, "id",               "Rolling Code",     NULL,         rc);
+            data = data_int(data, "channel",          "Channel",          NULL,         channel);
+            data = data_int(data, "battery_ok",       "Battery",          NULL,         battery_ok);
+            data = data_dbl(data, "temperature_C",    "Temperature",      "%.1f C",     temp * 0.1f);
+            data = data_dbl(data, "wind_avg_mi_h",    "Wind Speed",       "%.2f mi/h",  wind_speed * 0.1f);
+            data = data_dbl(data, "wind_max_mi_h",    "Gust Speed",       "%.2f mi/h",  gust_speed * 0.1f);
+            data = data_int(data, "wind_approach",    "Wind Approach",    NULL,         wind_approach);
+            data = data_dbl(data, "wind_dir_deg",     "Wind Direction",   "%.1f",       wind_direction * 0.1f);
+            data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
             /* clang-format on */
             decoder_output_data(decoder, data);
             return 1;
         }
         if (sensortype == HIDEKI_TEMP) {
             /* clang-format off */
-            data_t *data = data_make(
-                    "model",            "",                 DATA_STRING, "Hideki-Temperature",
-                    "id",               "Rolling Code",     DATA_INT,    rc,
-                    "channel",          "Channel",          DATA_INT,    channel,
-                    "battery_ok",       "Battery",          DATA_INT,    battery_ok,
-                    "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp * 0.1f,
-                    "mic",              "Integrity",        DATA_STRING, "CRC",
-                    NULL);
+            data_t *data = NULL;
+            data = data_str(data, "model",            "",                 NULL,         "Hideki-Temperature");
+            data = data_int(data, "id",               "Rolling Code",     NULL,         rc);
+            data = data_int(data, "channel",          "Channel",          NULL,         channel);
+            data = data_int(data, "battery_ok",       "Battery",          NULL,         battery_ok);
+            data = data_dbl(data, "temperature_C",    "Temperature",      "%.1f C",     temp * 0.1f);
+            data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
             /* clang-format on */
             decoder_output_data(decoder, data);
             return 1;
@@ -208,14 +205,13 @@ static int hideki_ts04_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             battery_ok = (packet[1] >> 6) & 1;
 
             /* clang-format off */
-            data_t *data = data_make(
-                    "model",            "",                 DATA_STRING, "Hideki-Rain",
-                    "id",               "Rolling Code",     DATA_INT,    rc,
-                    "channel",          "Channel",          DATA_INT,    channel,
-                    "battery_ok",       "Battery",          DATA_INT,    battery_ok,
-                    "rain_mm",          "Rain",             DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_units * 0.7f,
-                    "mic",              "Integrity",        DATA_STRING, "CRC",
-                    NULL);
+            data_t *data = NULL;
+            data = data_str(data, "model",            "",                 NULL,         "Hideki-Rain");
+            data = data_int(data, "id",               "Rolling Code",     NULL,         rc);
+            data = data_int(data, "channel",          "Channel",          NULL,         channel);
+            data = data_int(data, "battery_ok",       "Battery",          NULL,         battery_ok);
+            data = data_dbl(data, "rain_mm",          "Rain",             "%.1f mm",    rain_units * 0.7f);
+            data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
             /* clang-format on */
             decoder_output_data(decoder, data);
             return 1;

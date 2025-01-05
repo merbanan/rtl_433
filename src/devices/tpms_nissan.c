@@ -57,14 +57,13 @@ static int tpms_nissan_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
     snprintf(id_str, sizeof(id_str), "%06x", id);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Nissan",
-            "type",             "",             DATA_STRING, "TPMS",
-            "id",               "",             DATA_STRING, id_str,
-            "mode",             "",             DATA_INT,    mode,
-            "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.1f PSI", DATA_DOUBLE, pressure_psi,
-            "unknown",          "",             DATA_INT,    unknown,
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Nissan");
+    data = data_str(data, "type",             "",             NULL,         "TPMS");
+    data = data_str(data, "id",               "",             NULL,         id_str);
+    data = data_int(data, "mode",             "",             NULL,         mode);
+    data = data_dbl(data, "pressure_PSI",     "Pressure",     "%.1f PSI",   pressure_psi);
+    data = data_int(data, "unknown",          "",             NULL,         unknown);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

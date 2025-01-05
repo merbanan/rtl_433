@@ -80,15 +80,14 @@ static int ert_scm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     ert_id = ((b[2]&0x06)<<23) | (b[7]<<16) | (b[8]<<8) | b[9];
 
     /* clang-format off */
-    data = data_make(
-            "model",           "",                 DATA_STRING, "ERT-SCM",
-            "id",              "Id",               DATA_INT,    ert_id,
-            "physical_tamper", "Physical Tamper",  DATA_INT, physical_tamper,
-            "ert_type",        "ERT Type",         DATA_INT, ert_type,
-            "encoder_tamper",  "Encoder Tamper",   DATA_INT, encoder_tamper,
-            "consumption_data","Consumption Data", DATA_INT, consumption_data,
-            "mic",             "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",           "",                 NULL,         "ERT-SCM");
+    data = data_int(data, "id",              "Id",               NULL,         ert_id);
+    data = data_int(data, "physical_tamper", "Physical Tamper",  NULL,         physical_tamper);
+    data = data_int(data, "ert_type",        "ERT Type",         NULL,         ert_type);
+    data = data_int(data, "encoder_tamper",  "Encoder Tamper",   NULL,         encoder_tamper);
+    data = data_int(data, "consumption_data","Consumption Data", NULL,         consumption_data);
+    data = data_str(data, "mic",             "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

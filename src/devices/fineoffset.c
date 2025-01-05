@@ -131,17 +131,28 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     humidity = b[3];
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_COND, model_num == MODEL_WH2,  DATA_STRING, "Fineoffset-WH2",
-            "model",            "",             DATA_COND, model_num == MODEL_WH2A, DATA_STRING, "Fineoffset-WH2A",
-            "model",            "",             DATA_COND, model_num == MODEL_WH5,  DATA_STRING, "Fineoffset-WH5",
-            "model",            "",             DATA_COND, model_num == MODEL_RB,   DATA_STRING, "Rosenborg-66796",
-            "model",            "",             DATA_COND, model_num == MODEL_TP,   DATA_STRING, "Fineoffset-TelldusProove",
-            "id",               "ID",           DATA_INT, id,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-            "humidity",         "Humidity",     DATA_COND, humidity != 0xff, DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    if (model_num == MODEL_WH2) {
+        data = data_str(data, "model",            "",             NULL,         "Fineoffset-WH2");
+    }
+    if (model_num == MODEL_WH2A) {
+        data = data_str(data, "model",            "",             NULL,         "Fineoffset-WH2A");
+    }
+    if (model_num == MODEL_WH5) {
+        data = data_str(data, "model",            "",             NULL,         "Fineoffset-WH5");
+    }
+    if (model_num == MODEL_RB) {
+        data = data_str(data, "model",            "",             NULL,         "Rosenborg-66796");
+    }
+    if (model_num == MODEL_TP) {
+        data = data_str(data, "model",            "",             NULL,         "Fineoffset-TelldusProove");
+    }
+    data = data_int(data, "id",               "ID",           NULL,         id);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temperature);
+    if (humidity != 0xff) {
+        data = data_int(data, "humidity",         "Humidity",     "%u %%",      humidity);
+    }
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -285,21 +296,36 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     while (uv_index < 13 && uvi_upper[uv_index] < uv_raw) ++uv_index;
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",                 DATA_STRING, type == MODEL_WH24 ? "Fineoffset-WH24" : "Fineoffset-WH65B",
-            "id",               "ID",               DATA_INT,    id,
-            "battery_ok",       "Battery",          DATA_INT,    !low_battery,
-            "temperature_C",    "Temperature",      DATA_COND, temp_raw != 0x7ff, DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-            "humidity",         "Humidity",         DATA_COND, humidity != 0xff, DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "wind_dir_deg",     "Wind direction",   DATA_COND, wind_dir != 0x1ff, DATA_INT, wind_dir,
-            "wind_avg_m_s",     "Wind speed",       DATA_COND, wind_speed_raw != 0x1ff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_speed_ms,
-            "wind_max_m_s",     "Gust speed",       DATA_COND, gust_speed_raw != 0xff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust_speed_ms,
-            "rain_mm",          "Rainfall",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall_mm,
-            "uv",               "UV",               DATA_COND, uv_raw != 0xffff, DATA_INT, uv_raw,
-            "uvi",              "UVI",              DATA_COND, uv_raw != 0xffff, DATA_INT, uv_index,
-            "light_lux",        "Light",            DATA_COND, light_raw != 0xffffff, DATA_FORMAT, "%.1f lux", DATA_DOUBLE, light_lux,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         type == MODEL_WH24 ? "Fineoffset-WH24" : "Fineoffset-WH65B");
+    data = data_int(data, "id",               "ID",               NULL,         id);
+    data = data_int(data, "battery_ok",       "Battery",          NULL,         !low_battery);
+    if (temp_raw != 0x7ff) {
+        data = data_dbl(data, "temperature_C",    "Temperature",      "%.1f C",     temperature);
+    }
+    if (humidity != 0xff) {
+        data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+    }
+    if (wind_dir != 0x1ff) {
+        data = data_int(data, "wind_dir_deg",     "Wind direction",   NULL,         wind_dir);
+    }
+    if (wind_speed_raw != 0x1ff) {
+        data = data_dbl(data, "wind_avg_m_s",     "Wind speed",       "%.1f m/s",   wind_speed_ms);
+    }
+    if (gust_speed_raw != 0xff) {
+        data = data_dbl(data, "wind_max_m_s",     "Gust speed",       "%.1f m/s",   gust_speed_ms);
+    }
+    data = data_dbl(data, "rain_mm",          "Rainfall",         "%.1f mm",    rainfall_mm);
+    if (uv_raw != 0xffff) {
+        data = data_int(data, "uv",               "UV",               NULL,         uv_raw);
+    }
+    if (uv_raw != 0xffff) {
+        data = data_int(data, "uvi",              "UVI",              NULL,         uv_index);
+    }
+    if (light_raw != 0xffffff) {
+        data = data_dbl(data, "light_lux",        "Light",            "%.1f lux",   light_lux);
+    }
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -414,16 +440,15 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float battery_ok  = battery_bars * 0.2f; //convert out of 5 bars to 0 (0 bars) to 1 (5 bars)
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "Fineoffset-WH0290",
-            "id",               "ID",           DATA_INT,    id,
-            "battery_ok",       "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
-            "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%d ug/m3", DATA_INT, pm25/10,
-            "estimated_pm10_0_ug_m3",     "Estimate of 10um Coarse Particulate Matter",  DATA_FORMAT, "%d ug/m3", DATA_INT, pm100/10,
-            "family",           "FAMILY",       DATA_INT,    family,
-            "unknown1",         "UNKNOWN1",     DATA_INT,    unknown1,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Fineoffset-WH0290");
+    data = data_int(data, "id",               "ID",           NULL,         id);
+    data = data_dbl(data, "battery_ok",       "Battery Level",  "%.1f",       battery_ok);
+    data = data_int(data, "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  "%d ug/m3",   pm25/10);
+    data = data_int(data, "estimated_pm10_0_ug_m3",     "Estimate of 10um Coarse Particulate Matter",  "%d ug/m3",   pm100/10);
+    data = data_int(data, "family",           "FAMILY",       NULL,         family);
+    data = data_int(data, "unknown1",         "UNKNOWN1",     NULL,         unknown1);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -534,17 +559,24 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float pressure    = pressure_raw * 0.1f;
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_COND, type == 31, DATA_STRING, "Fineoffset-WH32",
-            "model",            "",             DATA_COND, type == 32, DATA_STRING, "Fineoffset-WH32B",
-            "model",            "",             DATA_COND, type == 25, DATA_STRING, "Fineoffset-WH25",
-            "id",               "ID",           DATA_INT,    id,
-            "battery_ok",       "Battery",      DATA_INT,    !low_battery,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-            "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "pressure_hPa",     "Pressure",     DATA_COND,   pressure_raw != 0xffff, DATA_FORMAT, "%.1f hPa", DATA_DOUBLE, pressure,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    if (type == 31) {
+        data = data_str(data, "model",            "",             NULL,         "Fineoffset-WH32");
+    }
+    if (type == 32) {
+        data = data_str(data, "model",            "",             NULL,         "Fineoffset-WH32B");
+    }
+    if (type == 25) {
+        data = data_str(data, "model",            "",             NULL,         "Fineoffset-WH25");
+    }
+    data = data_int(data, "id",               "ID",           NULL,         id);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !low_battery);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temperature);
+    data = data_int(data, "humidity",         "Humidity",     "%u %%",      humidity);
+    if (pressure_raw != 0xffff) {
+        data = data_dbl(data, "pressure_hPa",     "Pressure",     "%.1f hPa",   pressure);
+    }
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -638,16 +670,15 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int moisture        = b[6];
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",                 DATA_STRING, "Fineoffset-WH51",
-            "id",               "ID",               DATA_STRING, id,
-            "battery_ok",       "Battery level",    DATA_DOUBLE, battery_level,
-            "battery_mV",       "Battery",          DATA_FORMAT, "%d mV", DATA_INT, battery_mv,
-            "moisture",         "Moisture",         DATA_FORMAT, "%u %%", DATA_INT, moisture,
-            "boost",            "Transmission boost", DATA_INT, boost,
-            "ad_raw",           "AD raw",           DATA_INT, ad_raw,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "Fineoffset-WH51");
+    data = data_str(data, "id",               "ID",               NULL,         id);
+    data = data_dbl(data, "battery_ok",       "Battery level",    NULL,         battery_level);
+    data = data_int(data, "battery_mV",       "Battery",          "%d mV",      battery_mv);
+    data = data_int(data, "moisture",         "Moisture",         "%u %%",      moisture);
+    data = data_int(data, "boost",            "Transmission boost", NULL,         boost);
+    data = data_int(data, "ad_raw",           "AD raw",           NULL,         ad_raw);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -708,14 +739,13 @@ static int alecto_ws1200v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float rainfall    = rainfall_raw * 0.3f; // each tip is 0.3mm
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "Alecto-WS1200v1",
-            "id",               "ID",           DATA_INT,    id,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-            "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Alecto-WS1200v1");
+    data = data_int(data, "id",               "ID",           NULL,         id);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temperature);
+    data = data_dbl(data, "rain_mm",          "Rain",         "%.1f mm",    rainfall);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -792,13 +822,12 @@ static int alecto_ws1200v2_dcf_callback(r_device *decoder, bitbuffer_t *bitbuffe
             date_y, date_m, date_d, time_h, time_m, time_s);
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "Alecto-WS1200v2",
-            "id",               "ID",           DATA_INT,    id,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "radio_clock",      "Radio Clock",  DATA_STRING, clock_str,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Alecto-WS1200v2");
+    data = data_int(data, "id",               "ID",           NULL,         id);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+    data = data_str(data, "radio_clock",      "Radio Clock",  NULL,         clock_str);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -866,14 +895,13 @@ static int alecto_ws1200v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float rainfall    = rainfall_raw * 0.3f; // each tip is 0.3mm
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "Alecto-WS1200v2",
-            "id",               "ID",           DATA_INT,    id,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-            "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Alecto-WS1200v2");
+    data = data_int(data, "id",               "ID",           NULL,         id);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temperature);
+    data = data_dbl(data, "rain_mm",          "Rain",         "%.1f mm",    rainfall);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -939,14 +967,13 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float rainfall    = rainfall_raw * 0.3f; // each tip is 0.3mm
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "Fineoffset-WH0530",
-            "id",               "ID",           DATA_INT,    id,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-            "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Fineoffset-WH0530");
+    data = data_int(data, "id",               "ID",           NULL,         id);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temperature);
+    data = data_dbl(data, "rain_mm",          "Rain",         "%.1f mm",    rainfall);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

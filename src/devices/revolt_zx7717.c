@@ -137,19 +137,18 @@ static int revolt_zx7717_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // double powerf = va > 1.0 ? power / va : 1.0; // computed value
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",                 DATA_STRING, "Revolt-ZX7717",
-            "id",               "Device ID",        DATA_FORMAT, "%04x", DATA_INT, id,
-            "channel",          "Channel",          DATA_INT,    channel,
-            "unknown_1",        "Unknown 1",        DATA_FORMAT, "%04x", DATA_INT, unknown1,
-            "unknown_2",        "Unknown 2",        DATA_FORMAT, "%04x", DATA_INT, unknown2,
-            "current_A",        "Current",          DATA_FORMAT, "%.3f A", DATA_DOUBLE, current * 0.001,
-            "voltage_V",        "Voltage",          DATA_FORMAT, "%.1f V", DATA_DOUBLE, voltage * 0.1,
-            "power_W",          "Power",            DATA_FORMAT, "%.1f W", DATA_DOUBLE, power * 0.1,
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "Revolt-ZX7717");
+    data = data_int(data, "id",               "Device ID",        "%04x",       id);
+    data = data_int(data, "channel",          "Channel",          NULL,         channel);
+    data = data_int(data, "unknown_1",        "Unknown 1",        "%04x",       unknown1);
+    data = data_int(data, "unknown_2",        "Unknown 2",        "%04x",       unknown2);
+    data = data_dbl(data, "current_A",        "Current",          "%.3f A",     current * 0.001);
+    data = data_dbl(data, "voltage_V",        "Voltage",          "%.1f V",     voltage * 0.1);
+    data = data_dbl(data, "power_W",          "Power",            "%.1f W",     power * 0.1);
             // "apparentpower_VA", "Apparent Power",   DATA_FORMAT, "%.1f VA", DATA_DOUBLE, va * 0.1, // computed value
             // "powerfactor",      "Power Factor",     DATA_DOUBLE, powerf, // computed value
-            "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-            NULL);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

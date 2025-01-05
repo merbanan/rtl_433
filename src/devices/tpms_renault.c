@@ -62,15 +62,14 @@ static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     snprintf(code_str, sizeof(code_str), "%04x", unknown);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Renault",
-            "type",             "",             DATA_STRING, "TPMS",
-            "id",               "",             DATA_STRING, id_str,
-            "flags",            "",             DATA_STRING, flags_str,
-            "pressure_kPa",     "",             DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, (double)pressure_kpa,
-            "temperature_C",    "",             DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temp_c,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Renault");
+    data = data_str(data, "type",             "",             NULL,         "TPMS");
+    data = data_str(data, "id",               "",             NULL,         id_str);
+    data = data_str(data, "flags",            "",             NULL,         flags_str);
+    data = data_dbl(data, "pressure_kPa",     "",             "%.1f kPa",   (double)pressure_kpa);
+    data = data_dbl(data, "temperature_C",    "",             "%.0f C",     (double)temp_c);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

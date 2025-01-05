@@ -56,13 +56,12 @@ static int rftech_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int button  = (b[2] & 0x60) != 0;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "RF-tech",
-            "id",               "Id",           DATA_INT,    sensor_id,
-            "battery_ok",       "Battery",      DATA_INT,    battery,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "button",           "Button",       DATA_INT,    button,
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "RF-tech");
+    data = data_int(data, "id",               "Id",           NULL,         sensor_id);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         battery);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+    data = data_int(data, "button",           "Button",       NULL,         button);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

@@ -344,25 +344,24 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
     */
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",     "",                DATA_STRING, "Insteon",
+    data_t *data = NULL;
+    data = data_str(data, "model",     "",                NULL,         "Insteon");
          // "id",        "",                DATA_INT,    sensor_id,
          // "data",     "Data",             DATA_INT,    value,
-            "from_id",   "From_Addr",       DATA_STRING, pkt_from_addr,
-            "to_id",     "To_Addr",         DATA_STRING, pkt_to_addr,
-            "msg_type",  "Message_Type",    DATA_INT,    pkt_type,
-            "msg_str",   "Message_Str",     DATA_STRING, pkt_type_str,
+    data = data_str(data, "from_id",   "From_Addr",       NULL,         pkt_from_addr);
+    data = data_str(data, "to_id",     "To_Addr",         NULL,         pkt_to_addr);
+    data = data_int(data, "msg_type",  "Message_Type",    NULL,         pkt_type);
+    data = data_str(data, "msg_str",   "Message_Str",     NULL,         pkt_type_str);
          //   "command",   "Command",         DATA_STRING, cmd_str,
-            "extended",  "Extended",        DATA_INT,    extended,
+    data = data_int(data, "extended",  "Extended",        NULL,         extended);
          // "hops",      "Hops",            DATA_STRING, hops_str,
-            "hopsmax",   "Hops_Max",        DATA_INT,    hopsmax,
-            "hopsleft",  "Hops_Left",       DATA_INT,    hopsleft,
-            "formatted", "Packet",          DATA_STRING, pkt_formatted,
-            "mic",       "Integrity",       DATA_STRING, "CRC",
-            "payload",   "Payload",         DATA_STRING, payload,
-            "cmd_dat",   "CMD_Data",        DATA_ARRAY,  data_array(cmd_array_len, DATA_INT, cmd_array),
+    data = data_int(data, "hopsmax",   "Hops_Max",        NULL,         hopsmax);
+    data = data_int(data, "hopsleft",  "Hops_Left",       NULL,         hopsleft);
+    data = data_str(data, "formatted", "Packet",          NULL,         pkt_formatted);
+    data = data_str(data, "mic",       "Integrity",       NULL,         "CRC");
+    data = data_str(data, "payload",   "Payload",         NULL,         payload);
+    data = data_ary(data, "cmd_dat",   "CMD_Data",        NULL,         data_array(cmd_array_len, DATA_INT, cmd_array));
         //  "payload",   "Payload",         DATA_ARRAY,  data_array(min_pkt_len, DATA_INT, data_payload),
-            NULL);
 
     /* clang-format on */
     decoder_output_data(decoder, data);

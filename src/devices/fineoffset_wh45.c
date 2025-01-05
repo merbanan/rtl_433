@@ -110,18 +110,17 @@ static int fineoffset_wh45_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int co2           = (b[11] << 8) | b[12];
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Fineoffset-WH45",
-            "id",               "ID",           DATA_FORMAT, "%06x", DATA_INT, id,
-            "battery_ok",       "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm2_5,
-            "pm10_ug_m3",       "10um Coarse Particulate Matter",  DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm10,
-            "co2_ppm",          "Carbon Dioxide", DATA_FORMAT, "%d ppm", DATA_INT, co2,
-            "ext_power",        "External Power", DATA_INT, ext_power,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Fineoffset-WH45");
+    data = data_int(data, "id",               "ID",           "%06x",       id);
+    data = data_dbl(data, "battery_ok",       "Battery Level",  "%.1f",       battery_ok);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+    data = data_int(data, "humidity",         "Humidity",     "%u %%",      humidity);
+    data = data_dbl(data, "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  "%.1f ug/m3", pm2_5);
+    data = data_dbl(data, "pm10_ug_m3",       "10um Coarse Particulate Matter",  "%.1f ug/m3", pm10);
+    data = data_int(data, "co2_ppm",          "Carbon Dioxide", "%d ppm",     co2);
+    data = data_int(data, "ext_power",        "External Power", NULL,         ext_power);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

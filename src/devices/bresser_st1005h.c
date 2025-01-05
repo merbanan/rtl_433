@@ -130,16 +130,15 @@ static int bresser_st1005h_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",         "",            DATA_STRING, "Bresser-ST1005H",
-            "id",            "Id",          DATA_INT,    id,
-            "channel",       "Channel",     DATA_INT,    channel,
-            "battery_ok",    "Battery",     DATA_INT,    !battery_low,
-            "button",        "Button",      DATA_INT,    button,
-            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",         "",            NULL,         "Bresser-ST1005H");
+    data = data_int(data, "id",            "Id",          NULL,         id);
+    data = data_int(data, "channel",       "Channel",     NULL,         channel);
+    data = data_int(data, "battery_ok",    "Battery",     NULL,         !battery_low);
+    data = data_int(data, "button",        "Button",      NULL,         button);
+    data = data_dbl(data, "temperature_C", "Temperature", "%.1f C",     temp_c);
+    data = data_int(data, "humidity",      "Humidity",    "%u %%",      humidity);
+    data = data_str(data, "mic",           "Integrity",   NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

@@ -89,12 +89,11 @@ static int quinetic_switch_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int id = (b[0] << 8) | (b[1]);
 
     /* clang-format off */
-    data_t *data = data_make(
-        "model",         "Model",           DATA_STRING, "Quinetic",
-        "id",            "ID",              DATA_FORMAT, "%04x", DATA_INT, id,
-        "channel",       "Channel",         DATA_INT,    switch_channel,
-        "mic",           "Integrity",       DATA_STRING, "CRC",
-        NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",         "Model",           NULL,         "Quinetic");
+    data = data_int(data, "id",            "ID",              "%04x",       id);
+    data = data_int(data, "channel",       "Channel",         NULL,         switch_channel);
+    data = data_str(data, "mic",           "Integrity",       NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

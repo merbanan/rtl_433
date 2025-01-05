@@ -88,17 +88,16 @@ static int tpms_kia_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned r
     float temperature_float = temperature - 50.0f;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Kia",
-            "type",             "",             DATA_STRING, "TPMS",
-            "id",               "",             DATA_STRING, id_str,
-            "unknown1",         "",             DATA_STRING, unknown1_str,
-            "unknown2",         "",             DATA_STRING, unknown2_str,
-            "pressure_PSI",     "pressure",     DATA_FORMAT, "%.1f PSI", DATA_DOUBLE, pressure_float,
-            "temperature_C",    "temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, temperature_float,
-            "raw",              "",             DATA_STRING, raw,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Kia");
+    data = data_str(data, "type",             "",             NULL,         "TPMS");
+    data = data_str(data, "id",               "",             NULL,         id_str);
+    data = data_str(data, "unknown1",         "",             NULL,         unknown1_str);
+    data = data_str(data, "unknown2",         "",             NULL,         unknown2_str);
+    data = data_dbl(data, "pressure_PSI",     "pressure",     "%.1f PSI",   pressure_float);
+    data = data_dbl(data, "temperature_C",    "temperature",  "%.0f C",     temperature_float);
+    data = data_str(data, "raw",              "",             NULL,         raw);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

@@ -69,12 +69,11 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     sprintf(sernoout, "%08u%c", serno, b[3] - 32);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",       "",               DATA_STRING,    "AradMsMeter-Dialog3G",
-            "id",          "Serial No",      DATA_STRING,    sernoout,
-            "volume_m3",    "Volume",        DATA_FORMAT,    "%.1f m3",  DATA_DOUBLE, wread,
+    data_t *data = NULL;
+    data = data_str(data, "model",       "",               NULL,         "AradMsMeter-Dialog3G");
+    data = data_str(data, "id",          "Serial No",      NULL,         sernoout);
+    data = data_dbl(data, "volume_m3",    "Volume",        "%.1f m3",    wread);
             //"mic",         "Integrity",      DATA_STRING,    "CHECKSUM",
-            NULL);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

@@ -122,15 +122,14 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
 
     /* clang-format off */
-    data = data_make(
-         "model",            "",                 DATA_STRING, model_num == 3 ? "LaCrosse-TH3" : "LaCrosse-TH2",
-         "id",               "Sensor ID",        DATA_FORMAT, "%06x", DATA_INT, id,
-         "seq",              "Sequence",         DATA_INT,     seq,
-         "flags",            "unknown",          DATA_INT,     flags,
-         "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temp_c,
-         "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
-         "mic",              "Integrity",        DATA_STRING, "CRC",
-         NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         model_num == 3 ? "LaCrosse-TH3" : "LaCrosse-TH2");
+    data = data_int(data, "id",               "Sensor ID",        "%06x",       id);
+    data = data_int(data, "seq",              "Sequence",         NULL,         seq);
+    data = data_int(data, "flags",            "unknown",          NULL,         flags);
+    data = data_dbl(data, "temperature_C",    "Temperature",      "%.1f C",     temp_c);
+    data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

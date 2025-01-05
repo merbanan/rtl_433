@@ -172,11 +172,10 @@ static int ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row
         snprintf(clock_str, sizeof(clock_str), "%04d-%02d-%02dT%02d:%02d:%02d %s", year + 2000, month, day, hour, minute, second, cest ? "CEST" : "CET");
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",             DATA_STRING, "Emos-TTX201",
-                "radio_clock",      "Radio Clock",  DATA_STRING, clock_str,
-                "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",             NULL,         "Emos-TTX201");
+        data = data_str(data, "radio_clock",      "Radio Clock",  NULL,         clock_str);
+        data = data_str(data, "mic",              "Integrity",    NULL,         "CHECKSUM");
         /* clang-format on */
     } else { // temperature
         int device_id       = b[1];
@@ -186,14 +185,13 @@ static int ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row
         float temperature_c = (temperature >> 4) * 0.1f;
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",             DATA_STRING, "Emos-TTX201",
-                "id",               "House Code",   DATA_INT,    device_id,
-                "channel",          "Channel",      DATA_INT,    channel,
-                "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-                "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_c,
-                "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",             NULL,         "Emos-TTX201");
+        data = data_int(data, "id",               "House Code",   NULL,         device_id);
+        data = data_int(data, "channel",          "Channel",      NULL,         channel);
+        data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+        data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temperature_c);
+        data = data_str(data, "mic",              "Integrity",    NULL,         "CHECKSUM");
         /* clang-format on */
     }
 

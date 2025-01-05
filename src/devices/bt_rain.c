@@ -68,16 +68,15 @@ static int bt_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     rainrate = rain * 0.052f; // 19.23mm per tip
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",                 DATA_STRING, "Biltema-Rain",
-            "id",               "ID",               DATA_INT,    id,
-            "channel",          "Channel",          DATA_INT,    channel,
-            "battery_ok",       "Battery",          DATA_INT,    !battery,
-            "transmit",         "Transmit",         DATA_STRING, button ? "MANUAL" : "AUTO", // TODO: delete this
-            "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "rain_rate_mm_h",   "Rain per hour",    DATA_FORMAT, "%.2f mm/h", DATA_DOUBLE, rainrate,
-            "button",           "Button",       DATA_INT, button,
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "Biltema-Rain");
+    data = data_int(data, "id",               "ID",               NULL,         id);
+    data = data_int(data, "channel",          "Channel",          NULL,         channel);
+    data = data_int(data, "battery_ok",       "Battery",          NULL,         !battery);
+    data = data_str(data, "transmit",         "Transmit",         NULL,         button ? "MANUAL" : "AUTO"); // TODO: delete this
+    data = data_dbl(data, "temperature_C",    "Temperature",      "%.1f C",     temp_c);
+    data = data_dbl(data, "rain_rate_mm_h",   "Rain per hour",    "%.2f mm/h",  rainrate);
+    data = data_int(data, "button",           "Button",       NULL,         button);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

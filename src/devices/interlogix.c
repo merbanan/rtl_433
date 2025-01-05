@@ -196,18 +196,17 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data = data_make(
-            "model",       "Model",         DATA_STRING, "Interlogix-Security",
-            "subtype",     "Device Type",   DATA_STRING, device_type,
-            "id",          "ID",            DATA_STRING, device_serial,
-            "battery_ok",  "Battery",       DATA_INT,    !low_battery,
-            "switch1",     "Switch1 State", DATA_STRING, f1_latch_state,
-            "switch2",     "Switch2 State", DATA_STRING, f2_latch_state,
-            "switch3",     "Switch3 State", DATA_STRING, f3_latch_state,
-            "switch4",     "Switch4 State", DATA_STRING, f4_latch_state,
-            "switch5",     "Switch5 State", DATA_STRING, f5_latch_state,
-            "raw_message", "Raw Message",   DATA_STRING, raw_message,
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",       "Model",         NULL,         "Interlogix-Security");
+    data = data_str(data, "subtype",     "Device Type",   NULL,         device_type);
+    data = data_str(data, "id",          "ID",            NULL,         device_serial);
+    data = data_int(data, "battery_ok",  "Battery",       NULL,         !low_battery);
+    data = data_str(data, "switch1",     "Switch1 State", NULL,         f1_latch_state);
+    data = data_str(data, "switch2",     "Switch2 State", NULL,         f2_latch_state);
+    data = data_str(data, "switch3",     "Switch3 State", NULL,         f3_latch_state);
+    data = data_str(data, "switch4",     "Switch4 State", NULL,         f4_latch_state);
+    data = data_str(data, "switch5",     "Switch5 State", NULL,         f5_latch_state);
+    data = data_str(data, "raw_message", "Raw Message",   NULL,         raw_message);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

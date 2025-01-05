@@ -112,16 +112,15 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_logf(decoder, 1, __func__, "dword0-3= 0x%08X word5-6= 0x%04X byte18= 0x%02X", subtype, word56, word18);
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "Inkbird-ITH20R",
-            "id",               "",             DATA_INT,    sensor_id,
-            "battery_ok",       "Battery",      DATA_DOUBLE, battery_ok,
-            "sensor_num",       "",             DATA_INT,    sensor_num,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-            "temperature_2_C",  "Temperature2", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_ext,
-            "humidity",         "Humidity",     DATA_FORMAT, "%.1f %%", DATA_DOUBLE, humidity,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Inkbird-ITH20R");
+    data = data_int(data, "id",               "",             NULL,         sensor_id);
+    data = data_dbl(data, "battery_ok",       "Battery",      NULL,         battery_ok);
+    data = data_int(data, "sensor_num",       "",             NULL,         sensor_num);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temperature);
+    data = data_dbl(data, "temperature_2_C",  "Temperature2", "%.1f C",     temperature_ext);
+    data = data_dbl(data, "humidity",         "Humidity",     "%.1f %%",    humidity);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

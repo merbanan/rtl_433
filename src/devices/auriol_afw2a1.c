@@ -90,15 +90,14 @@ static int auriol_afw2a1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",                  DATA_STRING, "Auriol-AFW2A1",
-            "id",               "",                  DATA_INT,    id,
-            "channel",          "Channel",           DATA_INT,    channel + 1,
-            "battery_ok",       "Battery",           DATA_INT,    battery_ok,
-            "button",           "Button",            DATA_INT,    tx_button,
-            "temperature_C",    "Temperature",       DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",          DATA_FORMAT, "%.0f %%", DATA_DOUBLE, (float)humidity,
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",                  NULL,         "Auriol-AFW2A1");
+    data = data_int(data, "id",               "",                  NULL,         id);
+    data = data_int(data, "channel",          "Channel",           NULL,         channel + 1);
+    data = data_int(data, "battery_ok",       "Battery",           NULL,         battery_ok);
+    data = data_int(data, "button",           "Button",            NULL,         tx_button);
+    data = data_dbl(data, "temperature_C",    "Temperature",       "%.1f C",     temp_c);
+    data = data_dbl(data, "humidity",         "Humidity",          "%.0f %%",    (float)humidity);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

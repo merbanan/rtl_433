@@ -36,10 +36,9 @@ static int silvercrest_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             return DECODE_ABORT_EARLY;
 
         /* clang-format off */
-        data = data_make(
-                "model",    "", DATA_STRING, "Silvercrest-Remote",
-                "button",   "", DATA_INT,    cmd,
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",    "", NULL,         "Silvercrest-Remote");
+        data = data_int(data, "button",   "", NULL,         cmd);
         /* clang-format on */
 
         decoder_output_data(decoder, data);

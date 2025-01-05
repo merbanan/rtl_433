@@ -75,14 +75,13 @@ static int sharp_spc775_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",                 DATA_STRING, "Sharp-SPC775",
-            "id",               "",                 DATA_INT,    id,
-            "battery_ok",       "Battery",          DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",         DATA_FORMAT, "%u %%",    DATA_INT,    humidity,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "Sharp-SPC775");
+    data = data_int(data, "id",               "",                 NULL,         id);
+    data = data_int(data, "battery_ok",       "Battery",          NULL,         !battery_low);
+    data = data_dbl(data, "temperature_C",    "Temperature",      "%.1f C",     temp_c);
+    data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);
