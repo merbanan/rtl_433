@@ -29,7 +29,7 @@ Data layout:
 - 1: Always 1
 
 Example:
-    (without CRC check using flex decode)
+    (without checksum check using flex decode)
      $ rtl_433  -X 'n=fan,m=OOK_PWM,s=252,l=756,r=8288,g=0,t=0,y=3620,bits=33,get=address:@0:{20};%x,get=address:@20:{5}:[0x19:All_off 0x17:Light 0x1b:Forward 0xa:Fan 0xe:Reverse 9:Fan_off 0xf:Speed1 0xd:Speed2 3:Speed3 0x15:Speed4 0x10:Speed5 0x13:speed6 0x1d:1H 0x16:2H 6:3H ],get=msgcount:@25:{3}:%d,get=crc:@28:{4}:%02x,unique' -F kv
 */
 
@@ -45,15 +45,12 @@ static int universalfan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (row < 0)
         return DECODE_ABORT_LENGTH;
 
-    uint8_t *b = bitbuffer->bb[row];
-    int crc    = 0xA;
-    for (int j = 0; j < 28; j += 4) {
-        crc ^= (b[j / 8] >> (4 * (1 - (j % 8) / 4))) & 0x0F;
-    }
-    int crc_msg = (b[3] & 0x0F);
+    uint8_t *b  = bitbuffer->bb[row];
+    int chk_msg = (b[3] & 0x0F);
+    int chk     = xor_nibbles(b, 3, 0xa) ^ (b[3] >> 4);
 
-    if (crc_msg != crc) {
-        decoder_logf(decoder, 1, __func__, "Checksum error. CRC calculated: %d CRC message: %d", crc, crc_msg);
+    if (chk_msg != chk) {
+        decoder_logf(decoder, 1, __func__, "Checksum error. Checksum calculated: %d Checksum message: %d", chk, chk_msg);
         return DECODE_FAIL_MIC;
     }
 
@@ -121,7 +118,7 @@ static int universalfan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "button",       "Button",           DATA_STRING, button_string , 
             "button_code",  "Button Code",      DATA_INT,    button,
             "counter",      "Rolling Counter",  DATA_INT,    counter,
-            "crc",          "CRC" ,             DATA_INT,    crc_msg,
+            "chksum",          "Checksum" ,        DATA_INT,    chk_msg,
             NULL);
     /* clang-format on */
 
@@ -135,7 +132,7 @@ static char const *const output_fields[] = {
         "button",
         "button_code",
         "counter",
-        "crc",
+        "chksum",
         NULL,
 };
 

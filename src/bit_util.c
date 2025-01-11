@@ -496,6 +496,16 @@ int add_nibbles(uint8_t const message[], unsigned num_bytes)
     return result;
 }
 
+int xor_nibbles(uint8_t const message[], unsigned num_bytes, uint8_t init)
+{
+    int result = init;
+    for (unsigned i = 0; i < num_bytes; ++i) {
+        result ^= (message[i] >> 4); 
+        result ^= (message[i] & 0x0f);
+    }
+    return result;
+}
+
 // Unit testing
 #ifdef _TEST
 #define ASSERT_EQUALS(a, b) \

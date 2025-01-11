@@ -225,4 +225,12 @@ int add_bytes(uint8_t const message[], unsigned num_bytes);
 /// @return summation value
 int add_nibbles(uint8_t const message[], unsigned num_bytes);
 
+/// Compute XOR Addition of a number of nibbles (byte wise).
+///
+/// @param message bytes (of two nibbles) of message data
+/// @param num_bytes number of bytes to sum
+/// @param init starting value
+/// @return summation value
+int xor_nibbles(uint8_t const message[], unsigned num_bytes, uint8_t init);
+
 #endif /* INCLUDE_BIT_UTIL_H_ */
