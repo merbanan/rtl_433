@@ -39,19 +39,6 @@ Example:
 
 static int universalfan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    for (uint16_t i = 0; i < bitbuffer->num_rows; i++) {
-        uint16_t l = bitbuffer->bits_per_row[i];
-        decoder_logf(decoder, 1, __func__, "bits_per_row in row [%d] (total rows: %d %d) = %d", i, bitbuffer->num_rows, bitbuffer->num_rows, l);
-        if (l >= 33) {
-            uint8_t *b    = bitbuffer->bb[i];
-            uint8_t cksum = 0xA;
-            for (int j = 0; j < 28; j += 4) {
-                cksum ^= (b[j / 8] >> (4 * (1 - (j % 8) / 4))) & 0x0F;
-            }
-            int crc_msg = (b[3] & 0x0F);
-            decoder_logf(decoder, 1, __func__, "CRC calculated: %d CRC message: %d", cksum, crc_msg);
-        }
-    }
 
     int row = bitbuffer_find_repeated_row(bitbuffer, UNIVERSALFAN__MINREPEATS, UNIVERSALFAN__BITLEN);
     if (row < 0)
