@@ -360,6 +360,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [272]  Landis & Gyr Gridstream Power Meters 19.2k
     [273]  Landis & Gyr Gridstream Power Meters 38.4k
     [274]  Revolt ZX-7717 power meter
+    [275]  Universal (Reverseable) 24V Fan Controller
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -450,14 +451,15 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	Without this option the default is LOG and KV output. Use "-F null" to remove the default.
 	Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
+	Default user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"
 	MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
-	Default user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.
-	A base topic can be set with base=<topic>, default is "rtl_433/HOSTNAME".
 	Supported MQTT formats: (default is all)
-	  events: posts JSON event data
-	  states: posts JSON state data
-	  devices: posts device and sensor info in nested topics
+	  events: posts JSON event data, default "<base>/events"
+	  states: posts JSON state data, default "<base>/states"
+	  devices: posts device and sensor info in nested topics,
+	           default "<base>/devices[/type][/model][/subtype][/channel][/id]"
+	A base topic can be set with base=<topic>, default is "rtl_433/HOSTNAME".
 	Any topic string overrides the base topic and will expand keys like [/model]
 	E.g. -F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
 	With MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client-ID is computed from the driver string.
