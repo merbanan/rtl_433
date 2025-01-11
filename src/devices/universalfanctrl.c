@@ -20,16 +20,17 @@ A transmission starts with a pulse of 3616 us,
 there a 7 repeated packets, each with a 8200 us gap.
 
 Data layout:
-    AAAAAAAAAAAAAAAAAAAABBBBBCCCC1
+    AAAAAAAAAAAAAAAAAAAABBBBBRRRRCCCC1
 
 - A: 20 bit Address / id
 - B: 5-bit buttoncode
+- R: 3 bit rolling counter
 - C: 4 bit Checksum, init 0x0A
 - 1: Always 1
 
 Example:
     (without CRC check using flex decode)
-     $ rtl_433  -X 'n=fan,m=OOK_PWM,s=252,l=756,r=8288,g=0,t=0,y=3620,bits=33,get=address:@0:{20};%x,get=key:@20:{5}:[0x19:All_off 0x17:Light 0x1b:Forward 0xa:Fan 0xe:Reverse 9:Fan_off 0xf:Speed1 0xd:Speed2 3:Speed3 0x15:Speed4 0x10:Speed5 0x13:speed6 0x1d:1H 0x16:2H 6:3H ],get=seq:@25:{3}:%d,get=crc:@28:{4}:%02x,unique' -F kv
+     $ rtl_433  -X 'n=fan,m=OOK_PWM,s=252,l=756,r=8288,g=0,t=0,y=3620,bits=33,get=address:@0:{20};%x,get=address:@20:{5}:[0x19:All_off 0x17:Light 0x1b:Forward 0xa:Fan 0xe:Reverse 9:Fan_off 0xf:Speed1 0xd:Speed2 3:Speed3 0x15:Speed4 0x10:Speed5 0x13:speed6 0x1d:1H 0x16:2H 6:3H ],get=msgcount:@25:{3}:%d,get=crc:@28:{4}:%02x,unique' -F kv
 */
 
 #include "decoder.h"
@@ -49,12 +50,10 @@ static int universalfan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     for (int j = 0; j < 28; j += 4) {
         crc ^= (b[j / 8] >> (4 * (1 - (j % 8) / 4))) & 0x0F;
     }
-
     int crc_msg = (b[3] & 0x0F);
-    decoder_logf(decoder, 1, __func__, "CRC calculated: %d CRC message: %d", crc, crc_msg);
 
     if (crc_msg != crc) {
-        decoder_logf(decoder, 1, __func__, "CRC calculated: %d CRC message: %d", crc, crc_msg);
+        decoder_logf(decoder, 1, __func__, "Checksum error. CRC calculated: %d CRC message: %d", crc, crc_msg);
         return DECODE_FAIL_MIC;
     }
 
