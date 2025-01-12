@@ -229,8 +229,7 @@ int add_nibbles(uint8_t const message[], unsigned num_bytes);
 ///
 /// @param message bytes (of two nibbles) of message data
 /// @param num_bytes number of bytes to sum
-/// @param init starting value
 /// @return summation value
-int xor_nibbles(uint8_t const message[], unsigned num_bytes, uint8_t init);
+int xor_nibbles(uint8_t const message[], unsigned num_bytes);
 
 #endif /* INCLUDE_BIT_UTIL_H_ */

@@ -47,10 +47,9 @@ static int universalfan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint8_t *b  = bitbuffer->bb[row];
     int chk_msg = (b[3] & 0x0F);
-    int chk     = xor_nibbles(b, 3, 0xa) ^ (b[3] >> 4);
-
-    if (chk_msg != chk) {
-        decoder_logf(decoder, 1, __func__, "Checksum error. Checksum calculated: %d Checksum message: %d", chk, chk_msg);
+    int chk     = xor_nibbles(b, 4);
+    if (chk != 0x0A) {
+        decoder_logf(decoder, 1, __func__, "Checksum error. Checksumexpected: %d", chk_msg);
         return DECODE_FAIL_MIC;
     }
 
