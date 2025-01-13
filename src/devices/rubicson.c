@@ -11,6 +11,7 @@
 Rubicson temperature sensor.
 
 Also older TFA 30.3197 sensors.
+Also ZX-7382-675 sensor for inFactory FWS-325.pro, first seen 2025-01 (Pearl)
 
 Also InFactory PT-310 pool temperature sensor (AKA ZX-7074/7073). This device
 has longer packet lengths of 37 or 38 bits but is otherwise compatible. See more at

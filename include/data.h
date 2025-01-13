@@ -114,7 +114,7 @@ R_API data_t *data_make(const char *key, const char *pretty_key, ...);
 
     @see data_make()
 */
-R_API data_t *data_prepend(data_t *first, const char *key, const char *pretty_key, ...);
+R_API data_t *data_prepend(data_t *tail, data_t *head);
 
 /** Adds to a structured data object, by appending `int` data.
 
