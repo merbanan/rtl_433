@@ -1,7 +1,7 @@
 /** @file
     bm5-v2 12V Automotive Wireless Battery Monitor.
 
-    Copyright (C) 2024 Cameron Murphy
+    Copyright (C) 2025 Cameron Murphy
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -125,7 +125,7 @@ static int bm5_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char const *const output_fields[] = {
         "model",
-        "device_id",
+        "id",
         "health_pct",
         "cranking_error",
         "charge_pct",
