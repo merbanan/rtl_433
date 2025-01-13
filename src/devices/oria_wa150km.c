@@ -9,18 +9,22 @@
     (at your option) any later version.
 */
 /*
+Oria WA150KM temperature sensor decoder.
+
 The device uses Manchester coding with G.E. Thomas convention.
 The data is bit-reflected.
 
 Data layout after decoding:
-     0  1  2  3  4  5  6  7  8  9  10 11 12 13
-[00] FF FF FF ?? ?? CC DD TT II SS ?? ?? ?? BB
+
+    0  1  2  3  4  5  6  7  8  9  10 11 12 13
+    FF FF FF ?? ?? CC DD TT II SS ?? ?? ?? BB
+
 - FF = Preamble: 3 bytes of 0xff
 - CC = Channel (upper nibble + 1)
 - DD = Device ID
 - TT = Temperature decimal (upper nibble)
 - II = Temperature integer (BCD)
-- SS = Sign bit (bit 4, 1 = negative))
+- SS = Sign bit (bit 4, 1 = negative)
 - BB = Fixed value 0x65
  */
 
