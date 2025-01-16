@@ -95,6 +95,9 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
             break; // shutting down
         }
         ctx->conn = NULL;
+        if (!ctx->timer) {
+            break; // shutting down
+        }
         if (ctx->prev_status == 0) {
             print_log(LOG_WARNING, "MQTT", "MQTT Connection lost, reconnecting...");
         }
@@ -105,6 +108,19 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
             ctx->reconnect_delay = (ctx->reconnect_delay + 1) * 3 / 2;
         }
         break;
+    }
+}
+
+static void mqtt_client_timer(struct mg_connection *nc, int ev, void *ev_data)
+{
+    // note that while shutting down the ctx is NULL
+    mqtt_client_t *ctx = (mqtt_client_t *)nc->user_data;
+    (void)ev_data;
+
+    //if (ev != MG_EV_POLL)
+    //    fprintf(stderr, "MQTT timer handler got event %d\n", ev);
+
+    switch (ev) {
     case MG_EV_TIMER: {
         // Try to reconnect
         char const *error_string = NULL;
@@ -174,7 +190,7 @@ static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, tls_opts_t *tls_opts,
 
     // add dummy socket to receive timer events
     struct mg_add_sock_opts opts = {.user_data = ctx};
-    ctx->timer = mg_add_sock_opt(mgr, INVALID_SOCKET, mqtt_client_event, opts);
+    ctx->timer = mg_add_sock_opt(mgr, INVALID_SOCKET, mqtt_client_timer, opts);
 
     char const *error_string = NULL;
     ctx->connect_opts.error_string = &error_string;
