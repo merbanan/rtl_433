@@ -92,6 +92,9 @@ static void influx_client_event(struct mg_connection *nc, int ev, void *ev_data)
             break; // shutting down
         }
         ctx->conn = NULL;
+        if (!ctx->timer) {
+            break; // shutting down
+        }
         // Timer for next connect attempt, sends us MG_EV_TIMER event
         mg_set_timer(ctx->timer, mg_time() + ctx->reconnect_delay);
         if (ctx->reconnect_delay < 60) {
@@ -99,6 +102,16 @@ static void influx_client_event(struct mg_connection *nc, int ev, void *ev_data)
             ctx->reconnect_delay = (ctx->reconnect_delay + 1) * 3 / 2;
         }
         break;
+    }
+}
+
+static void influx_client_timer(struct mg_connection *nc, int ev, void *ev_data)
+{
+    // note that while shutting down the ctx is NULL
+    influx_client_t *ctx = (influx_client_t *)nc->user_data;
+    (void)ev_data;
+
+    switch (ev) {
     case MG_EV_TIMER: {
         // Try to reconnect, ends if no data to send
         influx_client_send(ctx);
@@ -536,7 +549,7 @@ struct data_output *data_output_influx_create(struct mg_mgr *mgr, char *opts)
 
     // add dummy socket to receive timer events
     struct mg_add_sock_opts timer_opts = {.user_data = influx};
-    influx->timer = mg_add_sock_opt(mgr, INVALID_SOCKET, influx_client_event, timer_opts);
+    influx->timer = mg_add_sock_opt(mgr, INVALID_SOCKET, influx_client_timer, timer_opts);
 
     influx_client_init(influx, url, token);
 
