@@ -250,7 +250,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [162]* ThermoPro-TX2 temperature sensor
     [163]  Acurite 590TX Temperature with optional Humidity
     [164]  Security+ 2.0 (Keyfob)
-    [165]  TFA Dostmann 30.3221.02 T/H Outdoor Sensor
+    [165]  TFA Dostmann 30.3221.02 T/H Outdoor Sensor (also 30.3249.02)
     [166]  LaCrosse Technology View LTV-WSDTH01 Breeze Pro Wind Sensor
     [167]  Somfy RTS
     [168]  Schrader TPMS SMD3MA4 (Subaru) 3039 (Infiniti, Nissan, Renault)
