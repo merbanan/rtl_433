@@ -62,6 +62,11 @@ static int rubicson_pool_48942_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (b[3] & 0xF || b[5])
         return DECODE_ABORT_EARLY;
 
+    // reduce false positives
+    if (b[0] == 0 && b[2] == 0 && b[4] == 0) {
+        return DECODE_ABORT_EARLY;
+    }
+
     if (crc8(b, 4, 0x31, 0x00) != b[4])
         return DECODE_FAIL_MIC;
 

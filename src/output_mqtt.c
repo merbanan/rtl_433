@@ -29,6 +29,8 @@ typedef struct mqtt_client {
     struct mg_connect_opts connect_opts;
     struct mg_send_mqtt_handshake_opts mqtt_opts;
     struct mg_connection *conn;
+    struct mg_connection *timer;
+    int reconnect_delay;
     int prev_status;
     char address[253 + 6 + 1]; // dns max + port
     char client_id[256];
@@ -53,16 +55,20 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
             // Success
             print_log(LOG_NOTICE, "MQTT", "MQTT Connected...");
             mg_set_protocol_mqtt(nc);
-            if (ctx)
+            if (ctx) {
+                ctx->reconnect_delay = 0;
                 mg_send_mqtt_handshake_opt(nc, ctx->client_id, ctx->mqtt_opts);
+            }
         }
         else {
             // Error, print only once
-            if (ctx && ctx->prev_status != connect_status)
+            if (ctx && ctx->prev_status != connect_status) {
                 print_logf(LOG_WARNING, "MQTT", "MQTT connect error: %s", strerror(connect_status));
+            }
         }
-        if (ctx)
+        if (ctx) {
             ctx->prev_status = connect_status;
+        }
         break;
     }
     case MG_EV_MQTT_CONNACK:
@@ -85,11 +91,38 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
         break;
     }
     case MG_EV_CLOSE:
-        if (!ctx)
+        if (!ctx) {
             break; // shutting down
-        if (ctx->prev_status == 0)
+        }
+        ctx->conn = NULL;
+        if (!ctx->timer) {
+            break; // shutting down
+        }
+        if (ctx->prev_status == 0) {
             print_log(LOG_WARNING, "MQTT", "MQTT Connection lost, reconnecting...");
-        // reconnect
+        }
+        // Timer for reconnect attempt, sends us MG_EV_TIMER event
+        mg_set_timer(ctx->timer, mg_time() + ctx->reconnect_delay);
+        if (ctx->reconnect_delay < 60) {
+            // 0, 1, 3, 6, 10, 16, 25, 39, 60
+            ctx->reconnect_delay = (ctx->reconnect_delay + 1) * 3 / 2;
+        }
+        break;
+    }
+}
+
+static void mqtt_client_timer(struct mg_connection *nc, int ev, void *ev_data)
+{
+    // note that while shutting down the ctx is NULL
+    mqtt_client_t *ctx = (mqtt_client_t *)nc->user_data;
+    (void)ev_data;
+
+    //if (ev != MG_EV_POLL)
+    //    fprintf(stderr, "MQTT timer handler got event %d\n", ev);
+
+    switch (ev) {
+    case MG_EV_TIMER: {
+        // Try to reconnect
         char const *error_string = NULL;
         ctx->connect_opts.error_string = &error_string;
         ctx->conn = mg_connect_opt(nc->mgr, ctx->address, mqtt_client_event, ctx->connect_opts);
@@ -99,6 +132,7 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
                     error_string ? ": " : "", error_string ? error_string : "");
         }
         break;
+    }
     }
 }
 
@@ -153,6 +187,11 @@ static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, tls_opts_t *tls_opts,
         exit(1);
 #endif
     }
+
+    // add dummy socket to receive timer events
+    struct mg_add_sock_opts opts = {.user_data = ctx};
+    ctx->timer = mg_add_sock_opt(mgr, INVALID_SOCKET, mqtt_client_timer, opts);
+
     char const *error_string = NULL;
     ctx->connect_opts.error_string = &error_string;
     ctx->conn = mg_connect_opt(mgr, ctx->address, mqtt_client_event, ctx->connect_opts);

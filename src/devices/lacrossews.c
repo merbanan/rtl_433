@@ -183,7 +183,8 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                     "id",               "",             DATA_INT,    sensor_id,
                     "wind_avg_m_s",     "Wind speed",   DATA_COND,   msg_type == 3, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_spd,
                     "wind_max_m_s",     "Gust speed",   DATA_COND,   msg_type != 3, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_spd,
-                    "wind_dir_deg",     "Direction",    DATA_DOUBLE, wind_dir, NULL);
+                    "wind_dir_deg",     "Direction",    DATA_DOUBLE, wind_dir,
+                    NULL);
             /* clang-format on */
 
             decoder_output_data(decoder, data);

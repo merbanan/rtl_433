@@ -852,6 +852,8 @@ static int m_bus_decode_format_b(r_device *decoder, const m_bus_data_t *in, m_bu
 
         out->length -= 2;   // Subtract the two extra CRC bytes
     }
+    // Include the final CRC, for wmbusmeters to verify decryption
+    out->length += 2;
     return 1;
 }
 
@@ -969,7 +971,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             // Decode
             if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))
                 return DECODE_FAIL_SANITY;
-        } // Format A
+        }
         // Format B
         else if (next_byte == 0x3D) {
             decoder_log(decoder, 1, __func__, "M-Bus: Mode C, Format B");
@@ -979,7 +981,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             // Decode
             if (!m_bus_decode_format_b(decoder, &data_in, &data_out, &block1))
                 return DECODE_FAIL_SANITY;
-        } // Format B
+        }
         // Unknown Format
         else {
             decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "M-Bus: Mode C, Unknown format: 0x%X", next_byte);
@@ -1083,13 +1085,13 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_log(decoder, 1, __func__, "M-Bus: Mode F, Format A");
         decoder_log(decoder, 1, __func__, "Not implemented");
         return 1;
-    } // Format A
+    }
     // Format B
     else if (next_byte == 0x72) {
         decoder_log(decoder, 1, __func__, "M-Bus: Mode F, Format B");
         decoder_log(decoder, 1, __func__, "Not implemented");
         return 1;
-    }   // Format B
+    }
     // Unknown Format
     else {
         decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "M-Bus: Mode F, Unknown format: 0x%X", next_byte);
