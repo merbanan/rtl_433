@@ -1385,13 +1385,22 @@ static void sighandler(int signum)
 }
 #endif
 
+static void timer_handler(struct mg_connection *nc, int ev, void *ev_data);
+
+// called by mg_mgr_poll() for each connection.
 // NOTE: this handler might be called while already in `r_free_cfg()`.
 static void sdr_handler(struct mg_connection *nc, int ev_type, void *ev_data)
 {
     //fprintf(stderr, "%s: %d, %d, %p, %p\n", __func__, nc->sock, ev_type, nc->user_data, ev_data);
-    // only process for the dummy nc
-    if (nc->sock != INVALID_SOCKET || ev_type != MG_EV_POLL)
+    // only process polls on the dummy nc
+    if (nc->sock != INVALID_SOCKET || ev_type != MG_EV_POLL) {
         return;
+    }
+    // only process a broadcast on our defined timer nc
+    if (nc->handler != timer_handler) {
+        return;
+    }
+
     r_cfg_t *cfg     = nc->user_data;
     sdr_event_t *ev = ev_data;
     //fprintf(stderr, "sdr_handler...\n");
@@ -1446,6 +1455,7 @@ static void acquire_callback(sdr_event_t *ev, void *ctx)
     // TODO: We should run the demod here to unblock the event loop
 
     // thread-safe dispatch, ev_data is the iq buffer pointer and length
+    // mg_mgr_poll() calls specified callback for each connection.
     //fprintf(stderr, "acquire_callback bc send...\n");
     mg_broadcast(mgr, sdr_handler, (void *)ev, sizeof(*ev));
     //fprintf(stderr, "acquire_callback bc done...\n");

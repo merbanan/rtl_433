@@ -250,7 +250,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [162]* ThermoPro-TX2 temperature sensor
     [163]  Acurite 590TX Temperature with optional Humidity
     [164]  Security+ 2.0 (Keyfob)
-    [165]  TFA Dostmann 30.3221.02 T/H Outdoor Sensor
+    [165]  TFA Dostmann 30.3221.02 T/H Outdoor Sensor (also 30.3249.02)
     [166]  LaCrosse Technology View LTV-WSDTH01 Breeze Pro Wind Sensor
     [167]  Somfy RTS
     [168]  Schrader TPMS SMD3MA4 (Subaru) 3039 (Infiniti, Nissan, Renault)
@@ -450,14 +450,15 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	Without this option the default is LOG and KV output. Use "-F null" to remove the default.
 	Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
+	Default user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"
 	MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
-	Default user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.
-	A base topic can be set with base=<topic>, default is "rtl_433/HOSTNAME".
 	Supported MQTT formats: (default is all)
-	  events: posts JSON event data
-	  states: posts JSON state data
-	  devices: posts device and sensor info in nested topics
+	  events: posts JSON event data, default "<base>/events"
+	  states: posts JSON state data, default "<base>/states"
+	  devices: posts device and sensor info in nested topics,
+	           default "<base>/devices[/type][/model][/subtype][/channel][/id]"
+	A base topic can be set with base=<topic>, default is "rtl_433/HOSTNAME".
 	Any topic string overrides the base topic and will expand keys like [/model]
 	E.g. -F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
 	With MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client-ID is computed from the driver string.
