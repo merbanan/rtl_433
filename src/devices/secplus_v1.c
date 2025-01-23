@@ -361,21 +361,28 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // decoder_logf(decoder, 0, __func__,  "# Security+:  rolling=2320615320  fixed=1846948897  (id1=2 id0=0 switch=1 remote_id=68405514 button=left)");
     /* clang-format off */
-    data_t *data = data_make(
-            "model",        "",             DATA_STRING, "Secplus-v1",
-            "id",           "",             DATA_INT,    id,
-            "id0",          "ID_0",         DATA_INT,    id0,
-            "id1",          "ID_1",         DATA_INT,    id1,
-            "switch_id",    "Switch-ID",    DATA_INT,    switch_id,
-            "pad_id",       "Pad-ID",       DATA_COND,   pad_id,    DATA_INT,    pad_id,
-            "pin",          "Pin",          DATA_COND,   pin,       DATA_STRING, pin_s,
-            "remote_id",    "Remote-ID",    DATA_COND,   remote_id, DATA_INT,    remote_id,
-            "button_id",    "Button-ID",    DATA_COND,   remote_id, DATA_STRING, button,
+    data_t *data = NULL;
+    data = data_str(data, "model",        "",             NULL,         "Secplus-v1");
+    data = data_int(data, "id",           "",             NULL,         id);
+    data = data_int(data, "id0",          "ID_0",         NULL,         id0);
+    data = data_int(data, "id1",          "ID_1",         NULL,         id1);
+    data = data_int(data, "switch_id",    "Switch-ID",    NULL,         switch_id);
+    if (pad_id) {
+        data = data_int(data, "pad_id",       "Pad-ID",       NULL,         pad_id);
+    }
+    if (pin) {
+        data = data_str(data, "pin",          "Pin",          NULL,         pin_s);
+    }
+    if (remote_id) {
+        data = data_int(data, "remote_id",    "Remote-ID",    NULL,         remote_id);
+    }
+    if (remote_id) {
+        data = data_str(data, "button_id",    "Button-ID",    NULL,         button);
+    }
             // "fixed",        "Fixed_Code",   DATA_INT,    fixed,
-            "fixed",        "Fixed_Code",   DATA_STRING, fixed_str,
+    data = data_str(data, "fixed",        "Fixed_Code",   NULL,         fixed_str);
             // "rolling",      "Rolling_Code", DATA_INT,    rolling,
-            "rolling",      "Rolling_Code", DATA_STRING, rolling_str,
-            NULL);
+    data = data_str(data, "rolling",      "Rolling_Code", NULL,         rolling_str);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

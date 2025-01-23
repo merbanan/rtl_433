@@ -75,16 +75,17 @@ static int thermopro_tx2c_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int humidity = (((b[3] & 0xF) << 4) | (b[4] >> 4));
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",         "",            DATA_STRING, "Thermopro-TX2C",
+    data_t *data = NULL;
+    data = data_str(data, "model",         "",            NULL,         "Thermopro-TX2C");
             // "subtype",       "",            DATA_INT, type,
-            "id",            "Id",          DATA_INT, id,
-            "channel",       "Channel",     DATA_INT, channel,
-            "battery_ok",    "Battery",     DATA_INT, !battery,
-            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "humidity",      "Humidity",    DATA_COND, humidity != 0x0a, DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "button",        "Button",      DATA_INT, button,
-            NULL);
+    data = data_int(data, "id",            "Id",          NULL,         id);
+    data = data_int(data, "channel",       "Channel",     NULL,         channel);
+    data = data_int(data, "battery_ok",    "Battery",     NULL,         !battery);
+    data = data_dbl(data, "temperature_C", "Temperature", "%.1f C",     temp_c);
+    if (humidity != 0x0a) {
+        data = data_int(data, "humidity",      "Humidity",    "%u %%",      humidity);
+    }
+    data = data_int(data, "button",        "Button",      NULL,         button);
     /* clang-format on */
     decoder_output_data(decoder, data);
     return 1;

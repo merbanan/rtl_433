@@ -164,13 +164,12 @@ static int norgo_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         impulse_gap = (b[2] >> 4) | (b[3] << 4) | ((b[4] & 0x7F) << 12);
         /* clang-format off */
-        data = data_make(
-                "model",        "",             DATA_STRING, "Norgo-NGE101",
-                "id",           "Device ID",    DATA_INT,    device_id,
-                "channel",      "Channel",      DATA_INT,    channel,
-                "gap",          "Impulse gap",  DATA_INT,    impulse_gap,
-                "mic",          "Integrity",    DATA_STRING, "CRC",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",        "",             NULL,         "Norgo-NGE101");
+        data = data_int(data, "id",           "Device ID",    NULL,         device_id);
+        data = data_int(data, "channel",      "Channel",      NULL,         channel);
+        data = data_int(data, "gap",          "Impulse gap",  NULL,         impulse_gap);
+        data = data_str(data, "mic",          "Integrity",    NULL,         "CRC");
         /* clang-format on */
 
         decoder_output_data(decoder, data);
@@ -193,14 +192,13 @@ static int norgo_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // should be enough for the duration of battery.
 
         /* clang-format off */
-        data = data_make(
-                "model",        "",             DATA_STRING, "Norgo-NGE101",
-                "id",           "Id",           DATA_INT,    device_id,
-                "channel",      "Channel",      DATA_INT,    channel,
-                "impulses",     "Impulses",     DATA_INT,    (uint32_t)impulses,
-                "battery_ok",   "Battery",      DATA_INT,    !low_battery,
-                "mic",          "Integrity",    DATA_STRING, "CRC",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",        "",             NULL,         "Norgo-NGE101");
+        data = data_int(data, "id",           "Id",           NULL,         device_id);
+        data = data_int(data, "channel",      "Channel",      NULL,         channel);
+        data = data_int(data, "impulses",     "Impulses",     NULL,         (uint32_t)impulses);
+        data = data_int(data, "battery_ok",   "Battery",      NULL,         !low_battery);
+        data = data_str(data, "mic",          "Integrity",    NULL,         "CRC");
         /* clang-format on */
 
         decoder_output_data(decoder, data);

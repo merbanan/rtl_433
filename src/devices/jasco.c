@@ -57,12 +57,11 @@ static int jasco_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // int battery = 0;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Jasco-Security",
-            "id",               "Id",           DATA_INT,    sensor_id,
-            "status",           "Closed",       DATA_INT,    s_closed,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Jasco-Security");
+    data = data_int(data, "id",               "Id",           NULL,         sensor_id);
+    data = data_int(data, "status",           "Closed",       NULL,         s_closed);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

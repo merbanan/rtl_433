@@ -153,15 +153,14 @@ static int watts_thermostat_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         /* clang-format off */
-        data_t *data = data_make(
-                "model",            "Model",            DATA_STRING, "Watts-WFHTRF",
-                "id",               "ID",               DATA_INT,    id,
-                "pairing",          "Pairing",          DATA_INT,    pairing,
-                "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",      DATA_DOUBLE,  temp * 0.1f,
-                "setpoint_C",       "Setpoint",         DATA_FORMAT, "%.1f C",      DATA_DOUBLE,  setp * 0.1f,
-                "flags",            "Flags",            DATA_INT,    flags[0],
-                "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-                NULL);
+        data_t *data = NULL;
+        data = data_str(data, "model",            "Model",            NULL,         "Watts-WFHTRF");
+        data = data_int(data, "id",               "ID",               NULL,         id);
+        data = data_int(data, "pairing",          "Pairing",          NULL,         pairing);
+        data = data_dbl(data, "temperature_C",    "Temperature",      "%.1f C",     temp * 0.1f);
+        data = data_dbl(data, "setpoint_C",       "Setpoint",         "%.1f C",     setp * 0.1f);
+        data = data_int(data, "flags",            "Flags",            NULL,         flags[0]);
+        data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
         /* clang-format on */
 
         decoder_output_data(decoder, data);

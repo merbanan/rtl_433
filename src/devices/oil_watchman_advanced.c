@@ -84,14 +84,13 @@ static int oil_watchman_advanced_decode(r_device *decoder, bitbuffer_t *bitbuffe
         uint8_t depth     = b[10];
 
         /* clang-format off */
-        data_t *data = data_make(
-                "model",                "Model",        DATA_STRING, "Oil-SonicAdv",
-                "id",                   "ID",           DATA_FORMAT, "%08d", DATA_INT, serial,
-                "temperature_C",        "Temperature",  DATA_DOUBLE, temperature,
-                "depth_cm",             "Depth",        DATA_INT,    depth,
-                "status",               "Status",       DATA_FORMAT, "%02x", DATA_INT, status,
-                "mic",                  "Integrity",    DATA_STRING, "CRC",
-                NULL);
+        data_t *data = NULL;
+        data = data_str(data, "model",                "Model",        NULL,         "Oil-SonicAdv");
+        data = data_int(data, "id",                   "ID",           "%08d",       serial);
+        data = data_dbl(data, "temperature_C",        "Temperature",  NULL,         temperature);
+        data = data_int(data, "depth_cm",             "Depth",        NULL,         depth);
+        data = data_int(data, "status",               "Status",       "%02x",       status);
+        data = data_str(data, "mic",                  "Integrity",    NULL,         "CRC");
         /* clang-format on */
 
         decoder_output_data(decoder, data);

@@ -162,19 +162,20 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     snprintf(unknown_3_str, sizeof(unknown_3_str), "%01x", unknown_3);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Ford",
-            "type",             "",             DATA_STRING, "TPMS",
-            "id",               "",             DATA_STRING, id_str,
-            "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.2f PSI", DATA_DOUBLE, pressure_psi,
-            "temperature_C",    "Temperature",  DATA_COND, temperature_valid, DATA_FORMAT, "%.1f C",   DATA_DOUBLE, (float)temperature_c,
-            "moving",           "Moving",       DATA_INT,    moving,
-            "learn",            "Learn",        DATA_INT,    learn,
-            "code",             "",             DATA_STRING, code_str,
-            "unknown",          "",             DATA_STRING, unknown_str,
-            "unknown_3",        "",             DATA_STRING, unknown_3_str,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Ford");
+    data = data_str(data, "type",             "",             NULL,         "TPMS");
+    data = data_str(data, "id",               "",             NULL,         id_str);
+    data = data_dbl(data, "pressure_PSI",     "Pressure",     "%.2f PSI",   pressure_psi);
+    if (temperature_valid) {
+        data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     (float)temperature_c);
+    }
+    data = data_int(data, "moving",           "Moving",       NULL,         moving);
+    data = data_int(data, "learn",            "Learn",        NULL,         learn);
+    data = data_str(data, "code",             "",             NULL,         code_str);
+    data = data_str(data, "unknown",          "",             NULL,         unknown_str);
+    data = data_str(data, "unknown_3",        "",             NULL,         unknown_3_str);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

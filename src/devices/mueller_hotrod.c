@@ -89,13 +89,12 @@ static int mueller_hotrod_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int flag   = b[7] & 0x0f;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",       "",          DATA_STRING, "Mueller-HotRod",
-            "id",          "",          DATA_STRING, id_str,
-            "volume_gal",  "Volume",    DATA_FORMAT, "%u gal", DATA_INT, volume,
-            "flag",        "Flag",      DATA_FORMAT, "%x", DATA_INT, flag,
-            "mic",         "Integrity", DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",       "",          NULL,         "Mueller-HotRod");
+    data = data_str(data, "id",          "",          NULL,         id_str);
+    data = data_int(data, "volume_gal",  "Volume",    "%u gal",     volume);
+    data = data_int(data, "flag",        "Flag",      "%x",         flag);
+    data = data_str(data, "mic",         "Integrity", NULL,         "CRC");
     /* clang-format on */
     decoder_output_data(decoder, data);
     return 1;

@@ -88,16 +88,15 @@ static int infactory_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_f    = (temp_raw - 900) * 0.1f;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "inFactory-TH",
-            "id",               "ID",           DATA_INT,    id,
-            "channel",          "Channel",      DATA_INT,    channel,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "button",           "Button",       DATA_INT,    button,
-            "temperature_F",    "Temperature",  DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
-            "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "inFactory-TH");
+    data = data_int(data, "id",               "ID",           NULL,         id);
+    data = data_int(data, "channel",          "Channel",      NULL,         channel);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+    data = data_int(data, "button",           "Button",       NULL,         button);
+    data = data_dbl(data, "temperature_F",    "Temperature",  "%.2f F",     temp_f);
+    data = data_int(data, "humidity",         "Humidity",     "%u %%",      humidity);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

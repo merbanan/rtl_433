@@ -48,11 +48,10 @@ static int hondaremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         device_id = b[44]<<8 | b[45];
 
         /* clang-format off */
-        data = data_make(
-                "model",        "",     DATA_STRING, "Honda-CarRemote",
-                "id",           "",     DATA_INT, device_id,
-                "code",         "",     DATA_STRING, code,
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",        "",     NULL,         "Honda-CarRemote");
+        data = data_int(data, "id",           "",     NULL,         device_id);
+        data = data_str(data, "code",         "",     NULL,         code);
         /* clang-format on */
 
         decoder_output_data(decoder, data);

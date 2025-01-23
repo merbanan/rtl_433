@@ -80,16 +80,15 @@ static int auriol_ahfl_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     humidity   = b[3] >> 1;
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",                  DATA_STRING, "Auriol-AHFL",
-            "id",               "",                  DATA_INT,    id,
-            "channel",          "Channel",           DATA_INT,    channel + 1,
-            "battery_ok",       "Battery",           DATA_INT,    battery_ok,
-            "button",           "Button",            DATA_INT,    tx_button,
-            "temperature_C",    "Temperature",       DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",          DATA_FORMAT, "%d %%", DATA_INT, humidity,
-            "mic",              "Integrity",         DATA_STRING, "CHECKSUM",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",                  NULL,         "Auriol-AHFL");
+    data = data_int(data, "id",               "",                  NULL,         id);
+    data = data_int(data, "channel",          "Channel",           NULL,         channel + 1);
+    data = data_int(data, "battery_ok",       "Battery",           NULL,         battery_ok);
+    data = data_int(data, "button",           "Button",            NULL,         tx_button);
+    data = data_dbl(data, "temperature_C",    "Temperature",       "%.1f C",     temp_c);
+    data = data_int(data, "humidity",         "Humidity",          "%d %%",      humidity);
+    data = data_str(data, "mic",              "Integrity",         NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

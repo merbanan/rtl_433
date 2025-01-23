@@ -75,13 +75,12 @@ static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_log_bitbuffer(decoder, 1, __func__, bitbuffer, "");
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "WT0124-Pool",
-            "id",               "Random ID",    DATA_INT,    sensor_rid,
-            "channel",          "Channel",      DATA_INT,    channel,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "WT0124-Pool");
+    data = data_int(data, "id",               "Random ID",    NULL,         sensor_rid);
+    data = data_int(data, "channel",          "Channel",      NULL,         channel);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

@@ -67,13 +67,12 @@ static int ibis_beacon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data = data_make(
-            "model",    "",             DATA_STRING,    "IBIS-Beacon",
-            "id",       "Vehicle No.",  DATA_INT,       id,
-            "counter",  "Counter",      DATA_INT,       counter,
-            "code",     "Code data",    DATA_STRING,    code_str,
-            "mic",      "Integrity",    DATA_STRING,    "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",    "",             NULL,         "IBIS-Beacon");
+    data = data_int(data, "id",       "Vehicle No.",  NULL,         id);
+    data = data_int(data, "counter",  "Counter",      NULL,         counter);
+    data = data_str(data, "code",     "Code data",    NULL,         code_str);
+    data = data_str(data, "mic",      "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

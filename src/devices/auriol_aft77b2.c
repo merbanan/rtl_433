@@ -125,12 +125,11 @@ static int auriol_aft77_b2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         temp_raw = -temp_raw;
 
     /* clang-format off */
-    data = data_make(
-            "model",         "",            DATA_STRING, "Auriol-AFT77B2",
-            "id",            "",            DATA_INT, id,
-            "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_raw * 0.1,
-            "mic",              "Integrity",         DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",         "",            NULL,         "Auriol-AFT77B2");
+    data = data_int(data, "id",            "",            NULL,         id);
+    data = data_dbl(data, "temperature_C", "Temperature", "%.2f C",     temp_raw * 0.1);
+    data = data_str(data, "mic",              "Integrity",         NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

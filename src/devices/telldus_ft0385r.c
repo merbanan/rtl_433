@@ -157,31 +157,29 @@ static int telldus_ft0385r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     if (temp_raw != 0x7fb) {
-        data = data_make(
-            "model",            "",                 DATA_STRING, "Telldus-FT0385R",
+        data = NULL;
+        data = data_str(data, "model",            "",                 NULL,         "Telldus-FT0385R");
             //"battery_ok",       "Battery",          DATA_INT,    !batt_low,
-            "temperature_F",    "Temperature",      DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_f,
-            "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "temperature_2_F",  "Temperature in",   DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp2_f,
-            "humidity_2",       "Humidity in",      DATA_FORMAT, "%u %%", DATA_INT, humidity2,
-            "pressure_hPa",     "Pressure",         DATA_FORMAT, "%.1f hPa", DATA_DOUBLE, pressure * 0.1f,
+        data = data_dbl(data, "temperature_F",    "Temperature",      "%.1f F",     temp_f);
+        data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+        data = data_dbl(data, "temperature_2_F",  "Temperature in",   "%.1f F",     temp2_f);
+        data = data_int(data, "humidity_2",       "Humidity in",      "%u %%",      humidity2);
+        data = data_dbl(data, "pressure_hPa",     "Pressure",         "%.1f hPa",   pressure * 0.1f);
             //"rain_rate_mm_h",   "Rain Rate",        DATA_FORMAT, "%.2f mm/h", DATA_DOUBLE, rain_rate * 0.1f,
-            "rain_mm",          "Rain",             DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_tot * 0.1f,
-            "wind_dir_deg",     "Wind direction",   DATA_INT,    wind_dir,
-            "wind_avg_m_s",     "Wind",             DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind * 0.1f,
-            "wind_max_m_s",     "Gust",             DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust * 0.1f,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+        data = data_dbl(data, "rain_mm",          "Rain",             "%.1f mm",    rain_tot * 0.1f);
+        data = data_int(data, "wind_dir_deg",     "Wind direction",   NULL,         wind_dir);
+        data = data_dbl(data, "wind_avg_m_s",     "Wind",             "%.1f m/s",   wind * 0.1f);
+        data = data_dbl(data, "wind_max_m_s",     "Gust",             "%.1f m/s",   gust * 0.1f);
+        data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     } else {
         // No outdoor data
-        data = data_make(
-            "model",            "",                 DATA_STRING, "Telldus-FT0385R",
+        data = NULL;
+        data = data_str(data, "model",            "",                 NULL,         "Telldus-FT0385R");
             //"battery_ok",       "Battery",          DATA_INT,    !batt_low,
-            "temperature_2_F",  "Temperature in",   DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp2_f,
-            "humidity_2",       "Humidity in",      DATA_FORMAT, "%u %%", DATA_INT, humidity2,
-            "pressure_hPa",     "Pressure",         DATA_FORMAT, "%.1f hPa", DATA_DOUBLE, pressure * 0.1f,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+        data = data_dbl(data, "temperature_2_F",  "Temperature in",   "%.1f F",     temp2_f);
+        data = data_int(data, "humidity_2",       "Humidity in",      "%u %%",      humidity2);
+        data = data_dbl(data, "pressure_hPa",     "Pressure",         "%.1f hPa",   pressure * 0.1f);
+        data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     }
     /* clang-format on */
 

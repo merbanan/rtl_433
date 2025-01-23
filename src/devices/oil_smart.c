@@ -89,14 +89,13 @@ static int oil_smart_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     uint16_t depth = b[6];
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Oil-Ultrasonic",
-            "id",               "",             DATA_FORMAT, "%04x", DATA_INT, unit_id,
-            "depth_cm",         "Depth",        DATA_INT,    depth,
-            "unknown_1",        "Unknown 1",    DATA_FORMAT, "%02x", DATA_INT, unknown1,
-            "unknown_2",        "Unknown 2",    DATA_FORMAT, "%02x", DATA_INT, unknown2,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Oil-Ultrasonic");
+    data = data_int(data, "id",               "",             "%04x",       unit_id);
+    data = data_int(data, "depth_cm",         "Depth",        NULL,         depth);
+    data = data_int(data, "unknown_1",        "Unknown 1",    "%02x",       unknown1);
+    data = data_int(data, "unknown_2",        "Unknown 2",    "%02x",       unknown2);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

@@ -116,25 +116,40 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     snprintf(extra, sizeof(extra), "%02x%02x%02x%02x%02x------%02x%02x%02x%02x%02x%02x%02x", b[14], b[15], b[16], b[17], b[18], /* b[19,20] is the rain sensor, b[21] is supercap_V */ b[22], b[23], b[24], b[25], b[26], b[27], b[28]);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",                 DATA_STRING, "Fineoffset-WS90",
-            "id",               "ID",               DATA_FORMAT, "%06x", DATA_INT,    id,
-            "battery_ok",       "Battery",          DATA_DOUBLE, battery_lvl * 0.01f,
-            "battery_mV",       "Battery Voltage",  DATA_FORMAT, "%d mV", DATA_INT,    battery_mv,
-            "temperature_C",    "Temperature",      DATA_COND, temp_raw != 0x3ff,   DATA_FORMAT, "%.1f C",   DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",         DATA_COND, humidity != 0xff,    DATA_FORMAT, "%u %%",    DATA_INT, humidity,
-            "wind_dir_deg",     "Wind direction",   DATA_COND, wind_dir != 0x1ff,   DATA_INT, wind_dir,
-            "wind_avg_m_s",     "Wind speed",       DATA_COND, wind_avg != 0x1ff,   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_avg * 0.1f,
-            "wind_max_m_s",     "Gust speed",       DATA_COND, wind_max != 0x1ff,   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_max * 0.1f,
-            "uvi",              "UVI",              DATA_COND, uv_index != 0xff,    DATA_FORMAT, "%.1f",     DATA_DOUBLE, uv_index * 0.1f,
-            "light_lux",        "Light",            DATA_COND, light_raw != 0xffff, DATA_FORMAT, "%.1f lux", DATA_DOUBLE, (double)light_lux,
-            "flags",            "Flags",            DATA_FORMAT, "%02x", DATA_INT, flags,
-            "rain_mm",          "Total Rain",       DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1f,
-            "supercap_V",       "Supercap Voltage", DATA_COND, supercap_V != 0xff, DATA_FORMAT, "%.1f V", DATA_DOUBLE, supercap_V * 0.1f,
-            "firmware",         "Firmware Version", DATA_INT, firmware,
-            "data",             "Extra Data",       DATA_STRING, extra,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "Fineoffset-WS90");
+    data = data_int(data, "id",               "ID",               "%06x",       id);
+    data = data_dbl(data, "battery_ok",       "Battery",          NULL,         battery_lvl * 0.01f);
+    data = data_int(data, "battery_mV",       "Battery Voltage",  "%d mV",      battery_mv);
+    if (temp_raw != 0x3ff) {
+        data = data_dbl(data, "temperature_C",    "Temperature",      "%.1f C",     temp_c);
+    }
+    if (humidity != 0xff) {
+        data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+    }
+    if (wind_dir != 0x1ff) {
+        data = data_int(data, "wind_dir_deg",     "Wind direction",   NULL,         wind_dir);
+    }
+    if (wind_avg != 0x1ff) {
+        data = data_dbl(data, "wind_avg_m_s",     "Wind speed",       "%.1f m/s",   wind_avg * 0.1f);
+    }
+    if (wind_max != 0x1ff) {
+        data = data_dbl(data, "wind_max_m_s",     "Gust speed",       "%.1f m/s",   wind_max * 0.1f);
+    }
+    if (uv_index != 0xff) {
+        data = data_dbl(data, "uvi",              "UVI",              "%.1f",       uv_index * 0.1f);
+    }
+    if (light_raw != 0xffff) {
+        data = data_dbl(data, "light_lux",        "Light",            "%.1f lux",   (double)light_lux);
+    }
+    data = data_int(data, "flags",            "Flags",            "%02x",       flags);
+    data = data_dbl(data, "rain_mm",          "Total Rain",       "%.1f mm",    rain_raw * 0.1f);
+    if (supercap_V != 0xff) {
+        data = data_dbl(data, "supercap_V",       "Supercap Voltage", "%.1f V",     supercap_V * 0.1f);
+    }
+    data = data_int(data, "firmware",         "Firmware Version", NULL,         firmware);
+    data = data_str(data, "data",             "Extra Data",       NULL,         extra);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

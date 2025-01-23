@@ -79,11 +79,10 @@ static int enocean_erp1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitrow_snprint(bytes.bb[0], bytes.bits_per_row[0], tstr, sizeof(tstr));
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",    "",             DATA_STRING, "EnOcean-ERP1",
-            "telegram", "",             DATA_STRING, tstr,
-            "mic",      "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",    "",             NULL,         "EnOcean-ERP1");
+    data = data_str(data, "telegram", "",             NULL,         tstr);
+    data = data_str(data, "mic",      "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

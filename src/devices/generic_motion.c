@@ -46,10 +46,9 @@ static int generic_motion_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         snprintf(code_str, sizeof(code_str), "%05x", code);
 
         /* clang-format off */
-        data_t *data = data_make(
-                "model",    "",  DATA_STRING, "Generic-Motion",
-                "code",     "",  DATA_STRING, code_str,
-                NULL);
+        data_t *data = NULL;
+        data = data_str(data, "model",    "",  NULL,         "Generic-Motion");
+        data = data_str(data, "code",     "",  NULL,         code_str);
         /* clang-format on */
 
         decoder_output_data(decoder, data);

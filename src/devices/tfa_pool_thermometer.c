@@ -64,14 +64,13 @@ static int tfa_pool_thermometer_decode(r_device *decoder, bitbuffer_t *bitbuffer
     battery     = ((b[3] & 0x20) >> 5);
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",                 DATA_STRING,    "TFA-Pool",
-            "id",               "Id",               DATA_INT,       device,
-            "channel",          "Channel",          DATA_INT,       channel,
-            "battery_ok",       "Battery",          DATA_INT,       battery,
-            "temperature_C",    "Temperature",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE,    temp_f,
-            "mic",              "Integrity",        DATA_STRING,    "CHECKSUM",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "TFA-Pool");
+    data = data_int(data, "id",               "Id",               NULL,         device);
+    data = data_int(data, "channel",          "Channel",          NULL,         channel);
+    data = data_int(data, "battery_ok",       "Battery",          NULL,         battery);
+    data = data_dbl(data, "temperature_C",    "Temperature",      "%.1f C",     temp_f);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

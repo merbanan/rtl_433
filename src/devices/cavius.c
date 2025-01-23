@@ -103,15 +103,14 @@ static int cavius_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",        "",             DATA_STRING, "Cavius-Security",
-            "id",           "Device ID",    DATA_INT,    sender_id,
-            "battery_ok",   "Battery",      DATA_INT,    !batt_low,
-            "net_id",       "Net ID",       DATA_INT,    net_id,
-            "message",      "Message",      DATA_INT,    message,
-            "text",         "Description",  DATA_STRING, text,
-            "mic",          "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",        "",             NULL,         "Cavius-Security");
+    data = data_int(data, "id",           "Device ID",    NULL,         sender_id);
+    data = data_int(data, "battery_ok",   "Battery",      NULL,         !batt_low);
+    data = data_int(data, "net_id",       "Net ID",       NULL,         net_id);
+    data = data_int(data, "message",      "Message",      NULL,         message);
+    data = data_str(data, "text",         "Description",  NULL,         text);
+    data = data_str(data, "mic",          "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

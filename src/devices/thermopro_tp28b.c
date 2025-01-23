@@ -122,18 +122,17 @@ static int thermopro_tp28b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float p2_set_lo = bcd2float(b[10], b[11]);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",                "",                             DATA_STRING,    "ThermoPro-TP28b",
-            "id",                   "",                             DATA_FORMAT,    "%04x",   DATA_INT,    id,
-            "temperature_1_C",      "Temperature 1",                DATA_FORMAT,    "%.1f C", DATA_DOUBLE, p1_temp,
-            "alarm_high_1_C",       "Temperature 1 alarm high",     DATA_FORMAT,    "%.1f C", DATA_DOUBLE, p1_set_hi,
-            "alarm_low_1_C",        "Temperature 1 alarm low",      DATA_FORMAT,    "%.1f C", DATA_DOUBLE, p1_set_lo,
-            "temperature_2_C",      "Temperature 2",                DATA_FORMAT,    "%.1f C", DATA_DOUBLE, p2_temp,
-            "alarm_high_2_C",       "Temperature 2 alarm high",     DATA_FORMAT,    "%.1f C", DATA_DOUBLE, p2_set_hi,
-            "alarm_low_2_C",        "Temperature 2 alarm low",      DATA_FORMAT,    "%.1f C", DATA_DOUBLE, p2_set_lo,
-            "flags",                "Status flags",                 DATA_FORMAT,    "%04x",   DATA_INT,    flags,
-            "mic",                  "Integrity",                    DATA_STRING,    "CHECKSUM",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",                "",                             NULL,         "ThermoPro-TP28b");
+    data = data_int(data, "id",                   "",                             "%04x",       id);
+    data = data_dbl(data, "temperature_1_C",      "Temperature 1",                "%.1f C",     p1_temp);
+    data = data_dbl(data, "alarm_high_1_C",       "Temperature 1 alarm high",     "%.1f C",     p1_set_hi);
+    data = data_dbl(data, "alarm_low_1_C",        "Temperature 1 alarm low",      "%.1f C",     p1_set_lo);
+    data = data_dbl(data, "temperature_2_C",      "Temperature 2",                "%.1f C",     p2_temp);
+    data = data_dbl(data, "alarm_high_2_C",       "Temperature 2 alarm high",     "%.1f C",     p2_set_hi);
+    data = data_dbl(data, "alarm_low_2_C",        "Temperature 2 alarm low",      "%.1f C",     p2_set_lo);
+    data = data_int(data, "flags",                "Status flags",                 "%04x",       flags);
+    data = data_str(data, "mic",                  "Integrity",                    NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

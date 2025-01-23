@@ -60,14 +60,13 @@ static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "Inovalley-kw9015b",
-            "id",               "",             DATA_INT,    device,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "rain",             "Rain Count",   DATA_INT,    rain, // TODO: remove this
-            "rain_mm",          "Rain Total",   DATA_DOUBLE, rain * 0.45f,
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Inovalley-kw9015b");
+    data = data_int(data, "id",               "",             NULL,         device);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+    data = data_int(data, "rain",             "Rain Count",   NULL,         rain); // TODO: remove this
+    data = data_dbl(data, "rain_mm",          "Rain Total",   NULL,         rain * 0.45f);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

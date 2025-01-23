@@ -68,17 +68,16 @@ static int wec2103_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int battery_low = (b[1] & 0x04) >> 3;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "WEC-2103",
-            "id",               "ID",           DATA_INT,    device_id,
-            "channel",          "Channel",      DATA_INT,    channel,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "button",           "Button",       DATA_INT,    button,
-            "temperature_F",    "Temperature",  DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
-            "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "flags",            "Flags",        DATA_INT,    flags,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "WEC-2103");
+    data = data_int(data, "id",               "ID",           NULL,         device_id);
+    data = data_int(data, "channel",          "Channel",      NULL,         channel);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+    data = data_int(data, "button",           "Button",       NULL,         button);
+    data = data_dbl(data, "temperature_F",    "Temperature",  "%.2f F",     temp_f);
+    data = data_int(data, "humidity",         "Humidity",     "%u %%",      humidity);
+    data = data_int(data, "flags",            "Flags",        NULL,         flags);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

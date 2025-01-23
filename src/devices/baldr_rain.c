@@ -73,12 +73,11 @@ static int baldr_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int rain_in = (b[2] << 12) | (b[3] << 4) | (b[4] >> 4);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",        "",         DATA_STRING, "Baldr-Rain",
-            "id",           "",         DATA_FORMAT, "%03x", DATA_INT, id,
-            "flags",        "Flags",    DATA_FORMAT, "%x", DATA_INT, flags,
-            "rain_in",      "Rain",     DATA_FORMAT, "%.3f in", DATA_DOUBLE, rain_in * 0.001,
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",        "",         NULL,         "Baldr-Rain");
+    data = data_int(data, "id",           "",         "%03x",       id);
+    data = data_int(data, "flags",        "Flags",    "%x",         flags);
+    data = data_dbl(data, "rain_in",      "Rain",     "%.3f in",    rain_in * 0.001);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

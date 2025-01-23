@@ -259,19 +259,18 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
     // PRESENTING DATA
     if (msg_type == 0) {
         /* clang-format off */
-        data = data_make(
-                "model",            "",                 DATA_STRING,    "Fineoffset-WHx080",
-                "subtype",          "Msg type",         DATA_INT,       msg_type,
-                "id",               "Station ID",       DATA_INT,       device_id,
-                "battery_ok",       "Battery",          DATA_INT,       !battery_low,
-                "temperature_C",    "Temperature",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE,    temperature,
-                "humidity",         "Humidity",         DATA_FORMAT,    "%u %%",    DATA_INT,       humidity,
-                "wind_dir_deg",     "Wind Direction",   DATA_INT, direction_deg,
-                "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT,    "%.2f",    DATA_DOUBLE,    speed,
-                "wind_max_km_h",    "Wind gust",        DATA_FORMAT,    "%.2f",    DATA_DOUBLE,    gust,
-                "rain_mm",          "Total rainfall",   DATA_FORMAT,    "%.1f",    DATA_DOUBLE,    rain,
-                "mic",              "Integrity",        DATA_STRING,    "CRC",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",                 NULL,         "Fineoffset-WHx080");
+        data = data_int(data, "subtype",          "Msg type",         NULL,         msg_type);
+        data = data_int(data, "id",               "Station ID",       NULL,         device_id);
+        data = data_int(data, "battery_ok",       "Battery",          NULL,         !battery_low);
+        data = data_dbl(data, "temperature_C",    "Temperature",      "%.1f C",     temperature);
+        data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+        data = data_int(data, "wind_dir_deg",     "Wind Direction",   NULL,         direction_deg);
+        data = data_dbl(data, "wind_avg_km_h",    "Wind avg speed",   "%.2f",       speed);
+        data = data_dbl(data, "wind_max_km_h",    "Wind gust",        "%.2f",       gust);
+        data = data_dbl(data, "rain_mm",          "Total rainfall",   "%.1f",       rain);
+        data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
         /* clang-format on */
     }
     else if (msg_type == 1) {
@@ -280,28 +279,26 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
                 year, month, day, hours, minutes, seconds);
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",                 DATA_STRING,    "Fineoffset-WHx080",
-                "subtype",          "Msg type",         DATA_INT,       msg_type,
-                "id",               "Station ID",       DATA_INT,       device_id,
-                "signal",           "Signal Type",      DATA_STRING,    signal_type_str,
-                "radio_clock",      "Radio Clock",      DATA_STRING,    clock_str,
-                "mic",              "Integrity",        DATA_STRING,    "CRC",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",                 NULL,         "Fineoffset-WHx080");
+        data = data_int(data, "subtype",          "Msg type",         NULL,         msg_type);
+        data = data_int(data, "id",               "Station ID",       NULL,         device_id);
+        data = data_str(data, "signal",           "Signal Type",      NULL,         signal_type_str);
+        data = data_str(data, "radio_clock",      "Radio Clock",      NULL,         clock_str);
+        data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
         /* clang-format on */
     }
     else {
         /* clang-format off */
-        data = data_make(
-                "model",            "",                 DATA_STRING,    "Fineoffset-WHx080",
-                "subtype",          "Msg type",         DATA_INT,       msg_type,
-                "uv_sensor_id",     "UV Sensor ID",     DATA_INT,       uv_sensor_id,
-                "uv_status",        "Sensor Status",    DATA_STRING,    uv_status_ok ? "OK" : "ERROR",
-                "uv_index",         "UV Index",         DATA_INT,       uv_index,
-                "lux",              "Lux",              DATA_FORMAT,    "%.1f",     DATA_DOUBLE,    lux,
-                "wm",               "Watts/m",          DATA_FORMAT,    "%.2f",     DATA_DOUBLE,    wm,
-                "mic",              "Integrity",        DATA_STRING,    "CRC",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",                 NULL,         "Fineoffset-WHx080");
+        data = data_int(data, "subtype",          "Msg type",         NULL,         msg_type);
+        data = data_int(data, "uv_sensor_id",     "UV Sensor ID",     NULL,         uv_sensor_id);
+        data = data_str(data, "uv_status",        "Sensor Status",    NULL,         uv_status_ok ? "OK" : "ERROR");
+        data = data_int(data, "uv_index",         "UV Index",         NULL,         uv_index);
+        data = data_dbl(data, "lux",              "Lux",              "%.1f",       lux);
+        data = data_dbl(data, "wm",               "Watts/m",          "%.2f",       wm);
+        data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
         /* clang-format on */
     }
     decoder_output_data(decoder, data);

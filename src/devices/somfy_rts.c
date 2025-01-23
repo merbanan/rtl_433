@@ -179,14 +179,13 @@ static int somfy_rts_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_logf(decoder, 2, __func__, "seed=0x%02x, chksum=0x%x", seed, chksum);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",          "",               DATA_STRING, "Somfy-RTS",
-            "id",             "",               DATA_FORMAT, "%06X", DATA_INT, address,
-            "control",        "Control",        DATA_STRING, control_str,
-            "counter",        "Counter",        DATA_INT,    counter,
-            "retransmission", "Retransmission", DATA_INT,    is_retransmission,
-            "mic",            "Integrity",      DATA_STRING, "CHECKSUM",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",          "",               NULL,         "Somfy-RTS");
+    data = data_int(data, "id",             "",               "%06X",       address);
+    data = data_str(data, "control",        "Control",        NULL,         control_str);
+    data = data_int(data, "counter",        "Counter",        NULL,         counter);
+    data = data_int(data, "retransmission", "Retransmission", NULL,         is_retransmission);
+    data = data_str(data, "mic",            "Integrity",      NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

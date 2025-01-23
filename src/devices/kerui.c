@@ -72,18 +72,29 @@ static int kerui_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
 
     /* clang-format off */
-    data = data_make(
-            "model",        "",                 DATA_STRING, "Kerui-Security",
-            "id",           "ID (20bit)",       DATA_FORMAT, "0x%x", DATA_INT, id,
-            "cmd",          "Command (4bit)",   DATA_FORMAT, "0x%x", DATA_INT, cmd,
-            "motion",       "",                 DATA_COND, cmd == 0xa, DATA_INT, 1,
-            "opened",       "",                 DATA_COND, cmd == 0xe, DATA_INT, 1,
-            "opened",       "",                 DATA_COND, cmd == 0x7, DATA_INT, 0,
-            "tamper",       "",                 DATA_COND, cmd == 0xb, DATA_INT, 1,
-            "water",        "",                 DATA_COND, cmd == 0x5, DATA_INT, 1,
-            "battery_ok",   "Battery",          DATA_COND, cmd == 0xf, DATA_INT, 0,
-            "state",        "State",            DATA_STRING, cmd_str,
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",        "",                 NULL,         "Kerui-Security");
+    data = data_int(data, "id",           "ID (20bit)",       "0x%x",       id);
+    data = data_int(data, "cmd",          "Command (4bit)",   "0x%x",       cmd);
+    if (cmd == 0xa) {
+        data = data_int(data, "motion",       "",                 NULL,         1);
+    }
+    if (cmd == 0xe) {
+        data = data_int(data, "opened",       "",                 NULL,         1);
+    }
+    if (cmd == 0x7) {
+        data = data_int(data, "opened",       "",                 NULL,         0);
+    }
+    if (cmd == 0xb) {
+        data = data_int(data, "tamper",       "",                 NULL,         1);
+    }
+    if (cmd == 0x5) {
+        data = data_int(data, "water",        "",                 NULL,         1);
+    }
+    if (cmd == 0xf) {
+        data = data_int(data, "battery_ok",   "Battery",          NULL,         0);
+    }
+    data = data_str(data, "state",        "State",            NULL,         cmd_str);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

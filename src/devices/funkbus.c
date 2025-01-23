@@ -137,17 +137,16 @@ static int funkbus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         /* clang-format off */
-        data_t *data = data_make(
-                "model",        "",                DATA_STRING, "Funkbus-Remote",
-                "id",           "Serial number",   DATA_INT, sn,
-                "battery_ok",   "Battery",         DATA_INT, bat ? 0 : 1,
-                "command",      "Switch",          DATA_INT, command,
-                "group",        "Group",           DATA_INT, group,
-                "action",       "Action",          DATA_INT, action,
-                "repeat",       "Repeat",          DATA_INT, repeat,
-                "longpress",    "Longpress",       DATA_INT, longpress,
-                "mic",          "Integrity",       DATA_STRING, "CHECKSUM",
-                NULL);
+        data_t *data = NULL;
+        data = data_str(data, "model",        "",                NULL,         "Funkbus-Remote");
+        data = data_int(data, "id",           "Serial number",   NULL,         sn);
+        data = data_int(data, "battery_ok",   "Battery",         NULL,         bat ? 0 : 1);
+        data = data_int(data, "command",      "Switch",          NULL,         command);
+        data = data_int(data, "group",        "Group",           NULL,         group);
+        data = data_int(data, "action",       "Action",          NULL,         action);
+        data = data_int(data, "repeat",       "Repeat",          NULL,         repeat);
+        data = data_int(data, "longpress",    "Longpress",       NULL,         longpress);
+        data = data_str(data, "mic",          "Integrity",       NULL,         "CHECKSUM");
         /* clang-format on */
 
         decoder_output_data(decoder, data);

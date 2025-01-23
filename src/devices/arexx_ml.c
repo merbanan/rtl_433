@@ -139,15 +139,20 @@ static int arexx_ml_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",                 DATA_STRING, "Arexx-ML",
-            "id",               "ID",               DATA_FORMAT, "%04x",    DATA_INT, id,
-            "temperature_C",    "Temperature",      DATA_COND, is_temp,     DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-            "temperature_alert","Alert",            DATA_COND, is_alert,    DATA_FORMAT, "%x", DATA_INT, temp_alert,
-            "humidity",         "Humidity",         DATA_COND, is_humi,     DATA_FORMAT, "%.1f %%", DATA_DOUBLE, humidity,
-            "sensor_raw",       "Sensor Raw",       DATA_FORMAT, "%04x",    DATA_INT, sens_val,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "Arexx-ML");
+    data = data_int(data, "id",               "ID",               "%04x",       id);
+    if (is_temp) {
+        data = data_dbl(data, "temperature_C",    "Temperature",      "%.2f C",     temp_c);
+    }
+    if (is_alert) {
+        data = data_int(data, "temperature_alert","Alert",            "%x",         temp_alert);
+    }
+    if (is_humi) {
+        data = data_dbl(data, "humidity",         "Humidity",         "%.1f %%",    humidity);
+    }
+    data = data_int(data, "sensor_raw",       "Sensor Raw",       "%04x",       sens_val);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

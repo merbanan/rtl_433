@@ -100,12 +100,11 @@ static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_logf(decoder, 1, __func__, "temperature: raw: %d %08X converted: %.2f", temp_raw, temp_raw, temp_c);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Philips-AJ7010",
-            "channel",          "Channel",      DATA_INT,    channel,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Philips-AJ7010");
+    data = data_int(data, "channel",          "Channel",      NULL,         channel);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

@@ -83,19 +83,18 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     snprintf(id_str, sizeof(id_str), "%02x%02x%02x", msg[0], msg[1], msg[2]);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",        "Model",        DATA_STRING, "Visonic-Powercode",
-            "id",           "ID",           DATA_STRING, id_str,
-            "tamper",       "Tamper",       DATA_INT,    ((0x80 & msg[3]) == 0x80) ? 1 : 0,
-            "alarm",        "Alarm",        DATA_INT,    ((0x40 & msg[3]) == 0x40) ? 1 : 0,
-            "battery_ok",   "Battery",      DATA_INT,    ((0x20 & msg[3]) == 0x20) ? 0 : 1,
-            "else",         "Else",         DATA_INT,    ((0x10 & msg[3]) == 0x10) ? 1 : 0,
-            "restore",      "Restore",      DATA_INT,    ((0x08 & msg[3]) == 0x08) ? 1 : 0,
-            "supervised",   "Supervised",   DATA_INT,    ((0x04 & msg[3]) == 0x04) ? 1 : 0,
-            "spidernet",    "Spidernet",    DATA_INT,    ((0x02 & msg[3]) == 0x02) ? 1 : 0,
-            "repeater",     "Repeater",     DATA_INT,    ((0x01 & msg[3]) == 0x01) ? 1 : 0,
-            "mic",          "Integrity",    DATA_STRING, "CHECKSUM",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",        "Model",        NULL,         "Visonic-Powercode");
+    data = data_str(data, "id",           "ID",           NULL,         id_str);
+    data = data_int(data, "tamper",       "Tamper",       NULL,         ((0x80 & msg[3]) == 0x80) ? 1 : 0);
+    data = data_int(data, "alarm",        "Alarm",        NULL,         ((0x40 & msg[3]) == 0x40) ? 1 : 0);
+    data = data_int(data, "battery_ok",   "Battery",      NULL,         ((0x20 & msg[3]) == 0x20) ? 0 : 1);
+    data = data_int(data, "else",         "Else",         NULL,         ((0x10 & msg[3]) == 0x10) ? 1 : 0);
+    data = data_int(data, "restore",      "Restore",      NULL,         ((0x08 & msg[3]) == 0x08) ? 1 : 0);
+    data = data_int(data, "supervised",   "Supervised",   NULL,         ((0x04 & msg[3]) == 0x04) ? 1 : 0);
+    data = data_int(data, "spidernet",    "Spidernet",    NULL,         ((0x02 & msg[3]) == 0x02) ? 1 : 0);
+    data = data_int(data, "repeater",     "Repeater",     NULL,         ((0x01 & msg[3]) == 0x01) ? 1 : 0);
+    data = data_str(data, "mic",          "Integrity",    NULL,         "CHECKSUM");
     /* clang-format on */
 
     // return data

@@ -97,17 +97,18 @@ static int bresser_lightning_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",                     DATA_STRING, "Bresser-Lightning",
-            "id",               "",                     DATA_FORMAT, "%08x",      DATA_INT,    sensor_id,
-            "startup",          "Startup",              DATA_COND,   !nstartup,   DATA_INT,    !nstartup,
-            "battery_ok",       "Battery",              DATA_INT,    !battery_low,
-            "storm_dist_km",    "Storm Distance",       DATA_FORMAT, "%d km",     DATA_INT,    distance_km,
-            "strike_count",     "Strike Count",         DATA_INT,    count,
-            "unknown1",         "Unknown1",             DATA_FORMAT, "%03x",      DATA_INT,    unknown1,
-            "unknown2",         "Unknown2",             DATA_FORMAT, "%04x",      DATA_INT,    unknown2,
-            "mic",              "Integrity",            DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",                     NULL,         "Bresser-Lightning");
+    data = data_int(data, "id",               "",                     "%08x",       sensor_id);
+    if (!nstartup) {
+        data = data_int(data, "startup",          "Startup",              NULL,         !nstartup);
+    }
+    data = data_int(data, "battery_ok",       "Battery",              NULL,         !battery_low);
+    data = data_int(data, "storm_dist_km",    "Storm Distance",       "%d km",      distance_km);
+    data = data_int(data, "strike_count",     "Strike Count",         NULL,         count);
+    data = data_int(data, "unknown1",         "Unknown1",             "%03x",       unknown1);
+    data = data_int(data, "unknown2",         "Unknown2",             "%04x",       unknown2);
+    data = data_str(data, "mic",              "Integrity",            NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

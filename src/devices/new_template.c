@@ -237,12 +237,11 @@ static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data = data_make(
-            "model", "", DATA_STRING, "New-Template",
-            "id",    "", DATA_INT,    sensor_id,
-            "data",  "", DATA_INT,    value,
-            "mic",   "", DATA_STRING, "CHECKSUM", // CRC, CHECKSUM, or PARITY
-            NULL);
+    data = NULL;
+    data = data_str(data, "model", "", NULL,         "New-Template");
+    data = data_int(data, "id",    "", NULL,         sensor_id);
+    data = data_int(data, "data",  "", NULL,         value);
+    data = data_str(data, "mic",   "", NULL,         "CHECKSUM"); // CRC, CHECKSUM, or PARITY
     /* clang-format on */
     decoder_output_data(decoder, data);
 

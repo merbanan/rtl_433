@@ -170,16 +170,21 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* build and handle data set for normal output */
     /* clang-format off */
-    data = data_make(
-            "model",        "",             DATA_STRING, "X10-Security",
-            "id",           "Device ID",    DATA_STRING, x10_id_str,
-            "code",         "Code",         DATA_STRING, x10_code_str,
-            "event",        "Event",        DATA_STRING, event_str,
-            "delay",        "Delay",        DATA_COND,   delay,         DATA_INT, delay,
-            "battery_ok",   "Battery",      DATA_COND,   battery_low,   DATA_INT, !battery_low,
-            "tamper",       "Tamper",       DATA_COND,   tamper,        DATA_INT, tamper,
-            "mic",          "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",        "",             NULL,         "X10-Security");
+    data = data_str(data, "id",           "Device ID",    NULL,         x10_id_str);
+    data = data_str(data, "code",         "Code",         NULL,         x10_code_str);
+    data = data_str(data, "event",        "Event",        NULL,         event_str);
+    if (delay) {
+        data = data_int(data, "delay",        "Delay",        NULL,         delay);
+    }
+    if (battery_low) {
+        data = data_int(data, "battery_ok",   "Battery",      NULL,         !battery_low);
+    }
+    if (tamper) {
+        data = data_int(data, "tamper",       "Tamper",       NULL,         tamper);
+    }
+    data = data_str(data, "mic",          "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

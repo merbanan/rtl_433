@@ -119,21 +119,20 @@ static int vevor_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             }
 
             /* clang-format off */
-            data_t *data = data_make(
-                    "model",            "",                 DATA_STRING, "Vevor-7in1",
-                    "id",               "",                 DATA_FORMAT, "%04x", DATA_INT,    id,
-                    "channel",          "Channel",          DATA_INT,    channel,
-                    "battery_ok",       "Battery_OK",       DATA_INT,    !battery_low,
-                    "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-                    "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                    "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
-                    "wind_max_km_h",    "Wind max speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, gust_kmh,
-                    "wind_dir_deg",     "Wind Direction",   DATA_INT,    direction_deg,
-                    "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",  DATA_DOUBLE, rain_mm,
-                    "uv",               "UV Index",         DATA_FORMAT, "%u", DATA_INT, uv_index,
-                    "light_lux",        "Lux",              DATA_FORMAT, "%u", DATA_INT, light_lux,
-                    "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-                    NULL);
+            data_t *data = NULL;
+            data = data_str(data, "model",            "",                 NULL,         "Vevor-7in1");
+            data = data_int(data, "id",               "",                 "%04x",       id);
+            data = data_int(data, "channel",          "Channel",          NULL,         channel);
+            data = data_int(data, "battery_ok",       "Battery_OK",       NULL,         !battery_low);
+            data = data_dbl(data, "temperature_C",    "Temperature",      "%.1f C",     temp_c);
+            data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+            data = data_dbl(data, "wind_avg_km_h",    "Wind avg speed",   "%.1f km/h",  speed_kmh);
+            data = data_dbl(data, "wind_max_km_h",    "Wind max speed",   "%.1f km/h",  gust_kmh);
+            data = data_int(data, "wind_dir_deg",     "Wind Direction",   NULL,         direction_deg);
+            data = data_dbl(data, "rain_mm",          "Total rainfall",   "%.1f mm",    rain_mm);
+            data = data_int(data, "uv",               "UV Index",         "%u",         uv_index);
+            data = data_int(data, "light_lux",        "Lux",              "%u",         light_lux);
+            data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
             /* clang-format on */
 
             decoder_output_data(decoder, data);

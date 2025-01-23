@@ -34,13 +34,12 @@ static int intertechno_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int command = b[6] & 0x07;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",     DATA_STRING,    "Intertechno-Remote",
-            "id",               "",     DATA_STRING,    id_str,
-            "slave",            "",     DATA_INT,       slave,
-            "master",           "",     DATA_INT,       master,
-            "command",          "",     DATA_INT,       command,
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",     NULL,         "Intertechno-Remote");
+    data = data_str(data, "id",               "",     NULL,         id_str);
+    data = data_int(data, "slave",            "",     NULL,         slave);
+    data = data_int(data, "master",           "",     NULL,         master);
+    data = data_int(data, "command",          "",     NULL,         command);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

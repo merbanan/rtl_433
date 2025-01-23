@@ -104,13 +104,12 @@ static int calibeur_rf104_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     humidity = bits;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",         "",            DATA_STRING, "Calibeur-RF104",
-            "id",            "ID",          DATA_INT,    id,
-            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-            "humidity",      "Humidity",    DATA_FORMAT, "%.0f %%", DATA_DOUBLE, humidity,
-            "mic",           "Integrity",   DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",         "",            NULL,         "Calibeur-RF104");
+    data = data_int(data, "id",            "ID",          NULL,         id);
+    data = data_dbl(data, "temperature_C", "Temperature", "%.1f C",     temperature);
+    data = data_dbl(data, "humidity",      "Humidity",    "%.0f %%",    humidity);
+    data = data_str(data, "mic",           "Integrity",   NULL,         "CRC");
     /* clang-format on */
     decoder_output_data(decoder, data);
     return 1;

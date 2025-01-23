@@ -95,15 +95,14 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float current_adc = (float)(bytes[4] << 8 | bytes[5]) / (1 << fact);
 
     /* clang-format off */
-    data = data_make(
-            "model",        "",                 DATA_STRING, "Efergy-e2CT",
-            "id",           "Transmitter ID",   DATA_INT,    address,
-            "battery_ok",   "Battery",          DATA_INT,    !!battery,
-            "current",      "Current",          DATA_FORMAT, "%.2f A", DATA_DOUBLE, current_adc,
-            "interval",     "Interval",         DATA_FORMAT, "%ds", DATA_INT, interval,
-            "learn",        "Learning",         DATA_STRING, learn ? "YES" : "NO",
-            "mic",          "Integrity",        DATA_STRING, "CHECKSUM",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",        "",                 NULL,         "Efergy-e2CT");
+    data = data_int(data, "id",           "Transmitter ID",   NULL,         address);
+    data = data_int(data, "battery_ok",   "Battery",          NULL,         !!battery);
+    data = data_dbl(data, "current",      "Current",          "%.2f A",     current_adc);
+    data = data_int(data, "interval",     "Interval",         "%ds",        interval);
+    data = data_str(data, "learn",        "Learning",         NULL,         learn ? "YES" : "NO");
+    data = data_str(data, "mic",          "Integrity",        NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

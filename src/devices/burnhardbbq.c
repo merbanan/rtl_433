@@ -97,19 +97,24 @@ static int burnhardbbq_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         /* clang-format off */
-        data = data_make(
-                "model",             "",                     DATA_STRING, "BurnhardBBQ",
-                "id",                "ID",                   DATA_INT,    id,
-                "channel",           "Channel",              DATA_INT,    channel,
-                "temperature_C",     "Temperature",          DATA_COND,   temp_raw != 0, DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-                "setpoint_C",        "Temperature setpoint", DATA_FORMAT, "%.0f C", DATA_DOUBLE, setpoint_c,
-                "temperature_alarm", "Temperature alarm",    DATA_INT,    temp_alarm,
-                "timer",             "Timer",                DATA_STRING, timer_str,
-                "timer_active",      "Timer active",         DATA_INT,    timer_active,
-                "timer_alarm",       "Timer alarm",          DATA_INT,    timer_alarm,
-                "meat",              "Meat",                 DATA_COND,   meat[0] != '\0', DATA_STRING, meat,
-                "taste",             "Taste",                DATA_COND,   taste[0] != '\0', DATA_STRING, taste,
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",             "",                     NULL,         "BurnhardBBQ");
+        data = data_int(data, "id",                "ID",                   NULL,         id);
+        data = data_int(data, "channel",           "Channel",              NULL,         channel);
+        if (temp_raw != 0) {
+            data = data_dbl(data, "temperature_C",     "Temperature",          "%.1f C",     temp_c);
+        }
+        data = data_dbl(data, "setpoint_C",        "Temperature setpoint", "%.0f C",     setpoint_c);
+        data = data_int(data, "temperature_alarm", "Temperature alarm",    NULL,         temp_alarm);
+        data = data_str(data, "timer",             "Timer",                NULL,         timer_str);
+        data = data_int(data, "timer_active",      "Timer active",         NULL,         timer_active);
+        data = data_int(data, "timer_alarm",       "Timer alarm",          NULL,         timer_alarm);
+        if (meat[0] != '\0') {
+            data = data_str(data, "meat",              "Meat",                 NULL,         meat);
+        }
+        if (taste[0] != '\0') {
+            data = data_str(data, "taste",             "Taste",                NULL,         taste);
+        }
         /* clang-format on */
 
         decoder_output_data(decoder, data);

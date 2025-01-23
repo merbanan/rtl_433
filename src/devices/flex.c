@@ -264,13 +264,12 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         print_row_bytes(row_bytes, bitbuffer->bb[r], bitbuffer->bits_per_row[r]);
 
         /* clang-format off */
-        data = data_make(
-                "model", "", DATA_STRING, params->name, // "User-defined"
-                "count", "", DATA_INT, match_count,
-                "num_rows", "", DATA_INT, bitbuffer->num_rows,
-                "len", "", DATA_INT, bitbuffer->bits_per_row[r],
-                "data", "", DATA_STRING, row_bytes,
-                NULL);
+        data = NULL;
+        data = data_str(data, "model", "", NULL,         params->name); // "User-defined"
+        data = data_int(data, "count", "", NULL,         match_count);
+        data = data_int(data, "num_rows", "", NULL,         bitbuffer->num_rows);
+        data = data_int(data, "len", "", NULL,         bitbuffer->bits_per_row[r]);
+        data = data_str(data, "data", "", NULL,         row_bytes);
         /* clang-format on */
 
         // add a data line for each getter
@@ -282,10 +281,9 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (params->count_only) {
         /* clang-format off */
-        data = data_make(
-                "model", "", DATA_STRING, params->name, // "User-defined"
-                "count", "", DATA_INT, match_count,
-                NULL);
+        data = NULL;
+        data = data_str(data, "model", "", NULL,         params->name); // "User-defined"
+        data = data_int(data, "count", "", NULL,         match_count);
         /* clang-format on */
 
         decoder_output_data(decoder, data);
@@ -296,10 +294,9 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         print_row_bytes(row_bytes, bitbuffer->bb[i], bitbuffer->bits_per_row[i]);
 
         /* clang-format off */
-        data = data_make(
-                "len", "", DATA_INT, bitbuffer->bits_per_row[i],
-                "data", "", DATA_STRING, row_bytes,
-                NULL);
+        data = NULL;
+        data = data_int(data, "len", "", NULL,         bitbuffer->bits_per_row[i]);
+        data = data_str(data, "data", "", NULL,         row_bytes);
         /* clang-format on */
         row_data[i] = data;
 
@@ -319,13 +316,12 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);
     }
     /* clang-format off */
-    data = data_make(
-            "model", "", DATA_STRING, params->name, // "User-defined"
-            "count", "", DATA_INT, match_count,
-            "num_rows", "", DATA_INT, bitbuffer->num_rows,
-            "rows", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_DATA, row_data),
-            "codes", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_STRING, row_codes),
-            NULL);
+    data = NULL;
+    data = data_str(data, "model", "", NULL,         params->name); // "User-defined"
+    data = data_int(data, "count", "", NULL,         match_count);
+    data = data_int(data, "num_rows", "", NULL,         bitbuffer->num_rows);
+    data = data_ary(data, "rows", "", NULL,         data_array(bitbuffer->num_rows, DATA_DATA, row_data));
+    data = data_ary(data, "codes", "", NULL,         data_array(bitbuffer->num_rows, DATA_STRING, row_codes));
     /* clang-format on */
 
     decoder_output_data(decoder, data);

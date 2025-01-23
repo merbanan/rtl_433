@@ -71,15 +71,14 @@ static int simplisafe_gen3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",                 DATA_STRING, "SimpliSafe-Gen3",
-            "id",               "ID",               DATA_FORMAT, "%08x", DATA_INT, id,
-            "msg_type",         "Type",             DATA_FORMAT, "%02x", DATA_INT, msg_type,
-            "ctr",              "Counter",          DATA_FORMAT, "%06x", DATA_INT, ctr,
-            "cmac",             "CMAC",             DATA_FORMAT, "%08x", DATA_INT, cmac,
-            "encr",             "Encrypted",        DATA_STRING, encr,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "SimpliSafe-Gen3");
+    data = data_int(data, "id",               "ID",               "%08x",       id);
+    data = data_int(data, "msg_type",         "Type",             "%02x",       msg_type);
+    data = data_int(data, "ctr",              "Counter",          "%06x",       ctr);
+    data = data_int(data, "cmac",             "CMAC",             "%08x",       cmac);
+    data = data_str(data, "encr",             "Encrypted",        NULL,         encr);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

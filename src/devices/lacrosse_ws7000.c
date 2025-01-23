@@ -95,13 +95,12 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         float temperature = ((b[4] * 10) + (b[3] * 1) + (b[2] * 0.1f)) * sign;
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",                 DATA_STRING, "LaCrosse-WS700027",
-                "id",               "",                 DATA_INT,    id,
-                "channel",          "",                 DATA_INT,    addr,
-                "temperature_C",    "Temperature",      DATA_DOUBLE, temperature,
-                "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",                 NULL,         "LaCrosse-WS700027");
+        data = data_int(data, "id",               "",                 NULL,         id);
+        data = data_int(data, "channel",          "",                 NULL,         addr);
+        data = data_dbl(data, "temperature_C",    "Temperature",      NULL,         temperature);
+        data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
         /* clang-format on */
 
         decoder_output_data(decoder, data);
@@ -114,14 +113,13 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int humidity      = (b[7] * 10) + (b[6] * 1) + (b[5] * 0.1f);
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",                 DATA_STRING, "LaCrosse-WS700022",
-                "id",               "",                 DATA_INT,    id,
-                "channel",          "",                 DATA_INT,    addr,
-                "temperature_C",    "Temperature",      DATA_DOUBLE, temperature,
-                "humidity",         "Humidity",         DATA_INT,    humidity,
-                "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",                 NULL,         "LaCrosse-WS700022");
+        data = data_int(data, "id",               "",                 NULL,         id);
+        data = data_int(data, "channel",          "",                 NULL,         addr);
+        data = data_dbl(data, "temperature_C",    "Temperature",      NULL,         temperature);
+        data = data_int(data, "humidity",         "Humidity",         NULL,         humidity);
+        data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
         /* clang-format on */
 
         decoder_output_data(decoder, data);
@@ -132,13 +130,12 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int rain = (b[4] << 8) | (b[3] << 4) | (b[2]);
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",                 DATA_STRING, "LaCrosse-WS700016",
-                "id",               "",                 DATA_INT,    id,
-                "channel",          "",                 DATA_INT,    addr,
-                "rain_mm",          "Rain counter",     DATA_DOUBLE, rain * 0.3,
-                "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",                 NULL,         "LaCrosse-WS700016");
+        data = data_int(data, "id",               "",                 NULL,         id);
+        data = data_int(data, "channel",          "",                 NULL,         addr);
+        data = data_dbl(data, "rain_mm",          "Rain counter",     NULL,         rain * 0.3);
+        data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
         /* clang-format on */
 
         decoder_output_data(decoder, data);
@@ -151,15 +148,14 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         float deviation = (b[7] & 0x3) * 22.5f;
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",                 DATA_STRING, "LaCrosse-WS700015",
-                "id",               "",                 DATA_INT,    id,
-                "channel",          "",                 DATA_INT,    addr,
-                "wind_avg_km_h",    "Wind speed",       DATA_DOUBLE, speed,
-                "wind_dir_deg",     "Wind direction",   DATA_DOUBLE, direction,
-                "wind_dev_deg",     "Wind deviation",   DATA_DOUBLE, deviation,
-                "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",                 NULL,         "LaCrosse-WS700015");
+        data = data_int(data, "id",               "",                 NULL,         id);
+        data = data_int(data, "channel",          "",                 NULL,         addr);
+        data = data_dbl(data, "wind_avg_km_h",    "Wind speed",       NULL,         speed);
+        data = data_dbl(data, "wind_dir_deg",     "Wind direction",   NULL,         direction);
+        data = data_dbl(data, "wind_dev_deg",     "Wind deviation",   NULL,         deviation);
+        data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
         /* clang-format on */
 
         decoder_output_data(decoder, data);
@@ -173,15 +169,14 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int pressure      = (b[10] * 100) + (b[9] * 10) + (b[8] * 1) + 200;
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",                 DATA_STRING, "LaCrosse-WS700020",
-                "id",               "",                 DATA_INT,    id,
-                "channel",          "",                 DATA_INT,    addr,
-                "temperature_C",    "Temperature",      DATA_DOUBLE, temperature,
-                "humidity",         "Humidity",         DATA_INT,    humidity,
-                "pressure_hPa",     "Pressure",         DATA_INT,    pressure,
-                "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",                 NULL,         "LaCrosse-WS700020");
+        data = data_int(data, "id",               "",                 NULL,         id);
+        data = data_int(data, "channel",          "",                 NULL,         addr);
+        data = data_dbl(data, "temperature_C",    "Temperature",      NULL,         temperature);
+        data = data_int(data, "humidity",         "Humidity",         NULL,         humidity);
+        data = data_int(data, "pressure_hPa",     "Pressure",         NULL,         pressure);
+        data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
         /* clang-format on */
 
         decoder_output_data(decoder, data);
@@ -196,14 +191,13 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             brightness *= 10;
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",                 DATA_STRING, "LaCrosse-WS250019",
-                "id",               "",                 DATA_INT,    id,
-                "channel",          "",                 DATA_INT,    addr,
-                "light_lux",        "Brightness",       DATA_INT,    brightness,
-                "exposure_mins",    "Exposition",       DATA_INT,    exposition,
-                "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",                 NULL,         "LaCrosse-WS250019");
+        data = data_int(data, "id",               "",                 NULL,         id);
+        data = data_int(data, "channel",          "",                 NULL,         addr);
+        data = data_int(data, "light_lux",        "Brightness",       NULL,         brightness);
+        data = data_int(data, "exposure_mins",    "Exposition",       NULL,         exposition);
+        data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
         /* clang-format on */
 
         decoder_output_data(decoder, data);

@@ -68,14 +68,13 @@ static int auriol_4ld5661_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         float rain   = rain_raw * 1.0F;
 
         /* clang-format off */
-        data_t *data = data_make(
-                "model",            "Model",        DATA_STRING, "Auriol-4LD5661",
-                "id",               "ID",           DATA_FORMAT, "%02x", DATA_INT, id,
-                "battery_ok",       "Battery OK",   DATA_INT, batt_ok,
-                "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-                "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain,
-                "rain",             "Rain tips",    DATA_INT, rain_raw,
-                NULL);
+        data_t *data = NULL;
+        data = data_str(data, "model",            "Model",        NULL,         "Auriol-4LD5661");
+        data = data_int(data, "id",               "ID",           "%02x",       id);
+        data = data_int(data, "battery_ok",       "Battery OK",   NULL,         batt_ok);
+        data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+        data = data_dbl(data, "rain_mm",          "Rain",         "%.1f mm",    rain);
+        data = data_int(data, "rain",             "Rain tips",    NULL,         rain_raw);
         /* clang-format on */
 
         decoder_output_data(decoder, data);

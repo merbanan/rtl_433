@@ -88,15 +88,14 @@ static int geevon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Store the decoded data
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Geevon-TX163",
-            "id",               "",             DATA_INT,    b[0],
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "channel",          "Channel",      DATA_INT,    channel,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,     humidity,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Geevon-TX163");
+    data = data_int(data, "id",               "",             NULL,         b[0]);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+    data = data_int(data, "channel",          "Channel",      NULL,         channel);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+    data = data_int(data, "humidity",         "Humidity",     "%u %%",      humidity);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

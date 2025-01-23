@@ -107,12 +107,11 @@ static int atech_ws308_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_c = sign * temp_raw * 0.1f;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Atech-WS308",
-            "id",               "Fixed ID",     DATA_INT,    id,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "mic",              "Integrity",    DATA_STRING, "PARITY",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Atech-WS308");
+    data = data_int(data, "id",               "Fixed ID",     NULL,         id);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "PARITY");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

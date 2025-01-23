@@ -145,16 +145,15 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             int direction = (reverse8(bb[5 + skip][2]) << 1) | (bb[5 + skip][1] & 0x1);
 
             /* clang-format off */
-            data = data_make(
-                    "model",            "",                 DATA_STRING, "AlectoV1-Wind",
-                    "id",               "House Code",       DATA_INT,    sensor_id,
-                    "channel",          "Channel",          DATA_INT,    channel,
-                    "battery_ok",       "Battery",          DATA_INT,    !battery_low,
-                    "wind_avg_m_s",     "Wind speed",       DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, speed * 0.2F,
-                    "wind_max_m_s",     "Wind gust",        DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, gust * 0.2F,
-                    "wind_dir_deg",     "Wind Direction",   DATA_INT,    direction,
-                    "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-                    NULL);
+            data = NULL;
+            data = data_str(data, "model",            "",                 NULL,         "AlectoV1-Wind");
+            data = data_int(data, "id",               "House Code",       NULL,         sensor_id);
+            data = data_int(data, "channel",          "Channel",          NULL,         channel);
+            data = data_int(data, "battery_ok",       "Battery",          NULL,         !battery_low);
+            data = data_dbl(data, "wind_avg_m_s",     "Wind speed",       "%.2f m/s",   speed * 0.2F);
+            data = data_dbl(data, "wind_max_m_s",     "Wind gust",        "%.2f m/s",   gust * 0.2F);
+            data = data_int(data, "wind_dir_deg",     "Wind Direction",   NULL,         direction);
+            data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
             /* clang-format on */
             decoder_output_data(decoder, data);
             return 1;
@@ -166,14 +165,13 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         double rain_mm = ((reverse8(b[3]) << 8) | reverse8(b[2])) * 0.25F;
 
         /* clang-format off */
-        data = data_make(
-                "model",        "",             DATA_STRING, "AlectoV1-Rain",
-                "id",           "House Code",   DATA_INT,    sensor_id,
-                "channel",      "Channel",      DATA_INT,    channel,
-                "battery_ok",   "Battery",      DATA_INT,    !battery_low,
-                "rain_mm",      "Total Rain",   DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rain_mm,
-                "mic",          "Integrity",    DATA_STRING, "CHECKSUM",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",        "",             NULL,         "AlectoV1-Rain");
+        data = data_int(data, "id",           "House Code",   NULL,         sensor_id);
+        data = data_int(data, "channel",      "Channel",      NULL,         channel);
+        data = data_int(data, "battery_ok",   "Battery",      NULL,         !battery_low);
+        data = data_dbl(data, "rain_mm",      "Total Rain",   "%.2f mm",    rain_mm);
+        data = data_str(data, "mic",          "Integrity",    NULL,         "CHECKSUM");
         /* clang-format on */
         decoder_output_data(decoder, data);
         return 1;
@@ -191,15 +189,14 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             return DECODE_FAIL_SANITY; // detect false positive, prologue is also 36bits and sometimes detected as alecto
 
         /* clang-format off */
-        data = data_make(
-                "model",         "",            DATA_STRING, "AlectoV1-Temperature",
-                "id",            "House Code",  DATA_INT,    sensor_id,
-                "channel",       "Channel",     DATA_INT,    channel,
-                "battery_ok",    "Battery",     DATA_INT,    !battery_low,
-                "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-                "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT, humidity,
-                "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",         "",            NULL,         "AlectoV1-Temperature");
+        data = data_int(data, "id",            "House Code",  NULL,         sensor_id);
+        data = data_int(data, "channel",       "Channel",     NULL,         channel);
+        data = data_int(data, "battery_ok",    "Battery",     NULL,         !battery_low);
+        data = data_dbl(data, "temperature_C", "Temperature", "%.2f C",     temp_c);
+        data = data_int(data, "humidity",      "Humidity",    "%u %%",      humidity);
+        data = data_str(data, "mic",           "Integrity",   NULL,         "CHECKSUM");
         /* clang-format on */
         decoder_output_data(decoder, data);
         return 1;

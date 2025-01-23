@@ -130,14 +130,13 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         float temp_setp = (float)bytes[7] + (float)bytes[6] / 256.0f;
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",             DATA_STRING, "Danfoss-CFR",
-                "id",               "ID",           DATA_INT,    id,
-                "temperature_C",    "Temperature",  DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_meas,
-                "setpoint_C",       "Setpoint",     DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_setp,
-                "switch",           "Switch",       DATA_STRING, str_sw,
-                "mic",              "Integrity",    DATA_STRING, "CRC",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",             NULL,         "Danfoss-CFR");
+        data = data_int(data, "id",               "ID",           NULL,         id);
+        data = data_dbl(data, "temperature_C",    "Temperature",  "%.2f C",     temp_meas);
+        data = data_dbl(data, "setpoint_C",       "Setpoint",     "%.2f C",     temp_setp);
+        data = data_str(data, "switch",           "Switch",       NULL,         str_sw);
+        data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
         /* clang-format on */
 
         decoder_output_data(decoder, data);

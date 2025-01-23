@@ -71,15 +71,14 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     snprintf(serial_str, sizeof(serial_str), "%07X", serial);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING,    "Microchip-HCS200",
-            "id",               "",             DATA_STRING,    serial_str,
-            "battery_ok",       "Battery",      DATA_INT,       !battery_low,
-            "button",           "Button",       DATA_INT,       btn_num,
-            "learn",            "Learn mode",   DATA_INT,       learn,
-            "repeat",           "Repeat",       DATA_INT,       repeat,
-            "encrypted",        "",             DATA_STRING,    encrypted_str,
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Microchip-HCS200");
+    data = data_str(data, "id",               "",             NULL,         serial_str);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+    data = data_int(data, "button",           "Button",       NULL,         btn_num);
+    data = data_int(data, "learn",            "Learn mode",   NULL,         learn);
+    data = data_int(data, "repeat",           "Repeat",       NULL,         repeat);
+    data = data_str(data, "encrypted",        "",             NULL,         encrypted_str);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

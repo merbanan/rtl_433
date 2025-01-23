@@ -222,17 +222,20 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             snprintf(extra, sizeof(extra), "%02x%02x%02x%02x%02x", b[6], b[7], b[8], b[9], b[10]);
 
             /* clang-format off */
-            data_t *data = data_make(
-                    "model",            "",             DATA_COND, msg_type == 0x30, DATA_STRING, "AmbientWeather-WH31E",
-                    "model",            "",             DATA_COND, msg_type == 0x37, DATA_STRING, "AmbientWeather-WH31B",
-                    "id",               "",             DATA_INT,    id,
-                    "channel",          "Channel",      DATA_INT,    channel,
-                    "battery_ok",       "Battery",      DATA_INT,    !batt_low,
-                    "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-                    "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                    "data",             "Extra Data",   DATA_STRING, extra,
-                    "mic",              "Integrity",    DATA_STRING, "CRC",
-                    NULL);
+            data_t *data = NULL;
+            if (msg_type == 0x30) {
+                data = data_str(data, "model",            "",             NULL,         "AmbientWeather-WH31E");
+            }
+            if (msg_type == 0x37) {
+                data = data_str(data, "model",            "",             NULL,         "AmbientWeather-WH31B");
+            }
+            data = data_int(data, "id",               "",             NULL,         id);
+            data = data_int(data, "channel",          "Channel",      NULL,         channel);
+            data = data_int(data, "battery_ok",       "Battery",      NULL,         !batt_low);
+            data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+            data = data_int(data, "humidity",         "Humidity",     "%u %%",      humidity);
+            data = data_str(data, "data",             "Extra Data",   NULL,         extra);
+            data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
             /* clang-format on */
             decoder_output_data(decoder, data);
             events++;
@@ -265,13 +268,12 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     year, month, day, hours, minutes, seconds);
 
             /* clang-format off */
-            data_t *data = data_make(
-                    "model",        "",             DATA_STRING,    "AmbientWeather-WH31E",
-                    "id",           "Station ID",   DATA_INT,       id,
-                    "data",         "Unknown",      DATA_INT,       unknown,
-                    "radio_clock",  "Radio Clock",  DATA_STRING,    clock_str,
-                    "mic",          "Integrity",    DATA_STRING,    "CRC",
-                    NULL);
+            data_t *data = NULL;
+            data = data_str(data, "model",        "",             NULL,         "AmbientWeather-WH31E");
+            data = data_int(data, "id",           "Station ID",   NULL,         id);
+            data = data_int(data, "data",         "Unknown",      NULL,         unknown);
+            data = data_str(data, "radio_clock",  "Radio Clock",  NULL,         clock_str);
+            data = data_str(data, "mic",          "Integrity",    NULL,         "CRC");
             /* clang-format on */
             decoder_output_data(decoder, data);
             events++;
@@ -301,15 +303,18 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 battery_lvl = 100;
 
             /* clang-format off */
-            data_t *data = data_make(
-                    "model",            "",                DATA_STRING, "EcoWitt-WH40",
-                    "id",               "",                DATA_INT,    id,
-                    "battery_V",        "Battery Voltage", DATA_COND, battery_v != 0, DATA_FORMAT, "%f V", DATA_DOUBLE, battery_v * 0.1f,
-                    "battery_ok",       "Battery",         DATA_COND, battery_v != 0, DATA_DOUBLE, battery_lvl * 0.01f,
-                    "rain_mm",          "Total Rain",      DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1,
-                    "data",             "Extra Data",      DATA_STRING, extra,
-                    "mic",              "Integrity",       DATA_STRING, "CRC",
-                    NULL);
+            data_t *data = NULL;
+            data = data_str(data, "model",            "",                NULL,         "EcoWitt-WH40");
+            data = data_int(data, "id",               "",                NULL,         id);
+            if (battery_v != 0) {
+                data = data_dbl(data, "battery_V",        "Battery Voltage", "%f V",       battery_v * 0.1f);
+            }
+            if (battery_v != 0) {
+                data = data_dbl(data, "battery_ok",       "Battery",         NULL,         battery_lvl * 0.01f);
+            }
+            data = data_dbl(data, "rain_mm",          "Total Rain",      "%.1f mm",    rain_raw * 0.1);
+            data = data_str(data, "data",             "Extra Data",      NULL,         extra);
+            data = data_str(data, "mic",              "Integrity",       NULL,         "CRC");
             /* clang-format on */
 
             decoder_output_data(decoder, data);
@@ -342,19 +347,18 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             snprintf(extra, sizeof(extra), "%02x%01x", b[16], b[17] >> 4);
 
             /* clang-format off */
-            data_t *data = data_make(
-                    "model",            "",             DATA_STRING, "EcoWitt-WS68",
-                    "id",               "",             DATA_INT,    id,
-                    "battery_raw",      "Battery Raw",  DATA_INT,    batt,
-                    "battery_ok",       "Battery OK",   DATA_INT,    batt_ok,
-                    "light_lux",        "Lux",          DATA_FORMAT, "%u lux",   DATA_INT,    light_lux,
-                    "wind_avg_m_s",     "Wind Speed",   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wspeed * 0.1f,
-                    "wind_max_m_s",     "Wind Gust",    DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wgust * 0.1f,
-                    "uvi",              "UVI",          DATA_INT,    uvindex,
-                    "wind_dir_deg",     "Wind dir",     DATA_INT,    wdir,
-                    "data",             "Extra Data",   DATA_STRING, extra,
-                    "mic",              "Integrity",    DATA_STRING, "CRC",
-                    NULL);
+            data_t *data = NULL;
+            data = data_str(data, "model",            "",             NULL,         "EcoWitt-WS68");
+            data = data_int(data, "id",               "",             NULL,         id);
+            data = data_int(data, "battery_raw",      "Battery Raw",  NULL,         batt);
+            data = data_int(data, "battery_ok",       "Battery OK",   NULL,         batt_ok);
+            data = data_int(data, "light_lux",        "Lux",          "%u lux",     light_lux);
+            data = data_dbl(data, "wind_avg_m_s",     "Wind Speed",   "%.1f m/s",   wspeed * 0.1f);
+            data = data_dbl(data, "wind_max_m_s",     "Wind Gust",    "%.1f m/s",   wgust * 0.1f);
+            data = data_int(data, "uvi",              "UVI",          NULL,         uvindex);
+            data = data_int(data, "wind_dir_deg",     "Wind dir",     NULL,         wdir);
+            data = data_str(data, "data",             "Extra Data",   NULL,         extra);
+            data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
             /* clang-format on */
             decoder_output_data(decoder, data);
             events++;

@@ -104,16 +104,15 @@ static int flowis_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     snprintf(fts_str, sizeof(fts_str), "%4d-%02d-%02dT%02d:%02d:%02d", fts_year + 2000, fts_mth, fts_day, fts_hour, fts_min, fts_sec);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",        "",             DATA_STRING, "Flowis",
-            "id",           "Meter id",     DATA_INT,    id,
-            "type",         "Type",         DATA_INT,    type,
-            "volume_m3",    "Volume",       DATA_FORMAT, "%.3f m3", DATA_DOUBLE, volume/1000.0,
-            "device_time",  "Device time",  DATA_STRING, fts_str,
-            "alarm",        "Alarm",        DATA_INT,    b[15],
-            "backflow",     "Backflow",     DATA_INT,    b[14],
-            "mic",          "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",        "",             NULL,         "Flowis");
+    data = data_int(data, "id",           "Meter id",     NULL,         id);
+    data = data_int(data, "type",         "Type",         NULL,         type);
+    data = data_dbl(data, "volume_m3",    "Volume",       "%.3f m3",    volume/1000.0);
+    data = data_str(data, "device_time",  "Device time",  NULL,         fts_str);
+    data = data_int(data, "alarm",        "Alarm",        NULL,         b[15]);
+    data = data_int(data, "backflow",     "Backflow",     NULL,         b[14]);
+    data = data_str(data, "mic",          "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

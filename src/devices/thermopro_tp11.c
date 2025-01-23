@@ -51,12 +51,11 @@ static int thermopro_tp11_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
     float temp_c = (temp_raw - 200) * 0.1f;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",         "",            DATA_STRING, "Thermopro-TP11",
-            "id",            "Id",          DATA_INT,    device,
-            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "mic",           "Integrity",   DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",         "",            NULL,         "Thermopro-TP11");
+    data = data_int(data, "id",            "Id",          NULL,         device);
+    data = data_dbl(data, "temperature_C", "Temperature", "%.1f C",     temp_c);
+    data = data_str(data, "mic",           "Integrity",   NULL,         "CRC");
     /* clang-format on */
     decoder_output_data(decoder, data);
     return 1;

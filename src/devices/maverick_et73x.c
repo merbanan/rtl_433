@@ -90,13 +90,12 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 pre, flags, temp1, temp2, digest, chk[0], chk[1], chk[2], id);
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",                     DATA_STRING, "Maverick-ET73x",
-            "id",               "Session_ID",           DATA_INT,    id,
-            "status",           "Status",               DATA_STRING, status,
-            "temperature_1_C",  "TemperatureSensor1",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp1_c,
-            "temperature_2_C",  "TemperatureSensor2",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp2_c,
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",                     NULL,         "Maverick-ET73x");
+    data = data_int(data, "id",               "Session_ID",           NULL,         id);
+    data = data_str(data, "status",           "Status",               NULL,         status);
+    data = data_dbl(data, "temperature_1_C",  "TemperatureSensor1",   "%.2f C",     temp1_c);
+    data = data_dbl(data, "temperature_2_C",  "TemperatureSensor2",   "%.2f C",     temp2_c);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

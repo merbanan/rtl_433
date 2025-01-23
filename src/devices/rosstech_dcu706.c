@@ -87,13 +87,12 @@ static int rosstech_dcu706_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data_t *data = data_make(
-        "model",            "Model",              DATA_STRING,   "Rosstech-Spa",
-        "id",               "ID",                 DATA_FORMAT,   "%04x",    DATA_INT,   id,
-        "msg_type",         "Transmission Type",  DATA_STRING,   msg_type == 0xba ? "Data" : "Bond",
-        "temperature_F",    "Temperature",        DATA_FORMAT,   "%d F",    DATA_INT,   temp_f,
-        "mic",              "Integrity",          DATA_STRING,   "CHECKSUM",
-        NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "Model",              NULL,         "Rosstech-Spa");
+    data = data_int(data, "id",               "ID",                 "%04x",       id);
+    data = data_str(data, "msg_type",         "Transmission Type",  NULL,         msg_type == 0xba ? "Data" : "Bond");
+    data = data_int(data, "temperature_F",    "Temperature",        "%d F",       temp_f);
+    data = data_str(data, "mic",              "Integrity",          NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

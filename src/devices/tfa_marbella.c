@@ -74,13 +74,12 @@ static int tfa_marbella_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     snprintf(serialnr_str, sizeof(serialnr_str), "%06x", serialnr);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "TFA-Marbella",
-            "id",               "",             DATA_STRING, serialnr_str,
-            "counter",          "",             DATA_INT,    counter,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "TFA-Marbella");
+    data = data_str(data, "id",               "",             NULL,         serialnr_str);
+    data = data_int(data, "counter",          "",             NULL,         counter);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

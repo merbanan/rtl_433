@@ -211,11 +211,10 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if ((!ikea_sparsnas_sensor_id) || (rcv_sensor_id != ikea_sparsnas_sensor_id)) {
 
         /* clang-format off */
-        data_t *data = data_make(
-                "model",         "Model",               DATA_STRING, "Ikea-Sparsnas",
-                "id",            "Sensor ID",           DATA_INT, ikea_sparsnas_sensor_id,
-                "mic",           "Integrity",           DATA_STRING,    "CRC",
-                NULL);
+        data_t *data = NULL;
+        data = data_str(data, "model",         "Model",               NULL,         "Ikea-Sparsnas");
+        data = data_int(data, "id",            "Sensor ID",           NULL,         ikea_sparsnas_sensor_id);
+        data = data_str(data, "mic",           "Integrity",           NULL,         "CRC");
         /* clang-format on */
 
         decoder_output_data(decoder, data);
@@ -249,18 +248,17 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float cumulative_kWh = ((float)pulses) / ((float)ikea_sparsnas_pulses_per_kwh);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",         "Model",               DATA_STRING, "Ikea-Sparsnas",
-            "id",            "Sensor ID",           DATA_INT,    rcv_sensor_id,
-            "sequence",      "Sequence Number",     DATA_INT,    sequence_number,
-            "battery_ok",    "Battery level",       DATA_INT,    battery * 0.01f, // 0-100
-            "pulses_per_kWh", "Pulses per kWh",     DATA_INT,    ikea_sparsnas_pulses_per_kwh,
-            "cumulative_kWh", "Cumulative kWh",     DATA_FORMAT, "%7.3fkWh", DATA_DOUBLE,  cumulative_kWh,
-            "effect",        "Effect",              DATA_FORMAT, "%dW", DATA_INT,  effect,
-            "pulses",        "Pulses",              DATA_INT,    pulses,
-            "mode",          "Mode",                DATA_INT,    mode,
-            "mic",           "Integrity",           DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",         "Model",               NULL,         "Ikea-Sparsnas");
+    data = data_int(data, "id",            "Sensor ID",           NULL,         rcv_sensor_id);
+    data = data_int(data, "sequence",      "Sequence Number",     NULL,         sequence_number);
+    data = data_int(data, "battery_ok",    "Battery level",       NULL,         battery * 0.01f); // 0-100
+    data = data_int(data, "pulses_per_kWh", "Pulses per kWh",     NULL,         ikea_sparsnas_pulses_per_kwh);
+    data = data_dbl(data, "cumulative_kWh", "Cumulative kWh",     "%7.3fkWh",   cumulative_kWh);
+    data = data_int(data, "effect",        "Effect",              "%dW",        effect);
+    data = data_int(data, "pulses",        "Pulses",              NULL,         pulses);
+    data = data_int(data, "mode",          "Mode",                NULL,         mode);
+    data = data_str(data, "mic",           "Integrity",           NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

@@ -122,17 +122,20 @@ static int ant_antplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         antplus_flag = 1;
 
     /* clang-format off */
-    data_t *data = data_make(
-        "model",       "",               DATA_STRING, "Garmin-ANT",
-        "network",     "Network",        DATA_COND,   antplus_flag == 1,  DATA_STRING, "ANT+",
-        "network",     "Network",        DATA_COND,   antplus_flag == 0,  DATA_STRING, "ANT",
-        "channel",     "Net key",        DATA_FORMAT, "0x%04x", DATA_INT, net_key,
-        "id",          "Device #",       DATA_FORMAT, "0x%04x", DATA_INT, id,
-        "device_type", "Device type",    DATA_INT,    device_type,
-        "tx_type",     "TX type",        DATA_INT,    tx_type,
-        "payload",     "Payload",        DATA_STRING, payload,
-        "mic",         "Integrity",      DATA_STRING, "CRC",
-        NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",       "",               NULL,         "Garmin-ANT");
+    if (antplus_flag == 1) {
+        data = data_str(data, "network",     "Network",        NULL,         "ANT+");
+    }
+    if (antplus_flag == 0) {
+        data = data_str(data, "network",     "Network",        NULL,         "ANT");
+    }
+    data = data_int(data, "channel",     "Net key",        "0x%04x",     net_key);
+    data = data_int(data, "id",          "Device #",       "0x%04x",     id);
+    data = data_int(data, "device_type", "Device type",    NULL,         device_type);
+    data = data_int(data, "tx_type",     "TX type",        NULL,         tx_type);
+    data = data_str(data, "payload",     "Payload",        NULL,         payload);
+    data = data_str(data, "mic",         "Integrity",      NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

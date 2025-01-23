@@ -69,18 +69,17 @@ static int esa_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     energy_impulse_val = 1.0f * impulses_val / impulse_constant;
 
     /* clang-format off */
-    data = data_make(
-            "model",            "Model",            DATA_STRING, "ESA-x000",
-            "id",               "Id",               DATA_INT, deviceid,
-            "impulses",         "Impulses",          DATA_INT, impulses,
-            "impulses_total",   "Impulses Total",   DATA_INT, impulses_total,
-            "impulse_constant", "Impulse Constant", DATA_INT, impulse_constant,
-            "total_kWh",        "Energy Total",     DATA_DOUBLE, energy_total_val,
-            "impulse_kWh",      "Energy Impulse",   DATA_DOUBLE, energy_impulse_val,
-            "sequence_id",      "Sequence ID",      DATA_INT, sequence_id,
-            "is_retry",         "Is Retry",         DATA_INT, is_retry,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "Model",            NULL,         "ESA-x000");
+    data = data_int(data, "id",               "Id",               NULL,         deviceid);
+    data = data_int(data, "impulses",         "Impulses",          NULL,         impulses);
+    data = data_int(data, "impulses_total",   "Impulses Total",   NULL,         impulses_total);
+    data = data_int(data, "impulse_constant", "Impulse Constant", NULL,         impulse_constant);
+    data = data_dbl(data, "total_kWh",        "Energy Total",     NULL,         energy_total_val);
+    data = data_dbl(data, "impulse_kWh",      "Energy Impulse",   NULL,         energy_impulse_val);
+    data = data_int(data, "sequence_id",      "Sequence ID",      NULL,         sequence_id);
+    data = data_int(data, "is_retry",         "Is Retry",         NULL,         is_retry);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

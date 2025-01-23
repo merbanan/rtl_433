@@ -76,12 +76,11 @@ static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data = data_make(
-            "model",    "",             DATA_STRING, "Chuango-Security",
-            "id",       "ID",           DATA_INT,    id,
-            "cmd",      "CMD",          DATA_STRING, cmd_str,
-            "cmd_id",   "CMD_ID",       DATA_INT,    cmd,
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",    "",             NULL,         "Chuango-Security");
+    data = data_int(data, "id",       "ID",           NULL,         id);
+    data = data_str(data, "cmd",      "CMD",          NULL,         cmd_str);
+    data = data_int(data, "cmd_id",   "CMD_ID",       NULL,         cmd);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

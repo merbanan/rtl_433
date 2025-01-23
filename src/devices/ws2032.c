@@ -81,19 +81,18 @@ static int fineoffset_ws2032_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int rain_raw      = (b[9] << 16) | (b[10] << 8) | b[11]; // raw tip count
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",                 DATA_STRING, "WS2032",
-            "id",               "Station ID",        DATA_FORMAT, "%04X",    DATA_INT,    device_id,
-            "battery_ok",       "Battery",                                  DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temperature,
-            "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
-            "wind_dir_deg",     "Wind Direction",   DATA_FORMAT, "%.1f",    DATA_DOUBLE, dir,
-            "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.1f",    DATA_DOUBLE, speed,
-            "wind_max_km_h",    "Wind gust",        DATA_FORMAT, "%.1f",    DATA_DOUBLE, gust,
-            "rain",             "Rain tips",                                DATA_INT,    rain_raw,
-            "flags",            "Flags",            DATA_FORMAT, "%02x",    DATA_INT,    flags,
-            "mic",              "Integrity",                                DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "WS2032");
+    data = data_int(data, "id",               "Station ID",        "%04X",       device_id);
+    data = data_int(data, "battery_ok",       "Battery",                                  NULL,         !battery_low);
+    data = data_dbl(data, "temperature_C",    "Temperature",      "%.1f C",     temperature);
+    data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+    data = data_dbl(data, "wind_dir_deg",     "Wind Direction",   "%.1f",       dir);
+    data = data_dbl(data, "wind_avg_km_h",    "Wind avg speed",   "%.1f",       speed);
+    data = data_dbl(data, "wind_max_km_h",    "Wind gust",        "%.1f",       gust);
+    data = data_int(data, "rain",             "Rain tips",                                NULL,         rain_raw);
+    data = data_int(data, "flags",            "Flags",            "%02x",       flags);
+    data = data_str(data, "mic",              "Integrity",                                NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

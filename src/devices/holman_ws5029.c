@@ -140,16 +140,15 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         float rain_mm     = rain_raw * 0.79f;
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",                 DATA_STRING, "Holman-WS5029",
-                "id",               "Station ID",        DATA_FORMAT, "%04X",       DATA_INT,    device_id,
-                "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",     DATA_DOUBLE, temp_c,
-                "humidity",         "Humidity",         DATA_FORMAT, "%u %%",      DATA_INT,    humidity,
-                "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",    DATA_DOUBLE, rain_mm,
-                "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
-                "wind_dir_deg",     "Wind Direction",   DATA_INT, direction_deg,
-                "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",                 NULL,         "Holman-WS5029");
+        data = data_int(data, "id",               "Station ID",        "%04X",       device_id);
+        data = data_dbl(data, "temperature_C",    "Temperature",      "%.1f C",     temp_c);
+        data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+        data = data_dbl(data, "rain_mm",          "Total rainfall",   "%.1f mm",    rain_mm);
+        data = data_dbl(data, "wind_avg_km_h",    "Wind avg speed",   "%.1f km/h",  speed_kmh);
+        data = data_int(data, "wind_dir_deg",     "Wind Direction",   NULL,         direction_deg);
+        data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
         /* clang-format on */
 
         decoder_output_data(decoder, data);
@@ -161,20 +160,19 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int battery_low  = ((b[10] & 0x30) >> 4);
         int counter      = ((b[10] & 0x0f) << 8 | b[11]);
         /* clang-format off */
-        data = data_make(
-                "model",            "",                 DATA_STRING, "AOK-5056",
-                "id",               "Station ID",        DATA_FORMAT, "%04X",      DATA_INT,    device_id,
-                "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",    DATA_DOUBLE, temp_c,
-                "humidity",         "Humidity",         DATA_FORMAT, "%u %%",     DATA_INT,    humidity,
-                "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",   DATA_DOUBLE, rain_mm,
-                "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.1f km/h", DATA_DOUBLE, speed_kmh,
-                "wind_dir_deg",     "Wind Direction",   DATA_INT,                              direction_deg,
-                "uv",               "UV Index",         DATA_FORMAT, "%u",        DATA_INT,    uv_index,
-                "light_lux",        "Lux",              DATA_FORMAT, "%u",        DATA_INT,    light_lux,
-                "counter",          "Counter",          DATA_FORMAT, "%u",        DATA_INT,    counter,
-                "battery_ok",       "battery",          DATA_FORMAT, "%u",        DATA_INT,    !battery_low,
-                "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",                 NULL,         "AOK-5056");
+        data = data_int(data, "id",               "Station ID",        "%04X",       device_id);
+        data = data_dbl(data, "temperature_C",    "Temperature",      "%.1f C",     temp_c);
+        data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+        data = data_dbl(data, "rain_mm",          "Total rainfall",   "%.1f mm",    rain_mm);
+        data = data_dbl(data, "wind_avg_km_h",    "Wind avg speed",   "%.1f km/h",  speed_kmh);
+        data = data_int(data, "wind_dir_deg",     "Wind Direction",   NULL,         direction_deg);
+        data = data_int(data, "uv",               "UV Index",         "%u",         uv_index);
+        data = data_int(data, "light_lux",        "Lux",              "%u",         light_lux);
+        data = data_int(data, "counter",          "Counter",          "%u",         counter);
+        data = data_int(data, "battery_ok",       "battery",          "%u",         !battery_low);
+        data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
         /* clang-format on */
 
         decoder_output_data(decoder, data);
@@ -300,17 +298,16 @@ static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     wind_dir    = b[9] & 0xF;                                          // 4 bit wind direction, clockwise from North
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",                 DATA_STRING, "Holman-WS5029",
-            "id",               "",                 DATA_INT,    id,
-            "battery_ok",       "Battery",          DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",     DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",         DATA_FORMAT, "%u %%",       DATA_INT,    humidity,
-            "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",    DATA_DOUBLE, rain_mm,
-            "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
-            "wind_dir_deg",     "Wind Direction",   DATA_INT,    (int)(wind_dir * 22.5),
-            "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "Holman-WS5029");
+    data = data_int(data, "id",               "",                 NULL,         id);
+    data = data_int(data, "battery_ok",       "Battery",          NULL,         !battery_low);
+    data = data_dbl(data, "temperature_C",    "Temperature",      "%.1f C",     temp_c);
+    data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+    data = data_dbl(data, "rain_mm",          "Total rainfall",   "%.1f mm",    rain_mm);
+    data = data_dbl(data, "wind_avg_km_h",    "Wind avg speed",   "%.1f km/h",  speed_kmh);
+    data = data_int(data, "wind_dir_deg",     "Wind Direction",   NULL,         (int)(wind_dir * 22.5));
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

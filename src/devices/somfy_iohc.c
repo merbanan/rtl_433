@@ -173,24 +173,27 @@ static int somfy_iohc_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_logf_bitrow(decoder, 2, __func__, b, len * 8, "offset %u, num_bits %u, len %d, msg_len %d", offset, num_bits, len, msg_len);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",                 DATA_STRING, "Somfy-IOHC",
-            "id",               "Source",           DATA_FORMAT, "%06x", DATA_INT, msg_src_addr,
-            "dst_id",           "Target",           DATA_FORMAT, "%06x", DATA_INT, msg_dst_addr,
-            "msg_type",         "Command",          DATA_FORMAT, "%02x", DATA_INT, msg_cmd_id,
-            "msg",              "Message",          DATA_STRING, msg_data,
-            "mode",             "Mode",             DATA_STRING, msg_protocol_mode ? "One-way" : "Two-way",
-            "version",          "Version",          DATA_INT,    msg_protocol_version,
-            "counter",          "Counter",          DATA_COND, msg_protocol_mode == 1, DATA_INT,    msg_seq_nr,
-            "mac",              "MAC",              DATA_COND, msg_protocol_mode == 1, DATA_STRING, msg_mac,
-            "flag_end",         "End flag",         DATA_INT,    msg_end_flag,
-            "flag_start",       "Start flag",       DATA_INT,    msg_start_flag,
-            "flag_mode",        "Mode flag",        DATA_INT,    msg_protocol_mode,
-            "flag_beacon",      "Beacon flag",      DATA_INT,    msg_use_beacon,
-            "flag_routed",      "Routed flag",      DATA_INT,    msg_is_routed,
-            "flag_lpm",         "LPM flag",         DATA_INT,    msg_low_power_mode,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "Somfy-IOHC");
+    data = data_int(data, "id",               "Source",           "%06x",       msg_src_addr);
+    data = data_int(data, "dst_id",           "Target",           "%06x",       msg_dst_addr);
+    data = data_int(data, "msg_type",         "Command",          "%02x",       msg_cmd_id);
+    data = data_str(data, "msg",              "Message",          NULL,         msg_data);
+    data = data_str(data, "mode",             "Mode",             NULL,         msg_protocol_mode ? "One-way" : "Two-way");
+    data = data_int(data, "version",          "Version",          NULL,         msg_protocol_version);
+    if (msg_protocol_mode == 1) {
+        data = data_int(data, "counter",          "Counter",          NULL,         msg_seq_nr);
+    }
+    if (msg_protocol_mode == 1) {
+        data = data_str(data, "mac",              "MAC",              NULL,         msg_mac);
+    }
+    data = data_int(data, "flag_end",         "End flag",         NULL,         msg_end_flag);
+    data = data_int(data, "flag_start",       "Start flag",       NULL,         msg_start_flag);
+    data = data_int(data, "flag_mode",        "Mode flag",        NULL,         msg_protocol_mode);
+    data = data_int(data, "flag_beacon",      "Beacon flag",      NULL,         msg_use_beacon);
+    data = data_int(data, "flag_routed",      "Routed flag",      NULL,         msg_is_routed);
+    data = data_int(data, "flag_lpm",         "LPM flag",         NULL,         msg_low_power_mode);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

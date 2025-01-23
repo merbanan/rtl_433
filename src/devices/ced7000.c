@@ -80,13 +80,12 @@ static int ced7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float split = (b[7] & 0xF) * 100 + (b[7] >> 4) * 10 + (b[6] & 0xF) + (b[6] >> 4) * 0.1 + (b[5] & 0xF) * 0.01f;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",    "Model",       DATA_STRING, "CED7000",
-            "id",       "ID",          DATA_FORMAT, "%04u",    DATA_INT, id,
-            "count",    "Shot Count",  DATA_INT,    count,
-            "final",    "Final Time",  DATA_FORMAT, "%.2f s", DATA_DOUBLE, final,
-            "split",    "Split Time",  DATA_FORMAT, "%.2f s", DATA_DOUBLE, split,
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",    "Model",       NULL,         "CED7000");
+    data = data_int(data, "id",       "ID",          "%04u",       id);
+    data = data_int(data, "count",    "Shot Count",  NULL,         count);
+    data = data_dbl(data, "final",    "Final Time",  "%.2f s",     final);
+    data = data_dbl(data, "split",    "Split Time",  "%.2f s",     split);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

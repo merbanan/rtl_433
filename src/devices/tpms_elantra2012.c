@@ -78,18 +78,17 @@ static int tpms_elantra2012_decode(r_device *decoder, bitbuffer_t *bitbuffer, un
     snprintf(flags_str, sizeof(flags_str), "%x", flags);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Elantra2012",
-            "type",             "",             DATA_STRING, "TPMS",
-            "id",               "",             DATA_STRING, id_str,
-            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, (float)pressure_kpa,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (float)temperature_c,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "triggered",        "LF Triggered", DATA_INT,    triggered,
-            "storage",          "Storage mode", DATA_INT,    storage,
-            "flags",            "All Flags",    DATA_STRING, flags_str,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Elantra2012");
+    data = data_str(data, "type",             "",             NULL,         "TPMS");
+    data = data_str(data, "id",               "",             NULL,         id_str);
+    data = data_dbl(data, "pressure_kPa",     "Pressure",     "%.1f kPa",   (float)pressure_kpa);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.0f C",     (float)temperature_c);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+    data = data_int(data, "triggered",        "LF Triggered", NULL,         triggered);
+    data = data_int(data, "storage",          "Storage mode", NULL,         storage);
+    data = data_str(data, "flags",            "All Flags",    NULL,         flags_str);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

@@ -104,22 +104,21 @@ static int tpms_tyreguard400_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
     int temp_c = b[8] - 40;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",           "Model",                 DATA_STRING, "TyreGuard400",
-            "type",            "Type",                  DATA_STRING, "TPMS",
-            "id",              "ID",                    DATA_STRING, id_str,
+    data_t *data = NULL;
+    data = data_str(data, "model",           "Model",                 NULL,         "TyreGuard400");
+    data = data_str(data, "type",            "Type",                  NULL,         "TPMS");
+    data = data_str(data, "id",              "ID",                    NULL,         id_str);
 //            "flags",           "Flags",                 DATA_STRING, flags_str,
-            "pressure_kPa",    "Pressure",              DATA_FORMAT, "%.1f kPa",  DATA_DOUBLE, (double)pressure_kpa,
-            "temperature_C",   "Temperature",           DATA_FORMAT, "%.0f C",    DATA_DOUBLE, (double)temp_c,
-            "peering_request", "Peering req",           DATA_INT,    peering_request,
-            "leaking",         "Leaking detected",      DATA_INT,    leaking,
-            "ack_leaking",     "Ack leaking",           DATA_INT,    ack_leaking,
+    data = data_dbl(data, "pressure_kPa",    "Pressure",              "%.1f kPa",   (double)pressure_kpa);
+    data = data_dbl(data, "temperature_C",   "Temperature",           "%.0f C",     (double)temp_c);
+    data = data_int(data, "peering_request", "Peering req",           NULL,         peering_request);
+    data = data_int(data, "leaking",         "Leaking detected",      NULL,         leaking);
+    data = data_int(data, "ack_leaking",     "Ack leaking",           NULL,         ack_leaking);
 //            "add256",          "",                      DATA_INT,    add256,
 //            "add512",          "",                      DATA_INT,    add512,
 //            "add1024",          "",                     DATA_INT,    add1024,
 //            "battery_ok",    "Batt OK",                 DATA_INT,    !bat_low,
-            "mic",             "Integrity",             DATA_STRING, "CRC",
-            NULL);
+    data = data_str(data, "mic",             "Integrity",             NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

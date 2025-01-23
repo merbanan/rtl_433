@@ -89,16 +89,15 @@ static int gt_wt_02_process_row(r_device *decoder, bitbuffer_t *bitbuffer, int r
     float temp_c       = (temp_raw >> 4) * 0.1F;
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "GT-WT02",
-            "id",               "ID Code",      DATA_INT,    sensor_id,
-            "channel",          "Channel",      DATA_INT,    channel + 1,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",     DATA_FORMAT, "%.0f %%", DATA_DOUBLE, (double)humidity,
-            "button",           "Button ",      DATA_INT,    button_pressed,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "GT-WT02");
+    data = data_int(data, "id",               "ID Code",      NULL,         sensor_id);
+    data = data_int(data, "channel",          "Channel",      NULL,         channel + 1);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+    data = data_dbl(data, "humidity",         "Humidity",     "%.0f %%",    (double)humidity);
+    data = data_int(data, "button",           "Button ",      NULL,         button_pressed);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

@@ -91,19 +91,24 @@ static int tpms_ave_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned r
     snprintf(id_str, sizeof(id_str), "%08x", id);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "Model",         DATA_STRING, "AVE",
-            "type",             "Type",          DATA_STRING, "TPMS",
-            "id",               "Id",            DATA_STRING, id_str,
-            "mode",             "Mode",          DATA_FORMAT, "M%d", DATA_INT, mode,
-            "pressure_kPa",     "Pressure",      DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, pressure,
-            "temperature_C",    "Temperature",   DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature - 50.0,
-            "battery_ok",       "Battery level", DATA_COND, battery_level < 6, DATA_DOUBLE, 1.0,
-            "battery_ok",       "Battery level", DATA_COND, battery_level == 6, DATA_DOUBLE, 0.75,
-            "battery_ok",       "Battery level", DATA_COND, battery_level == 7, DATA_DOUBLE, 0.25,
-            "flags",            "Flags",         DATA_FORMAT, "0x%x", DATA_INT, flags,
-            "mic",              "Integrity",     DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "Model",         NULL,         "AVE");
+    data = data_str(data, "type",             "Type",          NULL,         "TPMS");
+    data = data_str(data, "id",               "Id",            NULL,         id_str);
+    data = data_int(data, "mode",             "Mode",          "M%d",        mode);
+    data = data_dbl(data, "pressure_kPa",     "Pressure",      "%.1f kPa",   pressure);
+    data = data_dbl(data, "temperature_C",    "Temperature",   "%.0f C",     (double)temperature - 50.0);
+    if (battery_level < 6) {
+        data = data_dbl(data, "battery_ok",       "Battery level", NULL,         1.0);
+    }
+    if (battery_level == 6) {
+        data = data_dbl(data, "battery_ok",       "Battery level", NULL,         0.75);
+    }
+    if (battery_level == 7) {
+        data = data_dbl(data, "battery_ok",       "Battery level", NULL,         0.25);
+    }
+    data = data_int(data, "flags",            "Flags",         "0x%x",       flags);
+    data = data_str(data, "mic",              "Integrity",     NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

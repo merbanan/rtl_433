@@ -69,18 +69,17 @@ static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         /* clang-format off */
-        data_t *data = data_make(
-                "model",            "",             DATA_STRING, "Springfield-Soil",
-                "id",               "SID",          DATA_INT,    sid,
-                "channel",          "Channel",      DATA_INT,    channel,
-                "battery_ok",       "Battery",      DATA_INT,    !battery,
-                "transmit",         "Transmit",     DATA_STRING, button ? "MANUAL" : "AUTO", // TODO: delete this
-                "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-                "moisture",         "Moisture",     DATA_FORMAT, "%d %%", DATA_INT, moisture,
-                "button",           "Button",       DATA_INT,    button,
+        data_t *data = NULL;
+        data = data_str(data, "model",            "",             NULL,         "Springfield-Soil");
+        data = data_int(data, "id",               "SID",          NULL,         sid);
+        data = data_int(data, "channel",          "Channel",      NULL,         channel);
+        data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery);
+        data = data_str(data, "transmit",         "Transmit",     NULL,         button ? "MANUAL" : "AUTO"); // TODO: delete this
+        data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+        data = data_int(data, "moisture",         "Moisture",     "%d %%",      moisture);
+        data = data_int(data, "button",           "Button",       NULL,         button);
 //                "uk1",            "uk1",          DATA_INT,    uk1,
-                "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-                NULL);
+        data = data_str(data, "mic",              "Integrity",    NULL,         "CHECKSUM");
         /* clang-format on */
 
         decoder_output_data(decoder, data);

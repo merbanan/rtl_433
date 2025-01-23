@@ -40,10 +40,9 @@ static int blyss_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         snprintf(id_str, sizeof(id_str), "%02x%02x%02x%02x", b[0], b[1], b[2], b[3]);
 
         /* clang-format off */
-        data_t *data = data_make(
-                "model",    "", DATA_STRING, "Blyss-DC5ukwh",
-                "id",       "", DATA_STRING, id_str,
-                NULL);
+        data_t *data = NULL;
+        data = data_str(data, "model",    "", NULL,         "Blyss-DC5ukwh");
+        data = data_str(data, "id",       "", NULL,         id_str);
         /* clang-format on */
 
         decoder_output_data(decoder, data);

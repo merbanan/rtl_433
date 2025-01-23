@@ -114,18 +114,17 @@ static int tpms_renault_0435r_decode(r_device *decoder, bitbuffer_t *bitbuffer, 
     snprintf(flags_str, sizeof(flags_str), "%02x", flags);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",           "",                         DATA_STRING, "Renault-0435R",
-            "type",            "",                         DATA_STRING, "TPMS",
-            "id",              "",                         DATA_STRING, id_str,
-            "flags",           "",                         DATA_STRING, flags_str,
-            "pressure_kPa",    "Pressure",                 DATA_FORMAT, "%.1f kPa",  DATA_DOUBLE, (double)pressure_kpa,
-            "temperature_C",   "Temperature",              DATA_FORMAT, "%.0f C",    DATA_DOUBLE, (double)temp_c,
-            "centrifugal_acc", "Centrifugal Acceleration", DATA_FORMAT, "%.0f m/s2", DATA_DOUBLE, (double)rad_acc,
-            "mic",             "",                         DATA_STRING, "CRC",
-            "has_tick",        "",                         DATA_INT,    has_tick,
-            "tick",            "",                         DATA_INT,    tick - 0x80*(1-has_tick), //set to negative value when has_tick == 0 (invert bit 7)
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",           "",                         NULL,         "Renault-0435R");
+    data = data_str(data, "type",            "",                         NULL,         "TPMS");
+    data = data_str(data, "id",              "",                         NULL,         id_str);
+    data = data_str(data, "flags",           "",                         NULL,         flags_str);
+    data = data_dbl(data, "pressure_kPa",    "Pressure",                 "%.1f kPa",   (double)pressure_kpa);
+    data = data_dbl(data, "temperature_C",   "Temperature",              "%.0f C",     (double)temp_c);
+    data = data_dbl(data, "centrifugal_acc", "Centrifugal Acceleration", "%.0f m/s2",  (double)rad_acc);
+    data = data_str(data, "mic",             "",                         NULL,         "CRC");
+    data = data_int(data, "has_tick",        "",                         NULL,         has_tick);
+    data = data_int(data, "tick",            "",                         NULL,         tick - 0x80*(1-has_tick)); //set to negative value when has_tick == 0 (invert bit 7)
     /* clang-format on */
 
     decoder_output_data(decoder, data);

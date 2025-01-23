@@ -97,12 +97,11 @@ static int cmr113_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data = data_make(
-            "model",        "",             DATA_STRING, "Clipsal-CMR113",
-            "current_1_A",  "Current 1",    DATA_FORMAT, "%.1f A", DATA_DOUBLE, current[0],
-            "current_2_A",  "Current 2",    DATA_FORMAT, "%.1f A", DATA_DOUBLE, current[1],
-            "current_3_A",  "Current 3",    DATA_FORMAT, "%.1f A", DATA_DOUBLE, current[2],
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",        "",             NULL,         "Clipsal-CMR113");
+    data = data_dbl(data, "current_1_A",  "Current 1",    "%.1f A",     current[0]);
+    data = data_dbl(data, "current_2_A",  "Current 2",    "%.1f A",     current[1]);
+    data = data_dbl(data, "current_3_A",  "Current 3",    "%.1f A",     current[2]);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

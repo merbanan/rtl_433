@@ -80,14 +80,13 @@ static int proove_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint32_t unit      = (b[3] & 0x03) ^ 0x03;        // inverted
 
     /* clang-format off */
-    data = data_make(
-            "model",         "",            DATA_STRING, "Proove-Security",
-            "id",            "House Code",  DATA_INT,    id,
-            "channel",       "Channel",     DATA_INT,    channel,
-            "state",         "State",       DATA_STRING, on_bit ? "ON" : "OFF",
-            "unit",          "Unit",        DATA_INT,    unit,
-            "group",         "Group",       DATA_INT,    group_cmd,
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",         "",            NULL,         "Proove-Security");
+    data = data_int(data, "id",            "House Code",  NULL,         id);
+    data = data_int(data, "channel",       "Channel",     NULL,         channel);
+    data = data_str(data, "state",         "State",       NULL,         on_bit ? "ON" : "OFF");
+    data = data_int(data, "unit",          "Unit",        NULL,         unit);
+    data = data_int(data, "group",         "Group",       NULL,         group_cmd);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

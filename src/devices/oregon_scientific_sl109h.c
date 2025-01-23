@@ -93,15 +93,14 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
         id = ((b[3] & 0x0f) << 4) | (b[4] >> 4);
 
         /* clang-format off */
-        data = data_make(
-                "model",            "Model",                                DATA_STRING, "Oregon-SL109H",
-                "id",               "Id",                                   DATA_INT,    id,
-                "channel",          "Channel",                              DATA_INT,    channel,
-                "temperature_C",    "Celsius",      DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temp_c,
-                "humidity",         "Humidity",     DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
-                "status",           "Status",                               DATA_INT,    status,
-                "mic",              "Integrity",                            DATA_STRING, "CHECKSUM",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "Model",                                NULL,         "Oregon-SL109H");
+        data = data_int(data, "id",               "Id",                                   NULL,         id);
+        data = data_int(data, "channel",          "Channel",                              NULL,         channel);
+        data = data_dbl(data, "temperature_C",    "Celsius",      "%.1f C",     temp_c);
+        data = data_int(data, "humidity",         "Humidity",     "%u %%",      humidity);
+        data = data_int(data, "status",           "Status",                               NULL,         status);
+        data = data_str(data, "mic",              "Integrity",                            NULL,         "CHECKSUM");
         /* clang-format on */
 
         decoder_output_data(decoder, data);

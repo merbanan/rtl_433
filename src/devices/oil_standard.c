@@ -81,14 +81,13 @@ static int oil_standard_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     }
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",                "", DATA_STRING, "Oil-SonicStd",
-            "id",                   "", DATA_FORMAT, "%04x", DATA_INT, unit_id,
-            "flags",                "", DATA_FORMAT, "%02x", DATA_INT, flags,
-            "alarm",                "", DATA_INT,    alarm,
-            "binding_countdown",    "", DATA_INT,    binding_countdown,
-            "depth_cm",             "", DATA_INT,    depth,
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",                "", NULL,         "Oil-SonicStd");
+    data = data_int(data, "id",                   "", "%04x",       unit_id);
+    data = data_int(data, "flags",                "", "%02x",       flags);
+    data = data_int(data, "alarm",                "", NULL,         alarm);
+    data = data_int(data, "binding_countdown",    "", NULL,         binding_countdown);
+    data = data_int(data, "depth_cm",             "", NULL,         depth);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

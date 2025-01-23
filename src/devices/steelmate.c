@@ -79,15 +79,14 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         snprintf(sensor_idhex, sizeof(sensor_idhex), "0x%04x", sensor_id);
 
         /* clang-format off */
-        data_t *data = data_make(
-                "type",             "",             DATA_STRING, "TPMS",
-                "model",            "",             DATA_STRING, "Steelmate",
-                "id",               "",             DATA_STRING, sensor_idhex,
-                "pressure_PSI",     "",             DATA_DOUBLE, pressure_psi,
-                "temperature_F",    "",             DATA_DOUBLE, (float)tempFahrenheit,
-                "battery_mV",       "",             DATA_INT,    battery_mV,
-                "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-                NULL);
+        data_t *data = NULL;
+        data = data_str(data, "type",             "",             NULL,         "TPMS");
+        data = data_str(data, "model",            "",             NULL,         "Steelmate");
+        data = data_str(data, "id",               "",             NULL,         sensor_idhex);
+        data = data_dbl(data, "pressure_PSI",     "",             NULL,         pressure_psi);
+        data = data_dbl(data, "temperature_F",    "",             NULL,         (float)tempFahrenheit);
+        data = data_int(data, "battery_mV",       "",             NULL,         battery_mV);
+        data = data_str(data, "mic",              "Integrity",    NULL,         "CHECKSUM");
         /* clang-format on */
 
         decoder_output_data(decoder, data);

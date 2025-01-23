@@ -88,19 +88,18 @@ static int tpms_bmwg3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     snprintf(msg_str, sizeof(msg_str), "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10]);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",               "",                DATA_STRING, "BMW-GEN3",
-            "type",                "",                DATA_STRING, "TPMS",
+    data_t *data = NULL;
+    data = data_str(data, "model",               "",                NULL,         "BMW-GEN3");
+    data = data_str(data, "type",                "",                NULL,         "TPMS");
             //"id",                  "",                DATA_FORMAT, "%08x",     DATA_INT,    id,
-            "id",                  "",                DATA_INT,    id,
-            "pressure_kPa",        "Pressure",        DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, (double)pressure_kPa,
-            "temperature_C",       "Temperature",     DATA_FORMAT, "%.1f C",   DATA_DOUBLE, temperature_C,
-            "flags1",              "",                DATA_FORMAT, "%08b",     DATA_INT,    flags1,
-            "flags2",              "",                DATA_FORMAT, "%08b",     DATA_INT,    flags2,
-            "flags3",              "",                DATA_FORMAT, "%08b",     DATA_INT,    flags3,
-            "msg",                 "msg",             DATA_STRING, msg_str, // To remove after guess all tags
-            "mic",                 "Integrity",       DATA_STRING, "CRC",
-            NULL);
+    data = data_int(data, "id",                  "",                NULL,         id);
+    data = data_dbl(data, "pressure_kPa",        "Pressure",        "%.1f kPa",   (double)pressure_kPa);
+    data = data_dbl(data, "temperature_C",       "Temperature",     "%.1f C",     temperature_C);
+    data = data_int(data, "flags1",              "",                "%08b",       flags1);
+    data = data_int(data, "flags2",              "",                "%08b",       flags2);
+    data = data_int(data, "flags3",              "",                "%08b",       flags3);
+    data = data_str(data, "msg",                 "msg",             NULL,         msg_str); // To remove after guess all tags
+    data = data_str(data, "mic",                 "Integrity",       NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

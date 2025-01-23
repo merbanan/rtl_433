@@ -103,13 +103,14 @@ static int tfa_14_1504_v2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_c                = ((int)raw_temp_c) - 532;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",                 DATA_STRING,    "TFA-141504v2",
-            "battery_ok",       "Battery",          DATA_INT,       battery_ok,
-            "probe_fail",       "Probe failure",    DATA_INT,       !is_probe_connected,
-            "temperature_C",    "Temperature",      DATA_COND,      is_probe_connected,     DATA_FORMAT,    "%.0f C",   DATA_DOUBLE,    temp_c,
-            "mic",              "Integrity",        DATA_STRING,    "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "TFA-141504v2");
+    data = data_int(data, "battery_ok",       "Battery",          NULL,         battery_ok);
+    data = data_int(data, "probe_fail",       "Probe failure",    NULL,         !is_probe_connected);
+    if (is_probe_connected) {
+        data = data_dbl(data, "temperature_C",    "Temperature",      "%.0f C",     temp_c);
+    }
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

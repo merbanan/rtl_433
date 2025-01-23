@@ -122,13 +122,12 @@ static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_log_bitbuffer(decoder, 1, __func__, bitbuffer, "Row 0 = Input, Row 1 = Zero bit stuffing, Row 2 = Stripped delimiters, Row 3 = Decoded nibbles");
 
     /* clang-format off */
-    data = data_make(
-            "model",        "", DATA_STRING, "Lightwave-RF",
-            "id",           "", DATA_FORMAT, "%06x", DATA_INT, id,
-            "subunit",      "", DATA_INT,    subunit,
-            "command",      "", DATA_INT,    command,
-            "parameter",    "", DATA_INT,    parameter,
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",        "", NULL,         "Lightwave-RF");
+    data = data_int(data, "id",           "", "%06x",       id);
+    data = data_int(data, "subunit",      "", NULL,         subunit);
+    data = data_int(data, "command",      "", NULL,         command);
+    data = data_int(data, "parameter",    "", NULL,         parameter);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

@@ -261,35 +261,34 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     */
 
     /* clang-format off */
-    data = data_make(
-            "model",                            "",    DATA_STRING, "IDM",
+    data = NULL;
+    data = data_str(data, "model",                            "",    NULL,         "IDM");
 
             // "PacketTypeID",             "",             DATA_FORMAT, "0x%02X", DATA_INT, PacketTypeID,
-            "PacketTypeID",                     "",    DATA_STRING,       PacketTypeID_str,
-            "PacketLength",                     "",    DATA_INT,       PacketLength,
+    data = data_str(data, "PacketTypeID",                     "",    NULL,         PacketTypeID_str);
+    data = data_int(data, "PacketLength",                     "",    NULL,         PacketLength);
             // "HammingCode",              "",             DATA_INT,          HammingCode,
-            "ApplicationVersion",               "",     DATA_INT,       ApplicationVersion,
-            "ERTType",                          "",     DATA_FORMAT,  "0x%02X", DATA_INT,    ERTType,
+    data = data_int(data, "ApplicationVersion",               "",     NULL,         ApplicationVersion);
+    data = data_int(data, "ERTType",                          "",     "0x%02X",     ERTType);
             // "ERTType",                          "",     DATA_INT,       ERTType,
-            "ERTSerialNumber",                  "",     DATA_INT,       ERTSerialNumber,
-            "ConsumptionIntervalCount",         "",     DATA_INT,       ConsumptionIntervalCount,
+    data = data_int(data, "ERTSerialNumber",                  "",     NULL,         ERTSerialNumber);
+    data = data_int(data, "ConsumptionIntervalCount",         "",     NULL,         ConsumptionIntervalCount);
             // "ModuleProgrammingState",           "",     DATA_FORMAT, "0x%02X", DATA_INT, ModuleProgrammingState,
-            "ModuleProgrammingState",           "",     DATA_FORMAT, "0x%02X", DATA_INT, ModuleProgrammingState,
+    data = data_int(data, "ModuleProgrammingState",           "",     "0x%02X",     ModuleProgrammingState);
             // "ModuleProgrammingState",           "",     DATA_INT,      ModuleProgrammingState,
-            "TamperCounters",                   "",     DATA_STRING,       TamperCounters_str,
-            "AsynchronousCounters",             "",     DATA_FORMAT, "0x%02X", DATA_INT, AsynchronousCounters,
+    data = data_str(data, "TamperCounters",                   "",     NULL,         TamperCounters_str);
+    data = data_int(data, "AsynchronousCounters",             "",     "0x%02X",     AsynchronousCounters);
             // "AsynchronousCounters",             "",     DATA_INT,    AsynchronousCounters,
 
-            "PowerOutageFlags",                 "",     DATA_STRING,       PowerOutageFlags_str ,
-            "LastConsumptionCount",             "",     DATA_INT,       LastConsumptionCount,
-            "DifferentialConsumptionIntervals", "",     DATA_ARRAY, data_array(47, DATA_INT, DifferentialConsumptionIntervals),
-            "TransmitTimeOffset",               "",     DATA_INT,       TransmitTimeOffset,
-            "MeterIdCRC",                       "",     DATA_FORMAT, "0x%04X", DATA_INT, MeterIdCRC,
-            "PacketCRC",                        "",     DATA_FORMAT, "0x%04X", DATA_INT, PacketCRC,
+    data = data_str(data, "PowerOutageFlags",                 "",     NULL,         PowerOutageFlags_str );
+    data = data_int(data, "LastConsumptionCount",             "",     NULL,         LastConsumptionCount);
+    data = data_ary(data, "DifferentialConsumptionIntervals", "",     NULL,         data_array(47, DATA_INT, DifferentialConsumptionIntervals));
+    data = data_int(data, "TransmitTimeOffset",               "",     NULL,         TransmitTimeOffset);
+    data = data_int(data, "MeterIdCRC",                       "",     "0x%04X",     MeterIdCRC);
+    data = data_int(data, "PacketCRC",                        "",     "0x%04X",     PacketCRC);
 
-            "MeterType",                        "Meter_Type",       DATA_STRING, meter_type,
-            "mic",                              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data = data_str(data, "MeterType",                        "Meter_Type",       NULL,         meter_type);
+    data = data_str(data, "mic",                              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -549,37 +548,36 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     */
 
     /* clang-format off */
-    data = data_make(
-            "model",                            "",     DATA_STRING, "NETIDM",
+    data = NULL;
+    data = data_str(data, "model",                            "",     NULL,         "NETIDM");
 
-            "PacketTypeID",                     "",     DATA_STRING,       PacketTypeID_str,
-            "PacketLength",                     "",     DATA_INT,       PacketLength,
+    data = data_str(data, "PacketTypeID",                     "",     NULL,         PacketTypeID_str);
+    data = data_int(data, "PacketLength",                     "",     NULL,         PacketLength);
             // "HammingCode",              "",             DATA_FORMAT, "0x%02X", DATA_INT, HammingCode,
-            "ApplicationVersion",               "",     DATA_INT,       ApplicationVersion,
+    data = data_int(data, "ApplicationVersion",               "",     NULL,         ApplicationVersion);
 
-            "ERTType",                          "",     DATA_FORMAT,  "0x%02X", DATA_INT,    ERTType,
-            "ERTSerialNumber",                  "",     DATA_INT,       ERTSerialNumber,
-            "ConsumptionIntervalCount",         "",     DATA_INT,       ConsumptionIntervalCount,
-            "ModuleProgrammingState",           "",     DATA_FORMAT, "0x%02X", DATA_INT, ModuleProgrammingState,
+    data = data_int(data, "ERTType",                          "",     "0x%02X",     ERTType);
+    data = data_int(data, "ERTSerialNumber",                  "",     NULL,         ERTSerialNumber);
+    data = data_int(data, "ConsumptionIntervalCount",         "",     NULL,         ConsumptionIntervalCount);
+    data = data_int(data, "ModuleProgrammingState",           "",     "0x%02X",     ModuleProgrammingState);
             // "ModuleProgrammingState",           "",     DATA_STRING,    ModuleProgrammingState_str,
-            "TamperCounters",                   "",     DATA_STRING,       TamperCounters_str,
+    data = data_str(data, "TamperCounters",                   "",     NULL,         TamperCounters_str);
             // "AsynchronousCounters",             "",     DATA_FORMAT, "0x%02X", DATA_INT, AsynchronousCounters,
-            "Unknown_field_1",                  "",     DATA_STRING,    Unknown_field_1_str,
-            "LastGenerationCount",              "",     DATA_INT,       LastGenerationCount,
-            "Unknown_field_2",                  "",     DATA_STRING,    Unknown_field_2_str,
+    data = data_str(data, "Unknown_field_1",                  "",     NULL,         Unknown_field_1_str);
+    data = data_int(data, "LastGenerationCount",              "",     NULL,         LastGenerationCount);
+    data = data_str(data, "Unknown_field_2",                  "",     NULL,         Unknown_field_2_str);
 
             // "AsynchronousCounters",             "",     DATA_STRING,    AsynchronousCounters_str,
 
             // "PowerOutageFlags",                 "",     DATA_STRING,       PowerOutageFlags_str ,
-            "LastConsumptionCount",             "",     DATA_INT,       LastConsumptionCount,
-            "DifferentialConsumptionIntervals", "",     DATA_ARRAY, data_array(27, DATA_INT, DifferentialConsumptionIntervals),
-            "TransmitTimeOffset",               "",     DATA_INT,       TransmitTimeOffset,
-            "MeterIdCRC",                       "",     DATA_FORMAT, "0x%04X", DATA_INT, MeterIdCRC,
-            "PacketCRC",                        "",     DATA_FORMAT, "0x%04X", DATA_INT, PacketCRC,
+    data = data_int(data, "LastConsumptionCount",             "",     NULL,         LastConsumptionCount);
+    data = data_ary(data, "DifferentialConsumptionIntervals", "",     NULL,         data_array(27, DATA_INT, DifferentialConsumptionIntervals));
+    data = data_int(data, "TransmitTimeOffset",               "",     NULL,         TransmitTimeOffset);
+    data = data_int(data, "MeterIdCRC",                       "",     "0x%04X",     MeterIdCRC);
+    data = data_int(data, "PacketCRC",                        "",     "0x%04X",     PacketCRC);
 
-            "MeterType",                        "",       DATA_STRING, meter_type,
-            "mic",                              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data = data_str(data, "MeterType",                        "",       NULL,         meter_type);
+    data = data_str(data, "mic",                              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

@@ -95,15 +95,18 @@ static int acurite_01185m_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         float temp2_f = (temp2_raw - 900) * 0.1f;
 
         /* clang-format off */
-        data_t *data = data_make(
-                "model",            "",             DATA_STRING,    "Acurite-01185M",
-                "id",               "",             DATA_INT,       id,
-                "channel",          "",             DATA_INT,       channel,
-                "battery_ok",       "Battery",      DATA_INT,       !batt_low,
-                "temperature_1_F",  "Meat",         DATA_COND, temp1_ok, DATA_FORMAT, "%.1f F",   DATA_DOUBLE, temp1_f,
-                "temperature_2_F",  "Ambient",      DATA_COND, temp2_ok, DATA_FORMAT, "%.1f F",   DATA_DOUBLE, temp2_f,
-                "mic",              "Integrity",    DATA_STRING,    "CHECKSUM",
-                NULL);
+        data_t *data = NULL;
+        data = data_str(data, "model",            "",             NULL,         "Acurite-01185M");
+        data = data_int(data, "id",               "",             NULL,         id);
+        data = data_int(data, "channel",          "",             NULL,         channel);
+        data = data_int(data, "battery_ok",       "Battery",      NULL,         !batt_low);
+        if (temp1_ok) {
+            data = data_dbl(data, "temperature_1_F",  "Meat",         "%.1f F",     temp1_f);
+        }
+        if (temp2_ok) {
+            data = data_dbl(data, "temperature_2_F",  "Ambient",      "%.1f F",     temp2_f);
+        }
+        data = data_str(data, "mic",              "Integrity",    NULL,         "CHECKSUM");
         /* clang-format on */
 
         decoder_output_data(decoder, data);

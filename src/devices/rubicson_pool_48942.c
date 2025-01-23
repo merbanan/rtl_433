@@ -78,14 +78,13 @@ static int rubicson_pool_48942_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_log_bitbuffer(decoder, 1, __func__, bitbuffer, "");
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",          "",             DATA_STRING,  "Rubicson-48942",
-            "channel",        "Channel",      DATA_INT,     channel,
-            "id",             "Random ID",    DATA_INT,     random_id,
-            "battery_ok",     "Battery",      DATA_INT,     !battery_low,
-            "temperature_C",  "Temperature",  DATA_FORMAT,  "%.1f C", DATA_DOUBLE, temp_c,
-            "mic",            "Integrity",    DATA_STRING,  "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",          "",             NULL,         "Rubicson-48942");
+    data = data_int(data, "channel",        "Channel",      NULL,         channel);
+    data = data_int(data, "id",             "Random ID",    NULL,         random_id);
+    data = data_int(data, "battery_ok",     "Battery",      NULL,         !battery_low);
+    data = data_dbl(data, "temperature_C",  "Temperature",  "%.1f C",     temp_c);
+    data = data_str(data, "mic",            "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

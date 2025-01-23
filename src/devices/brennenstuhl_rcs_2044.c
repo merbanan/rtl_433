@@ -91,12 +91,11 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bit
         return 0; /* Pressing simultaneously ON and OFF key is not useful either */
 
     /* clang-format off */
-    data = data_make(
-            "model",    "Model",    DATA_STRING, "Brennenstuhl-RCS2044",
-            "id",       "id",       DATA_INT, system_code,
-            "key",      "key",      DATA_STRING, key,
-            "state",    "state",    DATA_STRING, (on_off == 0x02 ? "ON" : "OFF"),
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",    "Model",    NULL,         "Brennenstuhl-RCS2044");
+    data = data_int(data, "id",       "id",       NULL,         system_code);
+    data = data_str(data, "key",      "key",      NULL,         key);
+    data = data_str(data, "state",    "state",    NULL,         (on_off == 0x02 ? "ON" : "OFF"));
     /* clang-format on */
 
     decoder_output_data(decoder, data);

@@ -97,15 +97,14 @@ static int esperanza_ews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int humidity  = ((b[3] & 0x0f) << 4) | ((b[3] & 0xf0) >> 4);
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "Esperanza-EWS",
-            "id",               "ID",           DATA_INT, device_id,
-            "channel",          "Channel",      DATA_INT, channel,
-            "battery_ok",       "Battery",      DATA_INT, !battery_low,
-            "temperature_F",    "Temperature",  DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
-            "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Esperanza-EWS");
+    data = data_int(data, "id",               "ID",           NULL,         device_id);
+    data = data_int(data, "channel",          "Channel",      NULL,         channel);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+    data = data_dbl(data, "temperature_F",    "Temperature",  "%.2f F",     temp_f);
+    data = data_int(data, "humidity",         "Humidity",     "%u %%",      humidity);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

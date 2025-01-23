@@ -121,11 +121,10 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 temp_c = (msg_value_bcd - 300) * 0.1f;
 
             /* clang-format off */
-            data = data_make(
-                    "model",            "",             DATA_STRING, ws_id == 0x6 ? "LaCrosse-WS3600" : "LaCrosse-WS2310",
-                    "id",               "",             DATA_INT,    sensor_id,
-                    "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-                    NULL);
+            data = NULL;
+            data = data_str(data, "model",            "",             NULL,         ws_id == 0x6 ? "LaCrosse-WS3600" : "LaCrosse-WS2310");
+            data = data_int(data, "id",               "",             NULL,         sensor_id);
+            data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
             /* clang-format on */
 
             decoder_output_data(decoder, data);
@@ -140,11 +139,10 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             }
 
             /* clang-format off */
-            data = data_make(
-                    "model",            "",             DATA_STRING, ws_id == 0x6 ? "LaCrosse-WS3600" : "LaCrosse-WS2310",
-                    "id",               "",             DATA_INT,    sensor_id,
-                    "humidity",         "Humidity",     DATA_INT,    msg_value_bcd2,
-                    NULL);
+            data = NULL;
+            data = data_str(data, "model",            "",             NULL,         ws_id == 0x6 ? "LaCrosse-WS3600" : "LaCrosse-WS2310");
+            data = data_int(data, "id",               "",             NULL,         sensor_id);
+            data = data_int(data, "humidity",         "Humidity",     NULL,         msg_value_bcd2);
             /* clang-format on */
 
             decoder_output_data(decoder, data);
@@ -155,11 +153,10 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             rain_mm = 0.5180f * msg_value_bin;
 
             /* clang-format off */
-            data = data_make(
-                    "model",            "",             DATA_STRING, ws_id == 0x6 ? "LaCrosse-WS3600" : "LaCrosse-WS2310",
-                    "id",               "",             DATA_INT,    sensor_id,
-                    "rain_mm",          "Rainfall",     DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rain_mm,
-                    NULL);
+            data = NULL;
+            data = data_str(data, "model",            "",             NULL,         ws_id == 0x6 ? "LaCrosse-WS3600" : "LaCrosse-WS2310");
+            data = data_int(data, "id",               "",             NULL,         sensor_id);
+            data = data_dbl(data, "rain_mm",          "Rainfall",     "%.2f mm",    rain_mm);
             /* clang-format on */
 
             decoder_output_data(decoder, data);
@@ -178,13 +175,16 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             }
 
             /* clang-format off */
-            data = data_make(
-                    "model",            "",             DATA_STRING, ws_id == 0x6 ? "LaCrosse-WS3600" : "LaCrosse-WS2310",
-                    "id",               "",             DATA_INT,    sensor_id,
-                    "wind_avg_m_s",     "Wind speed",   DATA_COND,   msg_type == 3, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_spd,
-                    "wind_max_m_s",     "Gust speed",   DATA_COND,   msg_type != 3, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_spd,
-                    "wind_dir_deg",     "Direction",    DATA_DOUBLE, wind_dir,
-                    NULL);
+            data = NULL;
+            data = data_str(data, "model",            "",             NULL,         ws_id == 0x6 ? "LaCrosse-WS3600" : "LaCrosse-WS2310");
+            data = data_int(data, "id",               "",             NULL,         sensor_id);
+            if (msg_type == 3) {
+                data = data_dbl(data, "wind_avg_m_s",     "Wind speed",   "%.1f m/s",   wind_spd);
+            }
+            if (msg_type != 3) {
+                data = data_dbl(data, "wind_max_m_s",     "Gust speed",   "%.1f m/s",   wind_spd);
+            }
+            data = data_dbl(data, "wind_dir_deg",     "Direction",    NULL,         wind_dir);
             /* clang-format on */
 
             decoder_output_data(decoder, data);

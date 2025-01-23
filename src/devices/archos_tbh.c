@@ -147,14 +147,13 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     idx, ts, maxPower);
 
         /* clang-format off */
-        data = data_make(
-                "model",        "",                 DATA_STRING, "Archos-TBH",
-                "id",           "Station ID",       DATA_FORMAT, "%08X", DATA_INT, id,
-                "power_idx",    "Power index",      DATA_FORMAT, "%d", DATA_INT, idx,
-                "power_max",    "Power max",        DATA_FORMAT, "%d", DATA_INT, maxPower,
-                "timestamp",    "Timestamp",        DATA_FORMAT, "%d s", DATA_INT, ts / 8,
-                "mic",          "Integrity",        DATA_STRING, "CRC",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",        "",                 NULL,         "Archos-TBH");
+        data = data_int(data, "id",           "Station ID",       "%08X",       id);
+        data = data_int(data, "power_idx",    "Power index",      "%d",         idx);
+        data = data_int(data, "power_max",    "Power max",        "%d",         maxPower);
+        data = data_int(data, "timestamp",    "Timestamp",        "%d s",       ts / 8);
+        data = data_str(data, "mic",          "Integrity",        NULL,         "CRC");
         /* clang-format on */
         decoder_output_data(decoder, data);
         return 1;
@@ -166,13 +165,12 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int humidity = payload[7];
 
         /* clang-format off */
-        data = data_make(
-                "model",        "",                 DATA_STRING, "Archos-TBH",
-                "id",           "Station ID",       DATA_FORMAT, "%08X", DATA_INT, id,
-                "temperature_C", "Temperature",     DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-                "humidity",     "Humidity",         DATA_FORMAT, "%d %%", DATA_INT, humidity,
-                "mic",          "Integrity",        DATA_STRING, "CRC",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",        "",                 NULL,         "Archos-TBH");
+        data = data_int(data, "id",           "Station ID",       "%08X",       id);
+        data = data_dbl(data, "temperature_C", "Temperature",     "%.1f C",     temp_c);
+        data = data_int(data, "humidity",     "Humidity",         "%d %%",      humidity);
+        data = data_str(data, "mic",          "Integrity",        NULL,         "CRC");
         /* clang-format on */
         decoder_output_data(decoder, data);
         return 1;
@@ -182,12 +180,11 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int batt_level = payload[5];
 
         /* clang-format off */
-        data = data_make(
-                "model",        "",                 DATA_STRING, "Archos-TBH",
-                "id",           "Station ID",       DATA_FORMAT, "%08X", DATA_INT, id,
-                "battery_ok",   "Battery level",    DATA_FORMAT, "%0.2f", DATA_DOUBLE, batt_level * 0.01,
-                "mic",          "Integrity",        DATA_STRING, "CRC",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",        "",                 NULL,         "Archos-TBH");
+        data = data_int(data, "id",           "Station ID",       "%08X",       id);
+        data = data_dbl(data, "battery_ok",   "Battery level",    "%0.2f",      batt_level * 0.01);
+        data = data_str(data, "mic",          "Integrity",        NULL,         "CRC");
         /* clang-format on */
         decoder_output_data(decoder, data);
         return 1;
@@ -196,12 +193,11 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // battery low
 
         /* clang-format off */
-        data = data_make(
-                "model",        "",                 DATA_STRING, "Archos-TBH",
-                "id",           "Station ID",       DATA_FORMAT, "%08X", DATA_INT, id,
-                "battery_ok",   "Battery level",    DATA_INT,    0, // fixed
-                "mic",          "Integrity",        DATA_STRING, "CRC",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",        "",                 NULL,         "Archos-TBH");
+        data = data_int(data, "id",           "Station ID",       "%08X",       id);
+        data = data_int(data, "battery_ok",   "Battery level",    NULL,         0); // fixed
+        data = data_str(data, "mic",          "Integrity",        NULL,         "CRC");
         /* clang-format on */
         decoder_output_data(decoder, data);
         return 1;

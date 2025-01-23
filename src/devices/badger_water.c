@@ -123,14 +123,13 @@ static int badger_orion_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t flags_2 = data_in[7];
 
     /* clang-format off */
-    data = data_make(
-            "model",      "",          DATA_STRING, "Badger-ORION",
-            "id",         "ID",        DATA_INT,    device_id,
-            "flags_1",    "Flags-1",   DATA_INT,    flags_1,
-            "volume_gal", "Volume",    DATA_INT,    volume,
-            "flags_2",    "Flags-2",   DATA_INT,    flags_2,
-            "mic",        "Integrity", DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",      "",          NULL,         "Badger-ORION");
+    data = data_int(data, "id",         "ID",        NULL,         device_id);
+    data = data_int(data, "flags_1",    "Flags-1",   NULL,         flags_1);
+    data = data_int(data, "volume_gal", "Volume",    NULL,         volume);
+    data = data_int(data, "flags_2",    "Flags-2",   NULL,         flags_2);
+    data = data_str(data, "mic",        "Integrity", NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

@@ -86,15 +86,14 @@ static int lacrosse_tx34_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         float rain_mm = rain_tick * LACROSSE_TX34_RAIN_FACTOR;
 
         /* clang-format off */
-        data_t *data = data_make(
-                "model",        "",             DATA_STRING, "LaCrosse-TX34IT",
-                "id",           "",             DATA_INT,    sensor_id,
-                "battery_ok",   "Battery",      DATA_INT,    !low_batt,
-                "newbattery",   "New battery",  DATA_INT,    new_batt,
-                "rain_mm",      "Total rain",   DATA_DOUBLE, rain_mm,
-                "rain_raw",     "Raw rain",     DATA_INT,    rain_tick,
-                "mic",          "Integrity",    DATA_STRING, "CRC",
-                NULL);
+        data_t *data = NULL;
+        data = data_str(data, "model",        "",             NULL,         "LaCrosse-TX34IT");
+        data = data_int(data, "id",           "",             NULL,         sensor_id);
+        data = data_int(data, "battery_ok",   "Battery",      NULL,         !low_batt);
+        data = data_int(data, "newbattery",   "New battery",  NULL,         new_batt);
+        data = data_dbl(data, "rain_mm",      "Total rain",   NULL,         rain_mm);
+        data = data_int(data, "rain_raw",     "Raw rain",     NULL,         rain_tick);
+        data = data_str(data, "mic",          "Integrity",    NULL,         "CRC");
         /* clang-format on */
 
         decoder_output_data(decoder, data);

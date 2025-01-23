@@ -137,24 +137,24 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (msg_type == 0x00) {
             float temp_c = msg_value - 50.0f;
             /* clang-format off */
-            data_t *data = data_make(
-                    "model",            "",             DATA_STRING, "LaCrosse-TX",
-                    "id",               "",             DATA_INT,    sensor_id,
-                    "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-                    "mic",              "Integrity",    DATA_STRING, "PARITY",
-                    NULL);
+            data_t *data = NULL;
+            data = data_str(data, "model",            "",             NULL,         "LaCrosse-TX");
+            data = data_int(data, "id",               "",             NULL,         sensor_id);
+            data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+            data = data_str(data, "mic",              "Integrity",    NULL,         "PARITY");
             /* clang-format on */
             decoder_output_data(decoder, data);
             events++;
         }
         else if (msg_type == 0x0E) {
             /* clang-format off */
-            data_t *data = data_make(
-                    "model",            "",             DATA_STRING, "LaCrosse-TX",
-                    "id",               "",             DATA_INT,    sensor_id,
-                    "humidity",         "Humidity",     DATA_COND,   msg_value_raw != 0xff, DATA_FORMAT, "%.1f %%", DATA_DOUBLE, msg_value,
-                    "mic",              "Integrity",    DATA_STRING, "PARITY",
-                    NULL);
+            data_t *data = NULL;
+            data = data_str(data, "model",            "",             NULL,         "LaCrosse-TX");
+            data = data_int(data, "id",               "",             NULL,         sensor_id);
+            if (msg_value_raw != 0xff) {
+                data = data_dbl(data, "humidity",         "Humidity",     "%.1f %%",    msg_value);
+            }
+            data = data_str(data, "mic",              "Integrity",    NULL,         "PARITY");
             /* clang-format on */
             decoder_output_data(decoder, data);
             events++;

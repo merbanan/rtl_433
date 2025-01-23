@@ -120,14 +120,15 @@ static int geo_minim_ct_sensor_decode(r_device *decoder, bitbuffer_t *bitbuffer,
     unsigned flags4 = buf[4] & ~0x4f;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",        "",             DATA_STRING, "GEO-minimCT",
-            "id",           "",             DATA_STRING, id,
-            "power_VA",     "Power",        DATA_FORMAT, "%u VA", DATA_INT, va,
-            "flags4",       "Flags",        DATA_COND, flags4 != 0x30, DATA_FORMAT, "%#x", DATA_INT, flags4,
-            "uptime_s",     "Uptime",       DATA_INT, uptime_s,
-            "mic",          "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",        "",             NULL,         "GEO-minimCT");
+    data = data_str(data, "id",           "",             NULL,         id);
+    data = data_int(data, "power_VA",     "Power",        "%u VA",      va);
+    if (flags4 != 0x30) {
+        data = data_int(data, "flags4",       "Flags",        "%#x",        flags4);
+    }
+    data = data_int(data, "uptime_s",     "Uptime",       NULL,         uptime_s);
+    data = data_str(data, "mic",          "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -240,16 +241,19 @@ static int geo_minim_display_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
             1900 + t.tm_year, 1 + t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",        "",             DATA_STRING, "GEO-minimDP",
-            "id",           "",             DATA_STRING, id,
-            "power_W",      "Power",        DATA_FORMAT, "%u W", DATA_INT, watts,
-            "energy_kWh",   "Energy",       DATA_FORMAT, "%.3f kWh", DATA_DOUBLE, wh * 0.001,
-            "clock",         "Clock",         DATA_STRING, now,
-            "flags5",       "Flags5",       DATA_COND, flags5 != 0, DATA_FORMAT, "%#x", DATA_INT, flags5,
-            "flags15",      "Flags15",      DATA_COND, flags15 != 0x40, DATA_FORMAT, "%#x", DATA_INT, flags15,
-            "mic",          "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",        "",             NULL,         "GEO-minimDP");
+    data = data_str(data, "id",           "",             NULL,         id);
+    data = data_int(data, "power_W",      "Power",        "%u W",       watts);
+    data = data_dbl(data, "energy_kWh",   "Energy",       "%.3f kWh",   wh * 0.001);
+    data = data_str(data, "clock",         "Clock",         NULL,         now);
+    if (flags5 != 0) {
+        data = data_int(data, "flags5",       "Flags5",       "%#x",        flags5);
+    }
+    if (flags15 != 0x40) {
+        data = data_int(data, "flags15",      "Flags15",      "%#x",        flags15);
+    }
+    data = data_str(data, "mic",          "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

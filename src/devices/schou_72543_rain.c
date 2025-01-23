@@ -87,16 +87,15 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float temperature_F = (((b[6] << 8) | b[5]) - 900) * 0.1f; // -40.0 to +158     degF
 
     /* clang-format off */
-    data_t   *data = data_make(
-            "model",            "",             DATA_STRING, "Schou-72543",
-            "id",               "ID",           DATA_INT,    device_id,
-            "temperature_F",    "Temperature",  DATA_FORMAT, "%.1f F",  DATA_DOUBLE, temperature_F,
-            "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
-            "battery_ok",       "Battery_ok",   DATA_INT,    !battery_low,
-            "msg_counter",      "Counter",      DATA_INT,    message_counter,
-            "msg_repeat",       "Msg_repeat",   DATA_INT,    message_repeat,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-            NULL);
+    data_t   *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Schou-72543");
+    data = data_int(data, "id",               "ID",           NULL,         device_id);
+    data = data_dbl(data, "temperature_F",    "Temperature",  "%.1f F",     temperature_F);
+    data = data_dbl(data, "rain_mm",          "Rain",         "%.1f mm",    rain_mm);
+    data = data_int(data, "battery_ok",       "Battery_ok",   NULL,         !battery_low);
+    data = data_int(data, "msg_counter",      "Counter",      NULL,         message_counter);
+    data = data_int(data, "msg_repeat",       "Msg_repeat",   NULL,         message_repeat);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

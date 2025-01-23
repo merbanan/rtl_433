@@ -127,15 +127,16 @@ static int ecodhome_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int power_w = (msg[9] << 8) | (msg[8]);
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",                 DATA_STRING, "EcoDHOME-SmartSocket",
-                "id",               "",                 DATA_FORMAT, "%08x",   DATA_INT, id,
-                "message_type",     "Message Type",     DATA_FORMAT, "%04x",   DATA_INT, m_type,
-                "message_subtype",  "Message Subtype",  DATA_FORMAT, "%04x",   DATA_INT, m_subtype,
-                "power_W",          "Power",            DATA_COND, m_subtype == 0x414b, DATA_FORMAT, "%.1f W",   DATA_DOUBLE, (double)power_w,
-                "raw",              "Raw data",         DATA_FORMAT, "%06x",   DATA_INT, raw,
-                "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",                 NULL,         "EcoDHOME-SmartSocket");
+        data = data_int(data, "id",               "",                 "%08x",       id);
+        data = data_int(data, "message_type",     "Message Type",     "%04x",       m_type);
+        data = data_int(data, "message_subtype",  "Message Subtype",  "%04x",       m_subtype);
+        if (m_subtype == 0x414b) {
+            data = data_dbl(data, "power_W",          "Power",            "%.1f W",     (double)power_w);
+        }
+        data = data_int(data, "raw",              "Raw data",         "%06x",       raw);
+        data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
         /* clang-format on */
     }
     else {
@@ -156,14 +157,15 @@ static int ecodhome_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int power_w = ((uint8_t)(msg[7] - 0x33) << 8) | (uint8_t)(msg[6] - 0x33);
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",                 DATA_STRING, "EcoDHOME-Transmitter",
-                "id",               "",                 DATA_FORMAT, "%08x",   DATA_INT, id,
-                "message_type",     "Message Type",     DATA_FORMAT, "%04x",   DATA_INT, m_type,
-                "power_W",          "Power",            DATA_COND, m_type == 0x3eb3, DATA_FORMAT, "%.1f W",   DATA_DOUBLE, (double)power_w,
-                "raw",              "Raw data",         DATA_FORMAT, "%06x",   DATA_INT, raw,
-                "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",            "",                 NULL,         "EcoDHOME-Transmitter");
+        data = data_int(data, "id",               "",                 "%08x",       id);
+        data = data_int(data, "message_type",     "Message Type",     "%04x",       m_type);
+        if (m_type == 0x3eb3) {
+            data = data_dbl(data, "power_W",          "Power",            "%.1f W",     (double)power_w);
+        }
+        data = data_int(data, "raw",              "Raw data",         "%06x",       raw);
+        data = data_str(data, "mic",              "Integrity",        NULL,         "CHECKSUM");
         /* clang-format on */
     }
 

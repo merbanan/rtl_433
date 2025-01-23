@@ -82,18 +82,17 @@ static int tpms_hyundai_vdo_decode(r_device *decoder, bitbuffer_t *bitbuffer, un
     snprintf(id_str, sizeof(id_str), "%08x", id);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Hyundai-VDO",
-            "type",             "",             DATA_STRING, "TPMS",
-            "id",               "",             DATA_STRING, id_str,
-            "state",            "",             DATA_INT,    state,
-            "flags",            "",             DATA_INT,    flags,
-            "repeat",           "repetition",   DATA_INT,    repeat,
-            "pressure_kPa",     "pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure * 1.375,
-            "temperature_C",    "temp",         DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature - 50.0,
-            "maybe_battery",    "",             DATA_INT,    maybe_battery,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Hyundai-VDO");
+    data = data_str(data, "type",             "",             NULL,         "TPMS");
+    data = data_str(data, "id",               "",             NULL,         id_str);
+    data = data_int(data, "state",            "",             NULL,         state);
+    data = data_int(data, "flags",            "",             NULL,         flags);
+    data = data_int(data, "repeat",           "repetition",   NULL,         repeat);
+    data = data_dbl(data, "pressure_kPa",     "pressure",     "%.0f kPa",   (double)pressure * 1.375);
+    data = data_dbl(data, "temperature_C",    "temp",         "%.0f C",     (double)temperature - 50.0);
+    data = data_int(data, "maybe_battery",    "",             NULL,         maybe_battery);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

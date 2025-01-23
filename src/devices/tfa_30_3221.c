@@ -75,16 +75,15 @@ static int tfa_303221_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     sendmode    = (b[1] >> 6) & 1;
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "TFA-303221",
-            "id",               "Sensor ID",    DATA_INT,    device,
-            "channel",          "Channel",      DATA_INT,    channel,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "sendmode",         "Test mode",    DATA_INT,    sendmode,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "TFA-303221");
+    data = data_int(data, "id",               "Sensor ID",    NULL,         device);
+    data = data_int(data, "channel",          "Channel",      NULL,         channel);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.2f C",     temp_c);
+    data = data_int(data, "humidity",         "Humidity",     "%u %%",      humidity);
+    data = data_int(data, "sendmode",         "Test mode",    NULL,         sendmode);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

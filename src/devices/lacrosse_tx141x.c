@@ -169,16 +169,15 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             float temp_c = (temp_raw - 500) * 0.1f;
 
             /* clang-format off */
-            data = data_make(
-                    "model",            "",                 DATA_STRING, "LaCrosse-TX141W",
-                    "id",               "Sensor ID",        DATA_FORMAT, "%05x", DATA_INT, id,
-                    "channel",          "Channel",          DATA_FORMAT, "%01x", DATA_INT, channel,
-                    "battery_ok",       "Battery level",    DATA_INT,    !battery_low,
-                    "temperature_C",    "Temperature",      DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-                    "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                    "test",             "Test?",            DATA_INT,    test,
-                    "mic",              "Integrity",        DATA_STRING, "CRC",
-                    NULL);
+            data = NULL;
+            data = data_str(data, "model",            "",                 NULL,         "LaCrosse-TX141W");
+            data = data_int(data, "id",               "Sensor ID",        "%05x",       id);
+            data = data_int(data, "channel",          "Channel",          "%01x",       channel);
+            data = data_int(data, "battery_ok",       "Battery level",    NULL,         !battery_low);
+            data = data_dbl(data, "temperature_C",    "Temperature",      "%.2f C",     temp_c);
+            data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+            data = data_int(data, "test",             "Test?",            NULL,         test);
+            data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
             /* clang-format on */
         }
         else if (type == 2) {
@@ -187,16 +186,15 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             // wind direction is in humidity field
 
             /* clang-format off */
-            data = data_make(
-                    "model",            "",                 DATA_STRING, "LaCrosse-TX141W",
-                    "id",               "Sensor ID",        DATA_FORMAT, "%05x", DATA_INT, id,
-                    "channel",          "Channel",          DATA_FORMAT, "%01x", DATA_INT, channel,
-                    "battery_ok",       "Battery level",    DATA_INT,    !battery_low,
-                    "wind_avg_km_h",    "Wind speed",       DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
-                    "wind_dir_deg",     "Wind direction",   DATA_INT,    humidity,
-                    "test",             "Test?",            DATA_INT,    test,
-                    "mic",              "Integrity",        DATA_STRING, "CRC",
-                    NULL);
+            data = NULL;
+            data = data_str(data, "model",            "",                 NULL,         "LaCrosse-TX141W");
+            data = data_int(data, "id",               "Sensor ID",        "%05x",       id);
+            data = data_int(data, "channel",          "Channel",          "%01x",       channel);
+            data = data_int(data, "battery_ok",       "Battery level",    NULL,         !battery_low);
+            data = data_dbl(data, "wind_avg_km_h",    "Wind speed",       "%.1f km/h",  speed_kmh);
+            data = data_int(data, "wind_dir_deg",     "Wind direction",   NULL,         humidity);
+            data = data_int(data, "test",             "Test?",            NULL,         test);
+            data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
             /* clang-format on */
         }
         else {
@@ -233,36 +231,33 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (device == LACROSSE_TX141B) {
         /* clang-format off */
-        data = data_make(
-                "model",         "",              DATA_STRING, "LaCrosse-TX141B",
-                "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
-                "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-                "battery_ok",    "Battery",       DATA_INT,    !battery_low,
-                "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",         "",              NULL,         "LaCrosse-TX141B");
+        data = data_int(data, "id",            "Sensor ID",     "%02x",       id);
+        data = data_dbl(data, "temperature_C", "Temperature",   "%.2f C",     temp_c);
+        data = data_int(data, "battery_ok",    "Battery",       NULL,         !battery_low);
+        data = data_str(data, "test",          "Test?",         NULL,         test ? "Yes" : "No");
         /* clang-format on */
     } else if (device == LACROSSE_TX141) {
         /* clang-format off */
-        data = data_make(
-                "model",         "",              DATA_STRING, "LaCrosse-TX141Bv2",
-                "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
-                "channel",       "Channel",       DATA_INT, channel,
-                "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-                "battery_ok",    "Battery",       DATA_INT,    !battery_low,
-                "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",         "",              NULL,         "LaCrosse-TX141Bv2");
+        data = data_int(data, "id",            "Sensor ID",     "%02x",       id);
+        data = data_int(data, "channel",       "Channel",       NULL,         channel);
+        data = data_dbl(data, "temperature_C", "Temperature",   "%.2f C",     temp_c);
+        data = data_int(data, "battery_ok",    "Battery",       NULL,         !battery_low);
+        data = data_str(data, "test",          "Test?",         NULL,         test ? "Yes" : "No");
         /* clang-format on */
     }
     else if (device == LACROSSE_TX141BV3) {
         /* clang-format off */
-        data = data_make(
-                "model",         "",              DATA_STRING, "LaCrosse-TX141Bv3",
-                "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
-                "channel",       "Channel",       DATA_INT, channel,
-                "battery_ok",    "Battery",       DATA_INT,    !battery_low,
-                "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-                "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",         "",              NULL,         "LaCrosse-TX141Bv3");
+        data = data_int(data, "id",            "Sensor ID",     "%02x",       id);
+        data = data_int(data, "channel",       "Channel",       NULL,         channel);
+        data = data_int(data, "battery_ok",    "Battery",       NULL,         !battery_low);
+        data = data_dbl(data, "temperature_C", "Temperature",   "%.2f C",     temp_c);
+        data = data_str(data, "test",          "Test?",         NULL,         test ? "Yes" : "No");
         /* clang-format on */
     }
     else {
@@ -272,16 +267,15 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             return DECODE_FAIL_MIC;
         }
         /* clang-format off */
-        data = data_make(
-                "model",         "",              DATA_STRING, "LaCrosse-TX141THBv2",
-                "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
-                "channel",       "Channel",       DATA_INT, channel,
-                "battery_ok",    "Battery",       DATA_INT,    !battery_low,
-                "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-                "humidity",      "Humidity",      DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
-                "mic",           "Integrity",     DATA_STRING, "CRC",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",         "",              NULL,         "LaCrosse-TX141THBv2");
+        data = data_int(data, "id",            "Sensor ID",     "%02x",       id);
+        data = data_int(data, "channel",       "Channel",       NULL,         channel);
+        data = data_int(data, "battery_ok",    "Battery",       NULL,         !battery_low);
+        data = data_dbl(data, "temperature_C", "Temperature",   "%.2f C",     temp_c);
+        data = data_int(data, "humidity",      "Humidity",      "%u %%",      humidity);
+        data = data_str(data, "test",          "Test?",         NULL,         test ? "Yes" : "No");
+        data = data_str(data, "mic",           "Integrity",     NULL,         "CRC");
         /* clang-format on */
     }
 

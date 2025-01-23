@@ -64,15 +64,14 @@ static int schraeder_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     snprintf(flags_str, sizeof(flags_str), "%02x", flags);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Schrader",
-            "type",             "",             DATA_STRING, "TPMS",
-            "flags",            "",             DATA_STRING, flags_str,
-            "id",               "ID",           DATA_STRING, id_str,
-            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, pressure * 0.1f,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Schrader");
+    data = data_str(data, "type",             "",             NULL,         "TPMS");
+    data = data_str(data, "flags",            "",             NULL,         flags_str);
+    data = data_str(data, "id",               "ID",           NULL,         id_str);
+    data = data_dbl(data, "pressure_kPa",     "Pressure",     "%.1f kPa",   pressure * 0.1f);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.0f C",     (double)temperature);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -137,15 +136,14 @@ static int schrader_EG53MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     snprintf(flags_str, sizeof(flags_str), "%08x", flags);
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "Schrader-EG53MA4",
-            "type",             "",             DATA_STRING, "TPMS",
-            "flags",            "",             DATA_STRING, flags_str,
-            "id",               "ID",           DATA_STRING, id_str,
-            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, pressure * 0.1f,
-            "temperature_F",    "Temperature",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, (double)temperature,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Schrader-EG53MA4");
+    data = data_str(data, "type",             "",             NULL,         "TPMS");
+    data = data_str(data, "flags",            "",             NULL,         flags_str);
+    data = data_str(data, "id",               "ID",           NULL,         id_str);
+    data = data_dbl(data, "pressure_kPa",     "Pressure",     "%.1f kPa",   pressure * 0.1f);
+    data = data_dbl(data, "temperature_F",    "Temperature",  "%.1f F",     (double)temperature);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -270,13 +268,12 @@ static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     snprintf(id_str, sizeof(id_str), "%06X", serial_id);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Schrader-SMD3MA4",
-            "type",             "",             DATA_STRING, "TPMS",
-            "flags",            "",             DATA_INT,    flags,
-            "id",               "ID",           DATA_STRING, id_str,
-            "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.1f PSI", DATA_DOUBLE, pressure * 0.2f,
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Schrader-SMD3MA4");
+    data = data_str(data, "type",             "",             NULL,         "TPMS");
+    data = data_int(data, "flags",            "",             NULL,         flags);
+    data = data_str(data, "id",               "ID",           NULL,         id_str);
+    data = data_dbl(data, "pressure_PSI",     "Pressure",     "%.1f PSI",   pressure * 0.2f);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

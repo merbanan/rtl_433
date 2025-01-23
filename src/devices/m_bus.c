@@ -874,36 +874,34 @@ static int m_bus_output_data(r_device *decoder, bitbuffer_t *bitbuffer, const m_
         for (unsigned n=0; n<6; n++) { sprintf(sn_str+n*2, "%02x", block1->knx_sn[n]); }
 
         /* clang-format off */
-        data = data_make(
-                "model",    "",             DATA_STRING,    "KNX-RF",
-                "sn",       "SN",           DATA_STRING,    sn_str,
-                "knx_ctrl", "KNX-Ctrl",     DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.knx_ctrl,
-                "src",      "Src",          DATA_FORMAT,    "0x%04X", DATA_INT, block1->block2.src,
-                "dst",      "Dst",          DATA_FORMAT,    "0x%04X", DATA_INT, block1->block2.dst,
-                "l_npci",   "L/NPCI",       DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.l_npci,
-                "tpci",     "TPCI",         DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.tpci,
-                "apci",     "APCI",         DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.apci,
-                "data_length","Data Length",DATA_INT,       out->length,
-                "data",     "Data",         DATA_STRING,    str_buf,
-                "mic",      "Integrity",    DATA_STRING,    "CRC",
-                NULL);
+        data = NULL;
+        data = data_str(data, "model",    "",             NULL,         "KNX-RF");
+        data = data_str(data, "sn",       "SN",           NULL,         sn_str);
+        data = data_int(data, "knx_ctrl", "KNX-Ctrl",     "0x%02X",     block1->block2.knx_ctrl);
+        data = data_int(data, "src",      "Src",          "0x%04X",     block1->block2.src);
+        data = data_int(data, "dst",      "Dst",          "0x%04X",     block1->block2.dst);
+        data = data_int(data, "l_npci",   "L/NPCI",       "0x%02X",     block1->block2.l_npci);
+        data = data_int(data, "tpci",     "TPCI",         "0x%02X",     block1->block2.tpci);
+        data = data_int(data, "apci",     "APCI",         "0x%02X",     block1->block2.apci);
+        data = data_int(data, "data_length","Data Length",NULL,         out->length);
+        data = data_str(data, "data",     "Data",         NULL,         str_buf);
+        data = data_str(data, "mic",      "Integrity",    NULL,         "CRC");
         /* clang-format on */
     } else {
         /* clang-format off */
-        data = data_make(
-                "model",    "",             DATA_STRING,    "Wireless-MBus",
-                "mode",     "Mode",         DATA_STRING,    mode,
-                "M",        "Manufacturer", DATA_STRING,    block1->M_str,
-                "id",       "ID",           DATA_INT,       block1->A_ID,
-                "version",  "Version",      DATA_INT,       block1->A_Version,
-                "type",     "Device Type",  DATA_FORMAT,    "0x%02X",   DATA_INT, block1->A_DevType,
-                "type_string",  "Device Type String",   DATA_STRING,        m_bus_device_type_str(block1->A_DevType),
-                "C",        "Control",      DATA_FORMAT,    "0x%02X",   DATA_INT, block1->C,
+        data = NULL;
+        data = data_str(data, "model",    "",             NULL,         "Wireless-MBus");
+        data = data_str(data, "mode",     "Mode",         NULL,         mode);
+        data = data_str(data, "M",        "Manufacturer", NULL,         block1->M_str);
+        data = data_int(data, "id",       "ID",           NULL,         block1->A_ID);
+        data = data_int(data, "version",  "Version",      NULL,         block1->A_Version);
+        data = data_int(data, "type",     "Device Type",  "0x%02X",     block1->A_DevType);
+        data = data_str(data, "type_string",  "Device Type String",   NULL,         m_bus_device_type_str(block1->A_DevType));
+        data = data_int(data, "C",        "Control",      "0x%02X",     block1->C);
 //                "L",        "Length",       DATA_INT,       block1->L,
-                "data_length",  "Data Length",          DATA_INT,           out->length,
-                "data",     "Data",         DATA_STRING,    str_buf,
-                "mic",      "Integrity",    DATA_STRING,    "CRC",
-                NULL);
+        data = data_int(data, "data_length",  "Data Length",          NULL,         out->length);
+        data = data_str(data, "data",     "Data",         NULL,         str_buf);
+        data = data_str(data, "mic",      "Integrity",    NULL,         "CRC");
         /* clang-format on */
     }
     if (block1->block2.CI) {

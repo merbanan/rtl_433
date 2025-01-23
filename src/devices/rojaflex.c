@@ -186,19 +186,28 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data = data_make(
-                "model",        "Model",        DATA_COND, device_type == DEVICE_TYPE_UNKNOWN, DATA_STRING, "RojaFlex-Other",
-                "model",        "Model",        DATA_COND, device_type == DEVICE_TYPE_SHUTTER, DATA_STRING, "RojaFlex-Shutter",
-                "model",        "Model",        DATA_COND, device_type == DEVICE_TYPE_REMOTE, DATA_STRING, "RojaFlex-Remote",
-                "model",        "Model",        DATA_COND, device_type == DEVICE_TYPE_BRIDGE, DATA_STRING, "RojaFlex-Bridge",
-                "id",           "ID",           DATA_FORMAT, "%07x", DATA_INT,    id,
-                "channel",      "Channel",      DATA_INT,    msg[CHANNEL_OFFSET] & 0xF,
-                "token",        "Msg Token",    DATA_FORMAT, "%04x", DATA_INT,    token,
-                "cmd_id",       "Value",        DATA_FORMAT, "%02x", DATA_INT,    msg[COMMAND_ID_OFFSET],
-                "cmd_name",     "Command",      DATA_STRING, cmd_str,
-                "cmd_value",    "Value",        DATA_INT,    msg[COMMAND_VALUE_OFFSET],
-                "mic",          "Integrity",    DATA_COND,   has_crc, DATA_STRING, "CRC",
-                NULL);
+    data = NULL;
+    if (device_type == DEVICE_TYPE_UNKNOWN) {
+        data = data_str(data, "model",        "Model",        NULL,         "RojaFlex-Other");
+    }
+    if (device_type == DEVICE_TYPE_SHUTTER) {
+        data = data_str(data, "model",        "Model",        NULL,         "RojaFlex-Shutter");
+    }
+    if (device_type == DEVICE_TYPE_REMOTE) {
+        data = data_str(data, "model",        "Model",        NULL,         "RojaFlex-Remote");
+    }
+    if (device_type == DEVICE_TYPE_BRIDGE) {
+        data = data_str(data, "model",        "Model",        NULL,         "RojaFlex-Bridge");
+    }
+    data = data_int(data, "id",           "ID",           "%07x",       id);
+    data = data_int(data, "channel",      "Channel",      NULL,         msg[CHANNEL_OFFSET] & 0xF);
+    data = data_int(data, "token",        "Msg Token",    "%04x",       token);
+    data = data_int(data, "cmd_id",       "Value",        "%02x",       msg[COMMAND_ID_OFFSET]);
+    data = data_str(data, "cmd_name",     "Command",      NULL,         cmd_str);
+    data = data_int(data, "cmd_value",    "Value",        NULL,         msg[COMMAND_VALUE_OFFSET]);
+    if (has_crc) {
+        data = data_str(data, "mic",          "Integrity",    NULL,         "CRC");
+    }
     /* clang-format on */
 
     decoder_output_data(decoder, data);

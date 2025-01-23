@@ -72,12 +72,11 @@ static int wg_pb12v1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_c = (temp_raw - 400) * 0.1f;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "WG-PB12V1",
-            "id",               "ID",           DATA_INT,    id,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "WG-PB12V1");
+    data = data_int(data, "id",               "ID",           NULL,         id);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
     decoder_output_data(decoder, data);
     return 1;

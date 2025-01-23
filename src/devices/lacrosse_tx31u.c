@@ -133,11 +133,10 @@ static int lacrosse_tx31u_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     // what we know from the header
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "LaCrosse-TX31UIT",
-            "id",               "",             DATA_INT,    sensor_id,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "LaCrosse-TX31UIT");
+    data = data_int(data, "id",               "",             NULL,         sensor_id);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !battery_low);
 
     // decode each measurement we get and append them.
     enum sensor_type { TEMP=0, HUMIDITY, RAIN, WIND_AVG, WIND_MAX };

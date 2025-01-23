@@ -99,18 +99,17 @@ static int rainpoint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         chan = 3;
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING, "RainPoint-Soil",
-            "id",               "",             DATA_FORMAT, "%04x", DATA_INT,    id,
-            "channel",          "",             DATA_INT,    chan,
-            "sync",             "Sync?",        DATA_FORMAT, "%04x", DATA_INT,    sync,
-            "flags",            "Flags?",       DATA_FORMAT, "%02x", DATA_INT,    flags,
-            "status",           "Status?",      DATA_FORMAT, "%04x", DATA_INT,    status,
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "RainPoint-Soil");
+    data = data_int(data, "id",               "",             "%04x",       id);
+    data = data_int(data, "channel",          "",             NULL,         chan);
+    data = data_int(data, "sync",             "Sync?",        "%04x",       sync);
+    data = data_int(data, "flags",            "Flags?",       "%02x",       flags);
+    data = data_int(data, "status",           "Status?",      "%04x",       status);
             //"battery_ok",       "Battery",      DATA_INT,    batt,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "moisture",         "Moisture",     DATA_FORMAT, "%d %%", DATA_INT, moisture,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-            NULL);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+    data = data_int(data, "moisture",         "Moisture",     "%d %%",      moisture);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CHECKSUM");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

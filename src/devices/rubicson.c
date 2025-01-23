@@ -82,14 +82,13 @@ static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     temp_c   = (temp_raw >> 4) * 0.1f;
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_STRING, "Rubicson-Temperature",
-            "id",               "House Code",   DATA_INT,    id,
-            "channel",          "Channel",      DATA_INT,    channel,
-            "battery_ok",       "Battery",      DATA_INT,    !!battery,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "Rubicson-Temperature");
+    data = data_int(data, "id",               "House Code",   NULL,         id);
+    data = data_int(data, "channel",          "Channel",      NULL,         channel);
+    data = data_int(data, "battery_ok",       "Battery",      NULL,         !!battery);
+    data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C",     temp_c);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

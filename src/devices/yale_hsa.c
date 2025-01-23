@@ -105,14 +105,13 @@ static int yale_hsa_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int event = (msg[4]);
 
         /* clang-format off */
-        data_t *data = data_make(
-                "model",        "",             DATA_STRING, "Yale-HSA",
-                "id",           "",             DATA_FORMAT, "%04x", DATA_INT, id,
-                "stype",        "Sensor type",  DATA_FORMAT, "%02x", DATA_INT, stype,
-                "state",        "State",        DATA_FORMAT, "%02x", DATA_INT, state,
-                "event",        "Event",        DATA_FORMAT, "%02x", DATA_INT, event,
-                "mic",          "Integrity",    DATA_STRING, "CHECKSUM",
-                NULL);
+        data_t *data = NULL;
+        data = data_str(data, "model",        "",             NULL,         "Yale-HSA");
+        data = data_int(data, "id",           "",             "%04x",       id);
+        data = data_int(data, "stype",        "Sensor type",  "%02x",       stype);
+        data = data_int(data, "state",        "State",        "%02x",       state);
+        data = data_int(data, "event",        "Event",        "%02x",       event);
+        data = data_str(data, "mic",          "Integrity",    NULL,         "CHECKSUM");
         /* clang-format on */
 
         decoder_output_data(decoder, data);

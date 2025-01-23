@@ -84,15 +84,14 @@ static int klimalogg_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",                 DATA_STRING, "Klimalogg-Pro",
-            "id",               "Id",               DATA_FORMAT, "%04x", DATA_INT, id,
-            "battery_ok",       "Battery",          DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",      DATA_DOUBLE, temperature,
-            "humidity",         "Humidity",         DATA_INT,    humidity,
-            "sequence_nr",      "Sequence Number",  DATA_INT,    sequence_nr,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",                 NULL,         "Klimalogg-Pro");
+    data = data_int(data, "id",               "Id",               "%04x",       id);
+    data = data_int(data, "battery_ok",       "Battery",          NULL,         !battery_low);
+    data = data_dbl(data, "temperature_C",    "Temperature",      "%.1f C",     temperature);
+    data = data_int(data, "humidity",         "Humidity",         NULL,         humidity);
+    data = data_int(data, "sequence_nr",      "Sequence Number",  NULL,         sequence_nr);
+    data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

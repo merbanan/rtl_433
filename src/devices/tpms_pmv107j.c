@@ -68,18 +68,17 @@ static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     snprintf(id_str, sizeof(id_str), "%08x", id);
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING,    "PMV-107J",
-            "type",             "",             DATA_STRING,    "TPMS",
-            "id",               "",             DATA_STRING,    id_str,
-            "status",           "",             DATA_INT,       status,
-            "battery_ok",       "",             DATA_INT,       !battery_low,
-            "counter",          "",             DATA_INT,       counter,
-            "failed",           "",             DATA_STRING,    failed ? "FAIL" : "OK",
-            "pressure_kPa",     "",             DATA_DOUBLE,    pressure_kpa,
-            "temperature_C",    "",             DATA_DOUBLE,    temperature_c,
-            "mic",              "Integrity",    DATA_STRING,    "CRC",
-            NULL);
+    data_t *data = NULL;
+    data = data_str(data, "model",            "",             NULL,         "PMV-107J");
+    data = data_str(data, "type",             "",             NULL,         "TPMS");
+    data = data_str(data, "id",               "",             NULL,         id_str);
+    data = data_int(data, "status",           "",             NULL,         status);
+    data = data_int(data, "battery_ok",       "",             NULL,         !battery_low);
+    data = data_int(data, "counter",          "",             NULL,         counter);
+    data = data_str(data, "failed",           "",             NULL,         failed ? "FAIL" : "OK");
+    data = data_dbl(data, "pressure_kPa",     "",             NULL,         pressure_kpa);
+    data = data_dbl(data, "temperature_C",    "",             NULL,         temperature_c);
+    data = data_str(data, "mic",              "Integrity",    NULL,         "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

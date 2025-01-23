@@ -143,19 +143,22 @@ static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
         int battery_low   = br[1] & 0x04;
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",                 DATA_COND, type == TYPE_OOK, DATA_STRING, "Fineoffset-WH1050",
-                "model",            "",                 DATA_COND, type == TYPE_FSK, DATA_STRING, "TFA-303151",
-                "id",               "Station ID",       DATA_FORMAT, "%02X",    DATA_INT,    device_id,
-                "msg_type",         "Msg type",         DATA_INT,    msg_type,
-                "battery_ok",       "Battery",          DATA_INT,    !battery_low,
-                "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-                "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
-                "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.2f km/h",   DATA_DOUBLE, speed,
-                "wind_max_km_h",    "Wind gust",        DATA_FORMAT, "%.2f km/h ",   DATA_DOUBLE, gust,
-                "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",   DATA_DOUBLE, rain,
-                "mic",              "Integrity",        DATA_STRING, "CRC",
-                NULL);
+        data = NULL;
+        if (type == TYPE_OOK) {
+            data = data_str(data, "model",            "",                 NULL,         "Fineoffset-WH1050");
+        }
+        if (type == TYPE_FSK) {
+            data = data_str(data, "model",            "",                 NULL,         "TFA-303151");
+        }
+        data = data_int(data, "id",               "Station ID",       "%02X",       device_id);
+        data = data_int(data, "msg_type",         "Msg type",         NULL,         msg_type);
+        data = data_int(data, "battery_ok",       "Battery",          NULL,         !battery_low);
+        data = data_dbl(data, "temperature_C",    "Temperature",      "%.1f C",     temperature);
+        data = data_int(data, "humidity",         "Humidity",         "%u %%",      humidity);
+        data = data_dbl(data, "wind_avg_km_h",    "Wind avg speed",   "%.2f km/h",  speed);
+        data = data_dbl(data, "wind_max_km_h",    "Wind gust",        "%.2f km/h ", gust);
+        data = data_dbl(data, "rain_mm",          "Total rainfall",   "%.1f mm",    rain);
+        data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
         /* clang-format on */
     }
     else if (msg_type == 6) {
@@ -174,15 +177,18 @@ static int fineoffset_wh1050_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
                 year, month, day, hours, minutes, seconds);
 
         /* clang-format off */
-        data = data_make(
-                "model",            "",                 DATA_COND, type == TYPE_OOK, DATA_STRING, "Fineoffset-WH1050",
-                "model",            "",                 DATA_COND, type == TYPE_FSK, DATA_STRING, "TFA-303151",
-                "id",               "Station ID",       DATA_FORMAT, "%02X",    DATA_INT,    device_id,
-                "msg_type",         "Msg type",         DATA_INT,       msg_type,
-                "battery_ok",       "Battery",          DATA_INT,       !battery_low,
-                "radio_clock",      "Radio Clock",      DATA_STRING,    clock_str,
-                "mic",              "Integrity",        DATA_STRING,    "CRC",
-                NULL);
+        data = NULL;
+        if (type == TYPE_OOK) {
+            data = data_str(data, "model",            "",                 NULL,         "Fineoffset-WH1050");
+        }
+        if (type == TYPE_FSK) {
+            data = data_str(data, "model",            "",                 NULL,         "TFA-303151");
+        }
+        data = data_int(data, "id",               "Station ID",       "%02X",       device_id);
+        data = data_int(data, "msg_type",         "Msg type",         NULL,         msg_type);
+        data = data_int(data, "battery_ok",       "Battery",          NULL,         !battery_low);
+        data = data_str(data, "radio_clock",      "Radio Clock",      NULL,         clock_str);
+        data = data_str(data, "mic",              "Integrity",        NULL,         "CRC");
         /* clang-format on */
     }
     else {
