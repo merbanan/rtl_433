@@ -27,6 +27,16 @@ a packet is made of 72 bits
 */
 
 #include "decoder.h"
+#include "nice_flor_s_tables.h"
+
+int reverse_lookup_list(uint16_t enccode, const uint16_t table[], size_t size) {
+    for (size_t i = 0; i < size; ++i) {
+        if (table[i] == enccode) {
+            return (int)i;
+        }
+    }
+    return -1;
+}
 
 static int nice_flor_s_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -38,23 +48,30 @@ static int nice_flor_s_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     bitbuffer_invert(bitbuffer);
-    uint8_t *b = bitbuffer->bb[0];
+    uint8_t *b = bitbuffer->bb[0]; /* All the received bytes are stored in b */
 
-    uint8_t button_id = b[0] >> 4;
+    uint8_t button_id = b[0] >> 4; /* Button pressed, NOT ecnrypted */
     if (button_id < 1 || button_id > 4) {
         return DECODE_ABORT_EARLY;
     }
-    int count = 1 + (((b[0] ^ ~button_id) - 1) & 0xf);
-    uint32_t serial = ((b[1] & 0xf0) << 20) | ((b[3] & 0xf) << 20) |
-       (b[4] << 12) | (b[5] << 4) | (b[6] >> 4);
-    uint16_t code = (b[1] << 12) | (b[2] << 4) | (b[3] >> 4);
+    int count = 1 + (((b[0] ^ ~button_id) - 1) & 0xf); /* Message count, the SAME serial and code can have various messages with different "count" values */
+    uint32_t encrypted_serial = ((b[1] & 0xf0) << 20) | ((b[3] & 0xf) << 20) |
+       (b[4] << 12) | (b[5] << 4) | (b[6] >> 4); /* Remote control Serial Number, ENCRYPTED */
+    uint16_t encrypted_code = (b[1] << 12) | (b[2] << 4) | (b[3] >> 4); /* Rolling code, ENCRYPTED */
+
+    uint16_t code = reverse_lookup_list(encrypted_code, NICE_FLOR_S_TABLE_ENCODE, NICE_FLOR_S_TABLE_ENCODE_SIZE); /* unencrypted code */
+
+    uint8_t ki = NICE_FLOR_S_TABLE_KI[code & 0xFF] ^ (encrypted_code & 0xFF); /* Ki is used to decrypt the serial number */
+  
+    uint32_t mask = (ki << 24 | ki << 16 | ki << 8 | ki) & 0x0FFFFFFF;
+    uint32_t serial = encrypted_serial ^ mask;  /* Serial number unencrypted */
 
     /* clang-format off */
     data_t *data = data_make(
             "model",  "",              DATA_STRING, "Nice-FlorS",
             "button", "Button ID",     DATA_INT,     button_id,
-            "serial", "Serial (enc.)", DATA_FORMAT, "%07x",        DATA_INT, serial,
-            "code",   "Code (enc.)",   DATA_FORMAT, "%04x",        DATA_INT, code,
+            "serial", "Serial",        DATA_FORMAT, "%07x",        DATA_INT, serial,
+            "code",   "Code",          DATA_FORMAT, "%04x",        DATA_INT, code,
             "count",  "",              DATA_INT,     count,
             NULL);
     /* clang-format on */
