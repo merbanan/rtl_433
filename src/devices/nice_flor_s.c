@@ -62,7 +62,7 @@ static int nice_flor_s_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint16_t code = reverse_lookup_list(encrypted_code, NICE_FLOR_S_TABLE_ENCODE, NICE_FLOR_S_TABLE_ENCODE_SIZE); /* unencrypted code */
 
     uint8_t ki = NICE_FLOR_S_TABLE_KI[code & 0xFF] ^ (encrypted_code & 0xFF); /* Ki is used to decrypt the serial number */
-  
+
     uint32_t mask = (ki << 24 | ki << 16 | ki << 8 | ki) & 0x0FFFFFFF;
     uint32_t serial = encrypted_serial ^ mask;  /* Serial number unencrypted */
 
