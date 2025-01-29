@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include <limits.h>
 // _POSIX_HOST_NAME_MAX is broken in gcc-13 at least on MacOS
@@ -117,8 +118,14 @@ static int datagram_client_open(datagram_client_t *client, const char *host, con
         return -1;
     }
 
-    //int broadcast = 1;
-    //int ret = setsockopt(client->sock, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
+    // Enable SO_BROADCAST for all tested platforms, so far Linux and MacOS only
+#if defined(__linux__) || defined(__APPLE__)
+    int broadcast = 1;
+    int ret = setsockopt(client->sock, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
+    if (ret) {
+        print_logf(LOG_ERROR, __func__, "Failed to set broadcast flag (%d)\n", errno);
+    }
+#endif
 
     return 0;
 }
