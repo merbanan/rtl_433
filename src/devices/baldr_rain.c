@@ -12,7 +12,7 @@
 
 #include "decoder.h"
 
-/** @fn int baldr_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+/**
 Baldr / RainPoint Rain Gauge protocol.
 
 For Baldr Wireless Weather Station with Rain Gauge.
@@ -44,29 +44,25 @@ The data is grouped in 9 nibbles:
 - R : 20 bit rain in inch/1000
 
 */
-
-// NOTE: this should really not be here
-int rubicson_crc_check(uint8_t *b);
-
 static int baldr_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int r = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
-    if (r < 0)
+    if (r < 0) {
         return DECODE_ABORT_EARLY;
+    }
 
     uint8_t *b = bitbuffer->bb[r];
 
     // we expect 36 bits but there might be a trailing 0 bit
-    if (bitbuffer->bits_per_row[r] > 37)
+    if (bitbuffer->bits_per_row[r] > 37) {
         return DECODE_ABORT_LENGTH;
+    }
 
-    // The baldr_rain protocol will trigger on rubicson data, so calculate the rubicson crc and make sure
-    // it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
-    // So less then 0.5% which should be acceptable.
+    // Reduce false positives.
     if ((b[0] == 0 && b[2] == 0 && b[3] == 0)
-            || (b[0] == 0xff &&  b[2] == 0xff && b[3] == 0xff)
-            || rubicson_crc_check(b))
+            || (b[0] == 0xff &&  b[2] == 0xff && b[3] == 0xff)) {
         return DECODE_ABORT_EARLY;
+    }
 
     int id      = (b[0] << 4) | (b[1] >> 4);
     int flags   = (b[1] & 0x0f);
@@ -101,6 +97,7 @@ r_device const baldr_rain = {
         .gap_limit   = 3000,
         .reset_limit = 5000,
         .decode_fn   = &baldr_rain_decode,
+        .priority    = 10, // Eliminate false positives by letting Rubicson-Temperature go earlier
         .fields      = output_fields,
         .disabled    = 1, // no validity, no checksum
 };

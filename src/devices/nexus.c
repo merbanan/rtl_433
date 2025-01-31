@@ -7,8 +7,11 @@
     (at your option) any later version.
 
 */
-/** @fn int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
-Nexus sensor protocol with ID, temperature and optional humidity
+
+#include "decoder.h"
+
+/**
+Nexus sensor protocol with ID, temperature and optional humidity.
 
 also FreeTec (Pearl) NC-7345 sensors for FreeTec Weatherstation NC-7344,
 also infactory/FreeTec (Pearl) NX-3980 sensors for infactory/FreeTec NX-3974 station,
@@ -34,47 +37,38 @@ The data is grouped in 9 nibbles:
 
 The sensors can be bought at Clas Ohlsen (Nexus) and Pearl (infactory/FreeTec).
 */
-
-#include "decoder.h"
-
-// NOTE: this should really not be here
-int rubicson_crc_check(uint8_t *b);
-
-static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int nexus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
-    uint8_t *b;
-    int id, battery, channel, temp_raw, humidity;
-    float temp_c;
-
     int r = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
-    if (r < 0)
+    if (r < 0) {
         return DECODE_ABORT_EARLY;
+    }
 
-    b = bitbuffer->bb[r];
+    uint8_t *b = bitbuffer->bb[r];
 
     // we expect 36 bits but there might be a trailing 0 bit
-    if (bitbuffer->bits_per_row[r] > 37)
+    if (bitbuffer->bits_per_row[r] > 37) {
         return DECODE_ABORT_LENGTH;
+    }
 
-    if ((b[3] & 0xf0) != 0xf0)
+    if ((b[3] & 0xf0) != 0xf0) {
         return DECODE_ABORT_EARLY; // const not 1111
+    }
 
-    // The nexus protocol will trigger on rubicson data, so calculate the rubicson crc and make sure
-    // it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
-    // So less then 0.5% which should be acceptable.
+    // Reduce false positives.
     if ((b[0] == 0 && b[2] == 0 && b[3] == 0)
-            || (b[0] == 0xff &&  b[2] == 0xff && b[3] == 0xFF)
-            || rubicson_crc_check(b))
+            || (b[0] == 0xff &&  b[2] == 0xff && b[3] == 0xFF)) {
         return DECODE_ABORT_EARLY;
+    }
 
-    id       = b[0];
-    battery  = b[1] & 0x80;
-    channel  = ((b[1] & 0x30) >> 4) + 1;
-    temp_raw = (int16_t)((b[1] << 12) | (b[2] << 4)); // sign-extend
-    temp_c   = (temp_raw >> 4) * 0.1f;
-    humidity = (((b[3] & 0x0F) << 4) | (b[4] >> 4));
+    int id       = b[0];
+    int battery  = b[1] & 0x80;
+    int channel  = ((b[1] & 0x30) >> 4) + 1;
+    int temp_raw = (int16_t)((b[1] << 12) | (b[2] << 4)); // sign-extend
+    float temp_c = (temp_raw >> 4) * 0.1f;
+    int humidity = (((b[3] & 0x0F) << 4) | (b[4] >> 4));
 
+    data_t *data;
     if (humidity == 0x00) { // Thermo
         /* clang-format off */
         data = data_make(
@@ -120,6 +114,7 @@ r_device const nexus = {
         .long_width  = 2000,
         .gap_limit   = 3000,
         .reset_limit = 5000,
-        .decode_fn   = &nexus_callback,
+        .decode_fn   = &nexus_decode,
+        .priority    = 10, // Eliminate false positives by letting Rubicson-Temperature go earlier
         .fields      = output_fields,
 };
