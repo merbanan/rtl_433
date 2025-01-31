@@ -217,7 +217,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
                 "light_klx",        "Light",        DATA_FORMAT, "%.3f klx", DATA_DOUBLE, light_klx, // TODO: remove this
                 "light_lux",        "Light",        DATA_FORMAT, "%.3f lux", DATA_DOUBLE, light_lux,
-                "uv",               "UV Index",     DATA_FORMAT, "%.1f", DATA_DOUBLE, uv_index,
+                "uvi",              "UV Index",     DATA_FORMAT, "%.1f", DATA_DOUBLE, uv_index,
                 "battery_ok",       "Battery",      DATA_INT,    !battery_low,
                 "mic",              "Integrity",    DATA_STRING, "CRC",
                 NULL);
@@ -311,7 +311,7 @@ static char const *const output_fields[] = {
         "rain_mm",
         "light_klx", // TODO: remove this
         "light_lux",
-        "uv",
+        "uvi",
         "pm2_5_ug_m3",
         "pm10_0_ug_m3",
         "battery_ok",
