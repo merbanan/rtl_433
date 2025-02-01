@@ -296,11 +296,12 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         print_row_bytes(row_bytes, bitbuffer->bb[i], bitbuffer->bits_per_row[i]);
 
         /* clang-format off */
-        row_data[i] = data_make(
+        data = data_make(
                 "len", "", DATA_INT, bitbuffer->bits_per_row[i],
                 "data", "", DATA_STRING, row_bytes,
                 NULL);
         /* clang-format on */
+        row_data[i] = data;
 
         // add a data line for each getter
         render_getters(row_data[i], bitbuffer->bb[i], params);

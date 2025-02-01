@@ -76,6 +76,64 @@ Data layout:
 - W: (16 bit) f200    : power    (24.2)
 - X: (8 bit) e3    : checksum
 
+All data is little endian.
+There are 2 message types: 06 is power, 07 is energy.
+
+power:
+    0d 7e05 5a 68 06 5c 2100 e108 0700 c5
+    000 : (8bit)    0d      Length:13
+    001 : (16bit)   7e05    id:1406
+    003 : (8bit)    5a      version:90
+    004 : (8bit)    68      flags:"01101000"
+    005 : (8bit)    06      type:6 (power)
+    006 : (8bit)    5c      92?
+    007 : (16bit)   2100    current_A:0.033
+    009 : (16bit    e108    voltage_V:227.3
+    011 : (16bit)   0700    power_W:0.7
+    013 : (8bit)    c5        checksum
+
+coldstart power:
+    11 d507 5a a9 00 64 1d01 06 5c af03 ea08 9b05 18
+    000 : (8bit)    11      Length:17 (coldstart power)
+    001 : (16bit)   d507    id:2005
+    003 : (8bit)    5a      version:90
+    004 : (8bit)    a9      flags:"10101001"
+    005 : (8bit)    00      ?0
+    006 : (8bit)    64      ?100
+    007 : (16bit    1d01    ?285
+    009 : (8bit)    06      type:6 (power)
+    010 : (8bit)    5c      ?92
+    011 : (16bit)   af03    current_A:0.943
+    013 : (16bit    ea08    voltage_V:228.2
+    015 : (16bit)   9b05    power_W:143.5
+    017 : (8bit)    c5      checksum
+
+energy:
+    0e d507 5a a0 07 030000 a503 020000 98
+    000 : (8bit)    0e      Length:14
+    001 : (16bit)   7e05    id:2005
+    003 : (8bit)    5a      version:90
+    004 : (8bit)    a0      flags:"10100000"
+    005 : (8bit)    07      type:7 (energy)
+    006 : (24bit)   030000  energy_kWh:0.03
+    009 : (16bit    a503    tsec:933 (15min 33sec)
+    011 : (24bit)   020000  energy_kWh:0.02
+    013 : (8bit)    98      checksum
+
+coldstart energy:
+    12 7e 05 5a 69 00 64 1d 01 07 000000 0200 000000 e3
+    000 : (8bit)    0e      Length:18
+    001 : (16bit)   7e05    id:2005
+    003 : (8bit)    5a      version:90
+    004 : (8bit)    69      flags:"1101001"
+    005 : (16bit)   0064    uke1:    ?0064    (?100)
+    007 : (16bit)   1d01    uke2:    ?1d01    (?285)
+    009 : (8bit)    07      type:7    (energy)
+    010 : (24bit)   000000  energy_kWh:0.00
+    013 : (16bit)   0200    tsec:2 (2sec)
+    015 : (24bit)   020000  energy_kWh:0.00
+    018 : (8bit)    98      checksum
+
 */
 static int revolt_zx7717_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -84,9 +142,9 @@ static int revolt_zx7717_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->num_rows != 1) {
         return DECODE_ABORT_EARLY;
     }
-    // message length seen are 0d, 0e, 11, 12, i.e. 13, 14, 17, 18 plus sync and length byte
+    // valid message lengths are 0d, 0e, 11, 12, i.e. 13, 14, 17, 18 plus sync and length byte
     unsigned row_len = bitbuffer->bits_per_row[0];
-    if (row_len < 15 * 8 || row_len > 31*8) {
+    if (row_len < 15 * 8 || row_len > 22 * 8) {
         return DECODE_ABORT_EARLY; // Unrecognized data
     }
 
@@ -102,7 +160,7 @@ static int revolt_zx7717_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, 0, pos, b, len);
     reflect_bytes(b, (len + 7) / 8);
 
-    int msg_len = b[0]; // expected: 0d, 0e, 11, 12, 1b?
+    int msg_len = b[0]; // expected: 0d, 0e, 11, 12
     if (msg_len < 1) {
         return DECODE_FAIL_SANITY;
     }
@@ -117,20 +175,59 @@ static int revolt_zx7717_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC; // bad checksum
     }
 
-    if (msg_len != 13) {
+    decoder_log_bitrow(decoder, 2, __func__, b, len, "message");
+
+    int is_power   = 0;
+    int is_energy  = 0;
+    int id         = (b[2] << 8) | (b[1]);
+    int version    = (b[3]);
+    // int flags      = (b[4]);
+    // int type       = 0;
+    int current    = 0;
+    int voltage    = 0;
+    int power      = 0;
+    int energy_kWh = 0;
+    // int tsec       = 0; // time in secs energy changed
+
+    if (msg_len == 13) {
+        // power 0x0d
+        // 0d d507 5a a8 06 5c 2800 ea08 2100 88
+        is_power = 1;
+        // type      = (b[5]);
+        // unknown_1 = (b[6]);
+        current = (b[8] << 8) | b[7];
+        voltage = (b[10] << 8) | b[9];
+        power   = (b[12] << 8) | b[11];
+    }
+    else if (msg_len == 14) {
+        // energy 0x0e
+        is_energy  = 1;
+        // type       = (b[5]);
+        energy_kWh = (b[8] << 16) | (b[7] << 8) | b[6];
+        // tsec       = (b[10] << 8 | b[9]);
+        // energy_kwh_l = (b[13] << 16) | (b[12] << 8) | b[11];
+    }
+    else if (msg_len == 17) {
+        // 0x11 power at coldstart = initial power
+        is_power = 1;
+        // type      = (b[9]);
+        current   = (b[12] << 8) | b[11];
+        voltage   = (b[14] << 8) | b[13];
+        power     = (b[16] << 8) | b[15];
+    }
+    else if (msg_len == 18) {
+        // 0x12 energy at coldstart / initial energy
+        is_energy  = 1;
+        // type       = (b[9]);
+        energy_kWh = (b[12] << 16) | (b[11] << 8) | b[10];
+        // tsec =  (b[14] << 8 | b[13]);
+        // tsec is FAULTY and useless by design, should be: "time since coldstart" in seconds or even better in minutes for 24bit
+    }
+    else {
         decoder_log_bitrow(decoder, 1, __func__, b, len, "unhandled message");
         return DECODE_FAIL_OTHER; // unhandled message
     }
 
-    decoder_log_bitrow(decoder, 2, __func__, b, len, "message");
-
-    int id       = (b[1] << 8) | (b[2]); // Big Endian?
-    int unknown1 = (b[3] << 8) | b[4];   // Big Endian?
-    int unknown2 = (b[5] << 8) | b[6];   // Big Endian?
-    int channel  = (b[5]);               // just a guess
-    int current  = (b[8] << 8) | b[7];   // Little Endian
-    int voltage  = (b[10] << 8) | b[9];  // Little Endian
-    int power    = (b[12] << 8) | b[11]; // Little Endian
     // calculation for PF (Powerfactor) is invalid if current is < 0.02 A
     // e.g. a standby device will show bad readings
     // double va = current * voltage * 0.001; // computed value
@@ -139,13 +236,12 @@ static int revolt_zx7717_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data_t *data = data_make(
             "model",            "",                 DATA_STRING, "Revolt-ZX7717",
-            "id",               "Device ID",        DATA_FORMAT, "%04x", DATA_INT, id,
-            "channel",          "Channel",          DATA_INT,    channel,
-            "unknown_1",        "Unknown 1",        DATA_FORMAT, "%04x", DATA_INT, unknown1,
-            "unknown_2",        "Unknown 2",        DATA_FORMAT, "%04x", DATA_INT, unknown2,
-            "current_A",        "Current",          DATA_FORMAT, "%.3f A", DATA_DOUBLE, current * 0.001,
-            "voltage_V",        "Voltage",          DATA_FORMAT, "%.1f V", DATA_DOUBLE, voltage * 0.1,
-            "power_W",          "Power",            DATA_FORMAT, "%.1f W", DATA_DOUBLE, power * 0.1,
+            "id",               "Device ID",        DATA_INT,  id,
+            "version",          "Version",          DATA_INT,  version,
+            "current_A",        "Current",          DATA_COND, is_power, DATA_FORMAT, "%.3f A", DATA_DOUBLE, current * 0.001,
+            "voltage_V",        "Voltage",          DATA_COND, is_power, DATA_FORMAT, "%.1f V", DATA_DOUBLE, voltage * 0.1,
+            "power_W",          "Power",            DATA_COND, is_power, DATA_FORMAT, "%.1f W", DATA_DOUBLE, power * 0.1,
+            "energy_kWh",       "energy_kWh",       DATA_COND, is_energy, DATA_FORMAT, "%.2f kWh", DATA_DOUBLE, energy_kWh * 0.01,
             // "apparentpower_VA", "Apparent Power",   DATA_FORMAT, "%.1f VA", DATA_DOUBLE, va * 0.1, // computed value
             // "powerfactor",      "Power Factor",     DATA_DOUBLE, powerf, // computed value
             "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
@@ -159,12 +255,11 @@ static int revolt_zx7717_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
-        "channel",
-        "unknown_1",
-        "unknown_2",
+        "version",
         "current_A",
         "voltage_V",
         "power_W",
+        "energy_kWh",
         // "apparentpower_VA", // computed value
         // "powerfactor", // computed value
         "mic",

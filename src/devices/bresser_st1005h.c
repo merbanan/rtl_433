@@ -104,9 +104,14 @@ static int bresser_st1005h_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, r, 1, msg, 4*8);
     msg[3] &= 0xfe; // remove last bit, it is part of the checksum
     int chk = b[4] >> 2;
-    int sum = add_nibbles(msg, 4) & 0x3f;
+    int sum = add_nibbles(msg, 4);
 
-    if (chk != sum) {
+    // reduce false positives
+    if (sum == 0) {
+        return DECODE_ABORT_EARLY;
+    }
+
+    if (chk != (sum & 0x3f)) {
         decoder_log(decoder, 1, __func__, "checksum error");
         return DECODE_FAIL_MIC;
     }

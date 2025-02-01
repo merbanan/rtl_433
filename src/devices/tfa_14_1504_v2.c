@@ -77,33 +77,33 @@ static int tfa_14_1504_v2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
-    uint8_t data[NUM_BYTES_DATA];
-    bitbuffer_extract_bytes(bitbuffer, row, start_pos + NUM_BITS_PREAMBLE, data, NUM_BITS_DATA);
+    uint8_t b[NUM_BYTES_DATA];
+    bitbuffer_extract_bytes(bitbuffer, row, start_pos + NUM_BITS_PREAMBLE, b, NUM_BITS_DATA);
 
-    uint8_t flags = data[0] >> 4;
+    uint8_t flags = b[0] >> 4;
     // ignore resync button
     if ((flags & 0x5) == 0x5) {
         return DECODE_FAIL_SANITY;
     }
     unsigned battery_ok = (flags & 0x2) != 0;
 
-    if (data[2] != 0xff) {
+    if (b[2] != 0xff) {
         return DECODE_FAIL_SANITY;
     }
 
-    uint16_t calc_mic = lfsr_digest16(data, OFFSET_MIC, 0x8810, 0x0d42) ^ 0x16eb;
-    uint16_t data_mic = (data[OFFSET_MIC] << 8) + data[OFFSET_MIC+1];
+    uint16_t calc_mic = lfsr_digest16(b, OFFSET_MIC, 0x8810, 0x0d42) ^ 0x16eb;
+    uint16_t data_mic = (b[OFFSET_MIC] << 8) + b[OFFSET_MIC+1];
     if (calc_mic != data_mic) {
         return DECODE_FAIL_MIC;
     }
 
     // we discard the last 2 bits as those are always zero
-    uint16_t raw_temp_c         = ((data[0] & 0xf) << 6) + (data[1] >> 2);
+    uint16_t raw_temp_c         = ((b[0] & 0xf) << 6) + (b[1] >> 2);
     unsigned is_probe_connected = (raw_temp_c != 0x1c0);
     float temp_c                = ((int)raw_temp_c) - 532;
 
     /* clang-format off */
-    data_t *output = data_make(
+    data_t *data = data_make(
             "model",            "",                 DATA_STRING,    "TFA-141504v2",
             "battery_ok",       "Battery",          DATA_INT,       battery_ok,
             "probe_fail",       "Probe failure",    DATA_INT,       !is_probe_connected,
@@ -112,7 +112,7 @@ static int tfa_14_1504_v2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             NULL);
     /* clang-format on */
 
-    decoder_output_data(decoder, output);
+    decoder_output_data(decoder, data);
     return 1;
 }
 

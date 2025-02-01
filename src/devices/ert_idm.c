@@ -263,6 +263,7 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",                            "",    DATA_STRING, "IDM",
+            "id",                               "",     DATA_INT,       ERTSerialNumber,
 
             // "PacketTypeID",             "",             DATA_FORMAT, "0x%02X", DATA_INT, PacketTypeID,
             "PacketTypeID",                     "",    DATA_STRING,       PacketTypeID_str,
@@ -271,7 +272,7 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "ApplicationVersion",               "",     DATA_INT,       ApplicationVersion,
             "ERTType",                          "",     DATA_FORMAT,  "0x%02X", DATA_INT,    ERTType,
             // "ERTType",                          "",     DATA_INT,       ERTType,
-            "ERTSerialNumber",                  "",     DATA_INT,       ERTSerialNumber,
+            "ERTSerialNumber",                  "",     DATA_INT,       ERTSerialNumber, // NOTE: this is also "id"
             "ConsumptionIntervalCount",         "",     DATA_INT,       ConsumptionIntervalCount,
             // "ModuleProgrammingState",           "",     DATA_FORMAT, "0x%02X", DATA_INT, ModuleProgrammingState,
             "ModuleProgrammingState",           "",     DATA_FORMAT, "0x%02X", DATA_INT, ModuleProgrammingState,
@@ -551,6 +552,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",                            "",     DATA_STRING, "NETIDM",
+            "id",                               "",     DATA_INT,       ERTSerialNumber,
 
             "PacketTypeID",                     "",     DATA_STRING,       PacketTypeID_str,
             "PacketLength",                     "",     DATA_INT,       PacketLength,
@@ -558,7 +560,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "ApplicationVersion",               "",     DATA_INT,       ApplicationVersion,
 
             "ERTType",                          "",     DATA_FORMAT,  "0x%02X", DATA_INT,    ERTType,
-            "ERTSerialNumber",                  "",     DATA_INT,       ERTSerialNumber,
+            "ERTSerialNumber",                  "",     DATA_INT,       ERTSerialNumber, // NOTE: this is also "id"
             "ConsumptionIntervalCount",         "",     DATA_INT,       ConsumptionIntervalCount,
             "ModuleProgrammingState",           "",     DATA_FORMAT, "0x%02X", DATA_INT, ModuleProgrammingState,
             // "ModuleProgrammingState",           "",     DATA_STRING,    ModuleProgrammingState_str,
@@ -590,6 +592,7 @@ static char const *const output_fields[] = {
 
         // Common fields
         "model",
+        "id",
         "PacketTypeID",
         "PacketLength",
         "HammingCode",

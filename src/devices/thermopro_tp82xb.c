@@ -15,6 +15,7 @@ ThermoPro TP82xB Meat Thermometer probes.
 Devices decoded:
 - TP828P, 2 Probes, current Temperature, BBQ LO and HI temperatures
 - TP829B, 4 Probes, simple Temperature
+- TP829, same as TP829B
 */
 
 #include "decoder.h"
