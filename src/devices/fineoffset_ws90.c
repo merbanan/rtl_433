@@ -58,8 +58,8 @@ Packet layout:
 
 Rain start info:
 Status 1 will be reset to 0 when:
-    - Once the top is dry
-    - After the amount of water on the top has remained unchanged for two hours.
+- Once the top is dry
+- After the amount of water on the top has remained unchanged for two hours.
 
 */
 
