@@ -31,6 +31,8 @@ typedef struct {
     struct data_output output;
     struct mg_mgr *mgr;
     struct mg_connection *conn;
+    struct mg_connection *timer;
+    int reconnect_delay;
     int prev_status;
     int prev_resp_code;
     char hostname[64];
@@ -53,7 +55,12 @@ static void influx_client_event(struct mg_connection *nc, int ev, void *ev_data)
     switch (ev) {
     case MG_EV_CONNECT: {
         int connect_status = *(int *)ev_data;
-        if (connect_status != 0) {
+        if (connect_status == 0) {
+            // Success
+            if (ctx) {
+                ctx->reconnect_delay = 0;
+            }
+        } else {
             // Error, print only once
             if (ctx) {
                 if (ctx->prev_status != connect_status)
@@ -61,8 +68,9 @@ static void influx_client_event(struct mg_connection *nc, int ev, void *ev_data)
                 ctx->conn = NULL;
             }
         }
-        if (ctx)
+        if (ctx) {
             ctx->prev_status = connect_status;
+        }
         break;
     }
     case MG_EV_HTTP_CHUNK: // response is normally empty (so mongoose thinks we received a chunk only)
@@ -80,11 +88,35 @@ static void influx_client_event(struct mg_connection *nc, int ev, void *ev_data)
         }
         break;
     case MG_EV_CLOSE:
-        if (ctx) {
-            ctx->conn = NULL;
-            influx_client_send(ctx);
+        if (!ctx) {
+            break; // shutting down
+        }
+        ctx->conn = NULL;
+        if (!ctx->timer) {
+            break; // shutting down
+        }
+        // Timer for next connect attempt, sends us MG_EV_TIMER event
+        mg_set_timer(ctx->timer, mg_time() + ctx->reconnect_delay);
+        if (ctx->reconnect_delay < 60) {
+            // 0, 1, 3, 6, 10, 16, 25, 39, 60
+            ctx->reconnect_delay = (ctx->reconnect_delay + 1) * 3 / 2;
         }
         break;
+    }
+}
+
+static void influx_client_timer(struct mg_connection *nc, int ev, void *ev_data)
+{
+    // note that while shutting down the ctx is NULL
+    influx_client_t *ctx = (influx_client_t *)nc->user_data;
+    (void)ev_data;
+
+    switch (ev) {
+    case MG_EV_TIMER: {
+        // Try to reconnect, ends if no data to send
+        influx_client_send(ctx);
+        break;
+    }
     }
 }
 
@@ -514,6 +546,11 @@ struct data_output *data_output_influx_create(struct mg_mgr *mgr, char *opts)
     print_logf(LOG_CRITICAL, "InfluxDB", "Publishing data to InfluxDB (%s)", url);
 
     influx->mgr = mgr;
+
+    // add dummy socket to receive timer events
+    struct mg_add_sock_opts timer_opts = {.user_data = influx};
+    influx->timer = mg_add_sock_opt(mgr, INVALID_SOCKET, influx_client_timer, timer_opts);
+
     influx_client_init(influx, url, token);
 
     return (struct data_output *)influx;

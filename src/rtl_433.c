@@ -279,14 +279,15 @@ static void help_output(void)
             "\tWithout this option the default is LOG and KV output. Use \"-F null\" to remove the default.\n"
             "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\tSpecify MQTT server with e.g. -F mqtt://localhost:1883\n"
+            "\tDefault user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.\n"
             "\tAdd MQTT options with e.g. -F \"mqtt://host:1883,opt=arg\"\n"
             "\tMQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]\n"
-            "\tDefault user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.\n"
-            "\tA base topic can be set with base=<topic>, default is \"rtl_433/HOSTNAME\".\n"
             "\tSupported MQTT formats: (default is all)\n"
-            "\t  events: posts JSON event data\n"
-            "\t  states: posts JSON state data\n"
-            "\t  devices: posts device and sensor info in nested topics\n"
+            "\t  events: posts JSON event data, default \"<base>/events\"\n"
+            "\t  states: posts JSON state data, default \"<base>/states\"\n"
+            "\t  devices: posts device and sensor info in nested topics,\n"
+            "\t           default \"<base>/devices[/type][/model][/subtype][/channel][/id]\"\n"
+            "\tA base topic can be set with base=<topic>, default is \"rtl_433/HOSTNAME\".\n"
             "\tAny topic string overrides the base topic and will expand keys like [/model]\n"
             "\tE.g. -F \"mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]\"\n"
             "\tWith MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client-ID is computed from the driver string.\n"
@@ -1384,13 +1385,22 @@ static void sighandler(int signum)
 }
 #endif
 
+static void timer_handler(struct mg_connection *nc, int ev, void *ev_data);
+
+// called by mg_mgr_poll() for each connection.
 // NOTE: this handler might be called while already in `r_free_cfg()`.
 static void sdr_handler(struct mg_connection *nc, int ev_type, void *ev_data)
 {
     //fprintf(stderr, "%s: %d, %d, %p, %p\n", __func__, nc->sock, ev_type, nc->user_data, ev_data);
-    // only process for the dummy nc
-    if (nc->sock != INVALID_SOCKET || ev_type != MG_EV_POLL)
+    // only process polls on the dummy nc
+    if (nc->sock != INVALID_SOCKET || ev_type != MG_EV_POLL) {
         return;
+    }
+    // only process a broadcast on our defined timer nc
+    if (nc->handler != timer_handler) {
+        return;
+    }
+
     r_cfg_t *cfg     = nc->user_data;
     sdr_event_t *ev = ev_data;
     //fprintf(stderr, "sdr_handler...\n");
@@ -1445,6 +1455,7 @@ static void acquire_callback(sdr_event_t *ev, void *ctx)
     // TODO: We should run the demod here to unblock the event loop
 
     // thread-safe dispatch, ev_data is the iq buffer pointer and length
+    // mg_mgr_poll() calls specified callback for each connection.
     //fprintf(stderr, "acquire_callback bc send...\n");
     mg_broadcast(mgr, sdr_handler, (void *)ev, sizeof(*ev));
     //fprintf(stderr, "acquire_callback bc done...\n");

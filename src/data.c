@@ -296,22 +296,19 @@ static data_t *data_append(data_t *first, const char *key, const char *pretty_ke
     return result;
 }
 
-R_API data_t *data_prepend(data_t *first, const char *key, const char *pretty_key, ...)
+R_API data_t *data_prepend(data_t *tail, data_t *head)
 {
-    va_list ap;
-    va_start(ap, pretty_key);
-    data_t *result = vdata_make(NULL, key, pretty_key, ap);
-    va_end(ap);
+    if (!head) {
+        return tail;
+    }
 
-    if (!result)
-        return first;
-
-    data_t *prev = result;
-    while (prev->next)
+    data_t *prev = head;
+    while (prev->next) {
         prev = prev->next;
-    prev->next = first;
+    }
+    prev->next = tail;
 
-    return result;
+    return head;
 }
 
 // Wrappers for now, should be refactored.

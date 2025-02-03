@@ -134,6 +134,7 @@ add_library(r_433 STATIC
     devices/generic_temperature_sensor.c
     devices/geo_minim.c
     devices/govee.c
+    devices/gridstream.c
     devices/gt_tmbbq05.c
     devices/gt_wt_02.c
     devices/gt_wt_03.c
@@ -205,6 +206,7 @@ add_library(r_433 STATIC
     devices/rainpoint.c
     devices/regency_fan.c
     devices/revolt_nc5462.c
+    devices/revolt_zx7717.c
     devices/rftech.c
     devices/risco_agility.c
     devices/rojaflex.c

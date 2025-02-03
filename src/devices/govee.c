@@ -161,7 +161,11 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_invert(bitbuffer);
 
     int id = (b[0] << 8) | b[1];
+    // reduce false positives
     if (id == 0xffff) {
+        return DECODE_ABORT_EARLY;
+    }
+    if (b[5] == 0) {
         return DECODE_ABORT_EARLY;
     }
 

@@ -625,8 +625,7 @@ static void log_handler(log_level_t level, char const *src, char const *msg, voi
         char time_str[LOCAL_TIME_BUFLEN];
         time_pos_str(cfg, 0, time_str);
         data = data_prepend(data,
-                "time", "", DATA_STRING, time_str,
-                NULL);
+                data_str(NULL, "time", "", NULL, time_str));
     }
 
     for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
@@ -651,8 +650,7 @@ void event_occurred_handler(r_cfg_t *cfg, data_t *data)
         char time_str[LOCAL_TIME_BUFLEN];
         time_pos_str(cfg, 0, time_str);
         data = data_prepend(data,
-                "time", "", DATA_STRING, time_str,
-                NULL);
+                data_str(NULL, "time", "", NULL, time_str));
     }
 
     for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
@@ -672,8 +670,7 @@ void log_device_handler(r_device *r_dev, int level, data_t *data)
         char time_str[LOCAL_TIME_BUFLEN];
         time_pos_str(cfg, cfg->demod->pulse_data.start_ago, time_str);
         data = data_prepend(data,
-                "time", "", DATA_STRING, time_str,
-                NULL);
+                data_str(NULL, "time", "", NULL, time_str));
     }
 
     for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
@@ -840,15 +837,13 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
     // prepend "description" if requested
     if (cfg->report_description) {
         data = data_prepend(data,
-                "description", "Description", DATA_STRING, r_dev->name,
-                NULL);
+                data_str(NULL, "description", "Description", NULL, r_dev->name));
     }
 
     // prepend "protocol" if requested
     if (cfg->report_protocol && r_dev->protocol_num) {
         data = data_prepend(data,
-                "protocol", "Protocol", DATA_INT, r_dev->protocol_num,
-                NULL);
+                data_int(NULL, "protocol", "Protocol", NULL, r_dev->protocol_num));
     }
 
     if (cfg->report_meta && cfg->demod->fsk_pulse_data.fsk_f2_est) {
@@ -872,8 +867,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
         char time_str[LOCAL_TIME_BUFLEN];
         time_pos_str(cfg, cfg->demod->pulse_data.start_ago, time_str);
         data = data_prepend(data,
-                "time", "", DATA_STRING, time_str,
-                NULL);
+                data_str(NULL, "time", "", NULL, time_str));
     }
 
     // apply all tags

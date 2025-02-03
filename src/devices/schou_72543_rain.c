@@ -65,11 +65,16 @@ static int schou_72543_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Load bitbuffer data and validate checksum
     uint8_t *b = bitbuffer->bb[row];
-    int micsum = b[7];                    // Checksum as read
-    int calsum = add_bytes(b, 7) & 0x0FF; // Checksum as calculated, accounting for the lowest 8 bit
+    int chk    = b[7];            // Checksum as read
+    int sum    = add_bytes(b, 7); // Checksum as calculated
 
-    if (micsum != calsum) {
-        decoder_logf_bitrow(decoder, 1, __func__, b, 65, "Checksum error, expected: %02x calculated: %02x", micsum, calsum);
+    // reduce false positives
+    if (sum == 0) {
+        return DECODE_ABORT_EARLY;
+    }
+
+    if (chk != (sum & 0xff)) {
+        decoder_logf_bitrow(decoder, 1, __func__, b, 65, "Checksum error, expected: %02x calculated: %02x", chk, sum);
         return DECODE_FAIL_MIC;
     }
 

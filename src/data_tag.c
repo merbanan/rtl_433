@@ -319,8 +319,7 @@ data_t *data_tag_apply(data_tag_t *tag, data_t *data, char const *filename)
 
     // prepend simple tags
     data = data_prepend(data,
-            tag->key, "", DATA_STRING, val,
-            NULL);
+            data_str(NULL, tag->key, "", NULL, val));
 
     return data;
 }

@@ -174,7 +174,7 @@ struct deltadore_x3d_message_header {
     int16_t header_check;
 };
 
-struct __attribute__((packed)) deltadore_x3d_message_payload {
+struct deltadore_x3d_message_payload {
     uint8_t retry;
     uint16_t transfer;
     uint16_t transfer_ack;
@@ -286,9 +286,7 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     ccitt_whitening(&len, 1);
 
     if (len > DELTADORE_X3D_MAX_PKT_LEN) {
-        if (decoder->verbose) {
-            decoder_logf(decoder, 0, __func__, "packet too large (%u bytes), dropping it\n", len);
-        }
+        decoder_logf(decoder, 1, __func__, "packet too large (%u bytes), dropping it\n", len);
         return DECODE_ABORT_LENGTH;
     }
 
@@ -299,17 +297,13 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // dewhite the data
     ccitt_whitening(frame, len);
 
-    if (decoder->verbose > 1) {
-        decoder_log_bitrow(decoder, 0, __func__, frame, len * 8, "frame data");
-    }
+    decoder_log_bitrow(decoder, 2, __func__, frame, len * 8, "frame data");
 
     const uint16_t crc        = crc16(frame, len - 2, 0x1021, 0x0000);
     const uint16_t actual_crc = (frame[len - 2] << 8 | frame[len - 1]);
 
     if (actual_crc != crc) {
-        if (decoder->verbose) {
-            decoder_logf(decoder, 0, __func__, "CRC invalid %04x != %04x\n", actual_crc, crc);
-        }
+        decoder_logf(decoder, 1, __func__, "CRC invalid %04x != %04x\n", actual_crc, crc);
         return DECODE_FAIL_MIC;
     }
 
