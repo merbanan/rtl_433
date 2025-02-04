@@ -67,20 +67,20 @@ Known CRC init values can be added to the code via PR when they have been identi
 
 */
 static const struct crc_init known_crc_init[] = {
-        {0xe623, "Kansas City, MO", "Evergy-Missouri West"},
-        {0x5fd6, "Dallas, TX", "Oncor"},
-        {0xD553, "Austin, TX", "Austin Energy"},
-        {0x45F8, "Dallas, TX", "CoServ"},
-        {0x62C1, "Quebec, CAN", "Hydro-Quebec"},
-        {0x23D1, "Seattle, WA", "Seattle City Light"},
-        {0x2C22, "Santa Barbara, CA", "Southern California Edison"},
+        {0xe623, "Kansas City MO", "Evergy-Missouri West"},
+        {0x5fd6, "Dallas TX", "Oncor"},
+        {0xD553, "Austin TX", "Austin Energy"},
+        {0x45F8, "Dallas TX", "CoServ"},
+        {0x62C1, "Quebec CAN", "Hydro-Quebec"},
+        {0x23D1, "Seattle WA", "Seattle City Light"},
+        {0x2C22, "Santa Barbara CA", "Southern California Edison"},
         {0x142A, "Washington", "Puget Sound Energy"},
         {0x47F7, "Pennsylvania", "PPL Electric"},
-        {0x22c6, "Long Island, NY", "PSEG Long Island"},
-        {0x8819, "Alameda, CA", "Alameda Municipal Power"},
-        {0x4E2D, "Milwaukee, WI", "We Energies"},
-        {0x1D65, "Phoenix, AZ", "APS"},
-        {0xB9A9, "Mattoon, IL", "Coles-Moultrie Electric Co-op"}};
+        {0x22c6, "Long Island NY", "PSEG Long Island"},
+        {0x8819, "Alameda CA", "Alameda Municipal Power"},
+        {0x4E2D, "Milwaukee WI", "We Energies"},
+        {0x1D65, "Phoenix AZ", "APS"},
+        {0xB9A9, "Mattoon IL", "Coles-Moultrie Electric Co-op"}};
 
 static int gridstream_checksum(int fulllength, uint16_t length, uint8_t *bits, int adjust)
 {
