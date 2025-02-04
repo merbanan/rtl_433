@@ -268,7 +268,7 @@
     DECL(chamberlain_cwpirc) \
     DECL(thermopro_tp829b) \
     DECL(arad_ms_meter) \
-    DECL(geevon) \
+    DECL(geevon_tx16_3) \
     DECL(fineoffset_wh46) \
     DECL(vevor_7in1) \
     DECL(arexx_ml) \
@@ -282,6 +282,7 @@
     DECL(gridstream192) \
     DECL(gridstream384) \
     DECL(revolt_zx7717) \
+    DECL(geevon_tx19_1) \
 
     /* Add new decoders here. */
 
