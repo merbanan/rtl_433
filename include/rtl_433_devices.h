@@ -282,6 +282,7 @@
     DECL(gridstream192) \
     DECL(gridstream384) \
     DECL(revolt_zx7717) \
+    DECL(martec_mplcd) \
 
     /* Add new decoders here. */
 
