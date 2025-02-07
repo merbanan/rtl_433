@@ -1,5 +1,5 @@
 /** @file
-    General Motors TPMS
+    General Motors Aftermarket TPMS
 
     Copyright (C) 2025 Eric Blevins
 
@@ -14,8 +14,9 @@
 #include <stdio.h>
 #include <inttypes.h>  // Needed for PRIX64
 
-/**
+static uint8_t const preamble_pattern[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
+/**
 Data was detected an initially captured using:
 
   rtl_433 -X 'n=name,m=OOK_MC_ZEROBIT,s=120,l=0,r=15600'
@@ -45,13 +46,22 @@ AAAAAAAAAAAASSSSDDDDIIIIIIPPTTCCX
 - P: Pressure
 - T: Temperature
 - C: CheckSum, modulo 256
+
+The only status data detected is learn mode and low battery.
+Bit 5 of status indicates low battery when set to 1
+Bits 0,1,8 are set to 0 to indicate learn mode and 1 for operational mode.
+The sensors drop to learn mode when detecting a large pressure drop
+or when activated with the learning tool
+
+In learn mode with zero pressure they only transmit when activated by
+the learning tool.
+Once presurized they will transmit in learn mode and within a couple
+minutes switch to sending in operatioinal mode every teo minutes.
+
 */
-static uint8_t const preamble_pattern[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 static int tpms_gm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-
-
     if (bitbuffer->num_rows != 1) {
         return DECODE_ABORT_EARLY;
     }
@@ -65,8 +75,8 @@ static int tpms_gm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
     }
 
-
-    uint8_t b[17] = {0};  // Buffer for extracted bytes
+    // Buffer for extracted bytes
+    uint8_t b[17] = {0};
     bitbuffer_extract_bytes(bitbuffer, 0, 0, b, 130);
 
     // Checksum skips preamble
@@ -78,20 +88,16 @@ static int tpms_gm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
+    // Convert ID to an integer
     uint64_t sensor_id = ((uint64_t)b[8] << 32) | ((uint64_t)b[9] << 24) | (b[10] << 16) | (b[11] << 8) | b[12];
     uint16_t status = (b[6] << 8) | b[7];
 
     uint8_t pressure_raw = b[13];
     uint8_t temperature_raw = b[14];
 
-    // The data I found stated this sensor has a step of 1.572kPa
-    // The scaling below resulted in Mean Absolute Error ~1.46kPa
-    // With a ~0.29% Mean Percentage Error
     float pressure_kpa = (pressure_raw * 2.75) + 3.75;
     float pressure_psi = kpa2psi(pressure_kpa);
-    
     float temperature_c = temperature_raw - 60;
-
 
     // Extract bits correctly based on little-endian order
     int bit8 = (status >> 8) & 1;
@@ -101,12 +107,6 @@ static int tpms_gm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Status bits
     int learn_mode = ((bit8 == 0) && (bit1 == 0) && (bit0 == 0)) ? 1 : 0;
     int battery_ok = !((status >> 5) & 1);
-
-
-
-    char id_str[11];  // 5 bytes -> 10 hex characters + null terminator
-    snprintf(id_str, sizeof(id_str), "%010" PRIX64, sensor_id);
-
 
     char status_hex[7];  // 6 chars + null terminator for "0xFFFF"
     snprintf(status_hex, sizeof(status_hex), "0x%04X", status);
@@ -123,9 +123,9 @@ static int tpms_gm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-        "model",           "",            DATA_STRING,  "GM TPMS",
+        "model",           "",            DATA_STRING,  "GM Aftermarket TPMS",
         "type",            "",            DATA_STRING,  "TPMS",
-        "id",              "",            DATA_STRING,  id_str,
+        "id",              "",            DATA_INT,     sensor_id,
         "status",          "",            DATA_STRING,  status_hex,
         "raw",             "Raw Data",    DATA_STRING,  raw_hex,
         "learn_mode",      "",            DATA_INT,     learn_mode,
@@ -133,7 +133,7 @@ static int tpms_gm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         "pressure_kPa",    "",            DATA_DOUBLE,  pressure_kpa,
         "pressure_PSI",    "",            DATA_DOUBLE,  pressure_psi,
         "temperature_C",   "",            DATA_DOUBLE,  temperature_c,
-        "mic",             "Integrity",   DATA_STRING,  "SumMod256",
+        "mic",             "Integrity",   DATA_STRING,  "CHECKSUM",
         NULL);
 
     /* clang-format on */
@@ -141,7 +141,6 @@ static int tpms_gm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_output_data(decoder, data);
     return 1;
 }
-
 
 /** Output fields for rtl_433 */
 static char const *const output_fields[] = {
@@ -160,7 +159,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const tpms_gm = {
-    .name        = "GM TPMS",
+    .name        = "GM Aftermarket TPMS",
     .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
     .short_width = 120,
     .long_width  = 0,
