@@ -268,6 +268,7 @@ add_library(r_433 STATIC
     devices/tpms_tyreguard400.c
     devices/ts_ft002.c
     devices/ttx201.c
+    devices/universalfanctrl.c
     devices/vaillant_vrt340f.c
     devices/vauno_en8822c.c
     devices/vevor_7in1.c
