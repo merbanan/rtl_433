@@ -101,7 +101,7 @@ static int tpms_gm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int bit0 = (flags >> 0) & 1;
 
     // Flags bits
-    int learn_mode = ((bit8 == 0) && (bit1 == 0) && (bit0 == 0)) ? 1 : 0;
+    int learn_mode = ((bit8 == 0) && (bit1 == 0) && (bit0 == 0));
     int battery_ok = !((flags >> 5) & 1);
 
     char flags_hex[7]; // 6 chars + null terminator for "0xFFFF"
@@ -141,7 +141,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const tpms_gm = {
-        .name        = "GM Aftermarketi TPMS",
+        .name        = "GM Aftermarket TPMS",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 120,
         .long_width  = 0,
