@@ -1,5 +1,5 @@
 /** @file
-    General Motors Aftermarket TPMS
+    General Motors Aftermarket TPMS.
 
     Copyright (C) 2025 Eric Blevins
 
@@ -10,53 +10,45 @@
 */
 
 #include "decoder.h"
-#include "r_util.h"
-#include <stdio.h>
-#include <inttypes.h>  // Needed for PRIX64
-
-static uint8_t const preamble_pattern[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 /**
-Data was detected an initially captured using:
+    General Motors Aftermarket TPMS.
 
-  rtl_433 -X 'n=name,m=OOK_MC_ZEROBIT,s=120,l=0,r=15600'
+Data was detected and initially captured using:
 
-These sensors react to a signal from an EL-50448 relearn tool.
-They enter into learn mode upon receiving the signal and transmit.
-If they remain at 0PSI they will not transmit unless receiving signal
-from the relearn tool.
-If they have pressure they transmit every 2 minutes and will exit
-the learn mode after one cycle.
-Any sudden changes in pressure triggers immediate signal.
-These do not seem capable of detection motion.
+    rtl_433 -X 'n=name,m=OOK_MC_ZEROBIT,s=120,l=0,r=15600'
 
 
-
-130 bits
-AAAAAAAAAAAASSSSDDDDIIIIIIPPTTCCX
+    130 bits
+AAAAAAAAAAAAFFFFDDDDIIIIIIPPTTCCX
 0000000000004c90007849176600536d0
- Data layout:
 
-   AAAAAAAAAAAASSSSDDDDIIIIIIPPTTCCX
+Data layout:
+
+   AAAAAAAAAAAAFFFFDDDDIIIIIIPPTTCCX
 
 - A: preamble 0x000000000000
-- S: Status
+- F: Flags
 - D: Device type or prefix
 - I: Device uniquie identifier
 - P: Pressure
 - T: Temperature
 - C: CheckSum, modulo 256
 
+Format string:
+
+    ID:10h FLAGS:4h KPA:2h TEMP:2h CHECKSUM:2h
+
 The only status data detected is learn mode and low battery.
-Bit 5 of status indicates low battery when set to 1
+Bit 5 of status indicates low battery when set to 1.
 Bits 0,1,8 are set to 0 to indicate learn mode and 1 for operational mode.
 The sensors drop to learn mode when detecting a large pressure drop
-or when activated with the learning tool
+or when activated with the EL-50448 learning tool.
 
 In learn mode with zero pressure they only transmit when activated by
 the learning tool.
 Once presurized they will transmit in learn mode and within a couple
-minutes switch to sending in operatioinal mode every teo minutes.
+minutes switch to sending in operatioinal mode every two minutes.
 
 */
 
@@ -69,6 +61,8 @@ static int tpms_gm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[0] != 130) {
         return DECODE_ABORT_LENGTH;
     }
+
+    static uint8_t const preamble_pattern[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
     int pos = bitbuffer_search(bitbuffer, 0, 0, preamble_pattern, sizeof(preamble_pattern) * 8);
     if (pos < 0) {
@@ -90,40 +84,38 @@ static int tpms_gm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Convert ID to an integer
     uint64_t sensor_id = ((uint64_t)b[8] << 32) | ((uint64_t)b[9] << 24) | (b[10] << 16) | (b[11] << 8) | b[12];
-    uint16_t status = (b[6] << 8) | b[7];
+    uint16_t flags     = (b[6] << 8) | b[7];
 
-    uint8_t pressure_raw = b[13];
+    uint8_t pressure_raw    = b[13];
     uint8_t temperature_raw = b[14];
 
-    // Adding 3.75 made my sensors accurate accurate
+    // Adding 3.75 made my sensors accurate
     // But I think it might be best to allow the user to
     // to add their own offset when consuming the data
-    float pressure_kpa = (pressure_raw * 2.75);
-    float pressure_psi = kpa2psi(pressure_kpa);
+    float pressure_kpa  = (pressure_raw * 2.75);
     float temperature_c = temperature_raw - 60;
 
     // Extract bits correctly based on little-endian order
-    int bit8 = (status >> 8) & 1;
-    int bit1 = (status >> 1) & 1;
-    int bit0 = (status >> 0) & 1;
+    int bit8 = (flags >> 8) & 1;
+    int bit1 = (flags >> 1) & 1;
+    int bit0 = (flags >> 0) & 1;
 
-    // Status bits
+    // Flags bits
     int learn_mode = ((bit8 == 0) && (bit1 == 0) && (bit0 == 0)) ? 1 : 0;
-    int battery_ok = !((status >> 5) & 1);
+    int battery_ok = !((flags >> 5) & 1);
 
-    char status_hex[7];  // 6 chars + null terminator for "0xFFFF"
-    snprintf(status_hex, sizeof(status_hex), "0x%04X", status);
+    char flags_hex[7]; // 6 chars + null terminator for "0xFFFF"
+    snprintf(flags_hex, sizeof(flags_hex), "0x%04X", flags);
 
     /* clang-format off */
     data_t *data = data_make(
-        "model",           "",            DATA_STRING,  "GM Aftermarket TPMS",
+        "model",           "",            DATA_STRING,  "GM Aftermarket",
         "type",            "",            DATA_STRING,  "TPMS",
         "id",              "",            DATA_INT,     sensor_id,
-        "status",          "",            DATA_STRING,  status_hex,
+        "flags",           "",            DATA_STRING,  flags_hex,
         "learn_mode",      "",            DATA_INT,     learn_mode,
         "battery_ok",      "",            DATA_INT,     battery_ok,
         "pressure_kPa",    "",            DATA_DOUBLE,  pressure_kpa,
-        "pressure_PSI",    "",            DATA_DOUBLE,  pressure_psi,
         "temperature_C",   "",            DATA_DOUBLE,  temperature_c,
         "mic",             "Integrity",   DATA_STRING,  "CHECKSUM",
         NULL);
@@ -136,26 +128,24 @@ static int tpms_gm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 /** Output fields for rtl_433 */
 static char const *const output_fields[] = {
-    "model",
-    "type",
-    "id",
-    "status",
-    "learn_mode",
-    "battery_ok",
-    "pressure_kPa",
-    "pressure_PSI",
-    "temperature_C",
-    "mic",
-    NULL,
+        "model",
+        "type",
+        "id",
+        "flags",
+        "learn_mode",
+        "battery_ok",
+        "pressure_kPa",
+        "temperature_C",
+        "mic",
+        NULL,
 };
 
 r_device const tpms_gm = {
-    .name        = "GM Aftermarket TPMS",
-    .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
-    .short_width = 120,
-    .long_width  = 0,
-    .reset_limit = 15600,
-    .decode_fn   = &tpms_gm_decode,
-    .fields      = output_fields,
+        .name        = "GM Aftermarketi TPMS",
+        .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
+        .short_width = 120,
+        .long_width  = 0,
+        .reset_limit = 15600,
+        .decode_fn   = &tpms_gm_decode,
+        .fields      = output_fields,
 };
-
