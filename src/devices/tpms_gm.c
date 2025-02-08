@@ -95,7 +95,10 @@ static int tpms_gm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t pressure_raw = b[13];
     uint8_t temperature_raw = b[14];
 
-    float pressure_kpa = (pressure_raw * 2.75) + 3.75;
+    // Adding 3.75 made my sensors accurate accurate
+    // But I think it might be best to allow the user to
+    // to add their own offset when consuming the data
+    float pressure_kpa = (pressure_raw * 2.75);
     float pressure_psi = kpa2psi(pressure_kpa);
     float temperature_c = temperature_raw - 60;
 
@@ -111,23 +114,12 @@ static int tpms_gm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char status_hex[7];  // 6 chars + null terminator for "0xFFFF"
     snprintf(status_hex, sizeof(status_hex), "0x%04X", status);
 
-    // **Convert raw 130-bit packet to hex string**
-    char raw_hex[35];  // 130 bits → 17 bytes → 34 hex characters + null terminator
-    for (int i = 0; i < 16; i++) {
-        snprintf(&raw_hex[i * 2], 3, "%02X", b[i]);
-    }
-
-    // **Extract and append last 2 bits**
-    uint8_t last_two_bits = (b[16] >> 6) & 0x03;  // Get the last two bits (bits 6 and 7 of byte 16)
-    snprintf(&raw_hex[32], 3, "%X", last_two_bits);  // Append as a single hex digit
-
     /* clang-format off */
     data_t *data = data_make(
         "model",           "",            DATA_STRING,  "GM Aftermarket TPMS",
         "type",            "",            DATA_STRING,  "TPMS",
         "id",              "",            DATA_INT,     sensor_id,
         "status",          "",            DATA_STRING,  status_hex,
-        "raw",             "Raw Data",    DATA_STRING,  raw_hex,
         "learn_mode",      "",            DATA_INT,     learn_mode,
         "battery_ok",      "",            DATA_INT,     battery_ok,
         "pressure_kPa",    "",            DATA_DOUBLE,  pressure_kpa,
@@ -148,7 +140,6 @@ static char const *const output_fields[] = {
     "type",
     "id",
     "status",
-    "raw",
     "learn_mode",
     "battery_ok",
     "pressure_kPa",
