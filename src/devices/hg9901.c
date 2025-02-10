@@ -81,6 +81,7 @@ static int hg9901_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int temp_raw        = b[5];                               // Temperature from byte 5
         int battery_raw     = (b[6] & 0xf0) >> 4;                 // Battery status is together with the light value
         int light_intensity = ((b[6] & 0x0f) << 4) | (b[7] >> 4); // Light Intensity needs to be put togther from byte 6 and byte 7
+        int light_lux       = light_intensity * 100;
 
         if (temp_raw >= 0x80) { // temperature has a dedicated sign bit
             temp_raw = 0x80 - temp_raw;
@@ -95,7 +96,7 @@ static int hg9901_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "battery_ok",       "Battery",          DATA_DOUBLE, battery_pct,
                 "temperature_C",    "Temperature",      DATA_FORMAT, "%d C", DATA_INT, temp_raw,
                 "moisture",         "Soil moisture",    DATA_FORMAT, "%u %%", DATA_INT, soil_moisture,
-                "light",            "Light Intensity",  DATA_FORMAT, "%u ", DATA_INT, light_intensity,
+                "light_lux",        "Light",            DATA_FORMAT, "%u lux", DATA_INT, light_lux,
                 NULL);
         /* clang-format on */
 
@@ -112,7 +113,7 @@ static char const *const output_fields[] = {
         "battery_ok",
         "temperature_C",
         "moisture",
-        "light",
+        "light_lux",
         NULL,
 };
 
