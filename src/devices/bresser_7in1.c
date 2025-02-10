@@ -15,12 +15,14 @@
 #define SENSOR_TYPE_AIR_PM    8
 #define SENSOR_TYPE_CO2      10
 #define SENSOR_TYPE_HCHO_VOC 11
+#define SENSOR_TYPE_WEATHER2 13
 
 /**
 Decoder for Bresser Weather Center 7-in-1 and Air quality sensors.
 - Air Quality PM2.5/PM10 PN 7009970
 - CO2 sensor             PN 7009977
 - HCHO/VOC sensor        PN 7009978
+- 8-in-1 Weather Station PN 7003150
 
 See
 https://github.com/merbanan/rtl_433/issues/1492
@@ -183,7 +185,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int flags       = (msg[15] & 0x0f);
     int battery_low = (flags & 0x06) == 0x06;
 
-    if (s_type == SENSOR_TYPE_WEATHER) {
+    if ((s_type == SENSOR_TYPE_WEATHER) || (s_type == SENSOR_TYPE_WEATHER2)) {
         int wdir     = (msg[4] >> 4) * 100 + (msg[4] & 0x0f) * 10 + (msg[5] >> 4);
         int wgst_raw = (msg[7] >> 4) * 100 + (msg[7] & 0x0f) * 10 + (msg[8] >> 4);
         int wavg_raw = (msg[8] & 0x0f) * 100 + (msg[9] >> 4) * 10 + (msg[9] & 0x0f);
@@ -204,6 +206,16 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         float light_lux = lght_raw;
         float uv_index = uv_raw * 0.1f;
 
+        int tglobe_ok = 0;
+        float tglobe_c = 0.0f;
+        if (s_type == SENSOR_TYPE_WEATHER2) {
+            // Globe thermometer temperature, only present in the 8-in-1 sensor
+            if ((msg[23] >> 4) < 10) {
+                tglobe_ok = 1;
+                tglobe_c = (msg[22] >> 4) * 10 + (msg[22] & 0x0f) + (msg[23] >> 4) * 0.1f;
+            }
+        }
+
         /* clang-format off */
         data = data_make(
                 "model",            "",             DATA_STRING, "Bresser-7in1",
@@ -218,6 +230,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "light_klx",        "Light",        DATA_FORMAT, "%.3f klx", DATA_DOUBLE, light_klx, // TODO: remove this
                 "light_lux",        "Light",        DATA_FORMAT, "%.3f lux", DATA_DOUBLE, light_lux,
                 "uv",               "UV Index",     DATA_FORMAT, "%.1f", DATA_DOUBLE, uv_index,
+                "temperature_1_C",  "Globe Temp",   DATA_COND,   tglobe_ok, DATA_FORMAT, "%.1f C", DATA_DOUBLE, tglobe_c,
                 "battery_ok",       "Battery",      DATA_INT,    !battery_low,
                 "mic",              "Integrity",    DATA_STRING, "CRC",
                 NULL);
@@ -312,6 +325,7 @@ static char const *const output_fields[] = {
         "light_klx", // TODO: remove this
         "light_lux",
         "uv",
+        "temperature_1_C",
         "pm2_5_ug_m3",
         "pm10_0_ug_m3",
         "battery_ok",
