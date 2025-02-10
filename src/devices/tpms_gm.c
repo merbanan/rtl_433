@@ -12,20 +12,17 @@
 #include "decoder.h"
 
 /**
-    General Motors Aftermarket TPMS.
+General Motors Aftermarket TPMS.
 
 Data was detected and initially captured using:
 
     rtl_433 -X 'n=name,m=OOK_MC_ZEROBIT,s=120,l=0,r=15600'
 
 
-    130 bits
-AAAAAAAAAAAAFFFFDDDDIIIIIIPPTTCCX
-0000000000004c90007849176600536d0
+Data layout, 130 bits:
+    AAAAAAAAAAAAFFFFDDDDIIIIIIPPTTCCX
+    0000000000004c90007849176600536d0
 
-Data layout:
-
-   AAAAAAAAAAAAFFFFDDDDIIIIIIPPTTCCX
 
 - A: preamble 0x000000000000
 - F: Flags
@@ -78,16 +75,16 @@ static int tpms_gm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     for (int i = 6; i < 15; i++) {
         computed_checksum += b[i];
     }
-    if ((computed_checksum % 256) != b[15]) {
+    if ((computed_checksum & 0xFF) != b[15]) {
         return DECODE_FAIL_MIC;
     }
 
     // Convert ID to an integer
     uint64_t sensor_id = ((uint64_t)b[8] << 32) | ((uint64_t)b[9] << 24) | (b[10] << 16) | (b[11] << 8) | b[12];
-    uint16_t flags     = (b[6] << 8) | b[7];
+    int flags     = (b[6] << 8) | b[7];
 
-    uint8_t pressure_raw    = b[13];
-    uint8_t temperature_raw = b[14];
+    int pressure_raw    = b[13];
+    int temperature_raw = b[14];
 
     // Adding 3.75 made my sensors accurate
     // But I think it might be best to allow the user to
@@ -104,15 +101,12 @@ static int tpms_gm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int learn_mode = ((bit8 == 0) && (bit1 == 0) && (bit0 == 0));
     int battery_ok = !((flags >> 5) & 1);
 
-    char flags_hex[7]; // 6 chars + null terminator for "0xFFFF"
-    snprintf(flags_hex, sizeof(flags_hex), "0x%04X", flags);
-
     /* clang-format off */
     data_t *data = data_make(
-        "model",           "",            DATA_STRING,  "GM Aftermarket",
+        "model",           "",            DATA_STRING,  "GM-Aftermarket",
         "type",            "",            DATA_STRING,  "TPMS",
         "id",              "",            DATA_INT,     sensor_id,
-        "flags",           "",            DATA_STRING,  flags_hex,
+        "flags",           "",            DATA_INT,     flags,
         "learn_mode",      "",            DATA_INT,     learn_mode,
         "battery_ok",      "",            DATA_INT,     battery_ok,
         "pressure_kPa",    "",            DATA_DOUBLE,  pressure_kpa,
@@ -141,7 +135,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const tpms_gm = {
-        .name        = "GM Aftermarket TPMS",
+        .name        = "GM-Aftermarket TPMS",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 120,
         .long_width  = 0,
