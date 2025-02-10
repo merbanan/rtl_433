@@ -230,7 +230,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "light_klx",        "Light",        DATA_FORMAT, "%.3f klx", DATA_DOUBLE, light_klx, // TODO: remove this
                 "light_lux",        "Light",        DATA_FORMAT, "%.3f lux", DATA_DOUBLE, light_lux,
                 "uv",               "UV Index",     DATA_FORMAT, "%.1f", DATA_DOUBLE, uv_index,
-                "tglobe_C",         "Globe Temp",   DATA_COND,   tglobe_ok, DATA_FORMAT, "%.1f C", DATA_DOUBLE, tglobe_c,
+                "temperature_1_C",  "Globe Temp",   DATA_COND,   tglobe_ok, DATA_FORMAT, "%.1f C", DATA_DOUBLE, tglobe_c,
                 "battery_ok",       "Battery",      DATA_INT,    !battery_low,
                 "mic",              "Integrity",    DATA_STRING, "CRC",
                 NULL);
@@ -325,6 +325,7 @@ static char const *const output_fields[] = {
         "light_klx", // TODO: remove this
         "light_lux",
         "uv",
+        "temperature_1_C",
         "pm2_5_ug_m3",
         "pm10_0_ug_m3",
         "battery_ok",
