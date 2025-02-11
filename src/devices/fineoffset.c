@@ -482,28 +482,6 @@ packet_found:
     return 1;
 }
 
-static char const *const output_fields_WH0290[] = {
-        "model",
-        "id",
-        "battery_ok",
-        "ext_power",
-        "pm2_5_ug_m3",
-        "estimated_pm10_0_ug_m3",
-        "family",
-        "mic",
-        NULL,
-};
-
-r_device const fineoffset_WH0290 = {
-        .name        = "Fine Offset/EcoWitt WH0290/WH41/WH43 Wireless Air Quality Monitor",
-        .modulation  = FSK_PULSE_PCM,
-        .short_width = 58,
-        .long_width  = 58,
-        .reset_limit = 5000,
-        .decode_fn   = &fineoffset_WH0290_callback,
-        .fields      = output_fields_WH0290,
-};
-
 /**
 Fine Offset Electronics WH25 / WH32 / WH32B / WN32B Temperature/Humidity/Pressure sensor protocol.
 
