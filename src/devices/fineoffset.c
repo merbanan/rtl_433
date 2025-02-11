@@ -379,12 +379,25 @@ BitBench Examples
 Preamble: aa2dd4
 FAM:8d ID: 8h 1b Bat_MSB:1d PMTWO:14d Bat_LSB:2d PMTEN:14d CRC:8h BITSIM:8h bbbbb
 */
+#define MODEL_WH41 41
+#define MODEL_WH43 43
 static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t const preamble[] = {0xAA, 0x2D, 0xD4};
-    uint8_t b[8];
+    uint8_t b[10];
     unsigned bit_offset;
+    int type;
+
+    /* Declare these variables in the outer scope so they are available everywhere in the function */
+    uint8_t family = 0;
+    uint32_t id = 0;       // Use uint32_t for a 24-bit id.
+//    uint8_t unknown1 = 0;
+    int pm25 = 0;
+    int pm100 = 0;
+    int battery_bars = 0;
+    float battery_ok = 0.0f;
+    int ext_power = 0;
 
     bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
@@ -393,42 +406,103 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
 
-    // Verify checksum, same as other FO Stations: Reverse 1Wire CRC (poly 0x131)
-    uint8_t crc = crc8(b, 6, 0x31, 0x00);
-    uint8_t checksum = 0;
-    for (unsigned n = 0; n < 7; ++n) {
-        checksum += b[n];
-    }
-    if (crc != b[6] || checksum != b[7]) {
-        decoder_logf(decoder, 1, __func__, "Checksum error: %02x %02x", crc, checksum);
+    /* Determine packet type based on first byte */
+    if (b[0] == 0x41)
+        type = MODEL_WH41;
+    else if (b[0] == 0x43)
+        type = MODEL_WH43;
+    else {
+        // Unknown type
+        decoder_logf(decoder, 1, __func__, "Unknown device family: %02x", b[0]);
         return DECODE_FAIL_MIC;
     }
 
-    // Decode data
-    uint8_t family    = b[0];
-    uint8_t id        = b[1];
-    uint8_t unknown1  = (b[2] & 0x80) ? 1 : 0;
-    int pm25          = (b[2] & 0x3f) << 8 | b[3];
-    int pm100         = (b[4] & 0x3f) << 8 | b[5];
-    int battery_bars  = (b[2] & 0x40) >> 4 | (b[4] & 0xC0) >> 6; //out of 5
-    float battery_ok  = battery_bars * 0.2f; //convert out of 5 bars to 0 (0 bars) to 1 (5 bars)
+    /* Try WH41 packet (8-bit ID) */
+    {
+        uint8_t crc = crc8(b, 6, 0x31, 0x00);  // Compute CRC over first 6 bytes.
+        uint8_t checksum = 0;
+        for (unsigned n = 0; n < 7; ++n)
+            checksum += b[n];
+
+        if (crc == b[6] && checksum == b[7]) {
+            // WH41 packet detected
+            family   = b[0];
+            id       = b[1];
+            pm25     = ((b[2] & 0x3F) << 8) | b[3];
+            pm100    = ((b[4] & 0x3F) << 8) | b[5];
+            battery_bars = ((b[2] & 0x40) >> 4) | ((b[4] & 0xC0) >> 6);
+            ext_power = battery_bars == 6 ? 1 : 0;
+            battery_ok  = MIN(battery_bars * 0.2f, 1.0f);
+            decoder_logf(decoder, 2, __func__, "Decoded as WH41");
+            goto packet_found;
+        }
+    }
+
+    /* Try WH43 packet (24-bit ID) */
+    {
+        uint8_t crc = crc8(b, 8, 0x31, 0x00);  // Compute CRC over first 8 bytes.
+        uint8_t checksum = 0;
+        for (unsigned n = 0; n < 9; ++n)
+            checksum += b[n];
+
+        if (crc == b[8] && checksum == b[9]) {
+            // WH43 packet detected
+            family   = b[0];
+            id       = (b[1] << 16) | (b[2] << 8) | b[3];  // 24-bit ID
+            pm25     = ((b[4] & 0x3F) << 8) | b[5];
+            pm100    = ((b[6] & 0x3F) << 8) | b[7];
+            battery_bars = ((b[4] & 0x40) >> 4) | ((b[6] & 0xC0) >> 6);
+            ext_power = battery_bars == 6 ? 1 : 0;
+            battery_ok  = MIN(battery_bars * 0.2f, 1.0f);
+            decoder_logf(decoder, 2, __func__, "Decoded as WH43");
+            goto packet_found;
+        }
+    }
+
+    /* If neither CRC check passes, return failure */
+    decoder_logf(decoder, 1, __func__, "Checksum error on packet");
+    return DECODE_FAIL_MIC;
 
     /* clang-format off */
+packet_found:
+    /* Build data output (adjust field names, macros, and values as needed) */
     data = data_make(
-            "model",            "",             DATA_STRING, "Fineoffset-WH0290",
-            "id",               "ID",           DATA_INT,    id,
-            "battery_ok",       "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
-            "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%d ug/m3", DATA_INT, pm25/10,
-            "estimated_pm10_0_ug_m3",     "Estimate of 10um Coarse Particulate Matter",  DATA_FORMAT, "%d ug/m3", DATA_INT, pm100/10,
-            "family",           "FAMILY",       DATA_INT,    family,
-            "unknown1",         "UNKNOWN1",     DATA_INT,    unknown1,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
-    /* clang-format on */
+        "model",            "",             DATA_COND, type == MODEL_WH41, DATA_STRING, "Fineoffset-WH0290",
+        "model",            "",             DATA_COND, type == MODEL_WH43, DATA_STRING, "Fineoffset-WH43",
+        "id",               "ID",           DATA_FORMAT, "%06x", DATA_INT, id,
+        "battery_ok",       "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
+        "ext_power",        "External Power", DATA_STRING, ext_power == 1 ? "Yes" : "No",
+        "pm2_5_ug_m3",      "2.5µm Fine Particulate Matter",  DATA_FORMAT, "%d µg/m3", DATA_INT, pm25/10,
+        "estimated_pm10_0_ug_m3", "Estimate of 10µm Coarse Particulate Matter", DATA_FORMAT, "%d µg/m3", DATA_INT, (pm100/10),
+        "family",           "Family",       DATA_FORMAT, "%02x", DATA_INT, family,
+        "mic",              "Integrity",    DATA_STRING, "CRC",
+        NULL);
 
     decoder_output_data(decoder, data);
     return 1;
 }
+
+static char const *const output_fields_WH0290[] = {
+        "model",
+        "id",
+        "battery_ok",
+        "ext_power",
+        "pm2_5_ug_m3",
+        "estimated_pm10_0_ug_m3",
+        "family",
+        "mic",
+        NULL,
+};
+
+r_device const fineoffset_WH0290 = {
+        .name        = "Fine Offset/EcoWitt WH0290/WH41/WH43 Wireless Air Quality Monitor",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 58,
+        .long_width  = 58,
+        .reset_limit = 5000,
+        .decode_fn   = &fineoffset_WH0290_callback,
+        .fields      = output_fields_WH0290,
+};
 
 /**
 Fine Offset Electronics WH25 / WH32 / WH32B / WN32B Temperature/Humidity/Pressure sensor protocol.
