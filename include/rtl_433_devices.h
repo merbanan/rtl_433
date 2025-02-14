@@ -283,6 +283,7 @@
     DECL(gridstream384) \
     DECL(revolt_zx7717) \
     DECL(tpms_gm) \
+    DECL(lacrosse_ws6262) \
 
     /* Add new decoders here. */
 
