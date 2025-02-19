@@ -1,5 +1,43 @@
 # Changelog
 
+## Release 25.02 (2025-02-19)
+
+### Breaking Changes
+
+- Changed state key value to ON/OFF, BREAKING CHANGE for Waveman-Switch (#2946)
+
+### Highlights
+
+- Added support for General Motors TPMS (#3191)
+- Added Globe Thermometer for 8-in-1 sensor to Bresser-7in1 (#3193)
+- Added rain start detection feature for WS90 sensor (#3183)
+- Added id key to IDM and NETIDM (#3164)
+- Added decoder conf for Hormann remotes (#3162)
+- Added client cert option to HA script (#3160)
+- Added support for Revolt ZX-7717 power meter (#3125)
+- Added support for Gridstream RF protocol from Landis & Gyr meters (#2616)
+- Added decoder conf for Rako wireless lighting controls (#3124)
+- Added support for Quinetic Switches and Sensors (#3098)
+- Added support for DeltaDore X3D (#1911)
+- Fixed Prometheus exposition format for metrics endpoint (#3107)
+- Added support for Bresser/Explore Scientific ST1005H (#3092)
+- Improved HA script to round battery level display (#3100)
+- Fixed M-Bus Mode C Format B for wmbusmeters (#3091)
+- Added support for Thermopro TP828B Meat Thermometers 2 probes (#3085)
+- Added support for Arexx TL-3TSN, TSN-33MN and similar sensors (#3076)
+- Improved decoder conf qx-30x to support multiple switches and multi-gang versions (#3008)
+
+### Changed
+
+- Changed LandisGyr-GS location output (#3185)
+- Changed Rubicson, Nexus, Solight-TE44, Baldr-Rain priority (#3175)
+- Added energy msg to Revolt-ZX7717
+- Added broadcast flag for syslog output (#3171)
+- Fixed argument handling in sigrok file generation (#3161)
+- Fixed MQTT reconnect timer (closes #3145)
+- Added reconnect throttling to Influx output (#3135)
+- Added reconnect throttling to MQTT output (#3134)
+
 ## Release 24.10 (2024-10-30)
 
 ### Breaking Changes
