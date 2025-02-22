@@ -3,6 +3,7 @@
 
     Copyright (C) 2016 Benjamin Larsson
     Copyright (C) 2016 John Jore
+    Copyright (C) 2025 Bruno OCTAU (ProfBoc75)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -12,7 +13,23 @@
 /**
 Steelmate TPMS FSK protocol.
 
-Packet payload: 9 bytes.
+Reference:
+
+- model TP-S15
+
+Brand:
+
+- Steelmate
+- R-Lake
+
+S.a. issue #3200 Pressure issue :
+
+- The originally guessed formula was : Pressure in PSI scale 2, but more the pressure is important more the value diverged between the TPMS display and rtl_433.
+- New analysis : Based on data collected by \@e100 + the technical specification ( 0~7.9Bar ) + analysis by \@e100 and refined by \@ProfBoc75, the pressure is given in Bar at scale 32.
+
+Packet payload:
+
+- 9 bytes.
 
 Bytes 2 to 9 are inverted Manchester with swapped MSB/LSB:
 
@@ -24,7 +41,7 @@ Bytes 2 to 9 are inverted Manchester with swapped MSB/LSB:
 - S = sync, (0x00)
 - A = preamble, (0x01)
 - I = id, 0xc3f0
-- P = Pressure as double the PSI, 0x14 = 10 PSI
+- P = Pressure in Bar, scale 32, 0xA0 / 32 = 5 Bar, or 0xA0 * 3.125 = 500 kPA, see issue #3200
 - T = Temperature in Fahrenheit, 0x4a = 74 'F
 - B = Battery as half the millivolt, 0x8e = 2.84 V
 - C = Checksum, adding bytes 2 to 7 modulo 256 = byte 8,(0x01+0xc3+0xf0+0x14+0x4a+0x8e) modulus 256 = 0xa0
@@ -56,7 +73,7 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t id1 = ~reverse8(b[3]);
         uint8_t id2 = ~reverse8(b[4]);
 
-        //Pressure is stored as twice the PSI
+        //Pressure is stored as 32 * the Bar
         uint8_t p1 = ~reverse8(b[5]);
 
         //Temperature is stored in Fahrenheit. Note that the datasheet claims operational to -40'C, but can only express values from -17.8'C
@@ -72,7 +89,8 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             continue; // DECODE_FAIL_MIC
 
         int sensor_id      = (id1 << 8) | id2;
-        float pressure_psi = p1 * 0.5f;
+        float pressure_kpa = p1 * 3.125f; // as guessed in #3200
+        float pressure_psi = pressure_kpa * (1.0f / 6.89475729f); // Keep the PSI value to not Break the decoder after new formula, #3200.
         int battery_mV     = tmpbattery_mV * 2;
 
         char sensor_idhex[7];
