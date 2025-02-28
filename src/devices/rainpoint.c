@@ -31,7 +31,7 @@ Data layout:
              ^^     unknown?
                 ^^  channel (but maybe also other encoded data: 9F: CH1; B1: CH2; B7: CH3;)
                    ^^ ^^ unknown? (second byte changes between 00 and 02)
-                         ^^ temperature (degrees)
+                         ^^ temperature (degrees, 2's complement)
                             ^^ humidity (percentage)
                                ^^ unknown?
                                   ^^    Checksum, simple 4-bit addition over 20 nibbles (reflected)
@@ -86,7 +86,7 @@ static int rainpoint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int id       = (b[2] << 8) | b[3]; // just a guess
     int flags    = (b[4]);             // just a guess
     int status   = (b[5] << 8) | b[6]; // just a guess
-    float temp_c = b[7];
+    float temp_c = (int8_t)b[7];
     int moisture = b[8];
     int chan     = 0; // 9f: CH1, b1: CH2, b7: CH3
     //int batt     = 0;
