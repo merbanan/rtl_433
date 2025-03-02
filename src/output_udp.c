@@ -23,11 +23,6 @@
 #include <errno.h>
 
 #include <limits.h>
-// _POSIX_HOST_NAME_MAX is broken in gcc-13 at least on MacOS
-#ifndef _POSIX_HOST_NAME_MAX
-//#warning The limits.h include is missing the _POSIX_HOST_NAME_MAX define.
-#define _POSIX_HOST_NAME_MAX 255
-#endif
 // gethostname() needs _XOPEN_SOURCE 500 on unistd.h
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 500
@@ -73,6 +68,12 @@
     #include <tcpip_adapter.h>
     #define _POSIX_HOST_NAME_MAX 128
     #define gai_strerror strerror
+#endif
+
+// _POSIX_HOST_NAME_MAX is broken in gcc-13 at least on MacOS
+#ifndef _POSIX_HOST_NAME_MAX
+//#warning The limits.h include is missing the _POSIX_HOST_NAME_MAX define.
+#define _POSIX_HOST_NAME_MAX 255
 #endif
 
 /* Datagram (UDP) client */
