@@ -53,7 +53,7 @@ static int tpms_pacific_hkmc_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
     int state;
     unsigned id;
     int pressure;
-    
+
     bitbuffer_differential_manchester_decode(bitbuffer,row,bitpos,&packet_bits,80);
 
     if (packet_bits.bits_per_row[0] < 80) {
@@ -65,7 +65,7 @@ static int tpms_pacific_hkmc_decode(r_device *decoder, bitbuffer_t *bitbuffer, u
     state         = b[0];
     id            = (unsigned) (b[0] & 0x0f) << 24 | b[1] << 16 | b[2] << 8 | b[3];
     pressure      = b[4];
-   
+
     char id_str[8 + 1];
     snprintf(id_str, sizeof(id_str), "%07x", id);
 
@@ -129,7 +129,7 @@ static char const *const output_fields[] = {
 r_device const tpms_pacific_hkmc = {
         .name        = "Kia TPMS (Pacific HKMC)",
         .modulation  = FSK_PULSE_PCM,
-        .short_width = 52,  
+        .short_width = 52,
         .long_width  = 52,
         .reset_limit = 500,
         .decode_fn   = &tpms_pacific_hkmc_callback,
