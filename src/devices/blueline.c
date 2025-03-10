@@ -351,7 +351,7 @@ static int blueline_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             const uint8_t temperature = offset_payload_u8[1];
             const uint8_t flags = offset_payload_u8[0] >> 2;
             const uint8_t battery = (flags & 0x20) >> 5;
-            const float temperature_C = (0.436 * temperature) - 30.36;
+            const float temperature_C = (0.436f * temperature) - 30.36f;
             /* clang-format off */
             data = data_make(
                     "model",            "",             DATA_STRING, "Blueline-PowerCost",

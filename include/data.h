@@ -114,7 +114,7 @@ R_API data_t *data_make(const char *key, const char *pretty_key, ...);
 
     @see data_make()
 */
-R_API data_t *data_prepend(data_t *first, const char *key, const char *pretty_key, ...);
+R_API data_t *data_prepend(data_t *tail, data_t *head);
 
 /** Adds to a structured data object, by appending `int` data.
 
@@ -149,6 +149,8 @@ R_API data_t *data_dat(data_t *first, char const *key, char const *pretty_key, c
 /** Adds to a structured data object, by appending hex string data.
 
     Type-safe alternative to `data_make()` and `data_append()`.
+
+    If `format` is NULL or empty then a default of "%02x" is used.
 
     Caller needs to provide a sufficiently sized buffer.
 */

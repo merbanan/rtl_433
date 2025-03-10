@@ -163,8 +163,8 @@ static int lacrosse_tx31u_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             } break;
             case WIND_AVG: {
                 if ( !no_ext_sensor ) {
-                    float wind_dir = nib1 * 22.5 ; // compass direction in degrees
-                    float wind_avg = ((nib2<<4) + nib3) * 0.1f * 3.6; // wind values are decimal m/sec, convert to km/hr
+                    float wind_dir = nib1 * 22.5f ; // compass direction in degrees
+                    float wind_avg = ((nib2<<4) + nib3) * 0.1f * 3.6f; // wind values are decimal m/sec, convert to km/h
                     data = data_dbl(data, "wind_dir_deg",   "Wind direction",   "%.1f",       wind_dir);
                     data = data_dbl(data, "wind_avg_km_h",  "Wind speed",       "%.1f km/h",  wind_avg);
                 }
@@ -172,7 +172,7 @@ static int lacrosse_tx31u_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             case WIND_MAX: {
                 int wind_input_lost = CHECK_BIT(nib1, 0); // a sensor was attached, but now not detected
                 if ( !no_ext_sensor && !wind_input_lost ) {
-                    float wind_max = ((nib2<<4) + nib3) * 0.1f * 3.6; // wind values are decimal m/sec, convert to km/hr
+                    float wind_max = ((nib2<<4) + nib3) * 0.1f * 3.6f; // wind values are decimal m/sec, convert to km/h
                     data = data_dbl(data, "wind_max_km_h",  "Wind gust",     "%.1f km/h",  wind_max);
                 }
             } break;

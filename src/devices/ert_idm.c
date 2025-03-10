@@ -199,7 +199,8 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     strncpy(p, "0x", sizeof(TamperCounters_str));
     p += 2;
     for (int j = 0; j < 6; j++) {
-        p += sprintf(p, "%02X", b[13 + j]);
+        // GCC-14 is confused by sprintf()
+        p += snprintf(p, 3, "%02X", b[13 + j]);
     }
     decoder_logf_bitrow(decoder, 2, __func__, &b[13], 6 * 8, "TamperCounters_str   %s", TamperCounters_str);
 
@@ -210,7 +211,8 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     strncpy(p, "0x", sizeof(PowerOutageFlags_str));
     p += 2;
     for (int j = 0; j < 6; j++) {
-        p += sprintf(p, "%02X", b[21 + j]);
+        // GCC-14 is confused by sprintf()
+        p += snprintf(p, 3, "%02X", b[21 + j]);
     }
     decoder_logf_bitrow(decoder, 2, __func__, &b[21], 6 * 8, "PowerOutageFlags_str %s", PowerOutageFlags_str);
 
@@ -261,6 +263,7 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",                            "",    DATA_STRING, "IDM",
+            "id",                               "",     DATA_INT,       ERTSerialNumber,
 
             // "PacketTypeID",             "",             DATA_FORMAT, "0x%02X", DATA_INT, PacketTypeID,
             "PacketTypeID",                     "",    DATA_STRING,       PacketTypeID_str,
@@ -269,7 +272,7 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "ApplicationVersion",               "",     DATA_INT,       ApplicationVersion,
             "ERTType",                          "",     DATA_FORMAT,  "0x%02X", DATA_INT,    ERTType,
             // "ERTType",                          "",     DATA_INT,       ERTType,
-            "ERTSerialNumber",                  "",     DATA_INT,       ERTSerialNumber,
+            "ERTSerialNumber",                  "",     DATA_INT,       ERTSerialNumber, // NOTE: this is also "id"
             "ConsumptionIntervalCount",         "",     DATA_INT,       ConsumptionIntervalCount,
             // "ModuleProgrammingState",           "",     DATA_FORMAT, "0x%02X", DATA_INT, ModuleProgrammingState,
             "ModuleProgrammingState",           "",     DATA_FORMAT, "0x%02X", DATA_INT, ModuleProgrammingState,
@@ -449,7 +452,8 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     strncpy(p, "0x", sizeof(TamperCounters_str));
     p += 2;
     for (int j = 0; j < 6; j++) {
-        p += sprintf(p, "%02X", b[13 + j]);
+        // GCC-14 is confused by sprintf()
+        p += snprintf(p, 3, "%02X", b[13 + j]);
     }
     decoder_logf_bitrow(decoder, 2, __func__, &b[13], 6 * 8, "TamperCounters_str   %s", TamperCounters_str);
 
@@ -458,7 +462,8 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     strncpy(p, "0x", sizeof(Unknown_field_1_str));
     p += 2;
     for (int j = 0; j < 7; j++) {
-        p += sprintf(p, "%02X", b[19 + j]);
+        // GCC-14 is confused by sprintf()
+        p += snprintf(p, 3, "%02X", b[19 + j]);
     }
     decoder_logf_bitrow(decoder, 1, __func__, &b[19], 7 * 8, "Unknown_field_1 %s", Unknown_field_1_str);
 
@@ -470,7 +475,8 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     strncpy(p, "0x", sizeof(Unknown_field_2_str));
     p += 2;
     for (int j = 0; j < 3; j++) {
-        p += sprintf(p, "%02X", b[29 + j]);
+        // GCC-14 is confused by sprintf()
+        p += snprintf(p, 3, "%02X", b[29 + j]);
     }
     decoder_logf_bitrow(decoder, 1, __func__, &b[29], 3 * 8, "Unknown_field_1 %s", Unknown_field_2_str);
 
@@ -546,6 +552,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",                            "",     DATA_STRING, "NETIDM",
+            "id",                               "",     DATA_INT,       ERTSerialNumber,
 
             "PacketTypeID",                     "",     DATA_STRING,       PacketTypeID_str,
             "PacketLength",                     "",     DATA_INT,       PacketLength,
@@ -553,7 +560,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "ApplicationVersion",               "",     DATA_INT,       ApplicationVersion,
 
             "ERTType",                          "",     DATA_FORMAT,  "0x%02X", DATA_INT,    ERTType,
-            "ERTSerialNumber",                  "",     DATA_INT,       ERTSerialNumber,
+            "ERTSerialNumber",                  "",     DATA_INT,       ERTSerialNumber, // NOTE: this is also "id"
             "ConsumptionIntervalCount",         "",     DATA_INT,       ConsumptionIntervalCount,
             "ModuleProgrammingState",           "",     DATA_FORMAT, "0x%02X", DATA_INT, ModuleProgrammingState,
             // "ModuleProgrammingState",           "",     DATA_STRING,    ModuleProgrammingState_str,
@@ -585,6 +592,7 @@ static char const *const output_fields[] = {
 
         // Common fields
         "model",
+        "id",
         "PacketTypeID",
         "PacketLength",
         "HammingCode",

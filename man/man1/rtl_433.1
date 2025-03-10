@@ -338,28 +338,31 @@ Append output to file with :<filename> (e.g. \-F csv:log.csv), defaults to stdou
 Specify MQTT server with e.g. \-F mqtt://localhost:1883
 .RE
 .RS
+Default user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.
+.RE
+.RS
 Add MQTT options with e.g. \-F "mqtt://host:1883,opt=arg"
 .RE
 .RS
 MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
 .RE
 .RS
-Default user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.
-.RE
-.RS
-A base topic can be set with base=<topic>, default is "rtl_433/HOSTNAME".
-.RE
-.RS
 Supported MQTT formats: (default is all)
 .RE
 .RS
-  events: posts JSON event data
+  events: posts JSON event data, default "<base>/events"
 .RE
 .RS
-  states: posts JSON state data
+  states: posts JSON state data, default "<base>/states"
 .RE
 .RS
-  devices: posts device and sensor info in nested topics
+  devices: posts device and sensor info in nested topics,
+.RE
+.RS
+           default "<base>/devices[/type][/model][/subtype][/channel][/id]"
+.RE
+.RS
+A base topic can be set with base=<topic>, default is "rtl_433/HOSTNAME".
 .RE
 .RS
 Any topic string overrides the base topic and will expand keys like [/model]

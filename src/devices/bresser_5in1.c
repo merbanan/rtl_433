@@ -137,7 +137,7 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* check if the message is from a Bresser Professional Rain Gauge */
     if ((sensor_type >= 0x39) && (sensor_type <= 0x3b)) {
         // rescale the rain sensor readings
-        rain = rain * 2.5;
+        rain = rain * 2.5f;
         /* clang-format off */
         data = data_make(
                 "model",            "",             DATA_STRING, "Bresser-ProRainGauge",

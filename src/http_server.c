@@ -254,6 +254,7 @@ static data_t *protocols_data(r_cfg_t *cfg)
     list_t devs = {0};
     list_ensure_size(&devs, cfg->num_r_devices);
 
+    // list regular protocols
     for (int i = 0; i < cfg->num_r_devices; ++i) {
         r_device *dev = &cfg->devices[i];
 
@@ -288,6 +289,7 @@ static data_t *protocols_data(r_cfg_t *cfg)
         list_push(&devs, data);
     }
 
+    // list dynamic protocols (flex decoders and create instances)
     for (void **iter = cfg->demod->r_devs.elems; iter && *iter; ++iter) {
         r_device *dev = *iter;
         if (dev->protocol_num > 0) {
@@ -572,7 +574,7 @@ static void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
         data_free(data);
     }
     else if (!strcmp(rpc->method, "get_protocols")) {
-        char buf[65536]; // we expect the protocol string to be around 60k bytes.
+        char buf[102400]; // we expect the protocol string to be around 80k bytes.
         data_t *data = protocols_data(cfg);
         data_print_jsons(data, buf, sizeof(buf));
         rpc->response(rpc, 1, buf, 0);
@@ -796,6 +798,7 @@ static void handle_openmetrics(struct mg_connection *nc, struct http_message *hm
     mg_printf(nc,
             "HTTP/1.1 200 OK\r\n"
             "Content-Length: %u\r\n"
+            "Content-Type: text/plain; version=0.0.4; charset=utf-8\r\n"
             "\r\n",
             len);
     mg_send(nc, buf, (size_t)len);
@@ -951,6 +954,9 @@ static void handle_json_stream(struct mg_connection *nc, struct http_message *hm
 // curl -D - -d "cmd=report_meta&arg=level" -X POST 'http://127.0.0.1:8433/cmd'
 // http :8433/cmd cmd==center_frequency val==868000000'
 // http --form POST :8433/cmd cmd=report_meta arg=level val=1
+// xh :8433/cmd cmd==center_frequency val==433920123
+// xh :8433/cmd cmd==sample_rate val==250000
+// xh :8433/cmd cmd==gain arg==10
 static void handle_cmd_rpc(struct mg_connection *nc, struct http_message *hm)
 {
     struct http_server_context *ctx = nc->user_data;

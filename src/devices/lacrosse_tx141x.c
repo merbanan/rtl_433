@@ -16,6 +16,7 @@ LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX145wsdth sensor.
 
 Also TFA 30.3221.02 (a TX141TH-Bv2),
 also TFA 30.3222.02 (a LaCrosse-TX141W).
+Also TFA 30.3249.02 (a TX141TH-Bv2),
 also TFA 30.3251.10 (a LaCrosse-TX141W).
 also some rebrand (ORIA WA50B) with a slightly longer timing, s.a. #2088
 also TFA 30.3243.02 (a LaCrosse-TX141Bv3)

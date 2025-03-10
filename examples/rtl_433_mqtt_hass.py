@@ -149,6 +149,28 @@ mappings = {
             "state_class": "measurement"
         }
     },
+    "temperature_3_C": {
+        "device_type": "sensor",
+        "object_suffix": "T3",
+        "config": {
+            "device_class": "temperature",
+            "name": "Temperature 3",
+            "unit_of_measurement": "°C",
+            "value_template": "{{ value|float|round(1) }}",
+            "state_class": "measurement"
+        }
+    },
+    "temperature_4_C": {
+        "device_type": "sensor",
+        "object_suffix": "T4",
+        "config": {
+            "device_class": "temperature",
+            "name": "Temperature 4",
+            "unit_of_measurement": "°C",
+            "value_template": "{{ value|float|round(1) }}",
+            "state_class": "measurement"
+        }
+    },
     "temperature_F": {
         "device_type": "sensor",
         "object_suffix": "F",
@@ -184,7 +206,7 @@ mappings = {
             "device_class": "battery",
             "name": "Battery",
             "unit_of_measurement": "%",
-            "value_template": "{{ float(value) * 99 + 1 }}",
+            "value_template": "{{ ((float(value) * 99)|round(0)) + 1 }}",
             "state_class": "measurement",
             "entity_category": "diagnostic"
         }
@@ -197,6 +219,19 @@ mappings = {
             "device_class": "voltage",
             "name": "Battery mV",
             "unit_of_measurement": "mV",
+            "value_template": "{{ float(value) }}",
+            "state_class": "measurement",
+            "entity_category": "diagnostic"
+        }
+    },
+
+    "supercap_V": {
+        "device_type": "sensor",
+        "object_suffix": "V",
+        "config": {
+            "device_class": "voltage",
+            "name": "Supercap V",
+            "unit_of_measurement": "V",
             "value_template": "{{ float(value) }}",
             "state_class": "measurement",
             "entity_category": "diagnostic"
@@ -996,7 +1031,7 @@ def rtl_433_bridge():
         mqttc.username_pw_set(args.user, args.password)
 
     if args.ca_cert is not None:
-        mqttc.tls_set(ca_certs=args.ca_cert)
+        mqttc.tls_set(certfile=args.cert, keyfile=args.key, ca_certs=args.ca_cert)
 
     mqttc.on_connect = mqtt_connect
     mqttc.on_disconnect = mqtt_disconnect
@@ -1036,6 +1071,8 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--port", type=int, default=1883,
                         help="MQTT port (default: %(default)s)")
     parser.add_argument("-c", "--ca_cert", type=str, help="MQTT TLS CA certificate path")
+    parser.add_argument("--cert", type=str, help="MQTT TLS certificate path")
+    parser.add_argument("--key", type=str, help="MQTT TLS certificate key path")
     parser.add_argument("-r", "--retain", action="store_true")
     parser.add_argument("-f", "--force_update", action="store_true",
                         help="Append 'force_update = true' to all configs.")

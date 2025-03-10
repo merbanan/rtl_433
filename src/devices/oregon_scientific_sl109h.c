@@ -16,6 +16,13 @@ Data layout (bits):
 - I: 8 bit a random id that is generated when the sensor starts
 
 S.a. http://www.osengr.org/WxShield/Downloads/OregonScientific-RF-Protocols-II.pdf
+
+
+The device "Bresser Thermo-/Hygro-Sensor Explore Scientific ST1005H" works
+with the same row length, but a completely different interpretation.
+As such, if the bits align both decoders can misdetect data from the
+other sensor as valid from their sensor with "plausable" but usually
+completely wrong values.
 */
 
 #include "decoder.h"

@@ -142,7 +142,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [52]  Bresser Thermo-/Hygro-Sensor 3CH
     [53]  Springfield Temperature and Soil Moisture
     [54]  Oregon Scientific SL109H Remote Thermal Hygro Sensor
-    [55]  Acurite 606TX Temperature Sensor
+    [55]  Acurite 606TX / Technoline TX960 Temperature Sensor
     [56]  TFA pool temperature sensor
     [57]  Kedsum Temperature & Humidity Sensor, Pearl NC-7415
     [58]  Blyss DC5-UK-WH
@@ -199,7 +199,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [111]  Emos TTX201 Temperature Sensor
     [112]  Ambient Weather TX-8300 Temperature/Humidity Sensor
     [113]  Ambient Weather WH31E Thermo-Hygrometer Sensor, EcoWitt WH40 rain gauge, WS68 weather station
-    [114]  Maverick et73
+    [114]  Maverick ET73
     [115]  Honeywell ActivLink, Wireless Doorbell
     [116]  Honeywell ActivLink, Wireless Doorbell (FSK)
     [117]* ESA1000 / ESA2000 Energy Monitor
@@ -250,7 +250,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [162]* ThermoPro-TX2 temperature sensor
     [163]  Acurite 590TX Temperature with optional Humidity
     [164]  Security+ 2.0 (Keyfob)
-    [165]  TFA Dostmann 30.3221.02 T/H Outdoor Sensor
+    [165]  TFA Dostmann 30.3221.02 T/H Outdoor Sensor (also 30.3249.02)
     [166]  LaCrosse Technology View LTV-WSDTH01 Breeze Pro Wind Sensor
     [167]  Somfy RTS
     [168]  Schrader TPMS SMD3MA4 (Subaru) 3039 (Infiniti, Nissan, Renault)
@@ -344,6 +344,23 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [256]  ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill
     [257]  BMW Gen3 TPMS
     [258]  Chamberlain CWPIRC PIR Sensor
+    [259]  ThermoPro Meat Thermometers, TP829B 4 probes with temp only
+    [260]* Arad/Master Meter Dialog3G water utility meter
+    [261]  Geevon TX16-3 outdoor sensor
+    [262]  Fine Offset Electronics WH46 air quality sensor
+    [263]  Vevor Wireless Weather Station 7-in-1
+    [264]  Arexx Multilogger IP-HA90, IP-TH78EXT, TSN-70E
+    [265]  Rosstech Digital Control Unit DCU-706/Sundance/Jacuzzi
+    [266]  Risco 2 Way Agility protocol, Risco PIR/PET Sensor RWX95P
+    [267]  ThermoPro Meat Thermometers, TP828B 2 probes with Temp, BBQ Target LO and HI
+    [268]  Bresser Thermo-/Hygro-Sensor Explore Scientific ST1005H
+    [269]  DeltaDore X3D devices
+    [270]* Quinetic
+    [271]  Landis & Gyr Gridstream Power Meters 9.6k
+    [272]  Landis & Gyr Gridstream Power Meters 19.2k
+    [273]  Landis & Gyr Gridstream Power Meters 38.4k
+    [274]  Revolt ZX-7717 power meter
+    [275]  GM-Aftermarket TPMS
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -434,14 +451,15 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	Without this option the default is LOG and KV output. Use "-F null" to remove the default.
 	Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
+	Default user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"
 	MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
-	Default user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.
-	A base topic can be set with base=<topic>, default is "rtl_433/HOSTNAME".
 	Supported MQTT formats: (default is all)
-	  events: posts JSON event data
-	  states: posts JSON state data
-	  devices: posts device and sensor info in nested topics
+	  events: posts JSON event data, default "<base>/events"
+	  states: posts JSON state data, default "<base>/states"
+	  devices: posts device and sensor info in nested topics,
+	           default "<base>/devices[/type][/model][/subtype][/channel][/id]"
+	A base topic can be set with base=<topic>, default is "rtl_433/HOSTNAME".
 	Any topic string overrides the base topic and will expand keys like [/model]
 	E.g. -F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
 	With MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client-ID is computed from the driver string.

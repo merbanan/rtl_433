@@ -39,7 +39,7 @@ static int cardin_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
     }
 
-    unsigned char dip[10] = {'-','-','-','-','-','-','-','-','-', '\0'};
+    char dip[10] = {'-','-','-','-','-','-','-','-','-', '\0'};
     char const *const rbutton[4] = { "11R", "10R", "01R", "00L?" };
 
     // Dip 1
