@@ -283,6 +283,9 @@
     DECL(gridstream384) \
     DECL(revolt_zx7717) \
     DECL(tpms_gm) \
+    DECL(advent_doorbell) \
+    DECL(scve_door) \
+    DECL(dooya_curtain) \
 
     /* Add new decoders here. */
 
