@@ -27,7 +27,7 @@
 #define ID_AWR129   0xec41 // similar to THR228N, but an extra 100s digit
 #define ID_RTGN318  0x0cc3 // warning: id is from 0x0cc3 and 0xfcc3
 #define ID_RTGN129  0x0cc3 // same as RTGN318 but different packet size
-#define ID_THGR810  0xf824 // This might be ID_THGR81, but what's true is lost in (git) history
+#define ID_THGR810  0xf024 // This might be ID_THGR81, but what's true is lost in (git) history, #3221 Add new Oregon Scientific v3 models, original id is 0xf824, new rolling ids are 0xf024, 0xf224, 0xfa24 for rebranded sensor versions Newentor, Unni, Liorque.
 #define ID_THGR810a 0xf8b4 // unconfirmed version
 #define ID_THN802   0xc844
 #define ID_PCR800   0x2914
@@ -656,7 +656,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     int device_id   = (msg[2] & 0x0f) | (msg[3] & 0xf0); // not for CM sensor types
     int battery_low = (msg[3] >> 2) & 0x01;              // not for CM sensor types
 
-    if (sensor_id == ID_THGR810 || sensor_id == ID_THGR810a) {
+    if ((sensor_id & 0xf0ff) == ID_THGR810 || sensor_id == ID_THGR810a) { // rolling ids 0xf024, 0xf224, 0xf824, 0xfa24, 3 from 4 nibbles are checked see #3221
         if (validate_os_checksum(decoder, msg, 15) != 0)
             return DECODE_FAIL_MIC;
         // Sanity check BCD digits
