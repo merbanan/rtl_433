@@ -361,6 +361,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [273]  Landis & Gyr Gridstream Power Meters 38.4k
     [274]  Revolt ZX-7717 power meter
     [275]  GM-Aftermarket TPMS
+    [276]  RainPoint HCS012ARF Rain Gauge sensor
 
 * Disabled by default, use -R n or a conf file to enable
 

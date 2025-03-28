@@ -204,6 +204,7 @@ add_library(r_433 STATIC
     devices/quinetic.c
     devices/radiohead_ask.c
     devices/rainpoint.c
+    devices/rainpoint_hcs012arf.c
     devices/regency_fan.c
     devices/revolt_nc5462.c
     devices/revolt_zx7717.c
