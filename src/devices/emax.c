@@ -26,6 +26,7 @@ Rebrand and devices decoded :
 - Protmex PT3390A
 - Jula Marquant 014331 weather station /014332 temp hum sensor
 - TechniSat IMETEO X6 76-4924-00 weather station without UV/LUX/Gust  #2753
+- Auriol Weather Station With Multisensor HG11911
 
 S.a. issue #2000 #2299 #2326 #2375 PR #2300 #2346 #2374
 
