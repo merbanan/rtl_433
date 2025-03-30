@@ -84,7 +84,7 @@ static int fineoffset_wh55_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",                 DATA_STRING, "Fineoffset-WH55",
             "id",               "ID",               DATA_FORMAT, "%05X",    DATA_INT,    device_id,
             "channel",          "Channel",          DATA_INT,    channel,
-            "battery_ok",       "Battery",          DATA_DOUBLE, battery,
+            "battery_ok",       "Battery level",    DATA_DOUBLE, battery,
             "raw_value",        "Raw Value",        DATA_INT, raw_value,
             "sensitivity",      "Sensitivity",      DATA_INT, sensitivity,
             "alarm",            "Alarm",            DATA_INT, alarm,
