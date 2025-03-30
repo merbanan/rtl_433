@@ -77,7 +77,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-w <filename> | help] Save data stream to output file (a '-' dumps samples to stdout)
   [-W <filename> | help] Save data stream to output file, overwrite existing file
 		= Data output options =
-  [-F log | kv | json | csv | mqtt | influx | syslog | trigger | null | help] Produce decoded output in given format.
+  [-F log | kv | json | csv | mqtt | influx | syslog | trigger | rtl_tcp | http | null | help] Produce decoded output in given format.
        Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
   [-M time[:<options>] | protocol | level | noise[:<secs>] | stats | bits | help] Add various meta data to each output.
@@ -448,9 +448,10 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 
 
 		= Output format option =
-  [-F log|kv|json|csv|mqtt|influx|syslog|trigger|null] Produce decoded output in given format.
+  [-F log|kv|json|csv|mqtt|influx|syslog|trigger|rtl_tcp|http|null] Produce decoded output in given format.
 	Without this option the default is LOG and KV output. Use "-F null" to remove the default.
 	Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
+  [-F mqtt[:[//]host[:port][,<options>]] (default: localhost:1883)
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
 	Default user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"
@@ -465,10 +466,18 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	E.g. -F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
 	With MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client-ID is computed from the driver string.
 	If you use multiple RTL-SDR, perhaps set a serial and select by that (helps not to get the wrong antenna).
+  [-F influx[:[//]host[:port][/<path and options>]]
 	Specify InfluxDB 2.0 server with e.g. -F "influx://localhost:9999/api/v2/write?org=<org>&bucket=<bucket>,token=<authtoken>"
 	Specify InfluxDB 1.x server with e.g. -F "influx://localhost:8086/write?db=<db>&p=<password>&u=<user>"
 	  Additional parameter -M time:unix:usec:utc for correct timestamps in InfluxDB recommended
+  [-F syslog[:[//]host[:port] (default: localhost:514)
 	Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
+  [-F trigger:/path/to/file]
+	Add an output that writes a "1" to the path for each event, use with a e.g. a GPIO
+  [-F rtl_tcp[:[//]bind[:port]] (default: localhost:1234)
+	Add a rtl_tcp pass-through server
+  [-F http[:[//]bind[:port]] (default: 0.0.0.0:8433)
+	Add a HTTP API server, a UI is at e.g. http://localhost:8433/
 
 
 		= Meta information option =
