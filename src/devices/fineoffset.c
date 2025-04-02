@@ -44,7 +44,8 @@ The data is grouped in 6 bytes / 12 nibbles.
 
     [pre] [pre] [type] [id] [id] [temp] [temp] [temp] [humi] [humi] [crc] [crc]
 
-There is an extra, unidentified 7th byte in WH2A packages.
+There is an extra checksum byte (after the CRC) in WH2A messages.
+TODO: maybe add the checksum for WH2A, e.g. b[5] == b[0]+b[1]+b[2]+b[3]+b[4]
 
 - pre is always 0xFF
 - type is always 0x4 (may be different for different sensor type?)
