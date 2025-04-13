@@ -284,6 +284,7 @@ static void help_output(void)
             "\tAdd MQTT options with e.g. -F \"mqtt://host:1883,opt=arg\"\n"
             "\tMQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]\n"
             "\tSupported MQTT formats: (default is all)\n"
+            "\t  availability: posts availability (online/offline)\n"
             "\t  events: posts JSON event data, default \"<base>/events\"\n"
             "\t  states: posts JSON state data, default \"<base>/states\"\n"
             "\t  devices: posts device and sensor info in nested topics,\n"
