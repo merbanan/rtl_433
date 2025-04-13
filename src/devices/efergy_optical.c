@@ -38,12 +38,6 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     unsigned num_bits = bitbuffer->bits_per_row[0];
     uint8_t *bytes = bitbuffer->bb[0];
-    float energy, n_imp;
-    int pulsecount;
-    float seconds;
-    data_t *data;
-    uint16_t crc;
-    uint16_t csum1;
 
     if (num_bits < 96 || num_bits > 100)
         return DECODE_ABORT_LENGTH;
@@ -80,9 +74,9 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // crc16 xmodem with start value of 0x00 and polynomic of 0x1021 is same as CRC-CCITT (0x0000)
     // start of data, length of data=10, polynomic=0x1021, init=0x0000
 
-    csum1 = (bytes[10] << 8) | (bytes[11]);
+    uint16_t csum1 = (bytes[10] << 8) | (bytes[11]);
 
-    crc = crc16(bytes, 10, 0x1021, 0x0000);
+    uint16_t crc = crc16(bytes, 10, 0x1021, 0x0000);
 
     if (crc != csum1) {
         decoder_log(decoder, 1, __func__, "CRC error.");
@@ -91,31 +85,27 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     unsigned id = ((unsigned)bytes[0] << 16) | (bytes[1] << 8) | (bytes[2]);
 
-    // this setting depends on your electricity meter's optical output
-    n_imp = 3200;
-
     // interval:
     // - red led (every 30s):    bytes[3]=64 (0100 0000)
     // - orange led (every 60s): bytes[3]=80 (0101 0000)
     // - green led (every 90s):  bytes[3]=96 (0110 0000)
-    seconds = (((bytes[3] & 0x30) >> 4) + 1) * 30.0;
+    float seconds = (((bytes[3] & 0x30) >> 4) + 1) * 30.0f;
 
-    pulsecount = bytes[8];
+    int pulsecount = bytes[8];
 
-    energy = (((float)pulsecount / n_imp) * (3600 / seconds));
-
+    // this setting depends on your electricity meter's optical output
     // New code for calculating various energy values for differing pulse-kwh values
     const int imp_kwh[] = {4000, 3200, 2000, 1000, 500, 0};
     for (unsigned i = 0; imp_kwh[i] != 0; ++i) {
-        energy = (((float)pulsecount / imp_kwh[i]) * (3600 / seconds));
+        float energy = (((float)pulsecount / imp_kwh[i]) * (3600 / seconds));
 
         /* clang-format off */
-        data = data_make(
+        data_t *data = data_make(
                 "model",        "Model",        DATA_STRING, "Efergy-Optical",
                 "id",           "",             DATA_INT,   id,
                 "pulses",       "Pulse-rate",   DATA_INT, imp_kwh[i],
                 "pulsecount",   "Pulse-count",  DATA_INT, pulsecount,
-                "energy_kWh",   "Energy",       DATA_FORMAT, "%.03f kWh", DATA_DOUBLE, energy,
+                "energy_kWh",   "Energy",       DATA_FORMAT, "%.3f kWh", DATA_DOUBLE, energy,
                 "mic",          "Integrity",    DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */

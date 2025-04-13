@@ -111,7 +111,7 @@ so you can see -sometimes- some little difference between module's output and LC
 
 #include "decoder.h"
 
-static int wind_dir_degr[]= {0, 23, 45, 68, 90, 113, 135, 158, 180, 203, 225, 248, 270, 293, 315, 338};
+static int const wind_dir_degr[]= {0, 23, 45, 68, 90, 113, 135, 158, 180, 203, 225, 248, 270, 293, 315, 338};
 
 // The transmission differences are 8 preamble bits (EPB) and 7 preamble bits (SPB)
 #define EPB 8
@@ -264,19 +264,19 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
                 "subtype",          "Msg type",         DATA_INT,       msg_type,
                 "id",               "Station ID",       DATA_INT,       device_id,
                 "battery_ok",       "Battery",          DATA_INT,       !battery_low,
-                "temperature_C",    "Temperature",      DATA_FORMAT,    "%.01f C",  DATA_DOUBLE,    temperature,
+                "temperature_C",    "Temperature",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE,    temperature,
                 "humidity",         "Humidity",         DATA_FORMAT,    "%u %%",    DATA_INT,       humidity,
                 "wind_dir_deg",     "Wind Direction",   DATA_INT, direction_deg,
-                "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT,    "%.02f",    DATA_DOUBLE,    speed,
-                "wind_max_km_h",    "Wind gust",        DATA_FORMAT,    "%.02f",    DATA_DOUBLE,    gust,
-                "rain_mm",          "Total rainfall",   DATA_FORMAT,    "%3.1f",    DATA_DOUBLE,    rain,
+                "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT,    "%.2f",    DATA_DOUBLE,    speed,
+                "wind_max_km_h",    "Wind gust",        DATA_FORMAT,    "%.2f",    DATA_DOUBLE,    gust,
+                "rain_mm",          "Total rainfall",   DATA_FORMAT,    "%.1f",    DATA_DOUBLE,    rain,
                 "mic",              "Integrity",        DATA_STRING,    "CRC",
                 NULL);
         /* clang-format on */
     }
     else if (msg_type == 1) {
         char clock_str[23];
-        sprintf(clock_str, "%04d-%02d-%02dT%02d:%02d:%02d",
+        snprintf(clock_str, sizeof(clock_str), "%04d-%02d-%02dT%02d:%02d:%02d",
                 year, month, day, hours, minutes, seconds);
 
         /* clang-format off */

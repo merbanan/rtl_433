@@ -59,7 +59,7 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // decode the inner manchester encoding
     bitbuffer_manchester_decode(bitbuffer, 0, 0, &mc, 104);
 
-    // we require 7 bytes 13 nibble rounded up (b[6] highest referance below)
+    // we require 7 bytes 13 nibble rounded up (b[6] highest reference below)
     if (mc.bits_per_row[0] < 52) {
         return DECODE_FAIL_SANITY; // manchester_decode fail
     }
@@ -86,7 +86,7 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     //digest is used to represent a session. This means, we get a new id if a reset or battery exchange is done.
     int id = lfsr_digest16(chk, 3, 0x8810, 0xdd38) ^ digest;
 
-    decoder_logf(decoder, 1, __func__, "pre %03x, flags %0x, t1 %d, t2 %d, digest %04x, chk_data %02x%02x%02x, digest xor'ed: %04x",
+    decoder_logf(decoder, 1, __func__, "pre %03x, flags %x, t1 %d, t2 %d, digest %04x, chk_data %02x%02x%02x, digest xor'ed: %04x",
                 pre, flags, temp1, temp2, digest, chk[0], chk[1], chk[2], id);
 
     /* clang-format off */
@@ -94,8 +94,8 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",                     DATA_STRING, "Maverick-ET73x",
             "id",               "Session_ID",           DATA_INT,    id,
             "status",           "Status",               DATA_STRING, status,
-            "temperature_1_C",  "TemperatureSensor1",   DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp1_c,
-            "temperature_2_C",  "TemperatureSensor2",   DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp2_c,
+            "temperature_1_C",  "TemperatureSensor1",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp1_c,
+            "temperature_2_C",  "TemperatureSensor2",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp2_c,
             NULL);
     /* clang-format on */
 

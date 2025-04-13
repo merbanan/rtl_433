@@ -85,7 +85,7 @@ Preferably put the codes and annotations in a [BitBench](https://triq.net/bitben
   `rtl_433 -S unknown`
 - capture samples of every received frame
   `rtl_433 -S all`
-- anaylze a capture to get an overview of the timings
+- analyze a capture to get an overview of the timings
   `rtl_433 -A SAMPLE.cu8`
 - show the raw data pulse data from a captured sample
   `rtl_433 -w OOK:- SAMPLE.cu8`

@@ -37,6 +37,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
 
 ```
 
+  A "rtl_433.conf" file is searched in "./", XDG_CONFIG_HOME e.g. "$HOME/.config/rtl_433/",
+  SYSCONFDIR e.g. "/usr/local/etc/rtl_433/", then command line args will be parsed in order.
 		= General options =
   [-V] Output the version string and exit
   [-v] Increase verbosity (can be used multiple times).
@@ -75,7 +77,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-w <filename> | help] Save data stream to output file (a '-' dumps samples to stdout)
   [-W <filename> | help] Save data stream to output file, overwrite existing file
 		= Data output options =
-  [-F log | kv | json | csv | mqtt | influx | syslog | trigger | null | help] Produce decoded output in given format.
+  [-F log | kv | json | csv | mqtt | influx | syslog | trigger | rtl_tcp | http | null | help] Produce decoded output in given format.
        Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
   [-M time[:<options>] | protocol | level | noise[:<secs>] | stats | bits | help] Add various meta data to each output.
@@ -125,22 +127,22 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [37]* Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)
     [38]  Generic temperature sensor 1
     [39]  WG-PB12V1 Temperature Sensor
-    [40]  Acurite 592TXR Temp/Humidity, 592TX Temp, 5n1 Weather Station, 6045 Lightning, 899 Rain, 3N1, Atlas
+    [40]  Acurite 592TXR temp/humidity, 592TX temp, 5n1, 3n1, Atlas weather station, 515 fridge/freezer, 6045 lightning, 899 rain, 1190/1192 leak
     [41]  Acurite 986 Refrigerator / Freezer Thermometer
     [42]  HIDEKI TS04 Temperature, Humidity, Wind and Rain Sensor
     [43]  Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
     [44]  CurrentCost Current Sensor
     [45]  emonTx OpenEnergyMonitor
     [46]  HT680 Remote control
-    [47]  Conrad S3318P, FreeTec NC-5849-913 temperature humidity sensor
-    [48]  Akhan 100F14 remote keyless entry
+    [47]  Conrad S3318P, FreeTec NC-5849-913 temperature humidity sensor, ORIA WA50 ST389 temperature sensor
+    [48]* Akhan 100F14 remote keyless entry
     [49]  Quhwa
     [50]  OSv1 Temperature Sensor
     [51]  Proove / Nexa / KlikAanKlikUit Wireless Switch
     [52]  Bresser Thermo-/Hygro-Sensor 3CH
     [53]  Springfield Temperature and Soil Moisture
     [54]  Oregon Scientific SL109H Remote Thermal Hygro Sensor
-    [55]  Acurite 606TX Temperature Sensor
+    [55]  Acurite 606TX / Technoline TX960 Temperature Sensor
     [56]  TFA pool temperature sensor
     [57]  Kedsum Temperature & Humidity Sensor, Pearl NC-7415
     [58]  Blyss DC5-UK-WH
@@ -161,7 +163,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
     [76]  LaCrosse TX29IT, TFA Dostmann 30.3159.IT Temperature sensor
     [77]  Vaillant calorMatic VRT340f Central Heating Control
-    [78]  Fine Offset Electronics, WH25, WH32B, WH24, WH65B, HP1000, Misol WS2320 Temperature/Humidity/Pressure Sensor
+    [78]  Fine Offset Electronics, WH25, WH32, WH32B, WN32B, WH24, WH65B, HP1000, Misol WS2320 Temperature/Humidity/Pressure Sensor
     [79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
     [80]  IBIS beacon
     [81]  Oil Ultrasonic STANDARD FSK
@@ -169,7 +171,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [83]  Oil Ultrasonic STANDARD ASK
     [84]  Thermopro TP11 Thermometer
     [85]  Solight TE44/TE66, EMOS E0107T, NX-6876-917
-    [86]  Wireless Smoke and Heat Detector GS 558
+    [86]* Wireless Smoke and Heat Detector GS 558
     [87]  Generic wireless motion sensor
     [88]  Toyota TPMS
     [89]  Ford TPMS
@@ -196,8 +198,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [110]  PMV-107J (Toyota) TPMS
     [111]  Emos TTX201 Temperature Sensor
     [112]  Ambient Weather TX-8300 Temperature/Humidity Sensor
-    [113]  Ambient Weather WH31E Thermo-Hygrometer Sensor, EcoWitt WH40 rain gauge
-    [114]  Maverick et73
+    [113]  Ambient Weather WH31E Thermo-Hygrometer Sensor, EcoWitt WH40 rain gauge, WS68 weather station
+    [114]  Maverick ET73
     [115]  Honeywell ActivLink, Wireless Doorbell
     [116]  Honeywell ActivLink, Wireless Doorbell (FSK)
     [117]* ESA1000 / ESA2000 Energy Monitor
@@ -205,7 +207,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [119]  Bresser Weather Center 5-in-1
     [120]  Digitech XC-0324 / AmbientWeather FT005TH temp/hum sensor
     [121]  Opus/Imagintronix XT300 Soil Moisture
-    [122]* FS20
+    [122]  FS20 / FHT
     [123]* Jansite TPMS Model TY02S
     [124]  LaCrosse/ELV/Conrad WS7000/WS2500 weather sensors
     [125]  TS-FT002 Wireless Ultrasonic Tank Liquid Level Meter With Temperature Sensor
@@ -248,7 +250,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [162]* ThermoPro-TX2 temperature sensor
     [163]  Acurite 590TX Temperature with optional Humidity
     [164]  Security+ 2.0 (Keyfob)
-    [165]  TFA Dostmann 30.3221.02 T/H Outdoor Sensor
+    [165]  TFA Dostmann 30.3221.02 T/H Outdoor Sensor (also 30.3249.02)
     [166]  LaCrosse Technology View LTV-WSDTH01 Breeze Pro Wind Sensor
     [167]  Somfy RTS
     [168]  Schrader TPMS SMD3MA4 (Subaru) 3039 (Infiniti, Nissan, Renault)
@@ -256,7 +258,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [170]  LaCrosse Technology View LTV-WR1 Multi Sensor
     [171]  LaCrosse Technology View LTV-TH Thermo/Hygro Sensor
     [172]  Bresser Weather Center 6-in-1, 7-in-1 indoor, soil, new 5-in-1, 3-in-1 wind gauge, Froggit WH6000, Ventus C8488A
-    [173]  Bresser Weather Center 7-in-1
+    [173]  Bresser Weather Center 7-in-1, Air Quality PM2.5/PM10 7009970, CO2 7009977, HCHO/VOC 7009978 sensors
     [174]  EcoDHOME Smart Socket and MCEE Solar monitor
     [175]  LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1/W2 Wind Sensor
     [176]  BlueLine Innovations Power Cost Monitor
@@ -283,7 +285,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [197]  Acurite Grill/Meat Thermometer 01185M
     [198]* EnOcean ERP1
     [199]  Linear Megacode Garage/Gate Remotes
-    [200]* Auriol 4-LD5661 temperature/rain sensor
+    [200]* Auriol 4-LD5661/4-LD5972/4-LD6313 temperature/rain sensors
     [201]  Unbranded SolarTPMS for trucks
     [202]  Funkbus / Instafunk (Berker, Gira, Jung)
     [203]  Porsche Boxster/Cayman TPMS
@@ -298,13 +300,13 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [212]  Renault 0435R TPMS
     [213]  Fine Offset Electronics WS80 weather station
     [214]  EMOS E6016 weatherstation with DCF77
-    [215]  Emax W6, rebrand Altronics x7063/4, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025, Protmex PT3390A, Jula Marquant 014331/32, Weather Station or temperature/humidity sensor
+    [215]  Emax W6, rebrand Altronics x7063/4, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025, Protmex PT3390A, Jula Marquant 014331/32, TechniSat IMETEO X6 76-4924-00, Weather Station or temperature/humidity sensor
     [216]* ANT and ANT+ devices
     [217]  EMOS E6016 rain gauge
     [218]  Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes (FSK)
     [219]  Fine Offset Electronics WH45 air quality sensor
     [220]  Maverick XR-30 BBQ Sensor
-    [221]  Fine Offset Electronics WN34 temperature sensor
+    [221]  Fine Offset Electronics WN34S/L/D and Froggit DP150/D35 temperature sensor
     [222]  Rubicson Pool Thermometer 48942
     [223]  Badger ORION water meter, 100kbps (-f 916.45M -s 1200k)
     [224]  GEO minim+ energy monitor
@@ -312,23 +314,54 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [226]  Kia TPMS (-s 1000k)
     [227]  SRSmith Pool Light Remote Control SRS-2C-TX (-f 915M)
     [228]  Neptune R900 flow meters
-    [229]* WEC-2103 temperature/humidity sensor
+    [229]  WEC-2103 temperature/humidity sensor
     [230]  Vauno EN8822C
     [231]  Govee Water Leak Detector H5054
     [232]  TFA Dostmann 14.1504.V2 Radio-controlled grill and meat thermometer
     [233]* CED7000 Shot Timer
-    [234]  Watchman Sonic Advanced / Plus
+    [234]  Watchman Sonic Advanced / Plus, Tekelek
     [235]  Oil Ultrasonic SMART FSK
     [236]  Gasmate BA1008 meat thermometer
     [237]  Flowis flow meters
     [238]  Wireless M-Bus, Mode T, 32.768kbps (-f 868.3M -s 1000k)
     [239]  Revolt NC-5642 Energy Meter
     [240]  LaCrosse TX31U-IT, The Weather Channel WS-1910TWC-IT
-    [241]  EezTire E618 (TPMS10ATC)
+    [241]  EezTire E618, Carchet TPMS, TST-507 TPMS
     [242]* Baldr / RainPoint rain gauge.
     [243]  Celsia CZC1 Thermostat
     [244]  Fine Offset Electronics WS90 weather station
-    [245]* ThermoPro TX-2C Thermometer
+    [245]* ThermoPro TX-2C Thermometer and Humidity sensor
+    [246]  TFA 30.3151 Weather Station
+    [247]  Bresser water leakage
+    [248]* Nissan TPMS
+    [249]  Bresser lightning
+    [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge, TFA Dostmann 30.3252.01/47.3006.01 Rain Gauge and Thermometer, ADE WS1907
+    [251]  Fine Offset / Ecowitt WH55 water leak sensor
+    [252]  BMW Gen4-Gen5 TPMS and Audi TPMS Pressure Alert, multi-brand HUF/Beru, Continental, Schrader/Sensata, Audi
+    [253]  Watts WFHT-RF Thermostat
+    [254]  Thermor DG950 weather station
+    [255]  Mueller Hot Rod water meter
+    [256]  ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill
+    [257]  BMW Gen3 TPMS
+    [258]  Chamberlain CWPIRC PIR Sensor
+    [259]  ThermoPro Meat Thermometers, TP829B 4 probes with temp only
+    [260]* Arad/Master Meter Dialog3G water utility meter
+    [261]  Geevon TX16-3 outdoor sensor
+    [262]  Fine Offset Electronics WH46 air quality sensor
+    [263]  Vevor Wireless Weather Station 7-in-1
+    [264]  Arexx Multilogger IP-HA90, IP-TH78EXT, TSN-70E
+    [265]  Rosstech Digital Control Unit DCU-706/Sundance/Jacuzzi
+    [266]  Risco 2 Way Agility protocol, Risco PIR/PET Sensor RWX95P
+    [267]  ThermoPro Meat Thermometers, TP828B 2 probes with Temp, BBQ Target LO and HI
+    [268]  Bresser Thermo-/Hygro-Sensor Explore Scientific ST1005H
+    [269]  DeltaDore X3D devices
+    [270]* Quinetic
+    [271]  Landis & Gyr Gridstream Power Meters 9.6k
+    [272]  Landis & Gyr Gridstream Power Meters 19.2k
+    [273]  Landis & Gyr Gridstream Power Meters 38.4k
+    [274]  Revolt ZX-7717 power meter
+    [275]  GM-Aftermarket TPMS
+    [276]  RainPoint HCS012ARF Rain Gauge sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -415,24 +448,36 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 
 
 		= Output format option =
-  [-F log|kv|json|csv|mqtt|influx|syslog|trigger|null] Produce decoded output in given format.
+  [-F log|kv|json|csv|mqtt|influx|syslog|trigger|rtl_tcp|http|null] Produce decoded output in given format.
 	Without this option the default is LOG and KV output. Use "-F null" to remove the default.
 	Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
+  [-F mqtt[:[//]host[:port][,<options>]] (default: localhost:1883)
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
+	Default user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"
 	MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
 	Supported MQTT formats: (default is all)
-	  events: posts JSON event data
-	  states: posts JSON state data
-	  devices: posts device and sensor info in nested topics
-	The topic string will expand keys like [/model]
+	  events: posts JSON event data, default "<base>/events"
+	  states: posts JSON state data, default "<base>/states"
+	  devices: posts device and sensor info in nested topics,
+	           default "<base>/devices[/type][/model][/subtype][/channel][/id]"
+	A base topic can be set with base=<topic>, default is "rtl_433/HOSTNAME".
+	Any topic string overrides the base topic and will expand keys like [/model]
 	E.g. -F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
 	With MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client-ID is computed from the driver string.
 	If you use multiple RTL-SDR, perhaps set a serial and select by that (helps not to get the wrong antenna).
+  [-F influx[:[//]host[:port][/<path and options>]]
 	Specify InfluxDB 2.0 server with e.g. -F "influx://localhost:9999/api/v2/write?org=<org>&bucket=<bucket>,token=<authtoken>"
 	Specify InfluxDB 1.x server with e.g. -F "influx://localhost:8086/write?db=<db>&p=<password>&u=<user>"
 	  Additional parameter -M time:unix:usec:utc for correct timestamps in InfluxDB recommended
+  [-F syslog[:[//]host[:port] (default: localhost:514)
 	Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
+  [-F trigger:/path/to/file]
+	Add an output that writes a "1" to the path for each event, use with a e.g. a GPIO
+  [-F rtl_tcp[:[//]bind[:port]] (default: localhost:1234)
+	Add a rtl_tcp pass-through server
+  [-F http[:[//]bind[:port]] (default: 0.0.0.0:8433)
+	Add a HTTP API server, a UI is at e.g. http://localhost:8433/
 
 
 		= Meta information option =
@@ -512,6 +557,16 @@ Some examples:
 | `rtl_433 -K FILE -r file_name` | Read a saved data file instead of receiving live data. Tag output with filenames.
 | `rtl_433 -F json -M utc \| mosquitto_pub -t home/rtl_433 -l` | Will pipe the output to network as JSON formatted MQTT messages. A test MQTT client can be found in `examples/mqtt_rtl_433_test_client.py`.
 | `rtl_433 -f 433.53M -f 434.02M -H 15` | Will poll two frequencies with 15 seconds hop interval.
+
+## Security
+
+Please note: We aim to make `rtl_433` safe to use, but it should not be assumed secure.
+There is no reason to e.g. run with `sudo`, we do read and write files without any checks.
+
+The output is literally pulled from thin air, it's not to be trusted.
+If you feed downstream systems with data make sure edge cases are checked and handled.
+Network inputs and outputs are for use in a trusted local network, will contain unfiltered data, and might overload the recipient
+(know that e.g. the MQTT output can be controlled by anyone with a radio sender).
 
 ## Google Group
 

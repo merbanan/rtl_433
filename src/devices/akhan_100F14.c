@@ -79,4 +79,5 @@ r_device const akhan_100F14 = {
         .tolerance   = 80, // us
         .decode_fn   = &akhan_rke_callback,
         .fields      = output_fields,
+        .disabled    = 1, // false positives with generic EV1527 devices
 };

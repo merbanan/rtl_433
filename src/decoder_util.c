@@ -16,17 +16,31 @@
 
 // create decoder functions
 
-r_device *create_device(r_device const *dev_template)
+r_device *decoder_create(r_device const *dev_template, unsigned user_data_size)
 {
-    r_device *r_dev = malloc(sizeof (*r_dev));
+    r_device *r_dev = calloc(1, sizeof (*r_dev));
     if (!r_dev) {
-        WARN_MALLOC("create_device()");
+        WARN_MALLOC("decoder_create()");
         return NULL; // NOTE: returns NULL on alloc failure.
     }
     if (dev_template)
         *r_dev = *dev_template; // copy
 
+    if (user_data_size) {
+        r_dev->decode_ctx = calloc(1, user_data_size);
+        if (!r_dev->decode_ctx) {
+            WARN_MALLOC("decoder_create()");
+            free(r_dev);
+            return NULL; // NOTE: returns NULL on alloc failure.
+        }
+    }
+
     return r_dev;
+}
+
+void *decoder_user_data(r_device *decoder)
+{
+    return decoder->decode_ctx;
 }
 
 // output functions
@@ -55,6 +69,11 @@ static char *bitrow_asprint_code(uint8_t const *bitrow, unsigned bit_len)
     }
     // remove last nibble if needed
     row_bytes[2 * (bit_len + 3) / 8] = '\0';
+
+    // print at least one '0'
+    if (bit_len == 0) {
+        snprintf(row_bytes, sizeof(row_bytes), "0");
+    }
 
     // a simple bitrow representation
     row_code = malloc(8 + bit_len / 4 + 1); // "{nnnn}..\0"
@@ -96,6 +115,11 @@ static char *bitrow_asprint_bits(uint8_t const *bitrow, unsigned bit_len)
 
 // variadic output functions
 
+int decoder_verbose(r_device *decoder)
+{
+    return decoder->verbose;
+}
+
 void decoder_log(r_device *decoder, int level, char const *func, char const *msg)
 {
     if (decoder->verbose >= level) {
@@ -132,10 +156,11 @@ void decoder_log_bitbuffer(r_device *decoder, int level, char const *func, const
         // note that decoder levels start at LOG_WARNING
         level += 4;
 
-        char *row_codes[BITBUF_ROWS];
+        char *row_codes[BITBUF_ROWS] = {0};
         char *row_bits[BITBUF_ROWS] = {0};
 
-        for (unsigned i = 0; i < bitbuffer->num_rows; i++) {
+        unsigned num_rows = bitbuffer->num_rows;
+        for (unsigned i = 0; i < num_rows; i++) {
             row_codes[i] = bitrow_asprint_code(bitbuffer->bb[i], bitbuffer->bits_per_row[i]);
 
             if (decoder->verbose_bits) {
@@ -148,20 +173,18 @@ void decoder_log_bitbuffer(r_device *decoder, int level, char const *func, const
                 "src",     "",     DATA_STRING, func,
                 "lvl",      "",     DATA_INT,    level,
                 "msg",      "",     DATA_STRING, msg,
-                "num_rows", "",     DATA_INT, bitbuffer->num_rows,
-                "codes",    "",     DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_STRING, row_codes),
+                "num_rows", "",     DATA_INT, num_rows,
+                "codes",    "",     DATA_ARRAY, data_array(num_rows, DATA_STRING, row_codes),
                 NULL);
         /* clang-format on */
 
         if (decoder->verbose_bits) {
-            data_append(data,
-                    "bits", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_STRING, row_bits),
-                    NULL);
+            data = data_ary(data, "bits", "", NULL, data_array(num_rows, DATA_STRING, row_bits));
         }
 
         decoder_output_log(decoder, level, data);
 
-        for (unsigned i = 0; i < bitbuffer->num_rows; i++) {
+        for (unsigned i = 0; i < num_rows; i++) {
             free(row_codes[i]);
             free(row_bits[i]);
         }
@@ -204,9 +227,7 @@ void decoder_log_bitrow(r_device *decoder, int level, char const *func, uint8_t 
 
         if (decoder->verbose_bits) {
             row_bits = bitrow_asprint_bits(bitrow, bit_len);
-            data_append(data,
-                    "bits", "", DATA_STRING, row_bits,
-                    NULL);
+            data = data_str(data, "bits", "", NULL, row_bits);
         }
 
         decoder_output_log(decoder, level, data);

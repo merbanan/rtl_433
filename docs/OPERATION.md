@@ -402,7 +402,7 @@ Note that not all file types are supported/applicable by loaders or dumpers.
 Use the `-F` option to add outputs, use `-M`, `-K`, and `-C` to configure meta-data:
 
 ```
-  [-F kv | json | csv | mqtt | syslog | null | help] Produce decoded output in given format.
+  [-F kv | json | csv | mqtt | influx | syslog | trigger | rtl_tcp | http | null | help] Produce decoded output in given format.
        Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
   [-M time[:<options>] | protocol | level | stats | bits | help] Add various meta data to each output.
@@ -557,7 +557,7 @@ With `-C si` units are converted to the SI system:
 With `-C customary` units are converted to customary units:
 - converts fields of Celsius to Fahrenheit (`_C to _F`)
 - converts fields of km/h to Miles/h (`_kph to _mph`, `_km_h to _mi_h`)
-- converts fields of mm to Inch (`_mm to _inch`)
+- converts fields of mm to Inch (`_mm to _in`)
 - converts fields of mm/h to Inch/h (`_mm_h to _in_h`)
 - converts fields of hPa to InchHg (`_hPa to _inHg`)
 - converts fields of kPa to PSI (`_kPa to _PSI`)

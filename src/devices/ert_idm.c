@@ -190,8 +190,8 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     http://davestech.blogspot.com/2008/02/itron-remote-read-electric-meter.html
     SCM1 Counter1 Meter has been inverted
     SCM1 Counter2 Meter has been removed
-    SCM2 Counter3 Meter detected a button–press demand reset
-    SCM2 Counter4 Meter has a low-battery/end–of–calendar warning
+    SCM2 Counter3 Meter detected a button-press demand reset
+    SCM2 Counter4 Meter has a low-battery/end-of-calendar warning
     SCM3 Counter5 Meter has an error or a warning that can affect billing
     SCM3 Counter6 Meter has a warning that may or may not require a site visit,
     */
@@ -199,7 +199,8 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     strncpy(p, "0x", sizeof(TamperCounters_str));
     p += 2;
     for (int j = 0; j < 6; j++) {
-        p += sprintf(p, "%02X", b[13 + j]);
+        // GCC-14 is confused by sprintf()
+        p += snprintf(p, 3, "%02X", b[13 + j]);
     }
     decoder_logf_bitrow(decoder, 2, __func__, &b[13], 6 * 8, "TamperCounters_str   %s", TamperCounters_str);
 
@@ -210,7 +211,8 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     strncpy(p, "0x", sizeof(PowerOutageFlags_str));
     p += 2;
     for (int j = 0; j < 6; j++) {
-        p += sprintf(p, "%02X", b[21 + j]);
+        // GCC-14 is confused by sprintf()
+        p += snprintf(p, 3, "%02X", b[21 + j]);
     }
     decoder_logf_bitrow(decoder, 2, __func__, &b[21], 6 * 8, "PowerOutageFlags_str %s", PowerOutageFlags_str);
 
@@ -227,7 +229,7 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         DifferentialConsumptionIntervals[j] = ((uint16_t)buffy[0] << 1) | (buffy[1] >> 7);
         pos += 9;
     }
-    if (decoder->verbose > 1) {
+    if (decoder_verbose(decoder) > 1) {
         decoder_log(decoder, 2, __func__, "DifferentialConsumptionIntervals");
         for (int j = 0; j < 47; j++) {
             decoder_logf(decoder, 2, __func__, "%d", DifferentialConsumptionIntervals[j]);
@@ -261,6 +263,7 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",                            "",    DATA_STRING, "IDM",
+            "id",                               "",     DATA_INT,       ERTSerialNumber,
 
             // "PacketTypeID",             "",             DATA_FORMAT, "0x%02X", DATA_INT, PacketTypeID,
             "PacketTypeID",                     "",    DATA_STRING,       PacketTypeID_str,
@@ -269,7 +272,7 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "ApplicationVersion",               "",     DATA_INT,       ApplicationVersion,
             "ERTType",                          "",     DATA_FORMAT,  "0x%02X", DATA_INT,    ERTType,
             // "ERTType",                          "",     DATA_INT,       ERTType,
-            "ERTSerialNumber",                  "",     DATA_INT,       ERTSerialNumber,
+            "ERTSerialNumber",                  "",     DATA_INT,       ERTSerialNumber, // NOTE: this is also "id"
             "ConsumptionIntervalCount",         "",     DATA_INT,       ConsumptionIntervalCount,
             // "ModuleProgrammingState",           "",     DATA_FORMAT, "0x%02X", DATA_INT, ModuleProgrammingState,
             "ModuleProgrammingState",           "",     DATA_FORMAT, "0x%02X", DATA_INT, ModuleProgrammingState,
@@ -440,8 +443,8 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     http://davestech.blogspot.com/2008/02/itron-remote-read-electric-meter.html
     SCM1 Counter1 Meter has been inverted
     SCM1 Counter2 Meter has been removed
-    SCM2 Counter3 Meter detected a button–press demand reset
-    SCM2 Counter4 Meter has a low-battery/end–of–calendar warning
+    SCM2 Counter3 Meter detected a button-press demand reset
+    SCM2 Counter4 Meter has a low-battery/end-of-calendar warning
     SCM3 Counter5 Meter has an error or a warning that can affect billing
     SCM3 Counter6 Meter has a warning that may or may not require a site visit,
     */
@@ -449,7 +452,8 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     strncpy(p, "0x", sizeof(TamperCounters_str));
     p += 2;
     for (int j = 0; j < 6; j++) {
-        p += sprintf(p, "%02X", b[13 + j]);
+        // GCC-14 is confused by sprintf()
+        p += snprintf(p, 3, "%02X", b[13 + j]);
     }
     decoder_logf_bitrow(decoder, 2, __func__, &b[13], 6 * 8, "TamperCounters_str   %s", TamperCounters_str);
 
@@ -458,7 +462,8 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     strncpy(p, "0x", sizeof(Unknown_field_1_str));
     p += 2;
     for (int j = 0; j < 7; j++) {
-        p += sprintf(p, "%02X", b[19 + j]);
+        // GCC-14 is confused by sprintf()
+        p += snprintf(p, 3, "%02X", b[19 + j]);
     }
     decoder_logf_bitrow(decoder, 1, __func__, &b[19], 7 * 8, "Unknown_field_1 %s", Unknown_field_1_str);
 
@@ -470,7 +475,8 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     strncpy(p, "0x", sizeof(Unknown_field_2_str));
     p += 2;
     for (int j = 0; j < 3; j++) {
-        p += sprintf(p, "%02X", b[29 + j]);
+        // GCC-14 is confused by sprintf()
+        p += snprintf(p, 3, "%02X", b[29 + j]);
     }
     decoder_logf_bitrow(decoder, 1, __func__, &b[29], 3 * 8, "Unknown_field_1 %s", Unknown_field_2_str);
 
@@ -489,7 +495,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // decoder_logf_bitrow(decoder, 0, __func__, buffy, 14, "%d %d", j, DifferentialConsumptionIntervals[j]);
         pos += 14;
     }
-    if (decoder->verbose) {
+    if (decoder_verbose(decoder)) {
         decoder_log(decoder, 1, __func__, "DifferentialConsumptionIntervals");
         for (int j = 0; j < 27; j++) {
             decoder_logf(decoder, 1, __func__, "%d", DifferentialConsumptionIntervals[j]);
@@ -546,6 +552,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",                            "",     DATA_STRING, "NETIDM",
+            "id",                               "",     DATA_INT,       ERTSerialNumber,
 
             "PacketTypeID",                     "",     DATA_STRING,       PacketTypeID_str,
             "PacketLength",                     "",     DATA_INT,       PacketLength,
@@ -553,7 +560,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "ApplicationVersion",               "",     DATA_INT,       ApplicationVersion,
 
             "ERTType",                          "",     DATA_FORMAT,  "0x%02X", DATA_INT,    ERTType,
-            "ERTSerialNumber",                  "",     DATA_INT,       ERTSerialNumber,
+            "ERTSerialNumber",                  "",     DATA_INT,       ERTSerialNumber, // NOTE: this is also "id"
             "ConsumptionIntervalCount",         "",     DATA_INT,       ConsumptionIntervalCount,
             "ModuleProgrammingState",           "",     DATA_FORMAT, "0x%02X", DATA_INT, ModuleProgrammingState,
             // "ModuleProgrammingState",           "",     DATA_STRING,    ModuleProgrammingState_str,
@@ -585,6 +592,7 @@ static char const *const output_fields[] = {
 
         // Common fields
         "model",
+        "id",
         "PacketTypeID",
         "PacketLength",
         "HammingCode",

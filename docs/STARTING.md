@@ -83,7 +83,7 @@ Suffixes of `M`, and `k`, `G` are accepted.
 Multiple center frequencies can be given to set up frequency hopping.
 The hopping time can be given with `-H <seconds>`, the default is 10 minutes (600 s).
 Multiple hopping times can be given and apply to each frequency given in that order.
-You can give `-E hop` to hop immediatly after each received event.
+You can give `-E hop` to hop immediately after each received event.
 
 The default sample rate for `433.92M` is `250k` Hz and `1000k` for higher frequencies like `868M`.
 Select a sample rate using `-s <sample rate>` -- rates higher than `1024k` or maybe `2048k` are not recommended.
@@ -135,13 +135,15 @@ Any number of outputs can be selected:
 - `-F mqtt` sends to MQTT
 - `-F influx` sends to InfluxDB
 - `-F syslog` send UDP messages
-- `-F trigger` puts a `1` to the given file, can be used to e.g. on a Raspberyy Pi flash the LED.
+- `-F trigger` puts a `1` to the given file, can be used to e.g. on a Raspberry Pi flash the LED.
+- `-F rtl_tcp` adds a rtl_tcp pass-through server.
+- `-F http` adds a HTTP API server, a UI is at e.g. http://localhost:8433/
 
 Append output to file with `:<filename>` (e.g. `-F csv:log.csv`), default is to print to stdout.
 Specify host/port for `mqtt`, `influx`, `syslog`, with e.g. `-F syslog:127.0.0.1:1514`
 
 ::: tip
-    [-F kv | json | csv | mqtt | influx | syslog | trigger | null | help] Produce decoded output in given format.
+    [-F kv | json | csv | mqtt | influx | syslog | trigger | rtl_tcp | http | null | help] Produce decoded output in given format.
 :::
 
 ## Write outputs to files
@@ -271,7 +273,7 @@ Use
 When reading live inputs `rtl_433` will usually run forever, but you can limit the runtime
 - to a specific time using `-T <seconds>`, also formats like `12:34` or `1h23m45s` are accepted,
 - to a number of samples using `-n <value>` as a number of samples to take (each sample is an I/Q pair),
-- to recieving an event using `-E quit`, to quit after outputting the first event.
+- to receiving an event using `-E quit`, to quit after outputting the first event.
 
 When reading input from files `rtl_433` will process the data as fast as possible.
 You can limit the processing to original (or N-times) real-time using `-M replay[:N]`.

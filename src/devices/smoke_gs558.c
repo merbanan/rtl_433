@@ -49,13 +49,11 @@ Also you always need to learn from the same primary.
 
 static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
     uint8_t *b;
     int r;
     int learn = 0;
     int unit; // max 30
     int id;
-    char code_str[7];
 
     if (bitbuffer->num_rows < 3)
         return DECODE_ABORT_EARLY; // truncated transmission
@@ -101,12 +99,13 @@ static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (id == 0 || id == 0x7fff)
         return DECODE_FAIL_SANITY; // reject min/max to reduce false positives
 
-    sprintf(code_str, "%02x%02x%02x", b[2], b[1], b[0]);
+    char code_str[7];
+    snprintf(code_str, sizeof(code_str), "%02x%02x%02x", b[2], b[1], b[0]);
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",        "",             DATA_STRING, "Smoke-GS558",
-            "id"   ,        "",             DATA_INT, id,
+            "id",           "",             DATA_INT, id,
             "unit",         "",             DATA_INT, unit,
             "learn",        "",             DATA_INT, learn > 1,
             "code",         "Raw Code",     DATA_STRING, code_str,
@@ -135,4 +134,5 @@ r_device const smoke_gs558 = {
         .reset_limit = 11764 * 1.2f, // Maximum gap size before End Of Message [us]
         .decode_fn   = &smoke_gs558_callback,
         .fields      = output_fields,
+        .disabled    = 1, // false positives with generic EV1527 devices
 };

@@ -18,7 +18,7 @@ Note that this is actually Manchester coded and should be changed.
 */
 #include "decoder.h"
 
-static char const *const command_code[] = {"boot", "unlock" , "lock",};
+static char const *const command_code[] = {"boot", "unlock", "lock",};
 
 static char const *get_command_codes(const uint8_t *bytes)
 {

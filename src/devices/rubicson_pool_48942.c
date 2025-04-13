@@ -30,7 +30,7 @@ Sync pulses:
     730  730 730 730 730 730 730 730    [us]
 
 The device's transmission interval depends on the configured
-channel. The interval is 55 + <device channel> seconds.
+channel. The interval is 55 + `device channel` seconds.
 
 Data format:
     71       ba       4e       60       ba       0
@@ -61,6 +61,11 @@ static int rubicson_pool_48942_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // validate some static bits
     if (b[3] & 0xF || b[5])
         return DECODE_ABORT_EARLY;
+
+    // reduce false positives
+    if (b[0] == 0 && b[2] == 0 && b[4] == 0) {
+        return DECODE_ABORT_EARLY;
+    }
 
     if (crc8(b, 4, 0x31, 0x00) != b[4])
         return DECODE_FAIL_MIC;

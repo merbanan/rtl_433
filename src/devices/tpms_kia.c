@@ -26,7 +26,7 @@ Legend:
     z: 16-bit preamble = 0xed71. Must be omitted from Manchester-decoding
     a: Unknown, but 0xf in all my own readings
     p: 8-bit pressure given as PSI * 5
-    t: 8-bit temperature given as Celcius + 50
+    t: 8-bit temperature given as Celsius + 50
     i: 32-bit Sensor ID
     d: Unknown, with different value in each packet
     c: First 5 bits of CRC. We need to append 000 to reach 8 bits. poly=0x07, init=0x76.
@@ -43,20 +43,15 @@ NOTE: You may need to use the "-s 1000000" option of rtl_433 in order to get a c
 
 static int tpms_kia_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    data_t *data;
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
     unsigned id;
-    char id_str[9 + 1];
-    char unknown1_str[2 + 1];
-    char unknown2_str[3 + 1];
     uint8_t unknown1;
     uint8_t unknown2;
     uint8_t pressure;
 
     uint8_t temperature;
     uint8_t crc;
-    char raw[9 * 2 + 1]; // 9 bytes in hex notation
     unsigned int start_pos;
     const unsigned int preamble_length = 16;
 
@@ -80,16 +75,20 @@ static int tpms_kia_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned r
         return DECODE_FAIL_MIC;
     }
 
-    sprintf(id_str, "%08x", id);
-    sprintf(unknown1_str, "%02x", unknown1);
-    sprintf(unknown2_str, "%03x", unknown2);
-    sprintf(raw, "%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8]);
+    char id_str[9 + 1];
+    snprintf(id_str, sizeof(id_str), "%08x", id);
+    char unknown1_str[2 + 1];
+    snprintf(unknown1_str, sizeof(unknown1_str), "%02x", unknown1);
+    char unknown2_str[3 + 1];
+    snprintf(unknown2_str, sizeof(unknown2_str), "%03x", unknown2);
+    char raw[9 * 2 + 1]; // 9 bytes in hex notation
+    snprintf(raw, sizeof(raw), "%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8]);
 
-    float pressure_float    = pressure / 5.0;
-    float temperature_float = temperature - 50.0;
+    float pressure_float    = pressure / 5.0f;
+    float temperature_float = temperature - 50.0f;
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Kia",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,

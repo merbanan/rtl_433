@@ -7,10 +7,14 @@
     (at your option) any later version.
 
 */
-/** @fn int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+
+#include "decoder.h"
+
+/**
 Rubicson temperature sensor.
 
 Also older TFA 30.3197 sensors.
+Also ZX-7382-675 sensor for inFactory FWS-325.pro, first seen 2025-01 (Pearl)
 
 Also InFactory PT-310 pool temperature sensor (AKA ZX-7074/7073). This device
 has longer packet lengths of 37 or 38 bits but is otherwise compatible. See more at
@@ -32,14 +36,25 @@ data is grouped into 9 nibbles
 
 The sensor can be bought at Kjell&Co. The Infactory pool sensor can be bought at Pearl.
 */
-
-#include "decoder.h"
-
-// NOTE: this is used in nexus.c and solight_te44.c
-int rubicson_crc_check(uint8_t *b);
-
-int rubicson_crc_check(uint8_t *b)
+static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    int r = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
+    if (r < 0) {
+        return DECODE_ABORT_EARLY;
+    }
+
+    uint8_t *b = bitbuffer->bb[r];
+
+    // Infactory devices report 38 (or for last repetition) 37 bits
+    if (bitbuffer->bits_per_row[r] < 36 || bitbuffer->bits_per_row[r] > 38) {
+        return DECODE_ABORT_LENGTH;
+    }
+
+    if ((b[3] & 0xf0) != 0xf0) {
+        return DECODE_ABORT_EARLY; // const not 1111
+    }
+
+    // CRC check
     uint8_t tmp[5];
     tmp[0] = b[0];                // Byte 0 is nibble 0 and 1
     tmp[1] = b[1];                // Byte 1 is nibble 2 and 3
@@ -48,40 +63,19 @@ int rubicson_crc_check(uint8_t *b)
     tmp[4] = (b[3] & 0x0f) << 4 | // CRC is nibble 7 and 8
              (b[4] & 0xf0) >> 4;
 
-    return crc8(tmp, 5, 0x31, 0x6c) == 0;
-}
-
-static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer)
-{
-    data_t *data;
-    uint8_t *b;
-    int id, battery, channel, temp_raw;
-    float temp_c;
-
-    int r = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
-    if (r < 0)
-        return DECODE_ABORT_EARLY;
-
-    b = bitbuffer->bb[r];
-
-    // Infactory devices report 38 (or for last repetition) 37 bits
-    if (bitbuffer->bits_per_row[r] < 36 || bitbuffer->bits_per_row[r] > 38)
-        return DECODE_ABORT_LENGTH;
-
-    if ((b[3] & 0xf0) != 0xf0)
-        return DECODE_ABORT_EARLY; // const not 1111
-
-    if (!rubicson_crc_check(b))
+    int chk = crc8(tmp, 5, 0x31, 0x6c);
+    if (chk) {
         return DECODE_FAIL_MIC;
+    }
 
-    id       = b[0];
-    battery  = (b[1] & 0x80);
-    channel  = ((b[1] & 0x30) >> 4) + 1;
-    temp_raw = (int16_t)((b[1] << 12) | (b[2] << 4)); // sign-extend
-    temp_c   = (temp_raw >> 4) * 0.1f;
+    int id       = b[0];
+    int battery  = (b[1] & 0x80);
+    int channel  = ((b[1] & 0x30) >> 4) + 1;
+    int temp_raw = (int16_t)((b[1] << 12) | (b[2] << 4)); // sign-extend
+    float temp_c = (temp_raw >> 4) * 0.1f;
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Rubicson-Temperature",
             "id",               "House Code",   DATA_INT,    id,
             "channel",          "Channel",      DATA_INT,    channel,

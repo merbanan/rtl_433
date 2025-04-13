@@ -53,8 +53,6 @@ static int flowis_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             0xd3, 0x91, 0xd3, 0x91       // sync word
     };
 
-    data_t *data;
-
     if (bitbuffer->num_rows != 1) {
         return DECODE_ABORT_EARLY;
     }
@@ -71,7 +69,7 @@ static int flowis_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, row, start_pos + sizeof (preamble) * 8, &len, 8);
 
 
-    uint8_t frame[256+2+1] = {0}; // uint8_t max bytes + 2 bytes crc + 1 lenght byte
+    uint8_t frame[256+2+1] = {0}; // uint8_t max bytes + 2 bytes crc + 1 length byte
     frame[0] = len;
     // Get frame (len don't include the length byte and the crc16 bytes)
     bitbuffer_extract_bytes(bitbuffer, row,
@@ -96,26 +94,26 @@ static int flowis_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int id   = b[5] << 24 | b[4] << 16 | b[3] << 8 | b[2];
     int volume = b[13] << 16 | b[12] << 8 | b[11];
 
-    char fts_str[20];
     int fts_year = b[10] >> 2;
     int fts_mth  = ((b[9]>>6) | (b[10]&3)<<2);
     int fts_day  = (b[9]&0x3E) >> 1;
     int fts_hour = (b[8]>>4) | ((b[9]&1)<<4);
     int fts_min  = ((b[8]&0xF)<<2) | ((b[7]&0xC0)>>6);
     int fts_sec  = b[7]&0x3F;
-    sprintf(fts_str, "%4d-%02d-%02dT%02d:%02d:%02d", fts_year + 2000, fts_mth, fts_day, fts_hour, fts_min, fts_sec);
+    char fts_str[20];
+    snprintf(fts_str, sizeof(fts_str), "%4d-%02d-%02dT%02d:%02d:%02d", fts_year + 2000, fts_mth, fts_day, fts_hour, fts_min, fts_sec);
 
     /* clang-format off */
-     data = data_make(
-             "model",         "",          DATA_STRING, "Flowis",
-             "id",            "Meter id",  DATA_INT,    id,
-             "type",          "Type",      DATA_INT,    type,
-             "volume_m3",     "Volume",    DATA_FORMAT, "%.3f m3", DATA_DOUBLE, volume/1000.0,
-             "device_time",   "Device time", DATA_STRING, fts_str,
-             "alarm",         "Alarm",     DATA_INT,    b[15],
-             "backflow",      "Backflow",  DATA_INT,    b[14],
-             "mic",           "Integrity", DATA_STRING, "CRC",
-             NULL);
+    data_t *data = data_make(
+            "model",        "",             DATA_STRING, "Flowis",
+            "id",           "Meter id",     DATA_INT,    id,
+            "type",         "Type",         DATA_INT,    type,
+            "volume_m3",    "Volume",       DATA_FORMAT, "%.3f m3", DATA_DOUBLE, volume/1000.0,
+            "device_time",  "Device time",  DATA_STRING, fts_str,
+            "alarm",        "Alarm",        DATA_INT,    b[15],
+            "backflow",     "Backflow",     DATA_INT,    b[14],
+            "mic",          "Integrity",    DATA_STRING, "CRC",
+            NULL);
     /* clang-format on */
 
     decoder_output_data(decoder, data);

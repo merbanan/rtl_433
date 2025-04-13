@@ -19,6 +19,7 @@
 #include "data.h"
 #include "list.h"
 #include "optparse.h"
+#include "c_util.h" // for MIN()
 #include "fileformat.h"
 #include "fatal.h"
 
@@ -42,7 +43,7 @@ char const filter_nmea[] = "$GPGGA,";
 static void gpsd_client_line(gpsd_client_t *ctx, char *line)
 {
     if (!ctx->filter_str || strncmp(line, ctx->filter_str, strlen(ctx->filter_str)) == 0) {
-        strncpy(ctx->msg, line, sizeof(ctx->msg) - 1);
+        snprintf(ctx->msg, sizeof(ctx->msg), "%s", line);
     }
 }
 
@@ -263,7 +264,6 @@ static data_t *append_filtered_json(data_t *data, char const *json, char const *
     }
 
     // check all tokens
-    char buf[1024] = {0};
     for (int i = 1; i < toks - 1; ++i) {
         jsmntok_t *k = tok + i;
         jsmntok_t *v = tok + i + 1;
@@ -276,10 +276,11 @@ static data_t *append_filtered_json(data_t *data, char const *json, char const *
         char const *key = find_list_strncmp(includes, json + k->start, k->end - k->start);
         if (key) {
             // append json tag
-            strncpy(buf, json + v->start, v->end - v->start);
-            data = data_append(data,
-                    key, "", DATA_STRING, buf,
-                    NULL);
+            char buf[1024];
+            int len = MIN(v->end - v->start, (int)sizeof(buf) - 1);
+            memcpy(buf, json + v->start, len);
+            buf[len] = '\0';
+            data = data_str(data, key, "", NULL, buf);
         }
     }
 
@@ -296,9 +297,7 @@ data_t *data_tag_apply(data_tag_t *tag, data_t *data, char const *filename)
                 // wrap tag includes
                 data_t *obj = append_filtered_json(NULL, val, tag->includes);
                 // append tag wrapper
-                data = data_append(data,
-                        tag->key, "", DATA_DATA, obj,
-                        NULL);
+                data = data_dat(data, tag->key, "", NULL, obj);
             }
             else {
                 // append tag includes
@@ -307,9 +306,7 @@ data_t *data_tag_apply(data_tag_t *tag, data_t *data, char const *filename)
         }
         else {
             // append tag string
-            data = data_append(data,
-                    tag->key, "", DATA_STRING, val,
-                    NULL);
+            data = data_str(data, tag->key, "", NULL, val);
         }
         return data;
     }
@@ -322,8 +319,7 @@ data_t *data_tag_apply(data_tag_t *tag, data_t *data, char const *filename)
 
     // prepend simple tags
     data = data_prepend(data,
-            tag->key, "", DATA_STRING, val,
-            NULL);
+            data_str(NULL, tag->key, "", NULL, val));
 
     return data;
 }

@@ -82,7 +82,6 @@ static int ant_antplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t const preamble[] = {0xAA};
     uint8_t b[17]; // aligned packet data for both preambles/offsets
     unsigned bit_offset;
-    char payload[8 * 3 + 1]; // payload is 8 hex pairs for ANT and ANT+
     int antplus_flag = 0;
 
     // validate buffer: ANT messages are shorter than 150us, i.e. ~140 bits at 1Mbps
@@ -96,7 +95,7 @@ static int ant_antplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
-    // ANT and ANT+ packes have either aa or 55 preamble, depending on the first bit of
+    // ANT and ANT+ packets have either aa or 55 preamble, depending on the first bit of
     // the following byte. i.e. 10101010 1xxxxxxx or 01010101 0xxxxxxx
     // the best way to know which is being used, is to verify which one has a valid CRC
     // the following code relies on the fact that 55 is aa shifted right
@@ -115,7 +114,8 @@ static int ant_antplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t device_type = b[4];
     uint8_t tx_type     = b[5];
     // display ANT and ANT+ payload in the same format used by ANT tools
-    sprintf(payload, "%02x %02x %02x %02x %02x %02x %02x %02x", b[7], b[8], b[9], b[10], b[11], b[12], b[13], b[14]);
+    char payload[8 * 3 + 1]; // payload is 8 hex pairs for ANT and ANT+
+    snprintf(payload, sizeof(payload), "%02x %02x %02x %02x %02x %02x %02x %02x", b[7], b[8], b[9], b[10], b[11], b[12], b[13], b[14]);
 
     // display ANT or ANT+ depending on the network key used.
     if (0xc5a6 == net_key)

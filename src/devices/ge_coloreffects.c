@@ -19,9 +19,9 @@ Previous work decoding this device:
 #include "decoder.h"
 
 // Helper to access single bit (copied from bitbuffer.c)
-static inline int bit(const uint8_t *bytes, unsigned bit)
+static inline int bit(const uint8_t *bytes, unsigned b)
 {
-    return bytes[bit >> 3] >> (7 - (bit & 7)) & 1;
+    return bytes[b >> 3] >> (7 - (b & 7)) & 1;
 }
 
 /**

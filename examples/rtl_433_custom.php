@@ -19,7 +19,7 @@ Restart=always
 RestartSec=5
 RemainAfterExit=no
 User=root
-ExecStart=/bin/sh -c "/usr/bin/rtl_433 -f 433920000 -f 433920000 -H 120 -F syslog:127.0.0.1:1433"
+ExecStart=/bin/sh -c "/usr/bin/rtl_433 -f 433.92M -F syslog:127.0.0.1:1433"
 
 [Install]
 WantedBy=multi-user.target
@@ -105,4 +105,3 @@ for (;;)
     }
 }
 ?>
-

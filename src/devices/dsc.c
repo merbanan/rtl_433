@@ -113,8 +113,6 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t status, crc;
     //int subtype;
     uint32_t esn;
-    char status_str[3];
-    char esn_str[7];
     int s_closed, s_event, s_tamper, s_battery_low;
     int s_xactivity, s_xtamper1, s_xtamper2, s_exception;
 
@@ -194,7 +192,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         // Tamper: 0x10 set or 0x01 unset indicate tamper
         // 0x10 Set to tamper message type (more testing needed)
-        // 0x01 Cleared tamper status (seend during hearbeats)
+        // 0x01 Cleared tamper status (seen during heartbeats)
         s_tamper = ((status & 0x01) != 0x01) || ((status & 0x10) == 0x10);
 
         // "experimental" (naming might change)
@@ -208,8 +206,10 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // 0x80 is always set and 0x04 has never been set.
         s_exception = ((status & 0x80) != 0x80) || ((status & 0x04) == 0x04);
 
-        sprintf(status_str, "%02x", status);
-        sprintf(esn_str, "%06x", esn);
+        char status_str[3];
+        snprintf(status_str, sizeof(status_str), "%02x", status);
+        char esn_str[7];
+        snprintf(esn_str, sizeof(esn_str), "%06x", esn);
 
         /* clang-format off */
         data = data_make(

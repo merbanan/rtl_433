@@ -65,7 +65,7 @@ static int tpms_porsche_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     int temperature_c = temperature - 40;
 
     char id_str[4 * 2 + 1];
-    sprintf(id_str, "%08x", id);
+    snprintf(id_str, sizeof(id_str), "%08x", id);
 
     /* clang-format off */
     data_t *data = data_make(

@@ -83,7 +83,7 @@ static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "channel",          "Channel",          DATA_INT,    channel,
             "battery_ok",       "Battery level",    DATA_DOUBLE, battery * 0.01f,
             "flags",            "Flags2",           DATA_INT,    flags,
-            "temperature_F",    "Temperature",      DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,
+            "temperature_F",    "Temperature",      DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);

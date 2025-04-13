@@ -1,7 +1,8 @@
 /** @file
-    ThermoPro TX-2C Outdoor Thermometer.
+    ThermoPro TX-2C Outdoor Thermometer and humidity sensor.
 
     Copyright (C) 2023 igor@pele.tech.
+    Copyright (C) 2023 maxime@werlen.fr.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,13 +29,17 @@ Example data:
 
 Data layout:
 
-    II ZZ TTT UU Z
+    [type] [id0] [id1] [flags] [temp0] [temp1] [temp2] [humi0] [humi1] [zero] [zero] [zero]
 
-- I: 8 bit ID
-- Z: 8 bit zeros
-- T: 12 bit temperature, scale 10
-- U: 8 bit unknown (constant)
-- Z: 5 bit zeros
+- type: 4 bit fixed 1001 (9) or 0110 (5)
+- id: 8 bit a random id that is generated when the sensor starts, could include battery status
+  the same batteries often generate the same id
+- flags(3): is 1 when the battery is low, otherwise 0 (ok)
+- flags(2): is 1 when the sensor sends a reading when pressing the button on the sensor
+- flags(1,0): the channel number that can be set by the sensor (1, 2, 3, X)
+- temp: 12 bit signed scaled by 10
+- humi: 8 bit always 00001010 (0x0A) if no humidity sensor is available
+- zero : a trailing 12 bit fixed 000000000000
 
 */
 
@@ -56,16 +61,29 @@ static int thermopro_tx2c_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
     }
 
-    int device   = (b[0]);
+    // check existing 12 bit 0 trailer
+    if ((b[4] & 0x0F) != 0x00 || b[5] != 0x00)
+        return DECODE_FAIL_SANITY;
+
+    // int type     = b[0] >> 4;
+    int id       = (((b[0] & 0xF) << 4) | (b[1] >> 4));
+    int battery  = (b[1] & 0x08) >> 3;
+    int button   = (b[1] & 0x04) >> 2;
+    int channel  = (b[1] & 0x03) + 1;
     int temp_raw = (int16_t)((b[2] << 8) | b[3]); // uses sign-extend
     float temp_c = (temp_raw >> 4) * 0.1f;
+    int humidity = (((b[3] & 0xF) << 4) | (b[4] >> 4));
 
     /* clang-format off */
     data_t *data = data_make(
             "model",         "",            DATA_STRING, "Thermopro-TX2C",
-            "id",            "Id",          DATA_INT,    device,
+            // "subtype",       "",            DATA_INT, type,
+            "id",            "Id",          DATA_INT, id,
+            "channel",       "Channel",     DATA_INT, channel,
+            "battery_ok",    "Battery",     DATA_INT, !battery,
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "mic",           "Integrity",   DATA_STRING, "CRC",
+            "humidity",      "Humidity",    DATA_COND, humidity != 0x0a, DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "button",        "Button",      DATA_INT, button,
             NULL);
     /* clang-format on */
     decoder_output_data(decoder, data);
@@ -74,14 +92,18 @@ static int thermopro_tx2c_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char const *const output_fields[] = {
         "model",
+        // "subtype",
         "id",
+        "channel",
+        "battery_ok",
         "temperature_C",
-        "mic",
+        "humidity",
+        "button",
         NULL,
 };
 
 r_device const thermopro_tx2c = {
-        .name        = "ThermoPro TX-2C Thermometer",
+        .name        = "ThermoPro TX-2C Thermometer and Humidity sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1958,
         .long_width  = 3825,

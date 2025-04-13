@@ -68,8 +68,8 @@ These readings have not been tested.
 
 #define BIT(pos)               (1 << (pos))
 #define CHECK_BIT(y, pos)      ((0u == ((y) & (BIT(pos)))) ? 0u : 1u)
-#define SET_LSBITS(len)        (BIT(len) - 1)                     // the first len bits are '1' and the rest are '0'
-#define BF_PREP(y, start, len) (((y)&SET_LSBITS(len)) << (start)) // Prepare a bitmask
+#define SET_LSBITS(len)        (BIT(len) - 1)                       // the first len bits are '1' and the rest are '0'
+#define BF_PREP(y, start, len) (((y) & SET_LSBITS(len)) << (start)) // Prepare a bitmask
 #define BF_GET(y, start, len)  (((y) >> (start)) & SET_LSBITS(len))
 
 #define TX31U_MIN_LEN_BYTES    9  // assume at least one measurement
@@ -149,41 +149,31 @@ static int lacrosse_tx31u_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         switch (type) {
             case TEMP: {
                 float temp_c = 10*nib1 + nib2 + 0.1f*nib3 - 40.0f; // BCD offset 40 deg C
-                data = data_append( data,
-                    "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-                    NULL);
+                data = data_dbl(data, "temperature_C",    "Temperature",  "%.1f C", temp_c);
             } break;
             case HUMIDITY: {
                 int humidity = 100*nib1 + 10*nib2 + nib3; // BCD %
-                data = data_append( data,
-                    "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                    NULL);
+                data = data_int(data, "humidity",         "Humidity",     "%u %%",  humidity);
             } break;
             case RAIN: {
                 int raw_rain = (nib1<<8) + (nib2<<4) + nib3; // count of contact closures
-                if ( !no_ext_sensor && raw_rain > 0) { // most of these do not have rain gauges.  Surpress output if zero.
-                    data = data_append( data,
-                        "rain",         "raw_rain",     DATA_FORMAT, "%03x", DATA_INT, raw_rain,
-                        NULL);
+                if ( !no_ext_sensor && raw_rain > 0) { // most of these do not have rain gauges.  Suppress output if zero.
+                    data = data_int(data, "rain",         "raw_rain",     "%03x",   raw_rain);
                 }
             } break;
             case WIND_AVG: {
                 if ( !no_ext_sensor ) {
-                    float wind_dir = nib1 * 22.5 ; // compass direction in degrees
-                    float wind_avg = ((nib2<<4) + nib3) * 0.1f * 3.6; // wind values are decimal m/sec, convert to km/hr
-                    data = data_append( data,
-                        "wind_dir_deg",   "Wind direction",  DATA_FORMAT, "%.1f",       DATA_DOUBLE, wind_dir,
-                        "wind_avg_km_h",  "Wind speed",      DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, wind_avg,
-                        NULL);
+                    float wind_dir = nib1 * 22.5f ; // compass direction in degrees
+                    float wind_avg = ((nib2<<4) + nib3) * 0.1f * 3.6f; // wind values are decimal m/sec, convert to km/h
+                    data = data_dbl(data, "wind_dir_deg",   "Wind direction",   "%.1f",       wind_dir);
+                    data = data_dbl(data, "wind_avg_km_h",  "Wind speed",       "%.1f km/h",  wind_avg);
                 }
             } break;
             case WIND_MAX: {
-                int wind_input_lost = CHECK_BIT(nib1, 0); // a sensor was attched, but now not detected
+                int wind_input_lost = CHECK_BIT(nib1, 0); // a sensor was attached, but now not detected
                 if ( !no_ext_sensor && !wind_input_lost ) {
-                    float wind_max = ((nib2<<4) + nib3) * 0.1f * 3.6; // wind values are decimal m/sec, convert to km/hr
-                    data = data_append( data,
-                        "wind_max_km_h",  "Wind gust",    DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, wind_max,
-                        NULL);
+                    float wind_max = ((nib2<<4) + nib3) * 0.1f * 3.6f; // wind values are decimal m/sec, convert to km/h
+                    data = data_dbl(data, "wind_max_km_h",  "Wind gust",     "%.1f km/h",  wind_max);
                 }
             } break;
             default:
@@ -192,9 +182,7 @@ static int lacrosse_tx31u_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
-    data = data_append( data,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
-            NULL);
+    data = data_str(data, "mic",              "Integrity",  NULL,   "CRC");
     /* clang-format on */
 
     decoder_output_data(decoder, data);

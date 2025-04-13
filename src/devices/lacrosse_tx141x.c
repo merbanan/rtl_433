@@ -16,9 +16,11 @@ LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX145wsdth sensor.
 
 Also TFA 30.3221.02 (a TX141TH-Bv2),
 also TFA 30.3222.02 (a LaCrosse-TX141W).
+Also TFA 30.3249.02 (a TX141TH-Bv2),
 also TFA 30.3251.10 (a LaCrosse-TX141W).
 also some rebrand (ORIA WA50B) with a slightly longer timing, s.a. #2088
 also TFA 30.3243.02 (a LaCrosse-TX141Bv3)
+also LaCrosse TX141-Bv4 (seems identical to LaCrosse-TX141Bv3)
 
 LaCrosse Color Forecast Station (model C85845), or other LaCrosse product
 utilizing the remote temperature/humidity sensor TX141TH-Bv2 transmitting
@@ -171,7 +173,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "model",            "",                 DATA_STRING, "LaCrosse-TX141W",
                     "id",               "Sensor ID",        DATA_FORMAT, "%05x", DATA_INT, id,
                     "channel",          "Channel",          DATA_FORMAT, "%01x", DATA_INT, channel,
-                    "battery_ok",       "Battery level",    DATA_INT,    !battery_low,
+                    "battery_ok",       "Battery",          DATA_INT,    !battery_low,
                     "temperature_C",    "Temperature",      DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                     "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
                     "test",             "Test?",            DATA_INT,    test,
@@ -189,7 +191,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "model",            "",                 DATA_STRING, "LaCrosse-TX141W",
                     "id",               "Sensor ID",        DATA_FORMAT, "%05x", DATA_INT, id,
                     "channel",          "Channel",          DATA_FORMAT, "%01x", DATA_INT, channel,
-                    "battery_ok",       "Battery level",    DATA_INT,    !battery_low,
+                    "battery_ok",       "Battery",          DATA_INT,    !battery_low,
                     "wind_avg_km_h",    "Wind speed",       DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
                     "wind_dir_deg",     "Wind direction",   DATA_INT,    humidity,
                     "test",             "Test?",            DATA_INT,    test,
@@ -225,7 +227,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (0 == id || (device == LACROSSE_TX141TH && (0 == humidity || humidity > 100)) || temp_c < -40.0 || temp_c > 140.0) {
-        decoder_logf(decoder, 1, __func__, "data error, id: %i, humidity:%i, temp:%f", id, humidity, temp_c);
+        decoder_logf(decoder, 1, __func__, "data error, id: %d, humidity:%d, temp:%f", id, humidity, temp_c);
         return DECODE_FAIL_SANITY;
     }
 

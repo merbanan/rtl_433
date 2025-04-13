@@ -18,8 +18,8 @@ each +/- 50 kHz from that center point.
 
 A full signal TRANSMISSION consists of ROWS, which are collections of SYMBOLS.
 SYMBOLS, both the higher-frequency MARK (`1`) and lower-frequency SPACE
-(`0`), have a width of 600μs.  If there is more than one ROW in a single
-TRANSMISSION, there will be a GAP of 27,600μs of silence between each ROW.
+(`0`), have a width of 600µs.  If there is more than one ROW in a single
+TRANSMISSION, there will be a GAP of 27,600µs of silence between each ROW.
 
 A TRANSMISSION may be generated in response to an EVENT on the remote.  Observed
 EVENTS that may trigger a TRANSMISSION seem limited to manual button presses.
@@ -349,7 +349,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",         "",            DATA_STRING, "DirecTV-RC66RX",
             "id",            "",            DATA_FORMAT, "%06d", DATA_INT, dtv_device_id,
             "button_id",     "",            DATA_FORMAT, "0x%02X", DATA_INT, dtv_button_id,
-            "button_name",   "",            DATA_FORMAT, "[%s]", DATA_STRING, get_dtv_button_label(dtv_button_id),
+            "button_name",   "",            DATA_STRING, get_dtv_button_label(dtv_button_id),
             "event",         "",            DATA_STRING, row_sync_len > ROW_SYNC_SHORT_LEN ? "INITIAL" : "REPEAT",
             "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
             NULL);
@@ -375,9 +375,9 @@ r_device const directv = {
         .modulation  = FSK_PULSE_PCM,
         .short_width = 600,  // 150 samples @250k
         .long_width  = 600,  // 150 samples @250k
-        .gap_limit   = 30000, // gap is typically around 27,600μs, so long that rtl_433 resets
+        .gap_limit   = 30000, // gap is typically around 27,600µs, so long that rtl_433 resets
                               // signal decoder before recognizing row repeats in signal
-        .reset_limit = 50000, // maximum gap size before End Of Row [μs]
+        .reset_limit = 50000, // maximum gap size before End Of Row [µs]
         .decode_fn   = &directv_decode,
         .fields      = output_fields,
 };

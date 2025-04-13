@@ -98,12 +98,12 @@ static int emos_e6016_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int temp_raw   = (int16_t)(((b[8] & 0x0f) << 12) | (b[9] << 4)); // use sign extend
     float temp_c   = (temp_raw >> 4) * 0.1f;
     int humidity   = b[10];
-    float speed_ms = b[11] * 0.295;
+    float speed_ms = b[11] * 0.295f;
     int dir_raw    = (((b[12] & 0xf0) >> 4));
     float dir_deg  = dir_raw * 22.5f;
 
     char dcf77_str[20]; // "2064-16-32T32:64:64"
-    sprintf(dcf77_str, "%4d-%02d-%02dT%02d:%02d:%02d", dcf77_year + 2000, dcf77_mth, dcf77_day, dcf77_hour, dcf77_min, dcf77_sec);
+    snprintf(dcf77_str, sizeof(dcf77_str), "%4d-%02d-%02dT%02d:%02d:%02d", dcf77_year + 2000, dcf77_mth, dcf77_day, dcf77_hour, dcf77_min, dcf77_sec);
 
     /* clang-format off */
     data_t *data = data_make(
