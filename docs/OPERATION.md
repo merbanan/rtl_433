@@ -452,7 +452,7 @@ Add MQTT options with e.g. `-F "mqtt://host:1883,opt=arg"`.
 Supported MQTT options are: `user=foo`, `pass=bar`, `retain[=0|1]`, `<format>[=<topic>]`.
 
 Supported MQTT formats: (default is all formats)
-- `online`: posts connection status
+- `availability`: posts availability (online/offline)
 - `events`: posts JSON event data
 - `states`: posts JSON state data
 - `devices`: posts device and sensor info in nested topics
