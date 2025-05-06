@@ -42,8 +42,11 @@ Bytes 2 to 9 are inverted Manchester with swapped MSB/LSB:
 - A = preamble, (0x01)
 - I = id, 0xc3f0
 - P = Pressure in Bar, scale 32, 0xA0 / 32 = 5 Bar, or 0xA0 * 3.125 = 500 kPA, see issue #3200
-- T = Temperature in Fahrenheit, 0x4a = 74 'F
-- B = Battery as half the millivolt, 0x8e = 2.84 V
+- T = Temperature in Celcius + 50, 0x4a = 24 'C
+- B = Battery, where mV = 4000-(value*10). E.g 0x8e becomes 4000-(1420) = 2580mV.
+-     This calculation is approximate fit from sample data, any improvements are welcome.
+-   > If this field is set to 0xFF, a "fast leak" alarm is triggered.
+-   > If this field is set to 0xFE, a "slow leak" alarm is triggered.
 - C = Checksum, adding bytes 2 to 7 modulo 256 = byte 8,(0x01+0xc3+0xf0+0x14+0x4a+0x8e) modulus 256 = 0xa0
 
 */
@@ -52,19 +55,24 @@ Bytes 2 to 9 are inverted Manchester with swapped MSB/LSB:
 
 static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    uint8_t const preamble_pattern[] = {0x00, 0x00, 0x7f}; // inverted, raw value is 0x5a
     //Loop through each row of data
     for (int row = 0; row < bitbuffer->num_rows; row++)
     {
         //Payload is inverted Manchester encoded, and reversed MSB/LSB order
         uint8_t *b = bitbuffer->bb[row];
+        uint16_t row_len = bitbuffer->bits_per_row[row];
 
-        //Length must be 72 bits to be considered a valid packet
-        if (bitbuffer->bits_per_row[row] != 72)
+        //Length must be 72 or 209 bits to be considered a valid packet
+        //Length must be 72, 73, 208 or 209 bits to be considered a valid packet
+        if (row_len != 72 && row_len != 73 && row_len != 209 && row_len != 208)
             continue; // DECODE_ABORT_LENGTH
 
         //Valid preamble? (Note, the data is still wrong order at this point. Correct pre-amble: 0x00 0x00 0x01)
-        if (b[0] != 0x00 || b[1] != 0x00 || b[2] != 0x7f)
+        unsigned bitpos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, 24);
+        if (bitpos >= row_len)
             continue; // DECODE_ABORT_EARLY
+        b = &b[bitpos/8];
 
         //Preamble
         uint8_t preamble = ~reverse8(b[2]);
@@ -76,22 +84,22 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         //Pressure is stored as 32 * the Bar
         uint8_t p1 = ~reverse8(b[5]);
 
-        //Temperature is stored in Fahrenheit. Note that the datasheet claims operational to -40'C, but can only express values from -17.8'C
-        uint8_t tempFahrenheit = ~reverse8(b[6]);
+        //Temperature is sent as degrees Celcius + 50.
+        uint8_t tempCelcius = ~reverse8(b[6]);
 
-        //Battery voltage is stored as half the mV
-        uint8_t tmpbattery_mV = ~reverse8(b[7]);
+        //Battery voltage is stored as 100*(4v-<volt>).
+        uint8_t v1 = ~reverse8(b[7]);
+        int battery_mV = (int)4000-((double)v1*10.0f);
 
         //Checksum is a sum of all the other values
         uint8_t payload_checksum = ~reverse8(b[8]);
-        uint8_t calculated_checksum = preamble + id1 + id2 + p1 + tempFahrenheit + tmpbattery_mV;
+        uint8_t calculated_checksum = preamble + id1 + id2 + p1 + tempCelcius + v1;
         if (payload_checksum != calculated_checksum)
             continue; // DECODE_FAIL_MIC
 
         int sensor_id      = (id1 << 8) | id2;
         float pressure_kpa = p1 * 3.125f; // as guessed in #3200
         float pressure_psi = pressure_kpa * (1.0f / 6.89475729f); // Keep the PSI value to not Break the decoder after new formula, #3200.
-        int battery_mV     = tmpbattery_mV * 2;
 
         char sensor_idhex[7];
         snprintf(sensor_idhex, sizeof(sensor_idhex), "0x%04x", sensor_id);
@@ -102,8 +110,10 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",            "",             DATA_STRING, "Steelmate",
                 "id",               "",             DATA_STRING, sensor_idhex,
                 "pressure_PSI",     "",             DATA_DOUBLE, pressure_psi,
-                "temperature_F",    "",             DATA_DOUBLE, (float)tempFahrenheit,
-                "battery_mV",       "",             DATA_INT,    battery_mV,
+                "temperature_F",    "",             DATA_DOUBLE, ((float)tempCelcius*1.8f)+32.0f,
+                "battery_mV",       "",             DATA_COND,   v1 < 0xFE, DATA_INT,    battery_mV,
+                "alarm",            "",             DATA_COND,   v1 == 0xFF, DATA_STRING, "fast leak",
+                "alarm",            "",             DATA_COND,   v1 == 0xFE, DATA_STRING, "slow leak",
                 "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
@@ -124,6 +134,7 @@ static char const *const output_fields[] = {
         "pressure_PSI",
         "temperature_F",
         "battery_mV",
+        "alarm",
         "mic",
         NULL,
 };
