@@ -8,6 +8,9 @@
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
+
+    Updated by havochome as did not work for my device - remapped data bits
+    following analysis.
 */
 
 #include "decoder.h"
@@ -23,31 +26,49 @@ Should apply to similar Watchman, Beckett, and Apollo devices too.
 There is a preamble plus de-sync of 555558, then MC coded an inner preamble of 5558 (raw 9999996a).
 End of frame is the last half-bit repeated additional 2 times, then 4 times mark.
 
-The sensor sends a single packet once every half hour or twice a second
-for 5 minutes when in pairing/test mode.
+The sensor sends a single packet once every half hour (33mins for me) or twice a second
+for 5 minutes when in pairing/test mode, 13 mins when filling up or alarming.
 
-Depth reading is in cm, lowest reading is unknown, highest is unknown, invalid is unknown.
+Depth reading is in cm, lowest reading is appears to be 4cm, highest is supost to be 3m 
+but readings of 310 have been taken, invalid is 0cm.
 
 Data Format:
 
-    PRE?16h ID?16h FLAGS?16h CM:8d CRC:8h
+    incorrect - PRE?16h ID?16h FLAGS?16h CM:8d CRC:8h - incorrect
+    ID:32h FIXED0:b TXSTATUS:b TEMP_OK:2b FIXED0:b BAT:b Sensor?2b COUNTER:4b mode_b:3b DEPTH_CM:9d CRC:8h
 
 Data Layout:
 
-    PP PP II II FF CC DD XX
+    incorrect - PP PP PP PP FF CC DD XX - incorrect
+    ID ID ID ID DATA DATA DATA CRC
+    B0 B1 B2 B3  B4   B5   B6  B7
 
-- P: 16 bit Preamble of 0x5558
-- I: 16 bit Sensor ID
-- F: 8 bit Flags maybe
-- C: 8 bit Counter maybe
-- D: 8 bit Depth in cm, could have a MSB somewhere?
-- X: 8 bit CRC-8, poly 0x31 init 0x00, bit reflected
+- ID: B0 & B1, B2 & B3 32 bit Sensor ID - B0 is not pre-amble.
+- Fixed: B4 bit 8 (0x80) fixed 0
+- TxStatus: B4 bits 7 (0x40), 0 = noral transmit (every 30 to 33 mins), 1 = every 0.5 to 1 second during binding/alarm/refueling
+- Temp1: B4 bit 6 (0x20), Too cold to operate when = B4 bit 5 (0x10)
+- Temp2: B4 bit 5 (0x10), Too cold to operate when = B4 bit 6 (0x20)
+- Fixed: B4 bit 4 (0x08) fixed 0 - or could be like temp and working with B4 bit 3 (0x04)
+- Battery: B4 bits 3 (0x04) could be battery ok TODO this could be the same as bits 6/5 above working with B4 bit 4 (0x08)
+- Sensor?: B4 bit 2 (0x02) works opposite to bit 1 (0x01) - like temp, so sensor?
+- Sensor?: B4 bits 1 (0x01) what happens when B4 bit 1 (0x01) = bit 2 (0x02)?
+- Fixed: B5 bit 8 (0x80) fixed 0
+- Counter: B5 bits 7 (0x40) to 5 (0x10) count up and down over 24hrs - probably used for day marker in usage stats
+    Counter also appears to have a weekly marker and possibly a 4 weekly marker - again for stats?
+- Mode B:  B5 bits 4 (0x08) - 2 (0x02) unknown
+- Depth: B5 bit 1 (0x01) & B6 Depth in cm (nominally 4cm - 300cm) depth reading of 0cm is error - no reading
+- CRC:   B7 CRC-8, poly 0x31 init 0x00, bit reflected
+
+Alarm appears to be TxStatus in 'rapid' mode and depth change of greater than 1.5 cm - this appears to be a
+function of the receiver and Alarm does not appear to be coded.
 
 example packets are:
 
-- raw: {158}555558 9999 996a 6559aaa99996a55696a9a5963c
+- raw: {158}555558 9999 996a 6559aaa99996a55696a9a5963c - original
+       {158}555558 a955 5569 5a9aaa56a996966aa69596a63c - my sensor
 - aligned: {134}9999996a 6559aaa999969aa6aa9a6995 fc
-- decoded: 5558 bd01 5642 0497
+- decoded: 5558 bd01 5642 0497 - original
+           1ff9 c40e 1668 2762 - my sensor
 
 TODO: this is not confirmed
 Start of frame full preamble is depending on first data bit either
@@ -57,6 +78,7 @@ Start of frame full preamble is depending on first data bit either
 */
 static int oil_smart_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
+
     bitbuffer_t databits = {0};
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &databits, 64);
 
@@ -66,36 +88,83 @@ static int oil_smart_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
 
     uint8_t *b = databits.bb[0];
 
+/*   this stop my sensor from being decoded - flex sensor setting worked well though
     if (b[0] != 0x55 || b[1] != 0x58) {
         decoder_log(decoder, 2, __func__, "Couldn't find preamble");
         return 0; // DECODE_FAIL_SANITY; // TODO: fix calling code to handle negative return values
     }
-
+*/
     if (crc8le(b, 8, 0x31, 0x00)) {
         decoder_log(decoder, 2, __func__, "CRC8 fail");
         return 0; // DECODE_FAIL_MIC; // TODO: fix calling code to handle negative return values
     }
 
-    // We do not know if the unit ID changes when you rebind
+    // Unit ID does NOT changes when you rebind
     // by holding a magnet to the sensor for long enough?
-    uint16_t unit_id = (b[2] << 8) | b[3];
+    // 32 bit sensor ID
 
-    // TODO: none of these are identified.
-    uint8_t unknown1 = b[4]; // idle seems to be 0x17
-    uint8_t unknown2 = b[5]; // appears to change variously to: 0c 0e 10 12
+    // coding could be better
+    uint16_t unit_id_1 = (b[0] << 8) + (b[1] << 0);
+    uint16_t unit_id_2 = (b[2] << 8) + (b[3] << 0);
+
+    char unit_id_str[80];
+    char unit_2[80];
+    sprintf(unit_id_str, "%04x", unit_id_1);
+    strcat(unit_id_str, " ");
+    sprintf(unit_2, "%04x", unit_id_2);
+    strcat(unit_id_str, unit_2);
+
+    // TxStatus - 0 normal 30/33 mins repeat tx, 1 rapid 0.5/1 second repeat
+    // TxStatus - B4 bit 7 (0x40)
+    char *txstatus;
+    if (b[4] & 0x40) {
+        txstatus = "Rapid";
+    }
+    else {
+        txstatus = "Normal";
+    }
+
+    // temp_ok - warm enough to work 1 - too cold 0
+    // Temperature B4 bit 6 (0x20)= B4 bit 5 (0x10) to cold to work
+    uint8_t temp_ok = 1;  //temp ok by default
+    if ((b[4] & 0x10) == (b[4] & 0x20)) {
+        temp_ok = 0;
+    }
+
+    // battery level OK - 1 OK - 0 low?
+    // battery_ok - B4 bit 3 (0x04)
+    uint8_t battery = (b[4] & 0x04) >> 2;
+
+    // Appears to be sensor working with bit 2 (0x02) and bit 1 (0x01)
+    // sensor - B4 bit 2 (0x02) and B4 bit 1 (0x01)
+    uint8_t sensor = (b[4] & 0x03);
+
+    // Counter goes up and down over 24hrs refecting number of reading being sent
+    // Counter - B5 bits 8 - 5 (0x80 - 0x10)
+    uint8_t counter = (b[5] & 0xf0) >> 4;
+
+    // Unknown - just capturing
+    // mode_b - B5 bits 4 - 2 (0x04 - 0x02). Bit 2 could be fixed 0
+    uint8_t mode_b = (b[5] & 0x0d) >> 1;
 
     // TODO: the value for a bad reading has not been found?
-    // TODO: there could be more (MSB) bits to this?
-    uint16_t depth = b[6];
+    // Bad reading is zero depth
+
+    // depth in cm msb B5 bit 1 (0x01) and B6
+    uint16_t depth = ((b[5] & 0x01) << 8) + b[6];
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Oil-Ultrasonic",
-            "id",               "",             DATA_FORMAT, "%04x", DATA_INT, unit_id,
-            "depth_cm",         "Depth",        DATA_INT,    depth,
-            "unknown_1",        "Unknown 1",    DATA_FORMAT, "%02x", DATA_INT, unknown1,
-            "unknown_2",        "Unknown 2",    DATA_FORMAT, "%02x", DATA_INT, unknown2,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
+            "model",            "",                 DATA_STRING, "Oil-Ultrasonic-GDW",
+            "id",               "",                 DATA_STRING, unit_id_str,
+            "depth_cm",         "Depth",            DATA_INT,    depth,
+            "txstatus",         "TxStatus",         DATA_STRING, txstatus,
+            "temp_ok",          "temp_ok",          DATA_INT,    temp_ok,
+            "battery_ok",       "Battery Level",    DATA_INT,    battery,
+            "sensor",           "Sensor?",          DATA_INT,    sensor,
+            "counter",          "Counter",          DATA_INT,    counter,
+            "mode_b",           "mode_b?",          DATA_INT,    mode_b,
+            "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -129,8 +198,12 @@ static char const *const output_fields[] = {
         "model",
         "id",
         "depth_cm",
-        "unknown_1",
-        "unknown_2",
+        "txstatus",
+        "temp_ok",
+        "battery_ok",
+        "sensor",
+        "counter",
+        "mode_b",
         "mic",
         NULL,
 };
@@ -140,7 +213,8 @@ r_device const oil_smart = {
         .modulation  = FSK_PULSE_PCM,
         .short_width = 500,
         .long_width  = 500,
-        .reset_limit = 2000,
+        .gap_limit   = 2000,
+        .reset_limit = 9000,
         .decode_fn   = &oil_smart_callback,
         .fields      = output_fields,
 };
