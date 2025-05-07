@@ -43,7 +43,7 @@ Bytes 2 to 9 are inverted Manchester with swapped MSB/LSB:
 - I = id, 0xc3f0
 - P = Pressure in Bar, scale 32, 0xA0 / 32 = 5 Bar, or 0xA0 * 3.125 = 500 kPA, see issue #3200
 - T = Temperature in Celcius + 50, 0x4a = 24 'C
-- B = Battery, where mV = 4000-(value*10). E.g 0x8e becomes 4000-(1420) = 2580mV.
+- B = Battery, where mV = 3900-(value*10). E.g 0x8e becomes 3900-(1420) = 2480mV.
 -     This calculation is approximate fit from sample data, any improvements are welcome.
 -   > If this field is set to 0xFF, a "fast leak" alarm is triggered.
 -   > If this field is set to 0xFE, a "slow leak" alarm is triggered.
@@ -63,7 +63,6 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t *b = bitbuffer->bb[row];
         uint16_t row_len = bitbuffer->bits_per_row[row];
 
-        //Length must be 72 or 209 bits to be considered a valid packet
         //Length must be 72, 73, 208 or 209 bits to be considered a valid packet
         if (row_len != 72 && row_len != 73 && row_len != 209 && row_len != 208)
             continue; // DECODE_ABORT_LENGTH
@@ -85,11 +84,11 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t p1 = ~reverse8(b[5]);
 
         //Temperature is sent as degrees Celcius + 50.
-        uint8_t tempCelcius = ~reverse8(b[6]);
+        uint8_t tempCelcius = ~reverse8(b[6]) - 50;
 
-        //Battery voltage is stored as 100*(4v-<volt>).
+        //Battery voltage is stored as 100*(3.9v-<volt>).
         uint8_t v1 = ~reverse8(b[7]);
-        int battery_mV = (int)4000-((double)v1*10.0f);
+        int battery_mV = (int)3900-((double)v1*10.0f);
 
         //Checksum is a sum of all the other values
         uint8_t payload_checksum = ~reverse8(b[8]);
