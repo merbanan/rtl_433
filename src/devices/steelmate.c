@@ -142,9 +142,9 @@ static char const *const output_fields[] = {
 r_device const steelmate = {
         .name        = "Steelmate TPMS",
         .modulation  = FSK_PULSE_MANCHESTER_ZEROBIT,
-        .short_width = 12 * 4,
-        .long_width  = 0,
-        .reset_limit = 27 * 4,
+        .short_width = 50,
+        .long_width  = 50,
+        .reset_limit = 120,
         .decode_fn   = &steelmate_callback,
         .fields      = output_fields,
 };
