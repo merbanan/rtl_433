@@ -69,7 +69,7 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         //Valid preamble? (Note, the data is still wrong order at this point. Correct pre-amble: 0x00 0x00 0x01)
         unsigned bitpos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, 24);
-        if (bitpos >= row_len)
+        if (bitpos >= row_len-64)
             continue; // DECODE_ABORT_EARLY
         b = &b[bitpos/8];
 
