@@ -61,7 +61,7 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     {
         //Payload is inverted Manchester encoded, and reversed MSB/LSB order
         uint8_t *b = bitbuffer->bb[row];
-        uint16_t row_len = bitbuffer->bits_per_row[row];
+        unsigned row_len = bitbuffer->bits_per_row[row];
 
         //Length must be 72, 73, 208 or 209 bits to be considered a valid packet
         if (row_len != 72 && row_len != 73 && row_len != 209 && row_len != 208)
@@ -84,15 +84,16 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t p1 = ~reverse8(b[5]);
 
         //Temperature is sent as degrees Celcius + 50.
-        uint8_t tempCelcius = ~reverse8(b[6]) - 50;
+        uint8_t v1 = ~reverse8(b[6]);
+        uint8_t tempCelcius = v1 - 50;
 
         //Battery voltage is stored as 100*(3.9v-<volt>).
-        uint8_t v1 = ~reverse8(b[7]);
-        int battery_mV = (int)3900-((double)v1*10.0f);
+        uint8_t b1 = ~reverse8(b[7]);
+        int battery_mV = (int)3900-((double)b1*10.0f);
 
         //Checksum is a sum of all the other values
         uint8_t payload_checksum = ~reverse8(b[8]);
-        uint8_t calculated_checksum = preamble + id1 + id2 + p1 + tempCelcius + v1;
+        uint8_t calculated_checksum = preamble + id1 + id2 + p1 + v1 + b1;
         if (payload_checksum != calculated_checksum)
             continue; // DECODE_FAIL_MIC
 
@@ -110,9 +111,9 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id",               "",             DATA_STRING, sensor_idhex,
                 "pressure_PSI",     "",             DATA_DOUBLE, pressure_psi,
                 "temperature_F",    "",             DATA_DOUBLE, ((float)tempCelcius*1.8f)+32.0f,
-                "battery_mV",       "",             DATA_COND,   v1 < 0xFE, DATA_INT,    battery_mV,
-                "alarm",            "",             DATA_COND,   v1 == 0xFF, DATA_STRING, "fast leak",
-                "alarm",            "",             DATA_COND,   v1 == 0xFE, DATA_STRING, "slow leak",
+                "battery_mV",       "",             DATA_COND,   b1 < 0xFE, DATA_INT,    battery_mV,
+                "alarm",            "",             DATA_COND,   b1 == 0xFF, DATA_STRING, "fast leak",
+                "alarm",            "",             DATA_COND,   b1 == 0xFE, DATA_STRING, "slow leak",
                 "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
