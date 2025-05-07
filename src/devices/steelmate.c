@@ -57,10 +57,9 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble_pattern[] = {0x00, 0x00, 0x7f}; // inverted, raw value is 0x5a
     //Loop through each row of data
-    for (int row = 0; row < bitbuffer->num_rows; row++)
-    {
+    for (int row = 0; row < bitbuffer->num_rows; row++) {
         //Payload is inverted Manchester encoded, and reversed MSB/LSB order
-        uint8_t *b = bitbuffer->bb[row];
+        uint8_t *b       = bitbuffer->bb[row];
         unsigned row_len = bitbuffer->bits_per_row[row];
 
         //Length must be 72, 73, 208 or 209 bits to be considered a valid packet
@@ -69,9 +68,9 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         //Valid preamble? (Note, the data is still wrong order at this point. Correct pre-amble: 0x00 0x00 0x01)
         unsigned bitpos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, 24);
-        if (bitpos >= row_len-64)
+        if (bitpos >= row_len - 64)
             continue; // DECODE_ABORT_EARLY
-        b = &b[bitpos/8];
+        b = &b[bitpos / 8];
 
         //Preamble
         uint8_t preamble = ~reverse8(b[2]);
@@ -84,21 +83,21 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t p1 = ~reverse8(b[5]);
 
         //Temperature is sent as degrees Celcius + 50.
-        uint8_t v1 = ~reverse8(b[6]);
+        uint8_t v1          = ~reverse8(b[6]);
         uint8_t tempCelcius = v1 - 50;
 
         //Battery voltage is stored as 100*(3.9v-<volt>).
-        uint8_t b1 = ~reverse8(b[7]);
-        int battery_mV = (int)3900-((double)b1*10.0f);
+        uint8_t b1     = ~reverse8(b[7]);
+        int battery_mV = (int)3900 - ((double)b1 * 10.0f);
 
         //Checksum is a sum of all the other values
-        uint8_t payload_checksum = ~reverse8(b[8]);
+        uint8_t payload_checksum    = ~reverse8(b[8]);
         uint8_t calculated_checksum = preamble + id1 + id2 + p1 + v1 + b1;
         if (payload_checksum != calculated_checksum)
             continue; // DECODE_FAIL_MIC
 
         int sensor_id      = (id1 << 8) | id2;
-        float pressure_kpa = p1 * 3.125f; // as guessed in #3200
+        float pressure_kpa = p1 * 3.125f;                         // as guessed in #3200
         float pressure_psi = pressure_kpa * (1.0f / 6.89475729f); // Keep the PSI value to not Break the decoder after new formula, #3200.
 
         char sensor_idhex[7];
