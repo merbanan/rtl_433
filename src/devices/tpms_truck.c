@@ -83,11 +83,11 @@ static int tpms_truck_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned
             "type",           "",               DATA_STRING, "TPMS",
             "id",             "",               DATA_STRING, id_str,
             "wheel",          "",               DATA_INT,    wheel,
-            "pressure_kPa",   "Pressure",       DATA_FORMAT, "%.0f kPa",    DATA_DOUBLE, (float)pressure,
-            "temperature_C",  "Temperature",    DATA_FORMAT, "%.0f C",      DATA_DOUBLE, (float)temperature,
-            "pressure_alert", "Pressure Alert", DATA_INT, pressure_alert,
-            "battery_ok",     "Battery Ok",     DATA_INT, battery_ok,
-            "flags",          "Flag?",          DATA_FORMAT, "%x",          DATA_INT,    flags,
+            "pressure_kPa",   "Pressure",       DATA_FORMAT, "%.0f kPa",     DATA_DOUBLE, (float)pressure,
+            "temperature_C",  "Temperature",    DATA_FORMAT, "%.0f C",       DATA_DOUBLE, (float)temperature,
+            "pressure_alert", "Pressure Alert", DATA_COND,   pressure_alert, DATA_INT,    pressure_alert,
+            "battery_ok",     "Battery Ok",     DATA_INT,    battery_ok,
+            "flags",          "Flag?",          DATA_FORMAT, "%x",           DATA_INT,    flags,
             "mic",            "Integrity",      DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
