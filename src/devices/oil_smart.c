@@ -90,11 +90,10 @@ static int oil_smart_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
         return 0; // DECODE_FAIL_MIC; // TODO: fix calling code to handle negative return values
     }
 
-    // Unit ID does NOT changes when you force  TsStatus Rapid
+    // Unit ID does NOT changes when you force TxStatus: Rapid
     // by holding a magnet to the sensor for long enough
     // 32 bit sensor ID is stable
     uint32_t unit_id = ((uint32_t)b[0] << 24) | (b[1] << 16) | (b[2] << 8) | (b[3]);
-
     char unit_id_str[80];
     char unit_2[80];
     sprintf(unit_id_str, "%04X", (unit_id & 0xFFFF0000));
