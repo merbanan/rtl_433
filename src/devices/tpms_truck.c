@@ -29,7 +29,7 @@ Data layout (nibbles):
 - U: 4 bit state, decoding unknown, not included in checksum, could be sync
 - I: 32 bit ID
 - W: 8 bit wheel position
-- F: 4 bit status flags: 0xf = unknown. 0x8 = pressure alert. 0x2|0x1 = battery status (where 00 = low battery).
+- F: 4 bit status flags: 0x8 = unknown. 0x4 = pressure alert. 0x2|0x1 = battery status (where 00 = low battery).
 - P: 12 bit Pressure (kPa)
 - T: 8 bit Temperature (deg. C, signed)
 - C: 8 bit Checksum (XOR on bytes 0 to 7)
@@ -66,11 +66,13 @@ static int tpms_truck_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned
         return 0; // DECODE_FAIL_MIC;
     }
 
-    unsigned id     = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
-    int wheel       = b[4];
-    int flags       = b[5] >> 4;
-    int pressure    = (b[5] & 0x0f) << 8 | b[6];
-    int temperature = b[7];
+    unsigned id        = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
+    int wheel          = b[4];
+    int flags          = b[5] >> 4;
+    int pressure       = (b[5] & 0x0f) << 8 | b[6];
+    int temperature    = b[7];
+    int pressure_alert = (flags & 0x4) == 0x4;
+    int battery_ok     = (flags & 0x3) == 0x3; // 0x3 = battery ok, 0x0 = battery low, else unknown.
 
     char id_str[4 * 2 + 1];
     snprintf(id_str, sizeof(id_str), "%08x", id);
@@ -83,10 +85,9 @@ static int tpms_truck_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned
             "wheel",          "",               DATA_INT,    wheel,
             "pressure_kPa",   "Pressure",       DATA_FORMAT, "%.0f kPa",    DATA_DOUBLE, (float)pressure,
             "temperature_C",  "Temperature",    DATA_FORMAT, "%.0f C",      DATA_DOUBLE, (float)temperature,
-            "pressure_alert", "Pressure Alert", DATA_COND, flags & 0x4, DATA_STRING, "pressure alert",
-            "battery",        "Battery Status", DATA_COND, (flags & 0x3) == 0, DATA_STRING, "low",
-            "battery",        "Battery Status", DATA_COND, flags & 0x3, DATA_STRING, "ok",
-            "flag",           "Flag?",          DATA_FORMAT, "%x",          DATA_INT,    flags,
+            "pressure_alert", "Pressure Alert", DATA_INT, pressure_alert,
+            "battery_ok",     "Battery Ok",     DATA_INT, battery_ok,
+            "flags",          "Flag?",          DATA_FORMAT, "%x",          DATA_INT,    flags,
             "mic",            "Integrity",      DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
