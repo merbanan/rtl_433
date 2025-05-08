@@ -42,7 +42,7 @@ Data Layout:
 
 - ID: 32 bit Sensor Identity (B0, B1, B2, and B3)
 - DATA1: Status Flags (B4)
-- DATA2: Counter, unkown, and MSB for Depth (B5)
+- DATA2: Counter, unknown, and MSB for Depth (B5)
 - DATA3: Depth in cm (B6)
 - CRC: CRC-8, poly 0x31 init 0x00, bit reflected (B7)
 
