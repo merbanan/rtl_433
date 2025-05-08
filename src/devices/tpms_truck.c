@@ -66,10 +66,10 @@ static int tpms_truck_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned
         return 0; // DECODE_FAIL_MIC;
     }
 
-    unsigned id        = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
+    unsigned id        = (unsigned)(b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
     int wheel          = b[4];
-    int flags          = b[5] >> 4;
-    int pressure       = (b[5] & 0x0f) << 8 | b[6];
+    int flags          = (b[5] >> 4);
+    int pressure       = ((b[5] & 0x0f) << 8) | b[6];
     int temperature    = b[7];
     int pressure_alert = (flags & 0x4) == 0x4;
     int battery_ok     = (flags & 0x3) == 0x3; // 0x3 = battery ok, 0x0 = battery low, else unknown.
