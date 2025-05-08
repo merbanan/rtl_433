@@ -18,7 +18,7 @@ The preamble is 232 bit 0x55..5556.
 The data packet is Manchester coded.
 
 Specification:
-- Monitoring temperature range: -40 C to 130 C
+- Monitoring temperature range: -127 C to 127 C
 - Monitoring air pressure range: 0.1 bar to 12.0 bar
 - 433 MHz FSK
 
@@ -29,11 +29,11 @@ Data layout (nibbles):
 - U: 4 bit state, decoding unknown, not included in checksum, could be sync
 - I: 32 bit ID
 - W: 8 bit wheel position
-- F: 4 bit unknown flags (seen: 0x3)
+- F: 4 bit status flags: 0x8 = unknown. 0x4 = pressure alert. 0x2|0x1 = battery status (where 00 = low battery).
 - P: 12 bit Pressure (kPa)
-- T: 8 bit Temperature (deg. C, possibly signed?)
+- T: 8 bit Temperature (deg. C, signed)
 - C: 8 bit Checksum (XOR on bytes 0 to 7)
-- ?: 4 bit unknown (seems static)
+- ?: 4 bit unknown (seems static, probably a decoding artifact)
 
 Example data:
 
@@ -66,27 +66,29 @@ static int tpms_truck_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned
         return 0; // DECODE_FAIL_MIC;
     }
 
-    int state       = packet_bits.bb[0][0] >> 4; // fixed 0xa? could be sync
-    unsigned id     = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
-    int wheel       = b[4];
-    int flags       = b[5] >> 4;
-    int pressure    = (b[5] & 0x0f) << 8 | b[6];
-    int temperature = b[7];
+    unsigned id        = (unsigned)(b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
+    int wheel          = b[4];
+    int flags          = (b[5] >> 4);
+    int pressure       = ((b[5] & 0x0f) << 8) | b[6];
+    int temperature    = b[7];
+    int pressure_alert = (flags & 0x4) == 0x4;
+    int battery_ok     = (flags & 0x3) == 0x3; // 0x3 = battery ok, 0x0 = battery low, else unknown.
 
     char id_str[4 * 2 + 1];
     snprintf(id_str, sizeof(id_str), "%08x", id);
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Truck",
-            "type",             "",             DATA_STRING, "TPMS",
-            "id",               "",             DATA_STRING, id_str,
-            "wheel",            "",             DATA_INT,    wheel,
-            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa",    DATA_DOUBLE, (float)pressure,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C",      DATA_DOUBLE, (float)temperature,
-            "state",            "State?",       DATA_FORMAT, "%x",          DATA_INT,    state,
-            "flags",            "Flags?",       DATA_FORMAT, "%x",          DATA_INT,    flags,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
+            "model",          "",               DATA_STRING, "Truck",
+            "type",           "",               DATA_STRING, "TPMS",
+            "id",             "",               DATA_STRING, id_str,
+            "wheel",          "",               DATA_INT,    wheel,
+            "pressure_kPa",   "Pressure",       DATA_FORMAT, "%.0f kPa",     DATA_DOUBLE, (float)pressure,
+            "temperature_C",  "Temperature",    DATA_FORMAT, "%.0f C",       DATA_DOUBLE, (float)temperature,
+            "pressure_alert", "Pressure Alert", DATA_COND,   pressure_alert, DATA_INT,    pressure_alert,
+            "battery_ok",     "Battery Ok",     DATA_INT,    battery_ok,
+            "flags",          "Flag?",          DATA_FORMAT, "%x",           DATA_INT,    flags,
+            "mic",            "Integrity",      DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
