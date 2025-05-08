@@ -91,7 +91,7 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         //Battery voltage is stored as 100*(3.9v-<volt>).
         uint8_t b1     = b[7];
-        int battery_mv = (int)3900 - ((double)b1 * 10.0f);
+        int battery_mv = 3900 - b1 * 10;
 
         int sensor_id      = (id1 << 8) | id2;
         float pressure_kpa = p1 * 3.125f;                         // as guessed in #3200
