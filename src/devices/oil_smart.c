@@ -28,7 +28,7 @@ End of frame is the last half-bit repeated additional 2 times, then 4 times mark
 The sensor sends a single packet once every half hour to 33 mins or twice a second
 for 5 minutes when in pairing/test mode, 13 mins when filling up or alarming.
 
-Depth reading is in cm, lowest reading appears to be 4cm, highest is supposed to be 3m 
+Depth reading is in cm, lowest reading appears to be 4cm, highest is supposed to be 3m
 but readings of 310 have been observed; invalid depth is 0cm.
 
 Data Format:
@@ -65,7 +65,7 @@ DATA2:
 
 DATA3:
  - Depth: Depth in cm (nominally 4cm - 300cm) depth reading of 0cm is error - no reading
- 
+
 Alarm appears to be TxStatus in 'rapid' mode and depth change of greater than 1.5 cm - this appears to be a
 function of the receiver and Alarm does not appear to be coded by transmitter.
 
@@ -104,12 +104,6 @@ static int oil_smart_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     // by holding a magnet to the sensor for long enough
     // 32 bit sensor ID is stable
     uint32_t unit_id = ((uint32_t)b[0] << 24) | (b[1] << 16) | (b[2] << 8) | (b[3]);
-    char unit_id_str[80];
-    char unit_2[80];
-    sprintf(unit_id_str, "%04X", (unit_id & 0xFFFF0000));
-    strcat(unit_id_str, " ");
-    sprintf(unit_2, "%04X", (unit_id & 0x0000FFFF));
-    strcat(unit_id_str, unit_2);
 
     // TxStatus - 0 normal 30/33 mins repeat tx, 1 rapid 0.5/1 second repeat
     // TxStatus - B4 bit 7 (0x40)
@@ -153,7 +147,7 @@ static int oil_smart_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     /* clang-format off */
     data_t *data = data_make(
             "model",            "",                 DATA_STRING, "Oil-Ultrasonic-GDW",
-            "id",               "",                 DATA_STRING, unit_id_str,
+            "id",               "",                 DATA_FORMAT, "%08x", DATA_INT, unit_id,
             "depth_cm",         "Depth",            DATA_INT,    depth,
             "txstatus",         "TxStatus",         DATA_STRING, txstatus,
             "temp_ok",          "temp_ok",          DATA_INT,    temp_ok,
