@@ -3,14 +3,13 @@
 
     Copyright (C) 2022 Christian W. Zuckschwerdt <zany@triq.net>
     Device analysis by StarMonkey1
+    Improved device mapping by havochome
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 
-    Updated by havochome as did not work for my device - remapped data bits
-    following analysis.
 */
 
 #include "decoder.h"
@@ -26,36 +25,34 @@ Should apply to similar Watchman, Beckett, and Apollo devices too.
 There is a preamble plus de-sync of 555558, then MC coded an inner preamble of 5558 (raw 9999996a).
 End of frame is the last half-bit repeated additional 2 times, then 4 times mark.
 
-The sensor sends a single packet once every half hour (33mins for me) or twice a second
+The sensor sends a single packet once every half hour to 33 mins or twice a second
 for 5 minutes when in pairing/test mode, 13 mins when filling up or alarming.
 
-Depth reading is in cm, lowest reading is appears to be 4cm, highest is supost to be 3m 
-but readings of 310 have been taken, invalid is 0cm.
+Depth reading is in cm, lowest reading appears to be 4cm, highest is supposed to be 3m 
+but readings of 310 have been observed; invalid depth is 0cm.
 
 Data Format:
 
-    incorrect - PRE?16h ID?16h FLAGS?16h CM:8d CRC:8h - incorrect
-    ID:32h FIXED0:b TXSTATUS:b TEMP_OK:2b FIXED0:b BAT:b Sensor?2b COUNTER:4b mode_b:3b DEPTH_CM:9d CRC:8h
+    ID:32h FIXED:b TXSTATUS:b TEMP_OK:2b FIXED:b BAT:b SENSOR?2b COUNTER:4b MODE_B:3b DEPTH_CM:9d CRC:8h
 
 Data Layout:
 
-    incorrect - PP PP PP PP FF CC DD XX - incorrect
     ID ID ID ID DATA DATA DATA CRC
     B0 B1 B2 B3  B4   B5   B6  B7
 
-- ID: B0 & B1, B2 & B3 32 bit Sensor ID - B0 is not pre-amble.
+- ID: B0 & B1, B2 & B3 32 bit Sensor ID
 - Fixed: B4 bit 8 (0x80) fixed 0
-- TxStatus: B4 bits 7 (0x40), 0 = noral transmit (every 30 to 33 mins), 1 = every 0.5 to 1 second during binding/alarm/refueling
+- TxStatus: B4 bit 7 (0x40), 0 = noral transmit (every 30 to 33 mins), 1 = every 0.5 to 1 second during binding/alarm/refueling
 - Temp1: B4 bit 6 (0x20), Too cold to operate when = B4 bit 5 (0x10)
 - Temp2: B4 bit 5 (0x10), Too cold to operate when = B4 bit 6 (0x20)
 - Fixed: B4 bit 4 (0x08) fixed 0 - or could be like temp and working with B4 bit 3 (0x04)
 - Battery: B4 bits 3 (0x04) could be battery ok TODO this could be the same as bits 6/5 above working with B4 bit 4 (0x08)
 - Sensor?: B4 bit 2 (0x02) works opposite to bit 1 (0x01) - like temp, so sensor?
-- Sensor?: B4 bits 1 (0x01) what happens when B4 bit 1 (0x01) = bit 2 (0x02)?
+- Sensor?: B4 bit 1 (0x01) what happens when B4 bit 1 (0x01) = bit 2 (0x02)?
 - Fixed: B5 bit 8 (0x80) fixed 0
-- Counter: B5 bits 7 (0x40) to 5 (0x10) count up and down over 24hrs - probably used for day marker in usage stats
+- Counter: B5 bits 7 to 5 (0x40 - 0x10) counts up and down over 24hrs - probably used for day marker in usage stats
     Counter also appears to have a weekly marker and possibly a 4 weekly marker - again for stats?
-- Mode B:  B5 bits 4 (0x08) - 2 (0x02) unknown
+- Mode B:  B5 bits 4 - 2 (0x08 - 0x02) unknown
 - Depth: B5 bit 1 (0x01) & B6 Depth in cm (nominally 4cm - 300cm) depth reading of 0cm is error - no reading
 - CRC:   B7 CRC-8, poly 0x31 init 0x00, bit reflected
 
@@ -88,20 +85,14 @@ static int oil_smart_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
 
     uint8_t *b = databits.bb[0];
 
-/*   this stop my sensor from being decoded - flex sensor setting worked well though
-    if (b[0] != 0x55 || b[1] != 0x58) {
-        decoder_log(decoder, 2, __func__, "Couldn't find preamble");
-        return 0; // DECODE_FAIL_SANITY; // TODO: fix calling code to handle negative return values
-    }
-*/
     if (crc8le(b, 8, 0x31, 0x00)) {
         decoder_log(decoder, 2, __func__, "CRC8 fail");
         return 0; // DECODE_FAIL_MIC; // TODO: fix calling code to handle negative return values
     }
 
-    // Unit ID does NOT changes when you rebind
-    // by holding a magnet to the sensor for long enough?
-    // 32 bit sensor ID
+    // Unit ID does NOT changes when you 
+    // by holding a magnet to the sensor for long enough
+    // 32 bit sensor ID is stable
 
     // coding could be better
     uint16_t unit_id_1 = (b[0] << 8) + (b[1] << 0);
