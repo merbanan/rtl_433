@@ -37,10 +37,16 @@ Data Format:
 
 Data Layout:
 
-    ID ID ID ID DATA DATA DATA CRC
-    B0 B1 B2 B3  B4   B5   B6  B7
+    ID ID ID ID DATA1 DATA2 DATA3 CRC
+    B0 B1 B2 B3   B4    B5    B6  B7
 
-- ID: B0 & B1, B2 & B3 32 bit Sensor ID
+- ID: 32 bit Sensor Identity (B0, B1, B2, and B3)
+- DATA1: Status Flags (B4)
+- DATA2: Counter, unkown, and MSB for Depth (B5)
+- DATA3: Depth in cm (B6)
+- CRC: CRC-8, poly 0x31 init 0x00, bit reflected (B7)
+
+DATA 1:
 - Fixed: B4 bit 8 (0x80) fixed 0
 - TxStatus: B4 bit 7 (0x40), 0 = noral transmit (every 30 to 33 mins), 1 = every 0.5 to 1 second during binding/alarm/refueling
 - Temp1: B4 bit 6 (0x20), Too cold to operate when = B4 bit 5 (0x10)
@@ -49,15 +55,19 @@ Data Layout:
 - Battery: B4 bits 3 (0x04) could be battery ok TODO this could be the same as bits 6/5 above working with B4 bit 4 (0x08)
 - Sensor?: B4 bit 2 (0x02) works opposite to bit 1 (0x01) - like temp, so sensor?
 - Sensor?: B4 bit 1 (0x01) what happens when B4 bit 1 (0x01) = bit 2 (0x02)?
+
+DATA2:
 - Fixed: B5 bit 8 (0x80) fixed 0
 - Counter: B5 bits 7 to 5 (0x40 - 0x10) counts up and down over 24hrs - probably used for day marker in usage stats
     Counter also appears to have a weekly marker and possibly a 4 weekly marker - again for stats?
 - Mode B:  B5 bits 4 - 2 (0x08 - 0x02) unknown
-- Depth: B5 bit 1 (0x01) & B6 Depth in cm (nominally 4cm - 300cm) depth reading of 0cm is error - no reading
-- CRC:   B7 CRC-8, poly 0x31 init 0x00, bit reflected
+- Depth: B5 bit 1 (0x01) MSB for depth
 
+DATA3:
+ - Depth: Depth in cm (nominally 4cm - 300cm) depth reading of 0cm is error - no reading
+ 
 Alarm appears to be TxStatus in 'rapid' mode and depth change of greater than 1.5 cm - this appears to be a
-function of the receiver and Alarm does not appear to be coded.
+function of the receiver and Alarm does not appear to be coded by transmitter.
 
 example packets are:
 
