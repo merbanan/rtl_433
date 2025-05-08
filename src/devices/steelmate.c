@@ -68,33 +68,30 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         //Valid preamble? (Note, the data is still wrong order at this point. Correct pre-amble: 0x00 0x00 0x01)
         unsigned bitpos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, 24);
-        if (bitpos >= row_len - 64)
+        if (bitpos > row_len - 72)
             continue; // DECODE_ABORT_EARLY
-        b = &b[bitpos / 8];
+        bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, 72);
 
-        //Preamble
-        uint8_t preamble = ~reverse8(b[2]);
-
-        //Sensor ID
-        uint8_t id1 = ~reverse8(b[3]);
-        uint8_t id2 = ~reverse8(b[4]);
-
-        //Pressure is stored as 32 * the Bar
-        uint8_t p1 = ~reverse8(b[5]);
-
-        //Temperature is sent as degrees Celcius + 50.
-        uint8_t v1          = ~reverse8(b[6]);
-        uint8_t tempCelcius = v1 - 50;
-
-        //Battery voltage is stored as 100*(3.9v-<volt>).
-        uint8_t b1     = ~reverse8(b[7]);
-        int battery_mV = (int)3900 - ((double)b1 * 10.0f);
+        bitbuffer_invert(bitbuffer);
+        reflect_bytes(b, 9);
 
         //Checksum is a sum of all the other values
-        uint8_t payload_checksum    = ~reverse8(b[8]);
-        uint8_t calculated_checksum = preamble + id1 + id2 + p1 + v1 + b1;
-        if (payload_checksum != calculated_checksum)
+        if ((add_bytes(&b[2], 6) & 0xFF) != b[8])
             continue; // DECODE_FAIL_MIC
+
+        //Sensor ID
+        uint8_t id1 = b[3];
+        uint8_t id2 = b[4];
+
+        //Pressure is stored as 32 * the Bar
+        uint8_t p1 = b[5];
+
+        //Temperature is sent as degrees Celcius + 50.
+        int tempCelcius = b[6] - 50;
+
+        //Battery voltage is stored as 100*(3.9v-<volt>).
+        uint8_t b1     = b[7];
+        int battery_mV = (int)3900 - ((double)b1 * 10.0f);
 
         int sensor_id      = (id1 << 8) | id2;
         float pressure_kpa = p1 * 3.125f;                         // as guessed in #3200
