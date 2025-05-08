@@ -33,7 +33,7 @@ but readings of 310 have been observed; invalid depth is 0cm.
 
 Data Format:
 
-    ID:32h FIXED:b TXSTATUS:b TEMP_OK:2b FIXED:b BAT:b SENSOR?2b COUNTER:4b MODE_B:3b DEPTH_CM:9d CRC:8h
+    ID:32h FIXED:b TXSTATUS:b TEMP_OK:2b FIXED:b BAT:b SENSOR?2b COUNTER:4b unknown:3b DEPTH_CM:9d CRC:8h
 
 Data Layout:
 
@@ -135,8 +135,8 @@ static int oil_smart_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     uint8_t counter = (b[5] & 0xf0) >> 4;
 
     // Unknown - just capturing
-    // mode_b - B5 bits 4 - 2 (0x04 - 0x02). Bit 2 could be fixed 0
-    uint8_t mode_b = (b[5] & 0x0d) >> 1;
+    // unknown - B5 bits 4 - 2 (0x04 - 0x02). Bit 2 could be fixed 0
+    uint8_t unknown = (b[5] & 0x0d) >> 1;
 
     // TODO: the value for a bad reading has not been found?
     // Bad reading is zero depth
@@ -146,7 +146,7 @@ static int oil_smart_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "",                 DATA_STRING, "Oil-Ultrasonic-GDW",
+            "model",            "",                 DATA_STRING, "Oil-Ultrasonic",
             "id",               "",                 DATA_FORMAT, "%08x", DATA_INT, unit_id,
             "depth_cm",         "Depth",            DATA_INT,    depth,
             "txstatus",         "TxStatus",         DATA_STRING, txstatus,
@@ -154,7 +154,7 @@ static int oil_smart_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
             "battery_ok",       "Battery Level",    DATA_INT,    battery,
             "sensor",           "Sensor?",          DATA_INT,    sensor,
             "counter",          "Counter",          DATA_INT,    counter,
-            "mode_b",           "mode_b?",          DATA_INT,    mode_b,
+            "unknown",          "unknown",          DATA_INT,    unknown,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -194,7 +194,7 @@ static char const *const output_fields[] = {
         "battery_ok",
         "sensor",
         "counter",
-        "mode_b",
+        "unknown",
         "mic",
         NULL,
 };
