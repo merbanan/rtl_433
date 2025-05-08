@@ -95,22 +95,21 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         int sensor_id      = (id1 << 8) | id2;
         float pressure_kpa = p1 * 3.125f;                         // as guessed in #3200
-        float pressure_psi = pressure_kpa * (1.0f / 6.89475729f); // Keep the PSI value to not Break the decoder after new formula, #3200.
 
         char sensor_idhex[7];
         snprintf(sensor_idhex, sizeof(sensor_idhex), "0x%04x", sensor_id);
 
         /* clang-format off */
         data_t *data = data_make(
-                "type",             "",             DATA_STRING, "TPMS",
-                "model",            "",             DATA_STRING, "Steelmate",
-                "id",               "",             DATA_STRING, sensor_idhex,
-                "pressure_PSI",     "",             DATA_DOUBLE, pressure_psi,
-                "temperature_F",    "",             DATA_DOUBLE, ((float)temp_c*1.8f)+32.0f,
-                "battery_mV",       "",             DATA_COND,   b1 < 0xFE, DATA_INT,    battery_mv,
-                "alarm",            "",             DATA_COND,   b1 == 0xFF, DATA_STRING, "fast leak",
-                "alarm",            "",             DATA_COND,   b1 == 0xFE, DATA_STRING, "slow leak",
-                "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
+                "type",             "",             DATA_STRING,  "TPMS",
+                "model",            "",             DATA_STRING,  "Steelmate",
+                "id",               "",             DATA_STRING,  sensor_idhex,
+                "pressure_kPa",     "",             DATA_FORMAT,  "%.0f kPa", DATA_DOUBLE,  pressure_kpa,
+                "temperature_C",    "",             DATA_FORMAT,  "%d C",     DATA_INT,     temp_c,
+                "battery_mV",       "",             DATA_COND,    b1 < 0xFE,  DATA_INT,     battery_mv,
+                "alarm",            "",             DATA_COND,    b1 == 0xFF, DATA_STRING, "fast leak",
+                "alarm",            "",             DATA_COND,    b1 == 0xFE, DATA_STRING, "slow leak",
+                "mic",              "Integrity",    DATA_STRING,  "CHECKSUM",
                 NULL);
         /* clang-format on */
 
@@ -127,8 +126,8 @@ static char const *const output_fields[] = {
         "type",
         "model",
         "id",
-        "pressure_PSI",
-        "temperature_F",
+        "pressure_kPa",
+        "temperature_C",
         "battery_mV",
         "alarm",
         "mic",
