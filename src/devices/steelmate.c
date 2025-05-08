@@ -59,7 +59,6 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     //Loop through each row of data
     for (int row = 0; row < bitbuffer->num_rows; row++) {
         //Payload is inverted Manchester encoded, and reversed MSB/LSB order
-        uint8_t *b       = bitbuffer->bb[row];
         unsigned row_len = bitbuffer->bits_per_row[row];
 
         //Length must be 72, 73, 208 or 209 bits to be considered a valid packet
@@ -70,9 +69,10 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         unsigned bitpos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, 24);
         if (bitpos > row_len - 72)
             continue; // DECODE_ABORT_EARLY
+        bitbuffer_invert(bitbuffer);
+        uint8_t b[9];
         bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, 72);
 
-        bitbuffer_invert(bitbuffer);
         reflect_bytes(b, 9);
 
         //Checksum is a sum of all the other values
@@ -87,11 +87,11 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t p1 = b[5];
 
         //Temperature is sent as degrees Celcius + 50.
-        int tempCelcius = b[6] - 50;
+        int temp_c = b[6] - 50;
 
         //Battery voltage is stored as 100*(3.9v-<volt>).
         uint8_t b1     = b[7];
-        int battery_mV = (int)3900 - ((double)b1 * 10.0f);
+        int battery_mv = (int)3900 - ((double)b1 * 10.0f);
 
         int sensor_id      = (id1 << 8) | id2;
         float pressure_kpa = p1 * 3.125f;                         // as guessed in #3200
@@ -106,8 +106,8 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",            "",             DATA_STRING, "Steelmate",
                 "id",               "",             DATA_STRING, sensor_idhex,
                 "pressure_PSI",     "",             DATA_DOUBLE, pressure_psi,
-                "temperature_F",    "",             DATA_DOUBLE, ((float)tempCelcius*1.8f)+32.0f,
-                "battery_mV",       "",             DATA_COND,   b1 < 0xFE, DATA_INT,    battery_mV,
+                "temperature_F",    "",             DATA_DOUBLE, ((float)temp_c*1.8f)+32.0f,
+                "battery_mV",       "",             DATA_COND,   b1 < 0xFE, DATA_INT,    battery_mv,
                 "alarm",            "",             DATA_COND,   b1 == 0xFF, DATA_STRING, "fast leak",
                 "alarm",            "",             DATA_COND,   b1 == 0xFE, DATA_STRING, "slow leak",
                 "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
