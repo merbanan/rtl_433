@@ -87,6 +87,10 @@ static int thermopro_tb827b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     offset += sizeof(preamble_pattern) * 8;
     bitbuffer_extract_bytes(bitbuffer, 0, offset, b, 22 * 8);
 
+    if ( b[3] !=0xFE && b[4] != 0x00 && b[7] !=0xFE && b[8] != 0x00 && b[11] !=0xFE && b[12] != 0x00 && b[15] !=0xFE && b[16] != 0x00) {
+        return DECODE_FAIL_SANITY;
+    }
+
     if (crc8(b, 22, 0x07, 0x00)) {
         return DECODE_FAIL_MIC;
     }
@@ -131,14 +135,14 @@ static int thermopro_tb827b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "mode",                 "Mode",          DATA_COND, mode == 0xF,                           DATA_STRING, "Meat",
             "mode",                 "Mode",          DATA_COND, mode == 0xC,                           DATA_STRING, "BBQ",
             "mode",                 "Mode",          DATA_COND, mode == 0x3,                           DATA_STRING, "Normal",
-            "temperature_1_C",      "Temperature 1", DATA_COND, p1_raw != 0xfe00 && display_u == 0x0 , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p1_temp, // if 0xfe00 then no probe
-            "temperature_2_C",      "Temperature 2", DATA_COND, p2_raw != 0xfe00 && display_u == 0x0 , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p2_temp, // if 0xfe00 then no probe
-            "temperature_3_C",      "Temperature 3", DATA_COND, p3_raw != 0xfe00 && display_u == 0x0 , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p3_temp, // if 0xfe00 then no probe
-            "temperature_4_C",      "Temperature 4", DATA_COND, p4_raw != 0xfe00 && display_u == 0x0 , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p4_temp, // if 0xfe00 then no probe
-            "temperature_1_F",      "Temperature 1", DATA_COND, p1_raw != 0xfe00 && display_u == 0x1 , DATA_FORMAT, "%.1f F", DATA_DOUBLE, p1_temp, // if 0xfe00 then no probe
-            "temperature_2_F",      "Temperature 2", DATA_COND, p2_raw != 0xfe00 && display_u == 0x1 , DATA_FORMAT, "%.1f F", DATA_DOUBLE, p2_temp, // if 0xfe00 then no probe
-            "temperature_3_F",      "Temperature 3", DATA_COND, p3_raw != 0xfe00 && display_u == 0x1 , DATA_FORMAT, "%.1f F", DATA_DOUBLE, p3_temp, // if 0xfe00 then no probe
-            "temperature_4_F",      "Temperature 4", DATA_COND, p4_raw != 0xfe00 && display_u == 0x1 , DATA_FORMAT, "%.1f F", DATA_DOUBLE, p4_temp, // if 0xfe00 then no probe
+            "temperature_1_C",      "Temperature 1", DATA_COND, p1_raw != 0xfe00 && display_u == 0x0 && p1_temp < 573, DATA_FORMAT, "%.1f C", DATA_DOUBLE, p1_temp, // if 0xfe00 then no probe
+            "temperature_2_C",      "Temperature 2", DATA_COND, p2_raw != 0xfe00 && display_u == 0x0 && p2_temp < 573 , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p2_temp, // if 0xfe00 then no probe
+            "temperature_3_C",      "Temperature 3", DATA_COND, p3_raw != 0xfe00 && display_u == 0x0 && p3_temp < 573 , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p3_temp, // if 0xfe00 then no probe
+            "temperature_4_C",      "Temperature 4", DATA_COND, p4_raw != 0xfe00 && display_u == 0x0 && p4_temp < 573 , DATA_FORMAT, "%.1f C", DATA_DOUBLE, p4_temp, // if 0xfe00 then no probe
+            "temperature_1_F",      "Temperature 1", DATA_COND, p1_raw != 0xfe00 && display_u == 0x1 && p1_temp < 1063, DATA_FORMAT, "%.1f F", DATA_DOUBLE, p1_temp, // if 0xfe00 then no probe
+            "temperature_2_F",      "Temperature 2", DATA_COND, p2_raw != 0xfe00 && display_u == 0x1 && p2_temp < 1063 , DATA_FORMAT, "%.1f F", DATA_DOUBLE, p2_temp, // if 0xfe00 then no probe
+            "temperature_3_F",      "Temperature 3", DATA_COND, p3_raw != 0xfe00 && display_u == 0x1 && p3_temp < 1063 , DATA_FORMAT, "%.1f F", DATA_DOUBLE, p3_temp, // if 0xfe00 then no probe
+            "temperature_4_F",      "Temperature 4", DATA_COND, p4_raw != 0xfe00 && display_u == 0x1 && p4_temp < 1063 , DATA_FORMAT, "%.1f F", DATA_DOUBLE, p4_temp, // if 0xfe00 then no probe
             "alarm_low_1",          "Alarm Low 1",   DATA_COND, low_p1 && mode == 0xC, DATA_INT, 1,  // low temp reached in range mode BBQ
             "alarm_low_2",          "Alarm Low 2",   DATA_COND, low_p2 && mode == 0xC, DATA_INT, 1,  // low temp reached in range mode BBQ
             "alarm_low_3",          "Alarm Low 3",   DATA_COND, low_p3 && mode == 0xC, DATA_INT, 1,  // low temp reached in range mode BBQ
