@@ -27,12 +27,14 @@ Data layout:
 
     Byte Position     0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28
     Sample           d8 09 03 fe 00 fe 00 fe 00 fe 00 fe 00 fe 00 fe 00 31 1b 00 00 93 00 aa aa aa 00 00 00
-    Data             II 11 11 FF FF 22 22 FF FF 33 33 FF FF 44 44 FF FF MX LT 00 0H CC 00 AA AA AA 00 00 00
-                                                                        || ||     |
-                                                             Mode <-----+| ||     +-----> Alarm High bit 0  0  0  0
-                                                          Unknown <------+ ||                           H4 H3 H2 H1
-                                         bit 0  0  0  0 Alarm Low <--------++-----------> Unit  0  0  0  1
-                                            L4 L3 L2 L1                                        ?1 ?2 ?3 TU
+    Data             II 11 11 FF FF 22 22 FF FF 33 33 FF FF 44 44 FF FF MX LT 0A 0H CC 00 aa aa aa 00 00 00
+                                                                        || ||  |  |
+                                        bit 0  0  1  1  Mode BBQ/Meat <-+| ||  |  +-> Alarm High bit 0  0  0  0
+                                           M4 M3 M2 M1                   / ||  \                    H4 H3 H2 H1
+                                        bit 0  0  0  1  Alarm <---------+  ||   +---> Alarm triggered
+                                           A4 A3 A2 A1                    /  \
+                                        bit 0  0  0  1 Alarm Low <-------+    +-----> Unit  1  0  1  1
+                                           L4 L3 L2 L1                                     ?1 ?2 ?3 TU
 
 - II :{8}  Model or ID
 - 11 :{16} Temp Probe 1, C or F, scale 10, 0xFE00 = no probe
@@ -43,15 +45,16 @@ Data layout:
 - FF :{16} Fixed value, 0xFE00
 - 44 :{16} Temp Probe 4, C or F, scale 10, 0xFE00 = no probe
 - FF :{16} Fixed value, 0xFE00
-- M  :{4}  Mode, Normal (no alarm set) = 3, BBQ = 0xC, Meat = 0xF
-- X  :{4}  Unknown flags, from the first sample = 1, but from last codes always = 0
+- M  :{4}  Mode, 0 = BBQ/Low/High range, 1 = Meat target Temp
+- X  :{4}  Alarm flags by probe
 - L  :{4}  Low Temp Alarm flags: L1 = Probe 1 Low Temp reached, L2 = Probe 2 Low Temp reached ...
 - T  :{4}  First 3 bits unknown, last bit TU, Temperature unit flag, 1 = Fahrenheit, 0 = Celsius
-- 0  :{12} Fixed 0x000
+- 0  :     Fixed 0
+- A  :{2}  Alarm ON, 0x2 or 0x3
 - H  :{4}  High Temp Alarm flags: H1 = Probe 1 High Temp reached, H2 = Probe 2 High Temp reached ...
 - CC :{8}  CRC-8/SMBUS, poly 0x07, init 0x00, final XOR 0x00 from 21 previous bytes.
 - 00 :{8}  Fixed 0x00
-- AA :{24} Fixed 0xAA values
+- aa :{24} Fixed 0xaa values
 - 00 :{n}  Trailed zeros
 
 */
