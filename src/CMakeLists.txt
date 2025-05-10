@@ -230,7 +230,6 @@ add_library(r_433 STATIC
     devices/somfy_rts.c
     devices/springfield.c
     devices/srsmith_pool_srs_2c_tx.c
-    devices/steelmate.c
     devices/telldus_ft0385r.c
     devices/tfa_14_1504_v2.c
     devices/tfa_30_3196.c
@@ -264,6 +263,7 @@ add_library(r_433 STATIC
     devices/tpms_porsche.c
     devices/tpms_renault.c
     devices/tpms_renault_0435r.c
+    devices/tpms_steelmate.c
     devices/tpms_toyota.c
     devices/tpms_truck.c
     devices/tpms_tyreguard400.c
