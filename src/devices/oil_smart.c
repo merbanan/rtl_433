@@ -138,7 +138,6 @@ static int oil_smart_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     // unknown - B5 bits 4 - 2 (0x04 - 0x02). Bit 2 could be fixed 0
     uint8_t unknown = (b[5] & 0x0d) >> 1;
 
-    // TODO: the value for a bad reading has not been found?
     // Bad reading is zero depth
 
     // depth in cm msb B5 bit 1 (0x01) and B6
