@@ -1,5 +1,5 @@
 /** @file
-    Omni multi-sensor protocol, v1.0
+    Omni multi-sensor protocol, v1.1
 
     Copyright (C) 2025 H. David Todd <hdtodd@gmail.com>
 
@@ -20,7 +20,7 @@ The protocol is for the extensible wireless sensor 'omni'
 
 The 'sensor' is actually a programmed microcontroller (e.g.,
 Raspberry Pi Pico 2 or similar) with multiple possible data-sensor
-attachments.  A packet 'format' field indicates the format of the data
+attachments.  A message 'format' field indicates the format of the data
 packet being sent.
 
 NOTE: the rtl_433 decoder, omni.c, uses the "fmt" or "Format" field 
