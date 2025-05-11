@@ -14,7 +14,7 @@
 /**
 ThermoPro TP827B BBQ Meat Thermometer 4 probes.
 
-- Current Temperature of 4 probes, 3 modes, Normal (no temp target), Meat (temp max target) and BBQ (temp range target LO and HI) with alarms
+- Current Temperature of 4 probes, Meat (temp max target) and BBQ (temp range target LO and HI) with alarms
 - Max Target temperatures (Meat Mode) or Low / High range Temperatures (BBQ Mode) are set on the transmitter but values are not transmited, only alarm flags if reached.
 
 - Issue #3269
@@ -139,16 +139,14 @@ static int thermopro_tb827b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int high_p3    = (flags_high & 0x4) >> 2;
     int high_p4    = (flags_high & 0x8) >> 3;
 
-    //int flags1     = b[17] & 0x0F; // always 0
-    //int flags2     = b[18] & 0x0F; // always 1 if Fahrenheit, 0 if Celsius
+    int flags1     = b[18] & 0x0F; // 3 first bits not guessed, last bit always 1 if Fahrenheit, 0 if Celsius
     int alarm_on   = b[19];
 
     /* clang-format off */
     data_t *data = data_make(
             "model",                "",              DATA_STRING,        "ThermoPro-TB827B",
             "id",                   "",              DATA_FORMAT,        "%02x",                          DATA_INT,    id,
-            "temp_unit",            "Display Unit",  DATA_COND,   temp_unit == 0x1,                       DATA_STRING, "Fahrenheit",
-            "temp_unit",            "Display Unit",  DATA_COND,   temp_unit == 0x0,                       DATA_STRING, "Celsius",
+            "temp_unit",            "Display Unit",  DATA_STRING, temp_unit ? "Fahrenheit" : "Celsius",
             "mode_p1",              "Mode 1",        DATA_STRING, mode_p1 ? "Meat" : "BBQ",
             "mode_p2",              "Mode 2",        DATA_STRING, mode_p2 ? "Meat" : "BBQ",
             "mode_p3",              "Mode 3",        DATA_STRING, mode_p3 ? "Meat" : "BBQ",
@@ -161,35 +159,20 @@ static int thermopro_tb827b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "temperature_2_F",      "Temperature 2", DATA_COND,   temp_unit == 0x1 && p2_temp != -51.2f , DATA_FORMAT, "%.1f F", DATA_DOUBLE, p2_temp, // if 0xfe00 then no probe
             "temperature_3_F",      "Temperature 3", DATA_COND,   temp_unit == 0x1 && p3_temp != -51.2f , DATA_FORMAT, "%.1f F", DATA_DOUBLE, p3_temp, // if 0xfe00 then no probe
             "temperature_4_F",      "Temperature 4", DATA_COND,   temp_unit == 0x1 && p4_temp != -51.2f , DATA_FORMAT, "%.1f F", DATA_DOUBLE, p4_temp, // if 0xfe00 then no probe
-            //"alarm_low_1",          "Alarm Low 1",   DATA_COND, !mode_p1 && alarm_p1 && low_p1 && !high_p1 && alarm_on, DATA_INT, 1,  // less than low temp in range mode BBQ
-            //"alarm_high_1",         "Alarm High 1",  DATA_COND, !mode_p1 && alarm_p1 && low_p1 &&  high_p1 && alarm_on, DATA_INT, 1,  // less than low temp in range mode BBQ
-            //"alarm_meat_2",         "Alarm Meat 2",  DATA_COND,  mode_p2 && alarm_p2 && low_p2 && alarm_on, DATA_INT, 1,  // less than low temp in range mode BBQ
-            //"alarm_low_2",          "Alarm Low 2",   DATA_COND, !mode_p2 && alarm_p2 && low_p2 && !high_p2 && alarm_on, DATA_INT, 1,  // less than low temp in range mode BBQ
-            //"alarm_high_2",         "Alarm High 2",  DATA_COND, !mode_p2 && alarm_p2 && low_p2 &&  high_p2 && alarm_on, DATA_INT, 1,  // less than low temp in range mode BBQ
-            //"alarm_meat_2",         "Alarm Meat 2",  DATA_COND,  mode_p2 && alarm_p2 && low_p2 && alarm_on, DATA_INT, 1,  // less than low temp in range mode BBQ
-            //"alarm_low_3",          "Alarm Low 3",   DATA_COND, !mode_p3 && alarm_p3 && low_p3 && !high_p3 && alarm_on, DATA_INT, 1,  // less than low temp in range mode BBQ
-            //"alarm_high_3",         "Alarm High 3",  DATA_COND, !mode_p3 && alarm_p3 && low_p3 &&  high_p3 && alarm_on, DATA_INT, 1,  // less than low temp in range mode BBQ
-            //"alarm_meat_3",         "Alarm Meat 3",  DATA_COND,  mode_p3 && alarm_p3 && low_p3 && alarm_on, DATA_INT, 1,  // less than low temp in range mode BBQ
-            //"alarm_low_4",          "Alarm Low 4",   DATA_COND, !mode_p4 && alarm_p4 && low_p4 && !high_p4 && alarm_on, DATA_INT, 1,  // less than low temp in range mode BBQ
-            //"alarm_high_4",         "Alarm High 4",  DATA_COND, !mode_p4 && alarm_p4 && low_p4 &&  high_p4 && alarm_on, DATA_INT, 1,  // less than low temp in range mode BBQ
-            //"alarm_meat_4",         "Alarm Meat 4",  DATA_COND,  mode_p4 && alarm_p4 && low_p4 && alarm_on, DATA_INT, 1,
-            "alarm_low_1",          "Alarm Low 1",   DATA_COND, !mode_p1 && alarm_p1 && low_p1 && !high_p1, DATA_INT, 1,
-            "alarm_high_1",         "Alarm High 1",  DATA_COND, !mode_p1 && alarm_p1 && low_p1 &&  high_p1, DATA_INT, 1,
-            "alarm_meat_1",         "Alarm Meat 1",  DATA_COND,  mode_p1 && alarm_p1 && low_p1,             DATA_INT, 1,
-            "alarm_low_2",          "Alarm Low 2",   DATA_COND, !mode_p2 && alarm_p2 && low_p2 && !high_p2, DATA_INT, 1,
-            "alarm_high_2",         "Alarm High 2",  DATA_COND, !mode_p2 && alarm_p2 && low_p2 &&  high_p2, DATA_INT, 1,
-            "alarm_meat_2",         "Alarm Meat 2",  DATA_COND,  mode_p2 && alarm_p2 && low_p2,             DATA_INT, 1,
-            "alarm_low_3",          "Alarm Low 3",   DATA_COND, !mode_p3 && alarm_p3 && low_p3 && !high_p3, DATA_INT, 1,
-            "alarm_high_3",         "Alarm High 3",  DATA_COND, !mode_p3 && alarm_p3 && low_p3 &&  high_p3, DATA_INT, 1,
-            "alarm_meat_3",         "Alarm Meat 3",  DATA_COND,  mode_p3 && alarm_p3 && low_p3,             DATA_INT, 1,
-            "alarm_low_4",          "Alarm Low 4",   DATA_COND, !mode_p4 && alarm_p4 && low_p4 && !high_p4, DATA_INT, 1,
-            "alarm_high_4",         "Alarm High 4",  DATA_COND, !mode_p4 && alarm_p4 && low_p4 &&  high_p4, DATA_INT, 1,
-            "alarm_meat_4",         "Alarm Meat 4",  DATA_COND,  mode_p4 && alarm_p4 && low_p4,             DATA_INT, 1,
-            "alarm_on",             "Alarm ON",      DATA_COND,  alarm_on,  DATA_INT, 1,
-            //"flags0",               "17",            DATA_FORMAT,  "%08b",  DATA_INT, b[17],
-            //"flags1",               "18",            DATA_FORMAT,  "%08b",  DATA_INT, b[18],
-            //"flags2",               "19",            DATA_FORMAT,  "%08b",  DATA_INT, alarm_on,
-            //"flags3",               "20",            DATA_FORMAT,  "%08b",  DATA_INT, b[20],
+            "alarm_low_1",          "Alarm Low 1",   DATA_COND, !mode_p1, DATA_INT, (alarm_p1 && low_p1 && !high_p1) ? 1 : 0,
+            "alarm_high_1",         "Alarm High 1",  DATA_COND, !mode_p1, DATA_INT, (alarm_p1 && low_p1 &&  high_p1) ? 1 : 0,
+            "alarm_meat_1",         "Alarm Meat 1",  DATA_COND,  mode_p1, DATA_INT, (alarm_p1 && low_p1)             ? 1 : 0,
+            "alarm_low_2",          "Alarm Low 2",   DATA_COND, !mode_p2, DATA_INT, (alarm_p2 && low_p2 && !high_p2) ? 1 : 0,
+            "alarm_high_2",         "Alarm High 2",  DATA_COND, !mode_p2, DATA_INT, (alarm_p2 && low_p2 &&  high_p2) ? 1 : 0,
+            "alarm_meat_2",         "Alarm Meat 2",  DATA_COND,  mode_p2, DATA_INT, (alarm_p2 && low_p2) ? 1 : 0,
+            "alarm_low_3",          "Alarm Low 3",   DATA_COND, !mode_p3, DATA_INT, (alarm_p3 && low_p3 && !high_p3) ? 1 : 0,
+            "alarm_high_3",         "Alarm High 3",  DATA_COND, !mode_p3, DATA_INT, (alarm_p3 && low_p3 &&  high_p3) ? 1 : 0,
+            "alarm_meat_3",         "Alarm Meat 3",  DATA_COND,  mode_p3, DATA_INT, (alarm_p3 && low_p3) ? 1 : 0,
+            "alarm_low_4",          "Alarm Low 4",   DATA_COND, !mode_p4, DATA_INT, (alarm_p4 && low_p4 && !high_p4) ? 1 : 0,
+            "alarm_high_4",         "Alarm High 4",  DATA_COND, !mode_p4, DATA_INT, (alarm_p4 && low_p4 &&  high_p4) ? 1 : 0,
+            "alarm_meat_4",         "Alarm Meat 4",  DATA_COND,  mode_p4, DATA_INT, (alarm_p4 && low_p4) ? 1 : 0,
+            "alarm_on",             "Alarm ON",      DATA_INT,  (alarm_on > 0) ? 1 : 0,
+            "flags1",               "Flags",         DATA_FORMAT,  "%04b",  DATA_INT, flags1,
             "mic",                  "Integrity",     DATA_STRING,  "CRC",
             NULL);
     /* clang-format on */
