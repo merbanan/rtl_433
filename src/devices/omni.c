@@ -1,5 +1,5 @@
 /** @file
-    Omni multi-sensor protocol, v1.1
+    Omni multi-sensor protocol, v1.2
 
     Copyright (C) 2025 H. David Todd <hdtodd@gmail.com>
 
@@ -242,7 +242,6 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 	    "temperature_2_C", "Outdoor Temperature",DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  otemp_c, 
 	    "humidity",        "Indoor Humidity",    DATA_FORMAT, "%.0f %%",     DATA_DOUBLE,  ihum,
 	    "Light %",         "Light",              DATA_FORMAT, "%.0f%%",      DATA_DOUBLE,  ohum,
-	    //	    "humidity_2",      "Outdoor Humidity",   DATA_FORMAT, "%.0f %%",     DATA_DOUBLE,  ohum,
 	    "pressure_hPa",    "BarometricPressure", DATA_FORMAT, "%.1f hPa",    DATA_DOUBLE,  press,
 	    "voltage_V",       "VCC voltage",        DATA_FORMAT, "%.2f V",      DATA_DOUBLE,  volts,
 	    "mic",             "Integrity",                                      DATA_STRING,  "CRC",
