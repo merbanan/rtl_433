@@ -148,7 +148,7 @@ static char const *const output_fields_01[] = {
 /* New format output_field_nn declaration goes here */
 
 /* clang-format off */
-r_device const omni = {
+r_device omni = {
         .name        = "Omni multisensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 200,  // short pulse is ~200 us
@@ -213,14 +213,14 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // Make the data descriptor
         /* clang-format off */
        data = data_make(
-	    "model",           "",                                               DATA_STRING, "Omni",
-	    "id",              "Id",                                             DATA_INT,     id,
-	    "channel",         "Format",                                         DATA_INT,     message_fmt,
-	    "temperature_C"  , "Core Temperature",   DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  itemp_c, 
-	    "voltage_V",       "VCC voltage",        DATA_FORMAT, "%.2f V",      DATA_DOUBLE,  volts,
+            "model",           "",                                               DATA_STRING, "Omni",
+            "id",              "Id",                                             DATA_INT,     id,
+            "channel",         "Format",                                         DATA_INT,     message_fmt,
+            "temperature_C"  , "Core Temperature",   DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  itemp_c,
+            "voltage_V",       "VCC voltage",        DATA_FORMAT, "%.2f V",      DATA_DOUBLE,  volts,
             "payload",         "Payload",                                        DATA_STRING,  hexstring,
-	    "mic",             "Integrity",                                      DATA_STRING,  "CRC",
-	    NULL);
+            "mic",             "Integrity",                                      DATA_STRING,  "CRC",
+            NULL);
         /* clang-format on */
         break;
 
@@ -231,26 +231,26 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         ihum        = (double)b[4];
         ohum        = (double)b[5];
         press       = (double)(((uint16_t)(b[6] << 8)) | b[7]) / 10.0;
-	volts       = ((double)(b[8])) / 100.0 + 3.00;
+        volts       = ((double)(b[8])) / 100.0 + 3.00;
         // Make the data descriptor
         /* clang-format off */
-	data = data_make(
-	    "model",           "",                                               DATA_STRING, "Omni",
-	    "id",              "Id",                                             DATA_INT,     id,
-	    "channel",         "Format",                                         DATA_INT,     message_fmt,
-	    "temperature_C"  , "Indoor Temperature", DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  itemp_c, 
-	    "temperature_2_C", "Outdoor Temperature",DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  otemp_c, 
-	    "humidity",        "Indoor Humidity",    DATA_FORMAT, "%.0f %%",     DATA_DOUBLE,  ihum,
-	    "Light %",         "Light",              DATA_FORMAT, "%.0f%%",      DATA_DOUBLE,  ohum,
-	    "pressure_hPa",    "BarometricPressure", DATA_FORMAT, "%.1f hPa",    DATA_DOUBLE,  press,
-	    "voltage_V",       "VCC voltage",        DATA_FORMAT, "%.2f V",      DATA_DOUBLE,  volts,
-	    "mic",             "Integrity",                                      DATA_STRING,  "CRC",
-	    NULL);
+        data = data_make(
+            "model",           "",                                               DATA_STRING, "Omni",
+            "id",              "Id",                                             DATA_INT,     id,
+            "channel",         "Format",                                         DATA_INT,     message_fmt,
+            "temperature_C"  , "Indoor Temperature", DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  itemp_c,
+            "temperature_2_C", "Outdoor Temperature",DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  otemp_c,
+            "humidity",        "Indoor Humidity",    DATA_FORMAT, "%.0f %%",     DATA_DOUBLE,  ihum,
+            "Light %",         "Light",              DATA_FORMAT, "%.0f%%",      DATA_DOUBLE,  ohum,
+            "pressure_hPa",    "BarometricPressure", DATA_FORMAT, "%.1f hPa",    DATA_DOUBLE,  press,
+            "voltage_V",       "VCC voltage",        DATA_FORMAT, "%.2f V",      DATA_DOUBLE,  volts,
+            "mic",             "Integrity",                                      DATA_STRING,  "CRC",
+            NULL);
         /* clang-format on */
         break;
 
-	/* New decoders follow here */
-	
+        /* New decoders follow here */
+
     };
 
     // And output the field values
