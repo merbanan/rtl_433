@@ -159,7 +159,7 @@ static void usage(int exit_code)
             "  [-H <seconds>] Hop interval for polling of multiple frequencies (default: %d seconds)\n"
             "  [-p <ppm_error>] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
             "  [-s <sample rate>] Set sample rate (default: %d Hz)\n"
-            "  [-D restart | pause | quit | manual] Input device run mode options.\n"
+            "  [-D quit | restart | pause | manual] Input device run mode options (default: quit).\n"
             "\t\t= Demodulator options =\n"
             "  [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)\n"
             "       Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
@@ -260,12 +260,12 @@ static void help_device_mode(void)
 {
     term_help_fprintf(stdout,
             "\t\t= Input device run mode =\n"
-            "  [-D restart | pause | quit | manual] Input device run mode options.\n"
+            "  [-D quit | restart | pause | manual] Input device run mode options (default: quit).\n"
             "\tSupported input device run modes:\n"
+            "\t  quit: Quit on input device errors (default)\n"
             "\t  restart: Restart the input device on errors\n"
             "\t  pause: Pause the input device on errors, waits for e.g. HTTP-API control\n"
-            "\t  quit: Quit on input device errors (default)\n"
-            "\t  manual: Don't start an input device, waits for e.g. HTTP-API control\n"
+            "\t  manual: Do not start an input device, waits for e.g. HTTP-API control\n"
             "\tWithout this option the default is to start the SDR and quit on errors.\n");
     exit(0);
 }
@@ -922,7 +922,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             help_device_mode();
 
         if (strcmp(arg, "quit") == 0) {
-            cfg->dev_mode = DEVICE_MODE_RESTART;
+            cfg->dev_mode = DEVICE_MODE_QUIT;
         }
         else if (strcmp(arg, "restart") == 0) {
             cfg->dev_mode = DEVICE_MODE_RESTART;
