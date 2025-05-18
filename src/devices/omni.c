@@ -23,12 +23,12 @@ Raspberry Pi Pico 2 or similar) with multiple possible data-sensor
 attachments.  A message 'format' field indicates the format of the data
 packet being sent.
 
-NOTE: the rtl_433 decoder, omni.c, uses the "fmt" or "Format" field 
-here, as transmitted by omni.c, to decode the incoming message.  
+NOTE: the rtl_433 decoder, omni.c, uses the "fmt" or "Format" field
+here, as transmitted by omni.c, to decode the incoming message.
 But, through omni.c, rtl_433 reports the packet format-field value
-as "channel" in its published reporting (JSON, for example), 
+as "channel" in its published reporting (JSON, for example),
 in keeping with the standard nomenclature and order of field-name
-precedence used within rtl_433 for data fields.  
+precedence used within rtl_433 for data fields.
 
 The omni protocol is OOK modulated PWM with fixed period of 600μs
 for data bits, preambled by four long startbit pulses of fixed period equal
@@ -59,7 +59,7 @@ total of 336 bits requiring ~212μs.
 The last packet in a burst is followed by a postamble low
 of at least 1250μs.
 
-These 4-packet bursts repeat every 30 seconds. 
+These 4-packet bursts repeat every 30 seconds.
 
 The message in each packet is 10 bytes / 20 nibbles:
 
@@ -124,8 +124,8 @@ static char const *const output_fields_00[] = {
         "model",
         "fmt",
         "id",
-	"temperature_C",
-	"voltage_V",
+        "temperature_C",
+        "voltage_V",
         "payload",
         "mic",
         NULL,
@@ -140,7 +140,7 @@ static char const *const output_fields_01[] = {
         "humidity",
         "light_level",
         "pressure_hPa",
-	"voltage_V",
+        "voltage_V",
         "mic",
         NULL,
 };
@@ -212,7 +212,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         volts       = ((double)(b[8])) / 100.0 + 3.00;
         // Make the data descriptor
         /* clang-format off */
-	data = data_make(
+       data = data_make(
 	    "model",           "",                                               DATA_STRING, "Omni",
 	    "id",              "Id",                                             DATA_INT,     id,
 	    "channel",         "Format",                                         DATA_INT,     message_fmt,
