@@ -1,5 +1,5 @@
 /** @file
-`   Omni Multisensor Protocol
+`   Omni Multisensor
     v1.2
 
     Copyright (C) 2025 H. David Todd <hdtodd@gmail.com>
@@ -12,7 +12,7 @@
 
 /* clang-format off */
 /**
-Omni Multisensor Protocol
+Omni Multisensor
 
 The protocol is for the extensible wireless sensor 'omni'
 -  Single transmission protocol
@@ -201,7 +201,7 @@ static char const *const output_fields[] = {
 
 /* clang-format off */
 r_device const omni = {
-        .name        = "Omni Multisensor Protocol",
+        .name        = "Omni Multisensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 200,  // short pulse is ~200 us
         .long_width  = 400,  // long pulse is ~400 us
