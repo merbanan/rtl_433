@@ -21,7 +21,7 @@ packet being sent.  The protocol, and this decoder, support up to
 16 different message formats
 */
 
-/* 
+/*
 The protocol is for the extensible wireless sensor 'omni'
 -  Single transmission protocol
 -  Flexible 64-bit data payload field structure
