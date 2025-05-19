@@ -14,15 +14,18 @@
 /**
 Omni Multisensor
 
+The 'sensor' is actually a programmed microcontroller (e.g.,
+Raspberry Pi Pico 2 or similar) with multiple possible data-sensor
+attachments.  A message 'format' field indicates the format of the data
+packet being sent.  The protocol, and this decoder, support up to
+16 different message formats
+*/
+
+/* 
 The protocol is for the extensible wireless sensor 'omni'
 -  Single transmission protocol
 -  Flexible 64-bit data payload field structure
 -  Extensible to a total of 16 possible multi-sensor data formats
-
-The 'sensor' is actually a programmed microcontroller (e.g.,
-Raspberry Pi Pico 2 or similar) with multiple possible data-sensor
-attachments.  A message 'format' field indicates the format of the data
-packet being sent.
 
 NOTE: the rtl_433 decoder, omni.c, uses the "fmt" or "Format" field
 here, as transmitted by omni.c, to decode the incoming message.
@@ -120,8 +123,8 @@ For format=1 messages, the message nibbles are to be read as:
 
 static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
     uint8_t *b;
+    data_t *data;
     char hexstring[50];
     char *ptr;
     int message_fmt, id;
@@ -161,8 +164,8 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         volts       = ((double)(b[8])) / 100.0 + 3.00;
         // Make the data descriptor
         /* clang-format off */
-       data = data_make(
-            "model",           "",                                               DATA_STRING, "omni",
+           data = data_make(
+            "model",           "",                                               DATA_STRING, "Omni Multisensor",
             "id",              "Id",                                             DATA_INT,     id,
             "channel",         "Format",                                         DATA_INT,     message_fmt,
             "temperature_C"  , "Core Temperature",   DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  itemp_c,
