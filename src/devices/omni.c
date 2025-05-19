@@ -1,5 +1,6 @@
 /** @file
-    omni multi-sensor protocol, v1.2
+`   Omni Multisensor Protocol
+    v1.2
 
     Copyright (C) 2025 H. David Todd <hdtodd@gmail.com>
 
@@ -11,7 +12,7 @@
 
 /* clang-format off */
 /**
-omni multisensor protocol.
+Omni Multisensor Protocol
 
 The protocol is for the extensible wireless sensor 'omni'
 -  Single transmission protocol
@@ -123,11 +124,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b;
     char hexstring[50];
     char *ptr;
-
-    // Fields common to all message types
     int message_fmt, id;
-
-    // Fields needed depending upon the message type
     double itemp_c, volts;
 
     // Find a row that's a candidate for decoding
@@ -154,7 +151,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Decode that format, if we know it
     switch (message_fmt) {
 
-    //  Default to fmt=00 so message data are reported in hex
+    // Default to fmt=00 so unformatted message data are reported in hex
     default:
     case OMNI_MSGFMT_00:
         ptr = &hexstring[0];
@@ -176,15 +173,14 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format on */
         break;
 
-        break;
-
         /* New decoders follow here */
+        break;
 
     };
 
     // And output the field values
     decoder_output_data(decoder, data);
-    return 1;
+    return 1; // if we got here, one valid message was returned
 }
 
 // List the output fields for various message types
@@ -205,7 +201,7 @@ static char const *const output_fields[] = {
 
 /* clang-format off */
 r_device const omni = {
-        .name        = "Omni Multisensor",
+        .name        = "Omni Multisensor Protocol",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 200,  // short pulse is ~200 us
         .long_width  = 400,  // long pulse is ~400 us
