@@ -1,5 +1,5 @@
 /** @file
-    Omni multi-sensor protocol, v1.2
+    omni multi-sensor protocol, v1.2
 
     Copyright (C) 2025 H. David Todd <hdtodd@gmail.com>
 
@@ -11,7 +11,7 @@
 
 /* clang-format off */
 /**
-Omni multisensor protocol.
+omni multisensor protocol.
 
 The protocol is for the extensible wireless sensor 'omni'
 -  Single transmission protocol
@@ -128,13 +128,13 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int message_fmt, id;
 
     // Fields needed depending upon the message type
-    double itemp_c, otemp_c, ihum, ohum, press, volts;
+    double itemp_c, volts;
 
     // Find a row that's a candidate for decoding
     int r = bitbuffer_find_repeated_row(bitbuffer, 2, 80);
 
     if (r < 0 || bitbuffer->bits_per_row[r] > 82) {
-        decoder_log(decoder, 1, __func__, "Omni: Invalid message");
+        decoder_log(decoder, 1, __func__, "omni: Invalid message");
         return DECODE_ABORT_LENGTH;
     };
 
@@ -143,7 +143,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Validate the packet against the CRC8 checksum
     if (crc8(b, 9, 0x97, initCRC) != b[9]) {
-        decoder_log(decoder, 1, __func__, "Omni: CRC8 checksum error");
+        decoder_log(decoder, 1, __func__, "omni: CRC8 checksum error");
         return DECODE_FAIL_MIC;
     }
 
@@ -154,11 +154,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Decode that format, if we know it
     switch (message_fmt) {
 
-    /*  Default to fmt=00 so message data are reported in hex
-    default:
-        decoder_log(decoder, 1, __func__, "Unknown message type");
-        return DECODE_FAIL_SANITY;
-    */
+    //  Default to fmt=00 so message data are reported in hex
     default:
     case OMNI_MSGFMT_00:
         ptr = &hexstring[0];
@@ -169,7 +165,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // Make the data descriptor
         /* clang-format off */
        data = data_make(
-            "model",           "",                                               DATA_STRING, "Omni",
+            "model",           "",                                               DATA_STRING, "omni",
             "id",              "Id",                                             DATA_INT,     id,
             "channel",         "Format",                                         DATA_INT,     message_fmt,
             "temperature_C"  , "Core Temperature",   DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  itemp_c,
@@ -180,28 +176,6 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format on */
         break;
 
-    case OMNI_MSGFMT_01:
-        itemp_c     = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) / 10.0;
-        otemp_c     = ((double)((int32_t)(((((uint32_t)b[2]) << 28) | ((uint32_t)b[3]) << 20)) >> 20)) / 10.0;
-        ihum        = (double)b[4];
-        ohum        = (double)b[5];
-        press       = (double)(((uint16_t)(b[6] << 8)) | b[7]) / 10.0;
-        volts       = ((double)(b[8])) / 100.0 + 3.00;
-        // Make the data descriptor
-        /* clang-format off */
-        data = data_make(
-            "model",           "",                                               DATA_STRING, "Omni",
-            "id",              "Id",                                             DATA_INT,     id,
-            "channel",         "Format",                                         DATA_INT,     message_fmt,
-            "temperature_C"  , "Indoor Temperature", DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  itemp_c,
-            "temperature_2_C", "Outdoor Temperature",DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  otemp_c,
-            "humidity",        "Indoor Humidity",    DATA_FORMAT, "%.0f %%",     DATA_DOUBLE,  ihum,
-            "Light %",         "Light",              DATA_FORMAT, "%.0f%%",      DATA_DOUBLE,  ohum,
-            "pressure_hPa",    "BarometricPressure", DATA_FORMAT, "%.1f hPa",    DATA_DOUBLE,  press,
-            "voltage_V",       "VCC voltage",        DATA_FORMAT, "%.2f V",      DATA_DOUBLE,  volts,
-            "mic",             "Integrity",                                      DATA_STRING,  "CRC",
-            NULL);
-        /* clang-format on */
         break;
 
         /* New decoders follow here */
@@ -231,7 +205,7 @@ static char const *const output_fields[] = {
 
 /* clang-format off */
 const r_device omni = {
-        .name        = "omni",
+        .name        = "omni multisensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 200,  // short pulse is ~200 us
         .long_width  = 400,  // long pulse is ~400 us
