@@ -205,7 +205,7 @@ static char const *const output_fields[] = {
 
 /* clang-format off */
 r_device const omni = {
-        .name        = "omni",
+        .name        = "Omni Multisensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 200,  // short pulse is ~200 us
         .long_width  = 400,  // long pulse is ~400 us
