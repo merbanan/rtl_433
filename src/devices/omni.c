@@ -117,54 +117,12 @@ For format=1 messages, the message nibbles are to be read as:
 #define OMNI_MSGFMT_00 0x00
 #define OMNI_MSGFMT_01 0x01
 
-static int omni_decode(r_device *, bitbuffer_t *);
-
-// List the output fields for various message types
-static char const *const output_fields_00[] = {
-        "model",
-        "fmt",
-        "id",
-        "temperature_C",
-        "voltage_V",
-        "payload",
-        "mic",
-        NULL,
-};
-
-static char const *const output_fields_01[] = {
-        "model",
-        "fmt",
-        "id",
-        "temperature_C",
-        "temperature_2_C",
-        "humidity",
-        "light_level",
-        "pressure_hPa",
-        "voltage_V",
-        "mic",
-        NULL,
-};
-
-/* New format output_field_nn declaration goes here */
-
-/* clang-format off */
-r_device omni = {
-        .name        = "Omni multisensor",
-        .modulation  = OOK_PULSE_PWM,
-        .short_width = 200,  // short pulse is ~200 us
-        .long_width  = 400,  // long pulse is ~400 us
-        .sync_width  = 600,  // sync pulse is ~600 us
-        .gap_limit   = 500,  // long gap (with short pulse) is ~400 us, sync gap is ~600 us
-        .reset_limit = 1250, // maximum gap is 1250 us (long gap + longer sync gap on last repeat)
-        .decode_fn   = &omni_decode,
-        .fields      = output_fields_00,
-};
-/* clang-format on */
-
 static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t *b;
+    char hexstring[50];
+    char *ptr;
 
     // Fields common to all message types
     int message_fmt, id;
@@ -203,9 +161,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     */
     default:
     case OMNI_MSGFMT_00:
-        omni.fields = output_fields_00;
-        char hexstring[50];
-        char *ptr = &hexstring[0];
+	ptr = &hexstring[0];
         for (int ij = 1; ij < 9; ij++)
             ptr += sprintf(ptr, "0x%02x ", b[ij]);
         itemp_c     = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) / 10.0;
@@ -225,7 +181,6 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         break;
 
     case OMNI_MSGFMT_01:
-        omni.fields = output_fields_01;
         itemp_c     = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) / 10.0;
         otemp_c     = ((double)((int32_t)(((((uint32_t)b[2]) << 28) | ((uint32_t)b[3]) << 20)) >> 20)) / 10.0;
         ihum        = (double)b[4];
@@ -257,3 +212,33 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_output_data(decoder, data);
     return 1;
 }
+
+// List the output fields for various message types
+static char const *const output_fields[] = {
+        "model",
+        "fmt",
+        "id",
+        "temperature_C",
+        "temperature_2_C",
+        "humidity",
+        "pressure_hPa",
+        "light_level",
+        "voltage_V",
+        "payload",
+        "mic",
+        NULL,
+};
+
+/* clang-format off */
+r_device omni = {
+        .name        = "Omni multisensor",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 200,  // short pulse is ~200 us
+        .long_width  = 400,  // long pulse is ~400 us
+        .sync_width  = 600,  // sync pulse is ~600 us
+        .gap_limit   = 500,  // long gap (with short pulse) is ~400 us, sync gap is ~600 us
+        .reset_limit = 1250, // maximum gap is 1250 us (long gap + longer sync gap on last repeat)
+        .decode_fn   = &omni_decode,
+        .fields      = output_fields,
+};
+/* clang-format on */
