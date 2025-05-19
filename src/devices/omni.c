@@ -161,7 +161,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     */
     default:
     case OMNI_MSGFMT_00:
-	ptr = &hexstring[0];
+        ptr = &hexstring[0];
         for (int ij = 1; ij < 9; ij++)
             ptr += sprintf(ptr, "0x%02x ", b[ij]);
         itemp_c     = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) / 10.0;
@@ -230,7 +230,7 @@ static char const *const output_fields[] = {
 };
 
 /* clang-format off */
-r_device omni = {
+const r_device omni = {
         .name        = "Omni multisensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 200,  // short pulse is ~200 us
