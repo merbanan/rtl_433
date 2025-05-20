@@ -36,8 +36,8 @@ S.a issue #3256
 - I:{32} Sensor ID
 - F:{4}  Flag status : 0x6 = pressure drop (OEM) , 0x9 pressure increase (OEM) or drop (Chinese OEM), 0xb or 0xc alternatly in Motion
 - N:{4}  Seq number : 0,1,2,3,0,1,2,3... for OEM, 1,2,3,4,1,2,3,4... for Chinese OEM
-- P:{8}  Pressure
-- T:{8}  Temperature
+- P:{8}  Pressure PSI, scale 2.5
+- T:{8}  Temperature C, offset 50
 - S:{8}  Motion status, 0x0e parked, other value in motion, not yet guesses
 - C:{8}  CRC-8/SMBUS, poly 0x07, init 0x00, final XOR 0x00
 - X:{4}  Trailing bit but 0x4 OEM, 0x0 Chinese OEM
@@ -117,7 +117,7 @@ static int tpms_trw_decode(r_device *decoder, bitbuffer_t *bitbuffer, int type)
             "flags",            "Flags",        DATA_FORMAT, "%01x",     DATA_INT, flags,
             "alert",            "Alert",        DATA_COND, flags == 0x6 || flags == 0x9, DATA_STRING, "Pressure increase/decrease !",
             "seq_num",          "Seq Num",                               DATA_INT, seq_num,
-            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, pressure_psi,
+            "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.0f PSI", DATA_DOUBLE, pressure_psi,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C",   DATA_DOUBLE, (double)temperature_C,
             "motion_flags",     "Motion flags", DATA_FORMAT, "%02x",     DATA_INT, motion_flags,
             "motion_status",    "Motion",       DATA_STRING, motion_flags == 0x0e ? "Parked" : "Moving",
@@ -169,7 +169,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const tpms_trw_ook = {
-        .name        = "TRW TPMS OOK",
+        .name        = "TRW TPMS OOK OEM and Chinese models",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 52,
         .long_width  = 52,
@@ -179,7 +179,7 @@ r_device const tpms_trw_ook = {
 };
 
 r_device const tpms_trw_fsk = {
-        .name        = "TRW TPMS FSK",
+        .name        = "TRW TPMS FSK OEM and Chinese models",
         .modulation  = FSK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 52,
         .long_width  = 52,
