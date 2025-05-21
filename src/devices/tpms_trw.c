@@ -16,7 +16,7 @@ TRW TPMS Sensor.
 
 FCC-ID: GQ4-70T
 
-- OEM and Chinese OEM models
+- OEM and Clone OEM models
 - Used into Chrysler car from 2014 until 2022 : car models https://www.chryslertpms.com/chrysler-tpms-types-fitment
 
 - OOK then FSK rf signals, mode detail here : https://fcc.report/FCC-ID/GQ4-70T/2201535
@@ -32,15 +32,15 @@ S.a issue #3256
 
 - PRE : 7FFF (FSK) or 0001 (OOK)
 
-- M:{8}  Mode/Model : 0x5c, 0x5d or 0x5e (Always 0x5c for Chinese OEM model)
+- M:{8}  Mode/Model : 0x5c, 0x5d or 0x5e (Always 0x5c for Clone OEM model)
 - I:{32} Sensor ID
-- F:{4}  Flag status : 0x6 = pressure drop (OEM) , 0x9 pressure increase (OEM) or drop (Chinese OEM), 0xb or 0xc alternatly in Motion
-- N:{4}  Seq number : 0,1,2,3,0,1,2,3... for OEM, 1,2,3,4,1,2,3,4... for Chinese OEM
+- F:{4}  Flag status : 0x6 = pressure drop (OEM) , 0x9 pressure increase (OEM) or drop (Clone OEM), 0xb or 0xc alternatly in Motion
+- N:{4}  Seq number : 0,1,2,3,0,1,2,3... for OEM, 1,2,3,4,1,2,3,4... for Clone OEM
 - P:{8}  Pressure PSI, scale 2.5
 - T:{8}  Temperature C, offset 50
 - S:{8}  Motion status, 0x0e parked, other value in motion, not yet guesses
 - C:{8}  CRC-8/SMBUS, poly 0x07, init 0x00, final XOR 0x00
-- X:{4}  Trailing bit but 0x4 OEM, 0x0 Chinese OEM
+- X:{4}  Trailing bit but 0x4 OEM, 0x0 Clone OEM
 
 */
 
@@ -117,13 +117,12 @@ static int tpms_trw_decode(r_device *decoder, bitbuffer_t *bitbuffer, int type)
             "flags",            "Flags",        DATA_FORMAT, "%01x",     DATA_INT, flags,
             "alert",            "Alert",        DATA_COND, flags == 0x6 || flags == 0x9, DATA_STRING, "Pressure increase/decrease !",
             "seq_num",          "Seq Num",                               DATA_INT, seq_num,
-            "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.0f PSI", DATA_DOUBLE, pressure_psi,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C",   DATA_DOUBLE, (double)temperature_C,
+            "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.1f PSI", DATA_DOUBLE, pressure_psi,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C",   DATA_DOUBLE, (double)temperature_C,
             "motion_flags",     "Motion flags", DATA_FORMAT, "%02x",     DATA_INT, motion_flags,
             "motion_status",    "Motion",       DATA_STRING, motion_flags == 0x0e ? "Parked" : "Moving",
-            //"inflate",          "Inflate",      DATA_INT,    infl_detected,
             "oem_model",        "OEM Model",    DATA_COND,   oem_model == 0x4, DATA_STRING, "OEM",
-            "oem_model",        "OEM Model",    DATA_COND,   oem_model == 0x0, DATA_STRING, "Chinese OEM",
+            "oem_model",        "OEM Model",    DATA_COND,   oem_model == 0x0, DATA_STRING, "Clone",
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -156,11 +155,13 @@ static char const *const output_fields[] = {
         "mode",
         "id",
         //"battery_ok",
-        "pressure_kPa",
-        "temperature_C",
-        "seq_num",
         "flags",
+        "alert",
+        "seq_num",
+        "pressure_PSI",
+        "temperature_C",
         "motion_flags",
+        "motion_status",
         //"fast_leak",
         //"inflate",
         "oem_model",
@@ -169,21 +170,21 @@ static char const *const output_fields[] = {
 };
 
 r_device const tpms_trw_ook = {
-        .name        = "TRW TPMS OOK OEM and Chinese models",
+        .name        = "TRW TPMS OOK OEM and Clone models",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 52,
         .long_width  = 52,
-        .reset_limit = 200,
+        .reset_limit = 150,
         .decode_fn   = &tpms_trw_callback_ook,
         .fields      = output_fields,
 };
 
 r_device const tpms_trw_fsk = {
-        .name        = "TRW TPMS FSK OEM and Chinese models",
+        .name        = "TRW TPMS FSK OEM and Clone models",
         .modulation  = FSK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 52,
         .long_width  = 52,
-        .reset_limit = 200,
+        .reset_limit = 150,
         .decode_fn   = &tpms_trw_callback_fsk,
         .fields      = output_fields,
 };
