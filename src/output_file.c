@@ -26,6 +26,7 @@
 
 typedef struct {
     struct data_output output;
+    char const *path;
     FILE *file;
 } data_output_json_t;
 
@@ -122,15 +123,39 @@ static void R_API_CALLCONV data_output_json_print(data_output_t *output, data_t 
     }
 }
 
+static void R_API_CALLCONV data_output_json_reload(data_output_t *output)
+{
+    data_output_json_t *json = (data_output_json_t *)output;
+
+    if (json->file && json->file != stdout && json->file != stderr) {
+        fclose(json->file);
+    }
+
+    if (!json->path || !*json->path) {
+        json->file = stdout; // No path given
+    }
+    else if (*json->path == '-' && json->path[1] == '\0') {
+        json->file = stdout; // STDOUT requested
+    }
+    else {
+        json->file = fopen(json->path, "a");
+        if (!json->file) {
+            fprintf(stderr, "rtl_433: failed to open output file\n");
+            exit(1);
+        }
+    }
+}
+
 static void R_API_CALLCONV data_output_json_free(data_output_t *output)
 {
-    if (!output)
+    if (!output) {
         return;
+    }
 
     free(output);
 }
 
-struct data_output *data_output_json_create(int log_level, FILE *file)
+struct data_output *data_output_json_create(int log_level, char const *path)
 {
     data_output_json_t *json = calloc(1, sizeof(data_output_json_t));
     if (!json) {
@@ -138,15 +163,18 @@ struct data_output *data_output_json_create(int log_level, FILE *file)
         return NULL; // NOTE: returns NULL on alloc failure.
     }
 
-    json->output.log_level    = log_level;
-    json->output.print_data   = print_json_data;
-    json->output.print_array  = print_json_array;
-    json->output.print_string = print_json_string;
-    json->output.print_double = print_json_double;
-    json->output.print_int    = print_json_int;
-    json->output.output_print = data_output_json_print;
-    json->output.output_free  = data_output_json_free;
-    json->file                = file;
+    json->output.log_level     = log_level;
+    json->output.print_data    = print_json_data;
+    json->output.print_array   = print_json_array;
+    json->output.print_string  = print_json_string;
+    json->output.print_double  = print_json_double;
+    json->output.print_int     = print_json_int;
+    json->output.output_print  = data_output_json_print;
+    json->output.output_reload = data_output_json_reload;
+    json->output.output_free   = data_output_json_free;
+    json->path                 = path;
+
+    data_output_json_reload(&json->output);
 
     return (struct data_output *)json;
 }
@@ -190,6 +218,7 @@ static int kv_break_after_key(char const *key)
 
 typedef struct {
     struct data_output output;
+    char const *path;
     FILE *file;
     void *term;
     int color;
@@ -389,19 +418,44 @@ static void R_API_CALLCONV data_output_kv_print(data_output_t *output, data_t *d
     }
 }
 
+static void R_API_CALLCONV data_output_kv_reload(data_output_t *output)
+{
+    data_output_kv_t *kv = (data_output_kv_t *)output;
+
+    if (kv->file && kv->file != stdout && kv->file != stderr) {
+        fclose(kv->file);
+    }
+
+    if (!kv->path || !*kv->path) {
+        kv->file = stdout; // No path given
+    }
+    else if (*kv->path == '-' && kv->path[1] == '\0') {
+        kv->file = stdout; // STDOUT requested
+    }
+    else {
+        kv->file = fopen(kv->path, "a");
+        if (!kv->file) {
+            fprintf(stderr, "rtl_433: failed to open output file\n");
+            exit(1);
+        }
+    }
+}
+
 static void R_API_CALLCONV data_output_kv_free(data_output_t *output)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
-    if (!output)
+    if (!output) {
         return;
+    }
 
-    if (kv->color)
+    if (kv->color) {
         term_free(kv->term);
+    }
 
     free(output);
 }
-struct data_output *data_output_kv_create(int log_level, FILE *file)
+struct data_output *data_output_kv_create(int log_level, char const *path)
 {
     data_output_kv_t *kv = calloc(1, sizeof(data_output_kv_t));
     if (!kv) {
@@ -409,17 +463,20 @@ struct data_output *data_output_kv_create(int log_level, FILE *file)
         return NULL; // NOTE: returns NULL on alloc failure.
     }
 
-    kv->output.log_level    = log_level;
-    kv->output.print_data   = print_kv_data;
-    kv->output.print_array  = print_kv_array;
-    kv->output.print_string = print_kv_string;
-    kv->output.print_double = print_kv_double;
-    kv->output.print_int    = print_kv_int;
-    kv->output.output_print = data_output_kv_print;
-    kv->output.output_free  = data_output_kv_free;
-    kv->file                = file;
+    kv->output.log_level     = log_level;
+    kv->output.print_data    = print_kv_data;
+    kv->output.print_array   = print_kv_array;
+    kv->output.print_string  = print_kv_string;
+    kv->output.print_double  = print_kv_double;
+    kv->output.print_int     = print_kv_int;
+    kv->output.output_print  = data_output_kv_print;
+    kv->output.output_reload = data_output_kv_reload;
+    kv->output.output_free   = data_output_kv_free;
+    kv->path                 = path;
 
-    kv->term = term_init(file);
+    data_output_kv_reload(&kv->output);
+
+    kv->term  = term_init(kv->file);
     kv->color = term_has_color(kv->term);
 
     kv->ring_bell = 0; // TODO: enable if requested...
@@ -431,6 +488,7 @@ struct data_output *data_output_kv_create(int log_level, FILE *file)
 
 typedef struct {
     struct data_output output;
+    char const *path;
     FILE *file;
     const char **fields;
     const char *separator;
@@ -611,15 +669,42 @@ static void R_API_CALLCONV data_output_csv_print(data_output_t *output, data_t *
     fflush(csv->file);
 }
 
+static void R_API_CALLCONV data_output_csv_reload(data_output_t *output)
+{
+    data_output_csv_t *csv = (data_output_csv_t *)output;
+
+    if (csv->file && csv->file != stdout && csv->file != stderr) {
+        fclose(csv->file);
+    }
+
+    if (!csv->path || !*csv->path) {
+        csv->file = stdout; // No path given
+    }
+    else if (*csv->path == '-' && csv->path[1] == '\0') {
+        csv->file = stdout; // STDOUT requested
+    }
+    else {
+        csv->file = fopen(csv->path, "a");
+        if (!csv->file) {
+            fprintf(stderr, "rtl_433: failed to open output file\n");
+            exit(1);
+        }
+    }
+}
+
 static void R_API_CALLCONV data_output_csv_free(data_output_t *output)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
+
+    if (!output) {
+        return;
+    }
 
     free((void *)csv->fields);
     free(csv);
 }
 
-struct data_output *data_output_csv_create(int log_level, FILE *file)
+struct data_output *data_output_csv_create(int log_level, char const *path)
 {
     data_output_csv_t *csv = calloc(1, sizeof(data_output_csv_t));
     if (!csv) {
@@ -627,16 +712,19 @@ struct data_output *data_output_csv_create(int log_level, FILE *file)
         return NULL; // NOTE: returns NULL on alloc failure.
     }
 
-    csv->output.log_level    = log_level;
-    csv->output.print_data   = print_csv_data;
-    csv->output.print_array  = print_csv_array;
-    csv->output.print_string = print_csv_string;
-    csv->output.print_double = print_csv_double;
-    csv->output.print_int    = print_csv_int;
-    csv->output.output_start = data_output_csv_start;
-    csv->output.output_print = data_output_csv_print;
-    csv->output.output_free  = data_output_csv_free;
-    csv->file                = file;
+    csv->output.log_level     = log_level;
+    csv->output.print_data    = print_csv_data;
+    csv->output.print_array   = print_csv_array;
+    csv->output.print_string  = print_csv_string;
+    csv->output.print_double  = print_csv_double;
+    csv->output.print_int     = print_csv_int;
+    csv->output.output_start  = data_output_csv_start;
+    csv->output.output_print  = data_output_csv_print;
+    csv->output.output_reload = data_output_csv_reload;
+    csv->output.output_free   = data_output_csv_free;
+    csv->path                 = path;
+
+    data_output_csv_reload(&csv->output);
 
     return (struct data_output *)csv;
 }

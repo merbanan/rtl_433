@@ -22,6 +22,7 @@
 
 typedef struct {
     struct data_output output;
+    char const *path;
     FILE *file;
 } data_output_trigger_t;
 
@@ -34,15 +35,39 @@ static void R_API_CALLCONV data_output_trigger_print(data_output_t *output, data
     fflush(trigger->file);
 }
 
+static void R_API_CALLCONV data_output_trigger_reload(data_output_t *output)
+{
+    data_output_trigger_t *trigger = (data_output_trigger_t *)output;
+
+    if (trigger->file && trigger->file != stdout && trigger->file != stderr) {
+        fclose(trigger->file);
+    }
+
+    if (!trigger->path || !*trigger->path) {
+        trigger->file = stdout; // No path given
+    }
+    else if (*trigger->path == '-' && trigger->path[1] == '\0') {
+        trigger->file = stdout; // STDOUT requested
+    }
+    else {
+        trigger->file = fopen(trigger->path, "a");
+        if (!trigger->file) {
+            fprintf(stderr, "rtl_433: failed to open output file\n");
+            exit(1);
+        }
+    }
+}
+
 static void R_API_CALLCONV data_output_trigger_free(data_output_t *output)
 {
-    if (!output)
+    if (!output) {
         return;
+    }
 
     free(output);
 }
 
-struct data_output *data_output_trigger_create(FILE *file)
+struct data_output *data_output_trigger_create(char const *path)
 {
     data_output_trigger_t *trigger = calloc(1, sizeof(data_output_trigger_t));
     if (!trigger) {
@@ -50,9 +75,12 @@ struct data_output *data_output_trigger_create(FILE *file)
         return NULL; // NOTE: returns NULL on alloc failure.
     }
 
-    trigger->output.output_print = data_output_trigger_print;
-    trigger->output.output_free  = data_output_trigger_free;
-    trigger->file                = file;
+    trigger->output.output_print  = data_output_trigger_print;
+    trigger->output.output_reload = data_output_trigger_reload;
+    trigger->output.output_free   = data_output_trigger_free;
+    trigger->path                 = path;
+
+    data_output_trigger_reload(&trigger->output);
 
     return (struct data_output *)trigger;
 }

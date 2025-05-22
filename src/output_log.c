@@ -24,6 +24,7 @@
 
 typedef struct {
     struct data_output output;
+    char const *path;
     FILE *file;
 } data_output_log_t;
 
@@ -134,15 +135,39 @@ static void R_API_CALLCONV data_output_log_print(data_output_t *output, data_t *
     fflush(log->file);
 }
 
+static void R_API_CALLCONV data_output_log_reload(data_output_t *output)
+{
+    data_output_log_t *log = (data_output_log_t *)output;
+
+    if (log->file && log->file != stdout && log->file != stderr) {
+        fclose(log->file);
+    }
+
+    if (!log->path || !*log->path) {
+        log->file = stderr; // No path given
+    }
+    else if (*log->path == '-' && log->path[1] == '\0') {
+        log->file = stderr; // STDERR requested
+    }
+    else {
+        log->file = fopen(log->path, "a");
+        if (!log->file) {
+            fprintf(stderr, "rtl_433: failed to open output file\n");
+            exit(1);
+        }
+    }
+}
+
 static void R_API_CALLCONV data_output_log_free(data_output_t *output)
 {
     if (!output) {
         return;
     }
+
     free(output);
 }
 
-struct data_output *data_output_log_create(int log_level, FILE *file)
+struct data_output *data_output_log_create(int log_level, char const *path)
 {
     data_output_log_t *log = calloc(1, sizeof(data_output_log_t));
     if (!log) {
@@ -150,19 +175,18 @@ struct data_output *data_output_log_create(int log_level, FILE *file)
         return NULL; // NOTE: returns NULL on alloc failure.
     }
 
-    if (!file) {
-        file = stderr; // print to stderr by default
-    }
+    log->output.log_level     = log_level;
+    log->output.print_data    = print_log_data;
+    log->output.print_array   = print_log_array;
+    log->output.print_string  = print_log_string;
+    log->output.print_double  = print_log_double;
+    log->output.print_int     = print_log_int;
+    log->output.output_print  = data_output_log_print;
+    log->output.output_reload = data_output_log_reload;
+    log->output.output_free   = data_output_log_free;
+    log->path                 = path;
 
-    log->output.log_level    = log_level;
-    log->output.print_data   = print_log_data;
-    log->output.print_array  = print_log_array;
-    log->output.print_string = print_log_string;
-    log->output.print_double = print_log_double;
-    log->output.print_int    = print_log_int;
-    log->output.output_print = data_output_log_print;
-    log->output.output_free  = data_output_log_free;
-    log->file                = file;
+    data_output_log_reload(&log->output); // Note: print to stderr by default
 
     return (struct data_output *)log;
 }
