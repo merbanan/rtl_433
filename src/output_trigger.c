@@ -35,7 +35,7 @@ static void R_API_CALLCONV data_output_trigger_print(data_output_t *output, data
     fflush(trigger->file);
 }
 
-static void R_API_CALLCONV data_output_trigger_reload(data_output_t *output)
+static void R_API_CALLCONV data_output_trigger_reopen(data_output_t *output)
 {
     data_output_trigger_t *trigger = (data_output_trigger_t *)output;
 
@@ -76,11 +76,11 @@ struct data_output *data_output_trigger_create(char const *path)
     }
 
     trigger->output.output_print  = data_output_trigger_print;
-    trigger->output.output_reload = data_output_trigger_reload;
+    trigger->output.output_reopen = data_output_trigger_reopen;
     trigger->output.output_free   = data_output_trigger_free;
     trigger->path                 = path;
 
-    data_output_trigger_reload(&trigger->output);
+    data_output_trigger_reopen(&trigger->output);
 
     return (struct data_output *)trigger;
 }

@@ -1126,7 +1126,7 @@ void reopen_outputs(struct r_cfg *cfg)
 {
     for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
         data_output_t *output = cfg->output_handler.elems[i];
-        data_output_reload(output);
+        data_output_reopen(output);
     }
 }
 

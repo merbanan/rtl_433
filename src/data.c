@@ -411,11 +411,11 @@ R_API void data_output_start(struct data_output *output, char const *const *fiel
     output->output_start(output, fields, num_fields);
 }
 
-R_API void data_output_reload(struct data_output *output)
+R_API void data_output_reopen(struct data_output *output)
 {
-    if (!output || !output->output_reload)
+    if (!output || !output->output_reopen)
         return;
-    output->output_reload(output);
+    output->output_reopen(output);
 }
 
 R_API void data_output_free(data_output_t *output)

@@ -135,7 +135,7 @@ static void R_API_CALLCONV data_output_log_print(data_output_t *output, data_t *
     fflush(log->file);
 }
 
-static void R_API_CALLCONV data_output_log_reload(data_output_t *output)
+static void R_API_CALLCONV data_output_log_reopen(data_output_t *output)
 {
     data_output_log_t *log = (data_output_log_t *)output;
 
@@ -144,10 +144,10 @@ static void R_API_CALLCONV data_output_log_reload(data_output_t *output)
     }
 
     if (!log->path || !*log->path) {
-        log->file = stderr; // No path given
+        log->file = stderr; // No path given, note that we default to STDERR
     }
     else if (*log->path == '-' && log->path[1] == '\0') {
-        log->file = stderr; // STDERR requested
+        log->file = stdout; // STDOUT requested
     }
     else {
         log->file = fopen(log->path, "a");
@@ -182,11 +182,11 @@ struct data_output *data_output_log_create(int log_level, char const *path)
     log->output.print_double  = print_log_double;
     log->output.print_int     = print_log_int;
     log->output.output_print  = data_output_log_print;
-    log->output.output_reload = data_output_log_reload;
+    log->output.output_reopen = data_output_log_reopen;
     log->output.output_free   = data_output_log_free;
     log->path                 = path;
 
-    data_output_log_reload(&log->output); // Note: print to stderr by default
+    data_output_log_reopen(&log->output); // Note: print to stderr by default
 
     return (struct data_output *)log;
 }

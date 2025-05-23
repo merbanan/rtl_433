@@ -123,7 +123,7 @@ static void R_API_CALLCONV data_output_json_print(data_output_t *output, data_t 
     }
 }
 
-static void R_API_CALLCONV data_output_json_reload(data_output_t *output)
+static void R_API_CALLCONV data_output_json_reopen(data_output_t *output)
 {
     data_output_json_t *json = (data_output_json_t *)output;
 
@@ -170,11 +170,11 @@ struct data_output *data_output_json_create(int log_level, char const *path)
     json->output.print_double  = print_json_double;
     json->output.print_int     = print_json_int;
     json->output.output_print  = data_output_json_print;
-    json->output.output_reload = data_output_json_reload;
+    json->output.output_reopen = data_output_json_reopen;
     json->output.output_free   = data_output_json_free;
     json->path                 = path;
 
-    data_output_json_reload(&json->output);
+    data_output_json_reopen(&json->output);
 
     return (struct data_output *)json;
 }
@@ -418,7 +418,7 @@ static void R_API_CALLCONV data_output_kv_print(data_output_t *output, data_t *d
     }
 }
 
-static void R_API_CALLCONV data_output_kv_reload(data_output_t *output)
+static void R_API_CALLCONV data_output_kv_reopen(data_output_t *output)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
@@ -470,11 +470,11 @@ struct data_output *data_output_kv_create(int log_level, char const *path)
     kv->output.print_double  = print_kv_double;
     kv->output.print_int     = print_kv_int;
     kv->output.output_print  = data_output_kv_print;
-    kv->output.output_reload = data_output_kv_reload;
+    kv->output.output_reopen = data_output_kv_reopen;
     kv->output.output_free   = data_output_kv_free;
     kv->path                 = path;
 
-    data_output_kv_reload(&kv->output);
+    data_output_kv_reopen(&kv->output);
 
     kv->term  = term_init(kv->file);
     kv->color = term_has_color(kv->term);
@@ -669,7 +669,7 @@ static void R_API_CALLCONV data_output_csv_print(data_output_t *output, data_t *
     fflush(csv->file);
 }
 
-static void R_API_CALLCONV data_output_csv_reload(data_output_t *output)
+static void R_API_CALLCONV data_output_csv_reopen(data_output_t *output)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
@@ -720,11 +720,11 @@ struct data_output *data_output_csv_create(int log_level, char const *path)
     csv->output.print_int     = print_csv_int;
     csv->output.output_start  = data_output_csv_start;
     csv->output.output_print  = data_output_csv_print;
-    csv->output.output_reload = data_output_csv_reload;
+    csv->output.output_reopen = data_output_csv_reopen;
     csv->output.output_free   = data_output_csv_free;
     csv->path                 = path;
 
-    data_output_csv_reload(&csv->output);
+    data_output_csv_reopen(&csv->output);
 
     return (struct data_output *)csv;
 }
