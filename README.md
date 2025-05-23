@@ -362,6 +362,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [274]  Revolt ZX-7717 power meter
     [275]  GM-Aftermarket TPMS
     [276]  RainPoint HCS012ARF Rain Gauge sensor
+    [277]  ThermoPro TP827B BBQ Meat Thermometers 4 probes with Temp, Meat and BBQ Target LO and HI alarms
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -457,6 +458,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"
 	MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
 	Supported MQTT formats: (default is all)
+	  availability: posts availability (online/offline)
 	  events: posts JSON event data, default "<base>/events"
 	  states: posts JSON state data, default "<base>/states"
 	  devices: posts device and sensor info in nested topics,
