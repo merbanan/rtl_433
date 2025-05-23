@@ -206,7 +206,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
             int att = pulse_detect->use_mag_est ? mag_to_att(am_n) : amp_to_att(am_n);
             att_hist[att] += 1;
         }
-        int16_t ook_threshold = (s->ook_low_estimate + s->ook_high_estimate) / 2;
+        int16_t ook_threshold = (s->ook_low_estimate + MIN(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL)) / 2;
         if (pulse_detect->ook_fixed_high_level != 0) {
             ook_threshold = pulse_detect->ook_fixed_high_level; // Manual override
         }
@@ -239,7 +239,6 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     // Calculate default OOK high level estimate
                     s->ook_high_estimate = pulse_detect->ook_high_low_ratio * s->ook_low_estimate; // Default is a ratio of low level
                     s->ook_high_estimate = MAX(s->ook_high_estimate, pulse_detect->ook_min_high_level);
-                    s->ook_high_estimate = MIN(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL);
                     if (s->lead_in_counter <= OOK_EST_LOW_RATIO) s->lead_in_counter += 1;        // Allow initial estimate to settle
                 }
                 break;
@@ -271,7 +270,6 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     // Calculate OOK high level estimate
                     s->ook_high_estimate += am_n / OOK_EST_HIGH_RATIO - s->ook_high_estimate / OOK_EST_HIGH_RATIO;
                     s->ook_high_estimate = MAX(s->ook_high_estimate, pulse_detect->ook_min_high_level);
-                    s->ook_high_estimate = MIN(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL);
                     // Estimate pulse carrier frequency
                     pulses->fsk_f1_est += fm_data[s->data_counter] / OOK_EST_HIGH_RATIO - pulses->fsk_f1_est / OOK_EST_HIGH_RATIO;
                 }
