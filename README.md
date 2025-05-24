@@ -54,7 +54,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-H <seconds>] Hop interval for polling of multiple frequencies (default: 600 seconds)
   [-p <ppm_error>] Correct rtl-sdr tuner frequency offset error (default: 0)
   [-s <sample rate>] Set sample rate (default: 250000 Hz)
-  [-D restart | pause | quit | manual] Input device run mode options.
+  [-D quit | restart | pause | manual] Input device run mode options (default: quit).
 		= Demodulator options =
   [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)
        Specify a negative number to disable a device decoding protocol (can be used multiple times)
@@ -362,6 +362,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [274]  Revolt ZX-7717 power meter
     [275]  GM-Aftermarket TPMS
     [276]  RainPoint HCS012ARF Rain Gauge sensor
+    [277]  TRW TPMS OOK
+    [278]  TRW TPMS FSK
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -457,6 +459,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"
 	MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
 	Supported MQTT formats: (default is all)
+	  availability: posts availability (online/offline)
 	  events: posts JSON event data, default "<base>/events"
 	  states: posts JSON state data, default "<base>/states"
 	  devices: posts device and sensor info in nested topics,
