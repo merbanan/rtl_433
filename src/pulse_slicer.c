@@ -90,6 +90,11 @@ int pulse_slicer_pcm(pulse_data_t const *pulses, r_device *device)
     int events = 0;
     bitbuffer_t bits = {0};
 
+    // Prevent divide-by-zero
+    if (s_long <= 0) {
+        return 0;
+    }
+
     int const gap_limit = s_gap ? s_gap : s_reset;
     int const max_zeros = gap_limit / s_long;
     if (s_tolerance <= 0)
