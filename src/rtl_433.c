@@ -1532,6 +1532,7 @@ static void timer_handler(struct mg_connection *nc, int ev, void *ev_data)
     //fprintf(stderr, "%s: %d, %d, %p, %p\n", __func__, nc->sock, ev, nc->user_data, ev_data);
     r_cfg_t *cfg = (r_cfg_t *)nc->user_data;
     if (sig_hup) {
+        reopen_outputs(cfg);
         reopen_dumpers(cfg);
         sig_hup = 0;
     }
