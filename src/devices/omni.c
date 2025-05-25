@@ -128,7 +128,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char hexstring[50];
     char *ptr;
     int message_fmt, id;
-    double itemp_c, volts;
+    double itemp_c, otemp_c, ihum, light, press, volts;
 
     // Find a row that's a candidate for decoding
     int r = bitbuffer_find_repeated_row(bitbuffer, 2, 80);
@@ -158,8 +158,9 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     default:
     case OMNI_MSGFMT_00:
         ptr = &hexstring[0];
+	// print just the 8 data bytes as payload data
         for (int ij = 1; ij < 9; ij++)
-            ptr += sprintf(ptr, "0x%02x ", b[ij]);
+            ptr += sprintf(ptr, "%02x", b[ij]);
         itemp_c     = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) / 10.0;
         volts       = ((double)(b[8])) / 100.0 + 3.00;
         // Make the data descriptor
@@ -171,6 +172,30 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "temperature_C"  , "Core Temperature",   DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  itemp_c,
             "voltage_V",       "VCC voltage",        DATA_FORMAT, "%.2f V",      DATA_DOUBLE,  volts,
             "payload",         "Payload",                                        DATA_STRING,  hexstring,
+            "mic",             "Integrity",                                      DATA_STRING,  "CRC",
+            NULL);
+        /* clang-format on */
+        break;
+
+    case OMNI_MSGFMT_01:
+        itemp_c     = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) / 10.0;
+        otemp_c     = ((double)((int32_t)(((((uint32_t)b[2]) << 28) | ((uint32_t)b[3]) << 20)) >> 20)) / 10.0;
+        ihum        = (double)b[4];
+        light       = (double)b[5];
+        press       = (double)(((uint16_t)(b[6] << 8)) | b[7]) / 10.0;
+        volts       = ((double)(b[8])) / 100.0 + 3.00;
+        // Make the data descriptor
+        /* clang-format off */
+        data = data_make(
+            "model",           "",                                               DATA_STRING, "Omni Multisensor",
+            "id",              "Id",                                             DATA_INT,     id,
+            "channel",         "Format",                                         DATA_INT,     message_fmt,
+            "temperature_C"  , "Indoor Temperature", DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  itemp_c,
+            "temperature_2_C", "Outdoor Temperature",DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  otemp_c,
+            "humidity",        "Indoor Humidity",    DATA_FORMAT, "%.0f %%",     DATA_DOUBLE,  ihum,
+            "Light %",         "Light",              DATA_FORMAT, "%.0f%%",      DATA_DOUBLE,  light,
+            "pressure_hPa",    "BarometricPressure", DATA_FORMAT, "%.1f hPa",    DATA_DOUBLE,  press,
+            "voltage_V",       "VCC voltage",        DATA_FORMAT, "%.2f V",      DATA_DOUBLE,  volts,
             "mic",             "Integrity",                                      DATA_STRING,  "CRC",
             NULL);
         /* clang-format on */
