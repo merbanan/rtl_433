@@ -21,22 +21,24 @@ ThermoPro TP827B BBQ Meat Thermometer 4 probes.
 
 Flex decoder:
 
-    rtl_433 -X "n=tp827b,m=FSK_PCM,s=110,l=110,r=2500,preamble=d2eceaee" *.cu8 2>&1 | grep codes
+    rtl_433 -X "n=tp827b,m=FSK_PCM,s=110,l=110,r=2500,preamble=aad2ecec68" *.cu8 2>&1 | grep codes
 
 Data layout:
 
-    Byte Position     0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28
-    Sample           d8 09 03 fe 00 fe 00 fe 00 fe 00 fe 00 fe 00 fe 00 31 1b 00 00 93 00 aa aa aa 00 00 00
-    Data             II 11 11 FF FF 22 22 FF FF 33 33 FF FF 44 44 FF FF MX LT 0A 0H CC 00 aa aa aa 00 00 00
-                                                                        || ||  |  |
-                                        bit 0  0  1  1  Mode BBQ/Meat <-+| ||  |  +-> Alarm High bit 0  0  0  0
-                                           M4 M3 M2 M1                   / ||  \                    H4 H3 H2 H1
-                                        bit 0  0  0  1  Alarm <---------+  ||   +---> Alarm triggered
-                                           A4 A3 A2 A1                    /  \
-                                        bit 0  0  0  1 Alarm Low <-------+    +-----> Unit  1  0  1  1
-                                           L4 L3 L2 L1                                     ?1 ?2 ?3 TU
+    Byte Position                    0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28
+    Sample        aa aa d2 ec ex xx d8 09 03 fe 00 fe 00 fe 00 fe 00 fe 00 fe 00 fe 00 31 1b 00 00 93 00 aa aa aa 00 00 00
+    Data          PP PP SS SS SS SS II 11 11 FF FF 22 22 FF FF 33 33 FF FF 44 44 FF FF MX LT 0A 0H CC 00 aa aa aa 00 00 00
+                                                                                || ||  |  |
+                                                bit 0  0  1  1  Mode BBQ/Meat <-+| ||  |  +-> Alarm High bit 0  0  0  0
+                                                   M4 M3 M2 M1                   / ||  \                    H4 H3 H2 H1
+                                                bit 0  0  0  1  Alarm <---------+  ||   +---> Alarm triggered
+                                                   A4 A3 A2 A1                    /  \
+                                                bit 0  0  0  1 Alarm Low <-------+    +-----> Unit  1  0  1  1
+                                                   L4 L3 L2 L1                                     ?1 ?2 ?3 TU
 
-- II :{8}  Model or ID
+- PP :{56} Preamble 0xaa
+- SS :{32} Sync word, 0xd2ecexxx , xxx depends on battery level, 0xd2ecec68 with new battery, 0xd2eceaec or 0xd2eceaee with older batteries
+- II :{8}  Model or ID, was always 0xd8 even after new battery
 - 11 :{16} Temp Probe 1, C or F, scale 10, 0xFE00 = no probe
 - FF :{16} Fixed value, 0xFE00
 - 22 :{16} Temp Probe 2, C or F, scale 10, 0xFE00 = no probe
@@ -60,8 +62,9 @@ Data layout:
 */
 static int thermopro_tb827b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const preamble_pattern[] = { // 0xd2, removed to increase success
-                                        0xec, 0xea, 0xee};
+    uint8_t const preamble_pattern[] = { 0xd2,
+                                         0xec,
+                                         0xec}; //could be 0xeaec 0xeaee last 3 nibles not taken into account
     uint8_t b[22];
 
     if (bitbuffer->num_rows > 1) {
@@ -75,7 +78,7 @@ static int thermopro_tb827b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
-    int offset = bitbuffer_search(bitbuffer, 0, 0, preamble_pattern, sizeof(preamble_pattern) * 8);
+    int offset = bitbuffer_search(bitbuffer, 0, 0, preamble_pattern, 20 ); // reduce the preamble size as last "e" is ignore as could be "c" when new battery
 
     if (offset >= msg_len) {
         decoder_log(decoder, 1, __func__, "Sync word not found");
@@ -87,7 +90,11 @@ static int thermopro_tb827b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
-    offset += sizeof(preamble_pattern) * 8;
+    offset += 16; // to pic up sync word information
+    bitbuffer_extract_bytes(bitbuffer, 0, offset, b, 2 * 8);
+    int flags0 = (b[0] << 8) | b[1]; // last 2 bytes of the sync word
+
+    offset += 16; // to pic up the message
     bitbuffer_extract_bytes(bitbuffer, 0, offset, b, 22 * 8);
 
     if ( b[3] !=0xFE || b[4] != 0x00 || b[7] !=0xFE || b[8] != 0x00 || b[11] !=0xFE || b[12] != 0x00 || b[15] !=0xFE || b[16] != 0x00) {
@@ -102,6 +109,7 @@ static int thermopro_tb827b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     decoder_log_bitrow(decoder, 2, __func__, b, 176, "MSG");
 
+    //float bat_level = (flags0 & 0xfff) * 0.001f;
     int id     = b[0];
     int p1_raw = (int16_t)((b[1] << 8) | b[2]);
     int p2_raw = (int16_t)((b[5] << 8) | b[6]);
@@ -146,6 +154,8 @@ static int thermopro_tb827b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data = data_make(
             "model",                "",              DATA_STRING,        "ThermoPro-TB827B",
             "id",                   "",              DATA_FORMAT,        "%02x",                          DATA_INT,    id,
+            "sync_word",            "Sync Word",     DATA_FORMAT,        "d2ec%04x",                      DATA_INT,    flags0,
+            //"battery_ok",           "Battery Level", DATA_FORMAT,        "%0.3f V",                       DATA_DOUBLE, bat_level,
             "temp_unit",            "Display Unit",  DATA_STRING, temp_unit ? "Fahrenheit" : "Celsius",
             "mode_p1",              "Mode 1",        DATA_STRING, mode_p1 ? "Meat" : "BBQ",
             "mode_p2",              "Mode 2",        DATA_STRING, mode_p2 ? "Meat" : "BBQ",
@@ -184,6 +194,8 @@ static int thermopro_tb827b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const tb827b_output_fields[] = {
         "model",
         "id",
+        "sync_word",
+        "battery_ok",
         "temp_unit",
         "mode_p1",
         "mode_p2",
@@ -211,9 +223,6 @@ static char const *const tb827b_output_fields[] = {
         "alarm_meat_4",
         "alarm_on",
         "flags0",
-        "flags1",
-        "flags2",
-        "flags3",
         "mic",
         NULL,
 };
