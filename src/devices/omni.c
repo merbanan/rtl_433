@@ -158,7 +158,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     default:
     case OMNI_MSGFMT_00:
         ptr = &hexstring[0];
-	// print just the 8 data bytes as payload data
+        // print just the 8 data bytes as payload data
         for (int ij = 1; ij < 9; ij++)
             ptr += sprintf(ptr, "%02x", b[ij]);
         itemp_c     = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) / 10.0;
