@@ -118,7 +118,11 @@ For format=1 messages, the message nibbles are to be read as:
 
 static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-  // Find a row that's a candidate for decoding
+    char hexstring[50];
+    char *ptr;
+    data_t *data;
+    
+    // Find a row that's a candidate for decoding
     int r = bitbuffer_find_repeated_row(bitbuffer, 2, 80);
 
     if (r < 0 || bitbuffer->bits_per_row[r] > 82) {
@@ -145,15 +149,15 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Default to fmt=00 so unformatted message data are reported in hex
     default:
     case OMNI_MSGFMT_00:
-        char *ptr = &char hexstring[50];
+        ptr = &hexstring[0];
         // print just the 8 data bytes as payload data
         for (int ij = 1; ij < 9; ij++)
             ptr += sprintf(ptr, "%02x", b[ij]);
-        double itemp_c     = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) * 0.10;
-        double volts       = ((double)(b[8])) * 0.01 + 3.00;
+        double itemp_c = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) * 0.10;
+        double volts   = ((double)(b[8])) * 0.01 + 3.00;
         // Make the data descriptor
         /* clang-format off */
-        data_t *data = data_make(
+        data = data_make(
             "model",           "",                                               DATA_STRING, "Omni Multisensor",
             "id",              "Id",                                             DATA_INT,     id,
             "channel",         "Format",                                         DATA_INT,     message_fmt,
@@ -166,12 +170,12 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         break;
 
     case OMNI_MSGFMT_01:
-        itemp_c     = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) * 0.10;
-        double otemp_c     = ((double)((int32_t)(((((uint32_t)b[2]) << 28) | ((uint32_t)b[3]) << 20)) >> 20)) * 0.10;
-        double ihum        = (double)b[4];
-        double light       = (double)b[5];
-        double press       = (double)(((uint16_t)(b[6] << 8)) | b[7]) * 0.10;
-        volts       = ((double)(b[8])) * 0.01 + 3.00;
+        itemp_c        = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) * 0.10;
+        double otemp_c = ((double)((int32_t)(((((uint32_t)b[2]) << 28) | ((uint32_t)b[3]) << 20)) >> 20)) * 0.10;
+        double ihum    = (double)b[4];
+        double light   = (double)b[5];
+        double press   = (double)(((uint16_t)(b[6] << 8)) | b[7]) * 0.10;
+        volts          = ((double)(b[8])) * 0.01 + 3.00;
         // Make the data descriptor
         /* clang-format off */
         data = data_make(
