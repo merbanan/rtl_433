@@ -121,7 +121,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char hexstring[50];
     char *ptr;
     data_t *data;
-    
+
     // Find a row that's a candidate for decoding
     int r = bitbuffer_find_repeated_row(bitbuffer, 2, 80);
 
