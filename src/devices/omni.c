@@ -127,7 +127,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     };
 
     // OK, that's our message buffer for decoding
-    uint8_t b = bitbuffer->bb[r];
+    uint8_t *b = bitbuffer->bb[r];
 
     // Validate the packet against the CRC8 checksum
     if (crc8(b, 9, 0x97, initCRC) != b[9]) {
@@ -145,7 +145,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Default to fmt=00 so unformatted message data are reported in hex
     default:
     case OMNI_MSGFMT_00:
-        ptr = &char hexstring[50];
+        char *ptr = &char hexstring[50];
         // print just the 8 data bytes as payload data
         for (int ij = 1; ij < 9; ij++)
             ptr += sprintf(ptr, "%02x", b[ij]);

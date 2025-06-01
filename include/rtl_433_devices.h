@@ -285,7 +285,6 @@
     DECL(tpms_gm) \
     DECL(rainpoint_hcs012arf) \
     DECL(omni) \
-
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
