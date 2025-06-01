@@ -1,6 +1,5 @@
 /** @file
-`   Omni Multisensor
-    v1.2
+    Omni Multisensor
 
     Copyright (C) 2025 H. David Todd <hdtodd@gmail.com>
 
@@ -10,7 +9,6 @@
     (at your option) any later version.
 */
 
-/* clang-format off */
 /**
 Omni Multisensor
 
@@ -19,9 +17,7 @@ Raspberry Pi Pico 2 or similar) with multiple possible data-sensor
 attachments.  A message 'format' field indicates the format of the data
 packet being sent.  The protocol, and this decoder, support up to
 16 different message formats
-*/
 
-/*
 The protocol is for the extensible wireless sensor 'omni'
 -  Single transmission protocol
 -  Flexible 64-bit data payload field structure
@@ -113,7 +109,6 @@ For format=1 messages, the message nibbles are to be read as:
      c: CRC8 checksum of bytes 1..9, initial remainder 0xaa,
             divisor polynomial 0x97, no reflections or inversions
 */
-/* clang-format on */
 
 #include "decoder.h"
 
@@ -123,14 +118,7 @@ For format=1 messages, the message nibbles are to be read as:
 
 static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t *b;
-    data_t *data;
-    char hexstring[50];
-    char *ptr;
-    int message_fmt, id;
-    double itemp_c, otemp_c, ihum, light, press, volts;
-
-    // Find a row that's a candidate for decoding
+  // Find a row that's a candidate for decoding
     int r = bitbuffer_find_repeated_row(bitbuffer, 2, 80);
 
     if (r < 0 || bitbuffer->bits_per_row[r] > 82) {
@@ -139,7 +127,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     };
 
     // OK, that's our message buffer for decoding
-    b = bitbuffer->bb[r];
+    uint8_t b = bitbuffer->bb[r];
 
     // Validate the packet against the CRC8 checksum
     if (crc8(b, 9, 0x97, initCRC) != b[9]) {
@@ -148,8 +136,8 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // OK looks like we have a valid packet.  What format?
-    message_fmt = b[0] >> 4;
-    id          = b[0] & 0x0F;
+    int message_fmt = b[0] >> 4;
+    int id          = b[0] & 0x0F;
 
     // Decode that format, if we know it
     switch (message_fmt) {
@@ -157,15 +145,15 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Default to fmt=00 so unformatted message data are reported in hex
     default:
     case OMNI_MSGFMT_00:
-        ptr = &hexstring[0];
+        ptr = &char hexstring[50];
         // print just the 8 data bytes as payload data
         for (int ij = 1; ij < 9; ij++)
             ptr += sprintf(ptr, "%02x", b[ij]);
-        itemp_c     = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) / 10.0;
-        volts       = ((double)(b[8])) / 100.0 + 3.00;
+        double itemp_c     = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) * 0.10;
+        double volts       = ((double)(b[8])) * 0.01 + 3.00;
         // Make the data descriptor
         /* clang-format off */
-           data = data_make(
+        data_t *data = data_make(
             "model",           "",                                               DATA_STRING, "Omni Multisensor",
             "id",              "Id",                                             DATA_INT,     id,
             "channel",         "Format",                                         DATA_INT,     message_fmt,
@@ -178,12 +166,12 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         break;
 
     case OMNI_MSGFMT_01:
-        itemp_c     = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) / 10.0;
-        otemp_c     = ((double)((int32_t)(((((uint32_t)b[2]) << 28) | ((uint32_t)b[3]) << 20)) >> 20)) / 10.0;
-        ihum        = (double)b[4];
-        light       = (double)b[5];
-        press       = (double)(((uint16_t)(b[6] << 8)) | b[7]) / 10.0;
-        volts       = ((double)(b[8])) / 100.0 + 3.00;
+        itemp_c     = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) * 0.10;
+        double otemp_c     = ((double)((int32_t)(((((uint32_t)b[2]) << 28) | ((uint32_t)b[3]) << 20)) >> 20)) * 0.10;
+        double ihum        = (double)b[4];
+        double light       = (double)b[5];
+        double press       = (double)(((uint16_t)(b[6] << 8)) | b[7]) * 0.10;
+        volts       = ((double)(b[8])) * 0.01 + 3.00;
         // Make the data descriptor
         /* clang-format off */
         data = data_make(
