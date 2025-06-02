@@ -1,5 +1,6 @@
+/* -*- mode: c++ ; indent-tabs-mode: nil; tab-width: 4; c-basic-offset: 4; -*- */
 /** @file
-    Omni Multisensor
+    Omni Multisensor.
 
     Copyright (C) 2025 H. David Todd <hdtodd@gmail.com>
 
@@ -7,21 +8,15 @@
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
-*/
-
-/**
-Omni Multisensor
 
 The 'sensor' is actually a programmed microcontroller (e.g.,
 Raspberry Pi Pico 2 or similar) with multiple possible data-sensor
 attachments.  A message 'format' field indicates the format of the data
 packet being sent.  The protocol, and this decoder, support up to
-16 different message formats
-
-The protocol is for the extensible wireless sensor 'omni'
+16 different message formats:
 -  Single transmission protocol
 -  Flexible 64-bit data payload field structure
--  Extensible to a total of 16 possible multi-sensor data formats
+-  Two initial formats, extensible to a total of 16 possible formats.
 
 NOTE: the rtl_433 decoder, omni.c, uses the "fmt" or "Format" field
 here, as transmitted by omni.c, to decode the incoming message.
@@ -82,7 +77,7 @@ nibbles are to be read as:
      f: format of datagram, 0-15
      i: id of device, 0-15
      t: Pico 2 core temperature: °C *10, 12-bit, 2's complement integer
-     0: bytes should be 0
+     0: bytes should be 0 (but aren't required to be)
      v: (VCC-3.00)*100, as 8-bit integer, in volts: 3V00..5V55 volts
      c: CRC8 checksum of bytes 1..9, initial remainder 0xaa,
         divisor polynomial 0x97, no reflections or inversions
@@ -118,10 +113,6 @@ For format=1 messages, the message nibbles are to be read as:
 
 static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char hexstring[50];
-    char *ptr;
-    data_t *data;
-
     // Find a row that's a candidate for decoding
     int r = bitbuffer_find_repeated_row(bitbuffer, 2, 80);
 
@@ -142,7 +133,10 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // OK looks like we have a valid packet.  What format?
     int message_fmt = b[0] >> 4;
     int id          = b[0] & 0x0F;
-
+    char hexstring[50];
+    char *ptr;
+    data_t *data;
+    
     // Decode that format, if we know it
     switch (message_fmt) {
 
@@ -153,12 +147,13 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // print just the 8 data bytes as payload data
         for (int ij = 1; ij < 9; ij++)
             ptr += sprintf(ptr, "%02x", b[ij]);
-        double itemp_c = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) * 0.10;
+//        double itemp_c = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) * 0.10;
+        double itemp_c = (double)(((int16_t)( b[1]<<8  | b[2]<<4 )) >> 4) * 0.10;
         double volts   = ((double)(b[8])) * 0.01 + 3.00;
         // Make the data descriptor
         /* clang-format off */
         data = data_make(
-            "model",           "",                                               DATA_STRING, "Omni Multisensor",
+            "model",           "",                                               DATA_STRING, "Omni-Multisensor",
             "id",              "Id",                                             DATA_INT,     id,
             "channel",         "Format",                                         DATA_INT,     message_fmt,
             "temperature_C"  , "Core Temperature",   DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  itemp_c,
@@ -170,8 +165,10 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         break;
 
     case OMNI_MSGFMT_01:
-        itemp_c        = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) * 0.10;
-        double otemp_c = ((double)((int32_t)(((((uint32_t)b[2]) << 28) | ((uint32_t)b[3]) << 20)) >> 20)) * 0.10;
+//        itemp_c        = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) * 0.10;
+//        double otemp_c = ((double)((int32_t)(((((uint32_t)b[2]) << 28) | ((uint32_t)b[3]) << 20)) >> 20)) * 0.10;
+        itemp_c = (double)(((int16_t)( b[1]<<8  | b[2]<<4 )) >> 4) * 0.10;
+        double otemp_c = (double) (((int16_t)(b[2]<<12 | b[3]<<4 )) >> 4) * 0.10;
         double ihum    = (double)b[4];
         double light   = (double)b[5];
         double press   = (double)(((uint16_t)(b[6] << 8)) | b[7]) * 0.10;
@@ -179,7 +176,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // Make the data descriptor
         /* clang-format off */
         data = data_make(
-            "model",           "",                                               DATA_STRING, "Omni Multisensor",
+            "model",           "",                                               DATA_STRING, "Omni-Multisensor",
             "id",              "Id",                                             DATA_INT,     id,
             "channel",         "Format",                                         DATA_INT,     message_fmt,
             "temperature_C"  , "Indoor Temperature", DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  itemp_c,
@@ -221,7 +218,7 @@ static char const *const output_fields[] = {
 
 /* clang-format off */
 r_device const omni = {
-        .name        = "Omni Multisensor",
+        .name        = "Omni-Multisensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 200,  // short pulse is ~200 us
         .long_width  = 400,  // long pulse is ~400 us
