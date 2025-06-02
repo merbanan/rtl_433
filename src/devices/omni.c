@@ -7,9 +7,10 @@
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
-
-The 'sensor' is actually a programmed microcontroller (e.g.,
-Raspberry Pi Pico 2 or similar) with multiple possible data-sensor
+/*
+/**
+The 'sensor' is actually a programmed microcontroller, such as
+Raspberry Pi Pico 2 or similar, with multiple possible data-sensor
 attachments.  A message 'format' field indicates the format of the data
 packet being sent.  The protocol, and this decoder, support up to
 16 different message formats:
