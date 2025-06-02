@@ -50,14 +50,15 @@ After decoding the bitstream into 104 bits of payload, the layout appears to be:
 
 Data layout:
 
-    IIIIIIII IIIIIIII IIIIIIII IIIIIIII UUUUUUUU ???NNNBB CCCCCCCC CCCCCCCC CCCCCCCC UU?TTTLL EEEEEEEE EEEEEEEE EEEEEEEE
+    IIIIIIII IIIIIIII IIIIIIII IIIIIIII UUUUMMMM ???NNNBB CCCCCCCC CCCCCCCC CCCCCCCC UU?TTTLL EEEEEEEE EEEEEEEE EEEEEEEE
 
 - I: 32-bit little-endian id
-- U:  8-bit Unknown1
+- U:  4-bit Unknown1
+- M:  4-bit Meter Type
 - N:  6-bit NoUse (3 bits)
 - B:  2-bit backflow flag
 - C: 24-bit Consumption Data, might be 1/10 gallon units
-- U:  2-bit Unknown3
+- U:  2-bit Unknown3, perhaps added (first 2 bits) of consumption???
 - T:  4-bit days of leak mapping (3 bits)
 - L:  2-bit leak flag type
 - E: 24-bit extra data????
@@ -144,8 +145,10 @@ static int neptune_r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // meter_id 32 bits
     uint32_t meter_id = ((uint32_t)b[0] << 24) | (b[1] << 16) | (b[2] << 8) | (b[3]);
-    //Unkn1 8 bits
-    int unkn1 = b[4];
+    //Unkn1 4 bits
+    int unkn1 = b[4] >> 4;
+    //MeterType 4 bits
+    int metertype = b[4]&0x0F;
     //Unkn2 3 bits
     int unkn2 = b[5] >> 5;
     //NoUse 3 bits
@@ -163,8 +166,8 @@ static int neptune_r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // 1 = low
     // 2 = high
     int backflow = b[5]&0x03;
-    //Consumption 24 bits
-    int consumption = (b[6] << 16) | (b[7] << 8) | (b[8]);
+    //Consumption 26 bits ??
+    int consumption = ((b[9] >> 6) << 24) | (b[6] << 16) | (b[7] << 8) | (b[8]);
     //Unkn3 2 bits + 1 bit ???
     int unkn3 = b[9] >> 5;
     //Leak 3 bits
@@ -191,6 +194,7 @@ static int neptune_r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",       "",    DATA_STRING, "Neptune-R900",
             "id",          "",    DATA_INT,    meter_id,
             "unkn1",       "",    DATA_INT,    unkn1,
+            "metertype",   "",    DATA_INT,    metertype,
             "unkn2",       "",    DATA_INT,    unkn2,
             "nouse",       "",    DATA_INT,    nouse,
             "backflow",    "",    DATA_INT,    backflow,
@@ -218,6 +222,7 @@ static char const *const output_fields[] = {
         "model",
         "id",
         "unkn1",
+        "metertype",
         "unkn2",
         "nouse",
         "backflow",
