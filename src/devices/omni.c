@@ -1,4 +1,3 @@
-/* -*- mode: c++ ; indent-tabs-mode: nil; tab-width: 4; c-basic-offset: 4; -*- */
 /** @file
     Omni Multisensor.
 
@@ -136,7 +135,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char hexstring[50];
     char *ptr;
     data_t *data;
-    
+
     // Decode that format, if we know it
     switch (message_fmt) {
 
