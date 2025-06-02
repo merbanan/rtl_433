@@ -7,7 +7,7 @@
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
-/*
+*/
 /**
 The 'sensor' is actually a programmed microcontroller, such as
 Raspberry Pi Pico 2 or similar, with multiple possible data-sensor
@@ -218,7 +218,7 @@ static char const *const output_fields[] = {
 
 /* clang-format off */
 r_device const omni = {
-        .name        = "Omni-Multisensor",
+        .name        = "Omni Multisensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 200,  // short pulse is ~200 us
         .long_width  = 400,  // long pulse is ~400 us
