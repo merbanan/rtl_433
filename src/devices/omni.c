@@ -202,7 +202,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "mic",     "Integrity", DATA_STRING,  "CRC",
             NULL);
         /* clang-format on */
-	break;
+        break;
 
         /* New decoders follow here */
         break;
