@@ -131,12 +131,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, ubuntu-22.04]
+        os: [ubuntu-24.04]
         feat: [rtlsdr, soapysdr]
         include:
-          - os: ubuntu-20.04
-            libs: openssl11
-          - os: ubuntu-22.04
+          # - os: ubuntu-20.04
+          #   libs: openssl11
+          # - os: ubuntu-22.04
+          #   libs: openssl3
+          - os: ubuntu-24.04
             libs: openssl3
     runs-on: ${{ matrix.os }}
     name: Build ${{ matrix.feat }} on ${{ matrix.os }} for amd64
@@ -172,7 +174,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, ubuntu-22.04]
+        os: [ubuntu-22.04]
         arch: [armhf, arm64]
         feat: [rtlsdr, soapysdr]
         include:
@@ -180,8 +182,10 @@ jobs:
             compiler: arm-linux-gnueabihf
           - arch: arm64
             compiler: aarch64-linux-gnu
-          - os: ubuntu-20.04
-            libs: openssl11
+          # - os: ubuntu-20.04
+          #   libs: openssl11
+          # - os: ubuntu-24.04
+          #   libs: openssl3
           - os: ubuntu-22.04
             libs: openssl3
     runs-on: ${{ matrix.os }}
