@@ -284,6 +284,7 @@
     DECL(revolt_zx7717) \
     DECL(tpms_gm) \
     DECL(rainpoint_hcs012arf) \
+    DECL(apator_metra_erm30) \
 
     /* Add new decoders here. */
 
