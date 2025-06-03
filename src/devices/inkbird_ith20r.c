@@ -115,7 +115,7 @@ static int inkbird_ith20r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",            "",             DATA_STRING, "Inkbird-ITH20R",
             "id",               "",             DATA_INT,    sensor_id,
-            "battery_ok",       "Battery",      DATA_DOUBLE, battery_ok,
+            "battery_ok",       "Battery level",    DATA_DOUBLE, battery_ok,
             "sensor_num",       "",             DATA_INT,    sensor_num,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
             "temperature_2_C",  "Temperature2", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_ext,

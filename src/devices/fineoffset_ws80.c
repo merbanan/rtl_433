@@ -94,7 +94,7 @@ static int fineoffset_ws80_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data = data_make(
             "model",            "",                 DATA_STRING, "Fineoffset-WS80",
             "id",               "ID",               DATA_FORMAT, "%06x", DATA_INT,    id,
-            "battery_ok",       "Battery",          DATA_DOUBLE, battery_lvl * 0.01f,
+            "battery_ok",       "Battery level",    DATA_DOUBLE, battery_lvl * 0.01f,
             "battery_mV",       "Battery Voltage",  DATA_FORMAT, "%d mV", DATA_INT,    battery_mv,
             "temperature_C",    "Temperature",      DATA_COND, temp_raw != 0x3ff,   DATA_FORMAT, "%.1f C",   DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",         DATA_COND, humidity != 0xff,    DATA_FORMAT, "%u %%",    DATA_INT, humidity,

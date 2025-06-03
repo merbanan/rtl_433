@@ -82,6 +82,7 @@ static const struct crc_init known_crc_init[] = {
         {0x1D65, "Phoenix AZ", "APS"},
         {0xB9A9, "Mattoon IL", "Coles-Moultrie Electric Co-op"},
         {0xD1FF, "Newark NJ", "PSEG New Jersey"},
+        {0xba1f, "Burleson TX", "United Cooperative Services"},
 };
 
 static int gridstream_checksum(int fulllength, uint16_t length, uint8_t *bits, int adjust)

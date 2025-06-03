@@ -947,6 +947,7 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, char const *dev_query, int verbos
     if (r != 0) {
         if (verbose)
             print_log(LOG_ERROR, __func__, "Failed to setup sdr device");
+        free(dev->dev_info);
         free(dev);
         return -3;
     }

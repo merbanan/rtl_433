@@ -79,6 +79,12 @@
 typedef SSIZE_T ssize_t;
 #endif
 
+// _POSIX_HOST_NAME_MAX is broken in gcc-13 at least on MacOS
+#ifndef _POSIX_HOST_NAME_MAX
+//#warning The limits.h include is missing the _POSIX_HOST_NAME_MAX define.
+#define _POSIX_HOST_NAME_MAX 255
+#endif
+
 // MSG_NOSIGNAL is Linux and most BSDs only, not macOS or Windows
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0

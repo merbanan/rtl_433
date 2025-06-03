@@ -159,7 +159,7 @@ static void usage(int exit_code)
             "  [-H <seconds>] Hop interval for polling of multiple frequencies (default: %d seconds)\n"
             "  [-p <ppm_error>] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
             "  [-s <sample rate>] Set sample rate (default: %d Hz)\n"
-            "  [-D restart | pause | quit | manual] Input device run mode options.\n"
+            "  [-D quit | restart | pause | manual] Input device run mode options (default: quit).\n"
             "\t\t= Demodulator options =\n"
             "  [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)\n"
             "       Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
@@ -182,7 +182,7 @@ static void usage(int exit_code)
             "  [-w <filename> | help] Save data stream to output file (a '-' dumps samples to stdout)\n"
             "  [-W <filename> | help] Save data stream to output file, overwrite existing file\n"
             "\t\t= Data output options =\n"
-            "  [-F log | kv | json | csv | mqtt | influx | syslog | trigger | null | help] Produce decoded output in given format.\n"
+            "  [-F log | kv | json | csv | mqtt | influx | syslog | trigger | rtl_tcp | http | null | help] Produce decoded output in given format.\n"
             "       Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "       Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
             "  [-M time[:<options>] | protocol | level | noise[:<secs>] | stats | bits | help] Add various meta data to each output.\n"
@@ -260,12 +260,12 @@ static void help_device_mode(void)
 {
     term_help_fprintf(stdout,
             "\t\t= Input device run mode =\n"
-            "  [-D restart | pause | quit | manual] Input device run mode options.\n"
+            "  [-D quit | restart | pause | manual] Input device run mode options (default: quit).\n"
             "\tSupported input device run modes:\n"
+            "\t  quit: Quit on input device errors (default)\n"
             "\t  restart: Restart the input device on errors\n"
             "\t  pause: Pause the input device on errors, waits for e.g. HTTP-API control\n"
-            "\t  quit: Quit on input device errors (default)\n"
-            "\t  manual: Don't start an input device, waits for e.g. HTTP-API control\n"
+            "\t  manual: Do not start an input device, waits for e.g. HTTP-API control\n"
             "\tWithout this option the default is to start the SDR and quit on errors.\n");
     exit(0);
 }
@@ -275,14 +275,16 @@ static void help_output(void)
 {
     term_help_fprintf(stdout,
             "\t\t= Output format option =\n"
-            "  [-F log|kv|json|csv|mqtt|influx|syslog|trigger|null] Produce decoded output in given format.\n"
+            "  [-F log|kv|json|csv|mqtt|influx|syslog|trigger|rtl_tcp|http|null] Produce decoded output in given format.\n"
             "\tWithout this option the default is LOG and KV output. Use \"-F null\" to remove the default.\n"
             "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
+            "  [-F mqtt[:[//]host[:port][,<options>]] (default: localhost:1883)\n"
             "\tSpecify MQTT server with e.g. -F mqtt://localhost:1883\n"
             "\tDefault user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.\n"
             "\tAdd MQTT options with e.g. -F \"mqtt://host:1883,opt=arg\"\n"
             "\tMQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]\n"
             "\tSupported MQTT formats: (default is all)\n"
+            "\t  availability: posts availability (online/offline)\n"
             "\t  events: posts JSON event data, default \"<base>/events\"\n"
             "\t  states: posts JSON state data, default \"<base>/states\"\n"
             "\t  devices: posts device and sensor info in nested topics,\n"
@@ -292,10 +294,18 @@ static void help_output(void)
             "\tE.g. -F \"mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]\"\n"
             "\tWith MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client-ID is computed from the driver string.\n"
             "\tIf you use multiple RTL-SDR, perhaps set a serial and select by that (helps not to get the wrong antenna).\n"
+            "  [-F influx[:[//]host[:port][/<path and options>]]\n"
             "\tSpecify InfluxDB 2.0 server with e.g. -F \"influx://localhost:9999/api/v2/write?org=<org>&bucket=<bucket>,token=<authtoken>\"\n"
             "\tSpecify InfluxDB 1.x server with e.g. -F \"influx://localhost:8086/write?db=<db>&p=<password>&u=<user>\"\n"
             "\t  Additional parameter -M time:unix:usec:utc for correct timestamps in InfluxDB recommended\n"
-            "\tSpecify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n");
+            "  [-F syslog[:[//]host[:port] (default: localhost:514)\n"
+            "\tSpecify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
+            "  [-F trigger:/path/to/file]\n"
+            "\tAdd an output that writes a \"1\" to the path for each event, use with a e.g. a GPIO\n"
+            "  [-F rtl_tcp[:[//]bind[:port]] (default: localhost:1234)\n"
+            "\tAdd a rtl_tcp pass-through server\n"
+            "  [-F http[:[//]bind[:port]] (default: 0.0.0.0:8433)\n"
+            "\tAdd a HTTP API server, a UI is at e.g. http://localhost:8433/\n");
     exit(0);
 }
 
@@ -912,7 +922,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             help_device_mode();
 
         if (strcmp(arg, "quit") == 0) {
-            cfg->dev_mode = DEVICE_MODE_RESTART;
+            cfg->dev_mode = DEVICE_MODE_QUIT;
         }
         else if (strcmp(arg, "restart") == 0) {
             cfg->dev_mode = DEVICE_MODE_RESTART;

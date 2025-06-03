@@ -602,7 +602,7 @@ mappings = {
             "name": "Energy",
             "unit_of_measurement": "kWh",
             "value_template": "{{ value|float }}",
-            "state_class": "measurement"
+            "state_class": "total_increasing"
         }
     },
 
