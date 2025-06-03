@@ -74,8 +74,8 @@ Correct rtl\-sdr tuner frequency offset error (default: 0)
 [ \fB\-s\fI <sample rate>\fP ]
 Set sample rate (default: 250000 Hz)
 .TP
-[ \fB\-D\fI restart | pause | quit | manual\fP ]
-Input device run mode options.
+[ \fB\-D\fI quit | restart | pause | manual\fP ]
+Input device run mode options (default: quit).
 .SS "Demodulator options"
 .TP
 [ \fB\-R\fI <device> | help\fP ]
@@ -351,6 +351,9 @@ MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
 .RE
 .RS
 Supported MQTT formats: (default is all)
+.RE
+.RS
+  availability: posts availability (online/offline)
 .RE
 .RS
   events: posts JSON event data, default "<base>/events"
