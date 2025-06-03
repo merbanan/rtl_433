@@ -141,13 +141,11 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     switch (message_fmt) {
 
     // Default to fmt=00 so unformatted message data are reported in hex
-    default:
     case OMNI_MSGFMT_00:
         ptr = &hexstring[0];
         // print just the 8 data bytes as payload data
         for (int ij = 1; ij < 9; ij++)
             ptr += sprintf(ptr, "%02x", b[ij]);
-//        double itemp_c = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) * 0.10;
         double itemp_c = (double)(((int16_t)( b[1]<<8  | b[2]<<4 )) >> 4) * 0.10;
         double volts   = ((double)(b[8])) * 0.01 + 3.00;
         // Make the data descriptor
@@ -165,8 +163,6 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         break;
 
     case OMNI_MSGFMT_01:
-//        itemp_c        = ((double)((int32_t)(((((uint32_t)b[1]) << 24) | ((uint32_t)(b[2]) & 0xF0) << 16)) >> 20)) * 0.10;
-//        double otemp_c = ((double)((int32_t)(((((uint32_t)b[2]) << 28) | ((uint32_t)b[3]) << 20)) >> 20)) * 0.10;
         itemp_c = (double)(((int16_t)( b[1]<<8  | b[2]<<4 )) >> 4) * 0.10;
         double otemp_c = (double) (((int16_t)(b[2]<<12 | b[3]<<4 )) >> 4) * 0.10;
         double ihum    = (double)b[4];
@@ -189,6 +185,24 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             NULL);
         /* clang-format on */
         break;
+
+    default:
+        // Print the whole 10 bytes in hex, with id and fmt explicit
+        ptr = &hexstring[0];
+        // print just the 8 data bytes as payload data
+        for (int ij = 1; ij < 9; ij++)
+            ptr += sprintf(ptr, "%02x", b[ij]);
+        // Make the data descriptor
+        /* clang-format off */
+        data = data_make(
+            "model",   "",          DATA_STRING, "Omni-Multisensor",
+            "id",      "Id",        DATA_INT,     id,
+            "channel",         "Format",                                         DATA_INT,     message_fmt,
+            "payload", "Payload",   DATA_STRING,  hexstring,
+            "mic",     "Integrity", DATA_STRING,  "CRC",
+            NULL);
+        /* clang-format on */
+	break;
 
         /* New decoders follow here */
         break;
