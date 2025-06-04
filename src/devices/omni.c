@@ -178,7 +178,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "temperature_C"  , "Indoor Temperature", DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  itemp_c,
             "temperature_2_C", "Outdoor Temperature",DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  otemp_c,
             "humidity",        "Indoor Humidity",    DATA_FORMAT, "%.0f %%",     DATA_DOUBLE,  ihum,
-            "Light %",         "Light",              DATA_FORMAT, "%.0f%%",      DATA_DOUBLE,  light,
+            "light %",         "Light",              DATA_FORMAT, "%.0f%%",      DATA_DOUBLE,  light,
             "pressure_hPa",    "BarometricPressure", DATA_FORMAT, "%.1f hPa",    DATA_DOUBLE,  press,
             "voltage_V",       "VCC voltage",        DATA_FORMAT, "%.2f V",      DATA_DOUBLE,  volts,
             "mic",             "Integrity",                                      DATA_STRING,  "CRC",
