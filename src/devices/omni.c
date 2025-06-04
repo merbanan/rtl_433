@@ -178,7 +178,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "temperature_C"  , "Indoor Temperature", DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  itemp_c,
             "temperature_2_C", "Outdoor Temperature",DATA_FORMAT, "%.2f ˚C",     DATA_DOUBLE,  otemp_c,
             "humidity",        "Indoor Humidity",    DATA_FORMAT, "%.0f %%",     DATA_DOUBLE,  ihum,
-            "light %",         "Light",              DATA_FORMAT, "%.0f%%",      DATA_DOUBLE,  light,
+            "light_pct",       "Light",              DATA_FORMAT, "%.0f %%",      DATA_DOUBLE,  light,
             "pressure_hPa",    "BarometricPressure", DATA_FORMAT, "%.1f hPa",    DATA_DOUBLE,  press,
             "voltage_V",       "VCC voltage",        DATA_FORMAT, "%.2f V",      DATA_DOUBLE,  volts,
             "mic",             "Integrity",                                      DATA_STRING,  "CRC",
@@ -193,15 +193,13 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         for (int ij = 1; ij < 9; ij++)
             ptr += sprintf(ptr, "%02x", b[ij]);
         // Make the data descriptor
-        /* clang-format off */
         data = data_make(
             "model",   "",          DATA_STRING, "Omni-Multisensor",
             "id",      "Id",        DATA_INT,     id,
-            "channel",         "Format",                                         DATA_INT,     message_fmt,
+            "channel", "Format",    DATA_INT,     message_fmt,
             "payload", "Payload",   DATA_STRING,  hexstring,
             "mic",     "Integrity", DATA_STRING,  "CRC",
             NULL);
-        /* clang-format on */
         break;
 
         /* New decoders follow here */
@@ -223,7 +221,7 @@ static char const *const output_fields[] = {
         "temperature_2_C",
         "humidity",
         "pressure_hPa",
-        "light_level",
+        "light_pct",
         "voltage_V",
         "payload",
         "mic",
