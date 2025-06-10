@@ -177,6 +177,7 @@ add_library(r_433 STATIC
     devices/maverick_et73.c
     devices/maverick_et73x.c
     devices/maverick_xr30.c
+    devices/maverick_xr50.c
     devices/mebus.c
     devices/megacode.c
     devices/missil_ml0757.c
