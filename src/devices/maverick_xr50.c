@@ -105,21 +105,21 @@ static int maverick_xr50_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int p_4_high_raw = (b[19] << 4) | ((b[20] & 0xf0) >> 4);
     int p_4_low_raw  = ((b[20] & 0x0f) << 8) | b[21];
 
-    float p1_temp     = (p_1_temp_raw - 500) * 0.1f;
-    int p1_set_high = (p_1_high_raw - 500) / 10;
-    int p1_set_low  = (p_1_low_raw - 500) / 10;
+     float p1_temp     = (p_1_temp_raw - 500) * 0.1f;
+    float p1_set_high = (p_1_high_raw - 500) * 0.1f;
+    float p1_set_low  = (p_1_low_raw - 500) * 0.1f;
 
     float p2_temp     = (p_2_temp_raw - 500) * 0.1f;
-    int p2_set_high = (p_2_high_raw - 500) / 10;
-    int p2_set_low  = (p_2_low_raw - 500) / 10;
+    float p2_set_high = (p_2_high_raw - 500) * 0.1f;
+    float p2_set_low  = (p_2_low_raw - 500) * 0.1f;
 
     float p3_temp     = (p_3_temp_raw - 500) * 0.1f;
-    int p3_set_high = (p_3_high_raw - 500) / 10;
-    int p3_set_low  = (p_3_low_raw - 500) / 10;
+    float p3_set_high = (p_3_high_raw - 500) * 0.1f;
+    float p3_set_low  = (p_3_low_raw - 500) * 0.1f;
 
     float p4_temp     = (p_4_temp_raw - 500) * 0.1f;
-    int p4_set_high = (p_4_high_raw - 500) / 10;
-    int p4_set_low  = (p_4_low_raw - 500) / 10;
+    float p4_set_high = (p_4_high_raw - 500) * 0.1f;
+    float p4_set_low  = (p_4_low_raw - 500) * 0.1f;
 
     /* clang-format off */
    data_t *data = data_make(
@@ -127,20 +127,20 @@ static int maverick_xr50_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         "id",                   "",                         DATA_FORMAT, "%04x",   DATA_INT,  id,
         "probe_1_flags",        "Flags Probe 1",            DATA_FORMAT, "%1x",    DATA_INT,  p_1_flags,
         "temperature_1_C",      "Temperature 1",            DATA_COND, p_1_temp_raw != 0, DATA_FORMAT, "%.1f C", DATA_DOUBLE, p1_temp,
-        "temperature_high_1_C", "Temperature 1 alarm high", DATA_INT, p1_set_high,
-        "temperature_low_1_C",  "Temperature 1 alarm low",  DATA_INT, p1_set_low,
+        "temperature_high_1_C", "Temperature 1 alarm high", DATA_FORMAT, "%.1f C", DATA_DOUBLE, p1_set_high,
+        "temperature_low_1_C",  "Temperature 1 alarm low",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, p1_set_low,
         "probe_2_flags",        "Flags Probe 2",            DATA_FORMAT, "%1x",    DATA_INT,  p_2_flags,
         "temperature_2_C",      "Temperature 2",            DATA_COND, p_2_temp_raw != 0, DATA_FORMAT, "%.1f C", DATA_DOUBLE, p2_temp,
-        "temperature_high_2_C", "Temperature 2 alarm high", DATA_INT, p2_set_high,
-        "temperature_low_2_C",  "Temperature 2 alarm low",  DATA_INT, p2_set_low,
+        "temperature_high_2_C", "Temperature 2 alarm high", DATA_FORMAT, "%.1f C", DATA_DOUBLE, p2_set_high,
+        "temperature_low_2_C",  "Temperature 2 alarm low",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, p2_set_low,
         "probe_3_flags",        "Flags Probe 3",            DATA_FORMAT, "%1x",    DATA_INT,  p_3_flags,
         "temperature_3_C",      "Temperature 3",            DATA_COND, p_3_temp_raw != 0, DATA_FORMAT, "%.1f C", DATA_DOUBLE, p3_temp,
-        "temperature_high_3_C", "Temperature 3 alarm high", DATA_INT, p3_set_high,
-        "temperature_low_3_C",  "Temperature 3 alarm low",  DATA_INT, p3_set_low,
+        "temperature_high_3_C", "Temperature 3 alarm high", DATA_FORMAT, "%.1f C", DATA_DOUBLE, p3_set_high,
+        "temperature_low_3_C",  "Temperature 3 alarm low",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, p3_set_low,
         "probe_4_flags",        "Flags Probe 4",            DATA_FORMAT, "%1x",    DATA_INT,  p_4_flags,
         "temperature_4_C",      "Temperature 4",            DATA_COND, p_4_temp_raw != 0, DATA_FORMAT, "%.1f C", DATA_DOUBLE, p4_temp,
-        "temperature_high_4_C", "Temperature 4 alarm high", DATA_INT, p4_set_high,
-        "temperature_low_4_C",  "Temperature 4 alarm low",  DATA_INT, p4_set_low,
+        "temperature_high_4_C", "Temperature 4 alarm high", DATA_FORMAT, "%.1f C", DATA_DOUBLE, p4_set_high,
+        "temperature_low_4_C",  "Temperature 4 alarm low",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, p4_set_low,
         "mic",                  "Integrity",                DATA_STRING,  "CRC",
         NULL
     );
