@@ -1,7 +1,7 @@
 ########################################################################
 # Project setup
 ########################################################################
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.5)
 # Fix behavior of CMAKE_C_STANDARD when targeting macOS.
 if(POLICY CMP0025)
     cmake_policy(SET CMP0025 NEW)
@@ -244,7 +244,11 @@ endif()
 elseif(ENABLE_RTLSDR STREQUAL "AUTO")
     message(STATUS "RTL-SDR development files not found, RTL-SDR device input won't be possible.")
 else()
-    message(FATAL_ERROR "RTL-SDR development files not found.")
+    message(FATAL_ERROR "RTL-SDR development files not found. 
+    On Debian/Ubuntu systems: sudo apt-get update && sudo apt-get install librtlsdr-dev
+    On Fedora: sudo dnf install rtl-sdr-devel
+    On macOS: brew install librtlsdr
+    Please install the appropriate package and try again.")
 endif()
 
 else()
