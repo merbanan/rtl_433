@@ -363,6 +363,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [275]  GM-Aftermarket TPMS
     [276]  RainPoint HCS012ARF Rain Gauge sensor
     [277]  Apator Metra E-RM 30
+    [278]  Soil Moisture/Temp/Light level sensor
 
 * Disabled by default, use -R n or a conf file to enable
 

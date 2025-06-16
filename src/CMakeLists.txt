@@ -227,6 +227,7 @@ add_library(r_433 STATIC
     devices/simplisafe.c
     devices/simplisafe_gen3.c
     devices/smoke_gs558.c
+    devices/soil_mtl.c
     devices/solight_te44.c
     devices/somfy_iohc.c
     devices/somfy_rts.c
