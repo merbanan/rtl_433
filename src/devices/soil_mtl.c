@@ -23,35 +23,36 @@ also:
 - Royal Gardineer ZX8859-944, ASIN B0DQTYYZK8
 - some unbranded sensors on AliEexpress
 
-Wireless 433 MHz in EU region, unidirectional.
-Modulation OOK PWM with 400/1200 us timing, inverted bits.
-
 Example code:
     raw      {65}55aaee8ddae84fcf
     preamble {16}0x55aa
     inverted {65}aa5513fd001630800
 
+# Data transmission
+
+9 repeats of 433.92 MHz (EU region).
+Modulation is OOK PWM with 400/1200 us timing, inverted bits.
+
 # Data Layout
 
-        PPPP PPPP PPPP PPPP IIII IIII IIII IIII MMMM MMMM STTT TTTT QQBB LLLL CCCC SSSSSSSS
+        PPPP PPPP PPPP PPPP IIII IIII IIII IIII MMMM MMMM STTT TTTT QQBB LLLL CCCC XXXXXXXX
 
-- P = Preamble of 16 bits equal to 0xaa55 (inverted)
-- I =ID 16 bits length seems to survive battery changes
+- P = Preamble of 16 bits with 0xaa55 (inverted)
+- I = ID 16 bits, seems to survive battery changes
 - M = soil moisture ~0-99% as an 8 bit integer
 - S = sign for temperature (0 for positive or 1 for negative)
-- T = Temperature as 7bit integer ~0-100C
+- T = Temperature as 7 bit integer ~0-100C
 - Q = 2 sequence bits
   - device sends message on CHS change !
   - sequence:
-  - S 00  initial phase duration 150s
-  - S 01  intervall timer 3min
-  - S 02  intervall timer 15min
-  - S 03  intervall timer 30min
-- B = battery status in values of 1-3 for number of segments to show for battery
+  - S 00  initial phase duration 150 secs
+  - S 01  interval timer 3 mins
+  - S 02  interval timer 15 mins
+  - S 03  interval timer 30 mins
+- B = battery status of 1 to 3, 0 so far has not been observed?
 - L = light level (9 states from LOW- to HIGH+)
 - C = 4 bit checksum
-- S = Sync of 8 bits equal to 0xf8 , can be ignored
-- 9 repeats
+- X = Trailer of 8 bits equal to 0xf8 , can be ignored
 
 Note: Device drifts in direct sun and shows up to 12C offset.
 Note: Device is NOT waterproof (IP27),  don't immerse in water.
@@ -83,11 +84,11 @@ static int soil_mtl_decoder(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b = bitbuffer->bb[row];
 
     // Nibble-wide checksum validation
-    uint8_t chs = (b[7] & 0xf0) >> 4;
-    uint8_t c_sum = add_nibbles(b, 7) & 0x0f;
+    int chk = (b[7] & 0xf0) >> 4;
+    int sum = add_nibbles(b, 7) & 0x0f;
 
-    if (c_sum != chs) {
-        return DECODE_FAIL_MIC; // Checksum fault
+    if (sum != chk) {
+        return DECODE_FAIL_MIC; // Checksum mismatch
     }
 
     int id          = (b[2] << 8) | b[3];
@@ -105,12 +106,13 @@ static int soil_mtl_decoder(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data_t *data = data_make(
     		"model",            "Model",            DATA_STRING,    "Soil-MTL",
-    		"id",               "ID",               DATA_FORMAT,    "0x%02X",    DATA_INT,    id,
-    		"moisture_pct",     "Moisture Pct",     DATA_INT,       moisture,
+    		"id",               "ID",               DATA_FORMAT,    "%04X",	 	 DATA_INT,    id,
+            "battery_ok",       "Battery",      	DATA_INT,    	batt_lvl > 1, // Level 1 means "Low"
+    		"battery_pct",      "Battery level",    DATA_INT,       100 * batt_lvl / 3, // Note: this might change with #3103
     		"temperature_C",	"Temperature C",	DATA_INT,       temperature,
-    		"sequence",         "Sequence",         DATA_FORMAT,    "0x%02X",    DATA_INT,    sequence,
-    		"battery_lvl",      "Batt level",       DATA_INT,       batt_lvl,
+            "moisture",         "Moisture",     	DATA_FORMAT, 	"%d %%", 	 DATA_INT, moisture,
     		"light_lvl",        "Light level",      DATA_INT,       light_lvl,
+    		"sequence",         "TX Sequence",      DATA_FORMAT,    "0x%02X",    DATA_INT,    sequence,
     		"mic",              "Integrity",        DATA_STRING,	"CHECKSUM",
     		NULL);
     /* clang-format on */
@@ -123,11 +125,12 @@ static int soil_mtl_decoder(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
-        "moisture_pct",
+        "battery_ok",
+        "battery_pct",
         "temperature_C",
-        "sequence",
-        "battery_lvl",
+        "moisture",
         "light_lvl",
+        "sequence",
         "mic",
         NULL,
 };
