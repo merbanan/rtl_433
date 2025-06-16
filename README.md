@@ -365,6 +365,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [277]  Apator Metra E-RM 30
     [278]  ThermoPro TX-7B Outdoor Thermometer Hygrometer
     [279]  Nexus, CRX, Prego sauna temperature sensor
+    [280]  Homelead HG9901 (Geevon, Dr.Meter, Royal Gardineer) soil moisture/temp/light level sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
