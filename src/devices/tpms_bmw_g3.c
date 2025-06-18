@@ -93,12 +93,11 @@ static int tpms_bmwg3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC; // crc mismatch
     }
 
-    if (is_gen2){
+    if (is_gen2) {
         decoder_log(decoder, 1, __func__, "BMW Gen 2 found");
-    }else{
+    } else {
     decoder_log(decoder, 1, __func__, "BMW Gen 3 found");
     }
-
 
     float pressure_kPa      = (b[4] - 43) * 2.5f;
     float temperature_C     = (b[5] - 40);
