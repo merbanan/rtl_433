@@ -39,7 +39,7 @@ Modulation is OOK PWM with 400/1200 us timing, inverted bits.
 
 - P = Preamble of 16 bits with 0xaa55 (inverted)
 - I = ID 16 bits, seems to survive battery changes
-- M = soil moisture ~0-99% as an 8 bit integer
+- M = soil moisture 0-100% as an 8 bit integer
 - S = sign for temperature (0 for positive or 1 for negative)
 - T = Temperature as 7 bit integer ~0-100C
 - Q = 2 sequence bits
@@ -49,8 +49,17 @@ Modulation is OOK PWM with 400/1200 us timing, inverted bits.
   - S 01  interval timer 3 mins
   - S 02  interval timer 15 mins
   - S 03  interval timer 30 mins
-- B = battery status of 1 to 3, 0 so far has not been observed?
+- B = battery status of 1 (1.22 V) to 3 (above 1.42 V), 0 so far has not been observed?
 - L = light level (9 states from LOW- to HIGH+)
+  - 0 (LOW-)     0
+  - 1 (LOW)    > 120 Lux
+  - 2 (LOW+)   > 250 Lux
+  - 3 (NOR-)   > 480 Lux
+  - 4 (NOR)    > 750 Lux
+  - 5 (NOR+)   >1200 Lux
+  - 6 (HIGH-)  >1700 Lux
+  - 7 (HIGH)   >3800 Lux
+  - 8 (HIGH+)  >5200 Lux, max 15000 Lux for Dr.meter
 - C = 4 bit checksum
 - X = Trailer of 8 bits equal to 0xf8 , can be ignored
 
@@ -136,7 +145,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const soil_mtl = {
-        .name        = "Soil Moisture/Temp/Light level sensor",
+        .name        = "Geevon, Dr.Meter, Royal Gardineer Soil Moisture/Temp/Light sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 432,  // 400
         .long_width  = 1228, // 1200
