@@ -74,7 +74,7 @@ static int tpms_bmwg3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     decoder_log_bitrow(decoder, 2, __func__, decoded.bb[0], decoded.bits_per_row[0], "DMC");
 
-    // Based on the lenght define if Gen2 10 bytes, 81 bits or Gen3, 11 bytes, 89 bits.
+    // Based on the length decide if Gen2 (10 bytes, 81 bits) or Gen3 (11 bytes, 89 bits).
     int msg_len = decoded.bits_per_row[0];
     int is_gen2 = 0;
 
@@ -96,7 +96,7 @@ static int tpms_bmwg3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (is_gen2) {
         decoder_log(decoder, 1, __func__, "BMW Gen 2 found");
     } else {
-    decoder_log(decoder, 1, __func__, "BMW Gen 3 found");
+        decoder_log(decoder, 1, __func__, "BMW Gen 3 found");
     }
 
     float pressure_kPa      = (b[4] - 43) * 2.5f;
@@ -107,7 +107,10 @@ static int tpms_bmwg3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint32_t id             = ((uint32_t)b[0] << 24) | (b[1] << 16) | (b[2] << 8) | (b[3]);
 
-    char msg_str[23 - (2 * is_gen2) ];
+    char id_str[23];
+    snprintf(id_str, sizeof(id_str), "%u", id);
+
+    char msg_str[23];
     if (is_gen2) {
         snprintf(msg_str, sizeof(msg_str), "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9]);
     }else{
@@ -116,10 +119,11 @@ static int tpms_bmwg3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",               "",                DATA_STRING, is_gen2 ? "BMW-GEN2" : "BMW-GEN3",
+            "model",               "",                DATA_COND, is_gen2, DATA_STRING, "BMW-GEN2",
+            "model",               "",                DATA_COND, !is_gen2, DATA_STRING, "BMW-GEN3",
             "type",                "",                DATA_STRING, "TPMS",
-            //"id",                  "",                DATA_FORMAT, "%08x",     DATA_INT,    id,
-            "id",                  "",                DATA_INT,    id,
+            "id",                  "",                DATA_FORMAT, "%u", DATA_INT, id,
+            "uid",                 "",                DATA_STRING,             id_str, // unsigned id
             "pressure_kPa",        "Pressure",        DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, (double)pressure_kPa,
             "temperature_C",       "Temperature",     DATA_FORMAT, "%.1f C",   DATA_DOUBLE, temperature_C,
             "flags1",              "",                DATA_FORMAT, "%08b",     DATA_INT,    flags1,
@@ -138,6 +142,7 @@ static char const *const output_fields[] = {
         "model",
         "type",
         "id",
+        "uid",
         "battery_ok",
         "pressure_kPa",
         "flags1",
