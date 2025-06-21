@@ -285,6 +285,7 @@
     DECL(tpms_gm) \
     DECL(rainpoint_hcs012arf) \
     DECL(apator_metra_erm30) \
+    DECL(soil_mtl) \
 
     /* Add new decoders here. */
 
