@@ -285,6 +285,7 @@
     DECL(tpms_gm) \
     DECL(rainpoint_hcs012arf) \
     DECL(apator_metra_erm30) \
+    DECL(fineoffset_wh43) \
 
     /* Add new decoders here. */
 
