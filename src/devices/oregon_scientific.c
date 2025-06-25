@@ -17,7 +17,7 @@
 //
 // note that at least for THN132N, THGR122N, THGR810 valid channel numbers are 1, 2, 4.
 // Sensors ID
-#define ID_THGR122N 0x1d20
+#define ID_THGR122N 0x1d20 // also THGR228N (#3121)
 #define ID_THGR968  0x1d30
 #define ID_BTHR918  0x5d50
 #define ID_BHTR968  0x5d60
@@ -244,11 +244,19 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
 
     decoder_logf(decoder, 1, __func__,"Found sensor type (%04x)", sensor_id);
     if ((sensor_id == ID_THGR122N) || (sensor_id == ID_THGR968)) {
-        if (validate_os_v2_message(decoder, msg, 76, msg_bits, 15) != 0)
+        if ((validate_os_v2_message(decoder, msg, 68, msg_bits, 15) != 0)
+                && (validate_os_v2_message(decoder, msg, 76, msg_bits, 15) != 0)) {
             return 0;
+        }
+        int is_thgr228n = sensor_id == ID_THGR122N && msg_bits == 68;
+        int is_thgr122n = sensor_id == ID_THGR122N && msg_bits == 76; // the last byte is unused and not included in the checksum
+        int is_thgr968 = sensor_id == ID_THGR968;
+
         /* clang-format off */
-        data = data_make(
-                "model",                 "",                        DATA_STRING, (sensor_id == ID_THGR122N) ? "Oregon-THGR122N" : "Oregon-THGR968",
+        data_t *data = data_make(
+                "model",                 "",                        DATA_COND, is_thgr968, DATA_STRING, "Oregon-THGR968",
+                "model",                 "",                        DATA_COND, is_thgr122n, DATA_STRING, "Oregon-THGR122N",
+                "model",                 "",                        DATA_COND, is_thgr228n, DATA_STRING, "Oregon-THGR228N",
                 "id",                        "House Code",    DATA_INT,        device_id,
                 "channel",             "Channel",         DATA_INT,        channel,
                 "battery_ok",          "Battery",         DATA_INT,    !battery_low,
