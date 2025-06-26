@@ -397,6 +397,25 @@ static void help_write(void)
     exit(0);
 }
 
+static void reset_sdr_callback(r_cfg_t *cfg)
+{
+    struct dm_state *demod = cfg->demod;
+
+    get_time_now(&demod->now);
+
+    demod->frame_start_ago   = 0;
+    demod->frame_end_ago     = 0;
+    demod->frame_event_count = 0;
+
+    demod->min_level_auto = 0.0f;
+    demod->noise_level    = 0.0f;
+
+    baseband_low_pass_filter_reset(&demod->lowpass_filter_state);
+    baseband_demod_FM_reset(&demod->demod_FM_state);
+
+    pulse_detect_reset(demod->pulse_detect);
+}
+
 static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 {
     //fprintf(stderr, "sdr_callback... %u\n", len);
@@ -493,7 +512,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     }
 
     if (process_frame) {
-        baseband_low_pass_filter(demod->buf.temp, demod->am_buf, n_samples, &demod->lowpass_filter_state);
+        baseband_low_pass_filter(&demod->lowpass_filter_state, demod->buf.temp, demod->am_buf, n_samples);
     }
 
     // FM demodulation
@@ -509,9 +528,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     if (demod->enable_FM_demod && process_frame) {
         float low_pass = demod->low_pass != 0.0f ? demod->low_pass : fpdm ? 0.2f : 0.1f;
         if (demod->sample_size == 2) { // CU8
-            baseband_demod_FM(iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass, &demod->demod_FM_state);
+            baseband_demod_FM(&demod->demod_FM_state, iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass);
         } else { // CS16
-            baseband_demod_FM_cs16((int16_t *)iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass, &demod->demod_FM_state);
+            baseband_demod_FM_cs16(&demod->demod_FM_state, (int16_t *)iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass);
         }
     }
 
@@ -2000,6 +2019,7 @@ int main(int argc, char **argv) {
             if (cfg->verbosity >= LOG_NOTICE) {
                 print_logf(LOG_NOTICE, "Input", "Test mode file issued %d packets", n_blocks);
             }
+            reset_sdr_callback(cfg);
 
             if (in_file != stdin) {
                 fclose(in_file);

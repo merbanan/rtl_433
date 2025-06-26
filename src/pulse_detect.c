@@ -71,6 +71,18 @@ void pulse_detect_free(pulse_detect_t *pulse_detect)
     free(pulse_detect);
 }
 
+void pulse_detect_reset(pulse_detect_t *pulse_detect)
+{
+    pulse_detect->ook_state         = PD_OOK_STATE_IDLE;
+    pulse_detect->pulse_length      = 0;
+    pulse_detect->max_pulse         = 0;
+    pulse_detect->data_counter      = 0;
+    pulse_detect->lead_in_counter   = 0;
+    pulse_detect->ook_low_estimate  = 0;
+    pulse_detect->ook_high_estimate = 0;
+    pulse_detect_fsk_init(&pulse_detect->pulse_detect_fsk);
+}
+
 void pulse_detect_set_levels(pulse_detect_t *pulse_detect, int use_mag_est, float fixed_high_level, float min_high_level, float high_low_ratio, int verbosity)
 {
     pulse_detect->use_mag_est = use_mag_est;
