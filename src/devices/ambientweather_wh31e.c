@@ -292,13 +292,14 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
             int id         = (b[2] << 8) | b[3];
             int battery_v  = (b[4] & 0x1f);
-            int battery_lvl = battery_v <= 9 ? 0 : ((battery_v - 9) / 6 * 100); // 0.9V-1.5V is 0-100
+            int battery_lvl = battery_v <= 9 ? 0 : 100 * (battery_v - 9) / 6; // 0.9V-1.5V is 0-100
             int rain_raw   = (b[5] << 8) | b[6];
             char extra[11];
             snprintf(extra, sizeof(extra), "%02x%02x%02x%02x%02x", b[9], b[10], b[11], b[12], b[13]);
 
-            if (battery_lvl > 100)
+            if (battery_lvl > 100) {
                 battery_lvl = 100;
+            }
 
             /* clang-format off */
             data_t *data = data_make(

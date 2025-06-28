@@ -404,10 +404,9 @@ void ccitt_whitening(uint8_t *buffer, unsigned buffer_size)
 {
     uint8_t key_msb = 0x01;
     uint8_t key_lsb = 0xff;
-    uint8_t key_msb_previous;
-    uint8_t reflected_key_lsb = key_lsb;
 
     for (unsigned buffer_pos = 0; buffer_pos < buffer_size; buffer_pos++) {
+        uint8_t reflected_key_lsb;
         reflected_key_lsb = (key_lsb & 0xf0) >> 4 | (key_lsb & 0x0f) << 4;
         reflected_key_lsb = (reflected_key_lsb & 0xcc) >> 2 | (reflected_key_lsb & 0x33) << 2;
         reflected_key_lsb = (reflected_key_lsb & 0xaa) >> 1 | (reflected_key_lsb & 0x55) << 1;
@@ -415,6 +414,7 @@ void ccitt_whitening(uint8_t *buffer, unsigned buffer_size)
         buffer[buffer_pos] ^= reflected_key_lsb;
 
         for (uint8_t rol_counter = 0; rol_counter < 8; rol_counter++) {
+            uint8_t key_msb_previous;
             key_msb_previous = key_msb;
             key_msb          = (key_lsb & 0x01) ^ ((key_lsb >> 5) & 0x01);
             key_lsb          = ((key_msb_previous << 7) & 0x80) | ((key_lsb >> 1) & 0xff);

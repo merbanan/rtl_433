@@ -342,7 +342,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [254]  Thermor DG950 weather station
     [255]  Mueller Hot Rod water meter
     [256]  ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill
-    [257]  BMW Gen3 TPMS
+    [257]  BMW Gen2 and Gen3 TPMS
     [258]  Chamberlain CWPIRC PIR Sensor
     [259]  ThermoPro Meat Thermometers, TP829B 4 probes with temp only
     [260]* Arad/Master Meter Dialog3G water utility meter
