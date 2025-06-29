@@ -285,6 +285,7 @@
     DECL(tpms_gm) \
     DECL(rainpoint_hcs012arf) \
     DECL(apator_metra_erm30) \
+    DECL(thermopro_tx7b) \
 
     /* Add new decoders here. */
 
