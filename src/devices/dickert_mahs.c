@@ -41,35 +41,30 @@ static int dickert_pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Remove the first bit and store in b
     bitbuffer_extract_bytes(bitbuffer, 0, 1, b, MSG_LEN);
 
-    // Get dip switches
-    enum SwitchPos {
-        PLUS  = 3, // 0b11
-        ZERO  = 1, // 0b01
-        MINUS = 0, // 0x00
-    };
-    enum SwitchPos dip;
-    char dips[40] = {0}; 
-    char dips_s[40] = {0}; 
-    char facs_s[40] = {0}; 
+    char dips_s[10] = {0}; 
+    char facs_s[10] = {0}; 
+    int dip_count = 0;
+    int dips_written = 0;
+    int facs_written = 0;
+    char trinary[4] = { '-', '0', '?', '+' };
+    
+    for (int idx = 0; idx < 9; idx++) {
+	uint8_t byte = b[idx];
+	for (int nib = 3; nib >= 0; nib--) {
+            uint8_t val = (byte >> (2 * nib)) & 0x3;
+            char c = trinary[val];
 
-    for (int idx=0; idx<9; idx++) {
-        uint8_t byte = b[idx];
+	    if (dip_count < 10) {
+		dips_s[dips_written++] = c;
+	    } else if (dip_count >= 10 && dip_count < 18) {
+		facs_s[facs_written++] = c;
+	    }
 
-        for (int nib=3; nib>=0; nib--) {
-            dip = (enum SwitchPos) ((byte >> (2*nib)) & 3);
-            dips[idx * 4 + (3-nib)] = dip == PLUS ? '+' : dip == ZERO ? '0' : dip == MINUS ? '-' : '?';
-        }
+	    dip_count++;
+	    if (facs_written >= 8) break; // done early
+	}
+	if (facs_written >= 8) break;
     }
-	
-    // Extract the 10 first switch positions
-    // We intentionally disable the stringop-truncation warning as we're sure dips_s will be \0-terminated as it's initialized
-    // with 0 and > 10 chars
-
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wstringop-truncation"
-    strncat(dips_s, dips, 10);
-    strncat(facs_s, dips+10, 8);
-    #pragma GCC diagnostic pop
 
     /* clang-format off */
     data_t *data;
