@@ -25,24 +25,21 @@ static int dickert_pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     const int MSG_LEN = 37;
 
     enum SwitchPos {
-	 PLUS  = 3, // 0b11
-	 ZERO  = 1, // 0b01
-	 MINUS = 0, // 0x00
+        PLUS  = 3, // 0b11
+        ZERO  = 1, // 0b01
+        MINUS = 0, // 0x00
     };
 
     enum SwitchPos dip;
 
     // We only expect one row per transmission
     if (bitbuffer->num_rows != 1) {
-    	return DECODE_ABORT_EARLY;
+        return DECODE_ABORT_EARLY;
     }
 
-    // printf("Length: %d\n", bitbuffer->bits_per_row[0]);
     if (bitbuffer->bits_per_row[0] != MSG_LEN) {
-	return DECODE_ABORT_LENGTH;
+        return DECODE_ABORT_LENGTH;
     }
-
-    // bitbuffer_print(bitbuffer);
 
     // Remove the first bit and store in b
     bitbuffer_extract_bytes(bitbuffer, 0, 1, b, MSG_LEN);
@@ -51,10 +48,10 @@ static int dickert_pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     for (int idx=0; idx<9; idx++) {
         uint8_t byte = b[idx];
 
-	for (int nib=3; nib>=0; nib--) {
-                dip = (enum SwitchPos) ((byte >> (2*nib)) & 3);
-		dips[idx * 4 + (3-nib)] = dip == PLUS ? '+' : dip == ZERO ? '0' : dip == MINUS ? '-' : '?';
-	}
+        for (int nib=3; nib>=0; nib--) {
+            dip = (enum SwitchPos) ((byte >> (2*nib)) & 3);
+            dips[idx * 4 + (3-nib)] = dip == PLUS ? '+' : dip == ZERO ? '0' : dip == MINUS ? '-' : '?';
+        }
     }
 	
     // Extract the 10 first switch positions
@@ -69,10 +66,10 @@ static int dickert_pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",        "", DATA_STRING, "Dickert MAHS433-01 remote control",
-            "dipswitches",  "DIP switches configuration", DATA_STRING, dips_s,
-	    "facswitches",  "Factory code", DATA_STRING, facs_s,
-            NULL);
+        "model",        "", DATA_STRING, "Dickert MAHS433-01 remote control",
+        "dipswitches",  "DIP switches configuration", DATA_STRING, dips_s,
+	"facswitches",  "Factory code", DATA_STRING, facs_s,
+        NULL);
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -80,21 +77,21 @@ static int dickert_pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char const *const output_fields[] = {
-        "model",
-        "dipswitches",
-	"facswitches",
-        NULL,
+    "model",
+    "dipswitches",
+    "facswitches",
+    NULL,
 };
 
 r_device const dickert_pwm = {
-        .name        = "Dickert MAHS433-01 garage door remote control",
-        .modulation  = OOK_PULSE_PWM,
-        .short_width = 362,
-        .long_width  = 770,
-        .gap_limit   = 1064,
-        .reset_limit = 12000,
-	.disabled    = 1,
-        .decode_fn   = &dickert_pwm_decode,
-        .fields      = output_fields,
+    .name        = "Dickert MAHS433-01 garage door remote control",
+    .modulation  = OOK_PULSE_PWM,
+    .short_width = 362,
+    .long_width  = 770,
+    .gap_limit   = 1064,
+    .reset_limit = 12000,
+    .disabled    = 1,
+    .decode_fn   = &dickert_pwm_decode,
+    .fields      = output_fields,
 };
 
