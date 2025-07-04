@@ -16,35 +16,31 @@
 
 static int dickert_pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t b[40];
-    data_t *data;
-    char dips[40] = {0}; 
-    char dips_s[40] = {0}; 
-    char facs_s[40] = {0}; 
-
-    const int MSG_LEN = 37;
-
-    enum SwitchPos {
-        PLUS  = 3, // 0b11
-        ZERO  = 1, // 0b01
-        MINUS = 0, // 0x00
-    };
-
-    enum SwitchPos dip;
-
     // We only expect one row per transmission
     if (bitbuffer->num_rows != 1) {
         return DECODE_ABORT_EARLY;
     }
 
+    const int MSG_LEN = 37;
     if (bitbuffer->bits_per_row[0] != MSG_LEN) {
         return DECODE_ABORT_LENGTH;
     }
 
+    uint8_t b[40];
     // Remove the first bit and store in b
     bitbuffer_extract_bytes(bitbuffer, 0, 1, b, MSG_LEN);
 
     // Get dip switches
+    enum SwitchPos {
+        PLUS  = 3, // 0b11
+        ZERO  = 1, // 0b01
+        MINUS = 0, // 0x00
+    };
+    enum SwitchPos dip;
+    char dips[40] = {0}; 
+    char dips_s[40] = {0}; 
+    char facs_s[40] = {0}; 
+
     for (int idx=0; idx<9; idx++) {
         uint8_t byte = b[idx];
 
@@ -65,8 +61,9 @@ static int dickert_pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     #pragma GCC diagnostic pop
 
     /* clang-format off */
+    data_t *data;
     data = data_make(
-        "model",        "", DATA_STRING, "Dickert MAHS433-01 remote control",
+        "model",        "", DATA_STRING, "Dickert MAHS433",
         "dipswitches",  "DIP switches configuration", DATA_STRING, dips_s,
 	"facswitches",  "Factory code", DATA_STRING, facs_s,
         NULL);
