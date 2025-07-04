@@ -453,7 +453,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
   [-F log|kv|json|csv|mqtt|influx|syslog|trigger|rtl_tcp|http|null] Produce decoded output in given format.
 	Without this option the default is LOG and KV output. Use "-F null" to remove the default.
 	Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
-  [-F mqtt[:[//]host[:port][,<options>]] (default: localhost:1883)
+  [-F mqtt[s][:[//]host[:port][,<options>]] (default: localhost:1883)
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
 	Default user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"
@@ -467,6 +467,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	A base topic can be set with base=<topic>, default is "rtl_433/HOSTNAME".
 	Any topic string overrides the base topic and will expand keys like [/model]
 	E.g. -F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
+	For TLS use e.g. -F "mqtts://host,tls_cert=<path>,tls_key=<path>,tls_ca_cert=<path>"
 	With MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client-ID is computed from the driver string.
 	If you use multiple RTL-SDR, perhaps set a serial and select by that (helps not to get the wrong antenna).
   [-F influx[:[//]host[:port][/<path and options>]]
