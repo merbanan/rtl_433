@@ -11,8 +11,19 @@
 
 #include "decoder.h"
 
-// TODO: Add sample and textual description of protocol
+/**
+Dickert MAHS433-01 remote control
 
+The Dickert MAHS433-01 remote contains a user-accessible bank of 10 dip switches labeled "1" to "10" and each tristate dip switch can be set to one of three positions. These positions are labeled as "-" (down), "0" (half-way up), and "+" (up). Based on the position of these switches, 59,049 (3^10) unique codes are possible. There seems to be a model of this device "MAHS433-01" that has one button to trigger a repeating signal for the duration it is held, and there may be a "MAHS433-04" device with 4 buttons.
+
+There's some photos and documentation on the Dickert Electronic site: https://dickert.com/de/mahs433-01-02004600.html
+
+The signal itself is a bit unusual. Logical bits each seem to be encoded over three symbols. A logical "1" is encoded as "001" and a logical "0" is encoded as "011" which, although it looks like typical PWM, has each bit encoding starting with a ASK/OOK gap, then ending with the PWM pulse. The start of the signal is a single "1" pulse symbol.
+
+After decoding, there are 36 logical bits. The first 20 are 10 sets of 2 bits encoding the state of the 10 tristate dip switches. A "-" state is "00", a "0" state is "01" and a "+" state is "11". "10" is never observed and seems to be invalid. The remaining 36 bits comprise a factory code of 8 more symbols.
+
+Please see more details on https://github.com/merbanan/rtl_433/issues/2983
+*/
 
 static int dickert_pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
