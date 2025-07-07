@@ -66,10 +66,14 @@ static int dickert_pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 	if (facs_written >= 8) break;
     }
 
+    char id[8];
+    snprintf(id, sizeof(id), "%d", (b[0] << 12) | (b[1] << 4) | (b[2] >> 4));
+
     /* clang-format off */
     data_t *data;
     data = data_make(
-        "model",        "", DATA_STRING, "Dickert MAHS433-01",
+        "model",        "", DATA_STRING, "Dickert-MAHS433",
+        "id",           "", DATA_STRING, id,
         "dipswitches",  "DIP switches configuration", DATA_STRING, dips_s,
 	"facswitches",  "Factory code", DATA_STRING, facs_s,
         NULL);
