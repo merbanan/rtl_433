@@ -101,25 +101,26 @@ static int nexus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
- * Nexus Sauna sensor with ID, temperature, battery and test flag.
- * The "Sauna sensor", sends 36 bits 6 times, the nibbles are:
- *
- * [id0] [id1] [flags] [const] [temp0] [temp1] [temp2] [temp2] [const2]
- *
- * - The 8-bit id changes when the battery is changed in the sensor.
- * - flags are 4 bits B T C C, where:
- * B is the battery status: 1=OK, 0=LOW
- * T is Test mode, 0=Normal, 1=Test.
- * To enter test mode, press and hold Tx/Send button while putting the last battery in, it will send values at ~2sec intreval.
- * CC is the channel: It is always 11 (0x3) for CH4
- * - temp is 16 bit signed scaled by 10
- * - const is always 1111 (0x0F)
- * - const2 is always 0001 (0x1)
- * To be exact, the "Sauna sensor" seems to send niblets 6 times with const2=0x1, and then seventh time sends just 35 bits, so last nibble is 0b000.
- * Maybe this is "data-end" mark. I don't know. Anyway, it can be ignored here, cause data has been parsed already.
- *
- * Sauna sensor kit is sold by IKH (CRX) and Motonet (Prego).
- */
+ Nexus Sauna sensor with ID, temperature, battery and test flag.
+
+ The "Sauna sensor", sends 36 bits 6 times, the nibbles are:
+
+ [id0] [id1] [flags] [const] [temp0] [temp1] [temp2] [temp2] [const2]
+
+ - The 8-bit id changes when the battery is changed in the sensor.
+ - flags are 4 bits B T C C, where:
+ B is the battery status: 1=OK, 0=LOW
+ T is Test mode, 0=Normal, 1=Test.
+ To enter test mode, press and hold Tx/Send button while putting the last battery in, it will send values at ~2sec intreval.
+ CC is the channel: It is always 11 (0x3) for CH4
+ - temp is 16 bit signed scaled by 10
+ - const is always 1111 (0x0F)
+ - const2 is always 0001 (0x1)
+ To be exact, the "Sauna sensor" seems to send niblets 6 times with const2=0x1, and then seventh time sends just 35 bits, so last nibble is 0b000.
+ Maybe this is "data-end" mark. I don't know. Anyway, it can be ignored here, cause data has been parsed already.
+
+ Sauna sensor kit is sold by IKH (CRX) and Motonet (Prego).
+*/
 static int nexus_sauna_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int r = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
