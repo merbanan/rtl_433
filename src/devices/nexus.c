@@ -100,7 +100,7 @@ static int nexus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-/*
+/**
  * The "Sauna sensor", sends 36 bits 6 times, the nibbles are:
  *
  * [id0] [id1] [flags] [const] [temp0] [temp1] [temp2] [temp2] [const2]
@@ -151,13 +151,13 @@ static int nexus_sauna_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     /* clang-format off */
     data = data_make(
-        "model",         "",            DATA_STRING, "Nexus-Sauna",
-        "id",            "House Code",  DATA_INT,    id,
-        "channel",       "Channel",     DATA_INT,    4,
-        "battery_ok",    "Battery",     DATA_INT,    !!battery,
-        "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-        "test",          "Test?",       DATA_STRING, test ? "Yes" : "No",
-        NULL);
+            "model",         "",            DATA_STRING, "Nexus-Sauna",
+            "id",            "House Code",  DATA_INT,    id,
+            "channel",       "Channel",     DATA_INT,    4,
+            "battery_ok",    "Battery",     DATA_INT,    !!battery,
+            "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
+            "test",          "Test?",       DATA_STRING, test ? "Yes" : "No",
+            NULL);
     /* clang-format on */
 
     decoder_output_data(decoder, data);
