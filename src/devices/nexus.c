@@ -101,6 +101,7 @@ static int nexus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
+ * Nexus Sauna sensor with ID, temperature, battery and test flag.
  * The "Sauna sensor", sends 36 bits 6 times, the nibbles are:
  *
  * [id0] [id1] [flags] [const] [temp0] [temp1] [temp2] [temp2] [const2]
