@@ -165,13 +165,13 @@ static int nexus_sauna_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 static char const *const output_fields[] = {
-    "model",
-    "id",
-    "channel",
-    "battery_ok",
-    "temperature_C",
-    "humidity",
-    NULL,
+        "model",
+        "id",
+        "channel",
+        "battery_ok",
+        "temperature_C",
+        "humidity",
+        NULL,
 };
 
 r_device const nexus = {
@@ -187,13 +187,13 @@ r_device const nexus = {
 };
 
 static char const *const sauna_output_fields[] = {
-    "model",
-    "id",
-    "channel",
-    "battery_ok",
-    "temperature_C",
-    "test",
-    NULL,
+        "model",
+        "id",
+        "channel",
+        "battery_ok",
+        "temperature_C",
+        "test",
+        NULL,
 };
 
 r_device const nexus_sauna = {
