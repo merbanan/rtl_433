@@ -176,15 +176,15 @@ static char const *const output_fields[] = {
 };
 
 r_device const nexus = {
-    .name        = "Nexus, FreeTec NC-7345, NX-3980, Solight TE82S, TFA 30.3209 temperature/humidity sensor",
-    .modulation  = OOK_PULSE_PPM,
-    .short_width = 1000,
-    .long_width  = 2000,
-    .gap_limit   = 3000,
-    .reset_limit = 5000,
-    .decode_fn   = &nexus_decode,
-    .priority    = 10, // Eliminate false positives by letting Rubicson-Temperature go earlier
-    .fields      = output_fields,
+        .name        = "Nexus, FreeTec NC-7345, NX-3980, Solight TE82S, TFA 30.3209 temperature/humidity sensor",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 1000,
+        .long_width  = 2000,
+        .gap_limit   = 3000,
+        .reset_limit = 5000,
+        .decode_fn   = &nexus_decode,
+        .priority    = 10, // Eliminate false positives by letting Rubicson-Temperature go earlier
+        .fields      = output_fields,
 };
 
 static char const *const sauna_output_fields[] = {
@@ -198,13 +198,13 @@ static char const *const sauna_output_fields[] = {
 };
 
 r_device const nexus_sauna = {
-    .name        = "Nexus, CRX, Prego sauna temperature sensor",
-    .modulation  = OOK_PULSE_PPM,
-    .short_width = 1000,
-    .long_width  = 2000,
-    .gap_limit   = 3000,
-    .reset_limit = 5000,
-    .decode_fn   = &nexus_sauna_decode,
-    .priority    = 10, // Eliminate false positives by letting Rubicson-Temperature go earlier
-    .fields      = sauna_output_fields,
+        .name        = "Nexus, CRX, Prego sauna temperature sensor",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 1000,
+        .long_width  = 2000,
+        .gap_limit   = 3000,
+        .reset_limit = 5000,
+        .decode_fn   = &nexus_sauna_decode,
+        .priority    = 10, // Eliminate false positives by letting Rubicson-Temperature go earlier
+        .fields      = sauna_output_fields,
 };
