@@ -150,9 +150,8 @@ static int nexus_sauna_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int battery  = b[1] & 0x80;
     int temp_raw = (int16_t)((b[2] << 8) | (b[3])); // sign-extend
     float temp_c = temp_raw * 0.1f;
-    data_t *data;
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",         "",            DATA_STRING, "Nexus-Sauna",
             "id",            "House Code",  DATA_INT,    id,
             "channel",       "Channel",     DATA_INT,    4,
