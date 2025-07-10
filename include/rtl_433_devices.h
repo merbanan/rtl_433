@@ -286,6 +286,7 @@
     DECL(rainpoint_hcs012arf) \
     DECL(apator_metra_erm30) \
     DECL(thermopro_tx7b) \
+    DECL(nexus_sauna) \
 
     /* Add new decoders here. */
 
