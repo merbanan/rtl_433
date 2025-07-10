@@ -954,8 +954,13 @@ def publish_config(mqttc, topic, model, object_id, mapping, key=None):
         config["state_topic"] = topic
         config["unique_id"] = object_name
         config["name"] = readable_name
-    config["device"] = { "identifiers": [object_id], "name": object_id, "model": model, "manufacturer": "rtl_433" }
 
+    try:
+        hassio_device_mfgr, hassio_device_modl = model.split('-', 1)
+        config["device"] = { "identifiers": [object_id], "name": object_id, "model": hassio_device_modl, "manufacturer": hassio_device_mfgr }
+    except ValueError:
+        config["device"] = { "identifiers": [object_id], "name": object_id, "model": model, "manufacturer": "rtl_433" }
+  
     if args.force_update:
         config["force_update"] = "true"
 
