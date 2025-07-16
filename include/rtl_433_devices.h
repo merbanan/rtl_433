@@ -282,6 +282,12 @@
     DECL(gridstream192) \
     DECL(gridstream384) \
     DECL(revolt_zx7717) \
+    DECL(tpms_gm) \
+    DECL(rainpoint_hcs012arf) \
+    DECL(apator_metra_erm30) \
+    DECL(thermopro_tx7b) \
+    DECL(nexus_sauna) \
+    DECL(homelead_hg9901) \
     DECL(oria_wa150km) \
 
     /* Add new decoders here. */

@@ -11,6 +11,7 @@
 /**
 Temperature/Humidity outdoor sensor TFA 30.3221.02.
 
+Other compatible sensors: 30.3249.02
 This is the same as LaCrosse-TX141THBv2 and should be merged.
 
 S.a. https://github.com/RFD-FHEM/RFFHEM/blob/master/FHEM/14_SD_WS.pm
@@ -103,7 +104,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const tfa_30_3221 = {
-        .name        = "TFA Dostmann 30.3221.02 T/H Outdoor Sensor",
+        .name        = "TFA Dostmann 30.3221.02 T/H Outdoor Sensor (also 30.3249.02)",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 235,
         .long_width  = 480,

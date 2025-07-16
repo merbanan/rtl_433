@@ -176,7 +176,7 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",                 DATA_COND,   rev == 3,  DATA_STRING, "LaCrosse-R3",
             "model",            "",                 DATA_COND,   rev == 9,  DATA_STRING, "LaCrosse-W1",
             "id",               "Sensor ID",        DATA_FORMAT, "%06x",    DATA_INT,    id,
-            "battery_ok",       "Battery level",    DATA_INT,    !batt_low,
+            "battery_ok",       "Battery",          DATA_INT,    !batt_low,
             "startup",          "Startup",          DATA_COND,   startup,   DATA_INT,    startup,
             "seq",              "Sequence",         DATA_INT,    seq,
             "flags",            "Unknown",          DATA_COND,   flags,     DATA_INT,    flags,

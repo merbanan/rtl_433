@@ -110,7 +110,7 @@ static int fineoffset_wh46_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data = data_make(
             "model",            "",             DATA_STRING, "Fineoffset-WH46",
             "id",               "ID",           DATA_FORMAT, "%06x", DATA_INT, id,
-            "battery_ok",       "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
+            "battery_ok",       "Battery level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "pm1_ug_m3",        "1um Fine PM",  DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm1,

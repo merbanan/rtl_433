@@ -52,6 +52,7 @@ add_library(r_433 STATIC
     devices/ambientweather_tx8300.c
     devices/ambientweather_wh31e.c
     devices/ant_antplus.c
+    devices/apator_metra_erm30.c
     devices/arad_ms_meter.c
     devices/archos_tbh.c
     devices/arexx_ml.c
@@ -141,6 +142,7 @@ add_library(r_433 STATIC
     devices/hcs200.c
     devices/hideki.c
     devices/holman_ws5029.c
+    devices/homelead_hg9901.c
     devices/hondaremote.c
     devices/honeywell.c
     devices/honeywell_cm921.c
@@ -205,6 +207,7 @@ add_library(r_433 STATIC
     devices/quinetic.c
     devices/radiohead_ask.c
     devices/rainpoint.c
+    devices/rainpoint_hcs012arf.c
     devices/regency_fan.c
     devices/revolt_nc5462.c
     devices/revolt_zx7717.c
@@ -246,6 +249,7 @@ add_library(r_433 STATIC
     devices/thermopro_tp82xb.c
     devices/thermopro_tx2.c
     devices/thermopro_tx2c.c
+    devices/thermopro_tx7b.c
     devices/thermor.c
     devices/tpms_abarth124.c
     devices/tpms_ave.c
@@ -255,6 +259,7 @@ add_library(r_433 STATIC
     devices/tpms_eezrv.c
     devices/tpms_elantra2012.c
     devices/tpms_ford.c
+    devices/tpms_gm.c
     devices/tpms_hyundai_vdo.c
     devices/tpms_jansite.c
     devices/tpms_jansite_solar.c

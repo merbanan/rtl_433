@@ -246,7 +246,7 @@ static uint8_t deltadore_x3d_parse_message_payload(uint8_t *buffer, struct delta
     out->register_high = *buffer++;
     out->register_low  = *buffer++;
     out->target_ack    = deltadore_x3d_read_le_u16(&buffer);
-    return sizeof(struct deltadore_x3d_message_payload);
+    return 12;
 }
 
 static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)

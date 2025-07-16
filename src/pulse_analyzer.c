@@ -211,32 +211,41 @@ void pulse_analyzer(pulse_data_t *data, int package_type, r_device* device)
 
     double to_ms = 1e3 / data->sample_rate;
     double to_us = 1e6 / data->sample_rate;
-    // Generate pulse period data
+    // Generate pulse period data (pulse + gap, trailing gap)
     int pulse_total_period = 0;
-    pulse_data_t pulse_periods = {0};
-    pulse_periods.num_pulses = data->num_pulses;
-    for (unsigned n = 0; n < pulse_periods.num_pulses; ++n) {
-        pulse_periods.pulse[n] = data->pulse[n] + data->gap[n];
+    pulse_data_t pulse_periods_pg = {0};
+    pulse_periods_pg.num_pulses = data->num_pulses;
+    for (unsigned n = 0; n < pulse_periods_pg.num_pulses; ++n) {
+        pulse_periods_pg.pulse[n] = data->pulse[n] + data->gap[n];
         pulse_total_period += data->pulse[n] + data->gap[n];
     }
-    pulse_total_period -= data->gap[pulse_periods.num_pulses - 1];
+    pulse_total_period -= data->gap[pulse_periods_pg.num_pulses - 1];
+    // Generate pulse period data (gap + pulse, leading gap)
+    pulse_data_t pulse_periods_gp = {0};
+    pulse_periods_gp.num_pulses   = data->num_pulses;
+    pulse_periods_gp.pulse[0] = data->pulse[0];
+    for (unsigned n = 1; n < pulse_periods_gp.num_pulses; ++n) {
+        pulse_periods_gp.pulse[n] = data->pulse[n] + data->gap[n - 1];
+    }
 
     histogram_t hist_pulses  = {0};
     histogram_t hist_gaps    = {0};
-    histogram_t hist_periods = {0};
+    histogram_t hist_periods_pg = {0}; // Pulse+Gap periods
+    histogram_t hist_periods_gp = {0}; // Gap+Pulse periods
     histogram_t hist_timings = {0};
 
     // Generate statistics
     histogram_sum(&hist_pulses, data->pulse, data->num_pulses, TOLERANCE);
     histogram_sum(&hist_gaps, data->gap, data->num_pulses - 1, TOLERANCE);                      // Leave out last gap (end)
-    histogram_sum(&hist_periods, pulse_periods.pulse, pulse_periods.num_pulses - 1, TOLERANCE); // Leave out last gap (end)
+    histogram_sum(&hist_periods_pg, pulse_periods_pg.pulse, pulse_periods_pg.num_pulses - 1, TOLERANCE); // Leave out last gap (end)
+    histogram_sum(&hist_periods_gp, pulse_periods_gp.pulse, pulse_periods_gp.num_pulses, TOLERANCE);
     histogram_sum(&hist_timings, data->pulse, data->num_pulses, TOLERANCE);
     histogram_sum(&hist_timings, data->gap, data->num_pulses, TOLERANCE);
 
     // Fuse overlapping bins
     histogram_fuse_bins(&hist_pulses, TOLERANCE);
     histogram_fuse_bins(&hist_gaps, TOLERANCE);
-    histogram_fuse_bins(&hist_periods, TOLERANCE);
+    histogram_fuse_bins(&hist_periods_pg, TOLERANCE);
     histogram_fuse_bins(&hist_timings, TOLERANCE);
 
     fprintf(stderr, "Analyzing pulses...\n");
@@ -246,9 +255,11 @@ void pulse_analyzer(pulse_data_t *data, int package_type, r_device* device)
     histogram_print(&hist_pulses, data->sample_rate);
     fprintf(stderr, "Gap width distribution:\n");
     histogram_print(&hist_gaps, data->sample_rate);
-    fprintf(stderr, "Pulse period distribution:\n");
-    histogram_print(&hist_periods, data->sample_rate);
-    fprintf(stderr, "Pulse timing distribution:\n");
+    fprintf(stderr, "Pulse+gap period distribution:\n");
+    histogram_print(&hist_periods_pg, data->sample_rate);
+    fprintf(stderr, "Gap+pulse period distribution:\n");
+    histogram_print(&hist_periods_gp, data->sample_rate);
+    fprintf(stderr, "Timing distribution:\n");
     histogram_print(&hist_timings, data->sample_rate);
     fprintf(stderr, "Level estimates [high, low]: %6i, %6i\n",
             data->ook_high_estimate, data->ook_low_estimate);
@@ -291,7 +302,7 @@ void pulse_analyzer(pulse_data_t *data, int package_type, r_device* device)
         device->tolerance   = (device->long_width - device->short_width) * 0.4;
         device->reset_limit = to_us * (hist_gaps.bins[hist_gaps.bins_count - 1].max + 1); // Set limit above biggest gap
     }
-    else if (hist_pulses.bins_count == 2 && hist_gaps.bins_count == 2 && hist_periods.bins_count == 1) {
+    else if (hist_pulses.bins_count == 2 && hist_gaps.bins_count == 2 && hist_periods_pg.bins_count == 1) {
         fprintf(stderr, "Pulse Width Modulation with fixed period\n");
         device->modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PWM : OOK_PULSE_PWM;
         device->short_width = to_us * hist_pulses.bins[0].mean;
@@ -299,7 +310,7 @@ void pulse_analyzer(pulse_data_t *data, int package_type, r_device* device)
         device->tolerance   = (device->long_width - device->short_width) * 0.4;
         device->reset_limit = to_us * (hist_gaps.bins[hist_gaps.bins_count - 1].max + 1); // Set limit above biggest gap
     }
-    else if (hist_pulses.bins_count == 2 && hist_gaps.bins_count == 2 && hist_periods.bins_count == 3) {
+    else if (hist_pulses.bins_count == 2 && hist_gaps.bins_count == 2 && hist_periods_pg.bins_count == 3) {
         fprintf(stderr, "Manchester coding\n");
         device->modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_MANCHESTER_ZEROBIT : OOK_PULSE_MANCHESTER_ZEROBIT;
         device->short_width = to_us * MIN(hist_pulses.bins[0].mean, hist_pulses.bins[1].mean); // Assume shortest pulse is half period

@@ -253,7 +253,7 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",         "Model",               DATA_STRING, "Ikea-Sparsnas",
             "id",            "Sensor ID",           DATA_INT,    rcv_sensor_id,
             "sequence",      "Sequence Number",     DATA_INT,    sequence_number,
-            "battery_ok",    "Battery level",       DATA_INT,    battery * 0.01f, // 0-100
+            "battery_ok",    "Battery level",       DATA_DOUBLE, battery * 0.01f, // 0-100
             "pulses_per_kWh", "Pulses per kWh",     DATA_INT,    ikea_sparsnas_pulses_per_kwh,
             "cumulative_kWh", "Cumulative kWh",     DATA_FORMAT, "%7.3fkWh", DATA_DOUBLE,  cumulative_kWh,
             "effect",        "Effect",              DATA_FORMAT, "%dW", DATA_INT,  effect,

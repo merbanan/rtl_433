@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding=utf-8
 
 from __future__ import print_function
@@ -602,7 +602,7 @@ mappings = {
             "name": "Energy",
             "unit_of_measurement": "kWh",
             "value_template": "{{ value|float }}",
-            "state_class": "measurement"
+            "state_class": "total_increasing"
         }
     },
 
@@ -1031,7 +1031,7 @@ def rtl_433_bridge():
         mqttc.username_pw_set(args.user, args.password)
 
     if args.ca_cert is not None:
-        mqttc.tls_set(ca_certs=args.ca_cert)
+        mqttc.tls_set(certfile=args.cert, keyfile=args.key, ca_certs=args.ca_cert)
 
     mqttc.on_connect = mqtt_connect
     mqttc.on_disconnect = mqtt_disconnect
@@ -1071,6 +1071,8 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--port", type=int, default=1883,
                         help="MQTT port (default: %(default)s)")
     parser.add_argument("-c", "--ca_cert", type=str, help="MQTT TLS CA certificate path")
+    parser.add_argument("--cert", type=str, help="MQTT TLS certificate path")
+    parser.add_argument("--key", type=str, help="MQTT TLS certificate key path")
     parser.add_argument("-r", "--retain", action="store_true")
     parser.add_argument("-f", "--force_update", action="store_true",
                         help="Append 'force_update = true' to all configs.")
