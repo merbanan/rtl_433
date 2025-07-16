@@ -288,6 +288,7 @@
     DECL(thermopro_tx7b) \
     DECL(nexus_sauna) \
     DECL(homelead_hg9901) \
+    DECL(oria_wa150km) \
 
     /* Add new decoders here. */
 
