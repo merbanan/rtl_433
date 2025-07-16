@@ -17,15 +17,24 @@ The data is bit-reflected.
 Data layout after decoding:
 
     0  1  2  3  4  5  6  7  8  9  10 11 12 13
-    FF FF FF ?? ?? CC DD TT II SS ?? ?? ?? BB
+    FF FF FF MM ?? CC DD TT II SS ?? ?? ?? BB
 
 - FF = Preamble: 3 bytes of 0xff
+- MM = Message type (unused)
 - CC = Channel (upper nibble + 1)
 - DD = Device ID
 - TT = Temperature decimal (upper nibble)
 - II = Temperature integer (BCD)
 - SS = Sign bit (bit 4, 1 = negative)
 - BB = Fixed value 0x65
+
+Observations currently not affecting implemetation:
+- In normal operation, the MSG_TYPE toggles between fa20 and fa28 with every send (interval is ~34 seconds)
+- Forced transmissions with the TX button have a MSG_TYPE=fa21
+- DEVICE_IDs stay consistent over powercycles
+- The devices transmit a "battery low" signal encoded in the byte after the temperature
+- Negative temperatures have another single bit set
+
  */
 
 #include "decoder.h"
