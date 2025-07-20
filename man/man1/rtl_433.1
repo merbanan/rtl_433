@@ -335,7 +335,7 @@ Without this option the default is LOG and KV output. Use "\-F null" to remove t
 Append output to file with :<filename> (e.g. \-F csv:log.csv), defaults to stdout.
 .RE
 .TP
-[ \fB\-F\fI mqtt[:[//]host[:port][,<options>]\fP ]
+[ \fB\-F\fI mqtt[s][:[//]host[:port][,<options>]\fP ]
 (default: localhost:1883)
 .RS
 Specify MQTT server with e.g. \-F mqtt://localhost:1883
@@ -375,6 +375,9 @@ Any topic string overrides the base topic and will expand keys like [/model]
 .RE
 .RS
 E.g. \-F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
+.RE
+.RS
+For TLS use e.g. \-F "mqtts://host,tls_cert=<path>,tls_key=<path>,tls_ca_cert=<path>"
 .RE
 .RS
 With MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client\-ID is computed from the driver string.

@@ -142,6 +142,7 @@ add_library(r_433 STATIC
     devices/hcs200.c
     devices/hideki.c
     devices/holman_ws5029.c
+    devices/homelead_hg9901.c
     devices/hondaremote.c
     devices/honeywell.c
     devices/honeywell_cm921.c
@@ -248,6 +249,7 @@ add_library(r_433 STATIC
     devices/thermopro_tp82xb.c
     devices/thermopro_tx2.c
     devices/thermopro_tx2c.c
+    devices/thermopro_tx7b.c
     devices/thermor.c
     devices/tpms_abarth124.c
     devices/tpms_ave.c

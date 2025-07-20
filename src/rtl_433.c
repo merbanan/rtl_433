@@ -278,7 +278,7 @@ static void help_output(void)
             "  [-F log|kv|json|csv|mqtt|influx|syslog|trigger|rtl_tcp|http|null] Produce decoded output in given format.\n"
             "\tWithout this option the default is LOG and KV output. Use \"-F null\" to remove the default.\n"
             "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
-            "  [-F mqtt[:[//]host[:port][,<options>]] (default: localhost:1883)\n"
+            "  [-F mqtt[s][:[//]host[:port][,<options>]] (default: localhost:1883)\n"
             "\tSpecify MQTT server with e.g. -F mqtt://localhost:1883\n"
             "\tDefault user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.\n"
             "\tAdd MQTT options with e.g. -F \"mqtt://host:1883,opt=arg\"\n"
@@ -292,6 +292,7 @@ static void help_output(void)
             "\tA base topic can be set with base=<topic>, default is \"rtl_433/HOSTNAME\".\n"
             "\tAny topic string overrides the base topic and will expand keys like [/model]\n"
             "\tE.g. -F \"mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]\"\n"
+            "\tFor TLS use e.g. -F \"mqtts://host,tls_cert=<path>,tls_key=<path>,tls_ca_cert=<path>\"\n"
             "\tWith MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client-ID is computed from the driver string.\n"
             "\tIf you use multiple RTL-SDR, perhaps set a serial and select by that (helps not to get the wrong antenna).\n"
             "  [-F influx[:[//]host[:port][/<path and options>]]\n"
@@ -397,6 +398,25 @@ static void help_write(void)
     exit(0);
 }
 
+static void reset_sdr_callback(r_cfg_t *cfg)
+{
+    struct dm_state *demod = cfg->demod;
+
+    get_time_now(&demod->now);
+
+    demod->frame_start_ago   = 0;
+    demod->frame_end_ago     = 0;
+    demod->frame_event_count = 0;
+
+    demod->min_level_auto = 0.0f;
+    demod->noise_level    = 0.0f;
+
+    baseband_low_pass_filter_reset(&demod->lowpass_filter_state);
+    baseband_demod_FM_reset(&demod->demod_FM_state);
+
+    pulse_detect_reset(demod->pulse_detect);
+}
+
 static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 {
     //fprintf(stderr, "sdr_callback... %u\n", len);
@@ -493,7 +513,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     }
 
     if (process_frame) {
-        baseband_low_pass_filter(demod->buf.temp, demod->am_buf, n_samples, &demod->lowpass_filter_state);
+        baseband_low_pass_filter(&demod->lowpass_filter_state, demod->buf.temp, demod->am_buf, n_samples);
     }
 
     // FM demodulation
@@ -509,9 +529,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     if (demod->enable_FM_demod && process_frame) {
         float low_pass = demod->low_pass != 0.0f ? demod->low_pass : fpdm ? 0.2f : 0.1f;
         if (demod->sample_size == 2) { // CU8
-            baseband_demod_FM(iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass, &demod->demod_FM_state);
+            baseband_demod_FM(&demod->demod_FM_state, iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass);
         } else { // CS16
-            baseband_demod_FM_cs16((int16_t *)iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass, &demod->demod_FM_state);
+            baseband_demod_FM_cs16(&demod->demod_FM_state, (int16_t *)iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass);
         }
     }
 
@@ -2000,6 +2020,7 @@ int main(int argc, char **argv) {
             if (cfg->verbosity >= LOG_NOTICE) {
                 print_logf(LOG_NOTICE, "Input", "Test mode file issued %d packets", n_blocks);
             }
+            reset_sdr_callback(cfg);
 
             if (in_file != stdin) {
                 fclose(in_file);

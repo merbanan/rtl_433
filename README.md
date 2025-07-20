@@ -342,7 +342,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [254]  Thermor DG950 weather station
     [255]  Mueller Hot Rod water meter
     [256]  ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill
-    [257]  BMW Gen3 TPMS
+    [257]  BMW Gen2 and Gen3 TPMS
     [258]  Chamberlain CWPIRC PIR Sensor
     [259]  ThermoPro Meat Thermometers, TP829B 4 probes with temp only
     [260]* Arad/Master Meter Dialog3G water utility meter
@@ -363,7 +363,10 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [275]  GM-Aftermarket TPMS
     [276]  RainPoint HCS012ARF Rain Gauge sensor
     [277]  Apator Metra E-RM 30
-    [278]  Maverick XR-50 BBQ Sensor
+    [278]  ThermoPro TX-7B Outdoor Thermometer Hygrometer
+    [279]  Nexus, CRX, Prego sauna temperature sensor
+    [280]  Homelead HG9901 (Geevon, Dr.Meter, Royal Gardineer) soil moisture/temp/light level sensor
+    [281]  Maverick XR-50 BBQ Sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -453,7 +456,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
   [-F log|kv|json|csv|mqtt|influx|syslog|trigger|rtl_tcp|http|null] Produce decoded output in given format.
 	Without this option the default is LOG and KV output. Use "-F null" to remove the default.
 	Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
-  [-F mqtt[:[//]host[:port][,<options>]] (default: localhost:1883)
+  [-F mqtt[s][:[//]host[:port][,<options>]] (default: localhost:1883)
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
 	Default user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"
@@ -467,6 +470,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	A base topic can be set with base=<topic>, default is "rtl_433/HOSTNAME".
 	Any topic string overrides the base topic and will expand keys like [/model]
 	E.g. -F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
+	For TLS use e.g. -F "mqtts://host,tls_cert=<path>,tls_key=<path>,tls_ca_cert=<path>"
 	With MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client-ID is computed from the driver string.
 	If you use multiple RTL-SDR, perhaps set a serial and select by that (helps not to get the wrong antenna).
   [-F influx[:[//]host[:port][/<path and options>]]

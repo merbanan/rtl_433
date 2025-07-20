@@ -285,6 +285,9 @@
     DECL(tpms_gm) \
     DECL(rainpoint_hcs012arf) \
     DECL(apator_metra_erm30) \
+    DECL(thermopro_tx7b) \
+    DECL(nexus_sauna) \
+    DECL(homelead_hg9901) \
     DECL(maverick_xr50) \
 
     /* Add new decoders here. */
