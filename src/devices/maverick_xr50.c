@@ -1,5 +1,5 @@
 /** @file
-    Maverick XR-50 BBQ Sensor Europe Version
+    Maverick XR-50 BBQ Sensor Europe Version.
 
     Copyright (C) 2025 Luca Pinasco
 
@@ -83,7 +83,7 @@ static int maverick_xr50_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     decoder_log_bitrow(decoder, 1, __func__, b, 23 * 8, "MSG");
 
-    int id               = b[0] << 8 | b[1];
+    int id = b[0] << 8 | b[1];
 
     int p_1_flags    = (b[2] & 0xf0) >> 4;
     int p_1_temp_raw = ((b[2] & 0x0f) << 8) | b[3];
@@ -123,29 +123,27 @@ static int maverick_xr50_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
    data_t *data = data_make(
-        "model",        "", DATA_STRING, "Maverick-XR50",
-        "id",           "", DATA_FORMAT, "%04x", DATA_INT, id,
-        "probe_1_flags",        "Flags Probe 1",    DATA_FORMAT, "%1x", DATA_INT, p_1_flags,
-        "temperature_1_C",      "Temperature 1",    DATA_COND, p_1_temp_raw != 0, DATA_FORMAT, "%.1f C", DATA_DOUBLE, p1_temp,
-        "setpoint_high_1_C",    "Setpoint 1 high",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, p1_set_high,
-        "setpoint_low_1_C",     "Setpoint 1 low",   DATA_FORMAT, "%.1f C", DATA_DOUBLE, p1_set_low,
-        "probe_2_flags",        "Flags Probe 2",    DATA_FORMAT, "%1x", DATA_INT, p_2_flags,
-        "temperature_2_C",      "Temperature 2",    DATA_COND, p_2_temp_raw != 0, DATA_FORMAT, "%.1f C", DATA_DOUBLE, p2_temp,
-        "setpoint_high_2_C",    "Setpoint 2 high",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, p2_set_high,
-        "setpoint_low_2_C",     "Setpoint 2 low",   DATA_FORMAT, "%.1f C", DATA_DOUBLE, p2_set_low,
-        "probe_3_flags",        "Flags Probe 3",    DATA_FORMAT, "%1x", DATA_INT, p_3_flags,
-        "temperature_3_C",      "Temperature 3",    DATA_COND, p_3_temp_raw != 0, DATA_FORMAT, "%.1f C", DATA_DOUBLE, p3_temp,
-        "setpoint_high_3_C",    "Setpoint 3 high",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, p3_set_high,
-        "setpoint_low_3_C",     "Setpoint 3 low",   DATA_FORMAT, "%.1f C", DATA_DOUBLE, p3_set_low,
-        "probe_4_flags",        "Flags Probe 4",    DATA_FORMAT, "%1x", DATA_INT, p_4_flags,
-        "temperature_4_C",      "Temperature 4",    DATA_COND, p_4_temp_raw != 0, DATA_FORMAT, "%.1f C", DATA_DOUBLE, p4_temp,
-        "setpoint_high_4_C",    "Setpoint 4 high",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, p4_set_high,
-        "setpoint_low_4_C",     "Setpoint 4 low",   DATA_FORMAT, "%.1f C", DATA_DOUBLE, p4_set_low,
-        "mic",          "Integrity", DATA_STRING, "CRC",
-        NULL
+            "model",                "",                 DATA_STRING, "Maverick-XR50",
+            "id",                   "",                 DATA_FORMAT, "%04x",    DATA_INT, id,
+            "probe_1_flags",        "Flags Probe 1",    DATA_FORMAT, "%1x",     DATA_INT, p_1_flags,
+            "temperature_1_C",      "Temperature 1",    DATA_COND, p_1_temp_raw != 0, DATA_FORMAT, "%.1f C", DATA_DOUBLE, p1_temp,
+            "setpoint_high_1_C",    "Setpoint 1 high",  DATA_FORMAT, "%.1f C",  DATA_DOUBLE, p1_set_high,
+            "setpoint_low_1_C",     "Setpoint 1 low",   DATA_FORMAT, "%.1f C",  DATA_DOUBLE, p1_set_low,
+            "probe_2_flags",        "Flags Probe 2",    DATA_FORMAT, "%1x",     DATA_INT, p_2_flags,
+            "temperature_2_C",      "Temperature 2",    DATA_COND, p_2_temp_raw != 0, DATA_FORMAT, "%.1f C", DATA_DOUBLE, p2_temp,
+            "setpoint_high_2_C",    "Setpoint 2 high",  DATA_FORMAT, "%.1f C",  DATA_DOUBLE, p2_set_high,
+            "setpoint_low_2_C",     "Setpoint 2 low",   DATA_FORMAT, "%.1f C",  DATA_DOUBLE, p2_set_low,
+            "probe_3_flags",        "Flags Probe 3",    DATA_FORMAT, "%1x",     DATA_INT, p_3_flags,
+            "temperature_3_C",      "Temperature 3",    DATA_COND, p_3_temp_raw != 0, DATA_FORMAT, "%.1f C", DATA_DOUBLE, p3_temp,
+            "setpoint_high_3_C",    "Setpoint 3 high",  DATA_FORMAT, "%.1f C",  DATA_DOUBLE, p3_set_high,
+            "setpoint_low_3_C",     "Setpoint 3 low",   DATA_FORMAT, "%.1f C",  DATA_DOUBLE, p3_set_low,
+            "probe_4_flags",        "Flags Probe 4",    DATA_FORMAT, "%1x",     DATA_INT, p_4_flags,
+            "temperature_4_C",      "Temperature 4",    DATA_COND, p_4_temp_raw != 0, DATA_FORMAT, "%.1f C", DATA_DOUBLE, p4_temp,
+            "setpoint_high_4_C",    "Setpoint 4 high",  DATA_FORMAT, "%.1f C",  DATA_DOUBLE, p4_set_high,
+            "setpoint_low_4_C",     "Setpoint 4 low",   DATA_FORMAT, "%.1f C",  DATA_DOUBLE, p4_set_low,
+            "mic",                  "Integrity",        DATA_STRING, "CRC",
+            NULL
     );
-
-
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -176,7 +174,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const maverick_xr50 = {
-        .name        = "Maverick XR-50 BBQ Sensor", 
+        .name        = "Maverick XR-50 BBQ Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 107,
         .long_width  = 107,
