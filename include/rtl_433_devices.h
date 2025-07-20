@@ -288,6 +288,7 @@
     DECL(thermopro_tx7b) \
     DECL(nexus_sauna) \
     DECL(homelead_hg9901) \
+    DECL(maverick_xr50) \
 
     /* Add new decoders here. */
 

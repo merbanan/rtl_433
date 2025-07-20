@@ -366,6 +366,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [278]  ThermoPro TX-7B Outdoor Thermometer Hygrometer
     [279]  Nexus, CRX, Prego sauna temperature sensor
     [280]  Homelead HG9901 (Geevon, Dr.Meter, Royal Gardineer) soil moisture/temp/light level sensor
+    [281]  Maverick XR-50 BBQ Sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
