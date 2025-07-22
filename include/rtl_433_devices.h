@@ -327,6 +327,7 @@
     DECL(code_alarm_frdpc2000_car_remote) \
     DECL(rfm69_lowpowerlab_moteino) \
     DECL(shenzhen_wale_wl_th6r) \
+    DECL(ctt_tag) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
