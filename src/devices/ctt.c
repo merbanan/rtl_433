@@ -137,8 +137,8 @@ r_device const ctt_tag = {
     .long_width     = 40,
     .tolerance      = 10,
     /* allow up to 3×bit for same symbol */
-    .gap_limit      = 160,
-    .reset_limit    = 1000,  /* 10 ms */
+    .gap_limit      = 200,
+    .reset_limit    = 50000,  /* 50 ms */
     .decode_fn      = &ctt_tag_decode,
     .fields         = ctt_tag_fields,
     .disabled       = 0, // Set to 1 during development
