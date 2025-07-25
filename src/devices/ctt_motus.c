@@ -17,10 +17,20 @@ The tags transmit a unique identifier (ID) at a fixed bitrate of 25 kbps using F
 
 The packet format consists of:
 
-    • PREAMBLE: 24 bits of alternating 1/0 (0xAA if byte-aligned) for receiver bit-clock sync
+    • PREAMBLE: 24 bits of alternating 1/0 (0xAA if byte-aligned) for receiver bit-clock sync (preamble length can be shorter, depending on hardware)
     • SYNC:     2 bytes fixed pattern 0xD3, 0x91 marking the packet start
     • ID:       20-bit tag ID encoded into 4 bytes (5 bits per byte) using a 32-entry dictionary
     • CRC:      1-byte SMBus CRC-8 over the 4 encoded ID bytes
+
+    AA AA AA   D3 91   78 55 4C 33   58
+   |--------| |-----| |-----------| |--|
+    Preamble   Sync        ID       CRC
+
+    LifeTag - programmed with a standard 5-second beep rate.
+    PowerTag - user-defined beep rate
+    HybridTag - transmits every 2-15 seconds
+
+
 
 */
 
@@ -28,25 +38,7 @@ The packet format consists of:
 
 static const uint8_t sync[2] = {0xD3, 0x91};
 
-static const uint8_t ctt_code[32] = {
-        0x00, 0x07, 0x19, 0x1E, 0x2A, 0x2D, 0x33, 0x34,
-        0x4B, 0x4C, 0x52, 0x55, 0x61, 0x66, 0x78, 0x7F,
-        0x80, 0x87, 0x99, 0x9E, 0xAA, 0xAD, 0xB3, 0xB4,
-        0xCB, 0xCC, 0xD2, 0xD5, 0xE1, 0xE6, 0xF8, 0xFF};
-
-// Simple linear search to find index of codeword
-// TODO - reverse lookup table? Is that worth it?
-static int dict_index(uint8_t val)
-{
-    for (int i = 0; i < 32; i++) {
-        if (ctt_code[i] == val) {
-            return i;
-        }
-    }
-    return -1; // Not found
-}
-
-static int ctt_tag_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int ctt_motus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     int events = 0;
@@ -75,48 +67,18 @@ static int ctt_tag_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t payload[5];
         bitbuffer_extract_bytes(bitbuffer, row, sync_pos + 16, payload, 40);
 
-        // Extract encoded ID and CRC
-        uint8_t enc_id[4];
-        memcpy(enc_id, payload, 4);
-        uint8_t crc_val = payload[4];
-
         // SMBus CRC-8
-        if (crc8(enc_id, 4, 0x07, 0x00) != crc_val) {
-            decoder_logf(decoder, 2, __func__, "CRC fail (calc 0x%02X != rx 0x%02X)", crc8(enc_id, 4, 0x07, 0x00), crc_val);
+        if (crc8(payload, 5, 0x07, 0x00) != 0) {
+            decoder_logf(decoder, 2, __func__, "CRC fail (calc 0x%02X != rx 0x%02X)", crc8(payload, 5, 0x07, 0x00), 0);
             return DECODE_FAIL_SANITY; // Integrity check failed - no point in continuing
         }
 
-        // Decode ID (20 bits packed in 4x5)
-        uint32_t id = 0;
-        int valid   = 1;
-        for (int j = 0; j < 4; j++) {
-            int idx = dict_index(enc_id[j]);
-            if (idx < 0) {
-                valid = 0;
-                break;
-            }
-            id |= ((uint32_t)idx << (5 * (3 - j))); // MSB first
-        }
-        if (!valid) {
-            decoder_log(decoder, 2, __func__, "Invalid codeword in encoded ID");
-            continue; // DECODE_FAIL_MIC?
-        }
-
-        // Format hex representations
-        char id_hex[8];
-        snprintf(id_hex, sizeof(id_hex), "0x%05X", (unsigned)id);
-
-        char id_raw_hex[16]; // "XX XX XX XX"
-        snprintf(id_raw_hex, sizeof(id_raw_hex), "%02X %02X %02X %02X",
-                enc_id[0], enc_id[1], enc_id[2], enc_id[3]);
+        uint32_t id = (payload[0] << 24) | (payload[1] << 16) | (payload[2] << 8) | payload[3];
 
         /* clang-format off */
         data = data_make(
-            "model",      "",                        DATA_STRING, "CTT Motus LifeTag/PowerTag/HybridTag",
-            "id_raw",     "Raw Encoded ID",          DATA_STRING, id_raw_hex,
-            "id",         "Decoded Tag ID",          DATA_INT,    id,
-            "id_hex",     "Decoded Tag ID (hex)",    DATA_STRING, id_hex,
-            "crc",        "CRC",                     DATA_FORMAT, "%02X", DATA_INT, crc_val,
+            "model",      "",                        DATA_STRING, "CTT - Motus",
+            "id",         "Tag ID",                  DATA_FORMAT, "0x%08X", DATA_INT, id,
             "mic",        "Integrity",               DATA_STRING, "CRC",
             NULL);
         /* clang-format on */
@@ -128,10 +90,18 @@ static int ctt_tag_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return events;
 }
 
-static const char *ctt_tag_fields[] = {
-        "model", "id_raw", "id", "id_hex", "crc", "mic", NULL};
 
-r_device const ctt_tag = {
+static const char *output_fields[] = {
+        "model",
+        "id_raw",
+        "id",
+        "id_hex",
+        "crc",
+        "mic",
+        NULL,
+};
+
+r_device const ctt_motus = {
         .name       = "Cellular Tracking Technologies LifeTag/PowerTag/HybridTag",
         .modulation = FSK_PULSE_PCM,
         /* at BR=25 kbps, bit_time=40µs*/
@@ -140,7 +110,7 @@ r_device const ctt_tag = {
         .tolerance   = 10,
         .gap_limit   = 200,
         .reset_limit = 50000, /* 50 ms */
-        .decode_fn   = &ctt_tag_decode,
-        .fields      = ctt_tag_fields,
+        .decode_fn   = &ctt_motus_decode,
+        .fields      = output_fields,
         .disabled    = 0,
 };
