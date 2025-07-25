@@ -132,7 +132,7 @@ static const char *ctt_tag_fields[] = {
 };
 
 r_device const ctt_tag = {
-    .name           = "CTT Motus LifeTag/PowerTag/HybridTag",
+    .name           = "Cellular Tracking Technologies LifeTag/PowerTag/HybridTag",
     .modulation     = FSK_PULSE_PCM,
     /* at BR=25 kbps, bit_time=40µs*/
     .short_width    = 40,
