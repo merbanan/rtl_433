@@ -12,7 +12,8 @@
 /**
 Cellular Tracking Technologies (https://celltracktech.com/) LifeTag/PowerTag/HybridTag.
 
-CTT LifeTag/PowerTag/HybridTag is a lightweight transmitter used for wildlife tracking and research - most commonly used with the Motus Wildlife Tracking System (https://motus.org/).
+The CTT LifeTag/PowerTag/HybridTag is a lightweight transmitter used for wildlife tracking and research - most commonly used with the Motus Wildlife Tracking System (https://motus.org/).
+The tags transmit a unique identifier (ID) at a fixed bitrate of 25 kbps using Frequency Shift Keying (FSK) modulation on 434 MHz.
 
 The packet format consists of:
 
@@ -35,6 +36,7 @@ static const uint8_t ctt_code[32] = {
 };
 
 // Simple linear search to find index of codeword
+// TODO - reverse lookup table? Is that worth it?
 static int dict_index(uint8_t val) {
     for (int i = 0; i < 32; i++) {
         if (ctt_code[i] == val) {
@@ -53,19 +55,19 @@ static int ctt_tag_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     for (int row = 0; row < bitbuffer->num_rows; ++row) {
         if (bitbuffer->bits_per_row[row] < min_bits) {
-            continue; // Too short
+            continue; // DECODE_ABORT_LENGTH?
         }
 
         // Search for sync (allow 0 bit errors initially; increase to 2 for noisy signals)
         unsigned sync_pos = bitbuffer_search(bitbuffer, row, 0, sync, 16); // 2 bytes = 16 bits
 
         if (sync_pos >= bitbuffer->bits_per_row[row]) {
-            continue; // Sync not found
+            continue; // DECODE_ABORT_EARLY?
         }
 
         // Ensure enough bits after sync for ID (4B) + CRC (1B) = 40 bits
         if (sync_pos + 16 + 40 > bitbuffer->bits_per_row[row]) {
-            continue;
+            continue; // DECODE_ABORT_EARLY?
         }
 
         // Extract 5 bytes after sync
@@ -80,11 +82,11 @@ static int ctt_tag_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
         // SMBus CRC-8
         if (crc8(enc_id, 4, 0x07, 0x00) != crc_val) {
             decoder_logf(decoder, 2, __func__, "CRC fail (calc 0x%02X != rx 0x%02X)", crc8(enc_id, 4, 0x07, 0x00), crc_val);
-            continue; // DECODE_FAIL_MIC?
+            return DECODE_FAIL_SANITY; // Integrity check failed - no point in continuing
         }
 
         // Decode ID (20 bits packed in 4x5)
-        uint32_t id = 0; // Use uint32_t for safety
+        uint32_t id = 0;
         int valid = 1;
         for (int j = 0; j < 4; j++) {
             int idx = dict_index(enc_id[j]);
@@ -96,7 +98,7 @@ static int ctt_tag_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
         }
         if (!valid) {
             decoder_log(decoder, 2, __func__, "Invalid codeword in encoded ID");
-            continue;
+            continue; // DECODE_FAIL_MIC?
         }
 
         // Format hex representations
@@ -136,10 +138,9 @@ r_device const ctt_tag = {
     .short_width    = 40,
     .long_width     = 40,
     .tolerance      = 10,
-    /* allow up to 3×bit for same symbol */
     .gap_limit      = 200,
     .reset_limit    = 50000,  /* 50 ms */
     .decode_fn      = &ctt_tag_decode,
     .fields         = ctt_tag_fields,
-    .disabled       = 0, // Set to 1 during development
+    .disabled       = 0,
 };
