@@ -26,11 +26,11 @@ The packet format consists of:
    |--------| |-----| |-----------| |--|
     Preamble   Sync        ID       CRC
 
+    A beep is a single packet.
+
     LifeTag - programmed with a standard 5-second beep rate.
     PowerTag - user-defined beep rate
-    HybridTag - transmits every 2-15 seconds
-
-
+    HybridTag - transmits a beep every 2-15 seconds
 
 */
 
@@ -89,7 +89,6 @@ static int ctt_motus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     return events;
 }
-
 
 static const char *output_fields[] = {
         "model",
