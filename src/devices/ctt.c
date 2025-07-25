@@ -29,15 +29,15 @@ The packet format consists of:
 static const uint8_t sync[2] = {0xD3, 0x91};
 
 static const uint8_t ctt_code[32] = {
-    0x00, 0x07, 0x19, 0x1E, 0x2A, 0x2D, 0x33, 0x34,
-    0x4B, 0x4C, 0x52, 0x55, 0x61, 0x66, 0x78, 0x7F,
-    0x80, 0x87, 0x99, 0x9E, 0xAA, 0xAD, 0xB3, 0xB4,
-    0xCB, 0xCC, 0xD2, 0xD5, 0xE1, 0xE6, 0xF8, 0xFF
-};
+        0x00, 0x07, 0x19, 0x1E, 0x2A, 0x2D, 0x33, 0x34,
+        0x4B, 0x4C, 0x52, 0x55, 0x61, 0x66, 0x78, 0x7F,
+        0x80, 0x87, 0x99, 0x9E, 0xAA, 0xAD, 0xB3, 0xB4,
+        0xCB, 0xCC, 0xD2, 0xD5, 0xE1, 0xE6, 0xF8, 0xFF};
 
 // Simple linear search to find index of codeword
 // TODO - reverse lookup table? Is that worth it?
-static int dict_index(uint8_t val) {
+static int dict_index(uint8_t val)
+{
     for (int i = 0; i < 32; i++) {
         if (ctt_code[i] == val) {
             return i;
@@ -46,7 +46,8 @@ static int dict_index(uint8_t val) {
     return -1; // Not found
 }
 
-static int ctt_tag_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int ctt_tag_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
     int events = 0;
 
@@ -87,7 +88,7 @@ static int ctt_tag_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
 
         // Decode ID (20 bits packed in 4x5)
         uint32_t id = 0;
-        int valid = 1;
+        int valid   = 1;
         for (int j = 0; j < 4; j++) {
             int idx = dict_index(enc_id[j]);
             if (idx < 0) {
@@ -107,7 +108,7 @@ static int ctt_tag_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
 
         char id_raw_hex[16]; // "XX XX XX XX"
         snprintf(id_raw_hex, sizeof(id_raw_hex), "%02X %02X %02X %02X",
-                 enc_id[0], enc_id[1], enc_id[2], enc_id[3]);
+                enc_id[0], enc_id[1], enc_id[2], enc_id[3]);
 
         /* clang-format off */
         data = data_make(
@@ -128,19 +129,18 @@ static int ctt_tag_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static const char *ctt_tag_fields[] = {
-    "model", "id_raw", "id", "id_hex", "crc", "mic", NULL
-};
+        "model", "id_raw", "id", "id_hex", "crc", "mic", NULL};
 
 r_device const ctt_tag = {
-    .name           = "Cellular Tracking Technologies LifeTag/PowerTag/HybridTag",
-    .modulation     = FSK_PULSE_PCM,
-    /* at BR=25 kbps, bit_time=40µs*/
-    .short_width    = 40,
-    .long_width     = 40,
-    .tolerance      = 10,
-    .gap_limit      = 200,
-    .reset_limit    = 50000,  /* 50 ms */
-    .decode_fn      = &ctt_tag_decode,
-    .fields         = ctt_tag_fields,
-    .disabled       = 0,
+        .name       = "Cellular Tracking Technologies LifeTag/PowerTag/HybridTag",
+        .modulation = FSK_PULSE_PCM,
+        /* at BR=25 kbps, bit_time=40µs*/
+        .short_width = 40,
+        .long_width  = 40,
+        .tolerance   = 10,
+        .gap_limit   = 200,
+        .reset_limit = 50000, /* 50 ms */
+        .decode_fn   = &ctt_tag_decode,
+        .fields      = ctt_tag_fields,
+        .disabled    = 0,
 };
