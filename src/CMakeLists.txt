@@ -86,6 +86,7 @@ add_library(r_433 STATIC
     devices/cmr113.c
     devices/companion_wtr001.c
     devices/cotech_36_7959.c
+    devices/ctt_motus.c
     devices/current_cost.c
     devices/danfoss.c
     devices/deltadore_x3d.c
