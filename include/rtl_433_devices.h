@@ -289,6 +289,7 @@
     DECL(nexus_sauna) \
     DECL(homelead_hg9901) \
     DECL(maverick_xr50) \
+<<<<<<< HEAD
     DECL(orion_endpoint) \
     DECL(fineoffset_wh43) \
     DECL(baldr_therm) \
@@ -327,7 +328,7 @@
     DECL(code_alarm_frdpc2000_car_remote) \
     DECL(rfm69_lowpowerlab_moteino) \
     DECL(shenzhen_wale_wl_th6r) \
-    DECL(ctt_tag) \
+    DECL(ctt_motus) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
