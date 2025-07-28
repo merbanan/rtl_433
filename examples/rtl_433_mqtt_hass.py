@@ -350,7 +350,7 @@ mappings = {
         "config": {
             "device_class": "wind_speed",
             "name": "Wind Speed",
-            "unit_of_measurement": "mi/h",
+            "unit_of_measurement": "mph",
             "value_template": "{{ value|float }}",
             "state_class": "measurement"
         }
