@@ -289,7 +289,7 @@
     DECL(nexus_sauna) \
     DECL(homelead_hg9901) \
     DECL(maverick_xr50) \
-    DECL(ctt_motus) \
+    DECL(ctt_life_power_hybrid) \
 
     /* Add new decoders here. */
 
