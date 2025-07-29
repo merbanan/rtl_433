@@ -290,6 +290,7 @@
     DECL(homelead_hg9901) \
     DECL(maverick_xr50) \
 <<<<<<< HEAD
+<<<<<<< HEAD
     DECL(orion_endpoint) \
     DECL(fineoffset_wh43) \
     DECL(baldr_therm) \
@@ -328,7 +329,9 @@
     DECL(code_alarm_frdpc2000_car_remote) \
     DECL(rfm69_lowpowerlab_moteino) \
     DECL(shenzhen_wale_wl_th6r) \
-    DECL(ctt_motus) \
+    DECL(ctt_life_power_hybrid) \
+
+>>>>>>> 9ec8e745 (fix(ctt): re-add Motus code checks, move away from Motus naming, clean output_fields)
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
