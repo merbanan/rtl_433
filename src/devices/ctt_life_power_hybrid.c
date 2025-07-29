@@ -32,7 +32,8 @@ The packet format consists of:
     PowerTag - user-defined beep rate
     HybridTag - transmits a beep every 2-15 seconds
 
-There's a 20-bit subset of the 32-bit ID space set aside for Motus tag use. We set `valid_motus` to true if all 4 bytes of the ID are present in the Motus code dictionary. However, `valid_motus` not being set doesn't mean that a tag is invalid, just that it's not recognized as a tag used with Motus.
+There's a 20-bit subset of the 32-bit ID space set aside for Motus tag use. We set `valid_motus` to true if all 4 bytes of the ID are present in the Motus code dictionary.
+However, `valid_motus` not being set doesn't mean that a tag is invalid, just that it's not recognized as a tag used with Motus.
 
 */
 
@@ -130,9 +131,7 @@ r_device const ctt_life_power_hybrid = {
         /* at BR=25 kbps, bit_time=40µs*/
         .short_width = 40,
         .long_width  = 40,
-        .tolerance   = 10,
-        .gap_limit   = 200,
-        .reset_limit = 50000, /* 50 ms */
+        .reset_limit = 500, /* 500 µs: slightly above max run of 0's */
         .decode_fn   = &ctt_decode,
         .fields      = output_fields,
         .disabled    = 0,
