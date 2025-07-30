@@ -573,7 +573,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         data_t *data = data_make(
                 "model",                    "",                     DATA_STRING, "Oregon-UVR128",
                 "id",                         "House Code", DATA_INT,        device_id,
-                "uv",                         "UV Index",     DATA_FORMAT, "%u", DATA_INT, uvidx,
+                "uvi",                        "UV Index",     DATA_FORMAT, "%.0f", DATA_DOUBLE, (double)uvidx,
                 "battery_ok",          "Battery",         DATA_INT,    !battery_low,
                 //"channel",                "Channel",        DATA_INT,        channel,
                 NULL);
@@ -746,7 +746,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
                 "id",                         "House Code", DATA_INT,        device_id,
                 "channel",                "Channel",        DATA_INT,        channel,
                 "battery_ok",          "Battery",         DATA_INT,    !battery_low,
-                "uv",                         "UV Index",     DATA_FORMAT, "%u", DATA_INT, uvidx,
+                "uvi",                        "UV Index",     DATA_FORMAT, "%.0f", DATA_DOUBLE, (double)uvidx,
                 NULL);
         /* clang-format on */
         decoder_output_data(decoder, data);
@@ -989,7 +989,7 @@ static char const *const output_fields[] = {
         "wind_avg_m_s",
         "wind_dir_deg",
         "pressure_hPa",
-        "uv",
+        "uvi",
         "power_W",
         "energy_kWh",
         "radio_clock",
