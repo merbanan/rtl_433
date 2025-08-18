@@ -16,6 +16,9 @@
 
 struct r_device;
 
+/// Check the statistics of a pulse data structure and return a summary.
+int pulse_analyzer_check(pulse_data_t *data, int package_type);
+
 /// Analyze and print result.
 void pulse_analyzer(pulse_data_t *data, int package_type, struct r_device *device);
 
