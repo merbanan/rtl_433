@@ -279,6 +279,9 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
     r_device *p;
     if (r_dev->create_fn) {
         p = r_dev->create_fn(arg);
+        // create_fn() doesn't know or apply the main() assigned
+        // protocol number
+        p->protocol_num = r_dev->protocol_num;
     }
     else {
         if (arg && *arg) {
@@ -306,9 +309,13 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
 
 void free_protocol(r_device *r_dev)
 {
-    // free(r_dev->name);
-    free(r_dev->decode_ctx);
-    free(r_dev);
+    if (r_dev->destroy_fn) {
+        r_dev->destroy_fn(r_dev);
+    }
+    else {
+        free(r_dev->decode_ctx);
+        free(r_dev);
+    }
 }
 
 void unregister_protocol(r_cfg_t *cfg, r_device *r_dev)
