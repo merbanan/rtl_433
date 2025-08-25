@@ -33,6 +33,24 @@ endforeach(testSrc)
 # Define integration tests
 ########################################################################
 add_test(rtl_433_help ../src/rtl_433 -h)
+add_test(flex_decoder_help ../src/rtl_433 -X)
+add_test(flex_decoder bash -c
+    "touch empty_file.cu8 && \
+    ../src/rtl_433 \
+        -X n=name,m=FSK_PCM,s=10,l=10,r=10240 \
+        -r empty_file.cu8")
+# Borrowed from: https://github.com/merbanan/rtl_433/pull/786#issuecomment-410513334
+add_test(flex_decoder_w_getter bash -c
+    "touch empty_file.cu8 && \
+    ../src/rtl_433 \
+        -X 'n=name,m=FSK_PCM,s=10,l=10,r=10240,get=@20:{12}0x7f:status:[10:pir 14:open 7:close 11:tamper 0xf:battery_low]' \
+        -r empty_file.cu8")
+# Borrowed from: https://github.com/merbanan/rtl_433/pull/1532#issue-728103584
+add_test(flex_decoder_w_getter_and_format_specifier bash -c
+    "touch empty_file.cu8 && \
+    ../src/rtl_433 \
+        -X 'n=name,m=FSK_PCM,s=10,l=10,r=10240,get=@2:{32}:code:%x' \
+        -r empty_file.cu8")
 
 ########################################################################
 # Define style checks
