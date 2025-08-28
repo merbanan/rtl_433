@@ -441,6 +441,7 @@ Available options are:
 	reflect : reflect each byte (MSB first to MSB last)
 	decode_uart : UART 8n1 (10-to-8) decode
 	decode_dm : Differential Manchester decode
+	decode_mc : Manchester decode
 	match=<bits> : only match if the <bits> are found
 	preamble=<bits> : match and align at the <bits> preamble
 		<bits> is a row spec of {<bit count>}<bits as hex number>
