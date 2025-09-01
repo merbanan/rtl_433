@@ -107,6 +107,22 @@ static int fineoffset_ws85_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int supercap_V  = (b[17] & 0x3f);
     int firmware    = b[25];
 
+    const int BATTERY_THRESHOLDS[] = {17, 33, 50, 67, 83}; // % for bars 1, 2, 3, 4, 5
+    int battery_ok = 0;
+    if (battery_lvl > 100) {
+        // Treat > 100% as external power / fully charged beyond normal battery max
+        battery_ok = 6; 
+    } else {
+        // Map the 0-100% level to 0-5 bars
+        for (int i = 0; i < 5; ++i) {
+            if (battery_lvl >= BATTERY_THRESHOLDS[i]) {
+                battery_ok = i + 1; // Threshold i corresponds to bar i+1
+            } else {
+                break;
+            }
+        }
+    }
+
     if (battery_lvl > 100) // More then 100%?
         battery_lvl = 100;
 
@@ -117,7 +133,8 @@ static int fineoffset_ws85_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data = data_make(
             "model",            "",                 DATA_STRING, "Fineoffset-WS85",
             "id",               "ID",               DATA_FORMAT, "%06x", DATA_INT,    id,
-            "battery_ok",       "Battery level",    DATA_DOUBLE, battery_lvl * 0.01f,
+            "battery_ok",       "Battery",          DATA_INT, battery_ok,   // 0–6 bars
+            "battery_pct",      "Battery level",    DATA_INT, battery_lvl,  // 0–100%
             "battery_mV",       "Battery Voltage",  DATA_FORMAT, "%d mV", DATA_INT,    battery_mv,
             "wind_dir_deg",     "Wind direction",   DATA_COND, wind_dir != 0x1ff,   DATA_INT, wind_dir,
             "wind_avg_m_s",     "Wind speed",       DATA_COND, wind_avg != 0x1ff,   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_avg * 0.1f,
@@ -140,6 +157,7 @@ static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
+        "battery_pct",
         "battery_mV",
         "wind_dir_deg",
         "wind_avg_m_s",
