@@ -289,7 +289,7 @@
     DECL(nexus_sauna) \
     DECL(homelead_hg9901) \
     DECL(maverick_xr50) \
-
+    DECL(rfm69_lowpowerlab_moteino) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
