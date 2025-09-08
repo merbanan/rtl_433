@@ -33,14 +33,13 @@
 #include "r_util.h"
 #include "data.h"
 
-#define LENGTH_POS      5
-#define NODE_ID_POS     7
-#define DATA_START_POS  9
+#define LENGTH_POS     5
+#define NODE_ID_POS    7
+#define DATA_START_POS 9
 
-#define HEADER_LENGTH   6
-#define MAX_LENGTH      65
-#define BUF_LENGTH      72      // header + max + 1
-
+#define HEADER_LENGTH  6
+#define MAX_LENGTH     65
+#define BUF_LENGTH     72 // header + max + 1
 
 static int rfm69_fsk_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -51,7 +50,7 @@ static int rfm69_fsk_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint8_t message[BUF_LENGTH]; // max size of header + payload + terminator
     uint8_t payload[MAX_LENGTH]; // max size of payload + terminator
-    
+
     posn = bitbuffer_search(bitbuffer, 0, 0, &search, 8);
 
     if ((posn < 24) || (posn > 28))
@@ -81,21 +80,20 @@ static int rfm69_fsk_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     */
 
     uint16_t crc;
-    
+
     // found the polynomial values in an old Semtech appication note.
     crc = ~crc16(payload, (payload_len + 1), 0x1021, 0x1d0f) & 0xffff;
 
     if (((crc >> 8) != message[HEADER_LENGTH + payload_len + 0]) ||
-            ((crc & 0x00ff) != message[HEADER_LENGTH  + payload_len+ 1])) {
+            ((crc & 0x00ff) != message[HEADER_LENGTH + payload_len + 1])) {
         fprintf(stderr, "CRC NOT OK!\n");
         return 0;
     }
 
-    if (message[NODE_ID_POS] == 0x02) 
-    {
-        message[HEADER_LENGTH + payload_len] = 0x00;                 // remove the checksum which is still at the end of the message buffer
+    if (message[NODE_ID_POS] == 0x02) {
+        message[HEADER_LENGTH + payload_len] = 0x00; // remove the checksum which is still at the end of the message buffer
 
-        char strNode[2];    
+        char strNode[2];
         char strGateway[2];
         char strMessage[32];
 
@@ -103,7 +101,7 @@ static int rfm69_fsk_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         sprintf(strNode, "%d", (message[NODE_ID_POS]));
         sprintf(strMessage, "%.30s", &message[DATA_START_POS]);
 
-        /* clang-format off */          
+        /* clang-format off */
         data = data_make("model",	    "Model",           DATA_STRING, "LowPowerLab.com Moteino RFM69 Node",
                         "gatewayId", 	"GatewayId", 	   DATA_STRING, strGateway,
                         "id",	        "Node Id  ",       DATA_STRING, strNode,
@@ -115,10 +113,9 @@ static int rfm69_fsk_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_output_data(decoder, data);
 
         return 1;
- 
     }
 
-    if (message[NODE_ID_POS] == 0xff)   // your node id
+    if (message[NODE_ID_POS] == 0xff) // your node id
     {
         // Add your own stuff
     }
@@ -130,7 +127,7 @@ static char const *const output_fields[] = {
         NULL,
 };
 
-r_device rfm69_lowpowerlab_moteino = {
+r_device const rfm69_lowpowerlab_moteino = {
         .name        = "RFM69 LowPowerLab Moteino board (-s 1000k)",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 18,
