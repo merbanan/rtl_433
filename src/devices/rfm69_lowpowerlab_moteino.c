@@ -9,29 +9,31 @@
     (at your option) any later version.
 */
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//  Generic decoder for RFM69 radio modules as used on LowPowerLab.com Moteino boards. Handy if you want to use an SDR to decode various
-//  other devices together with some Moteino based nodes all in the same platform.
-//  Tested and data captures with sample sketch https://github.com/LowPowerLab/RFM69/blob/master/Examples/Node/Node.ino
-//
-//  Encryption must be disabled in the sketch (comment out #define ENCRYPTKEY)
-//  Tested and data captures from 433MHz RFM69HW_HCW board, but 868MHz models should be similar
-//
-//  Ian Cockett         Initial Version             Mar 2018
-//                      Updated for latest RTL_433  Aug 2025
-//
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//  Preamble(3) |  Sync (2) |       Header (4)    | Data (n) | CRC (2)
-//  0xAAAAAA    | 0x2d,0x64 | Len, Dest, Src, Ctl |          |
-//              |           |<--------------65-------------->|
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 #include "decoder.h"
-#include "r_api.h"
-#include "r_util.h"
-#include "data.h"
+
+/**
+
+Generic decoder for RFM69 radio modules as used on LowPowerLab.com Moteino boards.
+
+    rtl_433 -s 1000k
+
+Test data captured with sample sketch https://github.com/LowPowerLab/RFM69/blob/master/Examples/Node/Node.ino
+
+Encryption must be disabled in the sketch (comment out #define ENCRYPTKEY)
+Data captures from 433MHz RFM69HW_HCW board, but 868MHz models should be similar
+
+Protocol description:-
+
+-   Preamble    aaaaaa
+-   Sync word   2d64
+-   Header byte 1 - Length Byte
+-   Header byte 2 - Dest Address
+-   Header byte 3 - Src Address
+-   Header byte 4 - Control byte    (not sure what this does)
+-   n bytes variable length message.
+-   CRC16 checksum
+
+*/
 
 #define LENGTH_POS     5
 #define NODE_ID_POS    7
@@ -39,19 +41,18 @@
 
 #define HEADER_LENGTH  6
 #define MAX_LENGTH     65
-#define BUF_LENGTH     72 // header + max + 1
+#define BUF_LENGTH     72
 
 static int rfm69_fsk_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t search = 0x2d; // sync
-    unsigned posn;
-
     data_t *data;
+
+    uint8_t search = 0x2d; // sync byte to scan for
 
     uint8_t message[BUF_LENGTH]; // max size of header + payload + terminator
     uint8_t payload[MAX_LENGTH]; // max size of payload + terminator
 
-    posn = bitbuffer_search(bitbuffer, 0, 0, &search, 8);
+    unsigned posn = bitbuffer_search(bitbuffer, 0, 0, &search, 8);
 
     if ((posn < 24) || (posn > 28))
         return 0; // Can't find bit position of sync word
@@ -65,24 +66,8 @@ static int rfm69_fsk_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_extract_bytes(bitbuffer, 0, posn + 16, (uint8_t *)&payload, (payload_len + 1) * 8); // we need to include length byte in CRC calc
 
-    /*      uncomment for extra message logging
-
-    fprintf(stderr, "\n");
-    for (unsigned j = 0; j < maxlen; j++) {
-        fprintf(stderr, "%02x ", message[j]);
-    }
-    fprintf(stderr, "\n");
-    for (unsigned j = 0; j < maxlen; j++) {
-        fprintf(stderr, "%c ", message[j]);
-    }
-    fprintf(stderr, "\n");
-
-    */
-
-    uint16_t crc;
-
-    // found the polynomial values in an old Semtech appication note.
-    crc = ~crc16(payload, (payload_len + 1), 0x1021, 0x1d0f) & 0xffff;
+    // found the polynomial values in an old Semtech application note.
+    uint16_t crc = ~crc16(payload, (payload_len + 1), 0x1021, 0x1d0f) & 0xffff;
 
     if (((crc >> 8) != message[HEADER_LENGTH + payload_len + 0]) ||
             ((crc & 0x00ff) != message[HEADER_LENGTH + payload_len + 1])) {
@@ -102,12 +87,13 @@ static int rfm69_fsk_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         sprintf(strMessage, "%.30s", &message[DATA_START_POS]);
 
         /* clang-format off */
-        data = data_make("model",	    "Model",           DATA_STRING, "LowPowerLab.com Moteino RFM69 Node",
-                        "gatewayId", 	"GatewayId", 	   DATA_STRING, strGateway,
-                        "id",	        "Node Id  ",       DATA_STRING, strNode,
-                        "message",      "Msg",             DATA_STRING, strMessage,
-                        "mic",           "Integrity",      DATA_STRING, "CHECKSUM",
-                        NULL);
+        data = data_make(
+            "model",        "Model",           DATA_STRING, "Moteino-RFM69",
+            "id",           "Node Id ",        DATA_STRING, strNode,
+            "gateway_id",   "Gateway Id",      DATA_STRING, strGateway,
+            "msg",          "Message",         DATA_STRING, strMessage,
+            "mic",          "Integrity",       DATA_STRING, "CRC",
+            NULL);
         /* clang-format on */
 
         decoder_output_data(decoder, data);
@@ -124,6 +110,11 @@ static int rfm69_fsk_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char const *const output_fields[] = {
+        "model",
+        "gateway_id",
+        "id",
+        "msg",
+        "mic",
         NULL,
 };
 
@@ -132,9 +123,8 @@ r_device const rfm69_lowpowerlab_moteino = {
         .modulation  = FSK_PULSE_PCM,
         .short_width = 18,
         .long_width  = 18,
-        .reset_limit = 18432,
+        .reset_limit = 400,
         .decode_fn   = &rfm69_fsk_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 
 };
