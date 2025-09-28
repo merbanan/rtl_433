@@ -54,7 +54,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-H <seconds>] Hop interval for polling of multiple frequencies (default: 600 seconds)
   [-p <ppm_error>] Correct rtl-sdr tuner frequency offset error (default: 0)
   [-s <sample rate>] Set sample rate (default: 250000 Hz)
-  [-D restart | pause | quit | manual] Input device run mode options.
+  [-D quit | restart | pause | manual] Input device run mode options (default: quit).
 		= Demodulator options =
   [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)
        Specify a negative number to disable a device decoding protocol (can be used multiple times)
@@ -77,7 +77,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-w <filename> | help] Save data stream to output file (a '-' dumps samples to stdout)
   [-W <filename> | help] Save data stream to output file, overwrite existing file
 		= Data output options =
-  [-F log | kv | json | csv | mqtt | influx | syslog | trigger | null | help] Produce decoded output in given format.
+  [-F log | kv | json | csv | mqtt | influx | syslog | trigger | rtl_tcp | http | null | help] Produce decoded output in given format.
        Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
   [-M time[:<options>] | protocol | level | noise[:<secs>] | stats | bits | help] Add various meta data to each output.
@@ -342,7 +342,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [254]  Thermor DG950 weather station
     [255]  Mueller Hot Rod water meter
     [256]  ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill
-    [257]  BMW Gen3 TPMS
+    [257]  BMW Gen2 and Gen3 TPMS
     [258]  Chamberlain CWPIRC PIR Sensor
     [259]  ThermoPro Meat Thermometers, TP829B 4 probes with temp only
     [260]* Arad/Master Meter Dialog3G water utility meter
@@ -361,7 +361,13 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [273]  Landis & Gyr Gridstream Power Meters 38.4k
     [274]  Revolt ZX-7717 power meter
     [275]  GM-Aftermarket TPMS
-    [276]  Kia TPMS (Pacific HKMC)
+    [276]  RainPoint HCS012ARF Rain Gauge sensor
+    [277]  Apator Metra E-RM 30
+    [278]  ThermoPro TX-7B Outdoor Thermometer Hygrometer
+    [279]  Nexus, CRX, Prego sauna temperature sensor
+    [280]  Homelead HG9901 (Geevon, Dr.Meter, Royal Gardineer) soil moisture/temp/light level sensor
+    [281]  Maverick XR-50 BBQ Sensor
+    [282]  Kia TPMS (Pacific HKMC)
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -436,6 +442,7 @@ Available options are:
 	reflect : reflect each byte (MSB first to MSB last)
 	decode_uart : UART 8n1 (10-to-8) decode
 	decode_dm : Differential Manchester decode
+	decode_mc : Manchester decode
 	match=<bits> : only match if the <bits> are found
 	preamble=<bits> : match and align at the <bits> preamble
 		<bits> is a row spec of {<bit count>}<bits as hex number>
@@ -448,14 +455,16 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 
 
 		= Output format option =
-  [-F log|kv|json|csv|mqtt|influx|syslog|trigger|null] Produce decoded output in given format.
+  [-F log|kv|json|csv|mqtt|influx|syslog|trigger|rtl_tcp|http|null] Produce decoded output in given format.
 	Without this option the default is LOG and KV output. Use "-F null" to remove the default.
 	Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
+  [-F mqtt[s][:[//]host[:port][,<options>]] (default: localhost:1883)
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
 	Default user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"
 	MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
 	Supported MQTT formats: (default is all)
+	  availability: posts availability (online/offline)
 	  events: posts JSON event data, default "<base>/events"
 	  states: posts JSON state data, default "<base>/states"
 	  devices: posts device and sensor info in nested topics,
@@ -463,12 +472,21 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	A base topic can be set with base=<topic>, default is "rtl_433/HOSTNAME".
 	Any topic string overrides the base topic and will expand keys like [/model]
 	E.g. -F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
+	For TLS use e.g. -F "mqtts://host,tls_cert=<path>,tls_key=<path>,tls_ca_cert=<path>"
 	With MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client-ID is computed from the driver string.
 	If you use multiple RTL-SDR, perhaps set a serial and select by that (helps not to get the wrong antenna).
+  [-F influx[:[//]host[:port][/<path and options>]]
 	Specify InfluxDB 2.0 server with e.g. -F "influx://localhost:9999/api/v2/write?org=<org>&bucket=<bucket>,token=<authtoken>"
 	Specify InfluxDB 1.x server with e.g. -F "influx://localhost:8086/write?db=<db>&p=<password>&u=<user>"
 	  Additional parameter -M time:unix:usec:utc for correct timestamps in InfluxDB recommended
+  [-F syslog[:[//]host[:port] (default: localhost:514)
 	Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
+  [-F trigger:/path/to/file]
+	Add an output that writes a "1" to the path for each event, use with a e.g. a GPIO
+  [-F rtl_tcp[:[//]bind[:port]] (default: localhost:1234)
+	Add a rtl_tcp pass-through server
+  [-F http[:[//]bind[:port]] (default: 0.0.0.0:8433)
+	Add a HTTP API server, a UI is at e.g. http://localhost:8433/
 
 
 		= Meta information option =

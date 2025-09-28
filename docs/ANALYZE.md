@@ -3,7 +3,7 @@
 ## TL;DR
 
 Capture sample data with `-S unknown`. Note down the expected measurement values from a read-out or head unit.
-Check the spectrogram by dropping samples on https://triq.org/iqs/ (it should [look "busy" like this](https://triq.org/iqs/#/honeywell/2Gig-DW10/g001_344.975M_250k.cu8))
+Check the spectrogram by dropping samples on https://triq.org/pdv/ (it should [look "busy" like this](https://triq.org/pdv/#/honeywell/2Gig-DW10/g001_344.975M_250k.cu8))
 Try analyzing each sample with `rtl_433 -A gfile.cu8` to see if there is some real data.
 Use the analyzer hints to create a plausible `-X` decoder and demod the data codes.
 Then upload some zipped samples to an issue and post a description and tabled codes and values per sample file.
@@ -31,7 +31,7 @@ Do not plug the receiver directly in a USB port, avoid noise and use a short USB
 
 Note the frequency, pick a frequency a little off, e.g 50k above or below.
 Then grab the signal with rtl_433, e.g. `rtl_433 -f 433.92M -S unknown`
-Visually verify the samples in https://triq.org/iqs
+Visually verify the samples in https://triq.org/pdv
 
 ::: tip
 The modes for the sample grabber are
@@ -77,7 +77,7 @@ Use the suggestion or make a guess based on the analyzed pulse data on the codin
 
 The last stage is the protocol decoding from the bit data.
 Build a table of codes and the expected sensor values to identify where the bytes are and what is contained.
-Preferably put the codes and annotations in a [BitBench](https://triq.net/bitbench).
+Preferably put the codes and annotations in a [BitBench](https://triq.org/bitbench).
 
 ## Example commands
 

@@ -19,6 +19,7 @@ Devices supported:
 - Ambient Weather F012TH Indoor/Display Thermo-Hygrometer.
 - TFA senders 30.3208.02 from the TFA "Klima-Monitor" 30.3054,
 - SwitchDoc Labs F016TH.
+- Suomen Lämpömittari 7411
 
 This decoder handles the 433mhz/868mhz thermo-hygrometers.
 The 915mhz (WH*) family of devices use different modulation/encoding.
@@ -43,12 +44,6 @@ xxxxMMMM IIIIIIII BCCCTTTT TTTTTTTT HHHHHHHH MMMMMMMM
 static int ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     uint8_t b[6];
-    int deviceID;
-    int isBatteryLow;
-    int channel;
-    float temperature;
-    int humidity;
-    data_t *data;
 
     bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, 6 * 8);
 
@@ -61,12 +56,12 @@ static int ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
     }
 
     // int model_number = b[0] & 0x0F; // fixed 0x05, at least for "SwitchDoc Labs F016TH"
-    deviceID     = b[1];
-    isBatteryLow = (b[2] & 0x80) != 0; // if not zero, battery is low
-    channel      = ((b[2] & 0x70) >> 4) + 1;
-    int temp_f   = ((b[2] & 0x0f) << 8) | b[3];
-    temperature  = (temp_f - 400) * 0.1f;
-    humidity     = b[4];
+    int deviceID    = b[1];
+    int battery_low = (b[2] & 0x80) != 0; // if not zero, battery is low
+    int channel     = ((b[2] & 0x70) >> 4) + 1;
+    int temp_raw    = ((b[2] & 0x0f) << 8) | b[3];
+    float temp_f    = (temp_raw - 400) * 0.1f;
+    int humidity    = b[4];
 
     /*
     Sanity checks to reduce false positives and other bad data
@@ -74,11 +69,11 @@ static int ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
     Packets with Bad data often pass the MIC check.
 
     - humidity > 100 (such as 255) and
-    - temperatures > 140 F (such as 369.5 F and 348.8 F
+    - temperatures >= 344 F (0xf00 to 0xfff values)
 
     Specs in the F007TH and F012TH manuals state the range is:
 
-    - Temperature: -40 to 140 F
+    - Temperature: -40 to 140 F (7411 model up 150 C / 302 F)
     - Humidity: 10 to 99%
 
     @todo - sanity check b[0] "model number"
@@ -89,24 +84,24 @@ static int ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
 
     */
 
-    if (humidity < 0 || humidity > 100) {
+    if (humidity > 100) {
         decoder_logf_bitrow(decoder, 1, __func__, b, 48, "Humidity failed sanity check 0x%02x", humidity);
         return DECODE_FAIL_SANITY;
     }
 
-    if (temperature < -40.0 || temperature > 140.0) {
-        decoder_logf_bitrow(decoder, 1, __func__, b, 48, "Temperature failed sanity check 0x%03x", temp_f);
+    if (temp_f < -40.0f || temp_f >= 344.0f) {
+        decoder_logf_bitrow(decoder, 1, __func__, b, 48, "Temperature failed sanity check 0x%03x", temp_raw);
         return DECODE_FAIL_SANITY;
     }
 
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",          "",             DATA_STRING, "Ambientweather-F007TH",
             "id",             "House Code",   DATA_INT,    deviceID,
             "channel",        "Channel",      DATA_INT,    channel,
-            "battery_ok",     "Battery",      DATA_INT,    !isBatteryLow,
-            "temperature_F",  "Temperature",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, temperature,
+            "battery_ok",     "Battery",      DATA_INT,    !battery_low,
+            "temperature_F",  "Temperature",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_f,
             "humidity",       "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",            "Integrity",    DATA_STRING, "CRC",
             NULL);

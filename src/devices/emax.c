@@ -26,6 +26,7 @@ Rebrand and devices decoded :
 - Protmex PT3390A
 - Jula Marquant 014331 weather station /014332 temp hum sensor
 - TechniSat IMETEO X6 76-4924-00 weather station without UV/LUX/Gust  #2753
+- Auriol Weather Station With Multisensor HG11911
 
 S.a. issue #2000 #2299 #2326 #2375 PR #2300 #2346 #2374
 
@@ -215,7 +216,7 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
                         "wind_dir_deg",     "Wind Direction",   DATA_INT,    direction_deg,
                         "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",  DATA_DOUBLE, rain_mm,
-                        "uv",               "UV Index",         DATA_COND,   tag !=3, DATA_FORMAT, "%u", DATA_INT, uv_index,
+                        "uvi",              "UV Index",         DATA_COND,   tag !=3, DATA_FORMAT, "%.0f", DATA_DOUBLE, (double)uv_index,
                         "light_lux",        "Lux",              DATA_COND,   tag !=3, DATA_FORMAT, "%u", DATA_INT, light_lux,
                         "pairing",          "Pairing?",         DATA_COND,   pairing,    DATA_INT,    !!pairing,
                         "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
@@ -264,7 +265,7 @@ static char const *const output_fields[] = {
         "wind_max_km_h",
         "rain_mm",
         "wind_dir_deg",
-        "uv",
+        "uvi",
         "light_lux",
         "pairing",
         "mic",

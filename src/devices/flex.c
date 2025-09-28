@@ -98,6 +98,7 @@ struct flex_params {
     struct flex_get getter[GETTER_SLOTS];
     unsigned decode_uart;
     unsigned decode_dm;
+    unsigned decode_mc;
     char const *fields[7 + GETTER_SLOTS + 1]; // NOTE: needs to match output_fields
 };
 
@@ -257,6 +258,19 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
+    // IEEE 802.3 MC, may need G.E.Thomas option (bitbuffer_invert_row())
+    if (params->decode_mc) {
+        for (i = 0; i < bitbuffer->num_rows; i++) {
+            // TODO: refactor to bitbuffer_decode_mc_row()
+            unsigned len = bitbuffer->bits_per_row[i];
+            bitbuffer_t tmp = {0};
+            bitbuffer_manchester_decode(bitbuffer, i, 0, &tmp, len);
+            len = tmp.bits_per_row[0];
+            memcpy(bitbuffer->bb[i], tmp.bb[0], (len + 7) / 8); // safe to write over: can only be shorter
+            bitbuffer->bits_per_row[i] = len;
+        }
+    }
+
     decoder_log_bitbuffer(decoder, 1, params->name, bitbuffer, "");
 
     // discard duplicates
@@ -406,6 +420,7 @@ static void help(void)
             "\treflect : reflect each byte (MSB first to MSB last)\n"
             "\tdecode_uart : UART 8n1 (10-to-8) decode\n"
             "\tdecode_dm : Differential Manchester decode\n"
+            "\tdecode_mc : Manchester decode\n"
             "\tmatch=<bits> : only match if the <bits> are found\n"
             "\tpreamble=<bits> : match and align at the <bits> preamble\n"
             "\t\t<bits> is a row spec of {<bit count>}<bits as hex number>\n"
@@ -716,6 +731,8 @@ r_device *flex_create_device(char *spec)
             params->decode_uart = parse_atoiv(val, 1, "decode_uart: ");
         else if (!strcasecmp(key, "decode_dm"))
             params->decode_dm = parse_atoiv(val, 1, "decode_dm: ");
+        else if (!strcasecmp(key, "decode_mc"))
+            params->decode_mc = parse_atoiv(val, 1, "decode_mc: ");
 
         else if (!strcasecmp(key, "symbol_zero"))
             params->symbol_zero = parse_symbol(val);

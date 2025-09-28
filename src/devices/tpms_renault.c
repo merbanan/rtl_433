@@ -8,9 +8,12 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
+
+#include "decoder.h"
+
 /**
 FSK 9 byte Manchester encoded TPMS with CRC.
-Seen on Renault Clio, Renault Captur and maybe Dacia Sandero.
+Seen on Renault Clio, Renault Captur, Renault Zoe and maybe Dacia Sandero.
 
 Packet nibbles:
 
@@ -22,37 +25,35 @@ Packet nibbles:
 - T = Temperature in C, offset -30
 - ? = Unknown, mostly 0xffff
 - C = Checksum, CRC-8 truncated poly 0x07 init 0x00
+
+Notes from benppp:
+The last bit in flags maybe indicates test/startup/reset condition,
+it will be set for 2 minutes after power-up.
+At least for a Zoe2 (Zoe2 original TPMS sensor: 407004CB0B) the 16 unknown bits are
+9409 for stable pressure, 8C09 for pressure decrease and 9449 for something else.
+Could be that the 4th/5th bit encode a pressure alert and the 10th bit indicates some other state.
 */
-
-#include "decoder.h"
-
 static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     bitbuffer_t packet_bits = {0};
-    uint8_t *b;
-    int flags;
-    unsigned id;
-    int pressure_raw, temp_c, unknown;
-    double pressure_kpa;
-
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
     // require 72 data bits
     if (packet_bits.bits_per_row[0] < 72) {
-        return 0;
+        return 0; // DECODE_ABORT_LENGTH
     }
-    b = packet_bits.bb[0];
+    uint8_t *b = packet_bits.bb[0];
 
     // 0x83; 0x107 FOP-8; ATM-8; CRC-8P
     if (crc8(b, 8, 0x07, 0x00) != b[8]) {
-        return 0;
+        return 0; // DECODE_FAIL_MIC
     }
 
-    flags        = b[0] >> 2;
-    id           = b[5] << 16 | b[4] << 8 | b[3]; // little-endian
-    pressure_raw = (b[0] & 0x03) << 8 | b[1];
-    pressure_kpa = pressure_raw * 0.75;
-    temp_c       = b[2] - 30;
-    unknown      = b[7] << 8 | b[6]; // little-endian, fixed 0xffff?
+    int flags           = b[0] >> 2;
+    unsigned id         = b[5] << 16 | b[4] << 8 | b[3]; // little-endian
+    int pressure_raw    = (b[0] & 0x03) << 8 | b[1];
+    double pressure_kpa = pressure_raw * 0.75;
+    int temp_c          = b[2] - 30;
+    int unknown         = b[7] << 8 | b[6]; // little-endian, fixed 0xffff?
 
     char flags_str[3];
     snprintf(flags_str, sizeof(flags_str), "%02x", flags);

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding=utf-8
 
 from __future__ import print_function
@@ -350,7 +350,7 @@ mappings = {
         "config": {
             "device_class": "wind_speed",
             "name": "Wind Speed",
-            "unit_of_measurement": "mi/h",
+            "unit_of_measurement": "mph",
             "value_template": "{{ value|float }}",
             "state_class": "measurement"
         }
@@ -602,7 +602,7 @@ mappings = {
             "name": "Energy",
             "unit_of_measurement": "kWh",
             "value_template": "{{ value|float }}",
-            "state_class": "measurement"
+            "state_class": "total_increasing"
         }
     },
 
@@ -657,8 +657,8 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "uv",
         "config": {
-            "name": "UV Index",
-            "unit_of_measurement": "UV Index",
+            "name": "UV Value",
+            "unit_of_measurement": "UV",
             "value_template": "{{ value|float|round(1) }}",
             "state_class": "measurement"
         }

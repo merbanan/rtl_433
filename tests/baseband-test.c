@@ -156,18 +156,18 @@ int main(int argc, char *argv[])
     );
     write_buf("bb.am.s16", y16_buf, sizeof(uint16_t) * n_samples);
     MEASURE("baseband_low_pass_filter",
-        baseband_low_pass_filter(y16_buf, (int16_t *)u16_buf, n_samples, &state);
+        baseband_low_pass_filter(&state, y16_buf, (int16_t *)u16_buf, n_samples);
     );
     write_buf("bb.lp.am.s16", u16_buf, sizeof(int16_t) * n_samples);
     MEASURE("baseband_demod_FM",
-        baseband_demod_FM(cu8_buf, s16_buf, n_samples, 250000, 0.1f, &fm_state);
+        baseband_demod_FM(&fm_state, cu8_buf, s16_buf, n_samples, 250000, 0.1f);
     );
     write_buf("bb.fm.s16", s16_buf, sizeof(int16_t) * n_samples);
 
     write_buf("bb.cs16", cs16_buf, sizeof(int16_t) * 2 * n_samples);
     //envelope_detect_cs16(cs16_buf, y32_buf, n_samples);
     //write_buf("bb.am.u32", y32_buf, sizeof(uint32_t) * n_samples);
-    //baseband_low_pass_filter_u32(y32_buf, u32_buf, n_samples, &state);
+    //baseband_low_pass_filter_u32(&state, y32_buf, u32_buf, n_samples);
     //write_buf("bb.lp.am.u32", u32_buf, sizeof(uint32_t) * n_samples);
 
     MEASURE("magnitude_est_cs16",
@@ -178,15 +178,15 @@ int main(int argc, char *argv[])
     );
     write_buf("bb.mag.s16", y16_buf, sizeof(uint16_t) * n_samples);
     MEASURE("baseband_low_pass_filter",
-        baseband_low_pass_filter(y16_buf, (int16_t *)u16_buf, n_samples, &state);
+        baseband_low_pass_filter(&state, y16_buf, (int16_t *)u16_buf, n_samples);
     );
     write_buf("bb.mag.lp.s16", u16_buf, sizeof(int16_t) * n_samples);
 
-    //baseband_demod_FM_cs16(cs16_buf, s32_buf, n_samples, &fm_state);
+    //baseband_demod_FM_cs16(&fm_state, cs16_buf, s32_buf, n_samples);
     //write_buf("bb.fm.s32", s32_buf, sizeof(int32_t) * n_samples);
 
     MEASURE("baseband_demod_FM_cs16",
-        baseband_demod_FM_cs16(cs16_buf, s16_buf, n_samples, 250000, 0.1f, &fm_state);
+        baseband_demod_FM_cs16(&fm_state, cs16_buf, s16_buf, n_samples, 250000, 0.1f);
     );
     write_buf("bb.cs16.fm.s16", s16_buf, sizeof(int16_t) * n_samples);
 
