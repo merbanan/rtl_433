@@ -48,10 +48,9 @@
     The CRC bytes in the packet are in little-endian order (low byte first). I didn't find the parameters
     for a standard implementation, so I took the implementation from the python code at https://github.com/avian2/ec3k.
 
-    Decoding works good with this params:
-        rtl_433 -f 868300k -s 250k
+    Decoding works best with this params for a RTL28382U, you might need to tune the frequency offset to your devices, especially for 250k sample rate:
         rtl_433 -f 868000k -s 1000k
-        rtl_433 -f 868200k -s 1000k
+        rtl_433 -f 868300k -s 250k
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -73,8 +72,8 @@ static const uint32_t BITTIME_US = 50;
 #define PAKET_MIN_BITS (90)
 #define PAKET_MAX_BITS (PAKET_MIN_BITS * 5 / 2) // NRZ encoding, stuffing and noise
 
-static int ec3_decode_row(r_device *const decoder, const bitrow_t row, const uint16_t row_bits, const pulse_data_t *pulses);
-static int ec3k_decode(r_device *decoder, bitbuffer_t *bitbuffer, const pulse_data_t *pulses);
+static int ec3_decode_row(r_device *const decoder, const bitrow_t row, const uint16_t row_bits);
+static int ec3k_decode(r_device *decoder, bitbuffer_t *bitbuffer);
 static uint16_t calc_ec3k_crc(uint8_t *buffer, size_t len);
 static uint16_t update_ec3k_crc(uint16_t crc, uint8_t ch);
 
@@ -102,32 +101,8 @@ static uint32_t unpack_nibbles(const uint8_t* buf, int32_t start_nibble, int32_t
     return val;
 }
 
-static int ec3_decode_row(r_device *const decoder, const bitrow_t row, const uint16_t row_bits, __attribute_maybe_unused__ const pulse_data_t *pulses) {
+static int ec3_decode_row(r_device *const decoder, const bitrow_t row, const uint16_t row_bits) {
     int rc = DECODE_ABORT_EARLY;
-
-#if 0
-    int32_t diffFreq = (int32_t)(pulses->freq2_hz - pulses->freq1_hz + 0.5f);
-    printf("#f1=%d f2=%d diff=%d ", (int32_t)(pulses->freq1_hz - pulses->centerfreq_hz + 0.5f), (int32_t)(pulses->freq2_hz - pulses->centerfreq_hz + 0.5f), diffFreq);
-    printf("#RowLen=%-4i ", row_bits);
-    for (int i = 0; i < row_bits; i++) {
-        printf("%i", bit_at((const uint8_t*)row, i));
-    }
-    printf("\n");
-
-    printf("#PulseLen=%-4i ", pulses->num_pulses);
-    for (unsigned int i = 0; i < pulses->num_pulses; i++) {
-        printf(" +%d -%d", pulses->pulse[i], pulses->gap[i]);
-    }
-    printf("\n");
-#if 0
-    printf("#RowLen=%-4i ", row_bits);
-    for (int i = 0; i < (row_bits + 7) / 8; i++) {
-        printf("%x", row[i]);
-    }
-    printf("\n");
-#endif
-#endif
-
     uint8_t packetbuffer[DECODED_PAKET_LEN_BYTES];
     int32_t packetpos = 0;
     uint8_t packet = 0;
@@ -274,42 +249,27 @@ static int ec3_decode_row(r_device *const decoder, const bitrow_t row, const uin
 }
 
 
-static int ec3k_decode(r_device *decoder, bitbuffer_t *bitbuffer, const pulse_data_t *pulses)
+static int ec3k_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int rc = DECODE_ABORT_EARLY;
-    // const int32_t diffFreq = (int32_t)(pulses->freq2_hz - pulses->freq1_hz + 0.5f);
 
     // TODO: remove
     // temporarily set verbose level high to get bitrow output
-    // int orig_verbose = decoder->verbose;
-    // int orig_verbose_bits = decoder->verbose;
     decoder->verbose = 3;
     decoder->verbose_bits = 3;
 
-    const uint16_t min_row_bits = PAKET_MIN_BITS; // adapted to sample rate; TODO: samplerate adaption should not be necessary
-    // const uint16_t min_row_bits = (PAKET_MIN_BITS * pulses->sample_rate) / 200000; // adapted to sample rate; TODO: samplerate adaption should not be necessary
-    // const uint16_t max_row_bits = (PAKET_MAX_BITS * pulses->sample_rate) / 200000; // adapted to sample rate; TODO: samplerate adaption should not be necessary
     if (       bitbuffer->num_rows != 1
-            || bitbuffer->bits_per_row[0] < min_row_bits
-            // || bitbuffer->bits_per_row[0] > max_row_bits
+            || bitbuffer->bits_per_row[0] < PAKET_MIN_BITS
+            // || bitbuffer->bits_per_row[0] > PAKET_MAX_BITS
         )
     {
         decoder_logf(decoder, 3, __func__, "bit_per_row %u out of range", bitbuffer->bits_per_row[0]);
         rc = DECODE_ABORT_LENGTH; // Unrecognized data
     }
-    // else if (diffFreq < 20000 || diffFreq > 110000)
-    // {
-    //     decoder_logf(decoder, 3, __func__, "frequency shift %d out of range", diffFreq);
-    //     rc = DECODE_ABORT_EARLY; // Unrecognized data
-    // }
     else
     {
-        rc = ec3_decode_row(decoder, bitbuffer->bb[0], bitbuffer->bits_per_row[0], pulses);
+        rc = ec3_decode_row(decoder, bitbuffer->bb[0], bitbuffer->bits_per_row[0]);
     }
-
-    // TODO: remove
-    // decoder->verbose = orig_verbose;
-    // decoder->verbose = orig_verbose_bits;
 
     return rc;
 }
