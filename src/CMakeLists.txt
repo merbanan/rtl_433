@@ -93,6 +93,7 @@ add_library(r_433 STATIC
     devices/directv.c
     devices/dish_remote_6_3.c
     devices/dsc.c
+    devices/ec3k.c
     devices/ecodhome.c
     devices/ecowitt.c
     devices/efergy_e2_classic.c
