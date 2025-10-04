@@ -367,6 +367,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [279]  Nexus, CRX, Prego sauna temperature sensor
     [280]  Homelead HG9901 (Geevon, Dr.Meter, Royal Gardineer) soil moisture/temp/light level sensor
     [281]  Maverick XR-50 BBQ Sensor
+    [282]  Voltcraft Energy Count 3000
 
 * Disabled by default, use -R n or a conf file to enable
 
