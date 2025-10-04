@@ -253,11 +253,6 @@ static int ec3k_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int rc = DECODE_ABORT_EARLY;
 
-    // TODO: remove
-    // temporarily set verbose level high to get bitrow output
-    decoder->verbose = 3;
-    decoder->verbose_bits = 3;
-
     if (       bitbuffer->num_rows != 1
             || bitbuffer->bits_per_row[0] < PAKET_MIN_BITS
             // || bitbuffer->bits_per_row[0] > PAKET_MAX_BITS
