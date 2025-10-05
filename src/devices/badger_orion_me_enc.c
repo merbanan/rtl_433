@@ -35,7 +35,7 @@ Data layout:
     Byte Position   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
     Sample         eb e1 1d 9a ed 6d 4a 4d e8 71 93 3a 78 23 57 0a ae ce 2d d8 7d 3f 4e 0
     unwhiten       14 00 00 00 00 e8 79 69 02 0b 41 03 08 b4 00 00 fa b3 00 00 10 32 f4 4
-                   LL 11 11 11 11 SS SS SS SS xx |x xx RR RR RR RR DD DD DD DD 22 CC CC TT TT TT 
+                   LL 11 11 11 11 SS SS SS SS xx |x xx RR RR RR RR DD DD DD DD 22 CC CC TT TT TT
                                                  |
                                               +--+---+
                                               | xxLx |
