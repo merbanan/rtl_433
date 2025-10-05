@@ -1,5 +1,5 @@
 /** @file
-    Decoder for Voltcraft Energy Count 3000 (ec3k, sold by Conrad) / Cost Control RT-110 , tested with:
+    Decoder for VoltcraftEnergyCount3000 (ec3k, sold by Conrad) / Technoline Cost Control RT-110 , tested with:
       - Technoline Cost Control RT-110 (https://www.technotrade.de/produkt/technoline-cost-control-rt-110/), EAN 4029665006208
 
     Should also work with these devices from other manufacturers that use the same protocol or are even identical:
@@ -80,10 +80,10 @@ static uint16_t update_ec3k_crc(uint16_t crc, uint8_t ch);
         [Input] Test mode active. Reading samples from file: <stdin>
         _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
         time      : @1.864588s
-        model     : Voltcraft Energy Count 3000            id        : bb9b
+        model     : VoltcraftEnergyCount3000            id        : bb9b
         Power     : 90.200       Energy    : 754.518       Energy 2  : 1.860         Integrity : CRC
         Time total: 64942080     Time on   : 57501776      Power max : 186.500       Reset counter: 4          Flags     : 8
-        [pulse_slicer_pcm] Voltcraft Energy Count 3000
+        [pulse_slicer_pcm] VoltcraftEnergyCount3000
         codes     : {550}d4018c7e67bf2e4b15f2b3b404fc2bdace27e30ba759a5be0edcbff0f5e2b070f59d89ec5459cef2a6cddb6adf8c4e487546309633d08e4a092fba1d16749519e5de63c5c0
  */
 static int ec3k_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -177,7 +177,7 @@ static int ec3k_extract_fields(r_device *const decoder, const uint8_t* packetbuf
         if(calculated_crc == received_crc) {
             /* clang-format off */
             data_t *data = data_make(
-                "model",            "",              DATA_STRING, "Voltcraft Energy Count 3000",
+                "model",            "",              DATA_STRING, "VoltcraftEnergyCount3000",
                 "id",               "",              DATA_FORMAT, "%04x", DATA_INT, id,
                 "power",            "Power",         DATA_DOUBLE, power_current,
                 "energy",           "Energy",        DATA_DOUBLE, energy_kWh,
@@ -331,7 +331,7 @@ static char const *const output_fields[] = {
 };
 
 const r_device ec3k = {
-    .name           = "Voltcraft Energy Count 3000",
+    .name           = "VoltcraftEnergyCount3000",
     .modulation     = FSK_PULSE_PCM,
     .short_width    = BITTIME_US,
     .long_width     = BITTIME_US,
