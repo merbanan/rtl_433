@@ -53,7 +53,7 @@
         rtl_433 -f 868300k -s 250k
 
     To test with a file created by URH you can use this command:
-        ~/rtl433$ cat Rad1o-20251001_112936-868_2MHz-2MSps-2MHz_single.complex16s | csdr convert_s8_f | csdr fir_decimate_cc 2 0.02 HAMMING  | csdr convert_f_s8 | /opt/rtl433/rtl_433_feat-ec3k/build/src/rtl_433 -R 282 -r CS8:- -f 868000k -s 1000k
+        ~/rtl433$ cat Rad1o-20251001_112936-868_2MHz-2MSps-2MHz_single.complex16s | csdr convert_s8_f | csdr fir_decimate_cc 2 0.02 HAMMING | csdr convert_f_s8 | /opt/rtl433/rtl_433_feat-ec3k/build/src/rtl_433 -R 282 -r CS8:- -f 868000k -s 1000k
         fir_decimate_cc: taps_length = 201
         rtl_433 version -128-NOTFOUND branch feat-ec3k at 202510042209 inputs file rtl_tcp RTL-SDR with TLS
         New defaults active, use "-Y classic -s 250k" if you need the old defaults
@@ -89,7 +89,8 @@ static const uint32_t BITTIME_US = 50;
 
 static int ec3_decode_row(r_device *const decoder, const bitrow_t row, const uint16_t row_bits);
 static int ec3k_decode(r_device *decoder, bitbuffer_t *bitbuffer);
-static uint16_t calc_ec3k_crc(uint8_t *buffer, size_t len);
+static int ec3k_extract_fields(r_device *const decoder, const uint8_t* packetbuffer);
+static uint16_t calc_ec3k_crc(const uint8_t *buffer, size_t len);
 static uint16_t update_ec3k_crc(uint16_t crc, uint8_t ch);
 
 static inline uint8_t bit_at(const uint8_t *bytes, int32_t bit)
@@ -116,6 +117,73 @@ static uint32_t unpack_nibbles(const uint8_t* buf, int32_t start_nibble, int32_t
     return val;
 }
 
+static int ec3k_extract_fields(r_device *const decoder, const uint8_t* packetbuffer)
+{
+    int rc = DECODE_FAIL_SANITY;
+
+    // decode received ec3k packet
+    uint16_t id              = unpack_nibbles(packetbuffer, 1, 4);
+    uint16_t time_total_low  = unpack_nibbles(packetbuffer, 5, 4);
+    uint16_t pad_1           = unpack_nibbles(packetbuffer, 9, 4);
+    uint16_t time_on_low     = unpack_nibbles(packetbuffer, 13, 4);
+    uint32_t pad_2           = unpack_nibbles(packetbuffer, 17, 7);
+    uint32_t energy_low      = unpack_nibbles(packetbuffer, 24, 7);
+    double   power_current   = unpack_nibbles(packetbuffer, 31, 4) / 10.0;
+    double   power_max       = unpack_nibbles(packetbuffer, 35, 4) / 10.0;
+    // unknown? (seems to be used for internal calculations)
+    uint32_t energy2        = unpack_nibbles(packetbuffer, 39, 6);
+    // 						nibbles[45:59]
+    uint16_t time_total_high = unpack_nibbles(packetbuffer, 59, 3);
+    uint32_t pad_3           = unpack_nibbles(packetbuffer, 62, 5);
+    uint64_t energy_high     = (uint64_t)unpack_nibbles(packetbuffer, 67, 4) << 28;
+    uint16_t time_on_high    = unpack_nibbles(packetbuffer, 71, 3);
+    uint8_t  reset_counter   = unpack_nibbles(packetbuffer, 74, 2);
+    uint8_t  flags           = unpack_nibbles(packetbuffer, 76, 1);
+    uint8_t  pad_4           = unpack_nibbles(packetbuffer, 77, 1);
+    uint16_t received_crc    = 0xffff ^ (unpack_nibbles(packetbuffer, 78, 2) | (unpack_nibbles(packetbuffer, 80, 2) << 8)); // little-endian
+    uint16_t calculated_crc  = calc_ec3k_crc(packetbuffer, DECODED_PAKET_LEN_BYTES - 2);
+
+    // convert to common units
+    uint64_t energy_Ws = energy_high | energy_low;
+    const double energy_kWh = energy_Ws / (1000.0 * 3600.0); // Ws to kWh
+    const double energy2_kWh = energy2 / (1000.0 * 3600.0); // Ws to kWh
+    uint32_t time_total = (uint32_t)time_total_low | ((uint32_t)time_total_high << 16);
+    uint32_t time_on = (uint32_t)time_on_low | ((uint32_t)time_on_high << 16);
+
+    if(pad_1 == 0 && pad_2 == 0 && pad_3 == 0 && pad_4 == 0) {
+        if(calculated_crc == received_crc) {
+            /* clang-format off */
+            data_t *data = data_make(
+                "model",            "",              DATA_STRING, "Voltcraft Energy Count 3000",
+                "id",               "",              DATA_FORMAT, "%04x", DATA_INT, id,
+                "power",            "Power",         DATA_DOUBLE, power_current,
+                "energy",           "Energy",        DATA_DOUBLE, energy_kWh,
+                "energy2",          "Energy 2",      DATA_DOUBLE, energy2_kWh,
+                "mic",              "Integrity",     DATA_STRING, "CRC",
+                "time_total",       "Time total",    DATA_INT,    time_total,
+                "time_on",          "Time on",       DATA_INT,    time_on,
+                "power_max",        "Power max",     DATA_DOUBLE, power_max,
+                "reset_counter",    "Reset counter", DATA_INT,    reset_counter,
+                "flags",            "Flags",         DATA_INT,    flags,
+                NULL);
+            /* clang-format on */
+
+            decoder_output_data(decoder, data);
+            rc = 1;
+        }
+        else {
+            decoder_logf(decoder, 1, __func__, "Warning: CRC error, calculated %04X but received %04X", calculated_crc, received_crc);
+            rc = DECODE_FAIL_MIC;
+        }
+    } else {
+        decoder_logf(decoder, 1, __func__, "Warning: padding bits are not zero, pad_1=%u pad_2=%u pad_3=%u pad_4=%u", pad_1, pad_2, pad_3, pad_4);
+        rc = DECODE_FAIL_SANITY;
+    }
+
+    return rc;
+}
+
+
 static int ec3_decode_row(r_device *const decoder, const bitrow_t row, const uint16_t row_bits) {
     int rc = DECODE_ABORT_EARLY;
     uint8_t packetbuffer[DECODED_PAKET_LEN_BYTES];
@@ -125,7 +193,7 @@ static int ec3_decode_row(r_device *const decoder, const bitrow_t row, const uin
     uint8_t recbyte = 0;
     uint8_t recpos = 0;
 
-    for (int32_t bufferpos = 17; bufferpos < row_bits; bufferpos++)
+    for (int32_t bufferpos = 17; rc != 1 && bufferpos < row_bits; bufferpos++)
     {
         uint8_t out = symbol_at((const uint8_t*)row, bufferpos);
         if (bufferpos > 17)
@@ -192,65 +260,7 @@ static int ec3_decode_row(r_device *const decoder, const bitrow_t row, const uin
 
         if (packetpos >= DECODED_PAKET_LEN_BYTES)
         {
-            // decode received ec3k packet
-            uint16_t id              = unpack_nibbles(packetbuffer, 1, 4);
-            uint16_t time_total_low  = unpack_nibbles(packetbuffer, 5, 4);
-            uint16_t pad_1           = unpack_nibbles(packetbuffer, 9, 4);
-            uint16_t time_on_low     = unpack_nibbles(packetbuffer, 13, 4);
-            uint32_t pad_2           = unpack_nibbles(packetbuffer, 17, 7);
-            uint32_t energy_low      = unpack_nibbles(packetbuffer, 24, 7);
-            double   power_current   = unpack_nibbles(packetbuffer, 31, 4) / 10.0;
-            double   power_max       = unpack_nibbles(packetbuffer, 35, 4) / 10.0;
-            // unknown? (seems to be used for internal calculations)
-            uint32_t energy2        = unpack_nibbles(packetbuffer, 39, 6);
-            // 						nibbles[45:59]
-            uint16_t time_total_high = unpack_nibbles(packetbuffer, 59, 3);
-            uint32_t pad_3           = unpack_nibbles(packetbuffer, 62, 5);
-            uint64_t energy_high     = (uint64_t)unpack_nibbles(packetbuffer, 67, 4) << 28;
-            uint16_t time_on_high    = unpack_nibbles(packetbuffer, 71, 3);
-            uint8_t  reset_counter   = unpack_nibbles(packetbuffer, 74, 2);
-            uint8_t  flags           = unpack_nibbles(packetbuffer, 76, 1);
-            uint8_t  pad_4           = unpack_nibbles(packetbuffer, 77, 1);
-            uint16_t received_crc    = 0xffff ^ (unpack_nibbles(packetbuffer, 78, 2) | (unpack_nibbles(packetbuffer, 80, 2) << 8)); // little-endian
-            uint16_t calculated_crc  = calc_ec3k_crc(packetbuffer, DECODED_PAKET_LEN_BYTES - 2);
-
-            // convert to common units
-            uint64_t energy_Ws = energy_high | energy_low;
-            const double energy_kWh = energy_Ws / (1000.0 * 3600.0); // Ws to kWh
-            const double energy2_kWh = energy2 / (1000.0 * 3600.0); // Ws to kWh
-            uint32_t time_total = (uint32_t)time_total_low | ((uint32_t)time_total_high << 16);
-            uint32_t time_on = (uint32_t)time_on_low | ((uint32_t)time_on_high << 16);
-
-            if(pad_1 == 0 && pad_2 == 0 && pad_3 == 0 && pad_4 == 0) {
-                if(calculated_crc == received_crc) {
-                    /* clang-format off */
-                    data_t *data = data_make(
-                        "model",            "",              DATA_STRING, "Voltcraft Energy Count 3000",
-                        "id",               "",              DATA_FORMAT, "%04x", DATA_INT, id,
-                        "power",            "Power",         DATA_DOUBLE, power_current,
-                        "energy",           "Energy",        DATA_DOUBLE, energy_kWh,
-                        "energy2",          "Energy 2",      DATA_DOUBLE, energy2_kWh,
-                        "mic",              "Integrity",     DATA_STRING, "CRC",
-                        "time_total",       "Time total",    DATA_INT,    time_total,
-                        "time_on",          "Time on",       DATA_INT,    time_on,
-                        "power_max",        "Power max",     DATA_DOUBLE, power_max,
-                        "reset_counter",    "Reset counter", DATA_INT,    reset_counter,
-                        "flags",            "Flags",         DATA_INT,    flags,
-                        NULL);
-                    /* clang-format on */
-
-                    decoder_output_data(decoder, data);
-                    rc = 1;
-                    break;
-                }
-                else {
-                    decoder_logf(decoder, 1, __func__, "Warning: CRC error, calculated %04X but received %04X", calculated_crc, received_crc);
-                    rc = DECODE_FAIL_MIC;
-                }
-            } else {
-                decoder_logf(decoder, 1, __func__, "Warning: padding bits are not zero, pad_1=%u pad_2=%u pad_3=%u pad_4=%u", pad_1, pad_2, pad_3, pad_4);
-                rc = DECODE_FAIL_SANITY;
-            }
+            rc = ec3k_extract_fields(decoder, packetbuffer);
 
             // reset state to re-sync
             packet = 0;
@@ -285,7 +295,7 @@ static int ec3k_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 // from the ec3k python implementation at https://github.com/avian2/ec3k
-static uint16_t calc_ec3k_crc(uint8_t *buffer, size_t len)
+static uint16_t calc_ec3k_crc(const uint8_t *buffer, size_t len)
 {
     uint16_t crc = 0xffff;
     for(size_t i = 0; i < len; i++) {
