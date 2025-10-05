@@ -289,6 +289,7 @@
     DECL(nexus_sauna) \
     DECL(homelead_hg9901) \
     DECL(maverick_xr50) \
+    DECL(orion_me_enc) \
 
     /* Add new decoders here. */
 

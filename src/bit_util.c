@@ -422,6 +422,28 @@ void ccitt_whitening(uint8_t *buffer, unsigned buffer_size)
     }
 }
 
+// The IBM data whitening process is built around a 9-bit Linear Feedback Shift Register (LFSR).
+// CCITT data whitening processes data packets byte-per-byte, whereas IBM data
+// whitening processes the data packet bit-per-bit
+// Same, the initial value of the data whitening key is set to all ones, 0x1FF.
+// s.a. https://www.nxp.com/docs/en/application-note/AN5070.pdf s.5.1
+
+void ibm_whitening(uint8_t *buffer, unsigned buffer_size)
+{
+    uint8_t key_msb = 0x01;
+    uint8_t key_lsb = 0xff;
+    uint8_t key_msb_previous = 0;
+
+    for (unsigned buffer_pos = 0; buffer_pos < buffer_size; buffer_pos++) {
+        buffer[buffer_pos] ^= key_lsb;
+        for (uint8_t rol_counter = 0; rol_counter < 8; rol_counter++) {
+            key_msb_previous = key_msb;
+            key_msb          = (key_lsb & 0x01) ^ ((key_lsb >> 5) & 0x01);
+            key_lsb          = ((key_lsb >> 1) & 0xff) | ((key_msb_previous << 7) & 0x80);
+        }
+    }
+}
+
 /*
 void lfsr_keys_fwd16(int rounds, uint16_t gen, uint16_t key)
 {
