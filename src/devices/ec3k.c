@@ -10,10 +10,29 @@
 
     Copyright (C) 2025 Michael Dreher <michael(a)5dot1.de> @nospam2000
 
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+
+#include "decoder.h"
+
+#define DECODED_PAKET_LEN_BYTES (41)
+static const uint32_t BITTIME_US = 50;
+#define PAKET_MIN_BITS (90)
+#define PAKET_MAX_BITS (PAKET_MIN_BITS * 5 / 2) // NRZ encoding, stuffing and noise
+
+static int ec3_decode_row(r_device *const decoder, const bitrow_t row, const uint16_t row_bits);
+static int ec3k_extract_fields(r_device *const decoder, const uint8_t* packetbuffer);
+static uint16_t calc_ec3k_crc(const uint8_t *buffer, size_t len);
+static uint16_t update_ec3k_crc(uint16_t crc, uint8_t ch);
+
+/**
     decoding info taken from these projects:
       - https://github.com/EmbedME/ec3k_decoder (using rtl_fm)
       - https://github.com/avian2/ec3k (using python and gnuradio)
-      
+
     Some more info can be found here:
       - https://www.sevenwatt.com/main/rfm69-energy-count-3000-elv-cost-control/
       - https://batilanblog.wordpress.com/2015/01/11/getting-data-from-voltcraft-energy-count-3000-on-your-computer/
@@ -53,45 +72,39 @@
         rtl_433 -f 868300k -s 250k
 
     To test with a file created by URH you can use this command:
-        ~/rtl433$ cat Rad1o-20251001_112936-868_2MHz-2MSps-2MHz_single.complex16s | csdr convert_s8_f | csdr fir_decimate_cc 2 0.02 HAMMING | csdr convert_f_s8 | /opt/rtl433/rtl_433_feat-ec3k/build/src/rtl_433 -R 282 -r CS8:- -f 868000k -s 1000k
+        cat Rad1o-20251001_112936-868_2MHz-2MSps-2MHz_single.complex16s | csdr convert_s8_f | csdr fir_decimate_cc 2 0.02 HAMMING | csdr convert_f_s8 | rtl_433 -R 282 -r CS8:- -f 868000k -s 1000k
         fir_decimate_cc: taps_length = 201
         rtl_433 version -128-NOTFOUND branch feat-ec3k at 202510042209 inputs file rtl_tcp RTL-SDR with TLS
         New defaults active, use "-Y classic -s 250k" if you need the old defaults
 
         [Input] Test mode active. Reading samples from file: <stdin>
-        _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+        _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
         time      : @1.864588s
         model     : Voltcraft Energy Count 3000            id        : bb9b
         Power     : 90.200       Energy    : 754.518       Energy 2  : 1.860         Integrity : CRC
         Time total: 64942080     Time on   : 57501776      Power max : 186.500       Reset counter: 4          Flags     : 8
         [pulse_slicer_pcm] Voltcraft Energy Count 3000
         codes     : {550}d4018c7e67bf2e4b15f2b3b404fc2bdace27e30ba759a5be0edcbff0f5e2b070f59d89ec5459cef2a6cddb6adf8c4e487546309633d08e4a092fba1d16749519e5de63c5c0
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
  */
- 
-#include "decoder.h"
-#include "r_device.h"
-#include "rtl_433.h"
-#include "bitbuffer.h"
-#include <stdint.h>
+static int ec3k_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    int rc = DECODE_ABORT_EARLY;
 
-// --- Configuration ---
-#define DECODED_PAKET_LEN_BYTES (41)
-static const uint32_t BITTIME_US = 50;
+    if (       bitbuffer->num_rows != 1
+            || bitbuffer->bits_per_row[0] < PAKET_MIN_BITS
+            // || bitbuffer->bits_per_row[0] > PAKET_MAX_BITS
+        )
+    {
+        decoder_logf(decoder, 3, __func__, "bit_per_row %u out of range", bitbuffer->bits_per_row[0]);
+        rc = DECODE_ABORT_LENGTH; // Unrecognized data
+    }
+    else
+    {
+        rc = ec3_decode_row(decoder, bitbuffer->bb[0], bitbuffer->bits_per_row[0]);
+    }
 
-// values for 200 kHz sample rate, need to be adapted to actual sample rate
-#define PAKET_MIN_BITS (90)
-#define PAKET_MAX_BITS (PAKET_MIN_BITS * 5 / 2) // NRZ encoding, stuffing and noise
-
-static int ec3_decode_row(r_device *const decoder, const bitrow_t row, const uint16_t row_bits);
-static int ec3k_decode(r_device *decoder, bitbuffer_t *bitbuffer);
-static int ec3k_extract_fields(r_device *const decoder, const uint8_t* packetbuffer);
-static uint16_t calc_ec3k_crc(const uint8_t *buffer, size_t len);
-static uint16_t update_ec3k_crc(uint16_t crc, uint8_t ch);
+    return rc;
+}
 
 static inline uint8_t bit_at(const uint8_t *bytes, int32_t bit)
 {
@@ -105,6 +118,16 @@ static inline uint8_t symbol_at(const uint8_t *bytes, int32_t bit)
     uint8_t bit1 = bit_at(bytes, bit);
     return (bit0 == bit1) ? 1 : 0;
 }
+
+static inline uint8_t descrambled_symbol_at(const uint8_t *bytes, int32_t bit)
+{
+        uint8_t out = symbol_at(bytes, bit);
+        if (bit > 17)
+            out = out ^ symbol_at(bytes, bit - 17);
+        if (bit > 12)
+            out = out ^ symbol_at(bytes, bit - 12);
+
+        return out;}
 
 // maximum 8 nibbles (32 bits)
 static uint32_t unpack_nibbles(const uint8_t* buf, int32_t start_nibble, int32_t num_nibbles)
@@ -183,7 +206,6 @@ static int ec3k_extract_fields(r_device *const decoder, const uint8_t* packetbuf
     return rc;
 }
 
-
 static int ec3_decode_row(r_device *const decoder, const bitrow_t row, const uint16_t row_bits) {
     int rc = DECODE_ABORT_EARLY;
     uint8_t packetbuffer[DECODED_PAKET_LEN_BYTES];
@@ -195,12 +217,7 @@ static int ec3_decode_row(r_device *const decoder, const bitrow_t row, const uin
 
     for (int32_t bufferpos = 17; rc != 1 && bufferpos < row_bits; bufferpos++)
     {
-        uint8_t out = symbol_at((const uint8_t*)row, bufferpos);
-        if (bufferpos > 17)
-            out = out ^ symbol_at((const uint8_t*)row, bufferpos - 17);
-        if (bufferpos > 12)
-            out = out ^ symbol_at((const uint8_t*)row, bufferpos - 12);
-
+        uint8_t out = descrambled_symbol_at((const uint8_t*)row, bufferpos);
         if (out)
         {
             if((onecount < 6) && (packetpos < DECODED_PAKET_LEN_BYTES))
@@ -268,27 +285,6 @@ static int ec3_decode_row(r_device *const decoder, const bitrow_t row, const uin
             recpos = 0;
             onecount = 0;
         }
-    }
-
-    return rc;
-}
-
-
-static int ec3k_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-{
-    int rc = DECODE_ABORT_EARLY;
-
-    if (       bitbuffer->num_rows != 1
-            || bitbuffer->bits_per_row[0] < PAKET_MIN_BITS
-            // || bitbuffer->bits_per_row[0] > PAKET_MAX_BITS
-        )
-    {
-        decoder_logf(decoder, 3, __func__, "bit_per_row %u out of range", bitbuffer->bits_per_row[0]);
-        rc = DECODE_ABORT_LENGTH; // Unrecognized data
-    }
-    else
-    {
-        rc = ec3_decode_row(decoder, bitbuffer->bb[0], bitbuffer->bits_per_row[0]);
     }
 
     return rc;
