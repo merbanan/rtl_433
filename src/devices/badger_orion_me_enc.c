@@ -19,7 +19,7 @@ Manufacturer: Badger Meter Inc
 Model / FCCID : GIF2014W-OSE
 
 - Water meter endpoint
-- Issue #2995
+- Issue #2995 open by \@ddffnn, other key contributors \@zuckschwerdt , \@jjemelka, \@klyubin , \@shawntoffel, others in the issue.
 - Message is encoded using IBM Whitening Algorithm
 - Other models look compatible, to be confirmed.
 
