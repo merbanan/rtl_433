@@ -8,7 +8,7 @@
       - Velleman (type NETBESEM4)
       - La Crosse Techology Remote Cost Control Monitor” (type RS3620)
 
-    Copyright (C) 2025 Michael Dreher <michael(a)5dot1.de> @nospam2000
+    Copyright (C) 2025 Michael Dreher <michael(a)5dot1.de>, nospam2000 at github.com
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
