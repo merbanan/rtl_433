@@ -23,10 +23,42 @@ static const uint32_t BITTIME_US = 50;
 #define PAKET_MIN_BITS (90)
 #define PAKET_MAX_BITS (PAKET_MIN_BITS * 5 / 2) // NRZ encoding, stuffing and noise
 
-static int ec3_decode_row(r_device *const decoder, const bitrow_t row, const uint16_t row_bits);
 static int ec3k_extract_fields(r_device *const decoder, const uint8_t *packetbuffer);
 static uint16_t calc_ec3k_crc(const uint8_t *buffer, size_t len);
-static uint16_t update_ec3k_crc(uint16_t crc, uint8_t ch);
+
+static inline uint8_t bit_at(const uint8_t *bytes, int32_t bit)
+{
+    return (uint8_t)(bytes[bit >> 3] >> (7 - (bit & 7)) & 1);
+}
+
+static inline uint8_t symbol_at(const uint8_t *bytes, int32_t bit)
+{
+    // NRZI decoding
+    uint8_t bit0 = (bit > 0) ? bit_at(bytes, bit - 1) : 0;
+    uint8_t bit1 = bit_at(bytes, bit);
+    return (bit0 == bit1) ? 1 : 0;
+}
+
+static inline uint8_t descrambled_symbol_at(const uint8_t *bytes, int32_t bit)
+{
+    uint8_t out = symbol_at(bytes, bit);
+    if (bit > 17)
+        out = out ^ symbol_at(bytes, bit - 17);
+    if (bit > 12)
+        out = out ^ symbol_at(bytes, bit - 12);
+
+    return out;
+}
+
+// maximum 8 nibbles (32 bits)
+static inline uint32_t unpack_nibbles(const uint8_t *buf, int32_t start_nibble, int32_t num_nibbles)
+{
+    uint32_t val = 0;
+    for (int32_t i = 0; i < num_nibbles; i++) {
+        val = (val << 4) | ((buf[(start_nibble + i) / 2] >> ((1 - ((start_nibble + i) & 1)) * 4)) & 0x0F);
+    }
+    return val;
+}
 
 /**
     decoding info taken from these projects:
@@ -97,44 +129,75 @@ static int ec3k_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         rc = DECODE_ABORT_LENGTH; // Unrecognized data
     }
     else {
-        rc = ec3_decode_row(decoder, bitbuffer->bb[0], bitbuffer->bits_per_row[0]);
+        uint8_t packetbuffer[DECODED_PAKET_LEN_BYTES];
+        int32_t packetpos = 0;
+        uint8_t packet    = 0;
+        uint8_t onecount  = 0;
+        uint8_t recbyte   = 0;
+        uint8_t recpos    = 0;
+
+        for (int32_t bufferpos = 17; rc != 1 && bufferpos < bitbuffer->bits_per_row[0]; bufferpos++) {
+            uint8_t out = descrambled_symbol_at((const uint8_t *)bitbuffer->bb[0], bufferpos);
+            if (out) {
+                if ((onecount < 6) && (packetpos < DECODED_PAKET_LEN_BYTES)) {
+                    onecount++;
+                    recbyte = recbyte >> 1 | 0x80;
+                    recpos++;
+                    if ((recpos == 8) && (packet)) {
+                        recpos                    = 0;
+                        packetbuffer[packetpos++] = recbyte;
+                    }
+                }
+                else {
+                    // reset state to re-sync
+                    packet    = 0;
+                    packetpos = 0;
+                    recpos    = 0;
+                    onecount  = 0;
+                }
+            }
+            else {
+                if ((onecount < 5) && (packetpos < DECODED_PAKET_LEN_BYTES)) {
+                    // normal 0 bit
+                    recbyte = recbyte >> 1;
+                    recpos++;
+                    if ((recpos == 8) && (packet)) {
+                        recpos                    = 0;
+                        packetbuffer[packetpos++] = recbyte;
+                    }
+                }
+                else if (onecount == 5) {
+                    // bit unstuffing: 0 after 5 ones is a stuffed 0, skip it
+                }
+                // start and end of packet is marked by 6 ones surrounded by 0 (0x7e)
+                else if (onecount == 6) {
+                    packet    = !packet;
+                    packetpos = 0;
+                    recpos    = 0;
+                }
+                else {
+                    // reset state to re-sync
+                    packet    = 0;
+                    packetpos = 0;
+                    recpos    = 0;
+                }
+
+                onecount = 0;
+            }
+
+            if (packetpos >= DECODED_PAKET_LEN_BYTES) {
+                rc = ec3k_extract_fields(decoder, packetbuffer);
+
+                // reset state to re-sync
+                packet    = 0;
+                packetpos = 0;
+                recpos    = 0;
+                onecount  = 0;
+            }
+        }
     }
 
     return rc;
-}
-
-static inline uint8_t bit_at(const uint8_t *bytes, int32_t bit)
-{
-    return (uint8_t)(bytes[bit >> 3] >> (7 - (bit & 7)) & 1);
-}
-
-static inline uint8_t symbol_at(const uint8_t *bytes, int32_t bit)
-{
-    // NRZI decoding
-    uint8_t bit0 = (bit > 0) ? bit_at(bytes, bit - 1) : 0;
-    uint8_t bit1 = bit_at(bytes, bit);
-    return (bit0 == bit1) ? 1 : 0;
-}
-
-static inline uint8_t descrambled_symbol_at(const uint8_t *bytes, int32_t bit)
-{
-    uint8_t out = symbol_at(bytes, bit);
-    if (bit > 17)
-        out = out ^ symbol_at(bytes, bit - 17);
-    if (bit > 12)
-        out = out ^ symbol_at(bytes, bit - 12);
-
-    return out;
-}
-
-// maximum 8 nibbles (32 bits)
-static uint32_t unpack_nibbles(const uint8_t *buf, int32_t start_nibble, int32_t num_nibbles)
-{
-    uint32_t val = 0;
-    for (int32_t i = 0; i < num_nibbles; i++) {
-        val = (val << 4) | ((buf[(start_nibble + i) / 2] >> ((1 - ((start_nibble + i) & 1)) * 4)) & 0x0F);
-    }
-    return val;
 }
 
 static int ec3k_extract_fields(r_device *const decoder, const uint8_t *packetbuffer)
@@ -204,94 +267,17 @@ static int ec3k_extract_fields(r_device *const decoder, const uint8_t *packetbuf
     return rc;
 }
 
-static int ec3_decode_row(r_device *const decoder, const bitrow_t row, const uint16_t row_bits)
-{
-    int rc = DECODE_ABORT_EARLY;
-    uint8_t packetbuffer[DECODED_PAKET_LEN_BYTES];
-    int32_t packetpos = 0;
-    uint8_t packet    = 0;
-    uint8_t onecount  = 0;
-    uint8_t recbyte   = 0;
-    uint8_t recpos    = 0;
-
-    for (int32_t bufferpos = 17; rc != 1 && bufferpos < row_bits; bufferpos++) {
-        uint8_t out = descrambled_symbol_at((const uint8_t *)row, bufferpos);
-        if (out) {
-            if ((onecount < 6) && (packetpos < DECODED_PAKET_LEN_BYTES)) {
-                onecount++;
-                recbyte = recbyte >> 1 | 0x80;
-                recpos++;
-                if ((recpos == 8) && (packet)) {
-                    recpos                    = 0;
-                    packetbuffer[packetpos++] = recbyte;
-                }
-            }
-            else {
-                // reset state to re-sync
-                packet    = 0;
-                packetpos = 0;
-                recpos    = 0;
-                onecount  = 0;
-            }
-        }
-        else {
-            if ((onecount < 5) && (packetpos < DECODED_PAKET_LEN_BYTES)) {
-                // normal 0 bit
-                recbyte = recbyte >> 1;
-                recpos++;
-                if ((recpos == 8) && (packet)) {
-                    recpos                    = 0;
-                    packetbuffer[packetpos++] = recbyte;
-                }
-            }
-            else if (onecount == 5) {
-                // bit unstuffing: 0 after 5 ones is a stuffed 0, skip it
-            }
-            // start and end of packet is marked by 6 ones surrounded by 0 (0x7e)
-            else if (onecount == 6) {
-                packet    = !packet;
-                packetpos = 0;
-                recpos    = 0;
-            }
-            else {
-                // reset state to re-sync
-                packet    = 0;
-                packetpos = 0;
-                recpos    = 0;
-            }
-
-            onecount = 0;
-        }
-
-        if (packetpos >= DECODED_PAKET_LEN_BYTES) {
-            rc = ec3k_extract_fields(decoder, packetbuffer);
-
-            // reset state to re-sync
-            packet    = 0;
-            packetpos = 0;
-            recpos    = 0;
-            onecount  = 0;
-        }
-    }
-
-    return rc;
-}
-
-// from the ec3k python implementation at https://github.com/avian2/ec3k
-static uint16_t calc_ec3k_crc(const uint8_t *buffer, size_t len)
+// copied from the ec3k python implementation at https://github.com/avian2/ec3k
+static inline uint16_t calc_ec3k_crc(const uint8_t *buffer, size_t len)
 {
     uint16_t crc = 0xffff;
     for (size_t i = 0; i < len; i++) {
-        crc = update_ec3k_crc(crc, buffer[i]);
+        uint8_t ch = buffer[i];
+        ch ^= crc & 0xff;
+        ch ^= (ch << 4) & 0xff;
+        crc = (((uint16_t)ch << 8) | (crc >> 8)) ^ ((uint16_t)ch >> 4) ^ ((uint16_t)ch << 3);
     }
     return crc;
-}
-
-static uint16_t update_ec3k_crc(uint16_t crc, uint8_t ch)
-{
-    ch ^= crc & 0xff;
-    ch ^= (ch << 4) & 0xff;
-    return (((uint16_t)ch << 8) | (crc >> 8)) ^ ((uint16_t)ch >> 4) ^ ((uint16_t)ch << 3);
 }
 
 /*
