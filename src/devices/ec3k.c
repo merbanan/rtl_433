@@ -302,7 +302,7 @@ static char const *const output_fields[] = {
         NULL,
 };
 
-const r_device ec3k = {
+r_device const ec3k = {
         .name        = "Voltcraft-EnergyCount3000",
         .modulation  = FSK_PULSE_PCM,
         .short_width = BITTIME_US,
