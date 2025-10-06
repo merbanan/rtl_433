@@ -79,25 +79,24 @@ static inline uint32_t unpack_nibbles(const uint8_t *buf, int32_t start_nibble, 
     HDLC packets are delimited with flag sequences of content 0x7E. In AX5042 the meaning of address and control is user defined.
     The Frame Check Sequence (FCS) can be programmed to be CRC−CCITT, CRC−16 or CRC−32.
     The CRC is appended to the received data. There could be an optional flag byte after the CRC.
-
+    The packet length is 41 bytes (including the 16-bit CRC but excluding the two framing bytes and the optional flag byte).
     The packet is NRZI encoded, with bit stuffing (a 0 is inserted after 5 consecutive 1 bits).
     The packet is framed by 0x7E (01111110) bytes at start and end.
-    The packet length is 41 bytes (328 bits) excluding the two framing bytes.
+    The CRC is calculated over the packet excluding the leading and trailing framing byte 0x7E and the crc-value itself.
+    The CRC bytes in the packet are in little-endian order (low byte first). I didn't find the parameters
+    for a standard implementation, so I took the implementation from the python code at https://github.com/avian2/ec3k.
 
     The following fields are decoded:
         id -- 16-bit ID of the device
         time_total -- time in seconds since last reset
         time_on -- time in seconds since last reset with non-zero device power
-        energy -- total energy in Ws (watt-seconds)
-        power_current -- current device power in watts
-        power_max -- maximum device power in watts (reset at unknown intervals)
+        energy -- total energy in kWh (transmitted in Ws (watt-seconds))
+        power_current -- current device power in watts (transmitted in 0.1 watt steps)
+        power_max -- maximum device power in watts (reset at unknown intervals, transmitted in 0.1 watt steps)
         reset_counter -- total number of transmitter resets
         device_on_flag -- true if device is currently drawing non-zero power
         crc
-
-    The CRC is calculated over the packet excluding the leading and trailing framing byte 0x7E and the crc-value itself.
-    The CRC bytes in the packet are in little-endian order (low byte first). I didn't find the parameters
-    for a standard implementation, so I took the implementation from the python code at https://github.com/avian2/ec3k.
+        some padding fields that are always zero
 
     Decoding works best with this params for a RTL28382U, you might need to tune the frequency offset to your devices, especially for 250k sample rate:
         rtl_433 -f 868000k -s 1000k
@@ -119,6 +118,8 @@ static inline uint32_t unpack_nibbles(const uint8_t *buf, int32_t start_nibble, 
         [pulse_slicer_pcm] Voltcraft-EnergyCount3000
         codes     : {550}d4018c7e67bf2e4b15f2b3b404fc2bdace27e30ba759a5be0edcbff0f5e2b070f59d89ec5459cef2a6cddb6adf8c4e487546309633d08e4a092fba1d16749519e5de63c5c0
     \endverbatim
+
+    Check here for some example captures: https://github.com/merbanan/rtl_433_tests/tree/master/tests/ec3k/01
  */
 static int ec3k_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
