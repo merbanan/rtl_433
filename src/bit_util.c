@@ -580,13 +580,21 @@ int main(void) {
     ASSERT_EQUALS(bytes[3], 0x02);
     ASSERT_EQUALS(bytes[4], 0x03);
 
-    fprintf(stderr, "util:: test (%u/%u) passed, (%u) failed.\n", passed, passed + failed, failed);
-
     fprintf(stderr, "util::ccitt_whitening():\n");
-    uint8_t buf[16] = {0};
-    uint8_t chk[16] = {0xff, 0x87, 0xb8, 0x59, 0xb7, 0xa1, 0xcc, 0x24, 0x57, 0x5e, 0x4b, 0x9c, 0x0e, 0xe9, 0xea, 0x50};
-    ccitt_whitening(buf, sizeof(buf)) ;
-    ASSERT_MATCH(buf, chk, sizeof(buf));
+    uint8_t buf1[16] = {0};
+    uint8_t chk1[16] = {0xff, 0x87, 0xb8, 0x59, 0xb7, 0xa1, 0xcc, 0x24, 0x57, 0x5e, 0x4b, 0x9c, 0x0e, 0xe9, 0xea, 0x50};
+    ccitt_whitening(buf1, sizeof(buf1)) ;
+    ASSERT_MATCH(buf1, chk1, sizeof(buf1));
+
+    fprintf(stderr, "util::ibm_whitening():\n");
+    uint8_t buf2[16] = {0};
+    uint8_t chk2[16] = {0xff, 0xe1, 0x1d, 0x9a, 0xed, 0x85, 0x33, 0x24, 0xea, 0x7a, 0xd2, 0x39, 0x70, 0x97, 0x57, 0x0a};
+    ibm_whitening(buf2, sizeof(buf2)) ;
+    ASSERT_MATCH(buf2, chk2, sizeof(buf2));
+
+    // ------------- add test above this line -----------------------------------------------------
+    // Show result of the tests, this line must stay the last line before return failed;
+    fprintf(stderr, "util:: test (%u/%u) passed, (%u) failed.\n", passed, passed + failed, failed);
 
     return failed;
 }
