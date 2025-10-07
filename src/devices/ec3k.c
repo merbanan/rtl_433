@@ -84,8 +84,10 @@ The packet length is 41 bytes (including the 16-bit CRC but excluding the two fr
 The packet is NRZI encoded, with bit stuffing (a 0 is inserted after 5 consecutive 1 bits).
 The packet is framed by 0x7E (01111110) bytes at start and end.
 The CRC is calculated over the packet excluding the leading and trailing framing byte 0x7E and the crc-value itself.
-The CRC bytes in the packet are in little-endian order (low byte first). I didn't find the parameters
-for a standard implementation, so I took the implementation from the python code at https://github.com/avian2/ec3k.
+The CRC bytes in the packet are in little-endian order (low byte first).
+The CRC polynomial is 0x8408 (the reverse of the standard CRC-16-CCITT polynomial 0x1021),
+the initial value is 0xFFFF, the CRC is inverted (XORed with 0xFFFF) before appending to the packet,
+and the CRC calculation is done on the bit-reflected input data. See also https://reveng.sourceforge.io/crc-catalogue/16.htm#crc.cat.crc-16-ibm-sdlc
 
 List of known compatible devices:
 - Voltcraft EnergyCount 3000 ("ec3k", Item No. 12 53 53, https://conrad-rus.ru/images/stories/virtuemart/media/125353-an-01-ml-TCRAFT_ENERGYC_3000_ENER_MESSG_de_en_nl.pdf)
@@ -261,6 +263,7 @@ static int ec3k_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 // copied from the ec3k python implementation at https://github.com/avian2/ec3k
+// could be replaced by crc16lsb(buffer, len, 0x8408, 0xffff)
 static inline uint16_t calc_ec3k_crc(const uint8_t *buffer, size_t len)
 {
     uint16_t crc = 0xffff;
@@ -270,6 +273,7 @@ static inline uint16_t calc_ec3k_crc(const uint8_t *buffer, size_t len)
         ch ^= (ch << 4) & 0xff;
         crc = (((uint16_t)ch << 8) | (crc >> 8)) ^ ((uint16_t)ch >> 4) ^ ((uint16_t)ch << 3);
     }
+
     return crc;
 }
 
