@@ -94,16 +94,16 @@ List of known compatible devices:
 - La Crosse Techology Remote Cost Control Monitor” (type RS3620)
 
 The following fields are decoded:
-    id -- 16-bit ID of the device
-    time_total -- time in seconds since last reset
-    time_on -- time in seconds since last reset with non-zero device power
-    energy -- total energy in kWh (transmitted in Ws (watt-seconds))
-    power_current -- current device power in watts (transmitted in 0.1 watt steps)
-    power_max -- maximum device power in watts (reset at unknown intervals, transmitted in 0.1 watt steps)
-    reset_counter -- total number of transmitter resets
-    device_on_flag -- true if device is currently drawing non-zero power
-    crc
-    some padding fields that are always zero
+- id -- 16-bit ID of the device
+- time_total -- time in seconds since last reset
+- time_on -- time in seconds since last reset with non-zero device power
+- energy -- total energy in kWh (transmitted in Ws (watt-seconds))
+- power_current -- current device power in watts (transmitted in 0.1 watt steps)
+- power_max -- maximum device power in watts (reset at unknown intervals, transmitted in 0.1 watt steps)
+- reset_counter -- total number of transmitter resets
+- device_on_flag -- true if device is currently drawing non-zero power
+- crc
+- some padding fields that are always zero
 
 Decoding works best with this params for a RTL28382U, you might need to tune the frequency offset to your devices, especially for 250k sample rate:
     rtl_433 -f 868000k -s 1000k
