@@ -15,6 +15,22 @@
 #define PAKET_MIN_BITS (90)
 #define PAKET_MAX_BITS (PAKET_MIN_BITS * 5 / 2) // NRZ encoding, stuffing and noise
 
+struct ec3k_decode_ctx {
+    int32_t packetpos;  // number of bytes collected for current packet
+    uint8_t packet;     // 0=not in packet, 1=in packet
+    uint8_t onecount;   // count of consecutive 1 bits
+    uint8_t recbyte;    // currently received byte
+    uint8_t recpos;     // number of bits received for current byte (0..7)
+};
+static inline void ec3k_resync_decoder(struct ec3k_decode_ctx *ctx)
+{
+    ctx->packetpos = 0;
+    ctx->packet    = 0;
+    ctx->onecount  = 0;
+    ctx->recbyte   = 0;
+    ctx->recpos    = 0;
+}
+
 static int ec3k_extract_fields(r_device *const decoder, const uint8_t *packetbuffer);
 static uint16_t calc_ec3k_crc(const uint8_t *buffer, size_t len);
 
@@ -130,69 +146,54 @@ static int ec3k_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int rc = DECODE_ABORT_EARLY;
     uint8_t packetbuffer[DECODED_PAKET_LEN_BYTES];
-    int32_t packetpos = 0;
-    uint8_t packet    = 0;
-    uint8_t onecount  = 0;
-    uint8_t recbyte   = 0;
-    uint8_t recpos    = 0;
+    struct ec3k_decode_ctx ctx;
+    ec3k_resync_decoder(&ctx);
 
     for (int32_t bufferpos = 17; rc != 1 && bufferpos < bitbuffer->bits_per_row[0]; bufferpos++) {
         uint8_t out = descrambled_symbol_at((const uint8_t *)bitbuffer->bb[0], bufferpos);
         if (out) {
-            if ((onecount < 6) && (packetpos < DECODED_PAKET_LEN_BYTES)) {
-                onecount++;
-                recbyte = recbyte >> 1 | 0x80;
-                recpos++;
-                if ((recpos == 8) && (packet)) {
-                    recpos                    = 0;
-                    packetbuffer[packetpos++] = recbyte;
+            if ((ctx.onecount < 6) && (ctx.packetpos < DECODED_PAKET_LEN_BYTES)) {
+                ctx.onecount++;
+                ctx.recbyte = ctx.recbyte >> 1 | 0x80;
+                ctx.recpos++;
+                if ((ctx.recpos == 8) && (ctx.packet)) {
+                    ctx.recpos                    = 0;
+                    packetbuffer[ctx.packetpos++] = ctx.recbyte;
                 }
             }
             else {
-                // reset state to re-sync
-                packet    = 0;
-                packetpos = 0;
-                recpos    = 0;
-                onecount  = 0;
+                ec3k_resync_decoder(&ctx);
             }
         }
         else {
-            if ((onecount < 5) && (packetpos < DECODED_PAKET_LEN_BYTES)) {
+            if ((ctx.onecount < 5) && (ctx.packetpos < DECODED_PAKET_LEN_BYTES)) {
                 // normal 0 bit
-                recbyte = recbyte >> 1;
-                recpos++;
-                if ((recpos == 8) && (packet)) {
-                    recpos                    = 0;
-                    packetbuffer[packetpos++] = recbyte;
+                ctx.recbyte = ctx.recbyte >> 1;
+                ctx.recpos++;
+                if ((ctx.recpos == 8) && (ctx.packet)) {
+                    ctx.recpos                    = 0;
+                    packetbuffer[ctx.packetpos++] = ctx.recbyte;
                 }
             }
-            else if (onecount == 5) {
+            else if (ctx.onecount == 5) {
                 // bit unstuffing: 0 after 5 ones is a stuffed 0, skip it
             }
-            // start and end of packet is marked by 6 ones surrounded by 0 (0x7e)
-            else if (onecount == 6) {
-                packet    = !packet;
-                packetpos = 0;
-                recpos    = 0;
+            // start and end of packet is marked by 6 ones surrounded by zero (0x7e)
+            else if (ctx.onecount == 6) {
+                ctx.packet    = !ctx.packet;
+                ctx.packetpos = 0;
+                ctx.recpos    = 0;
             }
             else {
-                // reset state to re-sync
-                packet    = 0;
-                packetpos = 0;
-                recpos    = 0;
+                ec3k_resync_decoder(&ctx);
             }
 
-            onecount = 0;
+            ctx.onecount = 0;
         }
 
-        if (packetpos >= DECODED_PAKET_LEN_BYTES) {
+        if (ctx.packetpos >= DECODED_PAKET_LEN_BYTES) {
             rc = ec3k_extract_fields(decoder, packetbuffer);
-
-            // reset state to re-sync
-            packet    = 0;
-            packetpos = 0;
-            recpos    = 0;
-            onecount  = 0;
+            ec3k_resync_decoder(&ctx);
         }
     }
 
