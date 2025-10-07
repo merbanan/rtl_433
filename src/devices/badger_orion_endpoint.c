@@ -118,7 +118,7 @@ static int orion_endpoint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Unwhiten the data coded with IBM Whitening Algorithm LFSR.
     // ibm_whitening(b,23); // replace by XOR from ibm_whiten_key to reduce CPU cycles and resources.
-    for (int i = 0; i < 23; i++){
+    for (int i = 0; i < 23; i++) {
         b[i] ^= ibm_whiten_key[i];
     }
 
@@ -143,40 +143,40 @@ static int orion_endpoint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Define Endpoint Model
     char const *endpoint_model = "Unknown Model";
-    if (id >= 30000000 && id <= 59999999){
+    if (id >= 30000000 && id <= 59999999) {
         endpoint_model = "ME or SE";
     }
-    else if (id >= 60000000 && id <= 69999999){
+    else if (id >= 60000000 && id <= 69999999) {
         endpoint_model = "Mobile M";
     }
-    else if (id >= 70000000 && id <= 89999999){
+    else if (id >= 70000000 && id <= 89999999) {
         endpoint_model = "Classic (CE)";
     }
-    else if (id >= 110000000 && id <= 119999999){
+    else if (id >= 110000000 && id <= 119999999) {
         endpoint_model = "LTE";
     }
-    else if (id >= 120000000 && id <= 129999999){
+    else if (id >= 120000000 && id <= 129999999) {
         endpoint_model = "LTE-M or LTE-MS";
     }
-    else if (id >= 130000000 && id <= 139999999){
+    else if (id >= 130000000 && id <= 139999999) {
         endpoint_model = "C or CS";
     }
-    else if (id >= 140000000 && id <= 148999999){
+    else if (id >= 140000000 && id <= 148999999) {
         endpoint_model = "HLA";
     }
-    else if (id >= 149000000 && id <= 149999999){
+    else if (id >= 149000000 && id <= 149999999) {
         endpoint_model = "HLC";
     }
-    else if (id >= 150000000 && id <= 159999999){
+    else if (id >= 150000000 && id <= 159999999) {
         endpoint_model = "HLB";
     }
-    else if (id >= 160000000 && id <= 169999999){
+    else if (id >= 160000000 && id <= 169999999) {
         endpoint_model = "HLD";
     }
-    else if (id >= 170000000 && id <= 179999999){
+    else if (id >= 170000000 && id <= 179999999) {
         endpoint_model = "HLFX";
     }
-    else if (id >= 180000000 && id <= 189999999){
+    else if (id >= 180000000 && id <= 189999999) {
         endpoint_model = "HLG";
     }
     //else {
