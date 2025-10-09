@@ -11,6 +11,15 @@
 
 #include "decoder.h"
 
+#define PREAMBLE_BYTELEN   6
+#define DATA_BYTELEN      23
+
+#define PREAMBLE_BITLEN   48  //  6*8
+#define DATA_BITLEN      184  // 23*8
+
+#define MSG_MIN_BITLEN   232  // PREAMBLE+DATA
+#define MSG_MAX_BITLEN   290  // PREAMBLE+DATA+TRAILING_BITS
+
 /**
 Orion Water Endpoint Meter.
 
@@ -82,12 +91,12 @@ Data layout:
 */
 static int orion_endpoint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const preamble_pattern[6] = {0xaa, 0xaa, 0xec, 0x62, 0xec, 0x62};
+    uint8_t const preamble_pattern[PREAMBLE_BYTELEN] = {0xaa, 0xaa, 0xec, 0x62, 0xec, 0x62};
 
     // ibm_whiten() function added to bit_util but requires CPU cycles, as we just need XOR with fixed value this will take less resources.
-    uint8_t const ibm_whiten_key[23] = {0xff, 0xe1, 0x1d, 0x9a, 0xed, 0x85, 0x33, 0x24, 0xea, 0x7a, 0xd2, 0x39, 0x70, 0x97, 0x57, 0x0a, 0x54, 0x7d, 0x2d, 0xd8, 0x6d, 0x0d, 0xba};
+    uint8_t const ibm_whiten_key[DATA_BYTELEN] = {0xff, 0xe1, 0x1d, 0x9a, 0xed, 0x85, 0x33, 0x24, 0xea, 0x7a, 0xd2, 0x39, 0x70, 0x97, 0x57, 0x0a, 0x54, 0x7d, 0x2d, 0xd8, 0x6d, 0x0d, 0xba};
 
-    uint8_t b[23];
+    uint8_t b[DATA_BYTELEN];
 
     if (bitbuffer->num_rows > 1) {
         decoder_logf(decoder, 1, __func__, "Too many rows: %d", bitbuffer->num_rows);
@@ -95,41 +104,41 @@ static int orion_endpoint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     int msg_len = bitbuffer->bits_per_row[0];
 
-    if (msg_len > 290) {
-        decoder_logf(decoder, 1, __func__, "Expected less 290 bits, Packet too long: %d bits", msg_len);
+    if (msg_len < MSG_MIN_BITLEN && msg_len > MSG_MAX_BITLEN) {
+        decoder_logf(decoder, 1, __func__, "Message length error: must be between 232 and 290 bits, found %d bits", msg_len);
         return DECODE_ABORT_LENGTH;
     }
 
-    int offset = bitbuffer_search(bitbuffer, 0, 0, preamble_pattern, sizeof(preamble_pattern) * 8);
+    int offset = bitbuffer_search(bitbuffer, 0, 0, preamble_pattern, PREAMBLE_BITLEN);
 
     if (offset >= msg_len) {
         decoder_log(decoder, 1, __func__, "Sync word not found");
         return DECODE_ABORT_EARLY;
     }
 
-    offset += sizeof(preamble_pattern) * 8;
+    offset += PREAMBLE_BITLEN;
 
-    if ((msg_len - offset ) < 184 ) {
-        decoder_logf(decoder, 1, __func__, "Expected 184 bits, Packet too short: %d bits", msg_len - offset);
+    if ((msg_len - offset ) < DATA_BITLEN ) {
+        decoder_logf(decoder, 1, __func__, "Expected %d bits, Packet too short: %d bits", DATA_BITLEN, msg_len - offset);
         return DECODE_ABORT_LENGTH;
     }
 
-    bitbuffer_extract_bytes(bitbuffer, 0, offset, b, 23 * 8);
+    bitbuffer_extract_bytes(bitbuffer, 0, offset, b, DATA_BITLEN);
 
     // Unwhiten the data coded with IBM Whitening Algorithm LFSR.
     // ibm_whitening(b,23); // replace by XOR from ibm_whiten_key to reduce CPU cycles and resources.
-    for (int i = 0; i < 23; i++) {
+    for (int i = 0; i < DATA_BYTELEN; i++) {
         b[i] ^= ibm_whiten_key[i];
     }
 
-    decoder_log_bitrow(decoder, 2, __func__, b, 23 * 8, "Unwhiten MSG");
+    decoder_log_bitrow(decoder, 2, __func__, b, DATA_BITLEN, "Unwhiten MSG");
 
-    if (crc16(b, 23, 0x8005, 0xffff)) {
+    if (crc16(b, DATA_BYTELEN, 0x8005, 0xffff)) {
         decoder_log(decoder, 1, __func__, "CRC 16 do not match");
         return DECODE_FAIL_MIC;
     }
 
-    decoder_log_bitrow(decoder, 2, __func__, b, 23 * 8, "MSG");
+    decoder_log_bitrow(decoder, 2, __func__, b, DATA_BITLEN, "Valid MSG");
 
     // uint8_t msg_len   = b[0]; not used
     uint32_t id            = b[8] << 24 | b[7] << 16 | b[6] << 8 | b[5];
@@ -138,8 +147,6 @@ static int orion_endpoint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint32_t reading_raw   = b[15] << 24 | b[14] << 16 | b[13] << 8 | b[12];
     uint32_t daily_raw     = b[19] << 24 | b[18] << 16 | b[17] << 8 | b[16];
     uint8_t flags_2        = b[20];
-    //float volume_gal  = reading_raw * 0.1f; // unit, scale or decimal could defer
-    //float dly_vol_gal = daily_raw * 0.1f; // unit, scale or decimal could defer
 
     // Define Endpoint Model
     char const *endpoint_model = "Unknown Model";
@@ -179,9 +186,6 @@ static int orion_endpoint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     else if (id >= 180000000 && id <= 189999999) {
         endpoint_model = "HLG";
     }
-    //else {
-    //    endpoint_model = "Unknown Model";
-    //}
 
     /* clang-format off */
     data_t *data = data_make(
@@ -190,11 +194,9 @@ static int orion_endpoint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "endpoint_model",    "Endpoint Model",      DATA_STRING, endpoint_model,
             "leaking",           "Leaking",             DATA_INT,    leaking,
             "reading",           "Reading",             DATA_INT,    reading_raw,
-            "daily_reading",     "Daily Reading",       DATA_COND, daily_raw, DATA_INT, daily_raw,
-            //"volume_gal",        "Volume-Gallon",       DATA_FORMAT, "%.1f gal",  DATA_DOUBLE, volume_gal,
-            //"daily_volume_gal",  "Daily Volume-Gallon", DATA_FORMAT, "%.1f gal",  DATA_DOUBLE, dly_vol_gal,
-            "flags_1",           "Flags-1",             DATA_FORMAT, "%06x", DATA_INT, flags_1,
-            "flags_2",           "Flags-2",             DATA_FORMAT, "%02x", DATA_INT, flags_2,
+            "daily_reading",     "Daily Reading",       DATA_COND,   daily_raw, DATA_INT, daily_raw,
+            "flags_1",           "Flags-1",             DATA_FORMAT, "%06x",    DATA_INT, flags_1,
+            "flags_2",           "Flags-2",             DATA_FORMAT, "%02x",    DATA_INT, flags_2,
             "mic",               "Integrity",           DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -206,11 +208,10 @@ static int orion_endpoint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
+        "endpoint_model",
+        "leaking",
         "reading",
         "daily_reading",
-        //"volume_gal",
-        //"daily_volume_gal",
-        "leaking",
         "flags_1",
         "flags_2",
         "mic",
