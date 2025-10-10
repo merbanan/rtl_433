@@ -104,7 +104,7 @@ static int orion_endpoint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     int msg_len = bitbuffer->bits_per_row[0];
 
-    if (msg_len < MSG_MIN_BITLEN && msg_len > MSG_MAX_BITLEN) {
+    if (msg_len < MSG_MIN_BITLEN || msg_len > MSG_MAX_BITLEN) {
         decoder_logf(decoder, 1, __func__, "Message length error: must be between 232 and 290 bits, found %d bits", msg_len);
         return DECODE_ABORT_LENGTH;
     }
