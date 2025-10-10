@@ -367,6 +367,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [279]  Nexus, CRX, Prego sauna temperature sensor
     [280]  Homelead HG9901 (Geevon, Dr.Meter, Royal Gardineer) soil moisture/temp/light level sensor
     [281]  Maverick XR-50 BBQ Sensor
+    [282]  Orion Endpoint from Badger Meter, GIF2014W-OSE, water meter, hopping from 904.4 Mhz to 924.6Mhz (-s 1600k)
 
 * Disabled by default, use -R n or a conf file to enable
 
