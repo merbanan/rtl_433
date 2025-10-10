@@ -15,7 +15,7 @@
 
 r_device const fineoffset_WH2;
 
-static r_device *fineoffset_WH2_create(char *arg)
+static r_device *fineoffset_WH2_create(char const *arg)
 {
     if (arg && !strcmp(arg, "no-wh5")) {
         r_device *r_dev = decoder_create(&fineoffset_WH2, sizeof(int));
