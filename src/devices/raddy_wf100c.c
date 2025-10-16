@@ -258,9 +258,6 @@ r_device const raddy_wf100c = {
         .long_width  = 0,    // not used
         .gap_limit   = 1200, // Not used
         .reset_limit = 1200, // Packet gap is 5400 us.
-        .decode_fn   = &cotech_36_7959_decode,
-        .fields      = cotech_36_7959_output_fields,
         .decode_fn   = &raddy_wf100c_decode,
-        .disabled    = 3, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
         .fields      = raddy_wf100c_output_fields,
 };
