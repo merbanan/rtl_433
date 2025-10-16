@@ -161,7 +161,6 @@
     DECL(visonic_powercode) \
     DECL(eurochron_efth800) \
     DECL(cotech_36_7959) \
-    DECL(raddy_wf100c) \
     DECL(scmplus) \
     DECL(fineoffset_wh1080_fsk) \
     DECL(tpms_abarth124) \
@@ -291,6 +290,7 @@
     DECL(homelead_hg9901) \
     DECL(maverick_xr50) \
     DECL(orion_endpoint) \
+    DECL(raddy_wf100c) \
 
     /* Add new decoders here. */
 
