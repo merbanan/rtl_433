@@ -1,7 +1,7 @@
 /** @file
-    Template decoder for DEVICE, tested with BRAND, BRAND.
-
-    Copyright (C) 2016 Benjamin Larsson
+    Template decoder for Raddy WF-100C Lite
+    
+    Copyright (C) 2025 Chad Matsalla
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
