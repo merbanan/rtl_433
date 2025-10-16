@@ -221,7 +221,7 @@ static int raddy_wf100c_decode(r_device *decoder, bitbuffer_t *bitbuffer)
  * order for this device when using -F csv.
  *
  */
-static char const *const output_fields[] = {
+static char const *const raddy_wf100c_output_fields[] = {
         "model",
         "id",
         "data",
@@ -251,14 +251,16 @@ static char const *const output_fields[] = {
  * and sort it into src/CMakeLists.txt or run ./maintainer_update.py
  *
  */
-r_device const new_template = {
-        .name        = "Template decoder",
-        .modulation  = OOK_PULSE_PPM,
-        .short_width = 132,  // short gap is 132 us
-        .long_width  = 224,  // long gap is 224 us
-        .gap_limit   = 300,  // some distance above long
-        .reset_limit = 1000, // a bit longer than packet gap
-        .decode_fn   = &new_template_decode,
+r_device const raddy_wf100c = {
+        .name        = "Raddy WF-100C Lite",
+        .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
+        .short_width = 500,
+        .long_width  = 0,    // not used
+        .gap_limit   = 1200, // Not used
+        .reset_limit = 1200, // Packet gap is 5400 us.
+        .decode_fn   = &cotech_36_7959_decode,
+        .fields      = cotech_36_7959_output_fields,
+        .decode_fn   = &raddy_wf100c_decode,
         .disabled    = 3, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
-        .fields      = output_fields,
+        .fields      = raddy_wf100c_output_fields,
 };
