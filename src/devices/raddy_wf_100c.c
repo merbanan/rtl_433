@@ -1,3 +1,0 @@
-/*
-Chad was here on b
-*/

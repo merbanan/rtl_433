@@ -1,4 +1,4 @@
-# CMake out-of-tree builds
+#!/# CMake out-of-tree builds
 build*/
 
 # IDE files
@@ -29,3 +29,4 @@ cmake-build-debug/
 # File manager files
 .DS_Store
 .history
+build.sh
