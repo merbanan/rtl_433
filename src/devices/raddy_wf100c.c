@@ -41,216 +41,122 @@ Data layout:
 */
 static int raddy_wf100c_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    /*
-     * Early debugging aid to see demodulated bits in buffer and
-     * to determine if your limit settings are matched and firing
-     * this decode callback.
-     *
-     * 1. Enable with -vvv (debug decoders)
-     * 2. Delete this block when your decoder is working
-     */
-    //    decoder_log_bitbuffer(decoder, 2, __func__, bitbuffer, "");
+    uint8_t const preamble[] = {0x01, 0x40}; // 12 bits
 
-    /*
-     * If you expect the bits flipped with respect to the demod
-     * invert the whole bit buffer.
-     */
+    int r = -1;
+    uint8_t b[16]; // 112 bits are 14 bytes
+    data_t *data;
 
-    bitbuffer_invert(bitbuffer);
-
-    /*
-     * The bit buffer will contain multiple rows.
-     * Typically a complete message will be contained in a single
-     * row if long and reset limits are set correctly.
-     * May contain multiple message repeats.
-     * Message might not appear in row 0, if protocol uses
-     * start/preamble periods of different lengths.
-     */
-
-    /*
-     * Either, if you expect just a single packet
-     * loop over all rows and collect or output data:
-     */
-
-    uint8_t *b; // bits of a row
-    int r;
-    for (r = 0; r < bitbuffer->num_rows; ++r) {
-        b = bitbuffer->bb[r];
-
-        /*
-         * Validate message and reject invalid messages as
-         * early as possible before attempting to parse data.
-         *
-         * Check "message envelope"
-         * - valid message length (use a minimum length to account
-         *   for stray bits appended or prepended by the demod)
-         * - valid preamble/device type/fixed bits if any
-         * - Data integrity checks (CRC/Checksum/Parity)
-         */
-
-        // Message is expected to be 68 bits long
-        if (bitbuffer->bits_per_row[r] < 68) {
-            continue; // not enough bits
-        }
-
-        if (b[0] != 0x42) {
-            continue; // magic header not found
-        }
-
-        /*
-         * ... see below and replace `return 0;` with `continue;`
-         */
+    if (bitbuffer->num_rows > 2) {
+        return DECODE_ABORT_EARLY;
+    }
+    if (bitbuffer->bits_per_row[0] < 112 && bitbuffer->bits_per_row[1] < 112) {
+        return DECODE_ABORT_EARLY;
     }
 
-    /*
-     * Or, if you expect repeated packets
-     * find a suitable row:
-     */
+    for (int i = 0; i < bitbuffer->num_rows; ++i) {
+        unsigned pos = bitbuffer_search(bitbuffer, i, 0, preamble, 12);
+        pos += 12;
 
-    // The message is repeated as 5 packets, require at least 3 repeated packets of 68 bits.
-    r = bitbuffer_find_repeated_row(bitbuffer, 3, 68);
-    if (r < 0 || bitbuffer->bits_per_row[r] > 68 + 16) {
-        return DECODE_ABORT_LENGTH;
+        if (pos + 112 > bitbuffer->bits_per_row[i])
+            continue; // too short or not found
+
+        r = i;
+        bitbuffer_extract_bytes(bitbuffer, i, pos, b, 112);
+        break;
     }
 
-    b = bitbuffer->bb[r];
-
-    /*
-     * Either reject rows that don't start with the correct start byte:
-     * Example message should start with 0xAA
-     */
-    if (b[0] != 0xaa) {
-        return DECODE_ABORT_EARLY; // Messages start of 0xAA not found
+    if (r < 0) {
+        decoder_log(decoder, 2, __func__, "Couldn't find preamble");
+        return DECODE_FAIL_SANITY;
     }
 
-    /*
-     * Or (preferred) search for the message preamble:
-     * See bitbuffer_search()
-     */
-
-    /*
-     * Several tools are available to reverse engineer a message integrity
-     * check:
-     *
-     * - reveng for CRC: http://reveng.sourceforge.net/
-     *   - Guide: https://hackaday.com/2019/06/27/reverse-engineering-cyclic-redundancy-codes/
-     * - revdgst: https://github.com/triq-org/revdgst/
-     * - trial and error, e.g. via online calculators:
-     *   - https://www.scadacore.com/tools/programming-calculators/online-checksum-calculator/
-     */
-
-    /*
-     * Check message integrity (Parity example)
-     *
-     */
-    // parity check: odd parity on bits [0 .. 67]
-    // i.e. 8 bytes and a nibble.
-    int parity;
-    parity = b[0] ^ b[1] ^ b[2] ^ b[3] ^ b[4] ^ b[5] ^ b[6] ^ b[7]; // parity as byte
-    parity = (parity >> 4) ^ (parity & 0xF);                        // fold to nibble
-    parity ^= b[8] >> 4;                                            // add remaining nibble
-    parity = (parity >> 2) ^ (parity & 0x3);                        // fold to 2 bits
-    parity = (parity >> 1) ^ (parity & 0x1);                        // fold to 1 bit
-
-    if (!parity) {
-        // Enable with -vv (verbose decoders)
-        decoder_log(decoder, 1, __func__, "parity check failed");
+    if (crc8(b, 14, 0x31, 0xc0)) {
+        decoder_log(decoder, 2, __func__, "CRC8 fail");
         return DECODE_FAIL_MIC;
     }
 
-    /*
-     * Check message integrity (Checksum example)
-     */
-    if (((b[0] + b[1] + b[2] + b[3] - b[4]) & 0xFF) != 0) {
-        // Enable with -vv (verbose decoders)
-        decoder_log(decoder, 1, __func__, "checksum error");
-        return DECODE_FAIL_MIC;
+    // Extract data from buffer
+    //int subtype  = (b[0] >> 4);                                   // [0:4]
+    int id        = ((b[0] & 0x0f) << 4) | (b[1] >> 4);           // [4:8]
+    int batt_low  = (b[1] & 0x08) >> 3;                           // [12:1]
+    int deg_msb   = (b[1] & 0x04) >> 2;                           // [13:1]
+    int gust_msb  = (b[1] & 0x02) >> 1;                           // [14:1]
+    int wind_msb  = (b[1] & 0x01);                                // [15:1]
+    int wind      = (wind_msb << 8) | b[2];                       // [16:8]
+    int gust      = (gust_msb << 8) | b[3];                       // [24:8]
+    int wind_dir  = (deg_msb << 8) | b[4];                        // [32:8]
+    //int rain_msb  = (b[5] >> 4);                                  // [40:4]
+    int rain      = ((b[5] & 0x0f) << 8) | (b[6]);                // [44:12]
+    //int flags     = (b[7] & 0xf0) >> 4;                           // [56:4]
+    int temp_raw  = ((b[7] & 0x0f) << 8) | (b[8]);                // [60:12]
+    int humidity  = (b[9]);
+    uint32_t press_raw = (b[12] << 12) | (b[13] << 4) | (b[14] >> 4);
+    double baro_inhg = press_raw / 50.0; 
+    // int light_lux = (b[10] << 8) | b[11] | ((b[7] & 0x80) << 9);  // [56:1][80:16]
+    // int uvi       = (b[12]);                                      // [96:8]
+    //int crc       = (b[13]);                                      // [104:8]
+
+    float temp_f = (temp_raw - 400) * 0.1f;
+
+    // On models without a light sensor, the value read for UV index is out of bounds with its top bits set
+    // int light_is_valid = (uvi <= 150); // error value seems to be 0xfb, lux would be 0xfffb
+
+    char raw[32];
+    for (int i = 0; i < 14; i++)
+        sprintf(raw + i * 2, "%02x", b[i]);
+
+    for (int i = 0; i < 14; i++) {
+        printf("b[%d] = 0x%02x\n", i, b[i]);
     }
 
-    /*
-     * Check message integrity (CRC example)
-     *
-     * Example device uses CRC-8
-     */
-    // There are 6 data bytes and then a CRC8 byte
-    int chk = crc8(b, 7, 0x07, 0x00);
-    if (chk != 0) {
-        // Enable with -vv (verbose decoders)
-        decoder_log(decoder, 1, __func__, "bad CRC");
 
-        // reject row
-        return DECODE_FAIL_MIC;
-    }
-
-    /*
-     * Now that message "envelope" has been validated,
-     * start parsing data.
-     */
-    int msg_type  = b[1];
-    int sensor_id = b[2] << 8 | b[3];
-    int value     = b[4] << 8 | b[5];
-
-    // A message type byte of 0x10 is expected
-    if (msg_type != 0x10) {
-        /*
-         * received an unexpected message type
-         * could be a bad message or a new message not
-         * previously seen.  Optionally log debug output.
-         */
-        return DECODE_FAIL_OTHER;
-    }
 
     /* clang-format off */
-    data_t *data = data_make(
-            "model", "", DATA_STRING, "New-Template",
-            "id",    "", DATA_INT,    sensor_id,
-            "data",  "", DATA_INT,    value,
-            "mic",   "", DATA_STRING, "CHECKSUM", // CRC, CHECKSUM, or PARITY
+    data = data_make(
+            "model",            "",                 DATA_STRING, "Raddy-100C",
+            //"subtype",          "Type code",        DATA_INT, subtype,
+            "id",               "ID",               DATA_INT,    id,
+            "battery_ok",       "Battery",          DATA_INT,    !batt_low,
+            "temperature_F",    "Temperature (f)",      DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_f,
+            "temperature_C",    "Temperature (c)",      DATA_FORMAT, "%.1f C", DATA_DOUBLE, (temp_f - 32) / 1.8,
+            "rain_mm",          "Rain",             DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain * 0.1f,
+            "wind_dir_deg",     "Wind direction",   DATA_INT,    wind_dir,
+            "wind_avg_m_s",     "Wind",             DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind * 0.1f,
+            "wind_max_m_s",     "Gust",             DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust * 0.1f,
+            "humidity",         "Humidity",         DATA_INT, humidity,
+            // "light_lux",        "Light Intensity",  DATA_COND, light_is_valid, DATA_FORMAT, "%u lux", DATA_INT, light_lux,
+            // "uvi",              "UV Index",         DATA_COND, light_is_valid, DATA_FORMAT, "%.1f", DATA_DOUBLE, uvi * 0.1f,
+            "mic",              "Integrity",        DATA_STRING, "CRC",
+            "raw_data",        "Raw Data",        DATA_STRING, raw,
+            "press_raw",        "Pressure Raw",        DATA_INT, press_raw,
+            "baro",        "Barometric Pressure",        DATA_FORMAT, "%.2f inHg", DATA_DOUBLE, baro_inhg,
             NULL);
     /* clang-format on */
+
     decoder_output_data(decoder, data);
-
-    // Return 1 if message successfully decoded
     return 1;
-}
+    }
 
-/*
- * List of fields that may appear in the output
- *
- * Used to determine what fields will be output in what
- * order for this device when using -F csv.
- *
- */
-static char const *const raddy_wf100c_output_fields[] = {
+    static char const *const raddy_wf100c_output_fields[] = {
         "model",
         "id",
-        "data",
-        "mic", // remove if not applicable
+        "battery_ok",
+        "temperature_F",
+        "temperature_C",
+        "humidity",
+        "rain_mm",
+        "wind_dir_deg",
+        "wind_avg_m_s",
+        "wind_max_m_s",
+        "light_lux",
+        "uvi",
+        "mic",
+        "raw_data",
+        "baro",
+        "press_raw",
         NULL,
 };
-
-/*
- * r_device - registers device/callback. see rtl_433_devices.h
- *
- * Timings:
- *
- * short, long, and reset - specify pulse/period timings in [us].
- *     These timings will determine if the received pulses
- *     match, so your callback will fire after demodulation.
- *
- * Modulation:
- *
- * The function used to turn the received signal into bits.
- * See:
- * - pulse_slicer.h for descriptions
- * - r_device.h for the list of defined names
- *
- * This device is disabled and hidden, it can not be enabled.
- *
- * To enable your device, append it to the list in include/rtl_433_devices.h
- * and sort it into src/CMakeLists.txt or run ./maintainer_update.py
- *
- */
 r_device const raddy_wf100c = {
         .name        = "Raddy WF-100C Lite",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
