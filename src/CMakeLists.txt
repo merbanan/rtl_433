@@ -206,6 +206,7 @@ add_library(r_433 STATIC
     devices/proove.c
     devices/quhwa.c
     devices/quinetic.c
+    devices/raddy_wf100c.c
     devices/radiohead_ask.c
     devices/rainpoint.c
     devices/rainpoint_hcs012arf.c

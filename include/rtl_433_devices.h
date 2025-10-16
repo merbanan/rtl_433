@@ -290,6 +290,7 @@
     DECL(homelead_hg9901) \
     DECL(maverick_xr50) \
     DECL(orion_endpoint) \
+    DECL(raddy_wf100c) \
 
     /* Add new decoders here. */
 
