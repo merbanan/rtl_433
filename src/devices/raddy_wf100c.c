@@ -16,9 +16,7 @@
 #include "decoder.h"
 
 /**
-(this is a markdown formatted section to describe the decoder)
-(the first line here should match the first documentation line of the file, e.g.)
-Template decoder for Raddy Weather Station, tested with WF-120C lite
+Raddy WF-100C Lite 
 
 (describe the modulation, timing, and transmission, e.g.)
 The device uses PPM encoding,
