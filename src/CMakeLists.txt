@@ -65,6 +65,7 @@ add_library(r_433 STATIC
     devices/badger_orion_endpoint.c
     devices/badger_water.c
     devices/baldr_rain.c
+    devices/baldr_therm.c
     devices/blueline.c
     devices/blyss.c
     devices/brennenstuhl_rcs_2044.c

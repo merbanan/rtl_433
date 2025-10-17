@@ -291,6 +291,7 @@
     DECL(maverick_xr50) \
     DECL(orion_endpoint) \
     DECL(fineoffset_wh43) \
+    DECL(baldr_therm) \
 
     /* Add new decoders here. */
 
