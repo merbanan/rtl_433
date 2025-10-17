@@ -289,6 +289,8 @@
     DECL(nexus_sauna) \
     DECL(homelead_hg9901) \
     DECL(maverick_xr50) \
+    DECL(orion_endpoint) \
+    DECL(fineoffset_wh43) \
 
     /* Add new decoders here. */
 

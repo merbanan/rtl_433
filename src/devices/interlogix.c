@@ -167,8 +167,8 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     case 0xf: device_type = "keyfob"; break;
     case 0x4: device_type = "motion"; break;
     case 0x6: device_type = "heat"; break;
-    case 0x9: device_type = "glassbreak"; break; // switch1 changes from open to closed on trigger
-    case 0xd: device_type = "glassguard"; break;
+    case 0x9: device_type = "glass"; break; // switch1 changes from open to closed on trigger
+    case 0xd: device_type = "glass"; break; // newer Shatterpro
     case 0xe: device_type = "freeze"; break;
     case 0x2: device_type = "smoke"; break;
     case 0x3: device_type = "panic"; break;
