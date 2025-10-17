@@ -292,6 +292,7 @@
     DECL(orion_endpoint) \
     DECL(fineoffset_wh43) \
     DECL(baldr_therm) \
+    DECL(bm5) \
 
     /* Add new decoders here. */
 
