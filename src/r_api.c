@@ -1006,11 +1006,11 @@ static int lvlarg_param(char **param, int default_verb)
     return val;
 }
 
-/// Opens the path @p param (or STDOUT if empty or `-`) for append writing, removes leading `,` and `:` from path name.
-static FILE *fopen_output(char const *param)
+/// Returns the path @p param by removing leading `,` and `:` from path name.
+static char const *param_output_path(char const *param)
 {
     if (!param || !*param) {
-        return stdout; // No path given
+        return NULL; // No path given
     }
     while (*param == ',') {
         param++; // Skip all leading `,`
@@ -1019,26 +1019,21 @@ static FILE *fopen_output(char const *param)
         param++; // Skip one leading `:`
     }
     if (*param == '-' && param[1] == '\0') {
-        return stdout; // STDOUT requested
+        return NULL; // STDOUT requested
     }
-    FILE *file = fopen(param, "a");
-    if (!file) {
-        fprintf(stderr, "rtl_433: failed to open output file\n");
-        exit(1);
-    }
-    return file;
+    return param;
 }
 
 void add_json_output(r_cfg_t *cfg, char *param)
 {
     int log_level = lvlarg_param(&param, 0);
-    list_push(&cfg->output_handler, data_output_json_create(log_level, fopen_output(param)));
+    list_push(&cfg->output_handler, data_output_json_create(log_level, param_output_path(param)));
 }
 
 void add_csv_output(r_cfg_t *cfg, char *param)
 {
     int log_level = lvlarg_param(&param, 0);
-    list_push(&cfg->output_handler, data_output_csv_create(log_level, fopen_output(param)));
+    list_push(&cfg->output_handler, data_output_csv_create(log_level, param_output_path(param)));
 }
 
 void start_outputs(r_cfg_t *cfg, char const *const *well_known)
@@ -1057,13 +1052,13 @@ void start_outputs(r_cfg_t *cfg, char const *const *well_known)
 void add_log_output(r_cfg_t *cfg, char *param)
 {
     int log_level = lvlarg_param(&param, LOG_TRACE);
-    list_push(&cfg->output_handler, data_output_log_create(log_level, fopen_output(param)));
+    list_push(&cfg->output_handler, data_output_log_create(log_level, param_output_path(param)));
 }
 
 void add_kv_output(r_cfg_t *cfg, char *param)
 {
     int log_level = lvlarg_param(&param, LOG_TRACE);
-    list_push(&cfg->output_handler, data_output_kv_create(log_level, fopen_output(param)));
+    list_push(&cfg->output_handler, data_output_kv_create(log_level, param_output_path(param)));
 }
 
 void add_mqtt_output(r_cfg_t *cfg, char *param)
@@ -1107,7 +1102,7 @@ void add_http_output(r_cfg_t *cfg, char *param)
 void add_trigger_output(r_cfg_t *cfg, char *param)
 {
     // Note: no log_level, we never trigger on logs.
-    list_push(&cfg->output_handler, data_output_trigger_create(fopen_output(param)));
+    list_push(&cfg->output_handler, data_output_trigger_create(param_output_path(param)));
 }
 
 void add_null_output(r_cfg_t *cfg, char *param)
@@ -1127,6 +1122,14 @@ void add_rtltcp_output(r_cfg_t *cfg, char *param)
     print_logf(LOG_CRITICAL, "rtl_tcp server", "Starting rtl_tcp server at %s port %s", host, port);
 
     list_push(&cfg->raw_handler, raw_output_rtltcp_create(host, port, extra, cfg));
+}
+
+void reopen_outputs(struct r_cfg *cfg)
+{
+    for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
+        data_output_t *output = cfg->output_handler.elems[i];
+        data_output_reopen(output);
+    }
 }
 
 void add_sr_dumper(r_cfg_t *cfg, char const *spec, int overwrite)

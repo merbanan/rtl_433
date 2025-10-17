@@ -40,9 +40,9 @@ int main(void)
     /* clang-format on */
     const char *fields[] = { "label", "house_code", "temp", "array", "array2", "array3", "data", "house_code" };
 
-    void *json_output = data_output_json_create(0, stdout);
-    void *kv_output = data_output_kv_create(0, stdout);
-    void *csv_output = data_output_csv_create(0, stdout);
+    void *json_output = data_output_json_create(0, NULL/* stdout */);
+    void *kv_output = data_output_kv_create(0, NULL/* stdout */);
+    void *csv_output = data_output_csv_create(0, NULL/* stdout */);
     data_output_start(csv_output, fields, sizeof fields / sizeof *fields);
 
     data_output_print(json_output, data); fprintf(stdout, "\n");
