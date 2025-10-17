@@ -60,11 +60,10 @@ https://sensirion.com/products/catalog/SCD30/
 static int fineoffset_wh46_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble[] = {0xaa, 0x2d, 0xd4}; // 24 bit, part of preamble and sync word
-    uint8_t b[21];
 
     // Find a data package and extract data buffer
     unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
-
+    uint8_t b[21];
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) { // Did not find a big enough package
         decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "short package at %u", bit_offset);
         return DECODE_ABORT_LENGTH;
@@ -73,28 +72,31 @@ static int fineoffset_wh46_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Extract package data
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
 
-    if (b[0] != 0x46) // Check for family code 0x46
+    if (b[0] != 0x46) { // Check for family code 0x46
+        decoder_logf(decoder, 1, __func__, "Not our device type: %02x", b[0]);
         return DECODE_ABORT_EARLY;
+    }
 
-    decoder_log_bitrow(decoder, 1, __func__, b, sizeof (b) * 8, "");
+    decoder_log_bitrow(decoder, 2, __func__, b, sizeof (b) * 8, "Payload data");
 
     // Verify checksum and CRC
     uint8_t crc = crc8(b, 19, 0x31, 0x00);
-    uint8_t chk = add_bytes(b, 20);
-    if (crc != b[19] || chk != b[20]) {
-        decoder_logf(decoder, 1, __func__, "Checksum error: %02x %02x", crc, chk);
+    uint8_t sum = add_bytes(b, 20);
+    if (crc != b[19] || sum != b[20]) {
+        decoder_logf(decoder, 1, __func__, "Checksum error: %02x %02x", crc, sum);
         return DECODE_FAIL_MIC;
     }
 
+    // int family        = b[0];
     int id            = (b[1] << 16) | (b[2] << 8) | (b[3]);
     int temp_raw      = (b[4] & 0x7) << 8 | b[5];
     float temp_c      = (temp_raw - 400) * 0.1f;    // range -40.0-60.0 C
     int humidity      = b[6];
     int battery_bars  = (b[7] & 0x40) >> 4 | (b[9] & 0xC0) >> 6;
     // A battery bars value of 6 means the sensor is powered via USB (the Ecowitt WS View app shows 'DC')
-    int ext_power     = battery_bars == 6 ? 1 : 0;
+    int ext_power     = battery_bars == 6;
     //  Battery level is indicated with 5 bars. Convert to 0 (0 bars) to 1 (5 or 6 bars)
-    float battery_ok  = MIN(battery_bars * 0.2f, 1.0f);
+    float batt_lvl    = MIN(battery_bars * 0.2f, 1.0f);
     int pm2_5_raw     = (b[7] & 0x3f) << 8 | b[8];
     float pm2_5       = pm2_5_raw * 0.1f;
     int pm10_raw      = (b[9] & 0x3f) << 8 | b[10];
@@ -104,23 +106,24 @@ static int fineoffset_wh46_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float pm1         = pm1_raw * 0.1f;
     int pm4_raw       = (b[15] << 8) | b[16];
     float pm4         = pm4_raw * 0.1f;
-    int unknown      = (b[17] << 8) | b[18];
+    int unknown       = (b[17] << 8) | b[18];
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Fineoffset-WH46",
-            "id",               "ID",           DATA_FORMAT, "%06x", DATA_INT, id,
-            "battery_ok",       "Battery level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "pm1_ug_m3",        "1um Fine PM",  DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm1,
-            "pm2_5_ug_m3",      "2.5um Fine PM",  DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm2_5,
-            "pm4_ug_m3",        "4um Coarse PM",  DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm4,
-            "pm10_ug_m3",       "10um Coarse PM",  DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm10,
-            "co2_ppm",          "Carbon Dioxide", DATA_FORMAT, "%d ppm", DATA_INT, co2,
-            "unknown",          "Do not know", DATA_FORMAT, "%d ?", DATA_INT, unknown,
-            "ext_power",        "External Power", DATA_INT, ext_power,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
+            "model",            "",                 DATA_STRING, "Fineoffset-WH46",
+            "id",               "ID",               DATA_FORMAT, "%06x", DATA_INT, id,
+            "battery_ok",       "Battery",          DATA_INT,    battery_bars > 1, // Level 1 means "Low"
+    		"battery_pct",      "Battery level",    DATA_INT,    100 * batt_lvl, // Note: this might change with #3103
+            "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+            "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "pm1_ug_m3",        "1um Fine PM",      DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm1,
+            "pm2_5_ug_m3",      "2.5um Fine PM",    DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm2_5,
+            "pm4_ug_m3",        "4um Coarse PM",    DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm4,
+            "pm10_ug_m3",       "10um Coarse PM",   DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm10,
+            "co2_ppm",          "Carbon Dioxide",   DATA_FORMAT, "%d ppm", DATA_INT, co2,
+            "unknown",          "Do not know",      DATA_FORMAT, "%d ?", DATA_INT, unknown,
+            "ext_power",        "External Power",   DATA_INT,    ext_power,
+            "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -132,6 +135,7 @@ static char const *const output_fields[] = {
         "model",
         "id",
         "battery_ok",
+        "battery_pct",
         "temperature_C",
         "humidity",
         "pm1_ug_m3",
