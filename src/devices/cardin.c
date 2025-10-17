@@ -9,10 +9,16 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
+
+#include "decoder.h"
+
 /**
 Cardin S466-TX2 generic garage door remote control on 27.195 Mhz.
 
-Remember to set de freq right with -f 27195000
+Note: Similar to an EV1527 / SC2260, but there is a 6152 us sync pulse first, then 24 bit of 732 us / 1412 us leading-gap PWM.
+Decodes to 9 tri-state DIP-switches and a 2-bit button.
+
+Remember to set the correct freq with -f 27.195M
 May be useful for other Cardin product too
 
 - "11R"  = on-on    Right button used
@@ -20,27 +26,41 @@ May be useful for other Cardin product too
 - "01R"  = off-on   Right button used
 - "00L?" = off-off  Left button used or right button does the same as the left
 */
-
-#include "decoder.h"
-
 static int cardin_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    if (bitbuffer->bits_per_row[0] != 24) {
+        return DECODE_ABORT_LENGTH;
+    }
+
     uint8_t *b = bitbuffer->bb[0];
 
-    if (bitbuffer->bits_per_row[0] != 24)
-        return DECODE_ABORT_LENGTH;
-
     // validate message as best as we can
-    if ((b[2] & 0x30) != 0 ||
-            ((b[2] & 0x0f) != 0x03 &&
-                    (b[2] & 0x0f) != 0x09 &&
-                    (b[2] & 0x0f) != 0x0c &&
-                    (b[2] & 0x0f) != 0x06)) {
+    // constrain b[2] & 0x3f (the button) to 0x03, 0x06, 0x09, 0x0c
+    if ((b[2] & 0x3f) != 0x03
+            && (b[2] & 0x3f) != 0x09
+            && (b[2] & 0x3f) != 0x0c
+            && (b[2] & 0x3f) != 0x06) {
+        return DECODE_ABORT_EARLY;
+    }
+    // Disallow the fourth tri-state option on the 9 DIP switches
+    if (((b[0] & 8) == 0 && (b[1] & 8) != 0)
+            || ((b[0] & 16) == 0 && (b[1] & 16) != 0)
+            || ((b[0] & 32) == 0 && (b[1] & 32) != 0)
+            || ((b[0] & 64) == 0 && (b[1] & 64) != 0)
+            || ((b[0] & 128) == 0 && (b[1] & 128) != 0)
+            || ((b[2] & 128) == 0 && (b[2] & 64) != 0)
+            || ((b[0] & 1) == 0 && (b[1] & 1) != 0)
+            || ((b[0] & 2) == 0 && (b[1] & 2) != 0)
+            || ((b[0] & 4) == 0 && (b[1] & 4) != 0)) {
         return DECODE_ABORT_EARLY;
     }
 
-    char dip[10] = {'-','-','-','-','-','-','-','-','-', '\0'};
+    // Get button code
     char const *const rbutton[4] = { "11R", "10R", "01R", "00L?" };
+    char const *const button = rbutton[((b[2] & 0x0f) / 3) - 1];
+
+    // Get DIP tri-state switches
+    char dip[10] = {'-','-','-','-','-','-','-','-','-', '\0'};
 
     // Dip 1
     if (b[0] & 8) {
@@ -101,7 +121,7 @@ static int cardin_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data = data_make(
             "model",      "",                       DATA_STRING, "Cardin-S466",
             "dipswitch",  "dipswitch",              DATA_STRING, dip,
-            "rbutton",    "right button switches",  DATA_STRING, rbutton[((b[2] & 15) / 3)-1],
+            "rbutton",    "right button switches",  DATA_STRING, button,
             NULL);
     /* clang-format on */
 

@@ -9,8 +9,8 @@
 
 - [SigRok](https://sigrok.org/) [PulseView](https://sigrok.org/wiki/PulseView)
 - [Audacity](https://www.audacityteam.org/)
-- [iqSpectrogram](http://triq.org/iqs) to visualize sample files
-- [BitBench](http://triq.net/bitbench) to analyze data formats
+- [Spectrogram](http://triq.org/pdv) to visualize sample files
+- [BitBench](http://triq.org/bitbench) to analyze data formats
 
 # Related projects
 

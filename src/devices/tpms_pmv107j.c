@@ -18,7 +18,13 @@ based on work by Werner Johansson.
     II II II I F* PP NN TT CC
 
 - I: ID (28 bit)
-- F*: Flags, 6 bits (BCC00F, battery_low, repeat_counter, failed)
+- F*: Flags, 6 bits (BCCURF, battery_low, repeat_counter, Unknown, rapid_change, failed)
+    battery_low 1 is low, 0 is okay, inverted for battery_ok
+    repeat_counter 2 bits, normally each message is 1, 2, 3, then repeat
+    Unknown "Must be zero for the packet to be recognized by the car" https://github.com/xnk/pacific-tpms
+    rapid_change 1 when there is a rapid pressure change, the sensor will
+        not wait for the normal 60 second time slot, and will repeat.
+    failed (self test?) 1 if failed, 0 if okay
 - P: Tire pressure (PSI/0.363 + 40 or kPa/2.48 + 40)
 - N: Inverted tire pressure
 - T: Tire temperature (Celsius +40, range from -40 to +215 C)
@@ -52,6 +58,8 @@ static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     unsigned status        = b[4] & 0x3f;                                                  // status bits and 0 filler
     unsigned battery_low   = (b[4] & 0x20) >> 5;
     unsigned counter       = (b[4] & 0x18) >> 3;
+    // unknown bit         = (b[4] & 0x4) >> 2;
+    unsigned rapid_change  = (b[4] & 0x2) >> 1;
     unsigned failed        = b[4] & 0x01;
     unsigned pressure1     = b[5];
     unsigned pressure2     = b[6] ^ 0xff;
@@ -75,6 +83,7 @@ static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
             "status",           "",             DATA_INT,       status,
             "battery_ok",       "",             DATA_INT,       !battery_low,
             "counter",          "",             DATA_INT,       counter,
+            "rapid_change",     "",             DATA_INT,       rapid_change,
             "failed",           "",             DATA_STRING,    failed ? "FAIL" : "OK",
             "pressure_kPa",     "",             DATA_DOUBLE,    pressure_kpa,
             "temperature_C",    "",             DATA_DOUBLE,    temperature_c,
@@ -115,6 +124,7 @@ static char const *const output_fields[] = {
         "status",
         "battery_ok",
         "counter",
+        "rapid_change",
         "failed",
         "pressure_kPa",
         "temperature_C",

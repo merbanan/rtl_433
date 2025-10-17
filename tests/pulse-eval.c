@@ -229,7 +229,6 @@ int main(int argc, char *argv[])
 
     n_read = read_buf(filename, cu8_buf, sizeof(uint8_t) * 2 * block_size);
     if (n_read < 1) {
-        ret = 1;
         goto out;
     }
     n_samples = n_read / (sizeof(uint8_t) * 2);
@@ -241,11 +240,11 @@ int main(int argc, char *argv[])
     magnitude_est_cu8(cu8_buf, y16_buf, n_samples);
     envelope_detect_nolut(cu8_buf, am16_buf, n_samples);
     demodfm_state_t fm_state;
-    baseband_demod_FM(cu8_buf, fm16_buf, n_samples, &fm_state, 0);
+    baseband_demod_FM(&fm_state, cu8_buf, fm16_buf, n_samples, 250000, 0.1f);
     // envelope_detect(cu8_buf, y16_buf, n_samples);
     // magnitude_est_cu8(cu8_buf, y16_buf, n_samples);
-    // baseband_low_pass_filter(y16_buf, (int16_t *)u16_buf, n_samples, &state);
-    // baseband_demod_FM(cu8_buf, s16_buf, n_samples, &fm_state);
+    // baseband_low_pass_filter(&state, y16_buf, (int16_t *)u16_buf, n_samples);
+    // baseband_demod_FM(&fm_state, cu8_buf, s16_buf, n_samples, 250000, 0.1f);
 
     // moving avgs (AM)
     mavg_t ml = {0};

@@ -44,7 +44,8 @@ The data is grouped in 6 bytes / 12 nibbles.
 
     [pre] [pre] [type] [id] [id] [temp] [temp] [temp] [humi] [humi] [crc] [crc]
 
-There is an extra, unidentified 7th byte in WH2A packages.
+There is an extra checksum byte (after the CRC) in WH2A messages.
+TODO: maybe add the checksum for WH2A, e.g. b[5] == b[0]+b[1]+b[2]+b[3]+b[4]
 
 - pre is always 0xFF
 - type is always 0x4 (may be different for different sensor type?)
@@ -296,7 +297,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "wind_max_m_s",     "Gust speed",       DATA_COND, gust_speed_raw != 0xff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust_speed_ms,
             "rain_mm",          "Rainfall",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall_mm,
             "uv",               "UV",               DATA_COND, uv_raw != 0xffff, DATA_INT, uv_raw,
-            "uvi",              "UVI",              DATA_COND, uv_raw != 0xffff, DATA_INT, uv_index,
+            "uvi",              "UV Index",         DATA_COND, uv_raw != 0xffff, DATA_FORMAT, "%.0f", DATA_DOUBLE, (double)uv_index,
             "light_lux",        "Light",            DATA_COND, light_raw != 0xffffff, DATA_FORMAT, "%.1f lux", DATA_DOUBLE, light_lux,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
@@ -417,7 +418,7 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",            "",             DATA_STRING, "Fineoffset-WH0290",
             "id",               "ID",           DATA_INT,    id,
-            "battery_ok",       "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
+            "battery_ok",       "Battery level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
             "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%d ug/m3", DATA_INT, pm25/10,
             "estimated_pm10_0_ug_m3",     "Estimate of 10um Coarse Particulate Matter",  DATA_FORMAT, "%d ug/m3", DATA_INT, pm100/10,
             "family",           "FAMILY",       DATA_INT,    family,
