@@ -74,8 +74,8 @@ Correct rtl\-sdr tuner frequency offset error (default: 0)
 [ \fB\-s\fI <sample rate>\fP ]
 Set sample rate (default: 250000 Hz)
 .TP
-[ \fB\-D\fI restart | pause | quit | manual\fP ]
-Input device run mode options.
+[ \fB\-D\fI quit | restart | pause | manual\fP ]
+Input device run mode options (default: quit).
 .SS "Demodulator options"
 .TP
 [ \fB\-R\fI <device> | help\fP ]
@@ -129,7 +129,7 @@ Save data stream to output file (a '\-' dumps samples to stdout)
 Save data stream to output file, overwrite existing file
 .SS "Data output options"
 .TP
-[ \fB\-F\fI log | kv | json | csv | mqtt | influx | syslog | trigger | null | help\fP ]
+[ \fB\-F\fI log | kv | json | csv | mqtt | influx | syslog | trigger | rtl_tcp | http | null | help\fP ]
 Produce decoded output in given format.
        Append output to file with :<filename> (e.g. \-F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. \-F syslog:127.0.0.1:1514
@@ -307,6 +307,9 @@ decode_uart : UART 8n1 (10\-to\-8) decode
 decode_dm : Differential Manchester decode
 .RE
 .RS
+decode_mc : Manchester decode
+.RE
+.RS
 match=<bits> : only match if the <bits> are found
 .RE
 .RS
@@ -326,7 +329,7 @@ countonly : suppress detailed row output
 E.g. \-X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repeats>=3"
 .SS "Output format option"
 .TP
-[ \fB\-F\fI log|kv|json|csv|mqtt|influx|syslog|trigger|null\fP ]
+[ \fB\-F\fI log|kv|json|csv|mqtt|influx|syslog|trigger|rtl_tcp|http|null\fP ]
 Produce decoded output in given format.
 .RS
 Without this option the default is LOG and KV output. Use "\-F null" to remove the default.
@@ -334,6 +337,9 @@ Without this option the default is LOG and KV output. Use "\-F null" to remove t
 .RS
 Append output to file with :<filename> (e.g. \-F csv:log.csv), defaults to stdout.
 .RE
+.TP
+[ \fB\-F\fI mqtt[s][:[//]host[:port][,<options>]\fP ]
+(default: localhost:1883)
 .RS
 Specify MQTT server with e.g. \-F mqtt://localhost:1883
 .RE
@@ -348,6 +354,9 @@ MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
 .RE
 .RS
 Supported MQTT formats: (default is all)
+.RE
+.RS
+  availability: posts availability (online/offline)
 .RE
 .RS
   events: posts JSON event data, default "<base>/events"
@@ -371,11 +380,16 @@ Any topic string overrides the base topic and will expand keys like [/model]
 E.g. \-F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
 .RE
 .RS
+For TLS use e.g. \-F "mqtts://host,tls_cert=<path>,tls_key=<path>,tls_ca_cert=<path>"
+.RE
+.RS
 With MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client\-ID is computed from the driver string.
 .RE
 .RS
 If you use multiple RTL\-SDR, perhaps set a serial and select by that (helps not to get the wrong antenna).
 .RE
+.TP
+[ \fB\-F\fI influx[:[//]host[:port][/<path and options>]\fP ]
 .RS
 Specify InfluxDB 2.0 server with e.g. \-F "influx://localhost:9999/api/v2/write?org=<org>&bucket=<bucket>,token=<authtoken>"
 .RE
@@ -385,8 +399,28 @@ Specify InfluxDB 1.x server with e.g. \-F "influx://localhost:8086/write?db=<db>
 .RS
   Additional parameter \-M time:unix:usec:utc for correct timestamps in InfluxDB recommended
 .RE
+.TP
+[ \fB\-F\fI syslog[:[//]host[:port\fP ]
+(default: localhost:514)
 .RS
 Specify host/port for syslog with e.g. \-F syslog:127.0.0.1:1514
+.RE
+.TP
+[ \fB\-F\fI trigger:/path/to/file\fP ]
+.RS
+Add an output that writes a "1" to the path for each event, use with a e.g. a GPIO
+.RE
+.TP
+[ \fB\-F\fI rtl_tcp[:[//]bind[:port]\fP ]
+(default: localhost:1234)
+.RS
+Add a rtl_tcp pass\-through server
+.RE
+.TP
+[ \fB\-F\fI http[:[//]bind[:port]\fP ]
+(default: 0.0.0.0:8433)
+.RS
+Add a HTTP API server, a UI is at e.g. http://localhost:8433/
 .RE
 .SS "Meta information option"
 .TP

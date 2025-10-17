@@ -67,19 +67,23 @@ Known CRC init values can be added to the code via PR when they have been identi
 
 */
 static const struct crc_init known_crc_init[] = {
-        {0xe623, "Kansas City, MO", "Evergy-Missouri West"},
-        {0x5fd6, "Dallas, TX", "Oncor"},
-        {0xD553, "Austin, TX", "Austin Energy"},
-        {0x45F8, "Dallas, TX", "CoServ"},
-        {0x62C1, "Quebec, CAN", "Hydro-Quebec"},
-        {0x23D1, "Seattle, WA", "Seattle City Light"},
-        {0x2C22, "Santa Barbara, CA", "Southern California Edison"},
+        {0xe623, "Kansas City MO", "Evergy-Missouri West"},
+        {0x5fd6, "Dallas TX", "Oncor"},
+        {0xD553, "Austin TX", "Austin Energy"},
+        {0x45F8, "Dallas TX", "CoServ"},
+        {0x62C1, "Quebec CAN", "Hydro-Quebec"},
+        {0x23D1, "Seattle WA", "Seattle City Light"},
+        {0x2C22, "Santa Barbara CA", "Southern California Edison"},
         {0x142A, "Washington", "Puget Sound Energy"},
         {0x47F7, "Pennsylvania", "PPL Electric"},
-        {0x22c6, "Long Island, NY", "PSEG Long Island"},
-        {0x8819, "Alameda, CA", "Alameda Municipal Power"},
-        {0x4E2D, "Milwaukee, WI", "We Energies"},
-        {0x1D65, "Phoenix, AZ", "APS"}};
+        {0x22c6, "Long Island NY", "PSEG Long Island"},
+        {0x8819, "Alameda CA", "Alameda Municipal Power"},
+        {0x4E2D, "Milwaukee WI", "We Energies"},
+        {0x1D65, "Phoenix AZ", "APS"},
+        {0xB9A9, "Mattoon IL", "Coles-Moultrie Electric Co-op"},
+        {0xD1FF, "Newark NJ", "PSEG New Jersey"},
+        {0xba1f, "Burleson TX", "United Cooperative Services"},
+};
 
 static int gridstream_checksum(int fulllength, uint16_t length, uint8_t *bits, int adjust)
 {
@@ -99,6 +103,7 @@ static int gridstream_checksum(int fulllength, uint16_t length, uint8_t *bits, i
             crc_count++;
         }
     } while (crc_count < (sizeof(known_crc_init) / sizeof(struct crc_init)) && crc_ok == 0);
+
     if (!crc_ok) {
         return DECODE_FAIL_MIC;
     }
@@ -124,81 +129,83 @@ static int gridstream_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             0x7F,
             0xF8,
     };
+
     /* Maximum data length is not yet known, but 256 should be a sufficient buffer size. */
     uint8_t b[256];
-    uint16_t stream_len;
-    char found_crc[5]           = "";
-    char destwanaddress_str[13] = "";
-    char srcwanaddress_str[13]  = "";
-    char srcaddress_str[9]      = "";
-    char destaddress_str[9]     = "";
-    int srcwanaddress           = 0;
-    uint32_t uptime             = 0;
-    int clock                   = 0;
-    int subtype;
-    unsigned offset;
-    int protocol_version;
-    int subtype_mod = 0;
-    int crcidx;
     int decoded_len;
-    offset = bitbuffer_search(bitbuffer, 0, 0, preambleV4, 36);
+    int protocol_version;
+    unsigned offset = bitbuffer_search(bitbuffer, 0, 0, preambleV4, 36);
     if (offset >= bitbuffer->bits_per_row[0]) {
         offset = bitbuffer_search(bitbuffer, 0, 0, preambleV5, 37);
         if (offset >= bitbuffer->bits_per_row[0]) {
             return DECODE_FAIL_SANITY;
         }
-        else {
-            decoded_len      = extract_bytes_uart(bitbuffer->bb[0], offset + 37, bitbuffer->bits_per_row[0] - offset - 37, b);
-            protocol_version = 5;
-        }
+
+        decoded_len      = extract_bytes_uart(bitbuffer->bb[0], offset + 37, bitbuffer->bits_per_row[0] - offset - 37, b);
+        protocol_version = 5;
     }
     else {
         decoded_len      = extract_bytes_uart(bitbuffer->bb[0], offset + 36, bitbuffer->bits_per_row[0] - offset - 36, b);
         protocol_version = 4;
     }
-    if (decoded_len >= 5) {
-        switch (b[0]) {
-        case 0x2A:
-            subtype = b[1];
-            if (subtype == 0xD2) {
-                stream_len  = b[2];
-                subtype_mod = -1;
-            }
-            else {
-                stream_len = (b[2] << 8) | b[3];
-            }
-            crcidx = gridstream_checksum(decoded_len, stream_len, b, subtype_mod);
-            if (crcidx < 0) {
-                decoder_log(decoder, 1, __func__, "Bad CRC or unknown init value. ");
-                if ((stream_len == 0x23) && (subtype = 0xAA)) {
-                    /* These data types can be used to find new init values. See comment block on line 67. */
-                    decoder_log_bitrow(decoder, 1, __func__, &b[4], decoded_len * 8, "Use RevEng to find init value.");
-                }
-                return DECODE_FAIL_MIC;
-            }
-            sprintf(found_crc, "%04x", known_crc_init[crcidx].value);
-            switch (subtype) {
-            case 0x55:
-                sprintf(destwanaddress_str, "%02x%02x%02x%02x%02x%02x", b[5], b[6], b[7], b[8], b[9], b[10]);
-                sprintf(srcwanaddress_str, "%02x%02x%02x%02x%02x%02x", b[11], b[12], b[13], b[14], b[15], b[16]);
-                srcwanaddress = 1;
-                sprintf(srcaddress_str, "%02x%02x%02x%02x", b[24], b[25], b[26], b[27]);
-                uptime = ((uint32_t)b[18] << 24) | (b[19] << 16) | (b[20] << 8) | b[21];
-                break;
-            case 0xD5:
-                sprintf(destaddress_str, "%02x%02x%02x%02x", b[5], b[6], b[7], b[8]);
-                sprintf(srcaddress_str, "%02x%02x%02x%02x", b[9], b[10], b[11], b[12]);
-                if (stream_len == 0x47) {
-                    clock  = ((uint32_t)b[14] << 24) | (b[15] << 16) | (b[16] << 8) | b[17];
-                    uptime = ((uint32_t)b[22] << 24) | (b[23] << 16) | (b[24] << 8) | b[25];
-                    sprintf(srcwanaddress_str, "%02x%02x%02x%02x%02x%02x", b[30], b[31], b[32], b[33], b[34], b[35]);
-                    srcwanaddress = 1;
-                }
-                break;
-            }
 
-            /* clang-format off */
-            data = data_make(
+    if (decoded_len < 5) {
+        return DECODE_FAIL_SANITY;
+    }
+    decoder_log_bitrow(decoder, 1, __func__, b, decoded_len * 8, "Decoded frame data");
+
+    if (b[0] == 0x2A) {
+        int subtype = b[1];
+        int subtype_mod = 0;
+        uint16_t stream_len;
+        if (subtype == 0xD2) {
+            stream_len  = b[2];
+            subtype_mod = -1;
+        }
+        else {
+            stream_len = (b[2] << 8) | b[3];
+        }
+
+        int crcidx = gridstream_checksum(decoded_len, stream_len, b, subtype_mod);
+        if (crcidx < 0) {
+            decoder_log(decoder, 1, __func__, "Bad CRC or unknown init value. ");
+            if ((stream_len == 0x23) && (subtype == 0xAA)) {
+                /* These data types can be used to find new init values. See comment block on line 67. */
+                decoder_log_bitrow(decoder, 1, __func__, &b[4], decoded_len * 8, "Use RevEng to find init value.");
+            }
+            return DECODE_FAIL_MIC;
+        }
+        char found_crc[5];
+        sprintf(found_crc, "%04x", known_crc_init[crcidx].value);
+
+        char destwanaddress_str[13] = "";
+        char srcwanaddress_str[13]  = "";
+        char srcaddress_str[9]      = "";
+        char destaddress_str[9]     = "";
+        int srcwanaddress           = 0;
+        uint32_t uptime             = 0;
+        int clock                   = 0;
+
+        if (subtype == 0x55) {
+            sprintf(destwanaddress_str, "%02x%02x%02x%02x%02x%02x", b[5], b[6], b[7], b[8], b[9], b[10]);
+            sprintf(srcwanaddress_str, "%02x%02x%02x%02x%02x%02x", b[11], b[12], b[13], b[14], b[15], b[16]);
+            srcwanaddress = 1;
+            sprintf(srcaddress_str, "%02x%02x%02x%02x", b[24], b[25], b[26], b[27]);
+            uptime = ((uint32_t)b[18] << 24) | (b[19] << 16) | (b[20] << 8) | b[21];
+        }
+        else if (subtype == 0xD5) {
+            sprintf(destaddress_str, "%02x%02x%02x%02x", b[5], b[6], b[7], b[8]);
+            sprintf(srcaddress_str, "%02x%02x%02x%02x", b[9], b[10], b[11], b[12]);
+            if (stream_len == 0x47) {
+                clock  = ((uint32_t)b[14] << 24) | (b[15] << 16) | (b[16] << 8) | b[17];
+                uptime = ((uint32_t)b[22] << 24) | (b[23] << 16) | (b[24] << 8) | b[25];
+                sprintf(srcwanaddress_str, "%02x%02x%02x%02x%02x%02x", b[30], b[31], b[32], b[33], b[34], b[35]);
+                srcwanaddress = 1;
+            }
+        }
+
+        /* clang-format off */
+        data = data_make(
                 "model",        "",                     DATA_STRING,    "LandisGyr-GS",
                 "networkID",    "Network ID",           DATA_STRING,    found_crc,
                 "location",     "Location",             DATA_STRING,    known_crc_init[crcidx].location,
@@ -213,17 +220,15 @@ static int gridstream_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "timestamp",    "Timestamp",            DATA_COND,      subtype == 0xD5 && stream_len == 0x47, DATA_INT, clock,
                 "uptime",       "Uptime",               DATA_COND,      uptime > 0, DATA_INT, uptime,
                 NULL);
-            /* clang-format on */
+        /* clang-format on */
 
-            decoder_output_data(decoder, data);
-            break;
-        }
-        decoder_log_bitrow(decoder, 0, __func__, b, decoded_len * 8, "Decoded frame data");
+        decoder_output_data(decoder, data);
         // Return 1 if message successfully decoded
         return 1;
     }
     else {
-        return DECODE_FAIL_SANITY;
+        // Unknown type
+        return 0;
     }
 }
 

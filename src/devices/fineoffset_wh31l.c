@@ -141,7 +141,7 @@ static int fineoffset_wh31l_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data = data_make(
             "model",            "",                 DATA_STRING, "FineOffset-WH31L",
             "id",               "",                 DATA_INT,    id,
-            "battery_ok",       "Battery",          DATA_DOUBLE, battery_ok * 0.5f,
+            "battery_ok",       "Battery level",    DATA_DOUBLE, battery_ok * 0.5f,
             "state",            "State",            DATA_STRING, state_str,
             "flags",            "Flags",            DATA_FORMAT, "%04x", DATA_INT,    flags,
             "storm_dist_km",    "Storm Distance",   DATA_COND, s_dist != 63, DATA_FORMAT, "%d km", DATA_INT,    s_dist,

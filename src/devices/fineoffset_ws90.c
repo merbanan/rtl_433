@@ -50,10 +50,16 @@ Packet layout:
 - V = uv index, scale 10
 - U = unknown (bytes 14 and 15 appear to be fixed at 3f ff)
 - R = rain total (R3 << 8 | R4) * 0.1 mm
+- RS = rain start dection ((R1 & 0x10) >>4), 1 = raining, 0 = not raining
 - S = super cap voltage, unit of 0.1V, lower 6 bits, mask 0x3f
 - Z = Firmware version. 0x82 = 130 = 1.3.0
 - A = checksum
 - X = CRC
+
+Rain start info:
+Status 1 will be reset to 0 when:
+- Once the top is dry
+- After the amount of water on the top has remained unchanged for two hours.
 
 */
 
@@ -106,6 +112,7 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int wind_max    = ((b[7] & 0x40) << 2) | (b[12]);
     int uv_index    = (b[13]);
     int rain_raw    = (b[19] << 8 ) | (b[20]);
+    int rain_start  = (b[16] & 0x10) >> 4;
     int supercap_V  = (b[21] & 0x3f);
     int firmware    = b[29];
 
@@ -119,17 +126,18 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data = data_make(
             "model",            "",                 DATA_STRING, "Fineoffset-WS90",
             "id",               "ID",               DATA_FORMAT, "%06x", DATA_INT,    id,
-            "battery_ok",       "Battery",          DATA_DOUBLE, battery_lvl * 0.01f,
+            "battery_ok",       "Battery level",    DATA_DOUBLE, battery_lvl * 0.01f,
             "battery_mV",       "Battery Voltage",  DATA_FORMAT, "%d mV", DATA_INT,    battery_mv,
             "temperature_C",    "Temperature",      DATA_COND, temp_raw != 0x3ff,   DATA_FORMAT, "%.1f C",   DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",         DATA_COND, humidity != 0xff,    DATA_FORMAT, "%u %%",    DATA_INT, humidity,
             "wind_dir_deg",     "Wind direction",   DATA_COND, wind_dir != 0x1ff,   DATA_INT, wind_dir,
             "wind_avg_m_s",     "Wind speed",       DATA_COND, wind_avg != 0x1ff,   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_avg * 0.1f,
             "wind_max_m_s",     "Gust speed",       DATA_COND, wind_max != 0x1ff,   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_max * 0.1f,
-            "uvi",              "UVI",              DATA_COND, uv_index != 0xff,    DATA_FORMAT, "%.1f",     DATA_DOUBLE, uv_index * 0.1f,
+            "uvi",              "UV Index",         DATA_COND, uv_index != 0xff,    DATA_FORMAT, "%.1f",     DATA_DOUBLE, uv_index * 0.1f,
             "light_lux",        "Light",            DATA_COND, light_raw != 0xffff, DATA_FORMAT, "%.1f lux", DATA_DOUBLE, (double)light_lux,
             "flags",            "Flags",            DATA_FORMAT, "%02x", DATA_INT, flags,
             "rain_mm",          "Total Rain",       DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1f,
+            "rain_start",       "Rain Start",       DATA_INT, rain_start,
             "supercap_V",       "Supercap Voltage", DATA_COND, supercap_V != 0xff, DATA_FORMAT, "%.1f V", DATA_DOUBLE, supercap_V * 0.1f,
             "firmware",         "Firmware Version", DATA_INT, firmware,
             "data",             "Extra Data",       DATA_STRING, extra,
@@ -156,6 +164,7 @@ static char const *const output_fields[] = {
         "flags",
         "unknown",
         "rain_mm",
+        "rain_start",
         "supercap_V",
         "firmware",
         "data",

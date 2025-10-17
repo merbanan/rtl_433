@@ -167,8 +167,8 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
         if (!dup) {
             FATAL_STRDUP("write_sigrok()");
         }
+        argv_dups[arg] = dup;
         argv[arg++] = dup;
-        argv_dups[arg++] = dup;
     }
 
     int status = 0;

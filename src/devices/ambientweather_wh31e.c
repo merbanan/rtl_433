@@ -292,20 +292,21 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
             int id         = (b[2] << 8) | b[3];
             int battery_v  = (b[4] & 0x1f);
-            int battery_lvl = battery_v <= 9 ? 0 : ((battery_v - 9) / 6 * 100); // 0.9V-1.5V is 0-100
+            int battery_lvl = battery_v <= 9 ? 0 : 100 * (battery_v - 9) / 6; // 0.9V-1.5V is 0-100
             int rain_raw   = (b[5] << 8) | b[6];
             char extra[11];
             snprintf(extra, sizeof(extra), "%02x%02x%02x%02x%02x", b[9], b[10], b[11], b[12], b[13]);
 
-            if (battery_lvl > 100)
+            if (battery_lvl > 100) {
                 battery_lvl = 100;
+            }
 
             /* clang-format off */
             data_t *data = data_make(
                     "model",            "",                DATA_STRING, "EcoWitt-WH40",
                     "id",               "",                DATA_INT,    id,
                     "battery_V",        "Battery Voltage", DATA_COND, battery_v != 0, DATA_FORMAT, "%f V", DATA_DOUBLE, battery_v * 0.1f,
-                    "battery_ok",       "Battery",         DATA_COND, battery_v != 0, DATA_DOUBLE, battery_lvl * 0.01f,
+                    "battery_ok",       "Battery level",   DATA_COND, battery_v != 0, DATA_DOUBLE, battery_lvl * 0.01f,
                     "rain_mm",          "Total Rain",      DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1,
                     "data",             "Extra Data",      DATA_STRING, extra,
                     "mic",              "Integrity",       DATA_STRING, "CRC",
@@ -350,7 +351,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "light_lux",        "Lux",          DATA_FORMAT, "%u lux",   DATA_INT,    light_lux,
                     "wind_avg_m_s",     "Wind Speed",   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wspeed * 0.1f,
                     "wind_max_m_s",     "Wind Gust",    DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wgust * 0.1f,
-                    "uvi",              "UVI",          DATA_INT,    uvindex,
+                    "uvi",              "UV Index",     DATA_FORMAT, "%.0f",     DATA_DOUBLE, (double)uvindex,
                     "wind_dir_deg",     "Wind dir",     DATA_INT,    wdir,
                     "data",             "Extra Data",   DATA_STRING, extra,
                     "mic",              "Integrity",    DATA_STRING, "CRC",

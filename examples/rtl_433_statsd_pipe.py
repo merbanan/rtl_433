@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Statsd monitoring for rtl_433 using pipes."""
 

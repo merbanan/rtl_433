@@ -7,6 +7,31 @@ We are happy to accept your contribution of yet another sensor!
 Please check if your contribution is following these guidelines
 to improve the feedback loop and decrease the burden for the maintainers.
 
+## Adding a new decoder
+
+Decoders for new device protocols are welcome.
+You need to know some C and register the decoder with one line, the rest is automatic.
+
+To get started follow these steps to add a new decoder:
+- Clone the repo and create a feature branch.  
+  E.g. Clone in Github, checkout and then `git checkout -b feat-mydevice`
+- Copy some decoder as template, either one that is already close to what you need or `src/devices/new_template.c`.  
+  E.g. `cp src/devices/new_template.c src/devices/my_device.c`
+- Change the new decoder (at least the `r_device` name and `.disabled = 0`).  
+  E.g. change `r_device const new_template =` to `r_device const my_device =`,
+  and `new_template_decode` to `my_device_decode`,
+  and `.disabled = 3` to `.disabled = 0`
+- Edit `include/rtl_433_devices.h`  
+  E.g. add `DECL(my_device) \`
+- Add your files with Git (no need to commit yet)  
+  E.g. `git add src/devices/my_device.c include/rtl_433_devices.h`
+- Run `./maintainer_update.py` to add the CMake compile rules
+- Compile, add files with Git again  
+  E.g. `git add src/CMakeLists.txt`
+- Code and test your decoder, try to follow our code style (you can generally use clang-format).
+- Run `./maintainer_update.py` again for the readme files.
+- Review and commit your changes, push the changes then create a PR.
+
 ## Commit messages
 
 Pull-Requests (PR) will be added as squash commit

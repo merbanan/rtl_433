@@ -69,11 +69,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-13, macos-14]
+        os: [macos-14]
         feat: [rtlsdr, soapysdr]
         include:
-          - os: macos-13
-            arch: x86_64
+          #- os: macos-13
+          #  arch: x86_64
           - os: macos-14
             arch: arm64
     runs-on: ${{ matrix.os }}
@@ -131,12 +131,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, ubuntu-22.04]
+        os: [ubuntu-24.04]
         feat: [rtlsdr, soapysdr]
         include:
-          - os: ubuntu-20.04
-            libs: openssl11
-          - os: ubuntu-22.04
+          # - os: ubuntu-20.04
+          #   libs: openssl11
+          # - os: ubuntu-22.04
+          #   libs: openssl3
+          - os: ubuntu-24.04
             libs: openssl3
     runs-on: ${{ matrix.os }}
     name: Build ${{ matrix.feat }} on ${{ matrix.os }} for amd64
@@ -172,7 +174,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, ubuntu-22.04]
+        os: [ubuntu-22.04]
         arch: [armhf, arm64]
         feat: [rtlsdr, soapysdr]
         include:
@@ -180,8 +182,10 @@ jobs:
             compiler: arm-linux-gnueabihf
           - arch: arm64
             compiler: aarch64-linux-gnu
-          - os: ubuntu-20.04
-            libs: openssl11
+          # - os: ubuntu-20.04
+          #   libs: openssl11
+          # - os: ubuntu-24.04
+          #   libs: openssl3
           - os: ubuntu-22.04
             libs: openssl3
     runs-on: ${{ matrix.os }}
@@ -269,14 +273,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019, windows-2022]
+        os: [windows-2022, windows-2025]
         platform: [x64, Win32]
         # from https://downloads.myriadrf.org/builds/PothosSDR/
         #pothos-ver: [2021.07.25-vc16]
         include:
-          - os: windows-2019
-            generator: Visual Studio 16 2019
           - os: windows-2022
+            generator: Visual Studio 17 2022
+          - os: windows-2025
             generator: Visual Studio 17 2022
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.generator }} ${{ matrix.platform }} CMake (MSBuild) on ${{ matrix.os }}
@@ -369,7 +373,7 @@ jobs:
         ls -al dist
         7z a rtl_433-win-msvc-x64.zip ./dist/*
     - name: "Upload Release Asset"
-      if: matrix.os == 'windows-2019' && matrix.platform == 'x64'
+      if: matrix.os == 'windows-2022' && matrix.platform == 'x64'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GH_TOKEN: ${{ github.token }}

@@ -254,6 +254,7 @@ static data_t *protocols_data(r_cfg_t *cfg)
     list_t devs = {0};
     list_ensure_size(&devs, cfg->num_r_devices);
 
+    // list regular protocols
     for (int i = 0; i < cfg->num_r_devices; ++i) {
         r_device *dev = &cfg->devices[i];
 
@@ -288,6 +289,7 @@ static data_t *protocols_data(r_cfg_t *cfg)
         list_push(&devs, data);
     }
 
+    // list dynamic protocols (flex decoders and create instances)
     for (void **iter = cfg->demod->r_devs.elems; iter && *iter; ++iter) {
         r_device *dev = *iter;
         if (dev->protocol_num > 0) {
@@ -572,7 +574,7 @@ static void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
         data_free(data);
     }
     else if (!strcmp(rpc->method, "get_protocols")) {
-        char buf[65536]; // we expect the protocol string to be around 60k bytes.
+        char buf[102400]; // we expect the protocol string to be around 80k bytes.
         data_t *data = protocols_data(cfg);
         data_print_jsons(data, buf, sizeof(buf));
         rpc->response(rpc, 1, buf, 0);
