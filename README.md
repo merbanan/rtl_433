@@ -370,7 +370,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [282]  Orion Endpoint from Badger Meter, GIF2014W-OSE, water meter, hopping from 904.4 Mhz to 924.6Mhz (-s 1600k)
     [283]  Fine Offset Electronics WH43 air quality sensor
     [284]  Baldr E0666TH Thermo-Hygrometer
-    [275]  Universal (Reverseable) 24V Fan Controller
+    [285]  bm5-v2 12V Battery Monitor
+    [286]  Universal (Reverseable) 24V Fan Controller
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -467,6 +468,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"
 	MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
 	Supported MQTT formats: (default is all)
+    availability: posts availability (online/offline)
 	  events: posts JSON event data, default "<base>/events"
 	  states: posts JSON state data, default "<base>/states"
 	  devices: posts device and sensor info in nested topics,
