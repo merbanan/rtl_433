@@ -371,6 +371,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [283]  Fine Offset Electronics WH43 air quality sensor
     [284]  Baldr E0666TH Thermo-Hygrometer
     [285]  bm5-v2 12V Battery Monitor
+    [286]  Universal (Reverseable) 24V Fan Controller
 
 * Disabled by default, use -R n or a conf file to enable
 

@@ -293,6 +293,7 @@
     DECL(fineoffset_wh43) \
     DECL(baldr_therm) \
     DECL(bm5) \
+    DECL(universalfanctrl) \
 
     /* Add new decoders here. */
 
