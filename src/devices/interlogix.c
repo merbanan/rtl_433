@@ -168,6 +168,7 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     case 0x4: device_type = "motion"; break;
     case 0x6: device_type = "heat"; break;
     case 0x9: device_type = "glass"; break; // switch1 changes from open to closed on trigger
+    case 0x2: device_type = "smoke"; break;
 
     default: device_type = "unknown"; break;
     }
