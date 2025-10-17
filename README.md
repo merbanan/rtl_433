@@ -369,6 +369,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [281]  Maverick XR-50 BBQ Sensor
     [282]  Orion Endpoint from Badger Meter, GIF2014W-OSE, water meter, hopping from 904.4 Mhz to 924.6Mhz (-s 1600k)
     [283]  Fine Offset Electronics WH43 air quality sensor
+    [284]  Baldr E0666TH Thermo-Hygrometer
 
 * Disabled by default, use -R n or a conf file to enable
 
