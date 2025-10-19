@@ -372,6 +372,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [284]  Baldr E0666TH Thermo-Hygrometer
     [285]  bm5-v2 12V Battery Monitor
     [286]  Universal (Reverseable) 24V Fan Controller
+    [287]  Fine Offset Electronics WS85 weather station
 
 * Disabled by default, use -R n or a conf file to enable
 
