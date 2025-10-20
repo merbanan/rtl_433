@@ -294,6 +294,7 @@
     DECL(baldr_therm) \
     DECL(bm5) \
     DECL(universalfanctrl) \
+    DECL(fineoffset_ws85) \
 
     /* Add new decoders here. */
 
