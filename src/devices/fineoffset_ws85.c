@@ -89,15 +89,14 @@ static int fineoffset_ws85_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t crc = crc8(b, 26, 0x31, 0x00);
     uint8_t chk = add_bytes(b, 27);
     if (crc != b[26] || chk != b[27]) {
-        decoder_logf(decoder, 1, __func__, 
-            "Checksum error: CRC=%02x (Expected=%02x) CHK=%02x (Expected=%02x)", 
+        decoder_logf(decoder, 1, __func__,
+            "Checksum error: CRC=%02x (Expected=%02x) CHK=%02x (Expected=%02x)",
             crc, b[26], chk, b[27]);
         return DECODE_FAIL_MIC;
     }
 
     int id          = (b[1] << 16) | (b[2] << 8) | (b[3]);
     int battery_mv  = (b[4] * 20); // mV
-    int battery_lvl = battery_mv < 1400 ? 0 : (battery_mv - 1400) / 16; // 1.4V-3.0V is 0-100
     int flags       = b[5]; // to find the wind msb
     int wind_avg    = ((b[5] & 0x10) << 4) | (b[7]);
     int wind_dir    = ((b[5] & 0x20) << 3) | (b[8]);
@@ -109,11 +108,13 @@ static int fineoffset_ws85_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int battery_ok = 0;
     if (battery_mv > 2400) {
-        battery_ok = 1; 
+        battery_ok = 1;
     }
 
-    if (battery_lvl > 100) // More then 100%?
+    int battery_lvl = battery_mv < 1400 ? 0 : (battery_mv - 1400) / 16; // 1.4V-3.0V is 0-100
+    if (battery_lvl > 100) {
         battery_lvl = 100;
+    }
 
     char extra[31];
     snprintf(extra, sizeof(extra), "%02x%02x---%02x%02x%02x%02x%02x%02x%02x---%02x", b[13], b[14], /* b[15] b[16] is rain_raw, b[17] is supercap_V */ b[18], b[19], b[20], b[21], b[22], b[23], b[24], b[28]);
