@@ -29,3 +29,6 @@ cmake-build-debug/
 # File manager files
 .DS_Store
 .history
+
+# Precompiled headers
+*.h.pch
