@@ -11,7 +11,7 @@
 
 #include "decoder.h"
 
-/*
+/**
 Oria WA150KM temperature sensor decoder.
 
 The device uses Manchester coding with G.E. Thomas convention.
