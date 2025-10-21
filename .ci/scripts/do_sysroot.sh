@@ -62,7 +62,7 @@ then
         -DLIBUSB_INCLUDE_DIRS=$CMAKE_SYSROOT/usr/include \
         -B build-tmp && cmake --build build-tmp && cmake --install build-tmp
     rm -rf build-tmp
-    mv $sysroot32/usr/lib/librtlsdr_static.a $sysroot32/usr/lib/librtlsdr.a
+    mv $CMAKE_SYSROOT/usr/lib/librtlsdr_static.a $CMAKE_SYSROOT/usr/lib/librtlsdr.a
 fi
 
 if [ ! -e $sysroot32static/usr/lib/librtlsdr.a ]
@@ -75,9 +75,9 @@ then
         -DBUILD_SHARED_LIBS:BOOL=OFF \
         -B build-tmp && cmake --build build-tmp && cmake --install build-tmp
     rm -rf build-tmp
-    mv $sysroot32static/usr/lib/librtlsdr_static.a $sysroot32static/usr/lib/librtlsdr.a
-    rm $sysroot32static/usr/lib/librtlsdr.dll.a
-    rm $sysroot32static/usr/bin/librtlsdr.dll
+    mv $CMAKE_SYSROOT/usr/lib/librtlsdr_static.a $CMAKE_SYSROOT/usr/lib/librtlsdr.a
+    rm $CMAKE_SYSROOT/usr/lib/librtlsdr.dll.a
+    rm $CMAKE_SYSROOT/usr/bin/librtlsdr.dll
 fi
 
 if [ ! -e $sysroot64/usr/lib/librtlsdr.a ]
@@ -89,7 +89,7 @@ then
         -DLIBUSB_INCLUDE_DIRS=$CMAKE_SYSROOT/usr/include \
         -B build-tmp && cmake --build build-tmp && cmake --install build-tmp
     rm -rf build-tmp
-    mv $sysroot64/usr/lib/librtlsdr_static.a $sysroot64/usr/lib/librtlsdr.a
+    mv $CMAKE_SYSROOT/usr/lib/librtlsdr_static.a $CMAKE_SYSROOT/usr/lib/librtlsdr.a
 fi
 
 if [ ! -e $sysroot64static/usr/lib/librtlsdr.a ]
@@ -102,9 +102,9 @@ then
         -DBUILD_SHARED_LIBS:BOOL=OFF \
         -B build-tmp && cmake --build build-tmp && cmake --install build-tmp
     rm -rf build-tmp
-    mv $sysroot64static/usr/lib/librtlsdr_static.a $sysroot64static/usr/lib/librtlsdr.a
-    rm $sysroot64static/usr/lib/librtlsdr.dll.a
-    rm $sysroot64static/usr/bin/librtlsdr.dll
+    mv $CMAKE_SYSROOT/usr/lib/librtlsdr_static.a $CMAKE_SYSROOT/usr/lib/librtlsdr.a
+    rm $CMAKE_SYSROOT/usr/lib/librtlsdr.dll.a
+    rm $CMAKE_SYSROOT/usr/bin/librtlsdr.dll
 fi
 
 cd ..
@@ -134,12 +134,12 @@ rm -rf build-tmp
 # neither CMAKE_EXE_LINKER_FLAGS="-static-libgcc"
 # nor target_link_libraries(rtl_433 -static-libgcc)
 # fix this. Ideas welcome.
-mv $sysroot32/usr/bin/rtl_433.exe $sysroot32/usr/bin/rtl_433_32bit_nonstatic_broken.exe
+mv $CMAKE_SYSROOT/usr/bin/rtl_433.exe $CMAKE_SYSROOT/usr/bin/rtl_433_32bit_nonstatic_broken.exe
 
 export CMAKE_SYSROOT=$sysroot32static ; echo $CMAKE_SYSROOT
 cmake -DCMAKE_TOOLCHAIN_FILE=$source_dir/cmake/Toolchain-gcc-mingw-w64-i686.cmake -S $source_dir -B build-tmp && cmake --build build-tmp && cmake --install build-tmp
 rm -rf build-tmp
-mv $sysroot32static/usr/bin/rtl_433.exe $sysroot32static/usr/bin/rtl_433_32bit_static.exe
+mv $CMAKE_SYSROOT/usr/bin/rtl_433.exe $CMAKE_SYSROOT/usr/bin/rtl_433_32bit_static.exe
 
 export CMAKE_SYSROOT=$sysroot64 ; echo $CMAKE_SYSROOT
 cmake -DENABLE_SOAPYSDR=ON -DCMAKE_TOOLCHAIN_FILE=$source_dir/cmake/Toolchain-gcc-mingw-w64-x86-64.cmake -S $source_dir -B build-tmp && cmake --build build-tmp && cmake --install build-tmp
@@ -148,7 +148,7 @@ rm -rf build-tmp
 export CMAKE_SYSROOT=$sysroot64static ; echo $CMAKE_SYSROOT
 cmake -DCMAKE_TOOLCHAIN_FILE=$source_dir/cmake/Toolchain-gcc-mingw-w64-x86-64.cmake -S $source_dir -B build-tmp && cmake --build build-tmp && cmake --install build-tmp
 rm -rf build-tmp
-mv $sysroot64static/usr/bin/rtl_433.exe $sysroot64static/usr/bin/rtl_433_64bit_static.exe
+mv $CMAKE_SYSROOT/usr/bin/rtl_433.exe $CMAKE_SYSROOT/usr/bin/rtl_433_64bit_static.exe
 
 # collect package
 
