@@ -8,6 +8,9 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
+
+#include "decoder.h"
+
 /*
 Oria WA150KM temperature sensor decoder.
 
@@ -35,44 +38,35 @@ Observations currently not affecting implemetation:
 - The devices transmit a "battery low" signal encoded in the byte after the temperature
 - Negative temperatures have another single bit set
 
- */
-
-#include "decoder.h"
+*/
 
 #define ORIA_WA150KM_BITLEN  227
-#define WARMUP_LEN           3  // number of 0xff bytes at start
 
 static int oria_wa150km_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
-    int r;
-    uint8_t *b;
-
     // Find a valid row (skipping short preamble rows)
+    int r;
     for (r = 0; r < bitbuffer->num_rows; r++) {
         if (bitbuffer->bits_per_row[r] == ORIA_WA150KM_BITLEN) {
             break;
         }
     }
-    if (r == bitbuffer->num_rows) {
+    if (r >= bitbuffer->num_rows) {
         decoder_logf(decoder, 2, __func__, "No valid row found with %d bits", ORIA_WA150KM_BITLEN);
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     // Check warmup bytes before decoding
-    b = bitbuffer->bb[r];
-    for (int i = 0; i < WARMUP_LEN; i++) {
-        if (b[i] != 0xAA) { // Check for alternating 1/0 pattern before Manchester decoding
-            decoder_logf(decoder, 2, __func__, "Warmup byte %d is not 0xaa: %02x", i, b[i]);
-            return 0;
-        }
+    uint8_t *b = bitbuffer->bb[r];
+    if (b[0] != 0xAA || b[1] != 0xAA || b[2] != 0xAA) { // Check for alternating 1/0 pattern before Manchester decoding
+        decoder_log(decoder, 2, __func__, "Warmup bytes are not 0xaaaaaa");
+        return DECODE_ABORT_EARLY;
     }
 
     // Check last byte (raw data before Manchester decoding)
     if (b[bitbuffer->bits_per_row[r]/8 - 1] != 0x69) {
-        decoder_logf(decoder, 2, __func__, "Last byte is not 0x69: %02x",
-                b[bitbuffer->bits_per_row[r]/8 - 1]);
-        return 0;
+        decoder_log(decoder, 2, __func__, "Last byte is not 0x69");
+        return DECODE_ABORT_EARLY;
     }
 
     // Invert the buffer for G.E. Thomas decoding
@@ -83,7 +77,7 @@ static int oria_wa150km_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_manchester_decode(bitbuffer, r, 0, &manchester_buffer, ORIA_WA150KM_BITLEN);
 
     // Reflect bits in each byte
-    reflect_bytes(manchester_buffer.bb[0], manchester_buffer.bits_per_row[0]/8 + 1);
+    reflect_bytes(manchester_buffer.bb[0], (manchester_buffer.bits_per_row[0] + 7) / 8);
 
     b = manchester_buffer.bb[0];
 
@@ -95,14 +89,14 @@ static int oria_wa150km_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Extract temperature
     // BCD: Convert each nibble of byte 8 to decimal (tens+ones) and add decimal from byte 7
-    float temperature = (((b[8] >> 4) & 0x0F) * 10 + (b[8] & 0x0F)) + ((b[7] >> 4) & 0x0F) * 0.1;
+    float temperature = (((b[8] >> 4) & 0x0F) * 10 + (b[8] & 0x0F)) + ((b[7] >> 4) & 0x0F) * 0.1f;
     // Check sign byte (bit 4)
     if (b[9] & 0x08) {
         temperature = -temperature;
     }
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",        "", DATA_STRING, "Oria-WA150KM",
             "id",           "", DATA_INT,    device_id,
             "channel",      "", DATA_INT,    channel,
@@ -114,13 +108,6 @@ static int oria_wa150km_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-/*
- * List of fields that may appear in the output
- *
- * Used to determine what fields will be output in what
- * order for this device when using -F csv.
- *
- */
 static char const *const output_fields[] = {
         "model",
         "id",
@@ -129,9 +116,6 @@ static char const *const output_fields[] = {
         NULL,
 };
 
-/*
- * r_device - registers device/callback. see rtl_433_devices.h
- */
 r_device const oria_wa150km = {
         .name        = "Oria WA150KM freezer and fridge thermometer",
         .modulation  = OOK_PULSE_PCM,
