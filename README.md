@@ -366,7 +366,14 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [278]  ThermoPro TX-7B Outdoor Thermometer Hygrometer
     [279]  Nexus, CRX, Prego sauna temperature sensor
     [280]  Homelead HG9901 (Geevon, Dr.Meter, Royal Gardineer) soil moisture/temp/light level sensor
-    [281]  Oria WA150KM freezer and fridge temperature sensor
+    [281]  Maverick XR-50 BBQ Sensor
+    [282]  Orion Endpoint from Badger Meter, GIF2014W-OSE, water meter, hopping from 904.4 Mhz to 924.6Mhz (-s 1600k)
+    [283]  Fine Offset Electronics WH43 air quality sensor
+    [284]  Baldr E0666TH Thermo-Hygrometer
+    [285]  bm5-v2 12V Battery Monitor
+    [286]  Universal (Reverseable) 24V Fan Controller
+    [287]  Fine Offset Electronics WS85 weather station
+    [288]  Oria WA150KM freezer and fridge temperature sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -441,6 +448,7 @@ Available options are:
 	reflect : reflect each byte (MSB first to MSB last)
 	decode_uart : UART 8n1 (10-to-8) decode
 	decode_dm : Differential Manchester decode
+	decode_mc : Manchester decode
 	match=<bits> : only match if the <bits> are found
 	preamble=<bits> : match and align at the <bits> preamble
 		<bits> is a row spec of {<bit count>}<bits as hex number>

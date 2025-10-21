@@ -350,7 +350,7 @@ mappings = {
         "config": {
             "device_class": "wind_speed",
             "name": "Wind Speed",
-            "unit_of_measurement": "mi/h",
+            "unit_of_measurement": "mph",
             "value_template": "{{ value|float }}",
             "state_class": "measurement"
         }
@@ -657,8 +657,8 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "uv",
         "config": {
-            "name": "UV Index",
-            "unit_of_measurement": "UV Index",
+            "name": "UV Value",
+            "unit_of_measurement": "UV",
             "value_template": "{{ value|float|round(1) }}",
             "state_class": "measurement"
         }

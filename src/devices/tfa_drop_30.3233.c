@@ -64,7 +64,7 @@ KKKK
 - K: Unknown. Either b1011 or b0111.
      - Distribution: 50:50.
 
-[Bitbench](http://triq.net/bitbench) string:
+[Bitbench](http://triq.org/bitbench) string:
 
 ```
 ID:hh ID:hh ID:hh BAT_LOW:b RESET:b UNKNOWN:bb XMIT_COUNTER:h RAIN_A:d

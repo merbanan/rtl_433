@@ -297,7 +297,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "wind_max_m_s",     "Gust speed",       DATA_COND, gust_speed_raw != 0xff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust_speed_ms,
             "rain_mm",          "Rainfall",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall_mm,
             "uv",               "UV",               DATA_COND, uv_raw != 0xffff, DATA_INT, uv_raw,
-            "uvi",              "UVI",              DATA_COND, uv_raw != 0xffff, DATA_INT, uv_index,
+            "uvi",              "UV Index",         DATA_COND, uv_raw != 0xffff, DATA_FORMAT, "%.0f", DATA_DOUBLE, (double)uv_index,
             "light_lux",        "Light",            DATA_COND, light_raw != 0xffffff, DATA_FORMAT, "%.1f lux", DATA_DOUBLE, light_lux,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
