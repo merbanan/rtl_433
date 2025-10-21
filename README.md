@@ -373,6 +373,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [285]  bm5-v2 12V Battery Monitor
     [286]  Universal (Reverseable) 24V Fan Controller
     [287]  Fine Offset Electronics WS85 weather station
+    [288]  Oria WA150KM freezer and fridge temperature sensor
 
 * Disabled by default, use -R n or a conf file to enable
 

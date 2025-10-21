@@ -295,6 +295,7 @@
     DECL(bm5) \
     DECL(universalfanctrl) \
     DECL(fineoffset_ws85) \
+    DECL(oria_wa150km) \
 
     /* Add new decoders here. */
 
