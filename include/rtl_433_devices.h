@@ -289,6 +289,13 @@
     DECL(nexus_sauna) \
     DECL(homelead_hg9901) \
     DECL(maverick_xr50) \
+    DECL(orion_endpoint) \
+    DECL(fineoffset_wh43) \
+    DECL(baldr_therm) \
+    DECL(bm5) \
+    DECL(universalfanctrl) \
+    DECL(fineoffset_ws85) \
+    DECL(oria_wa150km) \
     DECL(ec3k) \
 
     /* Add new decoders here. */

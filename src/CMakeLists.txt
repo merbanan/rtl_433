@@ -62,10 +62,13 @@ add_library(r_433 STATIC
     devices/auriol_afw2a1.c
     devices/auriol_ahfl.c
     devices/auriol_hg02832.c
+    devices/badger_orion_endpoint.c
     devices/badger_water.c
     devices/baldr_rain.c
+    devices/baldr_therm.c
     devices/blueline.c
     devices/blyss.c
+    devices/bm5.c
     devices/brennenstuhl_rcs_2044.c
     devices/bresser_3ch.c
     devices/bresser_5in1.c
@@ -116,11 +119,13 @@ add_library(r_433 STATIC
     devices/fineoffset_wh1050.c
     devices/fineoffset_wh1080.c
     devices/fineoffset_wh31l.c
+    devices/fineoffset_wh43.c
     devices/fineoffset_wh45.c
     devices/fineoffset_wh46.c
     devices/fineoffset_wh55.c
     devices/fineoffset_wn34.c
     devices/fineoffset_ws80.c
+    devices/fineoffset_ws85.c
     devices/fineoffset_ws90.c
     devices/flex.c
     devices/flowis.c
@@ -199,6 +204,7 @@ add_library(r_433 STATIC
     devices/oregon_scientific.c
     devices/oregon_scientific_sl109h.c
     devices/oregon_scientific_v1.c
+    devices/oria_wa150km.c
     devices/philips_aj3650.c
     devices/philips_aj7010.c
     devices/proflame2.c
@@ -275,6 +281,7 @@ add_library(r_433 STATIC
     devices/tpms_tyreguard400.c
     devices/ts_ft002.c
     devices/ttx201.c
+    devices/universalfanctrl.c
     devices/vaillant_vrt340f.c
     devices/vauno_en8822c.c
     devices/vevor_7in1.c

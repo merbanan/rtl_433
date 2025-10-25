@@ -367,7 +367,14 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [279]  Nexus, CRX, Prego sauna temperature sensor
     [280]  Homelead HG9901 (Geevon, Dr.Meter, Royal Gardineer) soil moisture/temp/light level sensor
     [281]  Maverick XR-50 BBQ Sensor
-    [282]  Voltcraft EnergyCount 3000 (ec3k)
+    [282]  Orion Endpoint from Badger Meter, GIF2014W-OSE, water meter, hopping from 904.4 Mhz to 924.6Mhz (-s 1600k)
+    [283]  Fine Offset Electronics WH43 air quality sensor
+    [284]  Baldr E0666TH Thermo-Hygrometer
+    [285]  bm5-v2 12V Battery Monitor
+    [286]  Universal (Reverseable) 24V Fan Controller
+    [287]  Fine Offset Electronics WS85 weather station
+    [288]  Oria WA150KM freezer and fridge thermometer
+    [289]  Voltcraft EnergyCount 3000 (ec3k)
 
 * Disabled by default, use -R n or a conf file to enable
 
