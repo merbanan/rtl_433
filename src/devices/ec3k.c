@@ -32,7 +32,6 @@ static inline void ec3k_resync_decoder(struct ec3k_decode_ctx *ctx)
 }
 
 static int ec3k_extract_fields(r_device *const decoder, const uint8_t *packetbuffer);
-static uint16_t calc_ec3k_crc(const uint8_t *buffer, size_t len);
 
 static inline uint8_t bit_at(const uint8_t *bytes, int32_t bit)
 {
@@ -121,10 +120,10 @@ To test with a file created by URH you can use this command:
     [Input] Test mode active. Reading samples from file: <stdin>
     _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
     time      : @1.864588s
-    model     : Voltcraft-EnergyCount3000            id        : bb9b
+    model     : Voltcraft-EC3k            id        : bb9b
     Power     : 90.200       Energy    : 754.518       Energy 2  : 1.860         Integrity : CRC
     Time total: 64942080     Time on   : 57501776      Power max : 186.500       Reset counter: 4          Flags     : 8
-    [pulse_slicer_pcm] Voltcraft-EnergyCount3000
+    [pulse_slicer_pcm] Voltcraft EnergyCount 3000 (ec3k)
     codes     : {550}d4018c7e67bf2e4b15f2b3b404fc2bdace27e30ba759a5be0edcbff0f5e2b070f59d89ec5459cef2a6cddb6adf8c4e487546309633d08e4a092fba1d16749519e5de63c5c0
 \endverbatim
 
@@ -223,7 +222,7 @@ static int ec3k_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t flags            = unpack_nibbles(packetbuffer, 76, 1);
     uint8_t pad_4            = unpack_nibbles(packetbuffer, 77, 1);
     uint16_t received_crc    = 0xffff ^ (unpack_nibbles(packetbuffer, 78, 2) | (unpack_nibbles(packetbuffer, 80, 2) << 8)); // little-endian
-    uint16_t calculated_crc  = calc_ec3k_crc(packetbuffer, DECODED_PAKET_LEN_BYTES - 2);
+    uint16_t calculated_crc  = crc16lsb(packetbuffer, DECODED_PAKET_LEN_BYTES - 2, 0x8408, 0xffff);
 
     // convert to common units
     uint64_t energy_Ws       = energy_high | energy_low;
@@ -244,26 +243,27 @@ static int ec3k_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-        "model",            "",              DATA_STRING, "Voltcraft-EnergyCount3000",
-        "id",               "",              DATA_FORMAT, "%04x", DATA_INT, id,
-        "power",            "Power",         DATA_DOUBLE, power_current,
-        "energy",           "Energy",        DATA_DOUBLE, energy_kWh,
-        "energy2",          "Energy 2",      DATA_DOUBLE, energy2_kWh,
-        "time_total",       "Time total",    DATA_INT,    time_total,
-        "time_on",          "Time on",       DATA_INT,    time_on,
-        "power_max",        "Power max",     DATA_DOUBLE, power_max,
-        "reset_counter",    "Reset counter", DATA_INT,    reset_counter,
-        "flags",            "Flags",         DATA_INT,    flags,
-        "mic",              "Integrity",     DATA_STRING, "CRC",
-        NULL);
+            "model",            "",              DATA_STRING, "Voltcraft-EC3k",
+            "id",               "",              DATA_FORMAT, "%04x", DATA_INT, id,
+            "power",            "Power",         DATA_DOUBLE, power_current,
+            "energy",           "Energy",        DATA_DOUBLE, energy_kWh,
+            "energy2",          "Energy 2",      DATA_DOUBLE, energy2_kWh,
+            "time_total",       "Time total",    DATA_INT,    time_total,
+            "time_on",          "Time on",       DATA_INT,    time_on,
+            "power_max",        "Power max",     DATA_DOUBLE, power_max,
+            "reset_counter",    "Reset counter", DATA_INT,    reset_counter,
+            "flags",            "Flags",         DATA_INT,    flags,
+            "mic",              "Integrity",     DATA_STRING, "CRC",
+            NULL);
     /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
 }
 
-// copied from the ec3k python implementation at https://github.com/avian2/ec3k
-// could be replaced by crc16lsb(buffer, len, 0x8408, 0xffff)
+// originally from the ec3k python implementation at https://github.com/avian2/ec3k
+// this crc function is aquivalent to crc16lsb(buffer, len, 0x8408, 0xffff) but proably faster
+/*
 static inline uint16_t calc_ec3k_crc(const uint8_t *buffer, size_t len)
 {
     uint16_t crc = 0xffff;
@@ -276,6 +276,7 @@ static inline uint16_t calc_ec3k_crc(const uint8_t *buffer, size_t len)
 
     return crc;
 }
+*/
 
 /*
  * List of fields that may appear in the output
@@ -300,7 +301,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const ec3k = {
-        .name        = "Voltcraft-EnergyCount3000",
+        .name        = "Voltcraft EnergyCount 3000 (ec3k)",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 50, // in us
         .long_width  = 50, // in us
