@@ -850,8 +850,8 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
 
     if (cfg->report_meta && cfg->demod->fsk_pulse_data.fsk_f2_est) {
         data = data_str(data, "mod",   "Modulation",  NULL,         "FSK");
-        data = data_dbl(data, "freq1", "Freq1",       "%.1f MHz",   cfg->demod->fsk_pulse_data.freq1_hz / 1000000.0);
-        data = data_dbl(data, "freq2", "Freq2",       "%.1f MHz",   cfg->demod->fsk_pulse_data.freq2_hz / 1000000.0);
+        data = data_dbl(data, "freq1", "Freq1",       "%.3f MHz",   cfg->demod->fsk_pulse_data.freq1_hz / 1000000.0);
+        data = data_dbl(data, "freq2", "Freq2",       "%.3f MHz",   cfg->demod->fsk_pulse_data.freq2_hz / 1000000.0);
         data = data_dbl(data, "rssi",  "RSSI",        "%.1f dB",    cfg->demod->fsk_pulse_data.rssi_db);
         data = data_dbl(data, "snr",   "SNR",         "%.1f dB",    cfg->demod->fsk_pulse_data.snr_db);
         data = data_dbl(data, "noise", "Noise",       "%.1f dB",    cfg->demod->fsk_pulse_data.noise_db);
