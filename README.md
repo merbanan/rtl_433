@@ -374,6 +374,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [286]  Universal (Reverseable) 24V Fan Controller
     [287]  Fine Offset Electronics WS85 weather station
     [288]  Oria WA150KM freezer and fridge thermometer
+    [289]  Voltcraft EnergyCount 3000 (ec3k)
 
 * Disabled by default, use -R n or a conf file to enable
 
