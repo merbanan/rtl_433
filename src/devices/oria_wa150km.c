@@ -124,5 +124,6 @@ r_device const oria_wa150km = {
         .gap_limit   = 1500,
         .reset_limit = 4000,
         .decode_fn   = &oria_wa150km_decode,
+        .priority    = 10, // Reduce false positives with Oregon Scientific THGR810
         .fields      = output_fields,
 };
