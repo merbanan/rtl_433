@@ -227,3 +227,13 @@ r_device const orion_endpoint = {
         .decode_fn   = &orion_endpoint_decode,
         .fields      = output_fields,
 };
+
+r_device const orion_endpoint_2020 = {
+        .name        = "Orion Endpoint from Badger Meter, GIF2020OCECNA, water meter, hopping from 904.4 Mhz to 924.6Mhz (-s 1600k)",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 5,
+        .long_width  = 5,
+        .reset_limit = 1000,
+        .decode_fn   = &orion_endpoint_decode,
+        .fields      = output_fields,
+};
