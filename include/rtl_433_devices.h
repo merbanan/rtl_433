@@ -297,6 +297,7 @@
     DECL(fineoffset_ws85) \
     DECL(oria_wa150km) \
     DECL(ec3k) \
+    DECL(netatmo_thw) \
 
     /* Add new decoders here. */
 

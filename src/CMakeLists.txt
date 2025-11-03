@@ -190,6 +190,7 @@ add_library(r_433 STATIC
     devices/missil_ml0757.c
     devices/mueller_hotrod.c
     devices/neptune_r900.c
+    devices/netatmo_thw.c
     devices/new_template.c
     devices/newkaku.c
     devices/nexa.c
