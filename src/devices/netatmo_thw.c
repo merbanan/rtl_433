@@ -105,9 +105,9 @@ All signals are transmitted with a preamble (multiple) 0xa, followed by the sync
 
  ***********************************************  
 To get all raw messages from all NetAtmo sensors:  
-rtl_433 -f 868.9M -s 1000k  -R 0 -X 'n=netatmoTHW,m=FSK_PCM,s=8.1,l=8.1,r=800,preamble=aaaae712,match=e712' -M level  
+rtl_433 -f 868.95M -s 300k  -R - -X 'n=netatmoTHW,m=FSK_PCM,s=8.5,l=8.5,r=800,preamble=aaaae712,match=e712' -M level  
 
-  use "match=e71219" to get only the TH data message  
+  e.g. use "match=e71219" to get only the TH data message  
 
 */
 
@@ -122,7 +122,7 @@ static int netatmo_thw_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             0xaa, 0xaa,             // preamble
             0xe7, 0x12,             // sync word
     };
-    int id, battery_mV, signal, temp_raw, humidity, raw_a, raw_b, raw_c, raw_d, ws315, ws45, wind_dir;
+    int id, battery_mV, signal, temp_raw, humidity, raw_a_315, raw_b_315, raw_c_045, raw_d_045, ws315, ws45, wind_dir;
     float temp_c, wind_speed;
     data_t *data;
 
@@ -196,12 +196,12 @@ static int netatmo_thw_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         break;
       case 0x31:
         battery_mV  = (b[8] *256 + b[7]) ;
-        raw_a = (int16_t)((b[26] << 8) | (b[25] )) ; // sign-extend
-        raw_b = (int16_t)((b[28] << 8) | (b[27] )) ; // sign-extend
-        raw_c = (int16_t)((b[30] << 8) | (b[29] )) ; // sign-extend
-        raw_d = (int16_t)((b[32] << 8) | (b[31] )) ; // sign-extend
-        ws315 = raw_a + raw_b;
-        ws45  = raw_c + raw_d;
+        raw_a_315 = (int16_t)((b[26] << 8) | (b[25] )) ; // sign-extend
+        raw_b_315 = (int16_t)((b[28] << 8) | (b[27] )) ; // sign-extend
+        raw_c_045 = (int16_t)((b[30] << 8) | (b[29] )) ; // sign-extend
+        raw_d_045 = (int16_t)((b[32] << 8) | (b[31] )) ; // sign-extend
+        ws315 = raw_a_315 + raw_b_315;
+        ws45  = raw_c_045 + raw_d_045;
         wind_speed = sqrt(ws45*ws45 + ws315*ws315 )*0.05f;
         wind_dir = (short) (atan2f(ws45,ws315) / M_PI * 180 + 315) % 360;
 
@@ -210,10 +210,10 @@ static int netatmo_thw_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id",            "ID Code",     DATA_FORMAT,  "%08x",         DATA_INT,    id,
                 "battery_mV",    "Battery U",   DATA_FORMAT,  "%d mV",        DATA_INT,    battery_mV,
                 "signal_dB",     "Signal",      DATA_FORMAT,  "%d dB",        DATA_INT,    signal,
-                "raw_a",         "raw_a 315°",  DATA_FORMAT,  "%d",          DATA_INT,    raw_a,
-                "raw_b",         "raw_b 315°",  DATA_FORMAT,  "%d",          DATA_INT,    raw_b,
-                "raw_c",         "raw_c 045°",  DATA_FORMAT,  "%d",          DATA_INT,    raw_c,
-                "raw_d",         "raw_d 045°",  DATA_FORMAT,  "%d",          DATA_INT,    raw_d,
+                "raw_a_315",         "raw_a 315°",  DATA_FORMAT,  "%d",          DATA_INT,    raw_a_315,
+                "raw_b_315",         "raw_b 315°",  DATA_FORMAT,  "%d",          DATA_INT,    raw_b_315,
+                "raw_c_045",         "raw_c 045°",  DATA_FORMAT,  "%d",          DATA_INT,    raw_c_045,
+                "raw_d_045",         "raw_d 045°",  DATA_FORMAT,  "%d",          DATA_INT,    raw_d_045,
                 "wind_spd_km_h", "Wind Speed",  DATA_FORMAT,  "%.01f km/h",   DATA_DOUBLE, wind_speed,
                 "wind_dir_deg",  "Wind Dir",    DATA_FORMAT,  "%u °",        DATA_INT,    wind_dir,
                 "mic",           "Integrity",   DATA_STRING,  "CRC",
@@ -244,10 +244,10 @@ static char const *const output_fields[] = {
         "humidity",
         "wind_spd_km_h",
         "wind_dir_deg",
-        "raw_a",
-        "raw_b",
-        "raw_c",
-        "raw_d",
+        "raw_a_315",
+        "raw_b_315",
+        "raw_c_045",
+        "raw_d_045",
         "mic",
         NULL,
 };
@@ -255,8 +255,8 @@ static char const *const output_fields[] = {
 r_device const netatmo_thw = {
         .name        = "NetAtmo temp/hum and wind sensors",
         .modulation  = FSK_PULSE_PCM,
-        .short_width = 8.1,
-        .long_width  = 8.1,
+        .short_width = 8.5,
+        .long_width  = 8.5,
         .reset_limit = 800,
         .decode_fn   = &netatmo_thw_decode,
         .fields      = output_fields,
