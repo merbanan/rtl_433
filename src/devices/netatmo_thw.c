@@ -13,101 +13,101 @@
 /** @fn static int netatmo_thw_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 NetAtmo outdoor temperature/humidity sensor and ultrasonic anemometer.
 
-There are several different message types with different message lengths.  
-All signals are transmitted with a preamble (multiple) 0xa, followed by the syncword 0xe712,  
- followed by the data length byte and the data segment, and finished by a two byte CRC.  
- CRC16 calculation over all bytes after syncword should result in 0, if there were no bit errors  
+There are several different message types with different message lengths.<br>
+All signals are transmitted with a preamble (multiple) 0xa, followed by the syncword 0xe712,<br>
+ followed by the data length byte and the data segment, and finished by a two byte CRC.<br>
+ CRC16 calculation over all bytes after syncword should result in 0, if there were no bit errors<br>
 
- Data rate: 97.600 kbit/s  
- Sync word: 0xe712, e.g. using match=aae712 to eliminate false syncs  
-
+ Data rate: 97.600 kbit/s<br>
+ Sync word: 0xe712, e.g. using match=aae712 to eliminate false syncs<br>
 <pre>
- Message Formats (after sync word):  
- ***********************************************  
- Outdoor temp/hum sensor data message:  
- every 50 seconds  
- example:  
- 0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 // byte number  
- 19 01 5a 91 02 7d ad 57 0d 00 00 00 00 00 00 00 00 35 00 00 00 00 76 00 01 58 69 3c // data  
- |                                                                           |  
-  ----------------------------------------------------------------------------- CRC16 range  
+ Message Formats (after sync word):
 
- Byte  0            length of message in bytes, 0x19 = 25 bytes  
- Byte  1 - 4        TBD, ID or address, never changing  
- Byte  5            TBD, status information  
- Byte  6            RF signal strength from base (db), signed byte, 0xad = -83 dB, 0x88 = no signal  
- Byte  8 + 7        Battery voltage (0.5 mV), signed short, 0x0d57 = 3415 => 6830 mV  
- Byte  9 - 16       TBD  
- Byte 17            firmware version, 0x35 = 53  
- Byte 18 - 21       TBD  
- Byte 23 + 22       Temperature (0.1 deg C ), signed short, 0x0076 = 118 => 11.8 deg C  
- Byte 24            TBD  
- Byte 25            Relative Humidity in %, unsigned byte, 0x58 = 88 => 88 %  
- Byte 26 + 27       CRC16 with poly=0x8005 and init=0xffff over all data bytes after sync, 26 bytes  
+ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ Outdoor temp/hum sensor data message:
+ every 50 seconds
+ example:
+ 0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 // byte number
+ 19 01 5a 91 02 7d ad 57 0d 00 00 00 00 00 00 00 00 35 00 00 00 00 76 00 01 58 69 3c // data
+ |                                                                           |
+  ----------------------------------------------------------------------------- CRC16 range
 
- ***********************************************  
- Outdoor temp/hum sensor status message:  
- every 6 seconds  
- example:  
- 0  1  2  3  4  5  6  7  8   // byte number  
- 06 01 5a 91 02 7d ad e5 2a // data  
- |                  |  
-  -------------------- CRC16 range  
+ Byte  0            length of message in bytes, 0x19 = 25 bytes
+ Byte  1 - 4        TBD, ID or address, never changing
+ Byte  5            TBD, status information
+ Byte  6            RF signal strength from base (db), signed byte, 0xad = -83 dB, 0x88 = no signal
+ Byte  8 + 7        Battery voltage (0.5 mV), signed short, 0x0d57 = 3415 => 6830 mV
+ Byte  9 - 16       TBD
+ Byte 17            firmware version, 0x35 = 53
+ Byte 18 - 21       TBD
+ Byte 23 + 22       Temperature (0.1 deg C ), signed short, 0x0076 = 118 => 11.8 deg C
+ Byte 24            TBD
+ Byte 25            Relative Humidity in %, unsigned byte, 0x58 = 88 => 88 %
+ Byte 26 + 27       CRC16 with poly=0x8005 and init=0xffff over all data bytes after sync, 26 bytes
 
- Byte  0            length of message in bytes, 0x19 = 25 bytes  
- Byte  1 - 4        TBD, ID or address, never changing  
- Byte  5            TBD, status information  
- Byte  6            RF signal strength from base (in dB), signed byte, 0xad = -83 dB, 0x88 = no signal  
- Byte  7 + 8        CRC16 with poly=0x8005 and init=0xffff over all data bytes after sync, 7 bytes  
+ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ Outdoor temp/hum sensor status message:
+ every 6 seconds
+ example:
+ 0  1  2  3  4  5  6  7  8   // byte number
+ 06 01 5a 91 02 7d ad e5 2a // data
+ |                  |
+  -------------------- CRC16 range
 
- ***********************************************  
- Outdoor wind sensor data message:  
- every 6 seconds  
- example:  
- 0                   1                   2                   3                   4                   5  
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1  // byte number  
- 31015a910300bf161800000000000000001b000000000000022900e4ffd2fff0ff118e1f2a008e1f2a0067ae2900c4af2900a152 // data  
- |                                                                                                  |  
-  ---------------------------------------------------------------------------------------------------- CRC16 range  
+ Byte  0            length of message in bytes, 0x19 = 25 bytes
+ Byte  1 - 4        TBD, ID or address, never changing
+ Byte  5            TBD, status information
+ Byte  6            RF signal strength from base (in dB), signed byte, 0xad = -83 dB, 0x88 = no signal
+ Byte  7 + 8        CRC16 with poly=0x8005 and init=0xffff over all data bytes after sync, 7 bytes
 
- Byte  0            length of message in bytes, 0x31 = 49 bytes  
- Byte  1 - 4        TBD, ID or address, never changing  
- Byte  5            TBD, status information  
- Byte  6            RF signal strength from base (db), signed byte, 0xbf = -65 dB, 0x88 = no signal  
- Byte  8 + 7        Battery voltage (1 mV), signed short, 0x1816 = 6166 => 6166 mV  
- Byte  9 - 16       TBD  
- Byte  17           firmware version  
- Byte  18 - 24      TBD  
- Byte 25 + 26       raw 315° windcomponent measurement in 0.1 km/h, short integer little endin  
- Byte 27 + 28       raw 315° windcomponent measurement in 0.1 km/h, short integer little endia  
- Byte 29 + 30       raw 45° windcomponent measurement in 0.1 km/h, short integer little endia  
- Byte 31 + 32       raw 45° windcomponent measurement in 0.1 km/h, short integer little endia  
- Byte 32 - 49       TBD  
- Byte 50 + 51       CRC16 with poly=0x8005 and init=0xffff over all data bytes after sync, 50 bytes  
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ Outdoor wind sensor data message:
+ every 6 seconds
+ example:
+ 0                   1                   2                   3                   4                   5
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1  // byte number
+ 31015a910300bf161800000000000000001b000000000000022900e4ffd2fff0ff118e1f2a008e1f2a0067ae2900c4af2900a152 // data
+ |                                                                                                  |
+  ---------------------------------------------------------------------------------------------------- CRC16 range
 
- ***********************************************  
- base station request message:  
- every 6 seconds  
- example:  
- 0  1  2  3  4  5  6  7  8  9  10  // byte number  
- 08 00 5A 90 7E 02 B0 03 B1 80 03  // data  
- |                        |  
-  -------------------------- CRC16 range  
+ Byte  0            length of message in bytes, 0x31 = 49 bytes
+ Byte  1 - 4        TBD, ID or address, never changing
+ Byte  5            TBD, status information
+ Byte  6            RF signal strength from base (db), signed byte, 0xbf = -65 dB, 0x88 = no signal
+ Byte  8 + 7        Battery voltage (1 mV), signed short, 0x1816 = 6166 => 6166 mV
+ Byte  9 - 16       TBD
+ Byte  17           firmware version
+ Byte  18 - 24      TBD
+ Byte 25 + 26       raw 315° windcomponent measurement in 0.1 km/h, short integer little endin
+ Byte 27 + 28       raw 315° windcomponent measurement in 0.1 km/h, short integer little endia
+ Byte 29 + 30       raw 45° windcomponent measurement in 0.1 km/h, short integer little endia
+ Byte 31 + 32       raw 45° windcomponent measurement in 0.1 km/h, short integer little endia
+ Byte 32 - 49       TBD
+ Byte 50 + 51       CRC16 with poly=0x8005 and init=0xffff over all data bytes after sync, 50 bytes
 
- Byte  0            length of message in bytes, 0x08 = 8 bytes  
- Byte  1 - 4        TBD, ID or address, never changing  
- Byte  5            requested module id (02 = TH module)  
- Byte  6            RF signal strength of requested module (db), signed byte, 0xb0 = -80 dB, 0x88 = no signal  
- Byte  7            requested module id (03 = anemometer)  
- Byte  8            RF signal strength of requested module (db), signed byte, 0xb1 = -79 dB, 0x88 = no signal  
- Byte  9 + 10       CRC16 with poly=0x8005 and init=0xffff over all data bytes after sync, 9 bytes  
+ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ base station request message:
+ every 6 seconds
+ example:
+ 0  1  2  3  4  5  6  7  8  9  10  // byte number
+ 08 00 5A 90 7E 02 B0 03 B1 80 03  // data
+ |                        |
+  -------------------------- CRC16 range
+
+ Byte  0            length of message in bytes, 0x08 = 8 bytes
+ Byte  1 - 4        TBD, ID or address, never changing
+ Byte  5            requested module id (02 = TH module)
+ Byte  6            RF signal strength of requested module (db), signed byte, 0xb0 = -80 dB, 0x88 = no signal
+ Byte  7            requested module id (03 = anemometer)
+ Byte  8            RF signal strength of requested module (db), signed byte, 0xb1 = -79 dB, 0x88 = no signal
+ Byte  9 + 10       CRC16 with poly=0x8005 and init=0xffff over all data bytes after sync, 9 bytes
+
+ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 </pre>
+To get all raw messages from all NetAtmo sensors:<br>
+rtl_433 -f 868.95M -s 300k  -R - -X 'n=netatmoTHW,m=FSK_PCM,s=8.5,l=8.5,r=800,preamble=aaaae712,match=e712' -M level<br>
 
- ***********************************************  
-To get all raw messages from all NetAtmo sensors:  
-rtl_433 -f 868.95M -s 300k  -R - -X 'n=netatmoTHW,m=FSK_PCM,s=8.5,l=8.5,r=800,preamble=aaaae712,match=e712' -M level  
-
-  e.g. use "match=e71219" to get only the TH data message  
+  e.g. use "match=e71219" to get only the TH data message<br>
 
 */
 
