@@ -947,8 +947,8 @@ r_device *flex_create_device(char *spec)
             params->L = luaL_newstate();
             luaL_openlibs(params->L);
             if (luaL_dofile(params->L, val) != LUA_OK) {
-	        fprintf(stderr, "Bad lua code: %s\n", lua_tostring(params->L, -1));
-		usage();
+                fprintf(stderr, "Bad lua code: %s\n", lua_tostring(params->L, -1));
+                usage();
             }
 #endif
         } else {
