@@ -12,12 +12,38 @@ used when the `get` argument is insufficient.
 
 This extension is only built if the LUA 5.4 development environment is installed.
 
-## Configuration
+## Configuration -- LUA file
 
 The flex decoder definition now takes an extra `lua` argument whose value is a filename containing the LUA code. If there
 are multiple flex decoders, each of them can have their own individual files. If the LUA code file contains `require`
 statements, then care should be taken as to the working directory of the `rtl_433` daemon. It may make sense to make
 this the `/etc/rtl_433` directory.
+
+It may prove easier to develop the LUA code by referencing a file, and then use the `luacode` option if the decoder
+definition is to be distributed (i.e. it is all in a single file).
+
+## Configuration -- inline LUA code
+
+The flex decoder definition now takes an extra `luacode` argument whose value is the LUA code to run. Note that some
+careful escaping is required. In particular, the `decoder` must be declared using the { } syntax:
+
+```
+decoder {
+    name=wierdthing,
+    <other arguments>,
+    luacode=[[
+    ]]
+}
+```
+
+Note that the closing `}` and `]]` must be at the end of lines. The `}` requirement poses some problems for LUA code
+as the phrase `local result = {}` which would otherwise close the `{`. However, this line can be modified to read `local result = {} --`
+and this solves the quoting issue (by adding an empty LUA comment).
+If the LUA code file contains `require`
+statements, then care should be taken as to the working directory of the `rtl_433` daemon. It may make sense to make
+this the `/etc/rtl_433` directory. In any case, it means that distributing the decoder definition now requires the externally
+required file to be distributed as well.
+
 
 ## `bitbuffer` argument
 

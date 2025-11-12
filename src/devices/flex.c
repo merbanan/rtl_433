@@ -848,7 +848,7 @@ r_device *flex_create_device(char *spec)
     dev->fields = output_fields;
 
     char *key, *val;
-    while (getkwargs(&spec, &key, &val)) {
+    while (getkwargswithvalescape(&spec, &key, &val)) {
         key = remove_ws(key);
         val = trim_ws(val);
 
@@ -943,10 +943,19 @@ r_device *flex_create_device(char *spec)
                 usage();
             }
 #ifdef HAS_LUA
-        } else if (!strcasecmp(key, "lua")) {
+        }
+        else if (!strcasecmp(key, "luacode")) {
             params->L = luaL_newstate();
             luaL_openlibs(params->L);
-            if (luaL_dofile(params->L, val) != LUA_OK) {
+            if (!val || luaL_dostring(params->L, val) != LUA_OK) {
+                fprintf(stderr, "Bad lua code: %s\n", lua_tostring(params->L, -1));
+                usage();
+            }
+        }
+        else if (!strcasecmp(key, "lua")) {
+            params->L = luaL_newstate();
+            luaL_openlibs(params->L);
+            if (!val || luaL_dofile(params->L, val) != LUA_OK) {
                 fprintf(stderr, "Bad lua code: %s\n", lua_tostring(params->L, -1));
                 usage();
             }
