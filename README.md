@@ -454,8 +454,8 @@ Available options are:
 	preamble=<bits> : match and align at the <bits> preamble
 		<bits> is a row spec of {<bit count>}<bits as hex number>
 	unique : suppress duplicate row output
-
 	countonly : suppress detailed row output
+	lua : a filename containing a lua script defining validate and/or encode functions
 
 E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repeats>=3"
 

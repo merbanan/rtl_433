@@ -187,6 +187,30 @@ else()
 endif()
 
 ########################################################################
+# Find LUA dependencies
+########################################################################
+# 🚀 Find Lua 5.4
+# The FindLua module will set variables like Lua_FOUND, LUA_INCLUDE_DIR, and LUA_LIBRARIES.
+find_package(Lua 5.4 QUIET)
+
+# Check if the library was found
+if(Lua_FOUND)
+    message(STATUS "Found Lua ${Lua_VERSION}: ${LUA_LIBRARIES}")
+
+    # Set the preprocessor definition -DHAS_LUA=1 for C/C++ source code
+    # PUBLIC visibility means targets linked to 'your_project_target' will also see this definition.
+    ADD_DEFINITIONS(-DHAS_LUA)
+
+    # Link the target with the found Lua libraries
+    list(APPEND SDR_LIBRARIES ${LUA_LIBRARIES})
+
+    # Add the necessary include directories
+    include_directories(${LUA_INCLUDE_DIR})
+else()
+    message(STATUS "Lua 5.4 not found. Build will proceed without Lua support.")
+endif()
+
+########################################################################
 # Find OpenSSL build dependencies
 ########################################################################
 set(ENABLE_OPENSSL AUTO CACHE STRING "Enable OpenSSL TLS support")
