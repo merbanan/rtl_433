@@ -9,7 +9,7 @@
     (at your option) any later version.
 */
 /**
-LaCrosse Technology View LTV-TH3 & LTV-TH2 Thermo/Hygro Sensor.
+LaCrosse Technology View LTV-TH3, LTV-TH2 and LTV-TH2i Thermo/Hygro Sensor.
 
 LaCrosse Color Forecast Station (model S84060) utilizes the remote
 Thermo/Hygro LTV-TH3 and LTV-WR1 multi sensor (wind spd/dir and rain).
@@ -21,6 +21,7 @@ https://www.lacrossetechnology.com/products/S84060
 https://www.lacrossetechnology.com/products/ltv-th3
 https://www.lacrossetechnology.com/products/C84343
 https://www.lacrossetechnology.com/products/ltv-th2
+https://www.lacrossetechnology.com/products/ltv-th2i
 
 Specifications:
 - Outdoor Temperature Range: -40 C to 60 C
@@ -43,7 +44,7 @@ CMT2119A and CMT2219A.
 Protocol Specification:
 
 Data bits are NRZ encoded.  Logical 1 and 0 bits are 104us in
-length for the LTV-TH3 and 107us for the LTV-TH2.
+length for the LTV-TH3 and 107us for the LTV-TH2/2i.
 
 LTV-TH3
     SYNC:32h ID:24h ?:4b SEQ:3b ?:1b TEMP:12d HUM:12d CHK:8h END:
@@ -58,6 +59,15 @@ Sequence# 2 & 6
 Sequence# 0,1,3,4,5 & 7
     CHK is CRC-8 poly 0x31 init 0xac over 7 bytes following SYN
 
+LTV-TH2i
+    SYNC:32h ID:24h ?:4b SEQ:3b ?:1b TEMP:12d HUM:12d CHK:8h TRAILER:96h
+
+    CHK is CRC-8 poly 0x31 init (0x00 or 0xb2) over 7 bytes following SYN
+    The CRC init value for a given packet is seemingly arbitrary, though it
+    appears that the same init value is used for at most three packets in a row
+    before switching.
+
+    TRAILER is 0xd2d2d2d2d200000000000000...
 
 */
 
@@ -70,7 +80,7 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     uint8_t b[11];
     uint32_t id;
-    int flags, seq, offset, chk3, chk2, model_num;
+    int flags, seq, offset, chk3, chk2, chk2i, model_num;
     int raw_temp, humidity;
     float temp_c;
 
@@ -101,10 +111,11 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, 0, offset, b, 8 * 8);
 
     // failing the CRC checks indicates the packet is corrupt <OR>
-    // this is not a LTV-TH3 or LTV-TH2 sensor
+    // this is not a LTV-TH sensor
     chk3 = crc8(b, 8, 0x31, 0x00);
     chk2 = crc8(b, 8, 0x31, 0xac);
-    if (chk3 != 0 && chk2 != 0) {
+    chk2i = crc8(b, 8, 0x31, 0xb2);
+    if (chk3 != 0 && chk2 != 0 && chk2i != 0) {
         decoder_log(decoder, 1, __func__, "CRC failed!");
         return DECODE_FAIL_MIC;
     }
