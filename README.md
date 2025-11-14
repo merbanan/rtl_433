@@ -375,6 +375,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [287]  Fine Offset Electronics WS85 weather station
     [288]  Oria WA150KM freezer and fridge thermometer
     [289]  Voltcraft EnergyCount 3000 (ec3k)
+    [290]  LaCrosse Technology View LTV-WSDR1 Cyclone Wind and Rain Sensor
 
 * Disabled by default, use -R n or a conf file to enable
 

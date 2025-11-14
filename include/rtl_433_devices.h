@@ -297,6 +297,7 @@
     DECL(fineoffset_ws85) \
     DECL(oria_wa150km) \
     DECL(ec3k) \
+    DECL(lacrosse_wsdr1) \
 
     /* Add new decoders here. */
 
