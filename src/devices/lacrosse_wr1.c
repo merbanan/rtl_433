@@ -9,14 +9,20 @@
     (at your option) any later version.
 */
 /**
-LaCrosse Technology View LTV-WR1 Multi Sensor.
+LaCrosse Technology View LTV-WR1 Multi Sensor,
+LTV-WSDR1 Cyclone Wind and Rain Sensor.
 
 LaCrosse Color Forecast Station (model S84060?) utilizes the remote
 Thermo/Hygro LTV-TH3 and LTV-WR1 multi sensor (wind spd/dir and rain).
 
+Both models of sensor have the same specifications and transmit the same data
+format. The only apparent differences are in the bit width and the number of
+padding bits surrounding the packet.
+
 Product pages:
 https://www.lacrossetechnology.com/products/S84060
 https://www.lacrossetechnology.com/products/ltv-wr1
+https://www.lacrossetechnology.com/products/ltv-wsdr1
 
 Specifications:
 - Wind Speed Range: 0 to 188 kmh
@@ -39,9 +45,10 @@ capabilities of the CMT2119A and CMT2219A.
 
 Protocol Specification:
 
-Data bits are NRZ encoded with logical 1 and 0 bits 104us in length.
+Data bits are NRZ encoded with logical 1 and 0 bits 104us in length for LTV-WR1
+and 107us for LTV-WSDR1.
 
-LTV-WR1
+LTV-WR1, LTV-WSDR1
     SYN:32h ID:24h ?:4b SEQ:3d ?:1b WSPD:12d WDIR:12d RAIN1:12d RAIN2:12d CHK:8h
 
     CHK is CRC-8 poly 0x31 init 0x00 over 10 bytes following SYN
@@ -50,7 +57,12 @@ LTV-WR1
 
 #include "decoder.h"
 
-static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+struct model {
+    const char *name;
+    uint16_t min_bits_per_row, max_bits_per_row;
+};
+
+static int _lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer, const struct model *model)
 {
     uint8_t const preamble_pattern[] = {0xd2, 0xaa, 0x2d, 0xd4};
 
@@ -60,15 +72,17 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int flags, seq, offset, chk;
     int raw_wind, direction, raw_rain1, raw_rain2;
     float speed_kmh;
-    // float rain_mm;
+    float rain_in, prev_rain_in;
 
-    if (bitbuffer->bits_per_row[0] < 120) {
+    if (bitbuffer->bits_per_row[0] < model->min_bits_per_row) {
         decoder_logf(decoder, 1, __func__, "Packet too short: %d bits", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH;
-    } else if (bitbuffer->bits_per_row[0] > 156) {
+    }
+    else if (bitbuffer->bits_per_row[0] > model->max_bits_per_row) {
         decoder_logf(decoder, 1, __func__, "Packet too long: %d bits", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH;
-    } else {
+    }
+    else {
         decoder_logf(decoder, 1, __func__, "packet length: %d", bitbuffer->bits_per_row[0]);
     }
 
@@ -102,19 +116,21 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (speed_kmh < 0 || speed_kmh > 200 || direction < 0 || direction > 360)
         return DECODE_FAIL_SANITY;
 
-    //rain_mm   = 0.0;  // dummy until we know what raw_rain1 and raw_rain2 mean
+    // this packet's rain2 is the previous packet's rain1
+    rain_in      = raw_rain1 * 0.01f;
+    prev_rain_in = raw_rain2 * 0.01f;
 
     /* clang-format off */
     data = data_make(
-            "model",            "",                 DATA_STRING, "LaCrosse-WR1",
-            "id",               "Sensor ID",        DATA_FORMAT, "%06x", DATA_INT, id,
-            "seq",              "Sequence",         DATA_INT,     seq,
-            "flags",            "unknown",          DATA_INT,     flags,
-            "wind_avg_km_h",        "Wind speed",       DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
-            "wind_dir_deg",     "Wind direction",   DATA_INT,    direction,
-            "rain1",            "raw_rain1",        DATA_FORMAT, "%03x", DATA_INT, raw_rain1,
-            "rain2",            "raw_rain2",        DATA_FORMAT, "%03x", DATA_INT, raw_rain2,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
+            "model",            "",                  DATA_STRING, model->name,
+            "id",               "Sensor ID",         DATA_FORMAT, "%06x",       DATA_INT, id,
+            "seq",              "Sequence",          DATA_INT,    seq,
+            "flags",            "unknown",           DATA_COND,   flags,        DATA_INT, flags,
+            "wind_avg_km_h",    "Wind speed",        DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
+            "wind_dir_deg",     "Wind direction",    DATA_INT,    direction,
+            "rain_in",          "Total rain",        DATA_FORMAT, "%.2f in",    DATA_DOUBLE, rain_in,
+            "prev_rain_in",     "Total rain (prev)", DATA_FORMAT, "%.2f in",    DATA_DOUBLE, prev_rain_in,
+            "mic",              "Integrity",         DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -129,11 +145,22 @@ static char const *const output_fields[] = {
         "flags",
         "wind_avg_km_h",
         "wind_dir_deg",
-        "rain1",
-        "rain2",
+        "rain_in",
+        "prev_rain_in",
         "mic",
         NULL,
 };
+
+static const struct model lacrosse_wr1_model = {
+        .name             = "LaCrosse-WR1",
+        .min_bits_per_row = 120,
+        .max_bits_per_row = 156,
+};
+
+static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    return _lacrosse_wr1_decode(decoder, bitbuffer, &lacrosse_wr1_model);
+}
 
 // flex decoder m=FSK_PCM, s=104, l=104, r=9600
 r_device const lacrosse_wr1 = {
@@ -143,5 +170,27 @@ r_device const lacrosse_wr1 = {
         .long_width  = 104,
         .reset_limit = 9600,
         .decode_fn   = &lacrosse_wr1_decode,
+        .fields      = output_fields,
+};
+
+static const struct model lacrosse_wsdr1_model = {
+        .name             = "LaCrosse-WSDR1",
+        .min_bits_per_row = 200,
+        .max_bits_per_row = 224,
+};
+
+static int lacrosse_wsdr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    return _lacrosse_wr1_decode(decoder, bitbuffer, &lacrosse_wsdr1_model);
+}
+
+// flex decoder m=FSK_PCM, s=107, l=107, r=9600
+r_device const lacrosse_wsdr1 = {
+        .name        = "LaCrosse Technology View LTV-WSDR1 Cyclone Wind and Rain Sensor",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 107,
+        .long_width  = 107,
+        .reset_limit = 9600,
+        .decode_fn   = &lacrosse_wsdr1_decode,
         .fields      = output_fields,
 };
