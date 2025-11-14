@@ -72,7 +72,7 @@ static int _lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer, const
     int flags, seq, offset, chk;
     int raw_wind, direction, raw_rain1, raw_rain2;
     float speed_kmh;
-    // float rain_mm;
+    float rain_in, prev_rain_in;
 
     if (bitbuffer->bits_per_row[0] < model->min_bits_per_row) {
         decoder_logf(decoder, 1, __func__, "Packet too short: %d bits", bitbuffer->bits_per_row[0]);
@@ -116,19 +116,21 @@ static int _lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer, const
     if (speed_kmh < 0 || speed_kmh > 200 || direction < 0 || direction > 360)
         return DECODE_FAIL_SANITY;
 
-    //rain_mm   = 0.0;  // dummy until we know what raw_rain1 and raw_rain2 mean
+    // this packet's rain2 is the previous packet's rain1
+    rain_in      = raw_rain1 * 0.01f;
+    prev_rain_in = raw_rain2 * 0.01f;
 
     /* clang-format off */
     data = data_make(
-            "model",            "",                 DATA_STRING, model->name,
-            "id",               "Sensor ID",        DATA_FORMAT, "%06x", DATA_INT, id,
-            "seq",              "Sequence",         DATA_INT,     seq,
-            "flags",            "unknown",          DATA_INT,     flags,
-            "wind_avg_km_h",        "Wind speed",       DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
-            "wind_dir_deg",     "Wind direction",   DATA_INT,    direction,
-            "rain1",            "raw_rain1",        DATA_FORMAT, "%03x", DATA_INT, raw_rain1,
-            "rain2",            "raw_rain2",        DATA_FORMAT, "%03x", DATA_INT, raw_rain2,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
+            "model",            "",                  DATA_STRING, model->name,
+            "id",               "Sensor ID",         DATA_FORMAT, "%06x",       DATA_INT, id,
+            "seq",              "Sequence",          DATA_INT,    seq,
+            "flags",            "unknown",           DATA_COND,   flags,        DATA_INT, flags,
+            "wind_avg_km_h",    "Wind speed",        DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
+            "wind_dir_deg",     "Wind direction",    DATA_INT,    direction,
+            "rain_in",          "Total rain",        DATA_FORMAT, "%.2f in",    DATA_DOUBLE, rain_in,
+            "prev_rain_in",     "Total rain (prev)", DATA_FORMAT, "%.2f in",    DATA_DOUBLE, prev_rain_in,
+            "mic",              "Integrity",         DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -143,8 +145,8 @@ static char const *const output_fields[] = {
         "flags",
         "wind_avg_km_h",
         "wind_dir_deg",
-        "rain1",
-        "rain2",
+        "rain_in",
+        "prev_rain_in",
         "mic",
         NULL,
 };
