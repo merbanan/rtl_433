@@ -375,6 +375,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [287]  Fine Offset Electronics WS85 weather station
     [288]  Oria WA150KM freezer and fridge thermometer
     [289]  Voltcraft EnergyCount 3000 (ec3k)
+    [290]  Orion Endpoint from Badger Meter, GIF2020OCECNA, water meter, hopping from 904.4 Mhz to 924.6Mhz (-s 1600k)
 
 * Disabled by default, use -R n or a conf file to enable
 
