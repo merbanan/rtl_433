@@ -299,7 +299,7 @@
     DECL(ec3k) \
     DECL(orion_endpoint_2020)
 
-/* Add new decoders here. */
+    /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
 DEVICES
