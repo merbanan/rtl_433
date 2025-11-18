@@ -23,7 +23,7 @@ Then follow 40 bits:
     one : hi 348us, lo 642us
 
 This is OOK_PULSE_PWM encoding.  The frame is erroneously interpred as a bit (so bitbuffer_t reports
-41 bits rather than 40).  We discard this bit during recording.  The last frame erroneosly picks up
+41 bits rather than 40).  We discard this bit during recording.  The last frame erroneously picks up
 an extra bit at the end; we ignore this as well.
 
 Packet interpretation:
