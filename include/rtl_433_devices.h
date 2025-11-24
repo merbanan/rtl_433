@@ -297,7 +297,7 @@
     DECL(fineoffset_ws85) \
     DECL(oria_wa150km) \
     DECL(ec3k) \
-    DECL(orion_endpoint_2020)
+    DECL(orion_endpoint_2020) \
 
     /* Add new decoders here. */
 
