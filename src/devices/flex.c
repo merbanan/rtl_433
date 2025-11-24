@@ -431,10 +431,8 @@ static int flex_lua_getbits(lua_State *L) {
         luaL_error(L, "Invalid offset");
     }
 
-    int width = flex_lua_get_value(L, 2, "width", -1);
-    if (width < 0) {
-        luaL_error(L, "Invalid width");
-    }
+    // Width defaults to 1
+    int width = flex_lua_get_value(L, 2, "width", 1);
 
     int issigned = flex_lua_get_value(L, 2, "signed", 0);
 
@@ -446,8 +444,15 @@ static int flex_lua_getbits(lua_State *L) {
 
     int result_bits = 0;
 
+    if (width < 0) {
+        // Realign to the start and flip the value bit order
+        offset += width + 1;
+        width = -width;
+        little_endian_value = !little_endian_value;
+    }
+
     if ((size_t) (offset + width) > bit_len) {
-        luaL_error(L, "Offset + width is too large for this string");
+        luaL_error(L, "Bitfield outside this string");
     }
 
     while (width > 0) {
