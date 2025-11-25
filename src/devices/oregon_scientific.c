@@ -702,15 +702,17 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
             decoder_logf(decoder, 1, __func__, "THGR810 failed value sanity check: temp %.1fC hum %d%%.", temp_c, humidity);
             return DECODE_FAIL_SANITY;
         }
+        int tx_button = msg[0] & 1; // unused sensor id bits
 
         /* clang-format off */
         data_t *data = data_make(
-                "model",                    "",                     DATA_STRING, "Oregon-THGR810",
-                "id",                         "House Code", DATA_INT,        device_id,
-                "channel",                "Channel",        DATA_INT,        channel,
-                "battery_ok",          "Battery",         DATA_INT,    !battery_low,
-                "temperature_C",    "Celsius",        DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-                "humidity",             "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
+                "model",            "",             DATA_STRING, "Oregon-THGR810",
+                "id",               "House Code",   DATA_INT,    device_id,
+                "channel",          "Channel",      DATA_INT,    channel,
+                "button",           "Button",       DATA_COND,   tx_button, DATA_INT, tx_button,
+                "battery_ok",       "Battery",      DATA_INT,    !battery_low,
+                "temperature_C",    "Celsius",      DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
+                "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 NULL);
         /* clang-format on */
         decoder_output_data(decoder, data);
@@ -978,6 +980,7 @@ static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
+        "button",
         "battery_ok",
         "temperature_C",
         "humidity",
