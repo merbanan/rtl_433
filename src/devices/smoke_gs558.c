@@ -96,7 +96,7 @@ static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     unit = b[0] & 0x1f; // 5 bits
     id = ((b[2] & 0x0f) << 11) | (b[1] << 3) | (b[0] >> 5); // 15 bits
 
-    if (id == 0 || id == 0x7fff)
+    if (id == 0x7fff)
         return DECODE_FAIL_SANITY; // reject min/max to reduce false positives
 
     char code_str[7];
