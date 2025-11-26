@@ -83,7 +83,7 @@ exactly the same as `{4, 8}` except that the `little_endian_value` setting is in
 
 There are two ways to think about numbering bits in a sequence of bytes:
 
-* big-endian-buffer: the first bit (#0) is the *most* significant bit in the first byte. Bit #8 is the *most* significant bit in the second byte.
+* big-endian-buffer: the first bit (#0) is the *most* significant bit in the first byte (0x80). Bit #8 is the *most* significant bit in the second byte.
 * little-endian-buffer: the first bit (#0) is the *least* significant bit in the first byte. Bit #8 is the *least* significant bit in the second byte.
 
 This has implications when cross byte boundaries. The field extraction operator always returns a consecutive sequence of bits according to the endianness above. 
@@ -92,6 +92,8 @@ Once the sequence of bits has been extracted, there are two ways to turn it into
 
 * big-endian-value: the first extracted bit is the *most* significant bit in the returned integer.
 * little-endian-value: the first extracted bit is the *least* significant bit in the returned integer.
+
+The default is that the big-endian-buffer and big-endian-value are set. Note that `rtl_433` maps decoded symbols from RF to bytes by filling the 0x80 bit of the first byte with the first decoded symbol.
 
 
 
