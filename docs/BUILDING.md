@@ -111,7 +111,7 @@ Then install only from packages (version 0.7) or only from source (version 0.8).
 
 To properly configure builds without relying on automatic feature detection you should set all options explicitly, e.g.
 
-    cmake -DENABLE_RTLSDR=ON -DENABLE_SOAPYSDR=ON -DENABLE_OPENSSL=ON -DBUILD_DOCUMENTATION=OFF -DCMAKE_BUILD_TYPE=Release -GNinja -B build
+    cmake -DENABLE_LUA=ON -DENABLE_RTLSDR=ON -DENABLE_SOAPYSDR=ON -DENABLE_OPENSSL=ON -DBUILD_DOCUMENTATION=OFF -DCMAKE_BUILD_TYPE=Release -GNinja -B build
     cmake --build build -j 10
     DESTDIR=/tmp/destdir cmake --build build --target install
 

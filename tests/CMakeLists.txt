@@ -33,6 +33,11 @@ endforeach(testSrc)
 ########################################################################
 add_test(rtl_433_help ../src/rtl_433 -h)
 
+find_package(Lua 5.4 QUIET)
+if (Lua_FOUND)
+    add_test(rtl_433_lua ../src/rtl_433 -r /dev/null -c ../../tests/lua_test.conf)
+endif()
+
 ########################################################################
 # Define style checks
 ########################################################################
