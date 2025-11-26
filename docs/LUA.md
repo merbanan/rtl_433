@@ -62,12 +62,19 @@ It also supports bit index to extract values.
 local s = BitBuffer.new(string.char(0xc5, 0x6a), 16);
 assert(s[{4, 8}] == 0x56, "basic check")
 assert(s[8] == 0, "single bit check")
+assert(s[{11, -8}] == 0x6A, "reversed extract")
 ```
 
 The syntax above is a field extraction operator -- the first value is the bit offset from the start of the message, and the second
 value is the number of bits to extract. You can also include values of `little_endian_buffer`, `little_endian_value`, `signed` as other
 entries in the index table if you want to override the current settings for a single call. To access a single bit, you can
 just provide the offset. This will be interpreted according to the current setting of `:little_endian_buffer(<true/false>)`. 
+
+If the width is negative, then the bit extraction proceeds in the opposite direction. E.g. in the case above, `{11, -8}` means to
+start at bit 11 and work backwards to bit 4 (inclusive). This gives you the bit reversed value to `{4, 8}`. Effectively, `{11, -8}` is
+exactly the same as `{4, 8}` except that the `little_endian_value` setting is inverted. 
+
+
 
 ## Bit ordering
 
