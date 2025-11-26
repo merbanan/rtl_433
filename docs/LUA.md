@@ -75,7 +75,8 @@ just provide the offset. This will be interpreted according to the current setti
 
 If the width is negative, then the bit extraction proceeds in the opposite direction. E.g. in the case above, `{11, -8}` means to
 start at bit 11 and work backwards to bit 4 (inclusive). This gives you the bit reversed value to `{4, 8}`. Effectively, `{11, -8}` is
-exactly the same as `{4, 8}` except that the `little_endian_value` setting is inverted. 
+exactly the same as `{4, 8}` except that the `little_endian_value` setting is inverted. Note that the first number is the starting bit number and
+reversing {o, w} maps to {o + w - 1, -w}.
 
 
 

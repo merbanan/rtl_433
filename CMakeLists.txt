@@ -191,8 +191,11 @@ endif()
 ########################################################################
 # 🚀 Find Lua 5.4
 # The FindLua module will set variables like Lua_FOUND, LUA_INCLUDE_DIR, and LUA_LIBRARIES.
-find_package(Lua 5.4 QUIET)
+set(ENABLE_LUA AUTO CACHE STRING "Enable Flex LUA support")
+set_property(CACHE ENABLE_LUA PROPERTY STRINGS AUTO ON OFF)
+if(ENABLE_LUA) # AUTO / ON
 
+find_package(Lua 5.4 QUIET)
 # Check if the library was found
 if(Lua_FOUND)
     message(STATUS "Found Lua ${Lua_VERSION}: ${LUA_LIBRARIES}")
@@ -206,8 +209,14 @@ if(Lua_FOUND)
 
     # Add the necessary include directories
     include_directories(${LUA_INCLUDE_DIR})
+elseif(ENABLE_LUA STREQUAL "AUTO")
+    message(STATUS "LUA development files not found, Flex LUA won't be possible.")
 else()
-    message(STATUS "Lua 5.4 not found. Build will proceed without Lua support.")
+    message(FATAL_ERROR "LUA development files not found.")
+endif()
+
+else()
+    message(STATUS "Flex LUA disabled.")
 endif()
 
 ########################################################################
