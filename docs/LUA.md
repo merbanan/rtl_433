@@ -22,6 +22,9 @@ this the `/etc/rtl_433` directory.
 It may prove easier to develop the LUA code by referencing a file, and then use the `luacode` option if the decoder
 definition is to be distributed (i.e. it is all in a single file).
 
+> [NOTE!]
+> You can have multiple decoders using LUA code. Each decoder uses its own environment and there is no sharing of anything between different decoders.
+
 ## Configuration -- inline LUA code
 
 The flex decoder definition now takes an extra `luacode` argument whose value is the LUA code to run. Note that some
