@@ -61,11 +61,29 @@ It also supports bit index to extract values.
 ```lua
 local s = BitBuffer.new(string.char(0xc5, 0x6a), 16);
 assert(s[{4, 8}] == 0x56, "basic check")
+assert(s[8] == 0, "single bit check")
 ```
 
 The syntax above is a field extraction operator -- the first value is the bit offset from the start of the message, and the second
 value is the number of bits to extract. You can also include values of `little_endian_buffer`, `little_endian_value`, `signed` as other
-entries in the index table if you want to override the current settings for a single call.
+entries in the index table if you want to override the current settings for a single call. To access a single bit, you can
+just provide the offset. This will be interpreted according to the current setting of `:little_endian_buffer(<true/false>)`. 
+
+## Bit ordering
+
+There are two ways to think about numbering bits in a sequence of bytes:
+
+* big-endian-buffer: the first bit (#0) is the *most* significant bit in the first byte. Bit #8 is the *most* significant bit in the second byte.
+* little-endian-buffer: the first bit (#0) is the *least* significant bit in the first byte. Bit #8 is the *least* significant bit in the second byte.
+
+This has implications when cross byte boundaries. The field extraction operator always returns a consecutive sequence of bits according to the endianness above. 
+
+Once the sequence of bits has been extracted, there are two ways to turn it into an integer:
+
+* big-endian-value: the first extracted bit is the *most* significant bit in the returned integer.
+* little-endian-value: the first extracted bit is the *least* significant bit in the returned integer.
+
+
 
 ## `validate` details
 
@@ -136,20 +154,21 @@ returns an integer which is the value of the selected, consecutive, bits. The ta
 * `little_endian_value`: a boolesn set to true if the result is to be treated as little endian.
 * `signed`: a boolean to indicate if the returned value should be signed.
 
-The `getbits` method treats the supplied bitbuffer as a sequence of bits. By default, the most significant bit of the first byte is considered to be bit 0. If the `little_endian_buffer` is set to true, then the least significant bit of the first byte is considered to be bit 0.
-
-Once the required number of consecutive bits have been extracted, they are converted to an integer. By default, the first bit extracted is the bit with the highest value in the returned integer. If the `little_endian_value` is set, then the first bit extracted is the `1` bit in the returned integer.
+The `getbits` method treats the supplied bitbuffer as a sequence of bits according to the `little_endian_buffer` setting. 
+Once the required number of consecutive bits have been extracted, they are converted to an integer according to the `little_endian_value` setting.
 
 ## BitBuffer.new
 
 This function creates a new `BitBuffer`. It is called with two arguments:
 
-* A string containing the bytes of the packet
+* A string containing the bytes of the packet or another BitBuffer object.
 * An integer indicating the number of bits in the packet.
 
 It is an error if the number of bits exceeds the size of the string.
 
 Two `BitBuffer` objects compare equal if they both have the same data string and bit length.
+
+The `tostring` function converts a `BitBuffer` to the string that it was created with. 
 
 ## Debugging
 
