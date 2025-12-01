@@ -13,6 +13,7 @@
 #include "pulse_data.h"
 #include "rfraw.h"
 #include "r_util.h"
+#include "logger.h"
 #include "fatal.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -119,7 +120,7 @@ void pulse_data_print_vcd(FILE *file, pulse_data_t const *data, int ch_id)
         chk_ret(fprintf(file, "#%.f 0/\n", pos * scale));
 }
 
-void pulse_data_load(FILE *file, pulse_data_t *data, uint32_t sample_rate)
+void pulse_data_load(FILE *file, struct timeval *now, pulse_data_t *data, uint32_t sample_rate)
 {
     char s[1024];
     int i    = 0;
@@ -136,6 +137,12 @@ void pulse_data_load(FILE *file, pulse_data_t *data, uint32_t sample_rate)
         }
         if (!strncmp(s, ";freq2", 6)) {
             data->freq2_hz = strtol(s + 6, NULL, 10);
+        }
+        if (!strncmp(s, ";received ", 10)) {
+            const char* tail = parse_time_str(s + 10, now);
+            if (!tail) {
+                print_logf(LOG_WARNING, __func__, "failed to parse received time `%s`", s + 10);
+            }
         }
         if (*s == ';') {
             if (i) {
