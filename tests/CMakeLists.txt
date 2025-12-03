@@ -33,9 +33,16 @@ endforeach(testSrc)
 ########################################################################
 add_test(rtl_433_help ../src/rtl_433 -h)
 
+if(ENABLE_LUA) # AUTO / ON
+
 find_package(Lua 5.4 QUIET)
-if (Lua_FOUND)
+# Check if the library was found
+if(Lua_FOUND)
     add_test(rtl_433_lua ../src/rtl_433 -r /dev/null -c ../../tests/lua_test.conf)
+elseif(ENABLE_LUA STREQUAL "AUTO")
+else()
+    message(FATAL_ERROR "LUA development files not found.")
+endif()
 endif()
 
 ########################################################################
