@@ -35,7 +35,7 @@ add_test(rtl_433_help ../src/rtl_433 -h)
 
 if(ENABLE_LUA) # AUTO / ON
 
-find_package(Lua 5.4 QUIET)
+find_package(Lua 5.3 QUIET)
 # Check if the library was found
 if(Lua_FOUND)
     add_test(rtl_433_lua ../src/rtl_433 -r /dev/null -c ../../tests/lua_test.conf)

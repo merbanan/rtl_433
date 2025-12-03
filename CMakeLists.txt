@@ -189,13 +189,13 @@ endif()
 ########################################################################
 # Find LUA dependencies
 ########################################################################
-# 🚀 Find Lua 5.4
+# 🚀 Find Lua 5.3/5.4
 # The FindLua module will set variables like Lua_FOUND, LUA_INCLUDE_DIR, and LUA_LIBRARIES.
 set(ENABLE_LUA AUTO CACHE STRING "Enable Flex LUA support")
 set_property(CACHE ENABLE_LUA PROPERTY STRINGS AUTO ON OFF)
 if(ENABLE_LUA) # AUTO / ON
 
-find_package(Lua 5.4 QUIET)
+find_package(Lua 5.3 QUIET)
 # Check if the library was found
 if(Lua_FOUND)
     message(STATUS "Found Lua ${Lua_VERSION}: ${LUA_LIBRARIES}")

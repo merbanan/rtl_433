@@ -107,6 +107,26 @@ Purge all SoapySDR packages and source installation from /usr/local.
 Then install only from packages (version 0.7) or only from source (version 0.8).
 :::
 
+## LUA Support
+
+If you want LUA support, then you may need to install the LUA 5.4 development libraries for your platform.
+
+### Debian
+
+`sudo apt install liblua5.4-dev`
+
+### MacOS
+
+`brew install lua`
+
+or
+
+`sudo port install lua5.4`
+
+### Windows
+
+There are problems with installing a recent version of lua as some of the package managers don't have a current version.
+
 ## Package maintainers
 
 To properly configure builds without relying on automatic feature detection you should set all options explicitly, e.g.
