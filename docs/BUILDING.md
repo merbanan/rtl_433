@@ -109,7 +109,7 @@ Then install only from packages (version 0.7) or only from source (version 0.8).
 
 ## LUA Support
 
-If you want LUA support, then you may need to install the LUA 5.4 development libraries for your platform.
+If you want LUA support, then you may need to install the LUA 5.4 or the LUA 5.3 development libraries for your platform.
 
 ### Debian
 
@@ -125,7 +125,7 @@ or
 
 ### Windows
 
-There are problems with installing a recent version of lua as some of the package managers don't have a current version.
+Untested at the moment.
 
 ## Package maintainers
 
@@ -134,6 +134,8 @@ To properly configure builds without relying on automatic feature detection you 
     cmake -DENABLE_LUA=ON -DENABLE_RTLSDR=ON -DENABLE_SOAPYSDR=ON -DENABLE_OPENSSL=ON -DBUILD_DOCUMENTATION=OFF -DCMAKE_BUILD_TYPE=Release -GNinja -B build
     cmake --build build -j 10
     DESTDIR=/tmp/destdir cmake --build build --target install
+
+If you don't want to include the LUA feature, then set `-DENABLE_LUA=OFF` to ensure that the LUA feature is not built even if the libraries are present on the build system.
 
 ## Windows
 
