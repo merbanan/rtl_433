@@ -88,7 +88,7 @@ static int oil_watchman_advanced_decode(r_device *decoder, bitbuffer_t *bitbuffe
         data_t *data = data_make(
                 "model",                "Model",        DATA_STRING, "Oil-SonicAdv",
                 "id",                   "ID",           DATA_FORMAT, "%08d", DATA_INT, serial,
-                "temperature_C",        "Temperature",  DATA_DOUBLE, temperature,
+                "temperature_C",        "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
                 "depth_cm",             "Depth",        DATA_INT,    depth,
                 "status",               "Status",       DATA_FORMAT, "%02x", DATA_INT, status,
                 "mic",                  "Integrity",    DATA_STRING, "CRC",

@@ -66,7 +66,7 @@ static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "rain",             "Rain Count",   DATA_INT,    rain, // TODO: remove this
-            "rain_mm",          "Rain Total",   DATA_DOUBLE, rain * 0.45f,
+            "rain_mm",          "Rain total",   DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain * 0.45f,
             NULL);
     /* clang-format on */
 

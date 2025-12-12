@@ -250,9 +250,9 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "humidity",         "", DATA_FORMAT, "%.1f %%", DATA_DOUBLE, (double)humidity,
             "pressure_hPa",     "", DATA_COND, pressure, DATA_FORMAT, "%d hPa", DATA_INT, pressure,
             //KS200 / KS300
-            "wind_avg_km_h",    "", DATA_COND, is_ksx00, DATA_FORMAT, "%.1f kmh", DATA_DOUBLE, (double)wind,
+            "wind_avg_km_h",    "", DATA_COND, is_ksx00, DATA_FORMAT, "%.1f km/h", DATA_DOUBLE, (double)wind,
             "rain_count",       "", DATA_COND, is_ksx00, DATA_FORMAT, "%d", DATA_INT, rainsum,
-            "rain_mm",          "", DATA_COND, is_ksx00, DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)rainsum * 0.295,
+            "rain_mm",          "", DATA_COND, is_ksx00, DATA_FORMAT, "%.1f mm", DATA_DOUBLE, (double)rainsum * 0.295,
             "is_raining",       "", DATA_COND, is_ksx00, DATA_FORMAT, "%d", DATA_INT, it_rains,
             "unknown",          "", DATA_COND, is_ksx00, DATA_FORMAT, "%d", DATA_INT, unknown,
             NULL);

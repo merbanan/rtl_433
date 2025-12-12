@@ -91,7 +91,7 @@ static int lacrosse_tx34_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id",           "",             DATA_INT,    sensor_id,
                 "battery_ok",   "Battery",      DATA_INT,    !low_batt,
                 "newbattery",   "New battery",  DATA_INT,    new_batt,
-                "rain_mm",      "Total rain",   DATA_DOUBLE, rain_mm,
+                "rain_mm",      "Total rain",   DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
                 "rain_raw",     "Raw rain",     DATA_INT,    rain_tick,
                 "mic",          "Integrity",    DATA_STRING, "CRC",
                 NULL);
