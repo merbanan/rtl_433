@@ -1383,8 +1383,7 @@ static void sighandler(int signum)
     if (signum == SIGPIPE) {
         // NOTE: we already ignore most network SIGPIPE's, this might be a STDOUT/STDERR problem.
         // Printing is likely not the correct way to handle this.
-        write_err("Ignoring received signal SIGPIPE, Broken pipe.\n");
-        return;
+        write_err("Signal SIGPIPE caught, broken pipe, exiting!\n");
     }
     else if (signum == SIGHUP) {
         sig_hup = 1;
