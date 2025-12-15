@@ -15,19 +15,23 @@
 #define SENSOR_TYPE_AIR_PM    8
 #define SENSOR_TYPE_CO2      10
 #define SENSOR_TYPE_HCHO_VOC 11
-#define SENSOR_TYPE_WEATHER2 13
+#define SENSOR_TYPE_WEATHER3 12
+#define SENSOR_TYPE_WEATHER8 13
 
 /**
 Decoder for Bresser Weather Center 7-in-1 and Air quality sensors.
 - Air Quality PM2.5/PM10 PN 7009970
 - CO2 sensor             PN 7009977
 - HCHO/VOC sensor        PN 7009978
+- 3-in-1 Weather Station PN 7002530
 - 8-in-1 Weather Station PN 7003150
 
 See
 https://github.com/merbanan/rtl_433/issues/1492
 and
 https://github.com/merbanan/rtl_433/issues/2693
+and
+https://github.com/merbanan/rtl_433/issues/3424
 
 Preamble:
 
@@ -127,6 +131,10 @@ Data layout de-whitened :
 #2816 Bresser Air Quality sensors, ignore first packet:
     The first signal is not sending the good BCD values , all at 0xF and need to be excluded from result (BCD value can't be > 9) .
 
+Data with empty wind and light fields (from 3-in-1):
+
+    aaaaaaaaaa 2dd4 a6b2bf4b55aac8555555aa3e8f3eabca3355555555555555aa000000000000000000
+
 First two bytes are an LFSR-16 digest, generator 0x8810 key 0xba95 with a final xor 0x6df1, which likely means we got that wrong.
 */
 
@@ -185,7 +193,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int flags       = (msg[15] & 0x0f);
     int battery_low = (flags & 0x06) == 0x06;
 
-    if ((s_type == SENSOR_TYPE_WEATHER) || (s_type == SENSOR_TYPE_WEATHER2)) {
+    if ((s_type == SENSOR_TYPE_WEATHER) || (s_type == SENSOR_TYPE_WEATHER3) || (s_type == SENSOR_TYPE_WEATHER8)) {
         int wdir     = (msg[4] >> 4) * 100 + (msg[4] & 0x0f) * 10 + (msg[5] >> 4);
         int wgst_raw = (msg[7] >> 4) * 100 + (msg[7] & 0x0f) * 10 + (msg[8] >> 4);
         int wavg_raw = (msg[8] & 0x0f) * 100 + (msg[9] >> 4) * 10 + (msg[9] & 0x0f);
@@ -206,9 +214,12 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         float light_lux = lght_raw;
         float uv_index = uv_raw * 0.1f;
 
+        // 3-in-1 (type 12) features Temp/Hum/Rain only
+        int wind_light_ok = s_type != SENSOR_TYPE_WEATHER3;
+
         int tglobe_ok = 0;
         float tglobe_c = 0.0f;
-        if (s_type == SENSOR_TYPE_WEATHER2) {
+        if (s_type == SENSOR_TYPE_WEATHER8) {
             // Globe thermometer temperature, only present in the 8-in-1 sensor
             if ((msg[23] >> 4) < 10) {
                 tglobe_ok = 1;
@@ -223,13 +234,13 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "startup",          "Startup",      DATA_COND,   !nstartup,  DATA_INT, !nstartup,
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
                 "humidity",         "Humidity",     DATA_INT,    humidity,
-                "wind_max_m_s",     "Wind Gust",    DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wgst_raw * 0.1f,
-                "wind_avg_m_s",     "Wind Speed",   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wavg_raw * 0.1f,
-                "wind_dir_deg",     "Direction",    DATA_INT,    wdir,
+                "wind_max_m_s",     "Wind Gust",    DATA_COND,   wind_light_ok, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wgst_raw * 0.1f,
+                "wind_avg_m_s",     "Wind Speed",   DATA_COND,   wind_light_ok, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wavg_raw * 0.1f,
+                "wind_dir_deg",     "Direction",    DATA_COND,   wind_light_ok, DATA_INT,    wdir,
                 "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
-                "light_klx",        "Light",        DATA_FORMAT, "%.3f klx", DATA_DOUBLE, light_klx, // TODO: remove this
-                "light_lux",        "Light",        DATA_FORMAT, "%.3f lux", DATA_DOUBLE, light_lux,
-                "uvi",              "UV Index",     DATA_FORMAT, "%.1f", DATA_DOUBLE, uv_index,
+                "light_klx",        "Light",        DATA_COND,   wind_light_ok, DATA_FORMAT, "%.3f klx", DATA_DOUBLE, light_klx, // TODO: remove this
+                "light_lux",        "Light",        DATA_COND,   wind_light_ok, DATA_FORMAT, "%.3f lux", DATA_DOUBLE, light_lux,
+                "uvi",              "UV Index",     DATA_COND,   wind_light_ok, DATA_FORMAT, "%.1f", DATA_DOUBLE, uv_index,
                 "temperature_1_C",  "Globe Temp",   DATA_COND,   tglobe_ok, DATA_FORMAT, "%.1f C", DATA_DOUBLE, tglobe_c,
                 "battery_ok",       "Battery",      DATA_INT,    !battery_low,
                 "mic",              "Integrity",    DATA_STRING, "CRC",
