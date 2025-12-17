@@ -10,20 +10,22 @@ Actively tested and supported are Realtek RTL2832 based DVB dongles (using RTL-S
 
 ![rtl_433 screenshot](./docs/screenshot.png)
 
-## Building / Installation
+## Building
 
-rtl_433 is written in portable C (C99 standard) and known to compile on Linux (also embedded), MacOS, and Windows systems.
+rtl_433 is written in portable C (C99 standard) and known to compile on Linux (also embedded), FreeBSD, MacOS, and Windows systems.
 Older compilers and toolchains are supported as a key-goal.
-Low resource consumption and very few dependencies allow rtl_433 to run on embedded hardware like (repurposed) routers.
-Systems with 32-bit i686 and 64-bit x86-64 as well as (embedded) ARM, like the Raspberry Pi and PlutoSDR are well supported.
+Low resource consumption and very few dependencies allow rtl_433 to run on embedded hardware like routers running [OpenWrt](https://openwrt.org) or [ESP32](https://github.com/NorthernMan54/rtl_433_ESP).
+Most common 32-bit and 64-bit CPU architectures like amd64, arm64, armhf, i386, ppc64el, riscv64, s390x and others are well supported.
 
 See [BUILDING.md](docs/BUILDING.md)
 
-On Debian (sid) or Ubuntu (19.10+), `apt-get install rtl-433` for other distros check https://repology.org/project/rtl-433/versions
+## Installation
 
-On FreeBSD, `pkg install rtl-433`.
+Linux(Debian, Ubuntu, Trisquel, PureOS, Kali): `sudo apt install rtl-433`. For other Linux distributions check [1](https://repology.org/project/rtl-433/versions), [2](https://pkgs.org/download/rtl_433) or [3](https://pkgs.org/download/rtl-433)
 
-On MacOS, `brew install rtl_433`.
+FreeBSD: `pkg install rtl-433`.
+
+MacOS: `brew install rtl_433`.
 
 Docker images with rtl_433 are available [on the github page of hertzg](https://github.com/hertzg/rtl_433_docker).
 
