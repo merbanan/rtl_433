@@ -61,7 +61,16 @@ unsigned extract_nibbles_4b1s(uint8_t const *message, unsigned offset_bits, unsi
 /// @param num_bits message length in bits
 /// @param dst target buffer for extracted bytes, at least num_bits/10 size
 /// @return number of successful decoded bytes
-unsigned extract_bytes_uart(uint8_t const *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst);
+unsigned extract_bytes_uart_8n1(uint8_t const *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst);
+
+/// UART "8n2" (11-to-8) decoder with 1 start bit (0), no parity, 2 stop bits (1), LSB-first bit-order.
+///
+/// @param message bytes of message data
+/// @param offset_bits start offset of message in bits
+/// @param num_bits message length in bits
+/// @param dst target buffer for extracted bytes, at least num_bits/11 size
+/// @return number of successful decoded bytes
+unsigned extract_bytes_uart_8n2(uint8_t const *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst);
 
 /// UART "8o1" (11-to-8) decoder with 1 start bit (1), odd parity, 1 stop bit (0), MSB-first bit-order.
 ///
@@ -70,7 +79,7 @@ unsigned extract_bytes_uart(uint8_t const *message, unsigned offset_bits, unsign
 /// @param num_bits message length in bits
 /// @param dst target buffer for extracted bytes, at least num_bits/11 size
 /// @return number of successful decoded bytes
-unsigned extract_bytes_uart_parity(uint8_t const *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst);
+unsigned extract_bytes_uart_8o1(uint8_t const *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst);
 
 /// Decode symbols to bits.
 ///

@@ -301,7 +301,7 @@ invert : invert all bits
 reflect : reflect each byte (MSB first to MSB last)
 .RE
 .RS
-decode_uart : UART 8n1 (10\-to\-8) decode
+decode_uart=<8n1|8n2|8o1> : UART 8n1 (10\-to\-8), 8n2, 8o1 (11\-to\-8) decode
 .RE
 .RS
 decode_dm : Differential Manchester decode

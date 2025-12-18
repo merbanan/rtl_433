@@ -14,6 +14,12 @@
 #include "fatal.h"
 #include <stdlib.h>
 
+enum uart_mode {
+    UART_MODE_8N1 = 1,
+    UART_MODE_8N2,
+    UART_MODE_8O1,
+};
+
 static inline int bit(const uint8_t *bytes, unsigned b)
 {
     return bytes[b >> 3] >> (7 - (b & 7)) & 1;
@@ -240,7 +246,13 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             // TODO: refactor to bitbuffer_decode_uart_row()
             unsigned len = bitbuffer->bits_per_row[i];
             bitbuffer_t tmp = {0};
-            len = extract_bytes_uart(bitbuffer->bb[i], 0, len, tmp.bb[0]);
+            if (params->decode_uart == UART_MODE_8N1) {
+                len = extract_bytes_uart_8n1(bitbuffer->bb[i], 0, len, tmp.bb[0]);
+            } else if (params->decode_uart == UART_MODE_8N2) {
+                len = extract_bytes_uart_8n2(bitbuffer->bb[i], 0, len, tmp.bb[0]);
+            } else if (params->decode_uart == UART_MODE_8O1) {
+                len = extract_bytes_uart_8o1(bitbuffer->bb[i], 0, len, tmp.bb[0]);
+            }
             memcpy(bitbuffer->bb[i], tmp.bb[0], len); // safe to write over: can only be shorter
             bitbuffer->bits_per_row[i] = len * 8;
         }
@@ -418,7 +430,7 @@ static void help(void)
             "\t\tuse opt>=n to match at least <n> and opt<=n to match at most <n>\n"
             "\tinvert : invert all bits\n"
             "\treflect : reflect each byte (MSB first to MSB last)\n"
-            "\tdecode_uart : UART 8n1 (10-to-8) decode\n"
+            "\tdecode_uart=<8n1|8n2|8o1> : UART 8n1 (10-to-8), 8n2, 8o1 (11-to-8) decode\n"
             "\tdecode_dm : Differential Manchester decode\n"
             "\tdecode_mc : Manchester decode\n"
             "\tmatch=<bits> : only match if the <bits> are found\n"
@@ -630,6 +642,21 @@ static void parse_getter(const char *arg, struct flex_get *getter)
     */
 }
 
+static unsigned parse_uart_mode(char const *str)
+{
+    if (!strcasecmp(str, "8n1"))
+        return UART_MODE_8N1;
+    else if (!strcasecmp(str, "8n2"))
+        return UART_MODE_8N2;
+    else if (!strcasecmp(str, "8o1"))
+        return UART_MODE_8O1;
+    else {
+        fprintf(stderr, "Bad flex spec, unknown uart mode!\n");
+        usage();
+    }
+    return 0;
+}
+
 // NOTE: this is declared in rtl_433.c also.
 r_device *flex_create_device(char *spec);
 
@@ -728,7 +755,7 @@ r_device *flex_create_device(char *spec)
             params->unique = parse_atoiv(val, 1, "unique: ");
 
         else if (!strcasecmp(key, "decode_uart"))
-            params->decode_uart = parse_atoiv(val, 1, "decode_uart: ");
+            params->decode_uart = parse_uart_mode(val);
         else if (!strcasecmp(key, "decode_dm"))
             params->decode_dm = parse_atoiv(val, 1, "decode_dm: ");
         else if (!strcasecmp(key, "decode_mc"))
