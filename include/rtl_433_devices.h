@@ -298,6 +298,7 @@
     DECL(oria_wa150km) \
     DECL(ec3k) \
     DECL(orion_endpoint_2020) \
+    DECL(thermopro_tx2b) \
 
     /* Add new decoders here. */
 
