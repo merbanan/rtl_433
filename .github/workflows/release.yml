@@ -77,7 +77,7 @@ jobs:
           - os: macos-14
             arch: arm64
     runs-on: ${{ matrix.os }}
-    name: Build ${{ matrix.feat }} on ${{ matrix.os }} for ${{ matrix.arch }}
+    name: Build with ${{ matrix.feat }} for ${{ matrix.arch }} on ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup tools
@@ -124,8 +124,6 @@ jobs:
           zip --junk-paths $ZIP_FILE build/src/rtl_433
           gh release upload ${{ needs.release_job.outputs.release_version }} $ZIP_FILE
 
-  # 22.04 jammy / bookworm uses OpenSSL 3
-  # 20.04 focal / bullseye uses OpenSSL 1.1
   native_build_job:
     needs: release_job
     strategy:
@@ -133,15 +131,9 @@ jobs:
       matrix:
         os: [ubuntu-24.04]
         feat: [rtlsdr, soapysdr]
-        include:
-          # - os: ubuntu-20.04
-          #   libs: openssl11
-          # - os: ubuntu-22.04
-          #   libs: openssl3
-          - os: ubuntu-24.04
-            libs: openssl3
+        arch: [amd64]
     runs-on: ${{ matrix.os }}
-    name: Build ${{ matrix.feat }} on ${{ matrix.os }} for amd64
+    name: Build with ${{ matrix.feat }} for ${{ matrix.arch }} on ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup tools
@@ -164,7 +156,7 @@ jobs:
       - name: "Upload Release Asset"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ZIP_FILE: rtl_433-${{ matrix.feat }}-${{ matrix.libs }}-Linux-amd64-${{ needs.release_job.outputs.release_version }}.zip
+          ZIP_FILE: rtl_433-${{ matrix.feat }}-Linux-${{ matrix.arch }}-${{ needs.release_job.outputs.release_version }}.zip
         run: |
           zip --junk-paths $ZIP_FILE build/src/rtl_433
           gh release upload ${{ needs.release_job.outputs.release_version }} $ZIP_FILE
@@ -178,18 +170,14 @@ jobs:
         arch: [armhf, arm64]
         feat: [rtlsdr, soapysdr]
         include:
+          #- arch: armel
+          #  compiler: arm-linux-gnueabi
           - arch: armhf
             compiler: arm-linux-gnueabihf
           - arch: arm64
             compiler: aarch64-linux-gnu
-          # - os: ubuntu-20.04
-          #   libs: openssl11
-          # - os: ubuntu-24.04
-          #   libs: openssl3
-          - os: ubuntu-22.04
-            libs: openssl3
     runs-on: ${{ matrix.os }}
-    name: Build ${{ matrix.feat }} on ${{ matrix.os }} for ${{ matrix.arch }}
+    name: Build with ${{ matrix.feat }} for ${{ matrix.arch }} on ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup tools
@@ -201,7 +189,7 @@ jobs:
           sudo apt-get purge -y libssl-dev libusb-1.0-0-dev
       - name: Setup compiler
         run: |
-          sudo apt-get install -q -y gcc-${{ matrix.compiler }} g++-${{ matrix.compiler }}
+          sudo apt-get install -q -y gcc-${{ matrix.compiler }}
       - name: Restrict sources.list
         run: |
           sudo sed -i'' -E 's/^(deb|deb-src) mirror\+file/\1 [arch=amd64,i386] mirror\+file/' /etc/apt/sources.list
@@ -224,7 +212,7 @@ jobs:
       - name: "Upload Release Asset"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ZIP_FILE: rtl_433-${{ matrix.feat }}-${{ matrix.libs }}-Linux-${{ matrix.arch }}-${{ needs.release_job.outputs.release_version }}.zip
+          ZIP_FILE: rtl_433-${{ matrix.feat }}-Linux-${{ matrix.arch }}-${{ needs.release_job.outputs.release_version }}.zip
         run: |
           zip --junk-paths $ZIP_FILE build/src/rtl_433
           gh release upload ${{ needs.release_job.outputs.release_version }} $ZIP_FILE
