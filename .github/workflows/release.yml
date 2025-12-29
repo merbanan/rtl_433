@@ -217,6 +217,70 @@ jobs:
           zip --junk-paths $ZIP_FILE build/src/rtl_433
           gh release upload ${{ needs.release_job.outputs.release_version }} $ZIP_FILE
 
+  container_build_job:
+    needs: release_job
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [armel]
+        feat: [rtlsdr, soapysdr]
+        include:
+          - arch: armel
+            compiler: arm-linux-gnueabi
+          #- arch: armhf
+          #  compiler: arm-linux-gnueabihf
+          #- arch: arm64
+          #  compiler: aarch64-linux-gnu
+    runs-on: ubuntu-latest
+    name: Build with ${{ matrix.feat }} for ${{ matrix.arch }}
+    container:
+      image: debian:trixie-slim
+      env:
+        GH_VERSION: 2.83.2
+    steps:
+      - name: Setup base tools
+        run: |
+          apt-get update -q -y
+          apt-get install -q -y --no-install-recommends git ca-certificates curl file zip
+      - uses: actions/checkout@v4
+      - name: Fix Ownership issue
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+      - name: Add Architecture
+        run: |
+          dpkg --add-architecture ${{ matrix.arch }}
+          apt-get update -q -y
+      - name: Setup build tools
+        run: apt-get install -q -y --no-install-recommends cmake ninja-build
+      - name: Setup GH cli
+        run: |
+          curl -L -O https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.deb
+          dpkg -i gh_${GH_VERSION}_linux_amd64.deb
+      - name: Setup compiler
+        run: apt-get install -q -y gcc-${{ matrix.compiler }}
+      - name: Purge conflicting dev that confuse cross linking
+        run: apt-get purge -y libssl-dev libusb-1.0-0-dev
+      - name: Install deps
+        if: matrix.feat != 'soapysdr'
+        run: apt-get install -q -y librtlsdr-dev:${{ matrix.arch }} libssl-dev:${{ matrix.arch }}
+      - name: Install deps
+        if: matrix.feat == 'soapysdr'
+        run: apt-get install -q -y librtlsdr-dev:${{ matrix.arch }} libssl-dev:${{ matrix.arch }} libsoapysdr-dev:${{ matrix.arch }}
+      - name: Configure
+        run: cmake -DCMAKE_TOOLCHAIN_FILE="$(pwd)/cmake/Toolchain-${{ matrix.compiler }}.cmake" -GNinja -B build
+      - name: Build
+        run: cmake --build build
+      - name: Check final binary
+        run: file build/src/rtl_433
+      - name: Check final binary
+        run: ${{ matrix.compiler }}-readelf -a build/src/rtl_433 | grep "Shared library:"
+      - name: "Upload Release Asset"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ZIP_FILE: rtl_433-${{ matrix.feat }}-Linux-${{ matrix.arch }}-${{ needs.release_job.outputs.release_version }}.zip
+        run: |
+          zip --junk-paths $ZIP_FILE build/src/rtl_433
+          gh release upload ${{ needs.release_job.outputs.release_version }} $ZIP_FILE
+
   build_mingw_job:
     needs: release_job
     if: ${{ needs.release_job.result != 'failure' }}
