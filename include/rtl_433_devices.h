@@ -299,6 +299,7 @@
     DECL(ec3k) \
     DECL(orion_endpoint_2020) \
     DECL(geevon_tx19) \
+    DECL(wallarge_cltx001) \
 
     /* Add new decoders here. */
 
