@@ -1,7 +1,9 @@
 /** @file
-    Geevon TX16-3 Remote Outdoor Sensor with LCD Display.
+    Geevon TX19-1 Remote Outdoor Sensor with LCD Display.
 
     Contributed by Matt Falcon <falcon4@gmail.com>
+    Analyzed by \@mattigins
+    Copyright (C) 2026 Christian W. Zuckschwerdt <zany@triq.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -12,23 +14,24 @@
 #include "decoder.h"
 
 /**
-Geevon TX16-3 Remote Outdoor Sensor with LCD Display.
+Geevon TX19-1 Remote Outdoor Sensor with LCD Display.
 
 Note that Geevon TX16-3 and Geevon TX19-1 are identical except for the checksum.
 
 This device is a simple temperature/humidity transmitter with a small LCD display for local viewing.
 
 The test packet represents:
+- id 138
 - channel 1
 - battery OK
-- temperature of 62.6 Fahrenheit or 17 Celsius
-- 43% relative humidity.
+- temperature of 25.5 Celsius
+- 81% relative humidity.
 
 Data layout:
 
     Byte 0   Byte 1   Byte 2   Byte 3   Byte 4   Byte 5   Byte 6   Byte 7   Byte 8
     IIIIIIII BxCCxxxx TTTTTTTT TTTT0000 HHHHHHHH FFFFFFFF FFFFFFFF FFFFFFFF CCCCCCCC
-       87       00       29       e0       2b       aa       55       aa       e8
+       8a       00       2f       30       51       aa       55       aa       b3
 
 - I: ID?
 - B: Battery low status (0 = good, 1 = low battery)
@@ -36,7 +39,7 @@ Data layout:
 - T: Temperature - represented as ((degrees C * 10) + 500)
 - H: Relative humidity - represented as percentage %
 - F: Integrity check - 3 bytes are always 0xAA 0x55 0xAA
-- X: CRC checksum (CRC-8 poly 0x31 init=0x7b)
+- X: LFSR checksum (Galois bit reflected, generator 0x98 key 0x25)
 
 Format string:
 
@@ -44,14 +47,16 @@ Format string:
 
 Example packets:
 
-    f4002ac039aa55aa11
-    f4002ab039aa55aa54
-    f4002aa039aa55aa28
-    f4002a9039aa55aaac
-
+    {73}75ffd0cfae55aa554c8
+    {73}75ffd20fac55aa55978
+    {73}75ffd28fa955aa551e8
+    {73}75ffd31fa755aa55538
+    {73}75ffd32fa455aa552e8
+    {73}75ffd2efa555aa55908
+    {73}75ffd2cfa555aa55688
 */
 
-static int geevon_tx16_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int geevon_tx19_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // invert all the bits
     bitbuffer_invert(bitbuffer);
@@ -77,9 +82,9 @@ static int geevon_tx16_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    // Verify CRC checksum
-    uint8_t chk = crc8(b, 9, 0x31, 0x7b);
-    if (chk) {
+    // Verify LFSR checksum
+    uint8_t chk = lfsr_digest8_reverse(b, 8, 0x98, 0x25);
+    if (chk != b[8]) {
         decoder_log(decoder, 1, __func__, "Checksum did NOT match.");
         return DECODE_FAIL_MIC;
     }
@@ -94,7 +99,7 @@ static int geevon_tx16_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Store the decoded data
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Geevon-TX163",
+            "model",            "",             DATA_STRING, "Geevon-TX191",
             "id",               "",             DATA_INT,    b[0],
             "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "channel",          "Channel",      DATA_INT,    channel,
@@ -118,14 +123,14 @@ static char const *const output_fields[] = {
         NULL,
 };
 
-r_device const geevon_tx16 = {
-        .name        = "Geevon TX16-3 outdoor sensor",
+r_device const geevon_tx19 = {
+        .name        = "Geevon TX19-1 outdoor sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 250,
         .long_width  = 500,
         .sync_width  = 750,  // sync pulse is 728 us + 728 us gap
         .gap_limit   = 625,  // long gap (with short pulse) is ~472 us, sync gap is ~728 us
         .reset_limit = 1700, // maximum gap is 1250 us (long gap + longer sync gap on last repeat)
-        .decode_fn   = &geevon_tx16_decode,
+        .decode_fn   = &geevon_tx19_decode,
         .fields      = output_fields,
 };
