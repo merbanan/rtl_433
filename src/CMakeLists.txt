@@ -136,6 +136,7 @@ add_library(r_433 STATIC
     devices/gasmate_ba1008.c
     devices/ge_coloreffects.c
     devices/geevon.c
+    devices/geevon_tx19.c
     devices/generic_motion.c
     devices/generic_remote.c
     devices/generic_temperature_sensor.c
