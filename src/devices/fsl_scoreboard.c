@@ -76,10 +76,10 @@ static int fsl_scoreboard_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // Blocks start after 38-bit preamble
         unsigned block_pos = preamble_pos + 38;
 
-	// We expect ten blocks, but we only need one good one
+    // We expect ten blocks, but we only need one good one
         for (block_pos = preamble_pos + 38;
-	     block_pos + 72 < bitbuffer->bits_per_row[row];
-	     block_pos += 72) {
+         block_pos + 72 < bitbuffer->bits_per_row[row];
+         block_pos += 72) {
             // Verify 111 sync at expected position
             uint8_t const sync[] = {0xE0};
             if (bitbuffer_search(bitbuffer, row, block_pos, sync, 3) != block_pos)
