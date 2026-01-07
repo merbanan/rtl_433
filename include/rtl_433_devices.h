@@ -299,6 +299,7 @@
     DECL(ec3k) \
     DECL(orion_endpoint_2020) \
     DECL(geevon_tx19) \
+    DECL(fsl_scoreboard) \
 
     /* Add new decoders here. */
 
