@@ -299,6 +299,8 @@
     DECL(ec3k) \
     DECL(orion_endpoint_2020) \
     DECL(geevon_tx19) \
+    DECL(jc_contact) \
+    DECL(jc_pir) \
 
     /* Add new decoders here. */
 
