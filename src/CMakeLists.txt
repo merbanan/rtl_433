@@ -227,6 +227,7 @@ add_library(r_433 STATIC
     devices/rubicson_48659.c
     devices/rubicson_pool_48942.c
     devices/s3318p.c
+    devices/saintlogic_sa8.c
     devices/schou_72543_rain.c
     devices/schraeder.c
     devices/scmplus.c
