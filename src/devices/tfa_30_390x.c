@@ -168,7 +168,7 @@ static int tfa_30390X_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
     // check for plausibility, if ID is all zero, receive was invalid
-    for(i = 0; i < 5 ; i++){
+    for (i = 0 ; i < 5 ; i++) {
         tmp += b[start_idx + i];
     }
     if (tmp == 0x0) {
