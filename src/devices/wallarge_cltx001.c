@@ -17,7 +17,6 @@ Can be purchased individually (https://www.amazon.com/dp/B0CB17H77R/) or
 bundled with WallarGe clocks like the CL6007 (https://www.amazon.com/dp/B0D9BNSQCS)
 and CL7001 (https://www.amazon.com/dp/B0BYNJW532, http://www.us-wallarge.com/item/3015.html).
 
-
 Modulation:
 
 HIGH/LOW periods are multiples of 250 µs long.
@@ -54,7 +53,6 @@ The following uses '-' for HIGHs and '_' for LOWs lasting 250 µs, respectively.
    resulting in either one or two empty rows occurring between rows with data.
 
 The payload gets sent five times per transmission.
-
 
 Payload encoding:
 
@@ -102,7 +100,6 @@ Temperature reading:
 
 */
 
-#include <stdint.h>
 #include <stdbool.h>
 
 #include "decoder.h"
@@ -112,7 +109,7 @@ Temperature reading:
 
 #define DATA_BYTES 5
 
-static int wallarge_cltx001_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int wallarge_cltx001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // This value will be changed to reflect the best row.
     // If it doesn't get changed, we didn't see any row with exactly 56 bits.
@@ -120,13 +117,11 @@ static int wallarge_cltx001_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Consider each row in order of appearance
     for (int row_index = 0; row_index < bitbuffer->num_rows; row_index++) {
-
         // 1) Ignore rows that don't have 56 bits
 
         if (bitbuffer->bits_per_row[row_index] != BITS_PER_ROW) {
             continue;
         }
-
 
         // 2) Invert the data
 
@@ -137,7 +132,6 @@ static int wallarge_cltx001_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         for (int i = 0; i < BYTES_PER_ROW; i++) {
             row_bytes[i] = ~row_bytes[i];
         }
-
 
         // 3) Ignore rows with an invalid checksum
 
@@ -151,7 +145,6 @@ static int wallarge_cltx001_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             return_value = DECODE_FAIL_MIC;
             continue;
         }
-
 
         // 4) Ignore rows with invalid parity data
 
@@ -177,7 +170,6 @@ static int wallarge_cltx001_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             return_value = DECODE_FAIL_MIC;
             continue;
         }
-
 
         // 5) Extract the actual data and output it
 
@@ -241,6 +233,6 @@ r_device const wallarge_cltx001 = {
         .long_width  =   500,
         .gap_limit   =   650, // Gaps that deliniate rows are ~700-750 µs long and tolerance does not apply to the gap limit
         .reset_limit =  1250,
-        .decode_fn   = &wallarge_cltx001_callback,
+        .decode_fn   = &wallarge_cltx001_decode,
         .fields      = output_fields,
 };
