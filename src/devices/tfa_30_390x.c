@@ -121,7 +121,7 @@ uint32_t crc32_reveng(uint8_t *data, size_t length)
 static float decode_value(uint8_t* b, size_t start_idx, size_t offs_hi, uint8_t extended_range) {
     uint16_t raw = ((uint16_t)b[start_idx + offs_hi] << 8) | (uint16_t)b[start_idx + offs_hi - 1];
     int16_t val = 0;
-    if(extended_range) {
+    if (extended_range) {
         val = (int16_t)(raw << 4) >> 4; // 12-Bit sign-extended
     } else {
         val = (int16_t)(raw << 5) >> 5; // 13-Bit sign-extended
@@ -141,7 +141,7 @@ static int tfa_30390X_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint8_t b[TFA_30390X_MESSAGE_MIN_BITLEN] = {0};
 
-    if(bitbuffer->bits_per_row[0] < TFA_30390X_MESSAGE_MIN_BITLEN) {
+    if (bitbuffer->bits_per_row[0] < TFA_30390X_MESSAGE_MIN_BITLEN) {
         print_logf(LOG_DEBUG, __func__, "package too short: %d bits received", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH;
     }
@@ -171,7 +171,7 @@ static int tfa_30390X_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     for(i = 0; i < 5 ; i++){
         tmp += b[start_idx + i];
     }
-    if(tmp == 0x0) {
+    if (tmp == 0x0) {
         // invalid ID, abort
         print_logf(LOG_DEBUG, __func__, "TFA 30.390X.02 Invalid ID");
         return DECODE_FAIL_SANITY;
@@ -210,7 +210,7 @@ static int tfa_30390X_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         humidity_array[1]   = decode_value(b, start_idx, 16, 0);
         humidity_array[2]   = decode_value(b, start_idx, 22, 0);
 
-    } else if(b[start_idx] == 0xA3) {
+    } else if (b[start_idx] == 0xA3) {
         /*
         A3: internal + external temperature (normal range -40 - )
         |   Header          | Current Frame   | Current Frame -1| Current Frame -2|
@@ -224,7 +224,7 @@ static int tfa_30390X_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         temp_c_ext_array[0]   = decode_value(b, start_idx, 10, 0);
         temp_c_ext_array[1]   = decode_value(b, start_idx, 16, 0);
         temp_c_ext_array[2]   = decode_value(b, start_idx, 22, 0);
-    } else if(b[start_idx] == 0xA4) {
+    } else if (b[start_idx] == 0xA4) {
         /*
         A4: internal + external temperature (extended range) + humidity
         |   Header          | Current Frame         | Current Frame -1      | Current Frame -2      |
@@ -241,7 +241,7 @@ static int tfa_30390X_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         temp_c_ext_array[0] = decode_value(b, start_idx, 12, 1);
         temp_c_ext_array[1] = decode_value(b, start_idx, 20, 1);
         temp_c_ext_array[2] = decode_value(b, start_idx, 28 ,1);
-    } else if(b[start_idx] == 0xA5) {
+    } else if (b[start_idx] == 0xA5) {
         /*
         A5: internal temperature
         |   Header          | Cur Frame |  Frame -1 | Frame -2 |
