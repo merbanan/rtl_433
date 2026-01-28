@@ -76,20 +76,6 @@
 #include "decoder.h"
 #include "logger.h"
 
-/**#define TFA_303905_MESSAGE_BITLEN       320
-#define TFA_303905_CRC32_POLYNOM        0x04c11db7
-#define TFA_303905_CRC32_INIT           0xfa848a5b
-#define TFA_303905_PREAMBLE_ID          (0x24)
-
-
-#define TFA_303902_MESSAGE_BITLEN       312
-#define TFA_303902_CRC32_INIT           0x152ea23e
-#define TFA_303902_PREAMBLE_ID          (0x1e)
-
-#define TFA_30390X_ID_TINT              (0x18)
-#define TFA_30390X_ID_TINT_HUMID        (0x1e)
-#define TFA_30390X_ID_TINT_HUMID_TEXT   (0x24)
-**/
 #define TFA_30390X_MESSAGE_MIN_BITLEN   316
 #define TFA_30390X_MESSAGE_MAX_BITLEN   320
 
@@ -141,12 +127,6 @@ static float decode_value(uint8_t* b, size_t start_idx, size_t offs_hi, uint8_t 
     } else {
         val = (int16_t)(raw << 5) >> 5; // 13-Bit sign-extended
     }
-    /**
-    if(b[start_idx - 1] == TFA_303905_PREAMBLE_ID) {
-        val = (int16_t)(raw << 4) >> 4; // 12-Bit sign-extended
-    } else if(b[start_idx - 1] == TFA_303902_PREAMBLE_ID) {
-        val = (int16_t)(raw << 5) >> 5; // 13-Bit sign-extended
-    } **/
     return (float)val / 10.0f;
 }
 
