@@ -84,6 +84,7 @@
 #define TFA_30390X_CRC32_XOROUT         0xFFFFFFFFu
 
 uint32_t crc32_reveng(uint8_t *data, size_t length);
+
 /* *
  * CRC32 checksum calculation,
  * CRC32 nach RevEng:
@@ -95,8 +96,6 @@ uint32_t crc32_reveng(uint8_t *data, size_t length);
  * xorout=0xFFFFFFFF
  *
  * */
-
-
 uint32_t crc32_reveng(uint8_t *data, size_t length)
 {
     uint32_t crc = TFA_30390X_CRC32_INIT;
@@ -275,7 +274,6 @@ static int tfa_30390X_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-
 static char const *const output_fields[] = {
         "model",
         "id",
@@ -302,4 +300,3 @@ r_device const tfa_30390X = {
         .decode_fn   = &tfa_30390X_decode,
         .fields      = output_fields,
 };
-
