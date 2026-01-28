@@ -191,7 +191,7 @@ static int wallarge_cltx001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int16_t temperature_signed = (int16_t)(temperature_raw << 4) >> 4;
         // The temperature is stored as multiples of 0.1°C, so divide the integer by 10.0 and store it as a double.
         double temperature_celsius = temperature_signed / 10.0;
-        
+
         /* clang-format off */
         data_t *data = data_make(
                 "model",            "Model",        DATA_STRING,    "WallarGe CLTX001",
