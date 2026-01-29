@@ -1,10 +1,6 @@
 /** @file
 
-    TFA Dostmann A5 30.3901.02 temperature sensor.
-    TFA Dostmann A3 30.3902.02 temperature sensor with external sensor.
-    TFA Dostmann A4 30.3905.02 temperature and humidity sensor with external temp sensor.
-    TFA Dostmann A6 30.3906.02 temperature and humidity sensor.
-    TFA Dostmann A0 30.3908.02 temperature and humidity sensor (big display).
+    TFA Dostmann ID-AX series temperature and humidity sensors (30.390X.02)
 
     Copyright (c) 2026 Jacob Maxa <jack77@gmx.net>
 
@@ -15,7 +11,13 @@
 
 */
 
-/*  @fn int  tfa_30390X_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+/** @fn tfa_30_390x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+
+    TFA Dostmann ID-A5 30.3901.02 temperature sensor.
+    TFA Dostmann ID-A3 30.3902.02 temperature sensor with external sensor.
+    TFA Dostmann ID-A4 30.3905.02 temperature and humidity sensor with external temp sensor.
+    TFA Dostmann ID-A6 30.3906.02 temperature and humidity sensor.
+    TFA Dostmann ID-A0 30.3908.02 temperature and humidity sensor (big display).
 
     All sensors work on 868.025 Mhz with 250 kHz sample rate/bandwidth
 
@@ -85,17 +87,6 @@
 
 uint32_t crc32_reveng(uint8_t *data, size_t length);
 
-/* *
- * CRC32 checksum calculation,
- * CRC32 nach RevEng:
- * width=32
- * poly=0x04C11DB7
- * init=0xFFFFFFFF
- * refin=true
- * refout=true
- * xorout=0xFFFFFFFF
- *
- * */
 uint32_t crc32_reveng(uint8_t *data, size_t length)
 {
     uint32_t crc = TFA_30390X_CRC32_INIT;
@@ -115,9 +106,7 @@ uint32_t crc32_reveng(uint8_t *data, size_t length)
     crc ^= TFA_30390X_CRC32_XOROUT;
     return crc;
 }
-/*
-    Decode value from data frame position
-*/
+
 static float decode_value(uint8_t* b, size_t start_idx, size_t offs_hi, uint8_t extended_range) {
     uint16_t raw = ((uint16_t)b[start_idx + offs_hi] << 8) | (uint16_t)b[start_idx + offs_hi - 1];
     int16_t val = 0;
@@ -129,7 +118,7 @@ static float decode_value(uint8_t* b, size_t start_idx, size_t offs_hi, uint8_t 
     return (float)val / 10.0f;
 }
 
-static int tfa_30390X_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int tfa_30_390x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble_pattern[] = {0x4b, 0x2d, 0xd4, 0x2b};  // preamble pattern for both sensors
     data_t *data    = {0};
@@ -290,13 +279,13 @@ static char const *const output_fields[] = {
         NULL,
 };
 
-r_device const tfa_30390X = {
+r_device const tfa_30_390x = {
         .name        = "TFA Dostmann 30.390X T/H sensors series",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 61,
         .long_width  = 61,
         .tolerance   = 5,
         .reset_limit = 3500,
-        .decode_fn   = &tfa_30390X_decode,
+        .decode_fn   = &tfa_30_390x_decode,
         .fields      = output_fields,
 };
