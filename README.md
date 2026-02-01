@@ -362,7 +362,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [274]  Revolt ZX-7717 power meter
     [275]  GM-Aftermarket TPMS
     [276]  RainPoint HCS012ARF Rain Gauge sensor
-    [277]  Apator Metra E-RM 30
+    [277]  Apator Metra Water meter E-RM 30 and Heat cost allocator E-ITN 30
     [278]  ThermoPro TX-7B Outdoor Thermometer Hygrometer
     [279]  Nexus, CRX, Prego sauna temperature sensor
     [280]  Homelead HG9901 (Geevon, Dr.Meter, Royal Gardineer) soil moisture/temp/light level sensor
