@@ -362,7 +362,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [274]  Revolt ZX-7717 power meter
     [275]  GM-Aftermarket TPMS
     [276]  RainPoint HCS012ARF Rain Gauge sensor
-    [277]  Apator Metra Water meter E-RM 30 and Heat cost allocator E-ITN 30
+    [277]  Apator Metra E-RM 30 water meter
     [278]  ThermoPro TX-7B Outdoor Thermometer Hygrometer
     [279]  Nexus, CRX, Prego sauna temperature sensor
     [280]  Homelead HG9901 (Geevon, Dr.Meter, Royal Gardineer) soil moisture/temp/light level sensor
@@ -377,6 +377,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [289]  Voltcraft EnergyCount 3000 (ec3k)
     [290]  Orion Endpoint from Badger Meter, GIF2020OCECNA, water meter, hopping from 904.4 Mhz to 924.6Mhz (-s 1600k)
     [291]  Geevon TX19-1 outdoor sensor
+    [292]  Apator Metra E-ITN 30 heat cost allocator
 
 * Disabled by default, use -R n or a conf file to enable
 
