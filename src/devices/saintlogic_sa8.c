@@ -100,11 +100,11 @@ static int saintlogic_sa8_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_c      = temp_raw * 0.1f;
     float gust_km_h   = gust_raw * 0.036f; // orignal value is m/s but for Customary conversion, km/h is better
     float wind_km_h   = wind_raw * 0.036f; // orignal value is m/s but for Customary conversion, km/h is better
-    float rain_mm     = rain_raw * 0.15f;
+    float rain_mm     = rain_raw * 0.42893617f;
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",           "",                 DATA_STRING, "Saintlogic_SA8",
+            "model",           "",                 DATA_STRING, "Saintlogic-SA8",
             "id",              "",                 DATA_STRING, ID,
             //"battery_ok",      "Battery_OK",       DATA_INT,    !battery_low,
             "counter",         "Counter",          DATA_INT, counter,
