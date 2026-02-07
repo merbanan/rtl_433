@@ -52,7 +52,7 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned start_pos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, 48);
     start_pos += 48; // skip preamble
 
-    if ((bitbuffer->bits_per_row[row] - start_pos) < 120) {
+    if (start_pos + 120 > bitbuffer->bits_per_row[row]) {
         return DECODE_ABORT_LENGTH; // short buffer or preamble not found
     }
 
