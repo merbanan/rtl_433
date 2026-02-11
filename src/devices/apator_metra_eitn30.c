@@ -1,5 +1,5 @@
 /** @file
-    Apator Metra E-RM 30 Water Meters.
+    Apator Metra E-ITN 30 Heat cost allocator.
 
     Copyright (C) 2025 Alex Carp (\@carpalex)
     Copyright (c) 2026 Bruno Octau (\@ProfBoc75)
@@ -11,7 +11,7 @@
 */
 
 /**
-Apator Metra E-RM 30 Water Meters.
+Apator Metra E-ITN 30 Heat cost allocator.
 
 S.a issue #3012, for E-RM 30, #3452, for E-ITN 30
 
@@ -26,15 +26,34 @@ Coding:
 - CRC-16 must be checked after unwhitening and before decrypting the payload.
 - The payload is encrypted using nibble substitution of 16 values.
 
-E-RM 30 Message layout:
+E-ITN 30:
 
-     Byte  0  1  2  3  4  5  6  7  8  9 10 11 12 13 15 16 17 18 19 20  21 22
-     SSSS LL EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE  CC CC
+Flex decoder:
 
-- S  16b: syncword: 0x699a (16 bits)
-- L   8b: payload length (seems to be always 19 = 0x13; does not include length and CRC)
-- E 304b: encrypted payload (19 bytes), nibble substitution.
-- C  16b: CRC-16 with poly=0x8005 and init=0xffff over data after IBM unwhitened but still coded (length field + encrypted payload)
+    rtl_433 -X "n=Apator_eitn30,m=FSK_PCM,s=25,l=25,r=5000, preamble=aaaa699a"
+
+    Sample   ee c2 5e db 8e 00 3d 15 84 ca df 36 78 f9 30 c1 f7 bd c6 ec
+    Sample   ee c2 5e db 8e 00 3d 15 84 ca df 34 78 f9 30 0a 82 bd f5 57
+    Sample   ee c2 5e db 8e 00 3d 15 84 ca 5f 32 78 f9 30 c5 eb bd 89 cd
+    Sample   ee c2 5e db 8e 00 3d 15 84 ca 5f f8 78 fc 30 85 ef bd 53 f5
+    Sample   ee c2 5e db 8e 00 3d 15 84 ca 1f fc 78 fc 30 64 8c bd 91 bc
+
+    UnWhiten 11 23 43 41 63 85 0e 31 6e b0 0d 0f 08 6e 67 cb a3 c0 eb 34
+    UnWhiten 11 23 43 41 63 85 0e 31 6e b0 0d 0d 08 6e 67 00 d6 c0 d8 8f
+    UnWhiten 11 23 43 41 63 85 0e 31 6e b0 8d 0b 08 6e 67 cf bf c0 a4 15
+    UnWhiten 11 23 43 41 63 85 0e 31 6e b0 8d c1 08 6b 67 8f bb c0 7e 2d
+    UnWhiten 11 23 43 41 63 85 0e 31 6e b0 cd c5 08 6b 67 6e d8 c0 bc 64
+
+
+Data layout:
+
+    Byte Position   0   1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17  18 19
+    unwhiten       11  23 43 41 63 85 0e 31 6e b0 0d 0f 08 6e 67 cb a3 c0  eb 34
+                   LL  EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE  CC CC
+
+- LL: {8} Message length except CRC, 0x11 = 17 bytes.
+- EE: {136} Encrypted message, see substitution table
+- CC:{16} CRC-16, poly 0x8005, init 0xFFFF, final XOR 0x0000, over data after IBM unwhitened but still coded.
 
 Nibble substitution table:
 
@@ -57,26 +76,24 @@ Nibble substitution table:
 | E | A |
 | F | 5 |
 
-E-RM 30 Payload fields:
+Payload:
 
-           0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18
-          II II II II VV VV VV VV ?? ?? ?? ?? ?? ?? ?? DD DD ?? ??
+    Byte Position   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16
+    unwhitened     23 43 41 63 85 0e 31 6e b0 0d 0f 08 6e 67 cb a3 c0
+    decoded        F9 E9 E7 39 2D 0A 97 3A B0 08 05 02 3A 34 1B C9 10
+                   II II II II PP PP ?? ?? ?? ?? VV VV MD YY ?? ?? ??
 
-- I  32b: little-endian, id, visible on the radio module (not the one on the actual analog meter)
-- V  25b: little-endian, volume in liters (or scale 1000 in m3), VOL = (little-endian of the 32b & 0x0fffffff) >> 3
-- ?  56b: unknown
-- D  16b: little-endian, date, bit distribution : Year (offset 2000) {7} Month {4} Day {5}
-- ?  16b: unknown
-
-According to the technical manual, the radio module also transmits other fields,
-like reverse flow volume, date of magnetic tampering, date of mechanical tampering
-etc., but they were not (yet) identified
+- II: {25} little endian, serial number of the sensor
+- PP: {16} little endian, last year value
+- VV: {16} little endian, current value
+- MDYY {16} little endian, current date, distributed like that : YEAR offset 2000 {7} MONTH {4} DAY {5}
+- ??: Unknown value
 
 */
 
 #include "decoder.h"
 
-#define MAX_LEN 22     // 1 Byte LEN + 19 Byte MSG + 2 Byte CRC
+#define MAX_LEN 20     // 1 Byte LEN + 17 Byte MSG + 2 Byte CRC
 
 #define CRC_LEN 2
 #define LEN_LEN 1
@@ -86,7 +103,7 @@ etc., but they were not (yet) identified
 #define DATE_STR_LEN 10
 #define BIT_LEN_STR_LEN 6
 
-static int apator_metra_erm30_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int apator_metra_eitn30_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble[] = {
                                  0xaa, 0xaa,  // preamble
@@ -113,8 +130,8 @@ static int apator_metra_erm30_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_logf(decoder, 1, __func__, "MSG LEN: %d", len);
 
     len ^= 0xff;
-    if (len != 0x13) {
-        decoder_logf(decoder, 1, __func__, "MSG LEN does not match 19: %d", len);
+    if (len != 0x11) {
+        decoder_logf(decoder, 1, __func__, "MSG LEN does not match 17: %d", len);
         return DECODE_ABORT_EARLY; // unknown model
     }
 
@@ -156,11 +173,11 @@ static int apator_metra_erm30_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     decoder_log_bitrow(decoder, 1, __func__, p, 8 * (len), "MSG Decoded");
 
-    uint32_t id      = (p[3] << 24 | p[2] << 16 | p[1] << 8 | p[0]) ^ 0x30000000;
+    uint32_t id      = (p[3] << 24 | p[2] << 16 | p[1] << 8 | p[0]) ^ 0x38000000;
 
-    uint32_t vol_raw = ((p[7] << 24 | p[6] << 16 | p[5] << 8 | p[4]) & 0x0fffffff) >> 3;
-    float    volume  = vol_raw / 1000.0f;
-    uint16_t date    = p[16] << 8 | p[15];
+    uint16_t current = p[11] << 8 | p[10];
+    uint16_t last_yr = p[5]  << 8 | p[4];
+    uint16_t date    = p[13] << 8 | p[12];
     uint8_t  day     = date & 0x1f;
     uint8_t  month   = (date >> 5) & 0x0f;
     uint8_t  year    = (date >> 9) & 0x7f;
@@ -170,10 +187,11 @@ static int apator_metra_erm30_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-        "model",           "",                         DATA_STRING, "ApatorMetra-ERM30",
-        "id",              "ID",                       DATA_FORMAT, "%09d",    DATA_INT,    id,
+        "model",           "",                         DATA_STRING, "ApatorMetra-EITN30",
+        "id",              "ID",                       DATA_FORMAT, "%09d",  DATA_INT,    id,
         "len",             "Frame length",             DATA_INT,    len,
-        "volume_m3",       "Volume",                   DATA_FORMAT, "%.3f m3", DATA_DOUBLE, volume,
+        "current_heating", "Current Heating",          DATA_INT,    current,
+        "last_yr_heating", "Last Year Heating",        DATA_INT,    last_yr,
         "date",            "Date",                     DATA_STRING, date_str,
         "mic",             "Integrity",                DATA_STRING, "CRC",
         NULL);
@@ -187,18 +205,19 @@ static char const *const output_fields[] = {
     "model",
     "id",
     "len",
-    "volume_m3",
+    "current_heating",
+    "last_yr_heating",
     "date",
     "mic",
     NULL,
 };
 
-r_device const apator_metra_erm30 = {
-    .name        = "Apator Metra E-RM 30 water meter",
+r_device const apator_metra_eitn30 = {
+    .name        = "Apator Metra E-ITN 30 heat cost allocator",
     .modulation  = FSK_PULSE_PCM,
     .short_width = 25,
     .long_width  = 25,
     .reset_limit = 5000,
-    .decode_fn   = &apator_metra_erm30_decode,
+    .decode_fn   = &apator_metra_eitn30_decode,
     .fields      = output_fields,
 };
