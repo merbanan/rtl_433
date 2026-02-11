@@ -18,6 +18,7 @@ Fuzhou Emax Electronic W6 Professional Weather Station.
 Rebrand and devices decoded :
 - Emax W6 / WEC-W6 / 3390TX W6 / EM3390W6 / EM3551H
 - Altronics x7063/4
+- Altronics x7064A, #3463, different temp coding and another checksum
 - Optex 990040 / 990050 / 990051 / SM-040
 - Infactory FWS-1200
 - Newentor Q9
@@ -28,7 +29,7 @@ Rebrand and devices decoded :
 - TechniSat IMETEO X6 76-4924-00 weather station without UV/LUX/Gust  #2753
 - Auriol Weather Station With Multisensor HG11911
 
-S.a. issue #2000 #2299 #2326 #2375 PR #2300 #2346 #2374
+S.a. issue #2000 #2299 #2326 #2375 PR #2300 #2346 #2374 #3463
 
 - Likely a rebranded device, sold by Altronics
 - Data length is 32 bytes with a preamble of 10 bytes (33 bytes for Rain/Wind Station)
@@ -38,20 +39,27 @@ Data Layout:
     // That fits nicely: aaa16e95 a3 8a ae 2d is channel 1, id 6e95, temp 38e (=910, 1 F, -17.2 C), hum 2d (=45).
 
 Temp/Hum Sensor :
-    AA AC II IB AT TA AT HH AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA SS
 
-default empty = 0xAA
+    Byte Position   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33
+    Layout         AA MC II IF AT TA AT HH AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA SS AA 00
+                             |
+       Flag bit position  4 3 2 1
+                          B P M M
 
-- K: (4 bit) Kind of device, = A if Temp/Hum Sensor or = 0 if Weather Rain/Wind station
+default empty value = 0xAA
+
+- M: (4 bit) Sensor model type, = 0xA if Temp/Hum Sensor or = 0x0 if Weather Rain/Wind station
 - C: (4 bit) channel ( = 4 for Weather Rain/wind station)
-- I: (12 bit) ID
-- B: (4 bit) BP01: battery low, pairing button, 0, 1
-- T: (12 bit) temperature in F, offset 900, scale 10
+- I:(12 bit) ID
+- B: (1 bit) Battery low flag
+- P: (1 bit) TX pairing button pressed flag
+- M: (2 bit) subtype model flags,  0b01 = X7063/X7064/990040/SM-40, 0b11 = X7064A, 0x10 = Weather station
+- T:(12 bit) temperature, if subtype 0b01, in F, offset 900, scale 10, if subtype 0b11, in C, offset 500, scale 10
 - H: (8 bit) humidity %
 - A: (4 bit) fixed values of 0xA
-- S: (8 bit) checksum
+- S: (8 bit) checksum, sum of the 31 byte & 0xff, except subtype 0b11, same sum formula but offset 0x9A
 
-Raw data:
+Raw data sample:
 
     FF FF AA AA AA AA AA CA CA 54
     AA A1 6E 95 A6 BA A5 3B AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA D4
@@ -70,18 +78,18 @@ Emax Rain / Wind speed / Wind Direction / Temp / Hum / UV / Lux
 
 Weather Rain/Wind station : humidity not at same byte position as temp/hum sensor.
 - With UV Lux without Wind Gust
-    AA KC II IB 0T TT HH 0W WW 0D DD RR RR UU LL LL 04 05 06 07 08 09 10 11 12 13 14 15 16 17 xx SS yy
+    AA KC II IF 0T TT HH 0W WW 0D DD RR RR UU LL LL 04 05 06 07 08 09 10 11 12 13 14 15 16 17 xx SS yy
 - Without UV LUX Wind Gust
-    AA KC II IB 0T TT HH 0W WW 0D DD RR RR D9 01 01 04 05 06 07 08 09 10 11 12 13 14 15 16 17 xx SS yy
+    AA KC II IF 0T TT HH 0W WW 0D DD RR RR D9 01 01 04 05 06 07 08 09 10 11 12 13 14 15 16 17 xx SS yy
 - Without UV / Lux , with Wind Gust
-    AA KC II IB 0T TT HH 0W WW 0D DD RR RR ?0 01 01 GG 04 05 06 07 08 09 10 11 12 13 14 15 16 xx SS yy
+    AA KC II IF 0T TT HH 0W WW 0D DD RR RR ?0 01 01 GG 04 05 06 07 08 09 10 11 12 13 14 15 16 xx SS yy
 
 default empty/null = 0x01 => value = 0
 
 - K: (4 bit) Kind of device, = A if Temp/Hum Sensor or = 0 if Weather Rain/Wind station
 - C: (4 bit) channel ( = 4 for Weather Rain/wind station)
 - I: (12 bit) ID
-- B: (4 bit) BP01: battery low, pairing button, 0, 1
+- F: (4 bit) Flags: B P M M, B = Bat Low, P = TX pairing pressed, MM = 2 bit Subtype model, 0b10 for Weather station
 - T: (12 bit) temperature in F, offset 900, scale 10
 - H: (8 bit) humidity %
 - R: (16) Rain
@@ -146,8 +154,13 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t b[32] = {0};
         bitbuffer_extract_bytes(bitbuffer, 0, pos, b, sizeof(b) * 8);
 
-        // verify checksum
-        if ((add_bytes(b, 31) & 0xff) != b[31]) {
+        // verify checksum, 2 formulas, depends on the subtype model
+        int subtype = b[3] & 0x03;
+        int checksum = add_bytes(b, 31);
+        if (subtype == 0x3) { // same formula but 0x9A offset for Altronics-X7064A model only
+            checksum -= 0x9A;
+        }
+        if ((checksum & 0xff) != b[31]) {
             decoder_log(decoder, 2, __func__, "Checksum fail");
             ret = DECODE_FAIL_MIC;
             continue;
@@ -160,22 +173,31 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int pairing     = (b[3] & 0x04);
 
         // depend if external temp/hum sensor or Weather rain/wind station the values are not decode the same
+        float temp_f = 0;
+        float temp_c = 0;
 
         if (kind != 0) {  // if not Rain/Wind ... sensor
 
             int temp_raw    = ((b[4] & 0x0f) << 8) | (b[5] & 0xf0) | (b[6] & 0x0f); // weird format
-            float temp_f    = (temp_raw - 900) * 0.1f;
+            if (subtype == 0x1) {
+                temp_f    = (temp_raw - 900) * 0.1f;
+            }
+            if (subtype == 0x3) {
+                temp_c    = (temp_raw - 500) * 0.1f;
+            }
             int humidity    = b[7];
 
             /* clang-format off */
             data_t *data = data_make(
-                    "model",            "",                 DATA_STRING, "Altronics-X7064",
+                    "model",            "",                 DATA_COND,   subtype == 0x1, DATA_STRING, "Altronics-X7064",
+                    "model",            "",                 DATA_COND,   subtype == 0x3, DATA_STRING, "Altronics-X7064A",
                     "id",               "",                 DATA_FORMAT, "%03x", DATA_INT,    id,
                     "channel",          "Channel",          DATA_INT,    channel,
                     "battery_ok",       "Battery_OK",       DATA_INT,    !battery_low,
-                    "temperature_F",    "Temperature",      DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_f,
+                    "temperature_F",    "Temperature",      DATA_COND,   subtype == 0x1, DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_f,
+                    "temperature_C",    "Temperature",      DATA_COND,   subtype == 0x3, DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
                     "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                    "pairing",          "Pairing?",         DATA_COND,   pairing,   DATA_INT,    !!pairing,
+                    "pairing",          "Pairing",          DATA_COND,   pairing,   DATA_INT,    !!pairing,
                     "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
                     NULL);
             /* clang-format on */
@@ -186,7 +208,7 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         else {  // if Rain/Wind sensor
 
             int temp_raw      = ((b[4] & 0x0f) << 8) | (b[5]); // weird format
-            float temp_f      = (temp_raw - 900) * 0.1f;
+            temp_f      = (temp_raw - 900) * 0.1f;
             int humidity      = b[6];
             int wind_raw      = (((b[7] - 1) & 0xff) << 8) | ((b[8] - 1) & 0xff);   // need to remove 1 from byte , 0x01 - 1 = 0 , 0x02 - 1 = 1 ... 0xff -1 = 254 , 0x00 - 1 = 255.
             float speed_kmh   = wind_raw * 0.2f;
@@ -260,6 +282,7 @@ static char const *const output_fields[] = {
         "channel",
         "battery_ok",
         "temperature_F",
+        "temperature_C",
         "humidity",
         "wind_avg_km_h",
         "wind_max_km_h",
@@ -273,7 +296,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const emax = {
-        .name        = "Emax W6, rebrand Altronics x7063/4, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025, Protmex PT3390A, Jula Marquant 014331/32, TechniSat IMETEO X6 76-4924-00, Weather Station or temperature/humidity sensor",
+        .name        = "Emax W6, rebrand Altronics x7063/4/x7064A, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025, Protmex PT3390A, Jula Marquant 014331/32, TechniSat IMETEO X6 76-4924-00, Weather Station or temperature/humidity sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 90,
         .long_width  = 90,
