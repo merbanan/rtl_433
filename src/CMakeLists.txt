@@ -131,6 +131,7 @@ add_library(r_433 STATIC
     devices/flowis.c
     devices/fordremote.c
     devices/fs20.c
+    devices/fsl_scoreboard.c
     devices/ft004b.c
     devices/funkbus.c
     devices/gasmate_ba1008.c
