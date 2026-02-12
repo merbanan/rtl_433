@@ -377,6 +377,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [289]  Voltcraft EnergyCount 3000 (ec3k)
     [290]  Orion Endpoint from Badger Meter, GIF2020OCECNA, water meter, hopping from 904.4 Mhz to 924.6Mhz (-s 1600k)
     [291]  Geevon TX19-1 outdoor sensor
+    [292]  WallarGe CLTX001 Outdoor Temperature Sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
