@@ -83,10 +83,11 @@ static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_log_bitrow(decoder, 1, __func__, b, (len > 80 ? 80 : len), "");
     }
 
-    if (channel == 0x2 || channel == 0x4 || channel == 0xA) {
-        // 2GIG brand
+    if (channel == 0x2 || channel == 0x4 || channel == 0xA || channel == 0xC) {
+        // 2GIG brand added Type C for Tilt Sensor
         crc_calculated = crc16(b, 4, 0x8050, 0);
-    } else { // channel == 0x8
+    }
+    else { // channel == 0x8
         crc_calculated = crc16(b, 4, 0x8005, 0);
     }
     if (crc != crc_calculated)
