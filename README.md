@@ -35,7 +35,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
 
     rtl_433 -h
 
-```bash
+```
 
   A "rtl_433.conf" file is searched in "./", XDG_CONFIG_HOME e.g. "$HOME/.config/rtl_433/",
   SYSCONFDIR e.g. "/usr/local/etc/rtl_433/", then command line args will be parsed in order.
@@ -88,6 +88,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-E hop | quit] Hop/Quit after outputting successful event(s)
   [-h] Output this usage help and exit
        Use -d, -g, -R, -X, -F, -M, -r, -w, or -W without argument for more help
+
+
 
 		= Supported device protocols =
     [01]  Silvercrest Remote Control
@@ -379,6 +381,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
 
 * Disabled by default, use -R n or a conf file to enable
 
+
 		= Input device selection =
 	RTL-SDR device driver is available.
   [-d <RTL-SDR USB device index>] (default: 0)
@@ -391,11 +394,13 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-d rtl_tcp[:[//]host[:port]] (default: localhost:1234)
 	Specify host/port to connect to with e.g. -d rtl_tcp:127.0.0.1:1234
 
+
 		= Gain option =
   [-g <gain>] (default: auto)
 	For RTL-SDR: gain in dB ("0" is auto).
 	For SoapySDR: gain in dB for automatic distribution ("" is auto), or string of gain elements.
 	E.g. "LNA=20,TIA=8,PGA=2" for LimeSDR.
+
 
 		= Flex decoder spec =
 Use -X <spec> to add a flexible general purpose decoder.
@@ -457,6 +462,8 @@ Available options are:
 
 E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repeats>=3"
 
+
+
 		= Output format option =
   [-F log|kv|json|csv|mqtt|influx|syslog|trigger|rtl_tcp|http|null] Produce decoded output in given format.
 	Without this option the default is LOG and KV output. Use "-F null" to remove the default.
@@ -491,6 +498,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
   [-F http[:[//]bind[:port]] (default: 0.0.0.0:8433)
 	Add a HTTP API server, a UI is at e.g. http://localhost:8433/
 
+
 		= Meta information option =
   [-M time[:<options>]|protocol|level|noise[:<secs>]|stats|bits] Add various metadata to every output line.
 	Use "time" to add current date and time meta data (preset for live inputs).
@@ -510,6 +518,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	Use "stats[:[<level>][:<interval>]]" to report statistics (default: 600 seconds).
 	  level 0: no report, 1: report successful devices, 2: report active devices, 3: report all
 	Use "bits" to add bit representation to code outputs (for debug).
+
 
 		= Read file option =
   [-r <filename>] Read data from input file instead of a receiver
@@ -532,6 +541,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 
 	Reading from pipes also support format options.
 	E.g reading complex 32-bit float: CU32:-
+
 
 		= Write file option =
   [-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)
