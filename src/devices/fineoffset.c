@@ -150,9 +150,13 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
-Fine Offset Electronics WH24, WH65B, HP1000 and derivatives Temperature/Humidity/Pressure sensor protocol.
+Fine Offset Electronics WH24, WH65, HP1000 and derivatives Temperature/Humidity/Pressure sensor protocol.
 
-Also: Misol WS2320 (rebranded WH65B, 433MHz)
+Also: Misol WS2320 (rebranded WH65, 433MHz)
+
+Note the WH65 and WS69 come in three variants: A, B, C, where the characters A, B and C stand for the transmission frequency,
+A: 868 MHz, B: 915 MHz and C (or nothing): 433 MHz.
+The first WH65 analyzed was 915 MHz that way it's named WH65B in some places here.
 
 The sensor sends a package each ~16 s with a width of ~11 ms. The bits are PCM modulated with Frequency Shift Keying.
 
@@ -163,7 +167,7 @@ Example:
     Payload:                              FF II DD VT TT HH WW GG RR RR UU UU LL LL LL CC BB
     Reading: id: 191, temp: 11.8 C, humidity: 78 %, wind_dir 266 deg, wind_speed: 1.12 m/s, gust_speed 2.24 m/s, rainfall: 22.2 mm
 
-The WH65B sends the same data with a slightly longer preamble and postamble:
+The WH65 sends the same data with a slightly longer preamble and postamble:
 
             {209} 55 55 55 55 55 51 6e a1 22 83 3f 14 3a 08 00 00 00 08 00 10 00 00 04 60 a1 00 8
     aligned  {208} a aa aa aa aa aa 2d d4 24 50 67 e2 87 41 00 00 00 01 00 02 00 00 00 8c 14 20 1
@@ -188,6 +192,12 @@ The WH65B sends the same data with a slightly longer preamble and postamble:
 - C: 8 bit CRC checksum of the 15 data bytes
 - B: 8 bit Bitsum (sum without carry, XOR) of the 16 data bytes
 
+There are two hardware editions of the WS69 -- older ones with a 4 bit sensor ID, newer ones with a 8 bit sensor ID.
+The 8 bit sensor ID is needed for the console to process a potential additional pressure sensor (the default sensor
+is T&H whereas a T&HP sensor is also possible now).
+
+Note factory reset or hardware reset (i.e. rain counter reset) needs a cold start from depleted battery and super-capacitor.
+
 The WS69 sends the same data with additional 8 bytes (6 bytes plus CRC and SUM):
 
     {263}aaaaaaaaaaa 2dd4 241c8801ca63000000330000000000 acd5 01ff ffff 002f 835a 0
@@ -197,6 +207,13 @@ The WS69 sends the same data with additional 8 bytes (6 bytes plus CRC and SUM):
     {263}aaaaaaaaaaa 2dd4 241c5981b06302000033000000001e 2aaa 01ff ffff 002f 5fe0 0
     {263}aaaaaaaaaaa 2dd4 241c5981b063000000330000000014 aa1e 01ff ffff 002f b41a 0
 
+Pressure data:
+Found by \@Gyvate108
+Bytes 17-19 with 17 bits (0-16); Byte 19, Byte 18 and 1st bit (0) of Byte 17.
+Byte 20 is the pressure data checksum. There are two checksums: 1st is Byte 16 (Bytes 0-15) and 2nd is Byte 24 (Bytes 0-23)
+Full payload length: 25 Bytes
+When the pressure module is not present, the value provided will be 0x1FFFF, correct local pressure (ABS) is value/100 in hPa.
+
 The WS69 also seems to sends another type of packet, 100 us FSK PCM, that has not been analyzed:
 
     5555 5555 d395 d395 d90a ba0b 5cb7 1d
@@ -204,17 +221,17 @@ The WS69 also seems to sends another type of packet, 100 us FSK PCM, that has no
     rtl_433 -f 868.2M -s 1000k -Y minmax -R 0 -X 'n=name,m=FSK_PCM,s=100,l=100,r=3000,preamble=d395d395'
  */
 #define MODEL_WH24 24 /* internal identifier for model WH24, family code is always 0x24 */
-#define MODEL_WH65B 65 /* internal identifier for model WH65B, family code is always 0x24 */
+#define MODEL_WH65 65 /* internal identifier for model WH65, family code is always 0x24 */
 #define MODEL_WS69 69 /* internal identifier for model WS69, family code is always 0x24 */
 static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t const preamble[] = {0xAA, 0x2D, 0xD4}; // part of preamble and sync word
-    uint8_t b[17]; // aligned packet data, would need 25 bytes for WS69
+    uint8_t b[17 + 8]; // aligned packet data, 17 bytes general, 25 bytes for WS69
     unsigned bit_offset;
     int type;
 
-    // Validate package, WH24 nominal size is 196 bit periods, WH65b is 209 bit periods, WS69 is 260 bits.
+    // Validate package, WH24 nominal size is 196 bit periods, WH65 is 209 bit periods, WS69 is 260 bits.
     if (bitbuffer->bits_per_row[0] < 190 || bitbuffer->bits_per_row[0] > 268) {
         decoder_logf(decoder, 1, __func__, "wrong package size %u", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH;
@@ -222,31 +239,31 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Find a data package and extract data buffer
     bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
-    if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) { // Did not find a big enough package
+    if (bit_offset + 17 * 8 > bitbuffer->bits_per_row[0]) { // Did not find a big enough package
         decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "short package. Header index: %u", bit_offset);
         return DECODE_ABORT_LENGTH;
     }
 
     // Classification heuristics
-    if (bitbuffer->bits_per_row[0] - bit_offset - sizeof(b) * 8 < 8) {
+    if (bitbuffer->bits_per_row[0] - bit_offset - 17 * 8 < 8) {
         if (bit_offset < 61) {
             type = MODEL_WH24; // nominal 3 bits postamble
         }
         else {
-            type = MODEL_WH65B;
+            type = MODEL_WH65;
         }
     }
     else {
-        type = MODEL_WH65B; // nominal 12 bits postamble
+        type = MODEL_WH65; // nominal 12 bits postamble
     }
     if (bitbuffer->bits_per_row[0] > 215) { // minimum 27*8=216
         // we could also check the extra 6 bytes plus crc and sum.
         type = MODEL_WS69; // nominal 260 bits
     }
 
-    bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
+    bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, 25 * 8);
 
-    decoder_logf_bitrow(decoder, 1, __func__, b, sizeof(b) * 8, "Raw @ bit_offset [%u]", bit_offset);
+    decoder_logf_bitrow(decoder, 1, __func__, b, 25 * 8, "Raw @ bit_offset [%u]", bit_offset);
 
     if (b[0] != 0x24) { // Check for family code 0x24
         decoder_logf(decoder, 1, __func__, "unknown family code: 0x%02x", b[0]);
@@ -254,14 +271,24 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Verify checksum, same as other FO Stations: Reverse 1Wire CRC (poly 0x131)
-    uint8_t crc = crc8(b, 15, 0x31, 0x00);
-    uint8_t checksum = 0;
-    for (unsigned n = 0; n < 16; ++n) {
-        checksum += b[n];
-    }
-    if (crc != b[15] || checksum != b[16]) {
-        decoder_logf(decoder, 1, __func__, "Checksum error: %02x %02x", crc, checksum);
+    uint8_t crc = crc8(b, 16, 0x31, 0x00);
+    uint8_t sum = add_bytes(b, 16);
+    if (crc != 0 || sum != b[16]) {
+        decoder_logf(decoder, 1, __func__, "Checksum error: %02x %02x", crc, sum);
         return DECODE_FAIL_MIC;
+    }
+
+    float pressure_hpa = -1.0f;
+    if (type == MODEL_WS69) {
+        int pressure_raw = b[17] << 16 | b[18] << 8 | b[19]; // 0x01ffff if invalid
+
+        uint8_t p_crc = crc8(b, 24, 0x31, 0x00);
+        uint8_t p_sum = add_bytes(b, 24);
+        if (p_crc != 0 || p_sum != b[24]) {
+            decoder_logf(decoder, 1, __func__, "Checksum error in pressure: %02x %02x", p_crc, p_sum);
+        } else if (pressure_raw < 0x01ffff) {
+            pressure_hpa = pressure_raw * 0.01f;
+        }
     }
 
     // Decode data
@@ -273,16 +300,16 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int humidity        = b[5];                      // 0xff if invalid
     int wind_speed_raw  = b[6] | (b[3] & 0x10) << 4; // 0x1ff if invalid
     float wind_speed_factor, rain_cup_count;
-    // Wind speed factor is 1.12 m/s (1.19 per specs?) for WH24, 0.51 m/s for WH65B
-    // Rain cup each count is 0.3mm for WH24, 0.01inch (0.254mm) for WH65B
+    // Wind speed factor is 1.12 m/s (1.19 per specs?) for WH24, 0.51 m/s for WH65
+    // Rain cup each count is 0.3mm for WH24, 0.01inch (0.254mm) for WH65
     if (type == MODEL_WH24) { // WH24
         wind_speed_factor = 1.12f;
         rain_cup_count = 0.3f;
-    } else { // WH65B
+    } else { // WH65
         wind_speed_factor = 0.51f;
         rain_cup_count = 0.254f;
     }
-    // Wind speed is scaled by 8, wind speed = raw / 8 * 1.12 m/s (0.51 for WH65B)
+    // Wind speed is scaled by 8, wind speed = raw / 8 * 1.12 m/s (0.51 for WH65)
     float wind_speed_ms = wind_speed_raw * 0.125f * wind_speed_factor;
     int gust_speed_raw  = b[7];             // 0xff if invalid
     // Wind gust is unscaled, multiply by wind speed factor 1.12 m/s
@@ -316,12 +343,13 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",            "",                 DATA_COND, type == MODEL_WH24,  DATA_STRING, "Fineoffset-WH24",
-            "model",            "",                 DATA_COND, type == MODEL_WH65B, DATA_STRING, "Fineoffset-WH65B",
+            "model",            "",                 DATA_COND, type == MODEL_WH65, DATA_STRING, "Fineoffset-WH65B",
             "model",            "",                 DATA_COND, type == MODEL_WS69,  DATA_STRING, "Fineoffset-WS69",
             "id",               "ID",               DATA_INT,  id,
             "battery_ok",       "Battery",          DATA_INT,  !low_battery,
             "temperature_C",    "Temperature",      DATA_COND, temp_raw != 0x7ff, DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",         DATA_COND, humidity != 0xff, DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "pressure_hPa",     "Pressure",         DATA_COND, pressure_hpa >= 0, DATA_FORMAT, "%.2f hPa", DATA_DOUBLE, pressure_hpa,
             "wind_dir_deg",     "Wind direction",   DATA_COND, wind_dir != 0x1ff, DATA_INT, wind_dir,
             "wind_avg_m_s",     "Wind speed",       DATA_COND, wind_speed_raw != 0x1ff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_speed_ms,
             "wind_max_m_s",     "Gust speed",       DATA_COND, gust_speed_raw != 0xff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust_speed_ms,
@@ -508,7 +536,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         type = 32; // new WN32B
     }
     else if (bitbuffer->bits_per_row[0] < 440) {             // Nominal size is 488 bit periods
-        return fineoffset_WH24_callback(decoder, bitbuffer); // abort and try WH24, WH65B, HP1000
+        return fineoffset_WH24_callback(decoder, bitbuffer); // abort and try WH24, WH65, HP1000
     }
 
     if (bitbuffer->bits_per_row[0] > 510) { // WH32B has nominal size of 971 bit periods
@@ -1051,7 +1079,7 @@ r_device const fineoffset_WH2 = {
 };
 
 r_device const fineoffset_WH25 = {
-        .name        = "Fine Offset Electronics, WH25, WH32, WH32B, WN32B, WH24, WH65B, HP1000, Misol WS2320 Temperature/Humidity/Pressure Sensor",
+        .name        = "Fine Offset Electronics, WH25, WH32, WH32B, WN32B, WH24, WH65, WS69, HP1000, Misol WS2320 Temperature/Humidity/Pressure Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 58,    // Bit width = 58µs (measured across 580 samples / 40 bits / 250 kHz)
         .long_width  = 58,    // NRZ encoding (bit width = pulse width)
