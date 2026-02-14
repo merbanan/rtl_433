@@ -82,6 +82,55 @@ char *usecs_time_str(char *buf, char const *format, int with_tz, struct timeval 
     return buf;
 }
 
+const char *parse_time_str(const char *buf, struct timeval *out)
+{
+    struct tm tm      = {0};
+    long micros       = 0;
+    long digit_micros = 100000;
+    buf               = strptime(buf, "%Y-%m-%d", &tm);
+
+    if (!buf) {
+        return NULL;
+    }
+
+    if (*buf == 'T' || *buf == ' ') {
+        buf++;
+    }
+    else {
+        return NULL;
+    }
+
+    buf = strptime(buf, "%H:%M:%S", &tm);
+
+    if (!buf) {
+        return NULL;
+    }
+
+    if (*buf == '.') {
+        buf++;
+        while (*buf >= '0' && *buf <= '9') {
+            micros += (*buf - '0') * digit_micros;
+            digit_micros /= 10;
+            buf++;
+        }
+    }
+
+    const char *end = strptime(buf, "%z", &tm);
+    if (end) {
+        buf = end;
+    }
+    int gmtoff = tm.tm_gmtoff; // gmtoff is ignored and cleared by mktime/timegm, so handle it ourselves
+
+    time_t sec = timegm(&tm);
+    if (sec == -1) {
+        return NULL;
+    }
+    out->tv_sec  = sec - gmtoff;
+    out->tv_usec = micros;
+
+    return buf;
+}
+
 char *sample_pos_str(float sample_file_pos, char *buf)
 {
     snprintf(buf, LOCAL_TIME_BUFLEN, "@%fs", sample_file_pos);
