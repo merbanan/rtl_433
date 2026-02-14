@@ -202,6 +202,7 @@
     DECL(govee) \
     DECL(cmr113) \
     DECL(inkbird_ith20r) \
+    DECL(inkbird_p01r) \
     DECL(rainpoint) \
     DECL(atech_ws308) \
     DECL(acurite_01185m) \

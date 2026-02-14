@@ -14,7 +14,8 @@ Decoder for Inkbird ITH-20R.
 
 https://www.ink-bird.com/products-data-logger-ith20r.html
 
-Also: Inkbird IBS-P01R Pool Thermometer.
+Also: Inkbird IBS-P01R Pool Thermometer (temperature only, subtype 0x0F).
+See inkbird_p01r.c for IBS-P01R pool water quality sensor (subtype 0x14).
 
 The compact 3-in-1 multifunction outdoor sensor transmits the data on 433.92 MHz.
 The device uses FSK-PCM encoding,
