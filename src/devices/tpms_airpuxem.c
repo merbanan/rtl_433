@@ -85,8 +85,7 @@ static int tpms_airpuxem_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
 
     char code_str[11 * 2 + 1];
-    snprintf(code_str, sizeof(code_str), "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
-       b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10]);
+    bitrow_snprint(b, 11 * 8, code_str, sizeof(code_str));
 
 
     /* clang-format off */
