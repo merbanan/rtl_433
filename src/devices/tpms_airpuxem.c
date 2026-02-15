@@ -85,8 +85,8 @@ static int tpms_airpuxem_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
 
     char code_str[11 * 2 + 1];
-    snprintf(code_str, sizeof(code_str), "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", 
-       b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10]); 
+    snprintf(code_str, sizeof(code_str), "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+       b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10]);
 
 
     /* clang-format off */
@@ -94,11 +94,11 @@ static int tpms_airpuxem_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
             "model",            "",             DATA_STRING, "Airpuxem-TYH11EU6ZQ",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,
-            "position",         "",             DATA_INT, position,            
+            "position",         "",             DATA_INT, position,
             "flags",            "",             DATA_INT, flags,
             "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure ,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature ,            
-            "battery_V",        "Battery",      DATA_FORMAT, "%.1f V", DATA_DOUBLE, (double)battery * 0.02,            
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature ,      
+            "battery_V",        "Battery",      DATA_FORMAT, "%.1f V", DATA_DOUBLE, (double)battery * 0.02,
             "code",             "",             DATA_STRING, code_str,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
@@ -140,11 +140,11 @@ static char const *const output_fields[] = {
         "model",
         "type",
         "id",
-        "position",        
+        "position",
         "flags",
         "pressure_kPa",
         "temperature_C",
-        "battery_V",        
+        "battery_V",
         "code",
         "mic",
         NULL,
