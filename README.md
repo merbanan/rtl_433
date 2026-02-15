@@ -382,6 +382,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [294]  ThermoPro TP862b TempSpike XR Wireless Dual-Probe Meat Thermometer
     [295]  Airpuxem TPMS TYH11_EU6_ZQ
     [296]  Apator Metra E-ITN 30 heat cost allocator
+    [297]  Tuya WSD024-W-433 Temperature & Humidity Sensor
 
 * Disabled by default, use -R n or a conf file to enable
 

@@ -304,6 +304,7 @@
     DECL(thermopro_tp862b)\
     DECL(tpms_airpuxem) \
     DECL(apator_metra_eitn30) \
+    DECL(tuya_wsd024w433) \
 
     /* Add new decoders here. */
 
