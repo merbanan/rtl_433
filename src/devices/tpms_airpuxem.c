@@ -14,7 +14,7 @@ Airpuxem TPMS Model TYH11_EU6_ZQ FSK.
 - Working Temperature:-40 °C to 125 °C
 - Working Frequency: 433.92MHz+-30KHz
 - Tire monitoring range value: 100kPa-900kPa+-7kPa
-- Based on SENASIC SNP739D TPMS IC ( https://www.senasic.com/Public/Uploads/uploadfile2/files/20240206/DS0069SNP739D0XDatasheet.pdf ) 
+- Based on SENASIC SNP739D TPMS IC ( https://www.senasic.com/Public/Uploads/uploadfile2/files/20240206/DS0069SNP739D0XDatasheet.pdf )
 - Probably a 'white-labeled' Jansite TPMS ( http://www.jansite.cn/P_view.asp?pid=232 )
 
 Data layout (nibbles):
@@ -23,13 +23,13 @@ Data layout (nibbles):
 
 - F: 4 bit Sync (5)
 - I: 32 bit ID
-- M: 1 bit Pressure MSB_ONE, 3 bit Flags 
+- M: 1 bit Pressure MSB_ONE, 3 bit Flags
 - N: 1 bit Pressure MSB TWO, 3 bit Sensor position
 - P: 8 bit Pressure LSB (kPa)
 - T: 8 bit Temperature (deg. C)
 - B: 8 bit Battery level  (a good guess)
 - C: 8 bit Checksum
-- The preamble is 0xaa..aa9 (or 0x55..556 depending on polarity)    
+- The preamble is 0xaa..aa9 (or 0x55..556 depending on polarity)
 */
 
 
@@ -37,21 +37,20 @@ Data layout (nibbles):
 
 static int tpms_airpuxem_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    bitbuffer_t dec = {0};    
+    bitbuffer_t dec = {0};
     uint8_t *b;
 
     // Decode up to ~200 bits of Manchester into a temp buffer
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &dec, 354);
-    //printf("%d\n", dec.bits_per_row[0]);
     if (dec.bits_per_row[0] < 84) // need at least 4 ("FIVE") + 64 (CRC'ed data) + 8 (CRC) + 8 (CRC again) = 84 bits
         return DECODE_FAIL_SANITY;
 
-    b = dec.bb[0];    
+    b = dec.bb[0];
 
     unsigned nbits  = dec.bits_per_row[0];
 
     // Basic structural checks
-    if ((b[0] >> 4) != 0x5){
+    if ((b[0] >> 4) != 0x5) {
         return DECODE_FAIL_SANITY; // header nibble mismatch
     }
 
@@ -72,15 +71,15 @@ static int tpms_airpuxem_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
     uint8_t id_bytes[10] = {0};
     bitbuffer_extract_bytes(&dec, 0, 4, id_bytes, 10 * 8);
     unsigned id = ((unsigned)id_bytes[0] << 24) | (id_bytes[1] << 16) | (id_bytes[2] << 8) | id_bytes[3];
-    
+
 
     char id_str[8 + 1];
     snprintf(id_str, sizeof(id_str), "%08x", id);
 
     //id          = (unsigned)b[0] << 20 | b[1] << 12 | b[2] << 4 | b[3] >> 4;
     int flags       = (id_bytes[4] >> 4) & 0x07;
-    int position    = id_bytes[4] & 0x07; 
-    int pressure    = (id_bytes[5] | (((id_bytes[4] >> 7) & 1) << 8) | (((id_bytes[4] >> 3) & 1) << 9)) - 100; 
+    int position    = id_bytes[4] & 0x07;
+    int pressure    = (id_bytes[5] | (((id_bytes[4] >> 7) & 1) << 8) | (((id_bytes[4] >> 3) & 1) << 9)) - 100;
     int temperature  = (char) id_bytes[6];
     int battery      =  id_bytes[7];
 
