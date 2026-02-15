@@ -97,7 +97,7 @@ static int tpms_airpuxem_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
             "position",         "",             DATA_INT, position,
             "flags",            "",             DATA_INT, flags,
             "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure ,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature ,      
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature ,
             "battery_V",        "Battery",      DATA_FORMAT, "%.1f V", DATA_DOUBLE, (double)battery * 0.02,
             "code",             "",             DATA_STRING, code_str,
             "mic",              "Integrity",    DATA_STRING, "CRC",
