@@ -300,8 +300,9 @@
     DECL(orion_endpoint_2020) \
     DECL(geevon_tx19) \
     DECL(wallarge_cltx001) \
+    DECL(sainlogic_sa8) \
     DECL(tpms_airpuxem) \
-
+    
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;

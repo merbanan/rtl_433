@@ -122,7 +122,8 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
             /* clang-format off */
             data = data_make(
-                    "model",            "",             DATA_STRING, ws_id == 0x6 ? "LaCrosse-WS3600" : "LaCrosse-WS2310",
+                    "model",            "",             DATA_COND, ws_id == 0x6, DATA_STRING, "LaCrosse-WS3600",
+                    "model",            "",             DATA_COND, ws_id != 0x6, DATA_STRING, "LaCrosse-WS2310",
                     "id",               "",             DATA_INT,    sensor_id,
                     "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
                     NULL);
@@ -141,7 +142,8 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
             /* clang-format off */
             data = data_make(
-                    "model",            "",             DATA_STRING, ws_id == 0x6 ? "LaCrosse-WS3600" : "LaCrosse-WS2310",
+                    "model",            "",             DATA_COND, ws_id == 0x6, DATA_STRING, "LaCrosse-WS3600",
+                    "model",            "",             DATA_COND, ws_id != 0x6, DATA_STRING, "LaCrosse-WS2310",
                     "id",               "",             DATA_INT,    sensor_id,
                     "humidity",         "Humidity",     DATA_INT,    msg_value_bcd2,
                     NULL);
@@ -156,7 +158,8 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
             /* clang-format off */
             data = data_make(
-                    "model",            "",             DATA_STRING, ws_id == 0x6 ? "LaCrosse-WS3600" : "LaCrosse-WS2310",
+                    "model",            "",             DATA_COND, ws_id == 0x6, DATA_STRING, "LaCrosse-WS3600",
+                    "model",            "",             DATA_COND, ws_id != 0x6, DATA_STRING, "LaCrosse-WS2310",
                     "id",               "",             DATA_INT,    sensor_id,
                     "rain_mm",          "Rainfall",     DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rain_mm,
                     NULL);
@@ -179,7 +182,8 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
             /* clang-format off */
             data = data_make(
-                    "model",            "",             DATA_STRING, ws_id == 0x6 ? "LaCrosse-WS3600" : "LaCrosse-WS2310",
+                    "model",            "",             DATA_COND, ws_id == 0x6, DATA_STRING, "LaCrosse-WS3600",
+                    "model",            "",             DATA_COND, ws_id != 0x6, DATA_STRING, "LaCrosse-WS2310",
                     "id",               "",             DATA_INT,    sensor_id,
                     "wind_avg_m_s",     "Wind speed",   DATA_COND,   msg_type == 3, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_spd,
                     "wind_max_m_s",     "Gust speed",   DATA_COND,   msg_type != 3, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_spd,

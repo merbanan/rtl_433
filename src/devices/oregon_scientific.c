@@ -505,7 +505,8 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
 
             /* clang-format off */
             data_t *data = data_make(
-                    "model",                 "",                        DATA_STRING, (sensor_id == ID_THN129) ? "Oregon-THN129" : "Oregon-RTHN129",
+                    "model",                 "",                DATA_COND, sensor_id == ID_THN129, DATA_STRING, "Oregon-THN129",
+                    "model",                 "",                DATA_COND, sensor_id != ID_THN129, DATA_STRING, "Oregon-RTHN129",
                     "id",                        "House Code",    DATA_INT,        device_id,
                     "channel",             "Channel",         DATA_INT,        channel, // 1 to 5
                     "battery_ok",          "Battery",         DATA_INT,    !battery_low,

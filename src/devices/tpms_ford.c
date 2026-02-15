@@ -56,101 +56,79 @@ Packet nibbles:
 static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     bitbuffer_t packet_bits = {0};
-    uint8_t *b;
-    unsigned id;
-    int code;
-    float pressure_psi;
-    int temperature_c, temperature_valid;
-    int psibits;
-    int moving;
-    int learn;
-    int unknown;
-    int unknown_3;
-
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
 
     // require 64 data bits
     if (packet_bits.bits_per_row[0] < 64) {
         return 0;
     }
-    b = packet_bits.bb[0];
+    uint8_t *b = packet_bits.bb[0];
 
     if (((b[0] + b[1] + b[2] + b[3] + b[4] + b[5] + b[6]) & 0xff) != b[7]) {
         return 0;
     }
 
-    id = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
+    unsigned id = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
 
-    /* Extract and log code to aid in debugging. */
-    code = b[4] << 16 | b[5] << 8 | b[6];
+    // Extract and log code to aid in debugging.
+    int code = b[4] << 16 | b[5] << 8 | b[6];
 
-    /*
-     * Formula is a combination of regression and plausible, observed
-     * from roughly 31 to 36 psi.  (The bit at byte6-0x20 is shifted
-     * to 0x100.)
-     */
-    psibits      = (((b[6] & 0x20) << 3) | b[4]);
-    pressure_psi = psibits * 0.25f;
+    // Formula is a combination of regression and plausible, observed
+    // from roughly 31 to 36 psi.  (The bit at byte6-0x20 is shifted
+    // to 0x100.)
+    int psibits        = (((b[6] & 0x20) << 3) | b[4]);
+    float pressure_psi = psibits * 0.25f;
 
-    /*
-     * Working theory is that temperature bits are temp + 56,
-     * encoding -56 to 71 C.  Validated as close around 15 C.
-     */
-    if ((b[5] & 0x80) == 0x80) {
-        temperature_valid = 0;
-        /* Avoid uninitialized warning due to DATA_COND. */
-        temperature_c = -1000.0;
-    }
-    else {
+    // Working theory is that temperature bits are temp + 56,
+    // encoding -56 to 71 C.  Validated as close around 15 C.
+    int temperature_valid = 0;
+    int temperature_c     = -1000.0;
+
+    if ((b[5] & 0x80) == 0) {
         temperature_valid = 1;
         temperature_c     = (b[5] & 0x7f) - 56;
     }
 
-    /*
-     * Set up syndrome of unexpected bits.  The point is to have a
-     * variable unknown which is zero if this packet matches the
-     * code's understanding, and to be non-zero if anything is unusual,
-     * to aid finding logged packets for manual study.
-     */
-    unknown = 0;
+    // Set up syndrome of unexpected bits.  The point is to have a
+    // variable unknown which is zero if this packet matches the
+    // code's understanding, and to be non-zero if anything is unusual,
+    // to aid finding logged packets for manual study.
 
-    /* Examine moving, learn and normal bits. */
-    learn = moving = 0;
+    // Examine moving, learn and normal bits.
+    int learn  = 0;
+    int moving = 0;
+    int unknown = 0;
     switch (b[6] & 0x4c) {
     case 0x8:
-        /* In response to learn tool */
+        // In response to learn tool
         learn = 1;
         break;
 
     case 0x4:
-        /* At rest. */
+        // At rest.
         break;
 
     case 0x44:
-        /* Moving. */
+        // Moving.
         moving = 1;
         break;
 
     default:
-        /*
-             * These three bits taken together do not match a known
-             * pattern.  Therefore set all of them as the unknown
-             * syndrome.
-             */
+        // These three bits taken together do not match a known
+        // pattern.  Therefore set all of them as the unknown
+        // syndrome.
         unknown = (b[6] & 0x4c);
         break;
     }
 
-    /*
-     * We've accounted for
-     * 0x40(moving) 0x20(temp) 0x8(learn) 04(normal)
-     * 0x3(separate, next)
-     * so that leaves 0x80 and 0x10, which are expected to be 0.
-     */
+    // We've accounted for
+    // 0x40(moving) 0x20(temp) 0x8(learn) 04(normal)
+    // 0x3(separate, next)
+    // so that leaves 0x80 and 0x10, which are expected to be 0.
     unknown |= (b[6] & 0x90);
 
     /* Low-order 2 bits are variously 01, 10. */
-    unknown_3 = b[6] & 0x3;
+    int unknown_3 = b[6] & 0x3;
 
     char id_str[9];
     snprintf(id_str, sizeof(id_str), "%08x", id);
