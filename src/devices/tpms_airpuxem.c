@@ -1,7 +1,7 @@
 /** @file
     Airpuxem TYH11_EU6_ZQ FSK 84 bits Manchester encoded TPMS data.
 
-    Copyright (C) 2019 Alexander Grau, Andreas Spiess, Christian W. Zuckschwerdt <zany@triq.net>
+    Copyright (C) 2019 Alexander Grau, Bruno Octau, Christian W. Zuckschwerdt <zany@triq.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ Data layout (nibbles):
 - N: 1 bit Pressure MSB TWO, 3 bit Sensor position
 - P: 8 bit Pressure LSB (kPa)
 - T: 8 bit Temperature (deg. C)
-- B: 8 bit Battery level 
+- B: 8 bit Battery level  (a good guess)
 - C: 8 bit Checksum
 - The preamble is 0xaa..aa9 (or 0x55..556 depending on polarity)    
 */
@@ -35,7 +35,7 @@ Data layout (nibbles):
 
 #include "decoder.h"
 
-static int tpms_airpuxem_try(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+static int tpms_airpuxem_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     bitbuffer_t dec = {0};    
     uint8_t *b;
@@ -51,8 +51,9 @@ static int tpms_airpuxem_try(r_device *decoder, bitbuffer_t *bitbuffer, unsigned
     unsigned nbits  = dec.bits_per_row[0];
 
     // Basic structural checks
-    if ((b[0] >> 4) != 0x5)
+    if ((b[0] >> 4) != 0x5){
         return DECODE_FAIL_SANITY; // header nibble mismatch
+    }
 
     // Compute CRC over 84 bits starting right after the 4-bit constant header (FIVE)
     uint8_t payload[16] = {0};
@@ -70,7 +71,7 @@ static int tpms_airpuxem_try(r_device *decoder, bitbuffer_t *bitbuffer, unsigned
     // Extract bitstream starting at bit offset 4
     uint8_t id_bytes[10] = {0};
     bitbuffer_extract_bytes(&dec, 0, 4, id_bytes, 10 * 8);
-    unsigned id = ((unsigned)id_bytes[0] << 28) | (id_bytes[1] << 20) | (id_bytes[2] << 12) | (id_bytes[3] << 4) | (id_bytes[4] & 0x7);
+    unsigned id = ((unsigned)id_bytes[0] << 24) | (id_bytes[1] << 16) | (id_bytes[2] << 8) | id_bytes[3];
     
 
     char id_str[8 + 1];
@@ -91,7 +92,7 @@ static int tpms_airpuxem_try(r_device *decoder, bitbuffer_t *bitbuffer, unsigned
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Airpuxem-TYH11_EU6_ZQ",
+            "model",            "",             DATA_STRING, "Airpuxem-TYH11EU6ZQ",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,
             "position",         "",             DATA_INT, position,            
@@ -108,6 +109,7 @@ static int tpms_airpuxem_try(r_device *decoder, bitbuffer_t *bitbuffer, unsigned
     return 1;
 }
 
+/** @sa tpms_airpuxem_decode() */
 static int tpms_airpuxem_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // full preamble is (hex)
@@ -125,7 +127,7 @@ static int tpms_airpuxem_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         unsigned bitpos = 0;
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos, preamble_pattern, 24)) + 80 <=
                 bitbuffer->bits_per_row[row]) {
-                ret = tpms_airpuxem_try(decoder, bitbuffer, row, bitpos + 24);
+                ret = tpms_airpuxem_decode(decoder, bitbuffer, row, bitpos + 24);
             if (ret > 0)
                 events += ret;
             bitpos += 2;
