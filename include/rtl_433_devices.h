@@ -300,6 +300,7 @@
     DECL(orion_endpoint_2020) \
     DECL(geevon_tx19) \
     DECL(wallarge_cltx001) \
+    DECL(tpms_airpuxem) \
 
     /* Add new decoders here. */
 
