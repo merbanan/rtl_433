@@ -379,6 +379,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [291]  Geevon TX19-1 outdoor sensor
     [292]  WallarGe CLTX001 Outdoor Temperature Sensor
     [293]  Sainlogic SA8, Gevanti SA8 Weather Station
+    [294]  ThermoPro TP862b TempSpike XR Wireless Dual-Probe Meat Thermometer
 
 * Disabled by default, use -R n or a conf file to enable
 
