@@ -81,7 +81,7 @@ static int restaurant_pager_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
     }
 
-    return DECODE_ABORT_EARLY;
+    return 0;
 }
 
 static char const *const output_fields[] = {
