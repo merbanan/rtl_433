@@ -84,29 +84,18 @@ char *usecs_time_str(char *buf, char const *format, int with_tz, struct timeval 
 
 const char *parse_time_str(const char *buf, struct timeval *out)
 {
-    struct tm tm      = {0};
-    long micros       = 0;
-    long digit_micros = 100000;
-    buf               = strptime(buf, "%Y-%m-%d", &tm);
+    int year, mon, day, hour, min, sec, consumed;
+    long micros = 0;
 
-    if (!buf) {
-        return NULL;
-    }
-
-    if (*buf == 'T' || *buf == ' ') {
-        buf++;
+    if (sscanf(buf, "%4d-%2d-%2d%*1[ T]%2d:%2d:%2d%n", &year, &mon, &day, &hour, &min, &sec, &consumed) == 6) {
+        buf += consumed;
     }
     else {
         return NULL;
     }
 
-    buf = strptime(buf, "%H:%M:%S", &tm);
-
-    if (!buf) {
-        return NULL;
-    }
-
     if (*buf == '.') {
+        long digit_micros = 100000;
         buf++;
         while (*buf >= '0' && *buf <= '9') {
             micros += (*buf - '0') * digit_micros;
@@ -115,17 +104,41 @@ const char *parse_time_str(const char *buf, struct timeval *out)
         }
     }
 
-    const char *end = strptime(buf, "%z", &tm);
-    if (end) {
-        buf = end;
+    int gmtoff = 0;
+    if (*buf == '+' || *buf == '-') {
+        int tz_hours = 0, tz_mins = 0, tz_sign = 1;
+        if (*buf == '-')
+            tz_sign = -1;
+        buf += 1;
+        if (sscanf(buf, "%2d%2d%n", &tz_hours, &tz_mins, &consumed) == 2) {
+            buf += consumed;
+            gmtoff = tz_sign * (tz_hours * 3600 + tz_mins * 60);
+        }
+        else {
+            return NULL;
+        }
     }
-    int gmtoff = tm.tm_gmtoff; // gmtoff is ignored and cleared by mktime/timegm, so handle it ourselves
-
-    time_t sec = timegm(&tm);
-    if (sec == -1) {
+    else if (*buf == 'Z') {
+        buf++;
+    }
+    else if (*buf != '\0') {
         return NULL;
     }
-    out->tv_sec  = sec - gmtoff;
+
+    struct tm tm = {0};
+    tm.tm_year   = year - 1900;
+    tm.tm_mon    = mon - 1;
+    tm.tm_mday   = day;
+    tm.tm_hour   = hour;
+    tm.tm_min    = min;
+    tm.tm_sec    = sec;
+    tm.tm_isdst  = -1;
+
+    time_t epoch_sec = timegm(&tm);
+    if (epoch_sec == -1) {
+        return NULL;
+    }
+    out->tv_sec  = epoch_sec - gmtoff;
     out->tv_usec = micros;
 
     return buf;
