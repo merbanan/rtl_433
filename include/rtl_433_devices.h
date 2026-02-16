@@ -301,6 +301,7 @@
     DECL(geevon_tx19) \
     DECL(wallarge_cltx001) \
     DECL(sainlogic_sa8) \
+    DECL(restaurant_pager) \
 
     /* Add new decoders here. */
 
