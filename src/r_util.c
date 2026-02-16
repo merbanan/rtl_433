@@ -299,7 +299,7 @@ char const *nice_freq (double freq)
             } \
             else { \
                 ++failed; \
-                fprintf(stderr, "FAIL: parse_time_str \"%s\" = %ld.%06ld, expected %ld.%06d\n", str, tv.tv_sec, tv.tv_usec, (long)(epoch), (millis)); \
+                fprintf(stderr, "FAIL: parse_time_str \"%s\" = %ld.%06ld, expected %ld.%06d\n", str, tv.tv_sec, (long)tv.tv_usec, (long)(epoch), (millis)); \
             } \
         } \
         else { \
