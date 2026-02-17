@@ -41,7 +41,7 @@ static int tpms_airpuxem_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
     // Decode up to ~200 bits of Manchester into a temp buffer
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &dec, 354);
-    if (dec.bits_per_row[0] < 84){  // need at least 4 ("FIVE") + 64 (CRC'ed data) + 8 (CRC) + 8 (CRC again) = 84 bits
+    if (dec.bits_per_row[0] < 84) {  // need at least 4 ("FIVE") + 64 (CRC'ed data) + 8 (CRC) + 8 (CRC again) = 84 bits
         return DECODE_FAIL_SANITY;
     }
 
