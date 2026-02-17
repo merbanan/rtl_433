@@ -378,7 +378,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [290]  Orion Endpoint from Badger Meter, GIF2020OCECNA, water meter, hopping from 904.4 Mhz to 924.6Mhz (-s 1600k)
     [291]  Geevon TX19-1 outdoor sensor
     [292]  WallarGe CLTX001 Outdoor Temperature Sensor
-    [293]  Restaurant Pager (EV1527-variant, 25-bit)
+    [293]  Sainlogic SA8, Gevanti SA8 Weather Station
 
 * Disabled by default, use -R n or a conf file to enable
 

@@ -217,7 +217,6 @@ add_library(r_433 STATIC
     devices/rainpoint.c
     devices/rainpoint_hcs012arf.c
     devices/regency_fan.c
-    devices/restaurant_pager.c
     devices/revolt_nc5462.c
     devices/revolt_zx7717.c
     devices/rftech.c
