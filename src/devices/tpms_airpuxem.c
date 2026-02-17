@@ -32,7 +32,6 @@ Data layout (nibbles):
 - The preamble is 0xaa..aa9 (or 0x55..556 depending on polarity)
 */
 
-
 #include "decoder.h"
 
 static int tpms_airpuxem_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
@@ -42,8 +41,9 @@ static int tpms_airpuxem_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
     // Decode up to ~200 bits of Manchester into a temp buffer
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &dec, 354);
-    if (dec.bits_per_row[0] < 84) // need at least 4 ("FIVE") + 64 (CRC'ed data) + 8 (CRC) + 8 (CRC again) = 84 bits
+    if (dec.bits_per_row[0] < 84){  // need at least 4 ("FIVE") + 64 (CRC'ed data) + 8 (CRC) + 8 (CRC again) = 84 bits
         return DECODE_FAIL_SANITY;
+    }
 
     b = dec.bb[0];
 
@@ -76,17 +76,14 @@ static int tpms_airpuxem_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
     char id_str[8 + 1];
     snprintf(id_str, sizeof(id_str), "%08x", id);
 
-    //id          = (unsigned)b[0] << 20 | b[1] << 12 | b[2] << 4 | b[3] >> 4;
     int flags       = (id_bytes[4] >> 4) & 0x07;
     int position    = id_bytes[4] & 0x07;
     int pressure    = (id_bytes[5] | (((id_bytes[4] >> 7) & 1) << 8) | (((id_bytes[4] >> 3) & 1) << 9)) - 100;
     int temperature  = (char) id_bytes[6];
     int battery      =  id_bytes[7];
 
-
     char code_str[11 * 2 + 1];
     bitrow_snprint(b, 11 * 8, code_str, sizeof(code_str));
-
 
     /* clang-format off */
     data_t *data = data_make(

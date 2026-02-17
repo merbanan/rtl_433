@@ -377,7 +377,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [289]  Voltcraft EnergyCount 3000 (ec3k)
     [290]  Orion Endpoint from Badger Meter, GIF2020OCECNA, water meter, hopping from 904.4 Mhz to 924.6Mhz (-s 1600k)
     [291]  Geevon TX19-1 outdoor sensor
-    [292]  WallarGe CLTX001 Outdoor Temperature Sensor    
+    [292]  WallarGe CLTX001 Outdoor Temperature Sensor
     [293]  Sainlogic SA8, Gevanti SA8 Weather Station
     [294]  ThermoPro TP862b TempSpike XR Wireless Dual-Probe Meat Thermometer
     [295]  Airpuxem TPMS TYH11_EU6_ZQ
