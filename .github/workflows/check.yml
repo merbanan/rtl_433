@@ -1,3 +1,5 @@
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
+# https://docs.github.com/en/actions/reference/runners/github-hosted-runners
 name: Build Analyze Check
 on: [push, pull_request]
 jobs:
@@ -15,26 +17,48 @@ jobs:
       - name: Configure
         run: cmake -B build
       - name: Build
-        run: cmake --build build
+        run: cmake --build build -- -j $(nproc)
+      - name: Test
+        run: |
+          cmake --build build --target test || \
+          { cat build/Testing/Temporary/LastTest.log && false; }
 
   build_check_job:
     runs-on: ubuntu-latest
-    name: Build with CMake
+    strategy:
+      fail-fast: false
+      matrix:
+        cmake-generator: [Unix Makefiles, Ninja]
+        cmake-build-type: [Debug, Release]
+    name: Build ${{ matrix.cmake-build-type }} ${{ matrix.cmake-generator }}
     steps:
       - uses: actions/checkout@v4
-      - name: Setup
+      - name: Apt Update
+        run: sudo apt-get update -q -y --no-install-recommends
+      - name: Install Build Tools
+        run: sudo apt-get install -q -y --no-install-recommends cmake ninja-build
+      - name: Install Libraries
+        run: sudo apt-get install -q -y --no-install-recommends libsoapysdr-dev librtlsdr-dev
+      - name: Versions
         run: |
-          sudo apt-get update -q -y
-          sudo apt-get install -q -y --no-install-recommends cmake ninja-build
-          sudo apt-get install -q -y libsoapysdr-dev librtlsdr-dev
-      - name: Configure CMake+Ninja
-        run: cmake -GNinja -B ${{ runner.workspace }}/b/ninja -DENABLE_RTLSDR=OFF -DENABLE_SOAPYSDR=OFF
-      - name: Build CMake+Ninja
-        run: cmake --build ${{ runner.workspace }}/b/ninja
-      - name: Configure CMake+UnixMakefiles
-        run: cmake -G"Unix Makefiles" -B ${{ runner.workspace }}/b/unixmakefiles -DENABLE_RTLSDR=OFF -DENABLE_SOAPYSDR=OFF
-      - name: Build CMake+UnixMakefiles
-        run: cmake --build ${{ runner.workspace }}/b/unixmakefiles
+          cmake --version
+          lsb_release -a
+          make --version
+          echo Ninja Version: $(ninja --version)
+          uname -a
+      - name: Configure
+        run: |
+          cmake \
+            -B build \
+            -DCMAKE_BUILD_TYPE=${{ matrix.cmake-build-type }} \
+            -DENABLE_RTLSDR=OFF -DENABLE_SOAPYSDR=OFF \
+            -G "${{ matrix.cmake-generator }}"
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        run: |
+          cmake --build build --target test || \
+          { cat build/Testing/Temporary/LastTest.log && false; }
 
   doc_check_job:
     runs-on: ubuntu-latest

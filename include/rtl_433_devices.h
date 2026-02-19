@@ -305,7 +305,8 @@
 
     /* Add new decoders here. */
 
-#define DECL(name) extern r_device name;
+#define DECL(name) extern r_device const name;
+DECL(flex_decoder)
 DEVICES
 #undef DECL
 
