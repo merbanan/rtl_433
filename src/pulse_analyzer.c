@@ -201,6 +201,70 @@ static void hexstr_print(hexstr_t *h, FILE *out)
 
 #define TOLERANCE (0.2f) // 20% tolerance should still discern between the pulse widths: 0.33, 0.66, 1.0
 
+/// Check the statistics of a pulse data structure and return a summary.
+int pulse_analyzer_check(pulse_data_t *data, int package_type)
+{
+    (void)package_type;
+
+    if (data->num_pulses == 0) {
+        fprintf(stderr, "Skipping frame without pulses\n");
+        return 0;
+    }
+
+    // Generate pulse period data (pulse + gap, trailing gap)
+    pulse_data_t pulse_periods_pg = {0};
+    pulse_periods_pg.num_pulses   = data->num_pulses;
+    for (unsigned n = 0; n < pulse_periods_pg.num_pulses; ++n) {
+        pulse_periods_pg.pulse[n] = data->pulse[n] + data->gap[n];
+    }
+    // Generate pulse period data (gap + pulse, leading gap)
+    pulse_data_t pulse_periods_gp = {0};
+    pulse_periods_gp.num_pulses   = data->num_pulses;
+    pulse_periods_gp.pulse[0]     = data->pulse[0];
+    for (unsigned n = 1; n < pulse_periods_gp.num_pulses; ++n) {
+        pulse_periods_gp.pulse[n] = data->pulse[n] + data->gap[n - 1];
+    }
+
+    histogram_t hist_pulses     = {0};
+    histogram_t hist_gaps       = {0};
+    histogram_t hist_periods_pg = {0}; // Pulse+Gap periods
+    histogram_t hist_periods_gp = {0}; // Gap+Pulse periods
+    histogram_t hist_timings    = {0};
+
+    // Generate statistics
+    histogram_sum(&hist_pulses, data->pulse, data->num_pulses, TOLERANCE);
+    histogram_sum(&hist_gaps, data->gap, data->num_pulses - 1, TOLERANCE);                               // Leave out last gap (end)
+    histogram_sum(&hist_periods_pg, pulse_periods_pg.pulse, pulse_periods_pg.num_pulses - 1, TOLERANCE); // Leave out last gap (end)
+    histogram_sum(&hist_periods_gp, pulse_periods_gp.pulse, pulse_periods_gp.num_pulses, TOLERANCE);
+    histogram_sum(&hist_timings, data->pulse, data->num_pulses, TOLERANCE);
+    histogram_sum(&hist_timings, data->gap, data->num_pulses, TOLERANCE);
+
+    // Fuse overlapping bins
+    histogram_fuse_bins(&hist_pulses, TOLERANCE);
+    histogram_fuse_bins(&hist_gaps, TOLERANCE);
+    histogram_fuse_bins(&hist_periods_pg, TOLERANCE);
+    histogram_fuse_bins(&hist_timings, TOLERANCE);
+
+    histogram_sort_mean(&hist_pulses); // Easier to work with sorted data
+    histogram_sort_mean(&hist_gaps);
+    if (hist_pulses.bins[0].mean == 0) {
+        histogram_delete_bin(&hist_pulses, 0);
+    } // Remove FSK initial zero-bin
+
+    // Attempt to find a matching modulation
+    if (data->num_pulses == 1) {
+        fprintf(stderr, "Skipping frame with single pulse\n");
+        return 0;
+    }
+    else if (hist_pulses.bins_count == 1 && hist_gaps.bins_count == 1) {
+        fprintf(stderr, "Skipping frame with no data\n");
+        return 0;
+    }
+
+    fprintf(stderr, "Frame with %u bins found\n", hist_pulses.bins_count + hist_gaps.bins_count);
+    return 1;
+}
+
 /// Analyze the statistics of a pulse data structure and print result
 void pulse_analyzer(pulse_data_t *data, int package_type, r_device* device)
 {
