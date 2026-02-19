@@ -491,6 +491,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	Specify InfluxDB 2.0 server with e.g. -F "influx://localhost:9999/api/v2/write?org=<org>&bucket=<bucket>,token=<authtoken>"
 	Specify InfluxDB 1.x server with e.g. -F "influx://localhost:8086/write?db=<db>&p=<password>&u=<user>"
 	  Additional parameter -M time:unix:usec:utc for correct timestamps in InfluxDB recommended
+	  Additional parameter `metric` supports expanding keys (see the MQTT section just above for details).
   [-F syslog[:[//]host[:port] (default: localhost:514)
 	Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
   [-F trigger:/path/to/file]
