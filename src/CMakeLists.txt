@@ -196,6 +196,8 @@ add_library(r_433 STATIC
     devices/nexa.c
     devices/nexus.c
     devices/nice_flor_s.c
+    devices/nice_flor_s_table_decode.c
+    devices/nice_flor_s_table_ki.c
     devices/norgo.c
     devices/oil_smart.c
     devices/oil_standard.c
