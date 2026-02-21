@@ -82,6 +82,68 @@ char *usecs_time_str(char *buf, char const *format, int with_tz, struct timeval 
     return buf;
 }
 
+const char *parse_time_str(const char *buf, struct timeval *out)
+{
+    int year, mon, day, hour, min, sec, consumed;
+    long micros = 0;
+
+    if (sscanf(buf, "%4d-%2d-%2d%*1[ T]%2d:%2d:%2d%n", &year, &mon, &day, &hour, &min, &sec, &consumed) == 6) {
+        buf += consumed;
+    }
+    else {
+        return NULL;
+    }
+
+    if (*buf == '.') {
+        long digit_micros = 100000;
+        buf++;
+        while (*buf >= '0' && *buf <= '9') {
+            micros += (*buf - '0') * digit_micros;
+            digit_micros /= 10;
+            buf++;
+        }
+    }
+
+    int gmtoff = 0;
+    if (*buf == '+' || *buf == '-') {
+        int tz_hours = 0, tz_mins = 0, tz_sign = 1;
+        if (*buf == '-')
+            tz_sign = -1;
+        buf += 1;
+        if (sscanf(buf, "%2d%2d%n", &tz_hours, &tz_mins, &consumed) == 2) {
+            buf += consumed;
+            gmtoff = tz_sign * (tz_hours * 3600 + tz_mins * 60);
+        }
+        else {
+            return NULL;
+        }
+    }
+    else if (*buf == 'Z') {
+        buf++;
+    }
+    else if (*buf != '\0') {
+        return NULL;
+    }
+
+    struct tm tm = {0};
+    tm.tm_year   = year - 1900;
+    tm.tm_mon    = mon - 1;
+    tm.tm_mday   = day;
+    tm.tm_hour   = hour;
+    tm.tm_min    = min;
+    tm.tm_sec    = sec;
+    tm.tm_isdst  = -1;
+
+    time_t epoch_sec = timegm(&tm);
+    if (epoch_sec == -1) {
+        return NULL;
+    }
+    out->tv_sec  = epoch_sec - gmtoff;
+    out->tv_usec = micros;
+
+    return buf;
+}
+
 char *sample_pos_str(float sample_file_pos, char *buf)
 {
     snprintf(buf, LOCAL_TIME_BUFLEN, "@%fs", sample_file_pos);
@@ -226,3 +288,40 @@ char const *nice_freq (double freq)
      snprintf (buf, sizeof(buf), "%f", freq);
   return (buf);
 }
+
+#ifdef _TEST
+#define TEST_PARSE_TIME_STR(str, epoch, millis) \
+    do { \
+        struct timeval tv; \
+        if (parse_time_str(str, &tv) != NULL) { \
+            if (tv.tv_sec == (epoch) && tv.tv_usec == (millis)) { \
+                ++passed; \
+            } \
+            else { \
+                ++failed; \
+                fprintf(stderr, "FAIL: parse_time_str \"%s\" = %ld.%06ld, expected %ld.%06d\n", str, tv.tv_sec, (long)tv.tv_usec, (long)(epoch), (millis)); \
+            } \
+        } \
+        else { \
+            ++failed; \
+            fprintf(stderr, "FAIL: parse_time_str failed to parse \"%s\"\n", str); \
+        } \
+    } while (0)
+
+int main(void)
+{
+    unsigned passed = 0;
+    unsigned failed = 0;
+
+    TEST_PARSE_TIME_STR("2026-02-11T12:34:56.123456Z", 1770813296, 123456);
+    TEST_PARSE_TIME_STR("2026-02-11 12:34:56.123456Z", 1770813296, 123456);
+    TEST_PARSE_TIME_STR("2026-02-11 12:34:56.123Z", 1770813296, 123000);
+    TEST_PARSE_TIME_STR("2026-02-11 12:34:56.111111111Z", 1770813296, 111111);
+    TEST_PARSE_TIME_STR("2026-02-11 12:34:56Z", 1770813296, 0);
+    TEST_PARSE_TIME_STR("2026-02-11 12:34:56.123456-0700", 1770838496, 123456);
+    TEST_PARSE_TIME_STR("2026-02-11 12:34:56.123456+0845", 1770781796, 123456);
+
+    fprintf(stderr, "r_util test (%u/%u) passed, (%u) failed.\n", passed, passed + failed, failed);
+    return failed;
+}
+#endif /* _TEST */

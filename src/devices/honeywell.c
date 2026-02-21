@@ -9,6 +9,9 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
+
+#include "decoder.h"
+
 /**
 Honeywell (Ademco) Door/Window Sensors (345.0Mhz).
 
@@ -17,6 +20,7 @@ Tested with the Honeywell 5811 Wireless Door/Window transmitters.
 Also: 2Gig DW10 door sensors,
 and Resolution Products RE208 (wire to air repeater).
 And DW11 with 96 bit packets.
+Also 2GIG 345Mhz glass break detectors 2GIG-GB1-345 as channel 0x9
 
 Maybe: 5890PI?
 
@@ -35,75 +39,62 @@ Data layout:
 - S: 16bit CRC
 
 */
-
-#include "decoder.h"
-
 static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // full preamble is 0xFFFE
     uint8_t const preamble_pattern[2] = {0xff, 0xe0}; // 12 bits
 
-    data_t *data;
-    int row;
-    int pos;
-    int len;
-    uint8_t b[10] = {0};
-    int channel;
-    int device_id;
-    int event;
-    uint16_t crc_calculated;
-    uint16_t crc;
-    int reed;
-    int contact;
-    int heartbeat;
-    int alarm;
-    int tamper;
-    int battery_low;
 
-    row = 0; // we expect a single row only. reduce collisions
-    if (bitbuffer->num_rows != 1 || bitbuffer->bits_per_row[row] < 60)
+    int row = 0; // we expect a single row only. reduce collisions
+    if (bitbuffer->num_rows != 1 || bitbuffer->bits_per_row[row] < 60) {
         return DECODE_ABORT_LENGTH;
+    }
 
     bitbuffer_invert(bitbuffer);
 
-    pos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, 12) + 12;
-    len = bitbuffer->bits_per_row[row] - pos;
-    if (len < 48)
+    int pos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, 12) + 12;
+    int len = bitbuffer->bits_per_row[row] - pos;
+    if (len < 48) {
         return DECODE_ABORT_LENGTH;
+    }
+    uint8_t b[10] = {0};
     bitbuffer_extract_bytes(bitbuffer, row, pos, b, 80);
 
-    channel   = b[0] >> 4;
-    device_id = ((b[0] & 0xf) << 16) | (b[1] << 8) | b[2];
-    crc       = (b[4] << 8) | b[5];
+    int channel   = b[0] >> 4;
+    int device_id = ((b[0] & 0xf) << 16) | (b[1] << 8) | b[2];
+    int crc       = (b[4] << 8) | b[5];
 
-    if (device_id == 0 && crc == 0)
+    if (device_id == 0 && crc == 0) {
         return DECODE_ABORT_EARLY; // Reduce collisions
+    }
 
     if (len > 50) { // DW11
         decoder_log_bitrow(decoder, 1, __func__, b, (len > 80 ? 80 : len), "");
     }
 
-    if (channel == 0x2 || channel == 0x4 || channel == 0xA) {
+    int crc_calculated;
+    if (channel == 0x2 || channel == 0x4 || channel == 0x9 || channel == 0xA) {
         // 2GIG brand
         crc_calculated = crc16(b, 4, 0x8050, 0);
     } else { // channel == 0x8
         crc_calculated = crc16(b, 4, 0x8005, 0);
     }
-    if (crc != crc_calculated)
+    if (crc != crc_calculated) {
         return DECODE_FAIL_MIC; // Not a valid packet
+    }
 
-    event = b[3];
+    int event = b[3];
     // decoded event bits: CTRABHUU
     // NOTE: not sure if these apply to all device types
-    contact     = (event & 0x80) >> 7;
-    tamper      = (event & 0x40) >> 6;
-    reed        = (event & 0x20) >> 5;
-    alarm       = (event & 0x10) >> 4;
-    battery_low = (event & 0x08) >> 3;
-    heartbeat   = (event & 0x04) >> 2;
+    int contact     = (event & 0x80) >> 7;
+    int tamper      = (event & 0x40) >> 6;
+    int reed        = (event & 0x20) >> 5;
+    int alarm       = (event & 0x10) >> 4;
+    int battery_low = (event & 0x08) >> 3;
+    int heartbeat   = (event & 0x04) >> 2;
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",        "",         DATA_STRING, "Honeywell-Security",
             "id",           "",         DATA_FORMAT, "%05x", DATA_INT, device_id,
             "channel",      "",         DATA_INT,    channel,

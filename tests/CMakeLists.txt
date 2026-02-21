@@ -20,10 +20,11 @@ endif()
 ########################################################################
 # target_compile_definitions was only added in CMake 2.8.11
 add_definitions(-D_TEST)
-foreach(testSrc bitbuffer.c fileformat.c optparse.c bit_util.c)
+foreach(testSrc bitbuffer.c fileformat.c optparse.c bit_util.c r_util.c)
     get_filename_component(testName ${testSrc} NAME_WE)
 
-    add_executable(test_${testName} ../src/${testSrc})
+    # Note that r_util.c needs compat_time.c shims
+    add_executable(test_${testName} ../src/${testSrc} ../src/compat_time.c)
 
     add_test(${testName}_test test_${testName})
 endforeach(testSrc)

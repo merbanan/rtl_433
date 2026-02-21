@@ -61,6 +61,14 @@ char *format_time_str(char *buf, char const *format, int with_tz, time_t time_se
 */
 char *usecs_time_str(char *buf, char const *format, int with_tz, struct timeval *tv);
 
+/** Parse a timestamp in the format "YYYY-MM-DD HH:MM:SS.uuuuuu" as produced by `usecs_time_str`.
+
+    @param buf input buffer containing the timestamp
+    @param out output timeval structure
+    @return pointer to the first character after the parsed time string, or null on error
+*/
+const char *parse_time_str(const char *buf, struct timeval *out);
+
 /** Printable sample position.
 
     @param sample_file_pos sample position

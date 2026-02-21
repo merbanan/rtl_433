@@ -113,7 +113,7 @@ static int fineoffset_wh46_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",                 DATA_STRING, "Fineoffset-WH46",
             "id",               "ID",               DATA_FORMAT, "%06x", DATA_INT, id,
             "battery_ok",       "Battery",          DATA_INT,    battery_bars > 1, // Level 1 means "Low"
-    		"battery_pct",      "Battery level",    DATA_INT,    100 * batt_lvl, // Note: this might change with #3103
+            "battery_pct",      "Battery level",    DATA_DOUBLE, 100 * batt_lvl, // Note: this might change with #3103
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "pm1_ug_m3",        "1um Fine PM",      DATA_FORMAT, "%.1f ug/m3", DATA_DOUBLE, pm1,
