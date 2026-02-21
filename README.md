@@ -362,7 +362,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [274]  Revolt ZX-7717 power meter
     [275]  GM-Aftermarket TPMS
     [276]  RainPoint HCS012ARF Rain Gauge sensor
-    [277]  Apator Metra E-RM 30
+    [277]  Apator Metra E-RM 30 water meter
     [278]  ThermoPro TX-7B Outdoor Thermometer Hygrometer
     [279]  Nexus, CRX, Prego sauna temperature sensor
     [280]  Homelead HG9901 (Geevon, Dr.Meter, Royal Gardineer) soil moisture/temp/light level sensor
@@ -381,6 +381,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [293]  Sainlogic SA8, Gevanti SA8 Weather Station
     [294]  ThermoPro TP862b TempSpike XR Wireless Dual-Probe Meat Thermometer
     [295]  Airpuxem TPMS TYH11_EU6_ZQ
+    [296]  Apator Metra E-ITN 30 heat cost allocator
 
 * Disabled by default, use -R n or a conf file to enable
 

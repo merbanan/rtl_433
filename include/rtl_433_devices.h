@@ -303,6 +303,7 @@
     DECL(sainlogic_sa8) \
     DECL(thermopro_tp862b)\
     DECL(tpms_airpuxem) \
+    DECL(apator_metra_eitn30) \
 
     /* Add new decoders here. */
 
