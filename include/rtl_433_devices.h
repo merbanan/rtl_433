@@ -302,6 +302,7 @@
     DECL(wallarge_cltx001) \
     DECL(sainlogic_sa8) \
     DECL(thermopro_tp862b)\
+    DECL(tpms_airpuxem) \
 
     /* Add new decoders here. */
 
