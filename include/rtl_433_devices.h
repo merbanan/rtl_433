@@ -304,6 +304,7 @@
     DECL(thermopro_tp862b)\
     DECL(tpms_airpuxem) \
     DECL(apator_metra_eitn30) \
+    DECL(opel_mokka) \
 
     /* Add new decoders here. */
 
