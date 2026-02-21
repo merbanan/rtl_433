@@ -55,7 +55,7 @@ static int opel_mokka_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         event_type = (((bytes[12] & 0x07) << 8) | (bytes[13] & 0xc0)) >> 6;
-        
+
         bitbuffer_extract_bytes(bitbuffer, i, 90 + 17, code, 64);
         snprintf(code_str, sizeof(code_str), "%02x%02x%02x%02x%02x%02x%02x%02x",
             code[0], code[1], code[2], code[3], code[4], code[5], code[6], code[7]);
