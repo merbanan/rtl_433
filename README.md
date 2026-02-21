@@ -198,7 +198,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [110]  PMV-107J (Toyota) TPMS
     [111]  Emos TTX201 Temperature Sensor
     [112]  Ambient Weather TX-8300 Temperature/Humidity Sensor
-    [113]  Ambient Weather WH31E Thermo-Hygrometer Sensor, EcoWitt WH40 rain gauge, WS68 weather station
+    [113]  Ambient Weather WH31E Thermo-Hygrometer Sensor, EcoWitt WH40/WN20 rain gauge, WS68 weather station
     [114]  Maverick ET73
     [115]  Honeywell ActivLink, Wireless Doorbell
     [116]  Honeywell ActivLink, Wireless Doorbell (FSK)
@@ -565,7 +565,6 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 
 ```
 
-
 Some examples:
 
 | Command | Description
@@ -595,7 +594,6 @@ Network inputs and outputs are for use in a trusted local network, will contain 
 
 Join the Google group, rtl_433, for more information about rtl_433:
 https://groups.google.com/forum/#!forum/rtl_433
-
 
 ## Troubleshooting
 
