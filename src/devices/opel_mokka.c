@@ -79,8 +79,9 @@ static int opel_mokka_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "type",  "type",  DATA_INT,    event_type,
                 "code",  "data",  DATA_STRING, code_str,
                 NULL);
-        decoder_output_data(decoder, data);
         /* clang-format on */
+
+        decoder_output_data(decoder, data);
 
         found++;
     }
