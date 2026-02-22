@@ -1,7 +1,7 @@
 /** @file
     ThermoPro TP211B Thermometer.
 
-    Copyright (C) 2026, Ali Rahimi, Bruno OCTAU
+    Copyright (C) 2026, Ali Rahimi, Bruno OCTAU, Christian W. Zuckschwerdt <zany@triq.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,7 +17,8 @@ ThermoPro TP211B Thermometer.
 RF:
 - 915 MHz FSK temperature sensor.
 
-Based on issue #3435, and thanks to the analysis conducted there.
+Based on issue #3435 open by \@splobsterman, and thanks to the analysis conducted there by Ali, Bruno, Christian
+And contributors with lot of samples from \@splobsterman, \@moryckaz, and Ali
 
 Flex decoder:
 
