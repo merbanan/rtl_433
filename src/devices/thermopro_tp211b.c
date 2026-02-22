@@ -12,10 +12,12 @@
 #include "decoder.h"
 
 /**
-ThermoPro TP211B 915 MHz FSK temperature sensor.
+ThermoPro TP211B Thermometer.
 
-Based on [this issue](https://github.com/merbanan/rtl_433/issues/3435), and thanks to the
-analysis conducted there.
+RF:
+- 915 MHz FSK temperature sensor.
+
+Based on issue #3435, and thanks to the analysis conducted there.
 
 Flex decoder:
 
