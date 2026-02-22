@@ -255,6 +255,7 @@ add_library(r_433 STATIC
     devices/tfa_twin_plus_30.3049.c
     devices/thermopro_tp11.c
     devices/thermopro_tp12.c
+    devices/thermopro_tp211b.c
     devices/thermopro_tp28b.c
     devices/thermopro_tp82xb.c
     devices/thermopro_tp862b.c
