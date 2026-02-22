@@ -301,9 +301,11 @@
     DECL(geevon_tx19) \
     DECL(wallarge_cltx001) \
     DECL(sainlogic_sa8) \
+    DECL(thermopro_tp862b) \
     DECL(thermopro_tp862b)\
     DECL(tpms_airpuxem) \
     DECL(apator_metra_eitn30) \
+    DECL(thermopro_tp211b) \
 
     /* Add new decoders here. */
 
