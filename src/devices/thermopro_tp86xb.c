@@ -1,5 +1,5 @@
 /** @file
-    ThermoPro TP862b TempSpike XR 1,000-ft Wireless Dual-Probe Meat Thermometer.
+    ThermoPro TempSpike XR TP862b / TP863b Wireless Dual-Probe Meat Thermometer.
 
     Copyright (C) 2026 n6ham <github.com/n6ham>
 
@@ -11,12 +11,12 @@
 
 #include "decoder.h"
 
-/** @fn int thermopro_tp862b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-ThermoPro TP862b TempSpike XR 1,000-ft Wireless Dual-Probe Meat Thermometer.
+/** @fn int thermopro_tp86xb_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+ThermoPro TempSpike XR TP862b / TP863b Wireless Dual-Probe Meat Thermometer.
 
 Example data:
 
-    rtl_433 % rtl_433 -f 915M -F json -X 'n=name,m=FSK_PCM,s=104,l=104,r=2000,preamble=d2552dd4,bits=170' | jq --unbuffered -r '.codes[0]'
+    rtl_433 % rtl_433 -f 915M -F json -X 'n=ThermoPro-TempSpike-XR,m=FSK_PCM,s=104,l=104,r=2000,preamble=d2552dd4,bits=165' | jq --unbuffered -r '.codes[0]'
     (spaces below added manually)
 
     {74}36 8a 2a1 2a5 1f 3f c738 0 [internal: 17.3C, ambient: 17.7C]
@@ -39,11 +39,12 @@ Payload format:
 Experimental data:
 - Color            (Probe & 0x10) >> 4 (0 for black, 1 for white)
 - Docked           (Probe & 0x40) >> 6 (0 for undocked, 1 for docked)
+- Source           (Flags & 0xc0) (0 for probe, 0xc0 for range extender)
 
 Data layout:
     ID:8h PROBE:8h INTERNAL:12d AMBIENT:12d FLAGS:8h SEPARATOR:8h CHECKSUM:16h T:8b
 */
-static int thermopro_tp862b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int thermopro_tp86xb_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble_pattern[] = {0xd2, 0x55, 0x2d, 0xd4};
 
@@ -54,11 +55,11 @@ static int thermopro_tp862b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
     }
     int msg_len = bitbuffer->bits_per_row[0];
-    if (msg_len < 170) {
+    if (msg_len < 165) {
         decoder_logf(decoder, 1, __func__, "Packet too short: %d bits", msg_len);
         return DECODE_ABORT_LENGTH;
     }
-    if (msg_len > 170) {
+    if (msg_len > 173) {
         decoder_logf(decoder, 1, __func__, "Packet too long: %d bits", msg_len);
         return DECODE_ABORT_LENGTH;
     }
@@ -98,13 +99,14 @@ static int thermopro_tp862b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",                "",                 DATA_STRING,    "ThermoPro-TP862b",
+            "model",                "",                 DATA_STRING,    "ThermoPro-TempSpike-XR",
             "id",                   "",                 DATA_FORMAT,    "%02x",   DATA_INT,    id,
             "color",                "Color",            DATA_STRING,    (probe & 0x10) ? "white" : "black",
             "is_docked",            "Docked",           DATA_INT,       (probe & 0x40) >> 6,
             "temperature_int_C",    "Internal",         DATA_FORMAT,    "%.1f C", DATA_DOUBLE, internal_c,
             "temperature_amb_C",    "Ambient",          DATA_FORMAT,    "%.1f C", DATA_DOUBLE, ambient_c,
-            "flags",                "Flags",            DATA_FORMAT,    "%02x",   DATA_INT,    flags,
+            "source",               "Source",           DATA_COND,      (flags & 0xc0) == 0x00, DATA_STRING, "probe",
+            "source",               "Source",           DATA_COND,      (flags & 0xc0) == 0xc0, DATA_STRING, "extender",
             "mic",                  "Integrity",        DATA_STRING,    "CRC",
             NULL);
     /* clang-format on */
@@ -120,17 +122,17 @@ static char const *const output_fields[] = {
         "is_docked",
         "temperature_int_C",
         "temperature_amb_C",
-        "flags",
+        "source",
         "mic",
         NULL,
 };
 
-r_device const thermopro_tp862b = {
-        .name        = "ThermoPro TP862b TempSpike XR Wireless Dual-Probe Meat Thermometer",
+r_device const thermopro_tp86xb = {
+        .name        = "ThermoPro TempSpike XR TP862b / TP863b Wireless Dual-Probe Meat Thermometer",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 104,
         .long_width  = 104,
         .reset_limit = 2000,
-        .decode_fn   = &thermopro_tp862b_decode,
+        .decode_fn   = &thermopro_tp86xb_decode,
         .fields      = output_fields,
 };
