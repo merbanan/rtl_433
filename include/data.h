@@ -186,6 +186,7 @@ typedef struct data_output {
     void (R_API_CALLCONV *print_int)(struct data_output *output, int data, char const *format);
     void (R_API_CALLCONV *output_start)(struct data_output *output, char const *const *fields, int num_fields);
     void (R_API_CALLCONV *output_print)(struct data_output *output, data_t *data);
+    void (R_API_CALLCONV *output_reopen)(struct data_output *output);
     void (R_API_CALLCONV *output_free)(struct data_output *output);
     int log_level; ///< the maximum log level (verbosity) allowed, more verbose messages must be ignored.
 } data_output_t;
@@ -201,6 +202,9 @@ R_API void data_output_start(struct data_output *output, char const *const *fiel
 
 /** Prints a structured data object, flushes the output if applicable. */
 R_API void data_output_print(struct data_output *output, data_t *data);
+
+/** Reopen this output by closing and opening file descriptors as needed. */
+R_API void data_output_reopen(struct data_output *output);
 
 R_API void data_output_free(struct data_output *output);
 
