@@ -92,7 +92,8 @@ static int tuya_wsd024w433_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         // Check if this row matches any of the candidates we've already collected.
         int matches = 0; // Could be a bool, but we don't like those around here.
-        for (int candidate_index = 0; candidate_index < num_candidates; candidate_index++) {
+        // Start with the most recently added candidate since duplicates are typically consecutive
+        for (int candidate_index = num_candidates - 1; candidate_index >= 0; candidate_index--) {
             // We only compare the first 72 bits since the potential 73th bit doesn't matter
             if (bitbuffer_compare_rows(bitbuffer, candidate_rows[candidate_index], row_index, BITS_PER_ROW)) {
                 // Increment matches so we know this row matches an existing candidate
