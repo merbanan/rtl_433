@@ -1,5 +1,5 @@
 /** @file
-    Tuya WSD024-W-433 Temperature & Humidity Sensor
+    Tuya WSD024-W-433 Temperature & Humidity Sensor.
 
     Copyright (C) 2026 Dennis Kehrig
 
@@ -17,7 +17,7 @@
 #define MAX_CANDIDATES     4
 
 /**
-# Tuya WSD024-W-433 Temperature & Humidity Sensor.
+Tuya WSD024-W-433 Temperature & Humidity Sensor.
 
 ## Modulation
 
@@ -204,7 +204,7 @@ static int tuya_wsd024w433_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",            "Model",            DATA_STRING,    "Tuya-WSD024W433",
                 "id",               "Sensor ID",        DATA_FORMAT,    "%06X", DATA_INT, sensor_id,
                 "battery_ok",       "Battery",          DATA_COND,      battery_pct < 20, DATA_INT, 0, // The mobile app sends a low battery notification below 20%
-                "battery_pct",      "Battery level",    DATA_FORMAT,    "%d %%", DATA_INT, battery_pct,
+                "battery_pct",      "Battery level",    DATA_FORMAT,    "%d %%", DATA_INT, battery_pct, // Note: this might change with #3103
                 "temperature_C",    "Temperature",      DATA_FORMAT,    "%.1f C", DATA_DOUBLE, temp_c,
                 "humidity",         "Humidity",         DATA_FORMAT,    "%d %%", DATA_INT, humidity_pct,
                 "pairing",          "Pairing?",         DATA_COND,      pairing, DATA_INT, pairing,
