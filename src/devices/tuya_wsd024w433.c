@@ -172,7 +172,7 @@ static int tuya_wsd024w433_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             continue;
         }
 
-        // Combine b[7], b[1] and b[2] into a single sensor ID.
+        // Combine b[0], b[1] and b[2] into a single sensor ID.
         // In hex notation this matches what the base station reports via the Tuya API.
         int sensor_id = ((int)b[0] << 16) | ((int)b[1] << 8) | b[2];
 
