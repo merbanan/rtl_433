@@ -38,8 +38,8 @@ PWM with the following timings:
 
 Nine bytes with whitening:
 
-2. `DDDDDDDWM` (D = data byte, W = whitening byte, M = MIC byte). Ds need to be XOR'd with W.<br>
-3. `IIITTHBCM` (I = ID byte, T = temperature byte, H = humidity byte, B = battery byte, C = pairing bit + cycle, M = MIC byte)
+1. `DDDDDDDWM` (D = data byte, W = whitening byte, M = MIC byte). Ds need to be XOR'd with W.<br>
+2. `IIITTHBCM` (I = ID byte, T = temperature byte, H = humidity byte, B = battery byte, C = pairing bit + cycle, M = MIC byte)
 
 - b[0], b[1], b[2]: 24-bit sensor ID
 - b[3], b[4]: 16-bit temperature value (int16_t, multiples of 0.1°C)
