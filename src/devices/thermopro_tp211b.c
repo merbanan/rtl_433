@@ -173,6 +173,7 @@ static int thermopro_tp211b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int temp_raw = ((b[3] & 0x0f) << 8) | b[4];
     float temp_c = (temp_raw - 500) * 0.1f;
 
+    char raw_str[17];
     /* clang-format off */
     data_t *data = data_make(
             "model",         "",            DATA_STRING, "ThermoPro-TP211B",
@@ -180,6 +181,7 @@ static int thermopro_tp211b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temp_c,
             "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
             NULL);
+    data = data_hex(data, "raw", "Raw", NULL, b, 8, raw_str);
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -191,6 +193,7 @@ static char const *const output_fields[] = {
         "id",
         "temperature_C",
         "mic",
+        "raw",
         NULL,
 };
 
