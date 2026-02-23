@@ -36,18 +36,16 @@ PWM with the following timings:
 
 ## Payload Structure
 
-Nine bytes with two layers of whitening:
+Nine bytes with whitening:
 
-1. `WDDDDDDDM` (W = whitening byte, D = data byte, M = MIC byte). Ds need to be XOR'd with W.<br>
 2. `DDDDDDDWM` (D = data byte, W = whitening byte, M = MIC byte). Ds need to be XOR'd with W.<br>
-3. `CIITTHBIM` (C = cycle, I = ID byte, T = temperature byte, H = humidity byte, B = battery byte, M = MIC byte)
+3. `IIITTHBCM` (I = ID byte, T = temperature byte, H = humidity byte, B = battery byte, C = pairing bit + cycle, M = MIC byte)
 
-- b[0]: `PCCCCCCC` (P = 1 for pairing mode, 0 otherwise. The other bits make up a counter from 0-64 incremented each measurement cycle.)
-- b[1], b[2]: Second and third sensor ID byte
+- b[0], b[1], b[2]: 24-bit sensor ID
 - b[3], b[4]: 16-bit temperature value (int16_t, multiples of 0.1°C)
 - b[5]: Relative humidity in percentage points. Base station rejects transmissions with b[5] > 127.
 - b[6]: Battery level in percentage points. 0% = ~2.3V, 100% = ~3V. Base station accepts any value including 255%.
-- b[7]: First sensor ID byte
+- b[7]: `PCCCCCCC` (P = 1 for pairing mode, 0 otherwise. The other bits make up a counter from 0-64 incremented each measurement cycle.)
 - b[8]: MIC value = 0xA5 ^ xor(b[1..7]) ^ (sum(b[1..7]) & 0xFF) ^ (sum(b[1..7]) >> 8)
 
 ## Notes
@@ -136,16 +134,13 @@ static int tuya_wsd024w433_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         // Dewhiten the data
-        for (int i = 1; i < 8; i++) {
-            b[i] ^= b[0];
-        }
         for (int i = 0; i < 7; i++) {
             b[i] ^= b[7];
         }
 
         // Calculate the MIC value (made possible by a >7h run of Claude Opus 4.6 to identify the algorithm)
-        int xor = xor_bytes(b + 1, DATA_BYTES_PER_ROW);
-        int sum = add_bytes(b + 1, DATA_BYTES_PER_ROW);
+        int xor = xor_bytes(b, DATA_BYTES_PER_ROW);
+        int sum = add_bytes(b, DATA_BYTES_PER_ROW);
         int mic = 0xA5 ^ xor ^ (sum & 0xFF) ^ (sum >> 8); // 0xA5 = 1010 0101
 
         // Ignore rows with an invalid MIC value
@@ -154,22 +149,6 @@ static int tuya_wsd024w433_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             mic_failures++;
             continue;
         }
-
-        // Extract the pairing mode bit
-        int pairing = b[0] >> 7;
-        // Extract the cycle counter. Every ~10s the sensor takes a measurement and increments the counter, but only
-        // transmits when there's enough of a change (e.g. +/- 0.3°C or +/- 3% RH) or more than five minutes have passed.
-        // A good way to test the counter behavior is to press the pairing button, which causes the sensor to send
-        // 13 transmissions in a row, incrementing the counter each time.
-        // Normally the counter goes from 0-64 (0x40) and then starts over, but there's some odd behavior for the
-        // first transmission after inserting batteries where the bits for the counter might be uninitialized,
-        // seemingly reusing memory used for the battery level. When inserting sufficiently fresh batteries this could
-        // lead to counter values > 64, so let's cap the value to something inside the expected range just in case.
-        int cycle = (b[0] & 0x40) ? 0x40 : (b[0] & 0x3F);
-
-        // Combine b[7], b[1] and b[2] into a single sensor ID.
-        // In hex notation this matches what the base station reports via the Tuya API.
-        int sensor_id = ((int)b[7] << 16) | ((int)b[1] << 8) | b[2];
 
         // The temperature is an int16_t starting in b[3], use a cast to sign-extend
         int temp_raw = (int16_t)((b[3] << 8) | b[4]);
@@ -192,9 +171,25 @@ static int tuya_wsd024w433_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             continue;
         }
 
+        // Combine b[7], b[1] and b[2] into a single sensor ID.
+        // In hex notation this matches what the base station reports via the Tuya API.
+        int sensor_id = ((int)b[0] << 16) | ((int)b[1] << 8) | b[2];
+
         // Extract the battery level (percentage, can be 0% = ~2.3V, can be > 100% = ~3.0V).
         // The base station accepts transmissions with 255% battery level, the cloud API caps the returned value at 100%.
         int battery_pct = b[6];
+
+        // Extract the pairing mode bit
+        int pairing = b[7] >> 7;
+        // Extract the cycle counter. Every ~10s the sensor takes a measurement and increments the counter, but only
+        // transmits when there's enough of a change (e.g. +/- 0.3°C or +/- 3% RH) or more than five minutes have passed.
+        // A good way to test the counter behavior is to press the pairing button, which causes the sensor to send
+        // 13 transmissions in a row, incrementing the counter each time.
+        // Normally the counter goes from 0-64 (0x40) and then starts over, but there's some odd behavior for the
+        // first transmission after inserting batteries where the bits for the counter might be uninitialized,
+        // seemingly reusing memory used for the battery level. When inserting sufficiently fresh batteries this could
+        // lead to counter values > 64, so let's cap the value to something inside the expected range just in case.
+        int cycle = (b[7] & 0x40) ? 0x40 : (b[7] & 0x3F);
 
         decoder_logf(decoder, 2, __func__, "#%u is valid", candidate_index + 1);
         successes++;
