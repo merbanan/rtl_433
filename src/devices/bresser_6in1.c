@@ -21,6 +21,7 @@ Decoder for Bresser Weather Center 6-in-1.
 - also Bresser 3-in-1 Professional Wind Gauge / Anemometer, PN 7002531
 - also Bresser soil temperature and moisture meter, PN 7009972
 - also Bresser Thermo-/Hygro-Sensor 7 Channel 868 MHz, PN 7009999
+- also Bresser High Precision Thermo-/Hygro-Sensor 7 Channel 868 MHz, PN 7009971
 - also Bresser Pool / Spa Thermometer, PN 7009973 (STYPE = 3)
 - also SENCOR SWS 9898
 - also Ambient Weather TX-3110B Wireless Thermo-Hygrometer
@@ -142,7 +143,7 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     uint32_t const id = ((uint32_t)msg[2] << 24) | (msg[3] << 16) | (msg[4] << 8) | (msg[5]);
-    int const s_type  = (msg[6] >> 4); // 1: weather station, 2: indoor?, 3: pool thermometer, 4: soil probe
+    int const s_type  = (msg[6] >> 4); // 1: weather station, 2: thermo/hygro sensor, 3: pool thermometer, 4: soil probe
     int const startup = (msg[6] >> 3) & 1; // s.a. #1214
     int const chan    = (msg[6] & 0x7);
     int const battery = (msg[13] >> 1) & 1; // b[13] & 0x02 is battery_good, s.a. #1993
@@ -194,8 +195,9 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             + (msg[14] >> 4) * 10 + (msg[14] & 0x0f);
     float const rain_mm = rain_raw * 0.1f;
 
-    // the moisture sensor might present valid readings but does not have the hardware
-    if (s_type == 4) {
+    // the thermo/hygro sensor and the soil moisture sensor might present valid readings
+    // but do not have the hardware
+    if (s_type == 2 || s_type == 4) {
         wind_ok = 0;
         uv_ok = 0;
     }
