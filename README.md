@@ -383,8 +383,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [295]  Airpuxem TPMS TYH11_EU6_ZQ
     [296]  Apator Metra E-ITN 30 heat cost allocator
     [297]  ThermoPro TP211B Thermometer
-    [298]  TRW TPMS OOK
-    [299]  TRW TPMS FSK
+    [298]  TRW TPMS OOK OEM and Clone models
+    [299]  TRW TPMS FSK OEM and Clone models
 
 * Disabled by default, use -R n or a conf file to enable
 
