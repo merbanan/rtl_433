@@ -180,7 +180,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [92]  FT-004-B Temperature Sensor
     [93]  Ford Car Key
     [94]  Philips outdoor temperature sensor (type AJ3650)
-    [95]  Schrader TPMS EG53MA4, PA66GF35
+    [95]  Schrader TPMS EG53MA4, Saab, Opel, Vauxhall, Chevrolet
     [96]  Nexa
     [97]  ThermoPro TP08/TP12/TP20 thermometer
     [98]  GE Color Effects
@@ -227,7 +227,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [139]  Norgo NGE101
     [140]  Elantra2012 TPMS
     [141]  Auriol HG02832, HG05124A-DCF, Rubicson 48957 temperature/humidity sensor
-    [142]  Fine Offset Electronics/ECOWITT WH51, SwitchDoc Labs SM23 Soil Moisture Sensor
+    [142]  Fine Offset Electronics/Ecowitt WH51, WN31, SwitchDoc Labs SM23 Soil Moisture Sensor
     [143]  Holman Industries iWeather WS5029 weather station (older PWM)
     [144]  TBH weather sensor
     [145]  WS2032 weather station
@@ -300,7 +300,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [212]  Renault 0435R TPMS
     [213]  Fine Offset Electronics WS80 weather station
     [214]  EMOS E6016 weatherstation with DCF77
-    [215]  Emax W6, rebrand Altronics x7063/4, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025, Protmex PT3390A, Jula Marquant 014331/32, TechniSat IMETEO X6 76-4924-00, Weather Station or temperature/humidity sensor
+    [215]  Emax W6, rebrand Altronics x7063/4/x7064A, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025, Protmex PT3390A, Jula Marquant 014331/32, TechniSat IMETEO X6 76-4924-00, Weather Station or temperature/humidity sensor
     [216]* ANT and ANT+ devices
     [217]  EMOS E6016 rain gauge
     [218]  Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes (FSK)
@@ -342,7 +342,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [254]  Thermor DG950 weather station
     [255]  Mueller Hot Rod water meter
     [256]  ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill
-    [257]  BMW Gen3 TPMS
+    [257]  BMW Gen2 and Gen3 TPMS
     [258]  Chamberlain CWPIRC PIR Sensor
     [259]  ThermoPro Meat Thermometers, TP829B 4 probes with temp only
     [260]* Arad/Master Meter Dialog3G water utility meter
@@ -362,8 +362,29 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [274]  Revolt ZX-7717 power meter
     [275]  GM-Aftermarket TPMS
     [276]  RainPoint HCS012ARF Rain Gauge sensor
-    [277]  TRW TPMS OOK
-    [278]  TRW TPMS FSK
+    [277]  Apator Metra E-RM 30 water meter
+    [278]  ThermoPro TX-7B Outdoor Thermometer Hygrometer
+    [279]  Nexus, CRX, Prego sauna temperature sensor
+    [280]  Homelead HG9901 (Geevon, Dr.Meter, Royal Gardineer) soil moisture/temp/light level sensor
+    [281]  Maverick XR-50 BBQ Sensor
+    [282]  Orion Endpoint from Badger Meter, GIF2014W-OSE, water meter, hopping from 904.4 Mhz to 924.6Mhz (-s 1600k)
+    [283]  Fine Offset Electronics WH43 air quality sensor
+    [284]  Baldr E0666TH Thermo-Hygrometer
+    [285]  bm5-v2 12V Battery Monitor
+    [286]  Universal (Reverseable) 24V Fan Controller
+    [287]  Fine Offset Electronics WS85 weather station
+    [288]  Oria WA150KM freezer and fridge thermometer
+    [289]  Voltcraft EnergyCount 3000 (ec3k)
+    [290]  Orion Endpoint from Badger Meter, GIF2020OCECNA, water meter, hopping from 904.4 Mhz to 924.6Mhz (-s 1600k)
+    [291]  Geevon TX19-1 outdoor sensor
+    [292]  WallarGe CLTX001 Outdoor Temperature Sensor
+    [293]  Sainlogic SA8, Gevanti SA8 Weather Station
+    [294]  ThermoPro TP862b TempSpike XR Wireless Dual-Probe Meat Thermometer
+    [295]  Airpuxem TPMS TYH11_EU6_ZQ
+    [296]  Apator Metra E-ITN 30 heat cost allocator
+    [297]  ThermoPro TP211B Thermometer
+    [298]  TRW TPMS OOK
+    [299]  TRW TPMS FSK
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -438,6 +459,7 @@ Available options are:
 	reflect : reflect each byte (MSB first to MSB last)
 	decode_uart : UART 8n1 (10-to-8) decode
 	decode_dm : Differential Manchester decode
+	decode_mc : Manchester decode
 	match=<bits> : only match if the <bits> are found
 	preamble=<bits> : match and align at the <bits> preamble
 		<bits> is a row spec of {<bit count>}<bits as hex number>
@@ -453,7 +475,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
   [-F log|kv|json|csv|mqtt|influx|syslog|trigger|rtl_tcp|http|null] Produce decoded output in given format.
 	Without this option the default is LOG and KV output. Use "-F null" to remove the default.
 	Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
-  [-F mqtt[:[//]host[:port][,<options>]] (default: localhost:1883)
+  [-F mqtt[s][:[//]host[:port][,<options>]] (default: localhost:1883)
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
 	Default user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"
@@ -467,6 +489,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	A base topic can be set with base=<topic>, default is "rtl_433/HOSTNAME".
 	Any topic string overrides the base topic and will expand keys like [/model]
 	E.g. -F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
+	For TLS use e.g. -F "mqtts://host,tls_cert=<path>,tls_key=<path>,tls_ca_cert=<path>"
 	With MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client-ID is computed from the driver string.
 	If you use multiple RTL-SDR, perhaps set a serial and select by that (helps not to get the wrong antenna).
   [-F influx[:[//]host[:port][/<path and options>]]

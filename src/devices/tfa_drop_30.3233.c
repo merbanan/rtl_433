@@ -64,7 +64,7 @@ KKKK
 - K: Unknown. Either b1011 or b0111.
      - Distribution: 50:50.
 
-[Bitbench](http://triq.net/bitbench) string:
+[Bitbench](http://triq.org/bitbench) string:
 
 ```
 ID:hh ID:hh ID:hh BAT_LOW:b RESET:b UNKNOWN:bb XMIT_COUNTER:h RAIN_A:d
@@ -166,7 +166,7 @@ static int tfa_drop_303233_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",      "",           DATA_STRING, "TFA-Drop",
             "id",         "",           DATA_FORMAT, "%5x", DATA_INT,  sensor_id,
             "battery_ok", "Battery",    DATA_INT,    !battery_low,
-            "rain_mm",    "Rain in MM", DATA_DOUBLE, rain_mm,
+            "rain_mm",    "Rain total", DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
             "mic",        "Integrity",  DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */

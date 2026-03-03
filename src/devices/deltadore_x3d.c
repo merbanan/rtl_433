@@ -351,7 +351,7 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (head.unknown_header_flags3 == DELTADORE_X3D_HEADER_FLAG3_TEMP) {
         float temperature = head.temperature / 100.0f;
         /* clang-format off */
-        data = data_dbl(data, "temperature_C",    "Temperature", "%.1f", temperature);
+        data = data_dbl(data, "temperature_C",    "Temperature", "%.1f C", temperature);
         data = data_str(data, "temperature_type", "Temp Type",   NULL,   temp_type);
         /* clang-format on */
     }

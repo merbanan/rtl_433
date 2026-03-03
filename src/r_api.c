@@ -338,7 +338,9 @@ void calc_rssi_snr(r_cfg_t *cfg, pulse_data_t *pulse_data)
 {
     float ook_high_estimate = pulse_data->ook_high_estimate > 0 ? pulse_data->ook_high_estimate : 1;
     float ook_low_estimate = pulse_data->ook_low_estimate > 0 ? pulse_data->ook_low_estimate : 1;
-    float asnr   = ook_high_estimate / ook_low_estimate;
+    int const OOK_MAX_HIGH_LEVEL = DB_TO_AMP(0); // Maximum estimate for high level (-0 dB)
+    float ook_max_estimate = ook_high_estimate < OOK_MAX_HIGH_LEVEL ? ook_high_estimate : OOK_MAX_HIGH_LEVEL;
+    float asnr   = ook_max_estimate / ook_low_estimate;
     float foffs1 = (float)pulse_data->fsk_f1_est / INT16_MAX * cfg->samp_rate / 2.0f;
     float foffs2 = (float)pulse_data->fsk_f2_est / INT16_MAX * cfg->samp_rate / 2.0f;
     pulse_data->freq1_hz = (foffs1 + cfg->center_frequency);

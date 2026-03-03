@@ -16,6 +16,33 @@ Arad/Master Meter Dialog3G water utility meter.
 
 FCC-Id: TKCET-733
 
+See notes in https://45851052.fs1.hubspotusercontent-na1.net/hubfs/45851052/documents/files/Interpreter-II-Register_v0710.20F.pdf
+and https://www.arad.co.il/wp-content/uploads/Dialog-3G-register-information-sheet_Eng-002.pdf
+
+Programmable parameters:
+- Meter User ID:
+  A municipal Meter ID number of up to 5 digits (16 or 17 bits needed)
+- Transponder No:
+  Meter’s Dialog 3GTM transponder number of up to 12 digits (40 bits needed)
+- Reading:
+  The transmitted Dialog 3G TM meter reading (up to 9 digits), (30 bits needed)
+  the accumulated and the display readout are always equivalent.
+- Meter Type:
+  Meter type such as water, gas or electricity
+- Count Factor:
+  Meter count unit. It is a pre scale factor which is initially programmed
+  into the Dialog 3G TM unit is order to get the standaed measurement units
+  for the system billing, management and calculation (Gallons or Cubic/ Mettic)
+- Alarms Temper:
+  A warning temper sign, in case of unauthorized meter tampering. CCW: Reverse
+  consumption by the meter.
+- Gear Ratio:
+  Water meter mechanical gear ratio parameter for the 3G Interpreter register types
+
+Programmable registration includes USG, CF, or M3, while
+resolution of the flow multiplier provides a custom-tailored
+enhanced display (.01, 0.1, 1, 10, 100).
+
 Message is being sent once every 30 seconds.
 The message looks like:
 
@@ -36,7 +63,7 @@ where:
 
 Format string:
 
-    56x SERIAL: <24dc 8x COUNTER: <24d hhhhhhhhhhhhhh  SUFFIX:hh
+    UID:56h SERIAL: <24d c 8h COUNTER: <32d 8h8h 8h8h 8h8h  SUFFIX:hh
 
 */
 
@@ -52,7 +79,7 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned start_pos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, 48);
     start_pos += 48; // skip preamble
 
-    if ((bitbuffer->bits_per_row[row] - start_pos) < 120) {
+    if (start_pos + 120 > bitbuffer->bits_per_row[row]) {
         return DECODE_ABORT_LENGTH; // short buffer or preamble not found
     }
 
@@ -65,14 +92,14 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int wreadraw = b[5] | (b[6] << 8) | (b[7] << 16); // 24 bit little endian Meter water consumption reading
     float wread = wreadraw * 0.1f;
 
-    char sernoout[10];
-    sprintf(sernoout, "%08u%c", serno, b[3] - 32);
+    char sernoout[12];
+    sprintf(sernoout, "%08u-%02x", serno, b[3]);
 
     /* clang-format off */
     data_t *data = data_make(
             "model",       "",               DATA_STRING,    "AradMsMeter-Dialog3G",
             "id",          "Serial No",      DATA_STRING,    sernoout,
-            "volume_m3",    "Volume",        DATA_FORMAT,    "%.1f m3",  DATA_DOUBLE, wread,
+            "volume_m3",   "Volume",         DATA_FORMAT,    "%.1f m3",  DATA_DOUBLE, wread,
             //"mic",         "Integrity",      DATA_STRING,    "CHECKSUM",
             NULL);
     /* clang-format on */
@@ -84,7 +111,7 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
-        "waterread",
+        "volume_m3",
         //"mic",
         NULL,
 };

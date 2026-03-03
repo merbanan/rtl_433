@@ -122,7 +122,8 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
                 sensor_id += 0x40;      // Change ID to distinguish between the main and probe channels
             /* clang-format off */
             data = data_make(
-                    "model",            "",             DATA_STRING, (device29or35 == 29 ? "LaCrosse-TX29IT" : "LaCrosse-TX35DTHIT"),
+                    "model",            "",             DATA_COND,   device29or35 == 29, DATA_STRING, "LaCrosse-TX29IT",
+                    "model",            "",             DATA_COND,   device29or35 != 29, DATA_STRING, "LaCrosse-TX35DTHIT",
                     "id",               "",             DATA_INT,    sensor_id,
                     "battery_ok",       "Battery",      DATA_INT,    !battery_low,
                     "newbattery",       "NewBattery",   DATA_INT,    new_batt,
@@ -134,7 +135,8 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
         else {
             /* clang-format off */
             data = data_make(
-                    "model",            "",             DATA_STRING, (device29or35 == 29 ? "LaCrosse-TX29IT" : "LaCrosse-TX35DTHIT"),
+                    "model",            "",             DATA_COND,   device29or35 == 29, DATA_STRING, "LaCrosse-TX29IT",
+                    "model",            "",             DATA_COND,   device29or35 != 29, DATA_STRING, "LaCrosse-TX35DTHIT",
                     "id",               "",             DATA_INT,    sensor_id,
                     "battery_ok",       "Battery",      DATA_INT,    !battery_low,
                     "newbattery",       "NewBattery",   DATA_INT,    new_batt,

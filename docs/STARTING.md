@@ -19,7 +19,7 @@ the other way around `-h -V` you will see the help output but no version string 
 
 This ordering is important to keep in mind, generally go "inputs", "processing options", "outputs".
 
-::: tip
+:::tip
     [-V] Output the version string and exit
     [-h] Output this usage help and exit
          Use -d, -g, -R, -X, -F, -M, -r, -w, or -W without argument for more help
@@ -41,7 +41,7 @@ By default a configuration file will be searched for and loaded from
 
 An example configuration file with information on all possible options is provided at [rtl_433.example.conf](https://github.com/merbanan/rtl_433/blob/master/conf/rtl_433.example.conf).
 
-::: tip
+:::tip
     [-c <path>] Read config options from a file
 :::
 
@@ -58,7 +58,7 @@ Choose a live input with `-d`:
 The default is to use the first RTL-SDR available (`-d 0`).
 You can switch that to using the first SoapySDR available by using `-d ""`, i.e. the empty SoapySDR search string.
 
-::: warning
+:::warning
 When running multiple instances of `rtl_433` be sure to use a distinct input for each, do not rely on the auto-selection of the first available input.
 :::
 
@@ -67,7 +67,7 @@ If you list files to read as last options then you can omit the `-r` e.g. `rtl_4
 
 If you are testing a decoder you can list a demodulated bit pattern as input using the `-y` option, e.g. `-y "{25}fb2dd58"`
 
-::: tip
+:::tip
     [-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query> | rtl_tcp | help]
     [-r <filename> | help] Read data from input file instead of a receiver
     [-y <code>] Verify decoding of demodulated test data (e.g. "{25}fb2dd58") with enabled devices
@@ -91,7 +91,7 @@ Select a sample rate using `-s <sample rate>` -- rates higher than `1024k` or ma
 Specific settings for an SDR device can be given with `-g <gain>`, `-p <ppm_error>`,
 and even `-t <settings>` to apply a list of keyword=value settings for SoapySDR devices.
 
-::: tip
+:::tip
     [-f <frequency>] Receive frequency(s) (default: 433920000 Hz)
     [-H <seconds>] Hop interval for polling of multiple frequencies (default: 600 seconds)
     [-E hop | quit] Hop/Quit after outputting successful event(s)
@@ -113,13 +113,13 @@ Instruct `rtl_433` not to be silent, use:
 -  `-vvv` to show all decoding attempts,
 -  `-A` to analyze every signal in detail.
 
-::: tip
+:::tip
 Disable all decoders with `-R 0` if you want analyzer output only.
 :::
 
 Alternatively get periodic status output using: `-M level` `-M noise` `-M stats:2:30`
 
-::: tip
+:::tip
     [-v] Increase verbosity (can be used multiple times).
          -v : verbose, -vv : verbose decoders, -vvv : debug decoders, -vvvv : trace decoding).
     [-A] Pulse Analyzer. Enable pulse analysis and decode attempt.
@@ -142,7 +142,7 @@ Any number of outputs can be selected:
 Append output to file with `:<filename>` (e.g. `-F csv:log.csv`), default is to print to stdout.
 Specify host/port for `mqtt`, `influx`, `syslog`, with e.g. `-F syslog:127.0.0.1:1514`
 
-::: tip
+:::tip
     [-F kv | json | csv | mqtt | influx | syslog | trigger | rtl_tcp | http | null | help] Produce decoded output in given format.
 :::
 
@@ -150,7 +150,7 @@ Specify host/port for `mqtt`, `influx`, `syslog`, with e.g. `-F syslog:127.0.0.1
 
 You can write all received raw data to a file with `-w <filename>` (or  `-W <filename>` to overwrite an existing file).
 
-::: tip
+:::tip
     [-w <filename> | help] Save data stream to output file (a '-' dumps samples to stdout)
     [-W <filename> | help] Save data stream to output file, overwrite existing file
 :::
@@ -166,7 +166,7 @@ Use
 
 The saves signals are raw I/Q samples (uint8 pcm, 2 channel).
 
-::: tip
+:::tip
     [-S none | all | unknown | known] Signal auto save. Creates one file per signal.
 :::
 
@@ -180,11 +180,11 @@ You can disable all decoders using some `-R 0`.
 
 Additional flexible general purpose decoders can be added using `-X <spec>`.
 
-::: tip
+:::tip
 Disable all decoders with `-R 0` if you want only the given flex decoder.
 :::
 
-::: tip
+:::tip
     [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)
          Specify a negative number to disable a device decoding protocol (can be used multiple times)
     [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)
@@ -203,7 +203,7 @@ Use `-Y autolevel` to automatically adjust the minimum detection level based on 
 
 Use `-Y squelch` to skip frames below estimated noise level to reduce cpu load. Recommended.
 
-::: tip
+:::tip
     [-Y auto | classic | minmax] FSK pulse detector mode.
     [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto).
     [-Y minlevel=<dB level>] Manual minimum detection level used to determine pulses (-1.0 to -99.0).
@@ -233,7 +233,7 @@ Use
 - `-C si` Convert units to SI in decoded output.
 - `-C customary` Convert units to Customary (US) in decoded output.
 
-::: tip
+:::tip
     [-M time[:<options>] | protocol | level | noise[:<secs>] | stats | bits] Add various metadata to every output line.
       Use "time" to add current date and time meta data (preset for live inputs).
       Use "time:rel" to add sample position meta data (preset for read-file and stdin).
@@ -278,7 +278,7 @@ When reading live inputs `rtl_433` will usually run forever, but you can limit t
 When reading input from files `rtl_433` will process the data as fast as possible.
 You can limit the processing to original (or N-times) real-time using `-M replay[:N]`.
 
-::: tip
+:::tip
     [-n <value>] Specify number of samples to take (each sample is an I/Q pair)
     [-T <seconds>] Specify number of seconds to run, also 12:34 or 1h23m45s
     [-E hop | quit] Hop/Quit after outputting successful event(s)

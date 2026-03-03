@@ -404,10 +404,9 @@ void ccitt_whitening(uint8_t *buffer, unsigned buffer_size)
 {
     uint8_t key_msb = 0x01;
     uint8_t key_lsb = 0xff;
-    uint8_t key_msb_previous;
-    uint8_t reflected_key_lsb = key_lsb;
 
     for (unsigned buffer_pos = 0; buffer_pos < buffer_size; buffer_pos++) {
+        uint8_t reflected_key_lsb;
         reflected_key_lsb = (key_lsb & 0xf0) >> 4 | (key_lsb & 0x0f) << 4;
         reflected_key_lsb = (reflected_key_lsb & 0xcc) >> 2 | (reflected_key_lsb & 0x33) << 2;
         reflected_key_lsb = (reflected_key_lsb & 0xaa) >> 1 | (reflected_key_lsb & 0x55) << 1;
@@ -415,9 +414,32 @@ void ccitt_whitening(uint8_t *buffer, unsigned buffer_size)
         buffer[buffer_pos] ^= reflected_key_lsb;
 
         for (uint8_t rol_counter = 0; rol_counter < 8; rol_counter++) {
+            uint8_t key_msb_previous;
             key_msb_previous = key_msb;
             key_msb          = (key_lsb & 0x01) ^ ((key_lsb >> 5) & 0x01);
             key_lsb          = ((key_msb_previous << 7) & 0x80) | ((key_lsb >> 1) & 0xff);
+        }
+    }
+}
+
+// The IBM data whitening process is built around a 9-bit Linear Feedback Shift Register (LFSR).
+// CCITT data whitening processes data packets byte-per-byte, whereas IBM data
+// whitening processes the data packet bit-per-bit
+// Same, the initial value of the data whitening key is set to all ones, 0x1FF.
+// s.a. https://www.nxp.com/docs/en/application-note/AN5070.pdf s.5.1
+
+void ibm_whitening(uint8_t *buffer, unsigned buffer_size)
+{
+    uint8_t key_msb = 0x01;
+    uint8_t key_lsb = 0xff;
+    uint8_t key_msb_previous = 0;
+
+    for (unsigned buffer_pos = 0; buffer_pos < buffer_size; buffer_pos++) {
+        buffer[buffer_pos] ^= key_lsb;
+        for (uint8_t rol_counter = 0; rol_counter < 8; rol_counter++) {
+            key_msb_previous = key_msb;
+            key_msb          = (key_lsb & 0x01) ^ ((key_lsb >> 5) & 0x01);
+            key_lsb          = ((key_lsb >> 1) & 0xff) | ((key_msb_previous << 7) & 0x80);
         }
     }
 }
@@ -558,13 +580,21 @@ int main(void) {
     ASSERT_EQUALS(bytes[3], 0x02);
     ASSERT_EQUALS(bytes[4], 0x03);
 
-    fprintf(stderr, "util:: test (%u/%u) passed, (%u) failed.\n", passed, passed + failed, failed);
-
     fprintf(stderr, "util::ccitt_whitening():\n");
-    uint8_t buf[16] = {0};
-    uint8_t chk[16] = {0xff, 0x87, 0xb8, 0x59, 0xb7, 0xa1, 0xcc, 0x24, 0x57, 0x5e, 0x4b, 0x9c, 0x0e, 0xe9, 0xea, 0x50};
-    ccitt_whitening(buf, sizeof(buf)) ;
-    ASSERT_MATCH(buf, chk, sizeof(buf));
+    uint8_t buf1[16] = {0};
+    uint8_t chk1[16] = {0xff, 0x87, 0xb8, 0x59, 0xb7, 0xa1, 0xcc, 0x24, 0x57, 0x5e, 0x4b, 0x9c, 0x0e, 0xe9, 0xea, 0x50};
+    ccitt_whitening(buf1, sizeof(buf1)) ;
+    ASSERT_MATCH(buf1, chk1, sizeof(buf1));
+
+    fprintf(stderr, "util::ibm_whitening():\n");
+    uint8_t buf2[16] = {0};
+    uint8_t chk2[16] = {0xff, 0xe1, 0x1d, 0x9a, 0xed, 0x85, 0x33, 0x24, 0xea, 0x7a, 0xd2, 0x39, 0x70, 0x97, 0x57, 0x0a};
+    ibm_whitening(buf2, sizeof(buf2)) ;
+    ASSERT_MATCH(buf2, chk2, sizeof(buf2));
+
+    // ------------- add test above this line -----------------------------------------------------
+    // Show result of the tests, this line must stay the last line before return failed;
+    fprintf(stderr, "util:: test (%u/%u) passed, (%u) failed.\n", passed, passed + failed, failed);
 
     return failed;
 }

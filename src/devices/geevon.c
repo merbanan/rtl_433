@@ -14,6 +14,8 @@
 /**
 Geevon TX16-3 Remote Outdoor Sensor with LCD Display.
 
+Note that Geevon TX16-3 and Geevon TX19-1 are identical except for the checksum.
+
 This device is a simple temperature/humidity transmitter with a small LCD display for local viewing.
 
 The test packet represents:
@@ -49,7 +51,7 @@ Example packets:
 
 */
 
-static int geevon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int geevon_tx16_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // invert all the bits
     bitbuffer_invert(bitbuffer);
@@ -65,17 +67,20 @@ static int geevon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Check if the packet has the correct number of bits
     if (bitbuffer->bits_per_row[r] != 73) {
+        decoder_log(decoder, 1, __func__, "Bit length did NOT match.");
         return DECODE_ABORT_LENGTH;
     }
 
     // Check if the fixed bytes are correct
     if (b[5] != 0xAA || b[6] != 0x55 || b[7] != 0xAA) {
+        decoder_log(decoder, 1, __func__, "Fixed bytes did NOT match.");
         return DECODE_FAIL_MIC;
     }
 
     // Verify CRC checksum
     uint8_t chk = crc8(b, 9, 0x31, 0x7b);
     if (chk) {
+        decoder_log(decoder, 1, __func__, "Checksum did NOT match.");
         return DECODE_FAIL_MIC;
     }
 
@@ -113,7 +118,7 @@ static char const *const output_fields[] = {
         NULL,
 };
 
-r_device const geevon = {
+r_device const geevon_tx16 = {
         .name        = "Geevon TX16-3 outdoor sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 250,
@@ -121,6 +126,6 @@ r_device const geevon = {
         .sync_width  = 750,  // sync pulse is 728 us + 728 us gap
         .gap_limit   = 625,  // long gap (with short pulse) is ~472 us, sync gap is ~728 us
         .reset_limit = 1700, // maximum gap is 1250 us (long gap + longer sync gap on last repeat)
-        .decode_fn   = &geevon_callback,
+        .decode_fn   = &geevon_tx16_decode,
         .fields      = output_fields,
 };
