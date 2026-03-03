@@ -305,6 +305,8 @@
     DECL(tpms_airpuxem) \
     DECL(apator_metra_eitn30) \
     DECL(thermopro_tp211b) \
+    DECL(tpms_trw_ook) \
+    DECL(tpms_trw_fsk) \
 
     /* Add new decoders here. */
 
