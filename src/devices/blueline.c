@@ -397,7 +397,7 @@ static char const *const output_fields[] = {
 
 r_device const blueline;
 
-static r_device *blueline_create(char *arg)
+static r_device *blueline_create(char const *arg)
 {
     r_device *r_dev = decoder_create(&blueline, sizeof(struct blueline_stateful_context));
     if (!r_dev) {

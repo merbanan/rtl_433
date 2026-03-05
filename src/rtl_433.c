@@ -54,6 +54,7 @@
 #include "fatal.h"
 #include "write_sigrok.h"
 #include "mongoose.h"
+#include "rtl_433_devices.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -121,8 +122,6 @@ static void delay_timer_wait(delay_timer_t *delay_timer, unsigned delay_us)
     if ((time_t)delay_us > elapsed_us)
         usleep(delay_us - elapsed_us);
 }
-
-r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
 static void print_version(void)
 {
@@ -1204,11 +1203,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         }
         break;
     case 'X':
-        if (!arg)
-            flex_create_device(NULL);
-
-        flex_device = flex_create_device(arg);
-        register_protocol(cfg, flex_device, "");
+        register_protocol(cfg, &flex_decoder, arg);
         break;
     case 'q':
         fprintf(stderr, "quiet option (-q) is default and deprecated. See -v to increase verbosity\n");

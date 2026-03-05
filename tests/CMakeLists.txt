@@ -33,6 +33,12 @@ endforeach(testSrc)
 # Define integration tests
 ########################################################################
 add_test(rtl_433_help ../src/rtl_433 -h)
+add_test(flex_decoder_help ../src/rtl_433 -X)
+add_test(flex_decoder bash -c
+    "touch empty_file.cu8 && \
+    ../src/rtl_433 \
+        -X n=name,m=FSK_PCM,s=10,l=10,r=10240 \
+        -r empty_file.cu8")
 
 ########################################################################
 # Define style checks
