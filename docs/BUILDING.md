@@ -107,6 +107,20 @@ Purge all SoapySDR packages and source installation from /usr/local.
 Then install only from packages (version 0.7) or only from source (version 0.8).
 :::
 
+## Docker
+
+To build the container (and thus the application) from source:
+
+```console
+$ docker build \
+         --rm \
+         --tag 'rtl_433:MR123' \
+         --file dist/Containerfile \
+         './'
+```
+
+and then can be run as above, with `rtl_433:MR123` as container name instead when running the container.
+
 ## Package maintainers
 
 To properly configure builds without relying on automatic feature detection you should set all options explicitly, e.g.
