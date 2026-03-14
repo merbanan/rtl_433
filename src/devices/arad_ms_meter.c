@@ -1,6 +1,6 @@
 /**
  * @file
- * Arad/Master Meter Dialog3G water utility meter (protocol 260).
+ * Arad / Master Meter Dialog3G water utility meter (protocol 260).
  *
  * Copyright (C) 2022 avicarmeli
  *
@@ -113,8 +113,8 @@
  * Several fields previously assumed constant have been observed to vary in
  * newer captures. This documentation reflects current understanding based on
  * empirical analysis and may be updated as additional frames are decoded.
-
-  * ---------------------------------------------------------------------------
+ *
+ * ---------------------------------------------------------------------------
  * BitBench notation
  * ---------------------------------------------------------------------------
  *
@@ -135,10 +135,10 @@
  * ---------------------------------------------------------------------------
  * This decoder accepts arguments through:
  *
- *     rtl_433 -R <id>:<args>
+ *     rtl_433 -R ID:ARGS
  *
  * Mandatory:
- * - serial=<list> / serials=<list>
+ * - serial=LIST / serials=LIST
  *     At least one serial must be provided, otherwise the decoder is silent
  *     and prints a warning once.
  *
@@ -150,27 +150,27 @@
  *         SERIAL-SUFFIX
  *
  *     Examples:
- *         -R <id>:serial=9444602
- *         -R <id>:serials=9444602;1234567;0xfa1c90
- *         -R <id>:serials=09444602-73;01234567-53
+ *         -R ID:serial=9444602
+ *         -R ID:serials=9444602;1234567;0xfa1c90
+ *         -R ID:serials=09444602-73;01234567-53
  *
  *     NOTE:
  *     If other options are combined with serials, commas separate key=value
  *     pairs. In that case prefer semicolons inside serials:
  *
- *         -R <id>:serials=9444602;1234567,gear=0.1,units=m3
+ *         -R ID:serials=9444602;1234567,gear=0.1,units=m3
  *
  * Optional:
- * - gear=<value>
+ * - gear=VALUE
  *     Flow multiplier / resolution.
  *     Allowed values: 0.01, 0.1, 1, 10, 100
  *     Default: 0.1
  *
- * - units=<value>
+ * - units=VALUE
  *     Overrides the native unit interpretation of the meter.
  *     Allowed values (case-insensitive): m3, Liters, CF, USG
  *
- * - convert=<value>
+ * - convert=VALUE
  *     Converts the decoded numeric volume to the requested output unit.
  *     Allowed values (case-insensitive): m3, Liters, CF, USG
  *
@@ -178,7 +178,7 @@
  * Outputs
  * ---------------------------------------------------------------------------
  * - model               : decoder model name
- * - id                  : "SERIAL-SUFFIX"
+ * - id                  : SERIAL-SUFFIX
  *                         serial as 8-digit decimal + '-' + suffix as hex
  * - volume              : decoded volume in selected output units
  * - unit                : output unit string (m3 / Liters / CF / USG)
@@ -188,10 +188,10 @@
  * - unmatched_preamble  : inverted preamble nibbles outside the matched
  *                         nibble window, formatted as:
  *
- *                             <before>_..._<after>
+ *                             BEFORE_..._AFTER
  *
- *                         where <before> is the unmatched part before the
- *                         matched preamble window and <after> is the unmatched
+ *                         where BEFORE is the unmatched part before the
+ *                         matched preamble window and AFTER is the unmatched
  *                         part after it
  *
  * ---------------------------------------------------------------------------
@@ -203,11 +203,11 @@
  *
  * The decoder may search only a configurable nibble window inside this full
  * preamble. The unmatched nibbles are not validated and are reported in the
- * output as "unmatched_preamble" after nibble-wise inversion.
+ * output as unmatched_preamble after nibble-wise inversion.
  *
  * Important:
  * - The payload extraction offset is always derived from the start of the
- *   FULL 48-bit preamble, even if only a sub-range of nibbles is matched.
+ *   full 48-bit preamble, even if only a sub-range of nibbles is matched.
  * - This ensures serial / suffix / counter extraction stays aligned when the
  *   preamble match window is changed.
  *
@@ -249,9 +249,9 @@
  *     auto -> gear override -> units override -> convert
  *
  * Meaning:
- * - gear=<...>   overrides the detected native gear
- * - units=<...>  overrides the detected native unit
- * - convert=<...> converts the numeric output volume to the requested unit
+ * - gear=...    overrides the detected native gear
+ * - units=...   overrides the detected native unit
+ * - convert=... converts the numeric output volume to the requested unit
  *
  * Notes:
  * - units= changes the native interpretation
@@ -1011,12 +1011,11 @@ static r_device *arad_ms_meter_create(char *args)
         if (!val)
             val = (char *)"";
 
-        if (arad_ieq(key, "serial") || arad_ieq(key, "serials")) {
+ if (arad_ieq(key, "serial") || arad_ieq(key, "serials")) {
             collecting_serials = 1;
             serial_buf[0]      = '\0';
             if (*val) {
-                strncat(serial_buf, val, sizeof(serial_buf) - 1);
-                serial_buf[sizeof(serial_buf) - 1] = '\0';
+                snprintf(serial_buf, sizeof(serial_buf), "%s", val);
             }
         }
         else if (arad_ieq(key, "gear")) {
