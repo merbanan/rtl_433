@@ -33,7 +33,7 @@ Preamble is aaaa aaaa aaaa, sync word is 2dd4.
 Packet layout:
 
      0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-    YY II II II LL LL BB FF TT HH WW DD GG VV UU UU R0 R1 R2 R3 R4 SS UU UU UU UU UU UU UU ZZ AA XX
+    YY II II II LL LL BB FF TT HH WW DD GG VV PP PP R0 R1 R2 R3 R4 SS UU UU UU UU UU UU UU ZZ AA XX
     90 00 34 2b 00 77 a4 82 62 39 00 3e 00 00 3f ff 20 00 ba 00 00 26 02 00 ff 9f f8 00 00 82 92 4f
 
 - Y = fixed sensor type 0x90
@@ -48,7 +48,8 @@ Packet layout:
 - D = wind bearing, lowest 8 bits of wind bearing, range 0-359 deg, 0x1ff if invalid
 - G = wind gust, lowest 8 bits of wind gust, m/s, scale 10
 - V = uv index, scale 10
-- U = unknown (bytes 14 and 15 appear to be fixed at 3f ff)
+- P = ambient pressure or 3f ff for invalid
+- U = unknown
 - R = rain total (R3 << 8 | R4) * 0.1 mm
 - RS = rain start dection ((R1 & 0x10) >>4), 1 = raining, 0 = not raining
 - S = super cap voltage, unit of 0.1V, lower 6 bits, mask 0x3f
@@ -111,6 +112,7 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int wind_dir    = ((b[7] & 0x20) << 3) | (b[11]);
     int wind_max    = ((b[7] & 0x40) << 2) | (b[12]);
     int uv_index    = (b[13]);
+    int pressure    = (b[14] << 8) | (b[15]);
     int rain_raw    = (b[19] << 8 ) | (b[20]);
     int rain_start  = (b[16] & 0x10) >> 4;
     int supercap_V  = (b[21] & 0x3f);
@@ -130,6 +132,7 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "battery_mV",       "Battery Voltage",  DATA_FORMAT, "%d mV", DATA_INT,    battery_mv,
             "temperature_C",    "Temperature",      DATA_COND, temp_raw != 0x3ff,   DATA_FORMAT, "%.1f C",   DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",         DATA_COND, humidity != 0xff,    DATA_FORMAT, "%u %%",    DATA_INT, humidity,
+            "pressure_hPa",     "Pressure",         DATA_COND, pressure != 0x3fff, DATA_FORMAT, "%.1f hPa", DATA_DOUBLE, (double)pressure,
             "wind_dir_deg",     "Wind direction",   DATA_COND, wind_dir != 0x1ff,   DATA_INT, wind_dir,
             "wind_avg_m_s",     "Wind speed",       DATA_COND, wind_avg != 0x1ff,   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_avg * 0.1f,
             "wind_max_m_s",     "Gust speed",       DATA_COND, wind_max != 0x1ff,   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_max * 0.1f,
@@ -156,6 +159,7 @@ static char const *const output_fields[] = {
         "battery_mV",
         "temperature_C",
         "humidity",
+        "pressure_hPa",
         "wind_dir_deg",
         "wind_avg_m_s",
         "wind_max_m_s",
