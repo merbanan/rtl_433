@@ -385,6 +385,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [297]  ThermoPro TP211B Thermometer
     [298]  TRW TPMS OOK OEM and Clone models
     [299]  TRW TPMS FSK OEM and Clone models
+    [300]  Tuya WSD024-W-433 Temperature & Humidity Sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
