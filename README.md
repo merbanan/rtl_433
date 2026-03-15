@@ -383,7 +383,9 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [295]  Airpuxem TPMS TYH11_EU6_ZQ
     [296]  Apator Metra E-ITN 30 heat cost allocator
     [297]  ThermoPro TP211B Thermometer
-    [298]  Tuya WSD024-W-433 Temperature & Humidity Sensor
+    [298]  TRW TPMS OOK OEM and Clone models
+    [299]  TRW TPMS FSK OEM and Clone models
+    [300]  Tuya WSD024-W-433 Temperature & Humidity Sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
