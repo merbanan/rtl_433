@@ -325,7 +325,7 @@
     DECL(alps_fwb1u545_car_remote) \
     DECL(continental_car_remote) \
     DECL(code_alarm_frdpc2000_car_remote) \
-    DECL(tuya_wsd024w433) \
+    DECL(shenzhen_wale_wl_th6r) \
 
     /* Add new decoders here. */
 

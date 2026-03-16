@@ -403,7 +403,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [315]  Alps FWB1U545 Car Remote
     [316]  Continental KR5V2X Car Remote (-f 313.8M -s 1024k)
     [317]  Code Alarm FRDPC2002 Car Remote
-    [318]  Tuya WSD024-W-433 Temperature & Humidity Sensor
+    [318]  Shenzhen Wale WL-TH6R Temperature & Humidity Sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
