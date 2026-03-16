@@ -74,8 +74,8 @@ Therefore only rows that occur at least twice will be reported.
 
 static int shenzhen_wale_wl_th6r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    // Pick the first row with at least 72 bits that occurs at least twice.
-    int row = bitbuffer_find_repeated_row(bitbuffer, 2, BITS_PER_ROW);
+    // Pick the first row with at least 72 bits that occurs at least twice (ignoring additional bits)
+    int row = bitbuffer_find_repeated_prefix(bitbuffer, 2, BITS_PER_ROW);
 
     if (row < 0) {
         decoder_logf(decoder, 2, __func__, "No row with at least 72 bits occurred at least twice");
