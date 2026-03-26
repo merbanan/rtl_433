@@ -154,7 +154,7 @@ static int shenzhen_wale_wl_th6r_decode(r_device *decoder, bitbuffer_t *bitbuffe
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "Model",            DATA_STRING,    "ShenzhenWale-WL-TH6R",
+            "model",            "Model",            DATA_STRING,    "WL-TH6R",
             "id",               "Sensor ID",        DATA_FORMAT,    "%06X", DATA_INT, sensor_id,
             "battery_ok",       "Battery",          DATA_COND,      battery_pct < 20, DATA_INT, 0, // The mobile app sends a low battery notification below 20%
             "battery_pct",      "Battery level",    DATA_FORMAT,    "%d %%", DATA_INT, battery_pct, // Note: this might change with #3103
