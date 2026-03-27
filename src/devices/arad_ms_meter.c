@@ -1,4 +1,4 @@
-/** @file
+﻿/** @file
     Arad/Master Meter Dialog3G water utility meter.
 
     Copyright (C) 2022 avicarmeli
