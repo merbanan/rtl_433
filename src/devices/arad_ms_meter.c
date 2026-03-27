@@ -1,4 +1,4 @@
-﻿/** @file
+/** @file
     Arad/Master Meter Dialog3G water utility meter.
 
     Copyright (C) 2022 avicarmeli
@@ -774,7 +774,6 @@ Implementation notes
 - no strtok_r
 - no DATA_FORMAT varargs usage
 - output uses separate numeric and unit fields
-
 */
 
 static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
