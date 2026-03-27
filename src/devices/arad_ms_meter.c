@@ -455,7 +455,7 @@ static int arad_build_preamble_nibble_pattern(
     return 1;
 }
 
-/* 	Build a string containing the INVERTED preamble nibbles
+/*  Build a string containing the INVERTED preamble nibbles
         NOT covered by [start_nibble, end_nibble).
         The unmatched parts BEFORE and AFTER the matched window
         are separated by "_..._".
@@ -779,7 +779,7 @@ Implementation notes
 
 static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    /* 	---- Preamble matching window (nibbles) ----
+    /*  ---- Preamble matching window (nibbles) ----
                 Full preamble (inverted polarity, do NOT change):
                 96 f5 13 85 37 b4
 
