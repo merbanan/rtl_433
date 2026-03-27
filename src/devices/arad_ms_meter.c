@@ -1,271 +1,13 @@
-/**
- * @file
- * Arad / Master Meter Dialog3G water utility meter (protocol 260).
- *
- * Copyright (C) 2022 avicarmeli
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * ---------------------------------------------------------------------------
- * Overview
- * ---------------------------------------------------------------------------
- * Decoder for Arad / Master Meter Dialog3G water utility meter transmissions.
- *
- * FCC-Id: TKCET-733
- *
- * References:
- * - https://45851052.fs1.hubspotusercontent-na1.net/hubfs/45851052/documents/files/Interpreter-II-Register_v0710.20F.pdf
- * - https://www.arad.co.il/wp-content/uploads/Dialog-3G-register-information-sheet_Eng-002.pdf
- *
- * Messages are transmitted approximately once every 30 seconds.
- *
- * ---------------------------------------------------------------------------
- * Observed message structure
- * ---------------------------------------------------------------------------
- *
- * A typical frame (after preamble) appears as:
- *
- *     00000000FFFFFFFFFFFFFFSSSSSSSSXXCCCCCCXXXF?????????XFF
- *
- * Field description (based on reverse engineering and observations):
- *
- * - 00000000
- *     Preamble used for frame synchronization.
- *
- * - FFFFFFFFFFFFFF
- *     Bytes that appear constant in time and are usually identical for
- *     meters located in the same neighborhood.
- *
- *     Observed payload example:
- *         3e690aec7ac84b
- *
- *     The exact meaning is unknown. It may be related to the meter register
- *     configuration or gearing parameters.
- *
- * - SSSSSSSS
- *     Meter serial field (4 bytes).
- *
- *     The first 3 bytes represent the numeric serial number (little-endian).
- *
- *     Example:
- *         fa1c9073
- *
- *         fa1c90  -> 09444602 (decimal serial number)
- *         73      -> suffix byte
- *
- *     The last byte sometimes corresponds to a letter printed after the
- *     serial on the physical meter, but not always. In many cases it contains
- *     values that do not appear on the meter label.
- *
- *     Empirically, this suffix byte together with the following byte appears
- *     to encode meter configuration parameters such as the measurement unit
- *     and gear (resolution).
- *
- * - XX
- *     Unknown field (2 bytes). Its role is not yet understood.
- *
- * - CCCCCC
- *     Counter value (3 bytes, little-endian).
- *
- *     Example:
- *         a80600 -> 1704
- *
- *     This value represents the raw meter counter before applying the gear
- *     multiplier.
- *
- * - XXX
- *     Unknown field (3 bytes). Function currently unknown.
- *
- * - F
- *     Observed constant byte in many frames.
- *
- *     Typical observed payload:
- *         0x05
- *
- *     Appears stable for meters in the same installation but the exact
- *     meaning is not yet confirmed.
- *
- * - ?????????
- *     Likely CRC or checksum field. The exact algorithm is currently unknown.
- *
- * - X
- *     A single byte that is typically observed as either:
- *
- *         0x08  or  0x00
- *
- *     The meaning is not yet known.
- *
- * - FF
- *     Final byte of the frame.
- *
- *     Earlier observations suggested this byte was constant (often 0xF8),
- *     however newer captures show that this byte may change over time even
- *     for the same meter. Its purpose is currently unknown and it should not
- *     be assumed constant.
- *
- * ---------------------------------------------------------------------------
- * Notes
- * ---------------------------------------------------------------------------
- *
- * Several fields previously assumed constant have been observed to vary in
- * newer captures. This documentation reflects current understanding based on
- * empirical analysis and may be updated as additional frames are decoded.
- *
- * ---------------------------------------------------------------------------
- * BitBench notation
- * ---------------------------------------------------------------------------
- *
- * Use PREAMBLE_ALIGN with value:
- *
- *     c196f51385
- *
- * This is the inverted form of:
- *
- *     3e690aec7a
- *
- * Format string:
- *
- *     UID:16h SERIAL:<24d 8h 8h COUNTER:<32d 8h8h 8h8h 8h8h SUFFIX:hh
- *
- * ---------------------------------------------------------------------------
- * Protocol options
- * ---------------------------------------------------------------------------
- * This decoder accepts arguments through:
- *
- *     rtl_433 -R ID:ARGS
- *
- * Mandatory:
- * - serial=LIST / serials=LIST
- *     At least one serial must be provided, otherwise the decoder is silent
- *     and prints a warning once.
- *
- *     The filter accepts one or more meter serials (24-bit little-endian),
- *     in decimal or hex notation.
- *
- *     A suffix byte may optionally be locked too by using:
- *
- *         SERIAL-SUFFIX
- *
- *     Examples:
- *         -R ID:serial=9444602
- *         -R ID:serials=9444602;1234567;0xfa1c90
- *         -R ID:serials=09444602-73;01234567-53
- *
- *     NOTE:
- *     If other options are combined with serials, commas separate key=value
- *     pairs. In that case prefer semicolons inside serials:
- *
- *         -R ID:serials=9444602;1234567,gear=0.1,units=m3
- *
- * Optional:
- * - gear=VALUE
- *     Flow multiplier / resolution.
- *     Allowed values: 0.01, 0.1, 1, 10, 100
- *     Default: 0.1
- *
- * - units=VALUE
- *     Overrides the native unit interpretation of the meter.
- *     Allowed values (case-insensitive): m3, Liters, CF, USG
- *
- * - convert=VALUE
- *     Converts the decoded numeric volume to the requested output unit.
- *     Allowed values (case-insensitive): m3, Liters, CF, USG
- *
- * ---------------------------------------------------------------------------
- * Outputs
- * ---------------------------------------------------------------------------
- * - model               : decoder model name
- * - id                  : SERIAL-SUFFIX
- *                         serial as 8-digit decimal + '-' + suffix as hex
- * - volume              : decoded volume in selected output units
- * - unit                : output unit string (m3 / Liters / CF / USG)
- * - volume_m3           : volume always provided in cubic meters
- * - gear                : effective native gear used for decoding
- * - native_unit         : effective native unit used for decoding
- * - unmatched_preamble  : inverted preamble nibbles outside the matched
- *                         nibble window, formatted as:
- *
- *                             BEFORE_..._AFTER
- *
- *                         where BEFORE is the unmatched part before the
- *                         matched preamble window and AFTER is the unmatched
- *                         part after it
- *
- * ---------------------------------------------------------------------------
- * Preamble detection
- * ---------------------------------------------------------------------------
- * Full preamble (already in the expected polarity for search):
- *
- *     96 f5 13 85 37 b4
- *
- * The decoder may search only a configurable nibble window inside this full
- * preamble. The unmatched nibbles are not validated and are reported in the
- * output as unmatched_preamble after nibble-wise inversion.
- *
- * Important:
- * - The payload extraction offset is always derived from the start of the
- *   full 48-bit preamble, even if only a sub-range of nibbles is matched.
- * - This ensures serial / suffix / counter extraction stays aligned when the
- *   preamble match window is changed.
- *
- * ---------------------------------------------------------------------------
- * Buffer polarity
- * ---------------------------------------------------------------------------
- * This decoder keeps the original polarity behavior:
- *
- *     bitbuffer_invert(bitbuffer);
- *
- * The preamble is located first, and the shared bitbuffer is inverted only
- * afterwards, before payload extraction.
- *
- * As a result, verbose (-V) output shows the buffer in the polarity expected
- * by this decoder.
- *
- * ---------------------------------------------------------------------------
- * Decoding behavior
- * ---------------------------------------------------------------------------
- * - serial/serials is mandatory
- * - the decoder is silent when no serial filter is provided
- * - a warning is printed once if serial/serials is missing
- * - automatic native gear / unit detection is based on bytes after the serial:
- *
- *     b[3] == 0x73 && b[4] == 0x00
- *         -> gear = 0.1, native_unit = m3
- *
- *     b[3] == 0x00 && (b[4] == 0x00 || b[4] == 0x40)
- *         -> gear = 0.01, native_unit = m3
- *
- *     b[3] == 0x27 && b[4] == 0x00
- *         -> gear = 0.1, native_unit = USG
- *
- *     default
- *         -> gear = 0.1, native_unit = m3
- *
- * Override order:
- *
- *     auto -> gear override -> units override -> convert
- *
- * Meaning:
- * - gear=...    overrides the detected native gear
- * - units=...   overrides the detected native unit
- * - convert=... converts the numeric output volume to the requested unit
- *
- * Notes:
- * - units= changes the native interpretation
- * - convert= changes the displayed numeric output
- * - convert overrides units in output selection
- *
- * ---------------------------------------------------------------------------
- * Implementation notes
- * ---------------------------------------------------------------------------
- * - MSVC / Windows compatible tokenizer
- * - no strtok_r
- * - no DATA_FORMAT varargs usage
- * - output uses separate numeric and unit fields
- */
+/** @file
+    Arad/Master Meter Dialog3G water utility meter.
+
+    Copyright (C) 2022 avicarmeli
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
 #include "decoder.h"
 
@@ -658,14 +400,14 @@ static void arad_auto_gear_units(uint8_t after0, uint8_t after1, double *gear, a
         *unit = u;
 }
 
-/* Build a contiguous nibble-range pattern from the full 48-bit preamble.
- * start_nibble/end_nibble are in [0..12], where 0 is the HIGH nibble of 0x96.
- * end_nibble is exclusive. Required: 0 <= start < end <= 12.
- *
- * Output:
- *   out_bytes: pattern packed MSB-first
- *   out_bits:  number of bits to search (multiple of 4)
- * Returns 1 on success, 0 on invalid input.
+/*  Build a contiguous nibble-range pattern from the full 48-bit preamble.
+        start_nibble/end_nibble are in [0..12], where 0 is the HIGH nibble of 0x96.
+    end_nibble is exclusive. Required: 0 <= start < end <= 12.
+
+        Output:
+        out_bytes: pattern packed MSB-first
+        out_bits:  number of bits to search (multiple of 4)
+        Returns 1 on success, 0 on invalid input.
  */
 static int arad_build_preamble_nibble_pattern(
         uint8_t out_bytes[6],
@@ -712,13 +454,13 @@ static int arad_build_preamble_nibble_pattern(
     return 1;
 }
 
-/* Build a string containing the INVERTED preamble nibbles
- * NOT covered by [start_nibble, end_nibble).
- * The unmatched parts BEFORE and AFTER the matched window
- * are separated by "_..._".
- *
- * Inversion is done per nibble: out = 0xF ^ in.
- * Output format: hex nibbles (uppercase), no separators.
+/* 	Build a string containing the INVERTED preamble nibbles
+        NOT covered by [start_nibble, end_nibble).
+        The unmatched parts BEFORE and AFTER the matched window
+        are separated by "_..._".
+
+        Inversion is done per nibble: out = 0xF ^ in.
+        Output format: hex nibbles (uppercase), no separators.
  */
 static void arad_format_unmatched_preamble(
         char *out,
@@ -778,19 +520,275 @@ static void arad_format_unmatched_preamble(
 
 static r_device *arad_ms_meter_create(char *args);
 
+/**
+Overview
+--------
+
+Decoder for Arad / Master Meter Dialog3G water utility meter transmissions.
+
+FCC-Id: TKCET-733
+
+References:
+- https://45851052.fs1.hubspotusercontent-na1.net/hubfs/45851052/documents/files/Interpreter-II-Register_v0710.20F.pdf
+- https://www.arad.co.il/wp-content/uploads/Dialog-3G-register-information-sheet_Eng-002.pdf
+
+Messages are transmitted approximately once every 30 seconds.
+
+Observed message structure
+--------------------------
+
+A typical frame (after preamble) appears as:
+
+    00000000FFFFFFFFFFFFFFSSSSSSSSXXCCCCCCXXXF?????????XFF
+
+Field description (based on reverse engineering and observations):
+
+- 00000000
+    Preamble used for frame synchronization.
+
+- FFFFFFFFFFFFFF
+    Bytes that appear constant in time and are usually identical for
+    meters located in the same neighborhood.
+
+    Observed payload example:
+        3e690aec7ac84b
+
+    The exact meaning is unknown. It may be related to the meter register
+    configuration or gearing parameters.
+
+- SSSSSSSS
+    Meter serial field (4 bytes).
+
+    The first 3 bytes represent the numeric serial number (little-endian).
+
+    Example:
+        fa1c9073
+
+        fa1c90  -> 09444602 (decimal serial number)
+        73      -> suffix byte
+
+    The last byte sometimes corresponds to a letter printed after the
+    serial on the physical meter, but not always. In many cases it contains
+    values that do not appear on the meter label.
+
+    Empirically, this suffix byte together with the following byte appears
+    to encode meter configuration parameters such as the measurement unit
+    and gear (resolution).
+
+- XX
+    Unknown field (2 bytes). Its role is not yet understood.
+
+- CCCCCC
+    Counter value (3 bytes, little-endian).
+
+    Example:
+        a80600 -> 1704
+
+    This value represents the raw meter counter before applying the gear
+    multiplier.
+
+- XXX
+    Unknown field (3 bytes). Function currently unknown.
+
+- F
+    Observed constant byte in many frames.
+
+    Typical observed payload:
+        0x05
+
+    Appears stable for meters in the same installation but the exact
+    meaning is not yet confirmed.
+
+- ?????????
+    Likely CRC or checksum field. The exact algorithm is currently unknown.
+
+- X
+    A single byte that is typically observed as either:
+
+        0x08  or  0x00
+
+    The meaning is not yet known.
+
+- FF
+    Final byte of the frame.
+
+    Earlier observations suggested this byte was constant (often 0xF8),
+    however newer captures show that this byte may change over time even
+    for the same meter. Its purpose is currently unknown and it should not
+    be assumed constant.
+
+Notes
+-----
+
+Several fields previously assumed constant have been observed to vary in
+newer captures. This documentation reflects current understanding based on
+empirical analysis and may be updated as additional frames are decoded.
+
+BitBench notation
+-----------------
+
+Use PREAMBLE_ALIGN with value:
+
+    c196f51385
+
+This is the inverted form of:
+
+    3e690aec7a
+
+Format string:
+
+    UID:16h SERIAL:<24d 8h 8h COUNTER:<32d 8h8h 8h8h 8h8h SUFFIX:hh
+
+Protocol options
+----------------
+
+This decoder accepts arguments through:
+
+    rtl_433 -R ID:ARGS
+
+Mandatory:
+- serial=LIST / serials=LIST
+    At least one serial must be provided, otherwise the decoder is silent
+    and prints a warning once.
+
+    The filter accepts one or more meter serials (24-bit little-endian),
+    in decimal or hex notation.
+
+    A suffix byte may optionally be locked too by using:
+
+        SERIAL-SUFFIX
+
+    Examples:
+        -R ID:serial=9444602
+        -R ID:serials=9444602;1234567;0xfa1c90
+        -R ID:serials=09444602-73;01234567-53
+
+    NOTE:
+    If other options are combined with serials, commas separate key=value
+    pairs. In that case prefer semicolons inside serials:
+
+        -R ID:serials=9444602;1234567,gear=0.1,units=m3
+
+Optional:
+- gear=VALUE
+    Flow multiplier / resolution.
+    Allowed values: 0.01, 0.1, 1, 10, 100
+    Default: 0.1
+
+- units=VALUE
+    Overrides the native unit interpretation of the meter.
+    Allowed values (case-insensitive): m3, Liters, CF, USG
+
+- convert=VALUE
+    Converts the decoded numeric volume to the requested output unit.
+    Allowed values (case-insensitive): m3, Liters, CF, USG
+
+Outputs
+-------
+
+- model               : decoder model name
+- id                  : SERIAL-SUFFIX
+                        serial as 8-digit decimal + '-' + suffix as hex
+- volume              : decoded volume in selected output units
+- unit                : output unit string (m3 / Liters / CF / USG)
+- volume_m3           : volume always provided in cubic meters
+- gear                : effective native gear used for decoding
+- native_unit         : effective native unit used for decoding
+- unmatched_preamble  : inverted preamble nibbles outside the matched
+                        nibble window, formatted as:
+
+                            BEFORE_..._AFTER
+
+                        where BEFORE is the unmatched part before the
+                        matched preamble window and AFTER is the unmatched
+                        part after it
+
+Preamble detection
+------------------
+
+Full preamble (already in the expected polarity for search):
+
+    96 f5 13 85 37 b4
+
+The decoder may search only a configurable nibble window inside this full
+preamble. The unmatched nibbles are not validated and are reported in the
+output as unmatched_preamble after nibble-wise inversion.
+
+Important:
+- The payload extraction offset is always derived from the start of the
+  full 48-bit preamble, even if only a sub-range of nibbles is matched.
+- This ensures serial / suffix / counter extraction stays aligned when the
+  preamble match window is changed.
+
+Buffer polarity
+---------------
+
+This decoder keeps the original polarity behavior:
+
+    bitbuffer_invert(bitbuffer);
+
+The preamble is located first, and the shared bitbuffer is inverted only
+afterwards, before payload extraction.
+
+As a result, verbose (-V) output shows the buffer in the polarity expected
+by this decoder.
+
+Decoding behavior
+-----------------
+
+- serial/serials is mandatory
+- the decoder is silent when no serial filter is provided
+- a warning is printed once if serial/serials is missing
+- automatic native gear / unit detection is based on bytes after the serial:
+
+    b[3] == 0x73 && b[4] == 0x00
+        -> gear = 0.1, native_unit = m3
+
+    b[3] == 0x00 && (b[4] == 0x00 || b[4] == 0x40)
+        -> gear = 0.01, native_unit = m3
+
+    b[3] == 0x27 && b[4] == 0x00
+        -> gear = 0.1, native_unit = USG
+
+    default
+        -> gear = 0.1, native_unit = m3
+
+Override order:
+
+    auto -> gear override -> units override -> convert
+
+Meaning:
+- gear=...    overrides the detected native gear
+- units=...   overrides the detected native unit
+- convert=... converts the numeric output volume to the requested unit
+
+Notes:
+- units= changes the native interpretation
+- convert= changes the displayed numeric output
+- convert overrides units in output selection
+
+Implementation notes
+--------------------
+
+- MSVC / Windows compatible tokenizer
+- no strtok_r
+- no DATA_FORMAT varargs usage
+- output uses separate numeric and unit fields
+*/
+
 static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    /* ---- Preamble matching window (nibbles) ----
-     * Full preamble (inverted polarity, do NOT change):
-     *   96 f5 13 85 37 b4
-     *
-     * Configure which nibbles are matched:
-     *   nibble index 0..11, where 0 is HIGH nibble of 0x96, 11 is LOW nibble of 0xB4.
-     *   start_nibble inclusive, end_nibble exclusive.
-     *
-     * Example:
-     *   start_nibble=0, end_nibble=12  -> match full preamble (48 bits)
-     *   start_nibble=2, end_nibble=10  -> match middle 8 nibbles (32 bits)
+    /* 	---- Preamble matching window (nibbles) ----
+                Full preamble (inverted polarity, do NOT change):
+                96 f5 13 85 37 b4
+
+                Configure which nibbles are matched:
+                nibble index 0..11, where 0 is HIGH nibble of 0x96, 11 is LOW nibble of 0xB4.
+                start_nibble inclusive, end_nibble exclusive.
+
+                Example:
+                        start_nibble=0, end_nibble=12  -> match full preamble (48 bits)
+                        start_nibble=2, end_nibble=10  -> match middle 8 nibbles (32 bits)
      */
     /* ---- Preamble matching window (nibbles) ---- */
     const unsigned start_nibble = 1; /* inclusive, 0..11 */
@@ -815,9 +813,9 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     arad_format_unmatched_preamble(unmatched_preamble, sizeof(unmatched_preamble), start_nibble, end_nibble);
 
     /*
-     * Critical fix:
-     * Compute the start of the FULL 48-bit preamble from the window match position,
-     * then start payload AFTER the full preamble (always +48), regardless of window.
+                Critical fix:
+                Compute the start of the FULL 48-bit preamble from the window match position,
+                then start payload AFTER the full preamble (always +48), regardless of window.
      */
     int full_preamble_start_i = match_pos_i - (int)(start_nibble * 4);
     if (full_preamble_start_i < 0)
@@ -1011,7 +1009,7 @@ static r_device *arad_ms_meter_create(char *args)
         if (!val)
             val = (char *)"";
 
- if (arad_ieq(key, "serial") || arad_ieq(key, "serials")) {
+        if (arad_ieq(key, "serial") || arad_ieq(key, "serials")) {
             collecting_serials = 1;
             serial_buf[0]      = '\0';
             if (*val) {
