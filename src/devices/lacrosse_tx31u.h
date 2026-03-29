@@ -1,4 +1,4 @@
-/* lacrosse_tx31u.h – hand-written helpers included by the generated decoder. */
+/* lacrosse_tx31u.h - hand-written helpers included by the generated decoder. */
 #pragma once
 
 /* validate: CRC-8 (poly 0x31, init 0x00) over the 2-byte header and all
@@ -10,7 +10,7 @@ static int lacrosse_tx31u_validate(uint8_t *b, int measurements, int crc)
 }
 
 /* temperature_c: scan readings[] for sensor_type == 0 (TEMP).
-   Encoding: three BCD nibbles with a 40 °C offset.
+   Encoding: three BCD nibbles with a 40 deg C offset.
    Returns -999.0f if no temperature reading is present. */
 static float lacrosse_tx31u_temperature_c(
         int *readings_sensor_type, int *readings_reading, int measurements)
