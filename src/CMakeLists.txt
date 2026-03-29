@@ -1,4 +1,35 @@
 ########################################################################
+# Proto compiler — generate C device decoders from Python protocol specs
+########################################################################
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
+set(PROTO_BUILD_SCRIPT ${CMAKE_SOURCE_DIR}/proto_compiler/build.py)
+set(PROTO_COMPILER_DEPS
+    ${CMAKE_SOURCE_DIR}/proto_compiler/compiler.py
+    ${CMAKE_SOURCE_DIR}/proto_compiler/dsl.py
+)
+
+set(PROTO_PROTOCOL_STEMS
+    thermopro_tp211b
+    lacrosse_tx31u
+    tpms_ford
+    current_cost
+)
+
+foreach(STEM ${PROTO_PROTOCOL_STEMS})
+    add_custom_command(
+        OUTPUT  ${CMAKE_CURRENT_SOURCE_DIR}/devices/${STEM}.c
+        COMMAND ${Python3_EXECUTABLE} ${PROTO_BUILD_SCRIPT}
+                ${CMAKE_SOURCE_DIR}/proto_compiler/protocols/${STEM}.py
+                ${CMAKE_CURRENT_SOURCE_DIR}/devices/${STEM}.c
+        DEPENDS ${CMAKE_SOURCE_DIR}/proto_compiler/protocols/${STEM}.py
+                ${PROTO_BUILD_SCRIPT} ${PROTO_COMPILER_DEPS}
+        COMMENT "Generating ${STEM}.c"
+        VERBATIM
+    )
+endforeach()
+
+########################################################################
 # Build libraries and executables
 ########################################################################
 # commodity libraries
