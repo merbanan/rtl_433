@@ -1,0 +1,109 @@
+"""CurrentCost TX – two framing variants (EnviR and Classic), Manchester encoding."""
+
+from proto_compiler.dsl import (
+    Bits,
+    F,
+    JsonRecord,
+    Modulation,
+    Protocol,
+    ProtocolConfig,
+    Variant,
+)
+
+
+class current_cost_base(Protocol):
+    class config(ProtocolConfig):
+        device_name = "CurrentCost Current Sensor"
+        modulation = Modulation.FSK_PULSE_PCM
+        short_width = 250
+        long_width = 250
+        reset_limit = 8000
+        invert = True
+        manchester = True
+
+    msg_type: Bits[4]
+    device_id: Bits[12]
+
+    class meter(Variant):
+        when = F.msg_type == 0
+        ch0_valid: Bits[1]
+        ch0_power: Bits[15]
+        ch1_valid: Bits[1]
+        ch1_power: Bits[15]
+        ch2_valid: Bits[1]
+        ch2_power: Bits[15]
+
+        def power0_W(self) -> int:
+            return self.ch0_valid * self.ch0_power
+
+        def power1_W(self) -> int:
+            return self.ch1_valid * self.ch1_power
+
+        def power2_W(self) -> int:
+            return self.ch2_valid * self.ch2_power
+
+    class counter(Variant):
+        when = F.msg_type == 4
+        _unused: Bits[8]
+        sensor_type: Bits[8]
+        impulse: Bits[32]
+
+
+class current_cost_envir(current_cost_base):
+    class config(current_cost_base.config):
+        preamble = 0x55555555A457
+        preamble_bit_length = 48
+        manchester_start_offset_bits = 47
+
+    class meter(current_cost_base.meter):
+        def to_json(self) -> list[JsonRecord]:
+            # fmt: off
+            return [
+                JsonRecord("model",    "",          "CurrentCost-EnviR", "DATA_STRING"),
+                JsonRecord("id",       "Device Id", self.device_id,      "DATA_INT"),
+                JsonRecord("power0_W", "Power 0",   self.power0_W,       "DATA_INT"),
+                JsonRecord("power1_W", "Power 1",   self.power1_W,       "DATA_INT"),
+                JsonRecord("power2_W", "Power 2",   self.power2_W,       "DATA_INT"),
+            ]  # fmt: on
+
+    class counter(current_cost_base.counter):
+        def to_json(self) -> list[JsonRecord]:
+            # fmt: off
+            return [
+                JsonRecord("model",   "",          "CurrentCost-EnviRCounter", "DATA_STRING"),
+                JsonRecord("subtype", "Sensor Id", self.sensor_type,           "DATA_INT"),
+                JsonRecord("id",      "Device Id", self.device_id,             "DATA_INT"),
+                JsonRecord("power0",  "Counter",   self.impulse,               "DATA_INT"),
+            ]  # fmt: on
+
+
+class current_cost_classic(current_cost_base):
+    class config(current_cost_base.config):
+        preamble = 0xCCCCCCCE915D
+        preamble_bit_length = 45
+        manchester_start_offset_bits = 45
+
+    class meter(current_cost_base.meter):
+        def to_json(self) -> list[JsonRecord]:
+            # fmt: off
+            return [
+                JsonRecord("model",    "",          "CurrentCost-TX", "DATA_STRING"),
+                JsonRecord("id",       "Device Id", self.device_id,   "DATA_INT"),
+                JsonRecord("power0_W", "Power 0",   self.power0_W,    "DATA_INT"),
+                JsonRecord("power1_W", "Power 1",   self.power1_W,    "DATA_INT"),
+                JsonRecord("power2_W", "Power 2",   self.power2_W,    "DATA_INT"),
+            ]  # fmt: on
+
+    class counter(current_cost_base.counter):
+        def to_json(self) -> list[JsonRecord]:
+            # fmt: off
+            return [
+                JsonRecord("model",   "",          "CurrentCost-Counter", "DATA_STRING"),
+                JsonRecord("subtype", "Sensor Id", self.sensor_type,      "DATA_INT"),
+                JsonRecord("id",      "Device Id", self.device_id,        "DATA_INT"),
+                JsonRecord("power0",  "Counter",   self.impulse,          "DATA_INT"),
+            ]  # fmt: on
+
+
+class current_cost(Protocol):
+    delegates = (current_cost_envir, current_cost_classic)

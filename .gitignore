@@ -22,6 +22,9 @@ cmake-build-debug/
 *.db
 *.opendb
 
+# Python
+__pycache__/
+
 # Development files
 /_*/
 /rtl_433_tests

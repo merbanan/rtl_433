@@ -1,138 +1,168 @@
-/** @file
-    CurrentCost TX, CurrentCost EnviR current sensors.
-
-    Copyright (C) 2015 Emmanuel Navarro <enavarro222@gmail.com>
-    CurrentCost EnviR added by Neil Cowburn <git@neilcowburn.com>
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-*/
-
+// Generated from current_cost.py
 #include "decoder.h"
 
-/**
-CurrentCost TX, CurrentCost EnviR current sensors.
-
-@todo Documentation needed.
-*/
-static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int current_cost_envir_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
-    bitbuffer_t packet = {0};
-    uint8_t *b;
-    int is_envir = 0;
-    unsigned int start_pos;
-
     bitbuffer_invert(bitbuffer);
 
-    uint8_t init_pattern_classic[] = {0xcc, 0xcc, 0xcc, 0xce, 0x91, 0x5d}; // 45 bits (! last 3 bits is not init)
-
-    // The EnviR transmits 0x55 0x55 0x55 0x55 0x2D 0xD4
-    // which is a 4-byte preamble and a 2-byte syncword
-    // The init pattern is inverted and left-shifted by
-    // 1 bit so that the decoder starts with a high bit.
-    uint8_t init_pattern_envir[] = {0x55, 0x55, 0x55, 0x55, 0xa4, 0x57};
-
-    start_pos = bitbuffer_search(bitbuffer, 0, 0, init_pattern_envir, 48);
-
-    if (start_pos + 47 + 112 <= bitbuffer->bits_per_row[0]) {
-        is_envir = 1;
-        // bitbuffer_search matches patterns starting on a high bit, but the EnviR protocol
-        // starts with a low bit, so we have to adjust the offset by 1 to prevent the
-        // Manchester decoding from failing. This is perfectly safe though has the 47th bit
-        // is always 0 as it's the last bit of the 0x2DD4 syncword, i.e. 0010110111010100.
-        start_pos += 47;
-    }
-    else {
-        start_pos = bitbuffer_search(bitbuffer, 0, 0, init_pattern_classic, 45);
-
-        if (start_pos + 45 + 112 > bitbuffer->bits_per_row[0]) {
-            return DECODE_ABORT_EARLY;
-        }
-
-        start_pos += 45;
-    }
-
-    bitbuffer_manchester_decode(bitbuffer, 0, start_pos, &packet, 0);
-
-    if (packet.bits_per_row[0] < 64) {
+    unsigned search_row = 0;
+    uint8_t const preamble[] = {0x55, 0x55, 0x55, 0x55, 0xa4, 0x57};
+    if (bitbuffer->num_rows < 1)
+        return DECODE_ABORT_LENGTH;
+    unsigned offset = bitbuffer_search(bitbuffer, 0, 0, preamble, 48);
+    if (offset >= bitbuffer->bits_per_row[0])
         return DECODE_ABORT_EARLY;
-    }
+    offset += 47;
 
-    b = packet.bb[0];
-    // Read data
-    // Meter (b[0] = 0000xxxx) bits 5 and 4 are "unknown", but always 0 to date.
-    if ((b[0] & 0xf0) == 0) {
-        uint16_t device_id = (b[0] & 0x0f) << 8 | b[1];
-        uint16_t watt0 = 0;
-        uint16_t watt1 = 0;
-        uint16_t watt2 = 0;
-        //Check the "Data valid indicator" bit is 1 before using the sensor values
-        if ((b[2] & 0x80) == 128)
-            watt0 = (b[2] & 0x7F) << 8 | b[3];
-        if ((b[4] & 0x80) == 128)
-            watt1 = (b[4] & 0x7F) << 8 | b[5];
-        if ((b[6] & 0x80) == 128)
-            watt2 = (b[6] & 0x7F) << 8 | b[7];
+    bitbuffer_t packet_bits = {0};
+    bitbuffer_manchester_decode(bitbuffer, search_row, offset, &packet_bits, 0);
+
+    if (packet_bits.bits_per_row[0] < 8)
+        return DECODE_ABORT_LENGTH;
+    uint8_t *b = packet_bits.bb[0];
+
+    int msg_type = bitrow_get_bits(b, 0, 4);
+    int device_id = bitrow_get_bits(b, 4, 12);
+
+    if (msg_type == 0) {
+        int ch0_valid = bitrow_get_bits(b, 16, 1);
+        int ch0_power = bitrow_get_bits(b, 17, 15);
+        int ch1_valid = bitrow_get_bits(b, 32, 1);
+        int ch1_power = bitrow_get_bits(b, 33, 15);
+        int ch2_valid = bitrow_get_bits(b, 48, 1);
+        int ch2_power = bitrow_get_bits(b, 49, 15);
+        int power0_W = (ch0_valid * ch0_power);
+        int power1_W = (ch1_valid * ch1_power);
+        int power2_W = (ch2_valid * ch2_power);
+
         /* clang-format off */
-        data = data_make(
-                "model",        "",              DATA_COND, is_envir, DATA_STRING, "CurrentCost-EnviR", //TODO: it may have different CC Model ? any ref ?
-                "model",        "",              DATA_COND, !is_envir, DATA_STRING, "CurrentCost-TX", //TODO: it may have different CC Model ? any ref ?
-                //"rc",           "Rolling Code",  DATA_INT, rc, //TODO: add rolling code b[1] ? test needed
-                "id",           "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
-                "power0_W",     "Power 0",       DATA_FORMAT, "%d W", DATA_INT, watt0,
-                "power1_W",     "Power 1",       DATA_FORMAT, "%d W", DATA_INT, watt1,
-                "power2_W",     "Power 2",       DATA_FORMAT, "%d W", DATA_INT, watt2,
-                //"battery_ok",   "Battery",       DATA_INT,    !battery_low, //TODO is there some low battery indicator ?
-                NULL);
+        data_t *data = data_make(
+            "model", "", DATA_STRING, "CurrentCost-EnviR",
+            "id", "Device Id", DATA_INT, device_id,
+            "power0_W", "Power 0", DATA_INT, power0_W,
+            "power1_W", "Power 1", DATA_INT, power1_W,
+            "power2_W", "Power 2", DATA_INT, power2_W,
+            NULL);
         /* clang-format on */
-
         decoder_output_data(decoder, data);
         return 1;
-    }
-    // Counter (b[0] = 0100xxxx) bits 5 and 4 are "unknown", but always 0 to date.
-    else if ((b[0] & 0xf0) == 64) {
-        uint16_t device_id = (b[0] & 0x0f) << 8 | b[1];
-        // b[2] is "Apparently unused"
-        uint16_t sensor_type = b[3]; // Sensor type. Valid values are: 2-Electric, 3-Gas, 4-Water
-        uint32_t c_impulse   = (unsigned)b[4] << 24 | b[5] << 16 | b[6] << 8 | b[7];
-        /* clang-format off */
-        data = data_make(
-               "model",         "",              DATA_COND, is_envir, DATA_STRING, "CurrentCost-EnviRCounter", //TODO: it may have different CC Model ? any ref ?
-               "model",         "",              DATA_COND, !is_envir, DATA_STRING, "CurrentCost-Counter", //TODO: it may have different CC Model ? any ref ?
-               "subtype",       "Sensor Id",     DATA_FORMAT, "%d", DATA_INT, sensor_type, //Could "friendly name" this?
-               "id",            "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
-               //"counter",       "Counter",       DATA_FORMAT, "%d", DATA_INT, c_impulse,
-               "power0",        "Counter",       DATA_FORMAT, "%d", DATA_INT, c_impulse,
-               NULL);
-        /* clang-format on */
+    } else if (msg_type == 4) {
+        int sensor_type = bitrow_get_bits(b, 24, 8);
+        int impulse = bitrow_get_bits(b, 32, 32);
 
+        /* clang-format off */
+        data_t *data = data_make(
+            "model", "", DATA_STRING, "CurrentCost-EnviRCounter",
+            "subtype", "Sensor Id", DATA_INT, sensor_type,
+            "id", "Device Id", DATA_INT, device_id,
+            "power0", "Counter", DATA_INT, impulse,
+            NULL);
+        /* clang-format on */
         decoder_output_data(decoder, data);
         return 1;
     }
 
-    return 0;
+    return DECODE_FAIL_SANITY;
+
+}
+
+static int current_cost_classic_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    bitbuffer_invert(bitbuffer);
+
+    unsigned search_row = 0;
+    uint8_t const preamble[] = {0xcc, 0xcc, 0xcc, 0xce, 0x91, 0x5d};
+    if (bitbuffer->num_rows < 1)
+        return DECODE_ABORT_LENGTH;
+    unsigned offset = bitbuffer_search(bitbuffer, 0, 0, preamble, 45);
+    if (offset >= bitbuffer->bits_per_row[0])
+        return DECODE_ABORT_EARLY;
+    offset += 45;
+
+    bitbuffer_t packet_bits = {0};
+    bitbuffer_manchester_decode(bitbuffer, search_row, offset, &packet_bits, 0);
+
+    if (packet_bits.bits_per_row[0] < 8)
+        return DECODE_ABORT_LENGTH;
+    uint8_t *b = packet_bits.bb[0];
+
+    int msg_type = bitrow_get_bits(b, 0, 4);
+    int device_id = bitrow_get_bits(b, 4, 12);
+
+    if (msg_type == 0) {
+        int ch0_valid = bitrow_get_bits(b, 16, 1);
+        int ch0_power = bitrow_get_bits(b, 17, 15);
+        int ch1_valid = bitrow_get_bits(b, 32, 1);
+        int ch1_power = bitrow_get_bits(b, 33, 15);
+        int ch2_valid = bitrow_get_bits(b, 48, 1);
+        int ch2_power = bitrow_get_bits(b, 49, 15);
+        int power0_W = (ch0_valid * ch0_power);
+        int power1_W = (ch1_valid * ch1_power);
+        int power2_W = (ch2_valid * ch2_power);
+
+        /* clang-format off */
+        data_t *data = data_make(
+            "model", "", DATA_STRING, "CurrentCost-TX",
+            "id", "Device Id", DATA_INT, device_id,
+            "power0_W", "Power 0", DATA_INT, power0_W,
+            "power1_W", "Power 1", DATA_INT, power1_W,
+            "power2_W", "Power 2", DATA_INT, power2_W,
+            NULL);
+        /* clang-format on */
+        decoder_output_data(decoder, data);
+        return 1;
+    } else if (msg_type == 4) {
+        int sensor_type = bitrow_get_bits(b, 24, 8);
+        int impulse = bitrow_get_bits(b, 32, 32);
+
+        /* clang-format off */
+        data_t *data = data_make(
+            "model", "", DATA_STRING, "CurrentCost-Counter",
+            "subtype", "Sensor Id", DATA_INT, sensor_type,
+            "id", "Device Id", DATA_INT, device_id,
+            "power0", "Counter", DATA_INT, impulse,
+            NULL);
+        /* clang-format on */
+        decoder_output_data(decoder, data);
+        return 1;
+    }
+
+    return DECODE_FAIL_SANITY;
+
+}
+
+static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    int ret = DECODE_ABORT_EARLY;
+    ret = current_cost_envir_decode(decoder, bitbuffer);
+    if (ret > 0)
+        return ret;
+    bitbuffer_invert(bitbuffer);
+    ret = current_cost_classic_decode(decoder, bitbuffer);
+    if (ret > 0)
+        return ret;
+    return ret;
 }
 
 static char const *const output_fields[] = {
-        "model",
-        "id",
-        "subtype",
-        "power0_W",
-        "power1_W",
-        "power2_W",
-        "power0",
-        NULL,
+    "model",
+    "msg_type",
+    "device_id",
+    "id",
+    "power0_W",
+    "power1_W",
+    "power2_W",
+    "subtype",
+    "power0",
+    NULL,
 };
 
 r_device const current_cost = {
-        .name        = "CurrentCost Current Sensor",
-        .modulation  = FSK_PULSE_PCM,
-        .short_width = 250,
-        .long_width  = 250, // NRZ
-        .reset_limit = 8000,
-        .decode_fn   = &current_cost_decode,
-        .fields      = output_fields,
+    .name        = "CurrentCost Current Sensor",
+    .modulation  = FSK_PULSE_PCM,
+    .short_width = 250.0,
+    .long_width  = 250.0,
+    .reset_limit = 8000.0,
+    .decode_fn   = &current_cost_decode,
+    .fields      = output_fields,
 };

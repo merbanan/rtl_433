@@ -166,4 +166,14 @@ static inline uint8_t bitrow_get_byte(uint8_t const *bitrow, unsigned bit_idx)
                      (bitrow[(bit_idx >> 3) + 1] >> (8 - (bit_idx & 7))));
 }
 
+/// Extract 1..32 bits from a bitrow starting at bit_idx, MSB-first.
+static inline uint32_t bitrow_get_bits(uint8_t const *bitrow, unsigned bit_idx, unsigned num_bits)
+{
+    uint32_t val = 0;
+    for (unsigned i = 0; i < num_bits; i += 8) {
+        val = (val << 8) | bitrow_get_byte(bitrow, bit_idx + i);
+    }
+    return val >> ((8 - (num_bits & 7)) & 7);
+}
+
 #endif /* INCLUDE_BITBUFFER_H_ */
