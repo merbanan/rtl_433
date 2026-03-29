@@ -1,4 +1,4 @@
-/* thermopro_tp211b.h – hand-written helpers included by the generated decoder. */
+/* thermopro_tp211b.h - hand-written helpers included by the generated decoder. */
 #pragma once
 
 static uint16_t tp211b_checksum(uint8_t const *b)
