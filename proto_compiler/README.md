@@ -4,8 +4,18 @@ The proto_compiler lets you describe rtl_433 decoders as Python classes, similar
 to how the flex decoder lets you describe a protocol as a declarative key-value
 spec in a `.conf` file. But unlike the flex decoder, which interprets that spec
 at runtime, the proto_compiler compiles the Python class into C source code. The
-compiler is itself a Python program that inspects the input Python class
+compiler is itself a Python program that inspects the input Python class and
 generates a complete `r_device` decoder.
+
+The DSL is inspired by [this conversation](https://github.com/merbanan/rtl_433/pull/3399)
+about adding Lua to rtl_433.
+
+For examples, see:
+
+* [protocols/thermopro_tp211b.py](protocols/thermopro_tp211b.py)
+* [protocols/tpms_ford.py](protocols/tpms_ford.py)
+* [protocols/lacrosse_tx31u.py](protocols/lacrosse_tx31u.py)
+* [protocols/current_cost.py](protocols/current_cost.py)
 
 ## Protocol structure
 
@@ -56,7 +66,7 @@ start with `_` are skipped (their bits are consumed but no variable is emitted).
 
 ### Methods and properties
 
-Class methods are compiled to C. The compiler only understand simple arithmetic
+Class methods are compiled to C. The compiler only understands simple arithmetic
 and bit manipulation expressions, and translates these to C expressions that
 look almost identical to the Python expressions. For example, the method
 
@@ -126,7 +136,7 @@ This compiles to a row in `data_make` that looks like this:
 
 ## Code reuse through inheritance
 
-Because protocols are plain Python classes, you can use class inheritant to
+Because protocols are plain Python classes, you can use class inheritance to
 reuse code between decoders.  
 
 
@@ -231,7 +241,7 @@ class current_cost_classic(current_cost_base):
 
 The field definitions, variant dispatch logic, and computed properties
 (`power0_W`, etc.) are inherited from `current_cost_base`.  While the Python
-code is avoids duplication, the compiler is not smart enough to avoid
+code avoids duplication, the compiler is not smart enough to avoid
 duplication in the emitted code. It generates duplicate code paths for
 `current_cost_envir` and `current_cost_classic`. This creates a small amount of
 bloat in the binary, which I'm leaving for future work to address.
@@ -247,3 +257,36 @@ python proto_compiler/build.py proto_compiler/protocols/thermopro_tp211b.py src/
 This loads the protocol module, finds the root `Protocol` subclass(es), compiles
 each one, and writes the resulting C file. If a module defines multiple root
 protocols (as `current_cost.py` does), one C file is generated per protocol.
+
+## Other ideas considered
+
+Other tooling for automatically parsing bitstreams was evaluated before settling
+on this DSL:
+
+[Hammer](https://github.com/UpstandingHackers/hammer) is a C library for
+bit-level binary parsing. The syntax is verbose, it duplicates a lot of the bit
+parsing functionality already in rtl_433, and is missing quite a bit of it.
+
+[Kaitai Struct](https://kaitai.io/) is a YAML-based binary format DSL that
+compiles to C++. It lacks strong bit-level support. Notably, there is no obvious
+way to introduce preamble scans.
+
+[Spicy](https://docs.zeek.org/projects/spicy/en/latest/) is a C++-like DSL for
+network protocol parsing that compiles to C++. It is good for parsing byte-level
+protocols, but lacks tidy semantics for parsing bitstreams.
+
+[DaeDaLus](https://github.com/GaloisInc/daedalus) is a grammar-based DSL that
+compiles to C++. Its syntax was appealing and helped inform the syntax of this
+DSL. The repo itself is unfriendly and uninformative, which made it seem like a
+poor fit for the rtl_433 community.
+
+[bitmatch](https://git.sr.ht/~cryo/bitmatch/tree/main/item/README.md) is a
+small C regexp library for matching and parsing over bitstreams. The regexps
+are not very readable and it cannot associate names to fields.
+
+[Construct](https://construct.readthedocs.io/) is a binary parser library in
+Python with great semantics, but it is interpreted. Its recently added compiler
+targets Python, not C, so it is too slow for our purposes.
+
+This DSL was derived instead to have exactly the semantics rtl_433 needs, and to
+compile directly to C.
