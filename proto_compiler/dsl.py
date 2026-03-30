@@ -422,7 +422,8 @@ def _iter_user_callables(cls: type) -> list[tuple[str, Any]]:
     Skips Protocol/Variant base classes, dunder names, nested types,
     non-callables, and reserved framework method names.
     """
-    if cls is Protocol or cls is Variant or cls is object:
+    _Variant = globals().get("Variant")
+    if cls is Protocol or cls is _Variant or cls is object:
         return []
     result = []
     for attr_name, attr_value in cls.__dict__.items():
@@ -438,15 +439,6 @@ def _iter_user_callables(cls: type) -> list[tuple[str, Any]]:
     return result
 
 
-def _find_fn(cls: type, name: str) -> Any:
-    """Return the most-derived definition of *name* in cls's MRO, or None."""
-    for base in cls.__mro__:
-        fn = base.__dict__.get(name)
-        if fn is not None and callable(fn):
-            return fn
-    return None
-
-
 def _json_data_type_for(py_type: type) -> str:
     return {float: "DATA_DOUBLE", int: "DATA_INT", str: "DATA_STRING"}.get(py_type, "DATA_INT")
 
@@ -454,103 +446,83 @@ def _json_data_type_for(py_type: type) -> str:
 class Protocol:
     """Base class for protocol definitions."""
 
+    _all_fields: tuple[tuple[str, FieldSpec], ...] = ()
+    _all_variants: tuple[type, ...] = ()
+    _all_methods: tuple[str, ...] = ()
+    _all_properties: tuple[tuple[str, type], ...] = ()
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+
+        merged_fields = dict(cls._all_fields)
+        for name, ann in cls.__dict__.get("__annotations__", {}).items():
+            if isinstance(ann, (BitsSpec, LiteralSpec, CondSpec, RepeatSpec)):
+                merged_fields[name] = ann
+        cls._all_fields = tuple(merged_fields.items())
+
+        _Variant = globals().get("Variant")
+        merged_variants = {v.__name__: v for v in cls._all_variants}
+        if _Variant is not None:
+            for name, val in cls.__dict__.items():
+                if isinstance(val, type) and issubclass(val, _Variant):
+                    merged_variants[name] = val
+        cls._all_variants = tuple(merged_variants.values())
+
+        merged_methods = dict.fromkeys(cls._all_methods)
+        merged_props = dict(cls._all_properties)
+        for name, fn in _iter_user_callables(cls):
+            ret = getattr(fn, "__annotations__", {}).get("return")
+            if ret is None:
+                merged_methods[name] = None
+                merged_props.pop(name, None)
+            else:
+                merged_props[name] = ret
+                merged_methods.pop(name, None)
+        cls._all_methods = tuple(merged_methods.keys())
+        cls._all_properties = tuple(merged_props.items())
+
+    def __getattr__(self, name: str) -> FieldRef:
+        if name.startswith("_"):
+            raise AttributeError(name)
+        return FieldRef(name)
+
     # ------------------------------------------------------------------
     # Introspection classmethods – used by the compiler
     # ------------------------------------------------------------------
 
     @classmethod
     def fields(cls) -> list[tuple[str, FieldSpec]]:
-        """Walk MRO base-to-derived and collect annotated FieldSpec entries.
-
-        Uses ``base.__annotations__`` so that PEP 649 lazy annotations
-        (Python 3.14+) are evaluated correctly.
-        """
-        field_dict: dict[str, FieldSpec] = {}
-        for base in reversed(cls.__mro__):
-            anns = getattr(base, "__annotations__", {})
-            for name, ann in anns.items():
-                if isinstance(ann, (BitsSpec, LiteralSpec, CondSpec, RepeatSpec)):
-                    field_dict[name] = ann
-        return list(field_dict.items())
+        """Consolidated field list, base-to-derived, derived overrides base."""
+        return list(cls._all_fields)
 
     @classmethod
     def variants(cls) -> list[type]:
-        """Walk MRO base-to-derived and collect nested Variant subclasses."""
-        variant_dict: dict[str, type] = {}
-        for base in reversed(cls.__mro__):
-            for name, val in base.__dict__.items():
-                if isinstance(val, type) and issubclass(val, Variant):
-                    variant_dict[name] = val
-        return list(variant_dict.values())
+        """Consolidated nested Variant subclasses, base-to-derived."""
+        return list(cls._all_variants)
 
     @classmethod
     def methods(cls) -> list[str]:
-        """Collect void method names across MRO in base-to-derived order."""
-        method_dict: dict[str, None] = {}
-        for base in reversed(cls.__mro__):
-            for name, fn in _iter_user_callables(base):
-                if getattr(fn, "__annotations__", {}).get("return") is None:
-                    method_dict[name] = None
-        return list(method_dict.keys())
+        """Consolidated void method names, base-to-derived."""
+        return list(cls._all_methods)
 
     @classmethod
     def properties(cls) -> list[tuple[str, type]]:
-        """Collect (name, return_type) for return-annotated callables across MRO."""
-        prop_dict: dict[str, type] = {}
-        for base in reversed(cls.__mro__):
-            for name, fn in _iter_user_callables(base):
-                ret = getattr(fn, "__annotations__", {}).get("return")
-                if ret is not None:
-                    prop_dict[name] = ret
-        return list(prop_dict.items())
-
-    @classmethod
-    def method_exprs(cls) -> dict[str, Any]:
-        """Try to inline each method as a pure expression tree using the F proxy."""
-        exprs: dict[str, Any] = {}
-        explicit = cls.explicit_args()
-        for name in cls.methods():
-            fn = _find_fn(cls, name)
-            if fn is not None:
-                if explicit.get(name):
-                    exprs[name] = None
-                    continue
-                result = fn(F)
-                exprs[name] = result if isinstance(result, _EXPR_TYPES) else None
-        return exprs
-
-    @classmethod
-    def property_exprs(cls) -> dict[str, Any]:
-        """Try to inline each property as a pure expression tree using the F proxy."""
-        exprs: dict[str, Any] = {}
-        explicit = cls.explicit_args()
-        for name, _ in cls.properties():
-            fn = _find_fn(cls, name)
-            if fn is not None:
-                if explicit.get(name):
-                    exprs[name] = None
-                    continue
-                result = fn(F)
-                exprs[name] = result if isinstance(result, _EXPR_TYPES) else None
-        return exprs
+        """Consolidated (name, return_type) for return-annotated callables."""
+        return list(cls._all_properties)
 
     @classmethod
     def explicit_args(cls) -> dict[str, tuple[str, ...] | None]:
         """Collect explicit argument lists (excluding self) for methods and properties."""
         result: dict[str, tuple[str, ...] | None] = {}
         for name in cls.methods() + [n for n, _ in cls.properties()]:
-            fn = _find_fn(cls, name)
-            if fn is not None:
-                params = [p for p in inspect.signature(fn).parameters if p != "self"]
-                result[name] = tuple(params) if params else None
-            else:
-                result[name] = None
+            params = [p for p in inspect.signature(getattr(cls, name)).parameters if p != "self"]
+            result[name] = tuple(params) if params else None
         return result
 
     @classmethod
     def json_records(cls) -> tuple[JsonRecord, ...]:
-        """Evaluate the class's to_json (or Protocol.to_json fallback) via a proxy."""
-        json_fn = cls.__dict__.get("to_json", Protocol.to_json)
+        """Evaluate the class's to_json via a proxy (inherits Protocol.to_json)."""
+        json_fn = getattr(cls, "to_json")
         records = json_fn(_JsonProxy(cls))
         if not isinstance(records, (list, tuple)):
             raise ValueError(
@@ -567,18 +539,22 @@ class Protocol:
     @classmethod
     def requires_external_helpers(cls) -> bool:
         """True if any method or property cannot be inlined as a pure expression."""
-        me = cls.method_exprs()
-        if any(me.get(n) is None for n in cls.methods()):
-            return True
-        pe = cls.property_exprs()
-        if any(pe.get(n) is None for n, _ in cls.properties()):
-            return True
+        proxy = cls()
+        explicit = cls.explicit_args()
+        for name in cls.methods():
+            if explicit.get(name) or not isinstance(getattr(proxy, name)(), _EXPR_TYPES):
+                return True
+        for name, _ in cls.properties():
+            if explicit.get(name) or not isinstance(getattr(proxy, name)(), _EXPR_TYPES):
+                return True
         for variant_cls in cls.variants():
             if variant_cls.methods():
                 return True
-            v_pe = variant_cls.property_exprs()
-            if any(v_pe.get(n) is None for n, _ in variant_cls.properties()):
-                return True
+            v_proxy = variant_cls()
+            v_explicit = variant_cls.explicit_args()
+            for name, _ in variant_cls.properties():
+                if v_explicit.get(name) or not isinstance(getattr(v_proxy, name)(), _EXPR_TYPES):
+                    return True
         return False
 
     @classmethod
@@ -625,11 +601,8 @@ class Protocol:
     @classmethod
     def delegated_protocols(cls) -> tuple[type[Protocol], ...]:
         """Sub-protocols referenced via a wrapper ``delegates`` attribute."""
-        for base in cls.__mro__:
-            if "delegates" in base.__dict__:
-                delegates = base.__dict__["delegates"]
-                break
-        else:
+        delegates = getattr(cls, "delegates", None)
+        if delegates is None:
             return ()
         if not isinstance(delegates, tuple):
             raise ValueError(

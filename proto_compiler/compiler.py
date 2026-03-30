@@ -17,6 +17,7 @@ from .dsl import (
     ProtocolConfig,
     RepeatSpec,
     UnaryExpr,
+    _EXPR_TYPES,
 )
 
 
@@ -98,11 +99,21 @@ class _CompileContext:
         self.variants = cls.variants()
         self.methods = cls.methods()
         self.properties = cls.properties()
-        self.method_exprs = cls.method_exprs()
-        self.property_exprs = cls.property_exprs()
         self.explicit_args_map = cls.explicit_args()
         self.json_records = cls.json_records()
         self.delegates = self._delegate_protocols()
+        self._inline = self._try_inline_on(cls)
+
+    def _try_inline_on(self, cls_or_variant: type):
+        """Return a closure that tries to inline a callable as a pure expression."""
+        proxy = cls_or_variant()
+        explicit = cls_or_variant.explicit_args()
+        def try_one(name: str) -> Any:
+            if explicit.get(name):
+                return None
+            result = getattr(proxy, name)()
+            return result if isinstance(result, _EXPR_TYPES) else None
+        return try_one
 
     def _delegate_protocols(self) -> tuple[type, ...]:
         return self.cls.delegated_protocols()
@@ -451,9 +462,9 @@ class _CompileContext:
                             self._line("return DECODE_FAIL_SANITY;")
                         var_offset += spec.width
 
-                method_exprs = variant_cls.method_exprs()
+                variant_inline = self._try_inline_on(variant_cls)
                 for method_name in variant_cls.methods():
-                    inline = method_exprs.get(method_name)
+                    inline = variant_inline(method_name)
                     if inline is not None:
                         if method_name == "validate":
                             self._line(f"if (!({_emit_expr(inline)}))")
@@ -477,9 +488,8 @@ class _CompileContext:
                         else:
                             self._line(f"{func_name}({args});")
 
-                property_exprs = variant_cls.property_exprs()
                 for prop_name, prop_type in variant_cls.properties():
-                    inline = property_exprs.get(prop_name)
+                    inline = variant_inline(prop_name)
                     if inline is not None:
                         c_type = _c_type_for(prop_type)
                         self._line(f"{c_type} {prop_name} = {_emit_expr(inline)};")
@@ -584,9 +594,8 @@ class _CompileContext:
     # -- method calls --
 
     def _emit_method_calls(self):
-        method_exprs = self.method_exprs
         for method_name in self.methods:
-            inline = method_exprs.get(method_name)
+            inline = self._inline(method_name)
             if inline is not None:
                 if method_name == "validate":
                     self._line(f"if (!({_emit_expr(inline)}))")
@@ -615,9 +624,8 @@ class _CompileContext:
         property_items = self.properties
         if not property_items:
             return
-        property_exprs = self.property_exprs
         for prop_name, prop_type in property_items:
-            inline = property_exprs.get(prop_name)
+            inline = self._inline(prop_name)
             if inline is not None:
                 c_type = _c_type_for(prop_type)
                 self._line(f"{c_type} {prop_name} = {_emit_expr(inline)};")
