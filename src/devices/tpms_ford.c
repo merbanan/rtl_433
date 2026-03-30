@@ -77,7 +77,6 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
 
     float pressure_psi = ((((flags & 0x20) << 3) | pressure_raw) * 0.25);
-    float temperature_c = ((temp_byte & 0x7f) - 0x38);
     int moving = ((flags & 0x44) == 0x44);
     int learn = ((flags & 0x4c) == 8);
     int code = (((pressure_raw << 0x10) | (temp_byte << 8)) | flags);

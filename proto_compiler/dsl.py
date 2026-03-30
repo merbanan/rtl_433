@@ -392,6 +392,8 @@ class ProtocolConfig:
     scan_rows: str = "first"
     invert: bool = False
     reflect: bool = False
+    repeat_min_count: int | None = None
+    repeat_row_bits: int | None = None
 
     @property
     def resolved_preamble_bit_length(self) -> int:

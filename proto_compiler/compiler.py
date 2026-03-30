@@ -258,7 +258,8 @@ class _CompileContext:
 
     def _emit_transforms(self):
         cfg = getattr(self.cls, "config", ProtocolConfig)
-        if cfg.invert:
+        has_repeat = cfg.repeat_min_count is not None
+        if cfg.invert and not has_repeat:
             self._line("bitbuffer_invert(bitbuffer);")
             self._blank()
 
@@ -276,10 +277,35 @@ class _CompileContext:
         preamble = cfg.preamble
         manchester = cfg.manchester
         scan_rows = cfg.scan_rows
+        repeat_min_count = cfg.repeat_min_count
+        repeat_row_bits = cfg.repeat_row_bits
         need_search_row = manchester or scan_rows == "all"
+        has_repeat = repeat_min_count is not None
+
+        row_expr = "0"
+
+        if has_repeat:
+            if repeat_row_bits is None:
+                raise RuntimeError(
+                    f"Protocol {self.cls.__name__} sets repeat_min_count but not repeat_row_bits"
+                )
+            self._line(
+                f"int row = bitbuffer_find_repeated_row(bitbuffer, {repeat_min_count}, {repeat_row_bits});"
+            )
+            self._line("if (row < 0)")
+            with self.indent():
+                self._line("return DECODE_ABORT_EARLY;")
+            self._line(f"if (bitbuffer->bits_per_row[row] != {repeat_row_bits})")
+            with self.indent():
+                self._line("return DECODE_ABORT_LENGTH;")
+            row_expr = "row"
+            self._blank()
+            if cfg.invert:
+                self._line("bitbuffer_invert(bitbuffer);")
+                self._blank()
 
         if need_search_row:
-            self._line("unsigned search_row = 0;")
+            self._line(f"unsigned search_row = {row_expr};")
 
         if preamble is not None:
             preamble_bytes = _preamble_to_bytes(preamble)
@@ -315,9 +341,9 @@ class _CompileContext:
                     self._line("return DECODE_ABORT_EARLY;")
             else:
                 self._line(
-                    f"unsigned offset = bitbuffer_search(bitbuffer, 0, 0, preamble, {preamble_bits});"
+                    f"unsigned offset = bitbuffer_search(bitbuffer, {row_expr}, 0, preamble, {preamble_bits});"
                 )
-                self._line("if (offset >= bitbuffer->bits_per_row[0])")
+                self._line(f"if (offset >= bitbuffer->bits_per_row[{row_expr}])")
                 with self.indent():
                     self._line("return DECODE_ABORT_EARLY;")
             self._line(f"offset += {start_offset};")
@@ -330,7 +356,7 @@ class _CompileContext:
             decode_max_bits = cfg.manchester_decode_max_bits
             self._line("bitbuffer_t packet_bits = {0};")
             self._line(
-                f"bitbuffer_manchester_decode(bitbuffer, {'search_row' if need_search_row else '0'}, offset, &packet_bits, {decode_max_bits});"
+                f"bitbuffer_manchester_decode(bitbuffer, {'search_row' if need_search_row else row_expr}, offset, &packet_bits, {decode_max_bits});"
             )
             self._blank()
             self._line("if (packet_bits.bits_per_row[0] < 8)")
@@ -344,7 +370,7 @@ class _CompileContext:
             if total_bytes > 0:
                 self._line(f"uint8_t b[{total_bytes}];")
                 self._line(
-                    f"bitbuffer_extract_bytes(bitbuffer, 0, offset, b, {total_bits});"
+                    f"bitbuffer_extract_bytes(bitbuffer, {row_expr}, offset, b, {total_bits});"
                 )
                 self._blank()
 

@@ -58,9 +58,6 @@ class tpms_ford(Protocol):
     def pressure_psi(self) -> float:
         return (((self.flags & 0x20) << 3) | self.pressure_raw) * 0.25
 
-    def temperature_c(self) -> float:
-        return (self.temp_byte & 0x7F) - 56
-
     def moving(self) -> int:
         return (self.flags & 0x44) == 0x44
 

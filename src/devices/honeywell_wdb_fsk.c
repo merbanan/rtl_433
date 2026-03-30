@@ -1,15 +1,15 @@
-// Generated from honeywell_wdb.py
+// Generated from honeywell_wdb_fsk.py
 /** @file
-    Honeywell ActivLink, wireless door bell, PIR Motion sensor (OOK).
+    Honeywell ActivLink, wireless door bell, PIR Motion sensor (FSK).
 */
 
 #include "decoder.h"
-#include "honeywell_wdb.h"
+#include "honeywell_wdb_fsk.h"
 
-/** @fn static int honeywell_wdb_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-    Honeywell ActivLink, wireless door bell, PIR Motion sensor (OOK).
+/** @fn static int honeywell_wdb_fsk_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+    Honeywell ActivLink, wireless door bell, PIR Motion sensor (FSK).
 */
-static int honeywell_wdb_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int honeywell_wdb_fsk_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int row = bitbuffer_find_repeated_row(bitbuffer, 4, 48);
     if (row < 0)
@@ -31,17 +31,17 @@ static int honeywell_wdb_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int relay = bitrow_get_bits(b, 44, 1);
     int battery_low = bitrow_get_bits(b, 46, 1);
 
-    int valid = honeywell_wdb_validate(b);
+    int valid = honeywell_wdb_fsk_validate(b);
     if (valid != 0)
         return valid;
 
-    const char * subtype = honeywell_wdb_subtype(class_raw);
-    const char * alert = honeywell_wdb_alert(alert_raw);
+    const char * subtype = honeywell_wdb_fsk_subtype(class_raw);
+    const char * alert = honeywell_wdb_fsk_alert(alert_raw);
     int battery_ok = (battery_low == 0);
 
     /* clang-format off */
     data_t *data = data_make(
-        "model", "", DATA_STRING, "Honeywell-ActivLink",
+        "model", "", DATA_STRING, "Honeywell-ActivLinkFSK",
         "subtype", "Class", DATA_STRING, subtype,
         "id", "Id", DATA_FORMAT, "%x", DATA_INT, device,
         "battery_ok", "Battery", DATA_INT, battery_ok,
@@ -67,14 +67,14 @@ static char const *const output_fields[] = {
     NULL,
 };
 
-r_device const honeywell_wdb = {
-    .name        = "Honeywell ActivLink, Wireless Doorbell",
-    .modulation  = OOK_PULSE_PWM,
-    .short_width = 175.0,
-    .long_width  = 340.0,
-    .reset_limit = 5000.0,
+r_device const honeywell_wdb_fsk = {
+    .name        = "Honeywell ActivLink, Wireless Doorbell (FSK)",
+    .modulation  = FSK_PULSE_PWM,
+    .short_width = 160.0,
+    .long_width  = 320.0,
+    .reset_limit = 560.0,
     .gap_limit   = 0.0,
     .sync_width  = 500.0,
-    .decode_fn   = &honeywell_wdb_decode,
+    .decode_fn   = &honeywell_wdb_fsk_decode,
     .fields      = output_fields,
 };
