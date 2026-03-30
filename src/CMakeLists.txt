@@ -14,15 +14,22 @@ set(PROTO_PROTOCOL_STEMS
     lacrosse_tx31u
     tpms_ford
     current_cost
+    honeywell_wdb
+    honeywell_wdb_fsk
 )
 
 foreach(STEM ${PROTO_PROTOCOL_STEMS})
+    set(_EXTRA_DEPS "")
+    if(STEM MATCHES "^honeywell_wdb")
+        list(APPEND _EXTRA_DEPS ${CMAKE_SOURCE_DIR}/proto_compiler/protocols/honeywell_wdb_common.py)
+    endif()
     add_custom_command(
         OUTPUT  ${CMAKE_CURRENT_SOURCE_DIR}/devices/${STEM}.c
         COMMAND ${Python3_EXECUTABLE} ${PROTO_BUILD_SCRIPT}
                 ${CMAKE_SOURCE_DIR}/proto_compiler/protocols/${STEM}.py
                 ${CMAKE_CURRENT_SOURCE_DIR}/devices/${STEM}.c
         DEPENDS ${CMAKE_SOURCE_DIR}/proto_compiler/protocols/${STEM}.py
+                ${_EXTRA_DEPS}
                 ${PROTO_BUILD_SCRIPT} ${PROTO_COMPILER_DEPS}
         COMMENT "Generating ${STEM}.c"
         VERBATIM
@@ -196,6 +203,7 @@ add_library(r_433 STATIC
     devices/honeywell.c
     devices/honeywell_cm921.c
     devices/honeywell_wdb.c
+    devices/honeywell_wdb_fsk.c
     devices/ht680.c
     devices/ibis_beacon.c
     devices/ikea_sparsnas.c
