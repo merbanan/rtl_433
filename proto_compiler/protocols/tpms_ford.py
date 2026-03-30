@@ -1,4 +1,20 @@
-"""TPMS Ford – Manchester encoding, properties combining multiple fields."""
+"""FSK 8 byte Manchester encoded TPMS with simple checksum.
+
+Seen on Ford Fiesta, Focus, Kuga, Escape, Transit...
+
+Seen on 315.00 MHz (United States) and 433.92 MHz.
+Likely VDO-Sensors, Type "S180084730Z", built by "Continental Automotive GmbH".
+
+Packet nibbles:
+
+    II II II II PP TT FF CC
+
+- I = ID
+- P = Pressure, as PSI * 4
+- T = Temperature, as C + 56
+- F = Flags
+- C = Checksum, SUM bytes 0 to 6 = byte 7
+"""
 
 from proto_compiler.dsl import Bits, JsonRecord, Modulation, Protocol, ProtocolConfig
 
@@ -6,6 +22,7 @@ from proto_compiler.dsl import Bits, JsonRecord, Modulation, Protocol, ProtocolC
 class tpms_ford(Protocol):
     class config(ProtocolConfig):
         device_name = "Ford TPMS"
+        output_model = "Ford"
         modulation = Modulation.FSK_PULSE_PCM
         short_width = 52
         long_width = 52

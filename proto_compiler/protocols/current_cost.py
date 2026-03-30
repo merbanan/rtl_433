@@ -1,4 +1,13 @@
-"""CurrentCost TX – two framing variants (EnviR and Classic), Manchester encoding."""
+"""CurrentCost TX, CurrentCost EnviR current sensors.
+
+Two framing variants (EnviR and Classic) with Manchester encoding.
+The EnviR transmits a 4-byte preamble (0x55555555) and 2-byte syncword (0x2DD4).
+The Classic uses a different init pattern (0xCCCCCCCE915D).
+
+Both variants decode a 4-bit message type and 12-bit device ID, followed
+by either three channel power readings (msg_type 0) or a counter/impulse
+reading (msg_type 4).
+"""
 
 from proto_compiler.dsl import (
     Bits,

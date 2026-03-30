@@ -375,6 +375,7 @@ class ProtocolConfig:
     """
 
     device_name: str | None = None
+    output_model: str | None = None
     modulation: Modulation | None = None
     short_width: float = 0.0
     long_width: float = 0.0
@@ -648,7 +649,7 @@ class Protocol:
         protocol_cls = getattr(self, "__protocol_cls__", None) or self.__class__
         records: list[JsonRecord] = []
         cfg = getattr(protocol_cls, "config", ProtocolConfig)
-        model_name = cfg.device_name or protocol_cls.__name__
+        model_name = cfg.output_model or cfg.device_name or protocol_cls.__name__
         records.append(
             JsonRecord(key="model", label="", value=model_name, data_type="DATA_STRING")
         )

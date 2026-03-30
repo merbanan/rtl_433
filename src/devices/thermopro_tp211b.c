@@ -1,7 +1,54 @@
 // Generated from thermopro_tp211b.py
+/** @file
+    ThermoPro TP211B Thermometer.
+
+    RF:
+    - 915 MHz FSK temperature sensor.
+
+    Flex decoder:
+
+        rtl_433 -f 915M -X "n=tp211b,m=FSK_PCM,s=105,l=105,r=1500,preamble=552dd4"
+
+    Data layout after preamble:
+
+        Byte Position   0  1  2  3  4  5  6  7
+        Sample          01 1e d6 03 6c aa 14 ff
+        Sample          01 1e d6 02 fa aa c4 1e
+                        II II II fT TT aa CC CC
+
+    - III: {24} Sensor ID
+    - f:   {4}  Flags or unused, always 0
+    - TTT: {12} Temperature, raw value, deg C = (raw - 500) / 10
+    - aa:  {8}  Fixed value 0xAA
+    - CC:  {16} Checksum, XOR table based (see thermopro_tp211b.h).
+*/
+
 #include "decoder.h"
 #include "thermopro_tp211b.h"
 
+/** @fn static int thermopro_tp211b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+    ThermoPro TP211B Thermometer.
+
+    RF:
+    - 915 MHz FSK temperature sensor.
+
+    Flex decoder:
+
+        rtl_433 -f 915M -X "n=tp211b,m=FSK_PCM,s=105,l=105,r=1500,preamble=552dd4"
+
+    Data layout after preamble:
+
+        Byte Position   0  1  2  3  4  5  6  7
+        Sample          01 1e d6 03 6c aa 14 ff
+        Sample          01 1e d6 02 fa aa c4 1e
+                        II II II fT TT aa CC CC
+
+    - III: {24} Sensor ID
+    - f:   {4}  Flags or unused, always 0
+    - TTT: {12} Temperature, raw value, deg C = (raw - 500) / 10
+    - aa:  {8}  Fixed value 0xAA
+    - CC:  {16} Checksum, XOR table based (see thermopro_tp211b.h).
+*/
 static int thermopro_tp211b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble[] = {0x55, 0x2d, 0xd4};
@@ -30,7 +77,7 @@ static int thermopro_tp211b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-        "model", "", DATA_STRING, "ThermoPro TP211B Thermometer",
+        "model", "", DATA_STRING, "ThermoPro-TP211B",
         "id", "", DATA_INT, id,
         "flags", "", DATA_INT, flags,
         "temp_raw", "", DATA_INT, temp_raw,

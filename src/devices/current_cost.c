@@ -1,6 +1,29 @@
 // Generated from current_cost.py
+/** @file
+    CurrentCost TX, CurrentCost EnviR current sensors.
+
+    Two framing variants (EnviR and Classic) with Manchester encoding.
+    The EnviR transmits a 4-byte preamble (0x55555555) and 2-byte syncword (0x2DD4).
+    The Classic uses a different init pattern (0xCCCCCCCE915D).
+
+    Both variants decode a 4-bit message type and 12-bit device ID, followed
+    by either three channel power readings (msg_type 0) or a counter/impulse
+    reading (msg_type 4).
+*/
+
 #include "decoder.h"
 
+/** @fn static int current_cost_envir_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+    CurrentCost TX, CurrentCost EnviR current sensors.
+
+    Two framing variants (EnviR and Classic) with Manchester encoding.
+    The EnviR transmits a 4-byte preamble (0x55555555) and 2-byte syncword (0x2DD4).
+    The Classic uses a different init pattern (0xCCCCCCCE915D).
+
+    Both variants decode a 4-bit message type and 12-bit device ID, followed
+    by either three channel power readings (msg_type 0) or a counter/impulse
+    reading (msg_type 4).
+*/
 static int current_cost_envir_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     bitbuffer_invert(bitbuffer);
@@ -66,6 +89,17 @@ static int current_cost_envir_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 }
 
+/** @fn static int current_cost_classic_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+    CurrentCost TX, CurrentCost EnviR current sensors.
+
+    Two framing variants (EnviR and Classic) with Manchester encoding.
+    The EnviR transmits a 4-byte preamble (0x55555555) and 2-byte syncword (0x2DD4).
+    The Classic uses a different init pattern (0xCCCCCCCE915D).
+
+    Both variants decode a 4-bit message type and 12-bit device ID, followed
+    by either three channel power readings (msg_type 0) or a counter/impulse
+    reading (msg_type 4).
+*/
 static int current_cost_classic_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     bitbuffer_invert(bitbuffer);
@@ -131,6 +165,19 @@ static int current_cost_classic_decode(r_device *decoder, bitbuffer_t *bitbuffer
 
 }
 
+/** @fn static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+    CurrentCost TX, CurrentCost EnviR current sensors.
+
+    Two framing variants (EnviR and Classic) with Manchester encoding.
+    The EnviR transmits a 4-byte preamble (0x55555555) and 2-byte syncword (0x2DD4).
+    The Classic uses a different init pattern (0xCCCCCCCE915D).
+
+    Both variants decode a 4-bit message type and 12-bit device ID, followed
+    by either three channel power readings (msg_type 0) or a counter/impulse
+    reading (msg_type 4).
+    @sa current_cost_envir_decode()
+    @sa current_cost_classic_decode()
+*/
 static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int ret = DECODE_ABORT_EARLY;
