@@ -750,9 +750,9 @@ class _CompileContext:
         with self.braced_block(f"r_device const {self.prefix} =", ";"):
             self._line(f'.name        = "{name}",')
             self._line(f".modulation  = {cfg.modulation.name},")
-            self._line(f".short_width = {float(cfg.short_width or 0.0)},")
-            self._line(f".long_width  = {float(cfg.long_width or 0.0)},")
-            self._line(f".reset_limit = {float(cfg.reset_limit or 0.0)},")
+            self._line(f".short_width = {float(cfg.short_width)},")
+            self._line(f".long_width  = {float(cfg.long_width)},")
+            self._line(f".reset_limit = {float(cfg.reset_limit)},")
             if cfg.gap_limit is not None:
                 self._line(f".gap_limit   = {float(cfg.gap_limit)},")
             if cfg.sync_width is not None:
