@@ -77,9 +77,10 @@ def generate(proto_path: Path, out_path: Path) -> None:
     spec.loader.exec_module(module)
 
     root = find_root_protocol(module)
+    module_doc = inspect.getdoc(module)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    c_source = compile_protocol(root, source_path=str(proto_path))
+    c_source = compile_protocol(root, source_path=str(proto_path), module_doc=module_doc)
     out_path.write_text(c_source)
 
 

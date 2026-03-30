@@ -20,9 +20,9 @@ from .dsl import (
 )
 
 
-def compile(protocol_cls: type, source_path: str | None = None) -> str:
+def compile(protocol_cls: type, source_path: str | None = None, module_doc: str | None = None) -> str:
     """Compile a Protocol subclass into a complete C++ decoder source string."""
-    return _CompileContext(protocol_cls, source_path=source_path).emit()
+    return _CompileContext(protocol_cls, source_path=source_path, module_doc=module_doc).emit()
 
 
 def _preamble_to_bytes(value: int) -> bytes:
@@ -81,11 +81,17 @@ def _extract_bits(arr: str, offset, width: int) -> str:
     return f"bitrow_get_bits({arr}, {offset}, {width})"
 
 
+def _sanitize_c_comment(text: str) -> str:
+    """Make arbitrary text safe to embed inside a C block comment."""
+    return text.replace("*/", "* /")
+
+
 class _CompileContext:
-    def __init__(self, cls: type, source_path: str | None = None):
+    def __init__(self, cls: type, source_path: str | None = None, module_doc: str | None = None):
         self.cls = cls
         self.prefix = cls.__name__
         self.source_path = source_path
+        self.module_doc = module_doc
         self.lines: list[str] = []
         self._indent = 0
         self.fields = cls.fields()
@@ -124,10 +130,13 @@ class _CompileContext:
     def emit(self) -> str:
         self._emit_header()
         for delegate_cls in self.delegates:
-            child = _CompileContext(delegate_cls, source_path=None)
+            child = _CompileContext(delegate_cls, source_path=None, module_doc=self.module_doc)
+            child._emit_fn_doc(f"{delegate_cls.__name__}_decode")
             child._emit_decode_fn()
             self.lines.extend(child.lines)
             self._blank()
+        sa_targets = [f"{d.__name__}_decode" for d in self.delegates] if self.delegates else None
+        self._emit_fn_doc(f"{self.prefix}_decode", sa_targets=sa_targets)
         self._emit_decode_fn()
         self._blank()
         self._emit_output_fields()
@@ -148,9 +157,40 @@ class _CompileContext:
             return None
         return list(args)
 
+    def _emit_file_doc(self):
+        """Emit a ``/** @file … */`` block from the module docstring."""
+        doc = self.module_doc
+        if doc:
+            doc = _sanitize_c_comment(doc.strip())
+            self._line("/** @file")
+            for line in doc.splitlines():
+                self._line(f"    {line}".rstrip())
+            self._line("*/")
+        else:
+            cfg = getattr(self.cls, "config", ProtocolConfig)
+            name = cfg.device_name or self.prefix
+            self._line("/** @file")
+            self._line(f"    {name} decoder.")
+            self._line("*/")
+
+    def _emit_fn_doc(self, fn_name: str, sa_targets: list[str] | None = None):
+        """Emit a ``/** @fn … */`` block before a decode function."""
+        self._line(f"/** @fn static int {fn_name}(r_device *decoder, bitbuffer_t *bitbuffer)")
+        doc = self.module_doc
+        if doc:
+            doc = _sanitize_c_comment(doc.strip())
+            for line in doc.splitlines():
+                self._line(f"    {line}".rstrip())
+        if sa_targets:
+            for target in sa_targets:
+                self._line(f"    @sa {target}()")
+        self._line("*/")
+
     def _emit_header(self):
         if self.source_path:
             self._line(f"// Generated from {PurePosixPath(self.source_path).name}")
+        self._emit_file_doc()
+        self._blank()
         self._line('#include "decoder.h"')
         if self._has_external_helpers():
             if self.delegates:
@@ -492,10 +532,8 @@ class _CompileContext:
         self._line("/* clang-format off */")
         self._line("data_t *data = data_make(")
         with self.indent():
-            model_name = (
-                getattr(self.cls, "config", ProtocolConfig).device_name
-                or self.cls.__name__
-            )
+            cfg = getattr(self.cls, "config", ProtocolConfig)
+            model_name = cfg.output_model or cfg.device_name or self.cls.__name__
             self._line(f'"model", "", DATA_STRING, "{model_name}",')
 
             for name, spec in shared_fields:

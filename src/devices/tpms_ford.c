@@ -1,6 +1,43 @@
 // Generated from tpms_ford.py
+/** @file
+    FSK 8 byte Manchester encoded TPMS with simple checksum.
+
+    Seen on Ford Fiesta, Focus, Kuga, Escape, Transit...
+
+    Seen on 315.00 MHz (United States) and 433.92 MHz.
+    Likely VDO-Sensors, Type "S180084730Z", built by "Continental Automotive GmbH".
+
+    Packet nibbles:
+
+        II II II II PP TT FF CC
+
+    - I = ID
+    - P = Pressure, as PSI * 4
+    - T = Temperature, as C + 56
+    - F = Flags
+    - C = Checksum, SUM bytes 0 to 6 = byte 7
+*/
+
 #include "decoder.h"
 
+/** @fn static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+    FSK 8 byte Manchester encoded TPMS with simple checksum.
+
+    Seen on Ford Fiesta, Focus, Kuga, Escape, Transit...
+
+    Seen on 315.00 MHz (United States) and 433.92 MHz.
+    Likely VDO-Sensors, Type "S180084730Z", built by "Continental Automotive GmbH".
+
+    Packet nibbles:
+
+        II II II II PP TT FF CC
+
+    - I = ID
+    - P = Pressure, as PSI * 4
+    - T = Temperature, as C + 56
+    - F = Flags
+    - C = Checksum, SUM bytes 0 to 6 = byte 7
+*/
 static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     bitbuffer_invert(bitbuffer);
