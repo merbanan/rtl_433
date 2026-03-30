@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum, auto
 import inspect
+import sys
 from typing import Any, NamedTuple, Union
 
 
@@ -443,6 +444,20 @@ def _json_data_type_for(py_type: type) -> str:
     return {float: "DATA_DOUBLE", int: "DATA_INT", str: "DATA_STRING"}.get(py_type, "DATA_INT")
 
 
+def _evaluated_class_annotations(cls: type) -> dict[str, Any]:
+    """Return evaluated class ``__annotations__`` (PEP 649–safe on Python 3.14+)."""
+    if sys.version_info >= (3, 10):
+        return dict(inspect.get_annotations(cls))
+    return dict(getattr(cls, "__annotations__", {}))
+
+
+def _evaluated_callable_annotations(fn: Any) -> dict[str, Any]:
+    """Return evaluated annotations for a function/method (PEP 649–safe)."""
+    if sys.version_info >= (3, 10):
+        return dict(inspect.get_annotations(fn))
+    return dict(getattr(fn, "__annotations__", {}))
+
+
 class Protocol:
     """Base class for protocol definitions."""
 
@@ -455,7 +470,7 @@ class Protocol:
         super().__init_subclass__(**kwargs)
 
         merged_fields = dict(cls._all_fields)
-        for name, ann in cls.__dict__.get("__annotations__", {}).items():
+        for name, ann in _evaluated_class_annotations(cls).items():
             if isinstance(ann, (BitsSpec, LiteralSpec, CondSpec, RepeatSpec)):
                 merged_fields[name] = ann
         cls._all_fields = tuple(merged_fields.items())
@@ -471,7 +486,7 @@ class Protocol:
         merged_methods = dict.fromkeys(cls._all_methods)
         merged_props = dict(cls._all_properties)
         for name, fn in _iter_user_callables(cls):
-            ret = getattr(fn, "__annotations__", {}).get("return")
+            ret = _evaluated_callable_annotations(fn).get("return")
             if ret is None:
                 merged_methods[name] = None
                 merged_props.pop(name, None)
