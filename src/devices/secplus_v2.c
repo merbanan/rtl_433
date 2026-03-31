@@ -19,6 +19,7 @@ Security+ 2.0  is described in [US patent application US20110317835A1](https://p
 */
 
 #include "decoder.h"
+#include "compat_time.h"
 
 /**
 Security+ 2.0 rolling code.
@@ -241,6 +242,20 @@ unsigned _preamble_len           = 28;
 Security+ 2.0 rolling code.
 @sa secplus_v2_decode_v2_half()
 */
+
+// Cache for accumulating two halves across separate callback invocations.
+// The Security+ 2.0 protocol sends two packets (Set 1 and Set 2) separated
+// by ~10ms. The PCM demodulator delivers each as a separate callback.
+#define SECPLUS_V2_CACHE_TIMEOUT_US 800000 // 800ms max between halves
+
+static bitbuffer_t cached_fixed_1   = {0};
+static uint8_t cached_rolling_1[16] = {0};
+static bitbuffer_t cached_fixed_2   = {0};
+static uint8_t cached_rolling_2[16] = {0};
+static struct timeval cached_v2_tv  = {0};
+static int cached_v2_have_1 = 0;
+static int cached_v2_have_2 = 0;
+
 static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     unsigned search_index = 0;
@@ -268,7 +283,6 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         bitbuffer_clear(&bits);
         bitbuffer_manchester_decode(bitbuffer, row, search_index + 26, &bits, 80);
-        // search_index += 20;
         if (bits.bits_per_row[0] < 42) {
             continue; // DECODE_ABORT_LENGTH;
         }
@@ -276,12 +290,12 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_log_bitrow(decoder, 1, __func__, bits.bb[0], bits.bits_per_row[0], "manchester decoded");
 
         // valid = 0X00XXXX
-        // 1st 3rs and 4th bits should always be 0
+        // 1st 3rd and 4th bits should always be 0
         if (bits.bb[0][0] & 0xB0) {
             continue; // DECODE_FAIL_SANITY;
         }
 
-        // 2nd bit indicates with half of the data
+        // 2nd bit indicates which half of the data
         if (bits.bb[0][0] & 0xC0) {
             decoder_log(decoder, 1, __func__, "Set 2");
             secplus_v2_decode_v2_half(decoder, &bits, rolling_2, &fixed_2);
@@ -297,7 +311,64 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
-    // Do we have what we need ??
+    // Check if we got both halves in this invocation
+    if (fixed_1.bits_per_row[0] > 1 && fixed_2.bits_per_row[0] > 1) {
+        // Got both halves, proceed to decode below
+        // Also clear cache since we have a complete message
+        cached_v2_have_1 = 0;
+        cached_v2_have_2 = 0;
+        cached_v2_tv.tv_sec = 0;
+    }
+    else {
+        // Only got one half - cache it and wait for the other
+        struct timeval cur_tv;
+        gettimeofday(&cur_tv, NULL);
+
+        if (fixed_1.bits_per_row[0] > 1) {
+            memcpy(&cached_fixed_1, &fixed_1, sizeof(bitbuffer_t));
+            memcpy(cached_rolling_1, rolling_1, sizeof(cached_rolling_1));
+            cached_v2_have_1 = 1;
+            cached_v2_tv = cur_tv;
+            decoder_log(decoder, 1, __func__, "Cached Set 1, waiting for Set 2");
+        }
+        if (fixed_2.bits_per_row[0] > 1) {
+            memcpy(&cached_fixed_2, &fixed_2, sizeof(bitbuffer_t));
+            memcpy(cached_rolling_2, rolling_2, sizeof(cached_rolling_2));
+            cached_v2_have_2 = 1;
+            cached_v2_tv = cur_tv;
+            decoder_log(decoder, 1, __func__, "Cached Set 2, waiting for Set 1");
+        }
+
+        // Check if the other half is in the cache
+        if (cached_v2_have_1 && cached_v2_have_2) {
+            struct timeval res_tv;
+            timeval_subtract(&res_tv, &cur_tv, &cached_v2_tv);
+            if (res_tv.tv_sec == 0 && res_tv.tv_usec < SECPLUS_V2_CACHE_TIMEOUT_US) {
+                // Use cached halves
+                memcpy(&fixed_1, &cached_fixed_1, sizeof(bitbuffer_t));
+                memcpy(rolling_1, cached_rolling_1, sizeof(rolling_1));
+                memcpy(&fixed_2, &cached_fixed_2, sizeof(bitbuffer_t));
+                memcpy(rolling_2, cached_rolling_2, sizeof(rolling_2));
+                cached_v2_have_1 = 0;
+                cached_v2_have_2 = 0;
+                cached_v2_tv.tv_sec = 0;
+                decoder_log(decoder, 1, __func__, "Combined cached halves");
+            }
+            else {
+                // Cache too old, discard
+                cached_v2_have_1 = 0;
+                cached_v2_have_2 = 0;
+                cached_v2_tv.tv_sec = 0;
+                decoder_log(decoder, 1, __func__, "Cache expired");
+                return DECODE_FAIL_SANITY;
+            }
+        }
+        else {
+            return DECODE_FAIL_SANITY; // waiting for other half
+        }
+    }
+
+    // At this point we have both halves
     if (fixed_1.bits_per_row[0] == 0 || fixed_2.bits_per_row[0] == 0) {
         return DECODE_FAIL_SANITY;
     }
