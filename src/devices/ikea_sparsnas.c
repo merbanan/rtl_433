@@ -6,10 +6,12 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/**
+/** @fn int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 IKEA Sparsnäs Energy Meter Monitor.
 
-@warning This decoder is not stateless.
+@attention stateful
+This decoder has an internal state that may change between invocations and influence the output.
+The sensor ID is discovered via brute-force decryption on the first packet and cached in a static variable for subsequent invocations.
 
 The IKEA Sparsnäs consists of a display unit, and a sender unit. The display unit
 displays and stores the values sent by the sender unit. It is not needed for this
