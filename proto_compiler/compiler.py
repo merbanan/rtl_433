@@ -21,9 +21,13 @@ from .dsl import (
 )
 
 
-def compile(protocol_cls: type, source_path: str | None = None, module_doc: str | None = None) -> str:
+def compile(
+    protocol_cls: type, source_path: str | None = None, module_doc: str | None = None
+) -> str:
     """Compile a Protocol subclass into a complete C++ decoder source string."""
-    return _CompileContext(protocol_cls, source_path=source_path, module_doc=module_doc).emit()
+    return _CompileContext(
+        protocol_cls, source_path=source_path, module_doc=module_doc
+    ).emit()
 
 
 def _preamble_to_bytes(value: int) -> bytes:
@@ -88,7 +92,9 @@ def _sanitize_c_comment(text: str) -> str:
 
 
 class _CompileContext:
-    def __init__(self, cls: type, source_path: str | None = None, module_doc: str | None = None):
+    def __init__(
+        self, cls: type, source_path: str | None = None, module_doc: str | None = None
+    ):
         self.cls = cls
         self.prefix = cls.__name__
         self.source_path = source_path
@@ -108,11 +114,13 @@ class _CompileContext:
         """Return a closure that tries to inline a callable as a pure expression."""
         proxy = cls_or_variant()
         explicit = cls_or_variant.explicit_args()
+
         def try_one(name: str) -> Any:
             if explicit.get(name):
                 return None
             result = getattr(proxy, name)()
             return result if isinstance(result, _EXPR_TYPES) else None
+
         return try_one
 
     def _delegate_protocols(self) -> tuple[type, ...]:
@@ -141,12 +149,16 @@ class _CompileContext:
     def emit(self) -> str:
         self._emit_header()
         for delegate_cls in self.delegates:
-            child = _CompileContext(delegate_cls, source_path=None, module_doc=self.module_doc)
+            child = _CompileContext(
+                delegate_cls, source_path=None, module_doc=self.module_doc
+            )
             child._emit_fn_doc(f"{delegate_cls.__name__}_decode")
             child._emit_decode_fn()
             self.lines.extend(child.lines)
             self._blank()
-        sa_targets = [f"{d.__name__}_decode" for d in self.delegates] if self.delegates else None
+        sa_targets = (
+            [f"{d.__name__}_decode" for d in self.delegates] if self.delegates else None
+        )
         self._emit_fn_doc(f"{self.prefix}_decode", sa_targets=sa_targets)
         self._emit_decode_fn()
         self._blank()
@@ -155,11 +167,7 @@ class _CompileContext:
         self._emit_r_device()
         return "\n".join(self.lines) + "\n"
 
-    # -- header --
-
     def _has_external_helpers(self) -> bool:
-        if self.delegates:
-            return any(delegate_cls.requires_external_helpers() for delegate_cls in self.delegates)
         return self.cls.requires_external_helpers()
 
     def _explicit_args(self, name: str) -> list[str] | None:
@@ -186,7 +194,9 @@ class _CompileContext:
 
     def _emit_fn_doc(self, fn_name: str, sa_targets: list[str] | None = None):
         """Emit a ``/** @fn … */`` block before a decode function."""
-        self._line(f"/** @fn static int {fn_name}(r_device *decoder, bitbuffer_t *bitbuffer)")
+        self._line(
+            f"/** @fn static int {fn_name}(r_device *decoder, bitbuffer_t *bitbuffer)"
+        )
         doc = self.module_doc
         if doc:
             doc = _sanitize_c_comment(doc.strip())
@@ -204,15 +214,9 @@ class _CompileContext:
         self._blank()
         self._line('#include "decoder.h"')
         if self._has_external_helpers():
-            if self.delegates:
-                for delegate_cls in self.delegates:
-                    if delegate_cls.requires_external_helpers():
-                        self._line(f'#include "{delegate_cls.__name__}.h"')
-            else:
+            if not self.delegates:
                 self._line(f'#include "{self.prefix}.h"')
         self._blank()
-
-    # -- decode function --
 
     def _emit_decode_fn(self):
         if self.delegates:
@@ -222,7 +226,9 @@ class _CompileContext:
             with self.braced_block():
                 self._line("int ret = DECODE_ABORT_EARLY;")
                 for idx, delegate_cls in enumerate(self.delegates):
-                    self._line(f"ret = {delegate_cls.__name__}_decode(decoder, bitbuffer);")
+                    self._line(
+                        f"ret = {delegate_cls.__name__}_decode(decoder, bitbuffer);"
+                    )
                     self._line("if (ret > 0)")
                     with self.indent():
                         self._line("return ret;")
@@ -254,8 +260,6 @@ class _CompileContext:
                 self._emit_property_calls()
                 self._emit_data_make()
 
-    # -- pre-processing transforms --
-
     def _emit_transforms(self):
         cfg = getattr(self.cls, "config", ProtocolConfig)
         has_repeat = cfg.repeat_min_count is not None
@@ -269,8 +273,6 @@ class _CompileContext:
                     "reflect_bytes(bitbuffer->bb[i], (bitbuffer->bits_per_row[i] + 7) / 8);"
                 )
             self._blank()
-
-    # -- preamble search --
 
     def _emit_preamble_search(self):
         cfg = getattr(self.cls, "config", ProtocolConfig)()
@@ -374,8 +376,6 @@ class _CompileContext:
                 )
                 self._blank()
 
-    # -- field extraction --
-
     def _emit_field_extraction(self) -> int:
         """Emit extraction code for all fields. Returns the final bit offset."""
         return self._emit_fields(self.fields, "b", 0, False)
@@ -435,8 +435,6 @@ class _CompileContext:
         self._blank()
         return bit_offset
 
-    # -- cond codegen --
-
     def _emit_cond_field(
         self, name: str, spec: CondSpec, byte_array: str, bit_offset: int
     ) -> int:
@@ -462,8 +460,6 @@ class _CompileContext:
                 )
             self._line("}")
             return bit_offset + max(spec.true_type.width, spec.false_type.width)
-
-    # -- variant codegen --
 
     def _emit_variant_branches(self, variants: list, byte_array: str, bit_offset: int):
         for i, variant_cls in enumerate(variants):
@@ -588,8 +584,6 @@ class _CompileContext:
         self._line("decoder_output_data(decoder, data);")
         self._line("return 1;")
 
-    # -- repeat codegen --
-
     def _emit_repeat_field(
         self, name: str, spec: RepeatSpec, byte_array: str, bit_offset: int
     ):
@@ -617,8 +611,6 @@ class _CompileContext:
                     self._line(f"bit_pos += {sub_spec.width};")
         self._blank()
 
-    # -- method calls --
-
     def _emit_method_calls(self):
         for method_name in self.methods:
             inline = self._inline(method_name)
@@ -643,8 +635,6 @@ class _CompileContext:
                     self._blank()
                 else:
                     self._line(f"{func_name}({args});")
-
-    # -- property calls --
 
     def _emit_property_calls(self):
         property_items = self.properties
@@ -678,8 +668,6 @@ class _CompileContext:
                         args.append(f"{name}_{sub_name}")
                 args.append(_emit_expr(spec.count_expr))
         return args
-
-    # -- data_make --
 
     def _emit_json_record(self, record: JsonRecord, value_override: str | None = None):
         key = record.key.replace('"', '\\"')
@@ -739,8 +727,6 @@ class _CompileContext:
         self._line("decoder_output_data(decoder, data);")
         self._line("return 1;")
 
-    # -- output_fields --
-
     def _emit_output_fields(self):
         if self.delegates:
             names = []
@@ -762,8 +748,6 @@ class _CompileContext:
             for name in names:
                 self._line(f'"{name}",')
             self._line("NULL,")
-
-    # -- r_device struct --
 
     def _emit_r_device(self):
         device_cls = self.delegates[0] if self.delegates else self.cls
@@ -787,8 +771,6 @@ class _CompileContext:
                 self._line(f".tolerance   = {float(cfg.tolerance)},")
             self._line(f".decode_fn   = &{self.prefix}_decode,")
             self._line(".fields      = output_fields,")
-
-    # -- utility --
 
     def _total_payload_bits(self, cls: type) -> int:
         """Estimate max payload bits for bitbuffer_extract_bytes size."""
@@ -825,12 +807,6 @@ class _CompileContext:
         return total
 
     def _all_field_names_up_to(self, variant_cls: type, byte_array: str) -> list:
-        """Collect field names from the parent protocol + the variant."""
-        names = []
-        for n, s in self.fields:
-            if isinstance(s, BitsSpec):
-                names.append(n)
-        for n, s in variant_cls.fields():
-            if isinstance(s, BitsSpec):
-                names.append(n)
-        return names
+        return [n for n, s in self.fields if isinstance(s, BitsSpec)] + [
+            n for n, s in variant_cls.fields() if isinstance(s, BitsSpec)
+        ]
