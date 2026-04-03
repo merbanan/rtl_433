@@ -308,6 +308,7 @@
     DECL(tpms_trw_ook) \
     DECL(tpms_trw_fsk) \
     DECL(govee_h5059) \
+    DECL(thermor_a6n_132tx) \
 
     /* Add new decoders here. */
 
