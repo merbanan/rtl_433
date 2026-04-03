@@ -332,6 +332,7 @@
     DECL(tmps_gear_hive) \
     DECL(lacrosse_tx22uit) \
     DECL(lacrosse_tx22uit_ook) \
+    DECL(thermor_a6n_132tx) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
