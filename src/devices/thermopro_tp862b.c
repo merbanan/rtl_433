@@ -75,7 +75,7 @@ static int thermopro_tp862b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, 0, offset, b, 9 * 8);
 
     // Validate Checksum format. Byte 7 must be equal to byte 8 inverted.
-    if (b[7] == ~b[8]) {
+    if (b[7] == (uint8_t)~b[8]) {
         decoder_logf(decoder, 2, __func__, "Checksum byte 7 is supposed to be equal to byte 8 inverted. Actual: %02x vs %02x (inverted %02x)", b[7], b[8], ~b[8]);
         return DECODE_FAIL_MIC;
     }
