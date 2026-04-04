@@ -101,13 +101,13 @@ class _CompileContext:
         self.module_doc = module_doc
         self.lines: list[str] = []
         self._indent = 0
-        self.fields = cls.fields()
-        self.variants = cls.variants()
-        self.methods = cls.methods()
-        self.properties = cls.properties()
+        self.fields = cls.fields
+        self.variants = cls.variants
+        self.methods = cls.methods
+        self.properties = cls.properties
         self.explicit_args_map = cls.explicit_args()
         self.json_records = cls.json_records()
-        self.delegates = self._delegate_protocols()
+        self.delegates = self.cls.delegated_protocols()
         self._inline = self._try_inline_on(cls)
 
     def _try_inline_on(self, cls_or_variant: type):
@@ -122,9 +122,6 @@ class _CompileContext:
             return result if isinstance(result, _EXPR_TYPES) else None
 
         return try_one
-
-    def _delegate_protocols(self) -> tuple[type, ...]:
-        return self.cls.delegated_protocols()
 
     def _line(self, text: str = ""):
         self.lines.append("    " * self._indent + text)
@@ -232,6 +229,11 @@ class _CompileContext:
                     self._line("if (ret > 0)")
                     with self.indent():
                         self._line("return ret;")
+                    # TODO: This undoes the invert and reflects from this delegate. If the
+                    # next delegate operates on the inverted or reflected inputs, it will
+                    # re-invert or re-reflect the bitbuffer, which causes a lot of unnecessary
+                    # shuffling. We really only need to run this flip if this delete's
+                    # config.invert != next delegate's config.invert.
                     if idx + 1 < len(self.delegates):
                         cfg = getattr(delegate_cls, "config", ProtocolConfig)
                         if cfg.invert:
@@ -252,10 +254,9 @@ class _CompileContext:
         with self.braced_block():
             self._emit_transforms()
             self._emit_preamble_search()
-            self._emit_field_extraction()
+            self._emit_fields(self.fields)
 
-            has_variants = bool(self.variants)
-            if not has_variants:
+            if not self.variants:
                 self._emit_method_calls()
                 self._emit_property_calls()
                 self._emit_data_make()
@@ -376,44 +377,38 @@ class _CompileContext:
                 )
                 self._blank()
 
-    def _emit_field_extraction(self) -> int:
-        """Emit extraction code for all fields. Returns the final bit offset."""
-        return self._emit_fields(self.fields, "b", 0, False)
-
-    def _emit_fields(
-        self, fields: list, byte_array: str, bit_offset: int, dynamic: bool
-    ) -> int:
+    def _emit_fields(self, fields: list) -> int:
         """Emit C code for a list of (name, spec) fields.
-
-        When *dynamic* is True, a C variable ``bit_pos`` holds the current
-        offset at runtime and ``_extract_dynamic`` is used instead of the
-        static ``_extract_field_expr``.
 
         Returns the updated static bit offset (or -1 if dynamic).
         """
+        byte_array = "b"
+        bit_offset = 0
+        is_dynamic = False
+
         for name, spec in fields:
             if isinstance(spec, BitsSpec):
-                off = "bit_pos" if dynamic else bit_offset
+                off = "bit_pos" if is_dynamic else bit_offset
                 expr = _extract_bits(byte_array, off, spec.width)
                 if name.startswith("_"):
-                    if dynamic:
+                    if is_dynamic:
                         self._line(f"bit_pos += {spec.width};")
                     else:
                         bit_offset += spec.width
                 else:
                     self._line(f"int {name} = {expr};")
-                    if dynamic:
+                    if is_dynamic:
                         self._line(f"bit_pos += {spec.width};")
                     else:
                         bit_offset += spec.width
 
             elif isinstance(spec, LiteralSpec):
-                off = "bit_pos" if dynamic else bit_offset
+                off = "bit_pos" if is_dynamic else bit_offset
                 expr = _extract_bits(byte_array, off, spec.width)
                 self._line(f"if ({expr} != {hex(spec.value)})")
                 with self.indent():
                     self._line("return DECODE_FAIL_SANITY;")
-                if dynamic:
+                if is_dynamic:
                     self._line(f"bit_pos += {spec.width};")
                 else:
                     bit_offset += spec.width
@@ -423,14 +418,13 @@ class _CompileContext:
 
             elif isinstance(spec, RepeatSpec):
                 self._emit_repeat_field(name, spec, byte_array, bit_offset)
-                dynamic = True
+                is_dynamic = True
                 bit_offset = -1
 
         # Emit variant branches if present
-        variants = self.variants
-        if variants:
+        if self.variants:
             self._blank()
-            self._emit_variant_branches(variants, byte_array, bit_offset)
+            self._emit_variant_branches(self.variants, byte_array, bit_offset)
 
         self._blank()
         return bit_offset
@@ -469,7 +463,7 @@ class _CompileContext:
             self._line(f"{keyword} {when_expr} {{")
             with self.indent():
                 var_offset = bit_offset
-                for name, spec in variant_cls.fields():
+                for name, spec in variant_cls.fields:
                     if isinstance(spec, BitsSpec):
                         if not name.startswith("_"):
                             self._line(
@@ -485,7 +479,7 @@ class _CompileContext:
                         var_offset += spec.width
 
                 variant_inline = self._try_inline_on(variant_cls)
-                for method_name in variant_cls.methods():
+                for method_name in variant_cls.methods:
                     inline = variant_inline(method_name)
                     if inline is not None:
                         if method_name == "validate":
@@ -498,9 +492,7 @@ class _CompileContext:
                         func_name = (
                             f"{self.prefix}_{variant_cls.__name__}_{method_name}"
                         )
-                        all_field_names = self._all_field_names_up_to(
-                            variant_cls, byte_array
-                        )
+                        all_field_names = self._all_field_names_up_to(variant_cls)
                         args = ", ".join(["b"] + all_field_names)
                         if method_name == "validate":
                             self._line(f"int valid = {func_name}({args});")
@@ -510,7 +502,7 @@ class _CompileContext:
                         else:
                             self._line(f"{func_name}({args});")
 
-                for prop_name, prop_type in variant_cls.properties():
+                for prop_name, prop_type in variant_cls.properties:
                     inline = variant_inline(prop_name)
                     if inline is not None:
                         c_type = _c_type_for(prop_type)
@@ -518,9 +510,7 @@ class _CompileContext:
                     else:
                         func_name = f"{self.prefix}_{variant_cls.__name__}_{prop_name}"
                         c_type = _c_type_for(prop_type)
-                        field_args = self._all_field_names_up_to(
-                            variant_cls, byte_array
-                        )
+                        field_args = self._all_field_names_up_to(variant_cls)
                         args = ", ".join(field_args)
                         self._line(f"{c_type} {prop_name} = {func_name}({args});")
 
@@ -555,10 +545,10 @@ class _CompileContext:
         ]
         variant_fields = [
             (n, s)
-            for n, s in variant_cls.fields()
+            for n, s in variant_cls.fields
             if not n.startswith("_") and isinstance(s, BitsSpec)
         ]
-        variant_props = variant_cls.properties()
+        variant_props = variant_cls.properties
 
         self._blank()
         self._line("/* clang-format off */")
@@ -593,7 +583,7 @@ class _CompileContext:
         offset, so subsequent fields switch to dynamic extraction.
         """
         count_expr = _emit_expr(spec.count_expr)
-        sub_fields = spec.sub_protocol.fields()
+        sub_fields = spec.sub_protocol.fields
         max_count = 8
         for sub_name, sub_spec in sub_fields:
             if isinstance(sub_spec, BitsSpec):
@@ -663,7 +653,7 @@ class _CompileContext:
             if isinstance(spec, BitsSpec):
                 args.append(name)
             elif isinstance(spec, RepeatSpec):
-                for sub_name, sub_spec in spec.sub_protocol.fields():
+                for sub_name, sub_spec in spec.sub_protocol.fields:
                     if isinstance(sub_spec, BitsSpec):
                         args.append(f"{name}_{sub_name}")
                 args.append(_emit_expr(spec.count_expr))
@@ -734,7 +724,7 @@ class _CompileContext:
                 for name in delegate_cls.output_fields():
                     if name not in names:
                         names.append(name)
-                for variant_cls in delegate_cls.variants():
+                for variant_cls in delegate_cls.variants:
                     for name in variant_cls.output_fields():
                         if name not in names:
                             names.append(name)
@@ -776,7 +766,7 @@ class _CompileContext:
         """Estimate max payload bits for bitbuffer_extract_bytes size."""
         total = 0
         max_repeat = 8
-        for _, spec in cls.fields():
+        for _, spec in cls.fields:
             if isinstance(spec, BitsSpec):
                 total += spec.width
             elif isinstance(spec, LiteralSpec):
@@ -789,16 +779,16 @@ class _CompileContext:
             elif isinstance(spec, RepeatSpec):
                 sub_bits = sum(
                     s.width
-                    for _, s in spec.sub_protocol.fields()
+                    for _, s in spec.sub_protocol.fields
                     if isinstance(s, (BitsSpec, LiteralSpec))
                 )
                 total += sub_bits * max_repeat
 
         max_var_bits = 0
-        for variant_cls in cls.variants():
+        for variant_cls in cls.variants:
             var_bits = sum(
                 s.width
-                for _, s in variant_cls.fields()
+                for _, s in variant_cls.fields
                 if isinstance(s, (BitsSpec, LiteralSpec))
             )
             max_var_bits = max(max_var_bits, var_bits)
@@ -806,7 +796,7 @@ class _CompileContext:
 
         return total
 
-    def _all_field_names_up_to(self, variant_cls: type, byte_array: str) -> list:
+    def _all_field_names_up_to(self, variant_cls: type) -> list:
         return [n for n, s in self.fields if isinstance(s, BitsSpec)] + [
-            n for n, s in variant_cls.fields() if isinstance(s, BitsSpec)
+            n for n, s in variant_cls.fields if isinstance(s, BitsSpec)
         ]
