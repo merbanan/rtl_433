@@ -285,58 +285,176 @@ static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
-TPMS Model: Schrader Electronics MRXBC5A4
+TPMS Model: Schrader Electronics MRXBC5A4 / MRXBMW433TX1 (BMW)
 Contributed by: Ilias Daradimos.
 
-Packet structure:
+Packet structure (61 bits):
 
-    W SSSSSSSSSSSSS s FFF IIIIIIIIIIIIIIIIIIIIIIII PPPPPPPPP ? TTTTTTTT
+    W SSSSSSSSSSSSS s FFF IIIIIIIIIIIIIIIIIIIIIIII PPPPPPPPP CC TTTTTTTT
 
 - W: 1 bit wake
-- S: 13 sync bit
+- S: 13 sync bits
 - s: 1 start bit
-- F: 3 bits, may contain status and battery flags.
+- F: 3 bits, may contain status and battery flags. Value 010 = sleep ACK.
 - I: id (24 bits)
-- P: pressure 9 bits 1kPa/bit
-- ?: Parity?
-- T: 8 bits temperature offset by 50, degrees C -50 to 205
+- P: pressure 9 bits, 2 kPa/bit
+- C: 2 bits integrity check (C1, C2)
+- T: 8 bits temperature offset by 50, range -50 to 205 degrees C
+
+Integrity check (C1C2):
+The 2-bit integrity value is computed over the 33-bit payload (FFF...PPP):
+    C1C2 = (even_ones + 2*n - 1) mod 4
+where:
+    even_ones = count of 1-bits at even positions (0, 2, 4, ...) in the 33-bit payload
+    n = total number of 1-bits in the 33-bit payload
+
+Test data validated with RDC test tool (33-bit payload + C1C2):
+
+    Single-bit patterns (shifting 1):
+    00000000000000000000000000000000001 10
+    00000000000000000000000000000000010 01
+    00000000000000000000000000000000100 10
+    00000000000000000000000000000001000 01
+    00000000000000000000000000000010000 10
+    00000000000000000000000000000100000 01
+    00000000000000000000000000001000000 10
+    00000000000000000000000000010000000 01
+    00000000000000000000000000100000000 10
+    00000000000000000000000001000000000 01
+    00000000000000000000000010000000000 10
+    00000000000000000000000100000000000 01
+    00000000000000000000001000000000000 10
+    00000000000000000000010000000000000 01
+    00000000000000000000100000000000000 10
+    00000000000000000001000000000000000 01
+    00000000000000000010000000000000000 10
+    00000000000000000100000000000000000 01
+    00000000000000001000000000000000000 10
+    00000000000000010000000000000000000 01
+    00000000000000100000000000000000000 10
+    00000000000001000000000000000000000 01
+    00000000000010000000000000000000000 10
+    00000000000100000000000000000000000 01
+    00000000001000000000000000000000000 10
+    00000000010000000000000000000000000 01
+    00000000100000000000000000000000000 10
+    00000001000000000000000000000000000 01
+    00000010000000000000000000000000000 10
+    00000100000000000000000000000000000 01
+    00001000000000000000000000000000000 10
+    00010000000000000000000000000000000 01
+    00100000000000000000000000000000000 10
+
+    Consecutive-bit patterns (shifting 5):
+    00000000000000000000000000000011111 00
+    00000000000000000000000000000111110 11
+    00000000000000000000000000001111100 00
+    00000000000000000000000000011111000 11
+    00000000000000000000000000111110000 00
+    00000000000000000000000001111100000 11
+    00000000000000000000000011111000000 00
+    00000000000000000000000111110000000 11
+    00000000000000000000001111100000000 00
+
+    Consecutive-bit patterns (shifting 9):
+    0000000000000000000000000000111111111 10
+    0000000000000000000000000001111111110 01
+
+    Consecutive-bit patterns (shifting 13):
+    00000000000000000000001111111111111 00
+    00000000000000000000011111111111110 11
+    00000000000000000000111111111111100 00
+
+    Consecutive-bit patterns (shifting 17):
+    00000000000000000011111111111111111 10
+    00000000000000000111111111111111110 01
+
+    Alternating patterns (shifting 101):
+    00000000000000000000000000000000101 01
+    00000000000000000000000000000001010 11
+    00000000000000000000000000000010100 01
+    00000000000000000000000000000101000 11
+
+    Alternating patterns (shifting 10101):
+    00000000000000000000000000000010101 00
+    00000000000000000000000000000101010 01
+    00000000000000000000000000001010100 00
+
+    Sensor data (validated by RDC test tool):
+    00000100010010000000001010000000001 11
+    11100100010001101010010011001101010 10
+    11100100010001101010010011000000000 01
+    00000100010001101010010011000000000 01
+    00100100010001101010010011000000000 00
+    01000100010001101010010011000000000 11
+    01100100010001101010010011000000000 10
+    10000100010001101010010011000000000 00
+    10100100010001101010010011000000000 11
+    11000100010001101010010011000000000 10
 */
 static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t b[6];
     int serial_id;
-    char id_str[19];
+    char id_str[9];
     int flags;
-    char flags_str[9];
+    char flags_str[3];
     unsigned int pressure;    // kPa
     int temperature; // degree C
-    // int parity = 0;
 
     /* Check for incorrect number of bits received */
-    if (bitbuffer->bits_per_row[0] != 61) {
-      if (decoder->verbose > 1) {
-        fprintf(stderr, "%s: length error %d \n", __func__, bitbuffer->bits_per_row[0]);
-      }
-      return DECODE_ABORT_LENGTH;
-    }
-    /* Discard the first 15 bits */
+    if (bitbuffer->bits_per_row[0] != 61)
+        return DECODE_ABORT_LENGTH;
+
+    /* Discard the first 15 bits (1 wake + 13 sync + 1 start) */
     bitbuffer_extract_bytes(bitbuffer, 0, 16, b, 46);
 
-    /* Get data */
+    /* Get data fields:
+       b[0]: FFFIIIII (3 flags + 5 ID bits)
+       b[1]: IIIIIIII (8 ID bits)
+       b[2]: IIIIIIII (8 ID bits)
+       b[3]: IIIPPPPP (3 ID + 5 pressure bits)
+       b[4]: PPPPCC TT (4 pressure + 2 integrity + 2 temp)
+       b[5]: TTTTTTxx (6 temp + 2 unused)
+    */
     serial_id   = ((b[0] & 0x1f) << 19) | (b[1] << 11) | (b[2] << 3) | (b[3] >> 5);
-    // check serial value not zero
-    if ( serial_id == 0 || serial_id == 0xFFFFFF ) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
-        }
+
+    /* Check serial value not zero or all ones */
+    if (serial_id == 0 || serial_id == 0xFFFFFF) {
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00");
         return DECODE_FAIL_SANITY;
     }
+
     flags       = (b[0] >> 5) & 0x7;
     pressure    = ((b[3] & 0x1f) << 4) | (b[4] >> 4);
-    temperature = ((b[4]&0x3) << 5) | (b[5] >> 3);
-    sprintf(id_str, "%06X", serial_id);
-    sprintf(flags_str, "%01x", flags);
+    temperature = ((b[4] & 0x03) << 5) | (b[5] >> 3);
+
+    /* Verify 2-bit integrity check (C1C2) over 35-bit payload (III+PPP+CC).
+       C1C2 = (even_ones + 2*n - 1) mod 4
+       where even_ones = count of 1-bits at even positions (0,2,4,...)
+       and n = total number of 1-bits in the 35-bit payload.
+       The 35-bit payload spans bits 3-37 of the extracted 46-bit data.
+    */
+    int even_ones = 0;
+    int n = 0;
+    for (int i = 3; i < 38; ++i) {
+        int bit = (b[i / 8] >> (7 - (i % 8))) & 1;
+        if (bit) {
+            n++;
+            if ((i - 3) % 2 == 0)
+                even_ones++;
+        }
+    }
+    int c1c2 = (even_ones + 2 * n - 1) & 0x3;
+    int c1 = (b[4] >> 3) & 1;
+    int c2 = (b[4] >> 2) & 1;
+    if (c1c2 != ((c1 << 1) | c2)) {
+        return DECODE_FAIL_MIC;
+    }
+
+    snprintf(id_str, sizeof(id_str), "%06X", serial_id);
+    snprintf(flags_str, sizeof(flags_str), "%01x", flags);
 
     /* clang-format off */
     data = data_make(
@@ -344,8 +462,8 @@ static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "type",             "",             DATA_STRING, "TPMS",
             "flags",            "",             DATA_STRING, flags_str,
             "id",               "ID",           DATA_STRING, id_str,
-            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, pressure * 1.0f,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temperature -50,
+            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, pressure * 2.0f,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temperature - 50,
             "sleep",            "Sleep",        DATA_STRING, (flags == 2 ? "True" : "False"),
             "mic",              "Integrity",    DATA_STRING, "PARITY",
             NULL);
