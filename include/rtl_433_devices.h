@@ -308,6 +308,7 @@
     DECL(tpms_trw_ook) \
     DECL(tpms_trw_fsk) \
     DECL(govee_h5059) \
+    DECL(acurite_985) \
 
     /* Add new decoders here. */
 

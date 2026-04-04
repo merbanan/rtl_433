@@ -21,6 +21,7 @@ Devices decoded:
   (Note: Some newer sensors share the 592TXR coding for compatibility.
 - Acurite 609TXC "TH" temperature and humidity sensor (609A1TX)
 - Acurite 986 Refrigerator / Freezer Thermometer
+- Acurite/Chaney 985 Refrigerator / Freezer Thermometer
 - Acurite 515 Refrigerator / Freezer Thermometer
 - Acurite 606TX / Technoline TX960 temperature sensor, optional with channels and [TX]Button
 - Acurite 6045M Lightning Detector
@@ -1593,6 +1594,166 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
+Acurite/Chaney 00985 Refrigerator / Freezer Thermometer.
+
+Includes two sensors and a display, labeled 1 and 2,
+by default 1 - Refrigerator, 2 - Freezer.
+
+This is very similar to the Acurite 00986. The 985 is likely the version
+they sold before they rebranded as Acurite. Chaney Instrument Co. is a
+subsidiary of the Primex Family of Companies and Acurite is a brand.
+
+FCC ID: RNE00985TX
+
+Temperature range: -40F to 104F (-40C to 40C)
+Accuracy +- 2F
+Base frequency is 433MHz
+
+Data Format - 7 bytes, sent LSB first, bit-reversed per byte:
+
+    XX XX TT II II SS CC
+
+- X - Unknown (likely sync pulse / preamble)
+- T - Temperature in Fahrenheit, integer, MSB = sign (sign and magnitude)
+      More than maximum is 0x7f
+      Less than minimum is 0xff
+- I - 16 bit sensor ID, changes at each power up
+- S - status/sensor type
+      bit 0: 0 for channel 1 (Refrigerator), 1 for channel 2 (Freezer)
+      bit 1: low battery indicator for channel 1
+      bit 2: low battery indicator for channel 2
+             low battery: 0=normal, 1=low (under 2.5V)
+      All other bits are undefined
+- C - CRC (CRC-8 poly 0x07, little-endian)
+
+The devices transmit three groups which are transmitted within 1 second.
+
+The transmitting interval is initially 64 seconds upon power on.
+After 20 minutes, the interval of sensor1 is 7.5 minutes, and
+the interval of sensor2 is 6 minutes.
+
+*/
+static int acurite_985_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    uint8_t *bb, sensor_num, status, crc, crcc;
+    uint8_t br[7];
+    int bits;
+    int8_t tempf;
+    uint16_t sensor_id, valid_cnt = 0;
+    char sensor_type;
+    char const *channel_str;
+    int battery_low;
+    int result = 0;
+
+    for (uint16_t brow = 0; brow < bitbuffer->num_rows; ++brow) {
+        bb = bitbuffer->bb[brow];
+        bits = bitbuffer->bits_per_row[brow];
+
+        decoder_logf(decoder, 2, __func__, "row %u bits %u", brow, bits);
+
+        if (bits < 55 || bits > 59) {
+            if (bits > 16)
+                decoder_log(decoder, 2, __func__, "skipping wrong len");
+            result = DECODE_ABORT_LENGTH;
+            continue;
+        }
+
+        // Reduce false positives. All zero bytes will pass the CRC check.
+        if (bb[2] == 0x00 && bb[3] == 0x00 && bb[4] == 0x00 &&
+            bb[5] == 0x00 && bb[6] == 0x00) {
+            decoder_log(decoder, 2, __func__, "skipping all zeros");
+            result = DECODE_ABORT_EARLY;
+            continue;
+        }
+
+        // Reverse the bits, msg sent LSB first
+        for (int i = 0; i < 7; i++)
+            br[i] = reverse8(bb[i]);
+
+        decoder_log_bitrow(decoder, 1, __func__, br, 56, "reversed");
+
+        // First 2 bytes appear to be sync/preamble
+        tempf = br[2];
+        sensor_id = (br[3] << 8) | br[4];
+        status = br[5];
+        sensor_num = (status & 0x01) + 1;
+
+        // The two sensors use a different bit to denote low battery
+        if (sensor_num == 2)
+            battery_low = (status & 0x04) ? 1 : 0;
+        else
+            battery_low = (status & 0x02) ? 1 : 0;
+
+        // By default Sensor 1 is Refrigerator, 2 is Freezer
+        sensor_type = sensor_num == 2 ? 'F' : 'R';
+        channel_str = sensor_num == 2 ? "2F" : "1R";
+
+        crc = br[6];
+        crcc = crc8le(br + 2, 4, 0x07, 0);
+
+        decoder_logf(decoder, 1, __func__, "rawtemp=0x%02x id=%u sensor_num=%d batt=%s",
+                tempf, sensor_id, sensor_num, battery_low ? "low" : "ok");
+        decoder_logf(decoder, 2, __func__, "crc=0x%02x crcc=0x%02x", crc, crcc);
+
+        if (crcc != crc) {
+            decoder_logf_bitrow(decoder, 2, __func__, br, 56, "bad CRC: %02x -", crcc);
+            // HACK: the message is often missing the last 1 bit either due to a
+            // problem with the device or demodulator
+            // Add 1 (0x80 because message is LSB) and retry CRC.
+            if (crcc == (crc | 0x80)) {
+                decoder_logf(decoder, 2, __func__, "CRC fix %02x - %02x", crc, crcc);
+            }
+            else {
+                result = DECODE_FAIL_MIC;
+                continue;
+            }
+        }
+
+        // Convert from sign-and-magnitude
+        if (tempf & 0x80) {
+            tempf = (tempf & 0x7f) * -1;
+        }
+
+        // Validate temperature
+        if (tempf >= -40 && tempf <= 104) {
+            decoder_logf(decoder, 1, __func__, "valid temperature: %d", tempf);
+        }
+        else if (tempf == -127 || tempf == 127) {
+            decoder_logf(decoder, 1, __func__, "temperature %s operational range",
+                    tempf == 127 ? "above" : "below");
+        }
+        else {
+            decoder_logf(decoder, 1, __func__, "skipping bad temperature: %d", tempf);
+            result = DECODE_FAIL_SANITY;
+            continue;
+        }
+
+        decoder_logf(decoder, 1, __func__, "sensor 0x%04x - %d%c: %d F", sensor_id, sensor_num, sensor_type, tempf);
+
+        /* clang-format off */
+        data_t *data = data_make(
+                "model",            "",             DATA_STRING, "Acurite-985",
+                "id",               "",             DATA_INT,    sensor_id,
+                "channel",          "",             DATA_STRING, channel_str,
+                "battery_ok",       "Battery",      DATA_INT,    !battery_low,
+                "temperature_F",    "temperature",  DATA_FORMAT, "%f F", DATA_DOUBLE,    (float)tempf,
+                "status",           "Status",       DATA_INT,    status,
+                "mic",              "Integrity",    DATA_STRING, "CRC",
+                NULL);
+        /* clang-format on */
+
+        decoder_output_data(decoder, data);
+
+        valid_cnt++;
+    }
+
+    if (valid_cnt)
+        return 1;
+
+    return result;
+}
+
+/**
 Acurite 606TX / Technoline TX960 Temperature sensor decoder.
 
 Specs:
@@ -1952,6 +2113,34 @@ r_device const acurite_986 = {
         .reset_limit = 4000,
         .decode_fn   = &acurite_986_decode,
         .fields      = acurite_986_output_fields,
+};
+
+/*
+ * Acurite/Chaney 00985 Refrigerator / Freezer Thermometer
+ *
+ * Temperature only
+ */
+static char const *const acurite_985_output_fields[] = {
+        "model",
+        "id",
+        "channel",
+        "battery_ok",
+        "temperature_F",
+        "status",
+        "mic",
+        NULL,
+};
+
+r_device const acurite_985 = {
+        .name        = "Acurite/Chaney 985 Refrigerator / Freezer Thermometer",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 556,
+        .long_width  = 1104,
+        .gap_limit   = 4000,
+        .reset_limit = 7636,
+        .sync_width  = 2996,
+        .decode_fn   = &acurite_985_decode,
+        .fields      = acurite_985_output_fields,
 };
 
 /*
