@@ -309,6 +309,7 @@
     DECL(tpms_trw_fsk) \
     DECL(govee_h5059) \
     DECL(lacrosse_tx22uit) \
+    DECL(lacrosse_tx22u) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;

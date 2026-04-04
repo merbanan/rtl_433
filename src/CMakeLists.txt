@@ -174,6 +174,8 @@ add_library(r_433 STATIC
     devices/lacrosse_r1.c
     devices/lacrosse_th3.c
     devices/lacrosse_tx141x.c
+    devices/lacrosse_tx22u.c
+    devices/lacrosse_tx22u.c
     devices/lacrosse_tx22uit.c
     devices/lacrosse_tx31u.c
     devices/lacrosse_tx34.c
