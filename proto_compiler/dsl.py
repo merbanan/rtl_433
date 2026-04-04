@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 import inspect
 import sys
-from typing import Any, NamedTuple, Union
+from typing import Any, ClassVar, NamedTuple, Union
 
 
 # ---------------------------------------------------------------------------
@@ -463,30 +463,34 @@ def _evaluated_callable_annotations(fn: Any) -> dict[str, Any]:
 class Protocol:
     """Base class for protocol definitions."""
 
-    _all_fields: tuple[tuple[str, FieldSpec], ...] = ()
-    _all_variants: tuple[type, ...] = ()
-    _all_methods: tuple[str, ...] = ()
-    _all_properties: tuple[tuple[str, type], ...] = ()
+    #: Consolidated field list, base-to-derived (derived overrides base).
+    fields: ClassVar[tuple[tuple[str, FieldSpec], ...]] = ()
+    #: Consolidated nested ``Variant`` subclasses, base-to-derived.
+    variants: ClassVar[tuple[type, ...]] = ()
+    #: Consolidated void method names (no return annotation), base-to-derived.
+    methods: ClassVar[tuple[str, ...]] = ()
+    #: Consolidated return-annotated callables as ``(name, py_type)``, base-to-derived.
+    properties: ClassVar[tuple[tuple[str, type], ...]] = ()
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
 
-        merged_fields = dict(cls._all_fields)
+        merged_fields = dict(cls.fields)
         for name, ann in _evaluated_class_annotations(cls).items():
             if isinstance(ann, (BitsSpec, LiteralSpec, CondSpec, RepeatSpec)):
                 merged_fields[name] = ann
-        cls._all_fields = tuple(merged_fields.items())
+        cls.fields = tuple(merged_fields.items())
 
         _Variant = globals().get("Variant")
-        merged_variants = {v.__name__: v for v in cls._all_variants}
+        merged_variants = {v.__name__: v for v in cls.variants}
         if _Variant is not None:
             for name, val in cls.__dict__.items():
                 if isinstance(val, type) and issubclass(val, _Variant):
                     merged_variants[name] = val
-        cls._all_variants = tuple(merged_variants.values())
+        cls.variants = tuple(merged_variants.values())
 
-        merged_methods = dict.fromkeys(cls._all_methods)
-        merged_props = dict(cls._all_properties)
+        merged_methods = dict.fromkeys(cls.methods)
+        merged_props = dict(cls.properties)
         for name, fn in _iter_user_callables(cls):
             ret = _evaluated_callable_annotations(fn).get("return")
             if ret is None:
@@ -495,8 +499,8 @@ class Protocol:
             else:
                 merged_props[name] = ret
                 merged_methods.pop(name, None)
-        cls._all_methods = tuple(merged_methods.keys())
-        cls._all_properties = tuple(merged_props.items())
+        cls.methods = tuple(merged_methods.keys())
+        cls.properties = tuple(merged_props.items())
 
     def __getattr__(self, name: str) -> FieldRef:
         if name.startswith("_"):
@@ -508,30 +512,10 @@ class Protocol:
     # ------------------------------------------------------------------
 
     @classmethod
-    def fields(cls) -> list[tuple[str, FieldSpec]]:
-        """Consolidated field list, base-to-derived, derived overrides base."""
-        return list(cls._all_fields)
-
-    @classmethod
-    def variants(cls) -> list[type]:
-        """Consolidated nested Variant subclasses, base-to-derived."""
-        return list(cls._all_variants)
-
-    @classmethod
-    def methods(cls) -> list[str]:
-        """Consolidated void method names, base-to-derived."""
-        return list(cls._all_methods)
-
-    @classmethod
-    def properties(cls) -> list[tuple[str, type]]:
-        """Consolidated (name, return_type) for return-annotated callables."""
-        return list(cls._all_properties)
-
-    @classmethod
     def explicit_args(cls) -> dict[str, tuple[str, ...] | None]:
         """Collect explicit argument lists (excluding self) for methods and properties."""
         result: dict[str, tuple[str, ...] | None] = {}
-        for name in cls.methods() + [n for n, _ in cls.properties()]:
+        for name in cls.methods + tuple(n for n, _ in cls.properties):
             params = [p for p in inspect.signature(getattr(cls, name)).parameters if p != "self"]
             result[name] = tuple(params) if params else None
         return result
@@ -558,18 +542,18 @@ class Protocol:
         """True if any method or property cannot be inlined as a pure expression."""
         proxy = cls()
         explicit = cls.explicit_args()
-        for name in cls.methods():
+        for name in cls.methods:
             if explicit.get(name) or not isinstance(getattr(proxy, name)(), _EXPR_TYPES):
                 return True
-        for name, _ in cls.properties():
+        for name, _ in cls.properties:
             if explicit.get(name) or not isinstance(getattr(proxy, name)(), _EXPR_TYPES):
                 return True
-        for variant_cls in cls.variants():
-            if variant_cls.methods():
+        for variant_cls in cls.variants:
+            if variant_cls.methods:
                 return True
             v_proxy = variant_cls()
             v_explicit = variant_cls.explicit_args()
-            for name, _ in variant_cls.properties():
+            for name, _ in variant_cls.properties:
                 if v_explicit.get(name) or not isinstance(getattr(v_proxy, name)(), _EXPR_TYPES):
                     return True
         return False
@@ -577,7 +561,7 @@ class Protocol:
     @classmethod
     def output_fields(cls) -> tuple[str, ...]:
         """Ordered output field names for the r_device struct."""
-        recs = list(cls.json_records())
+        recs = cls.json_records()
         if recs:
             names: list[str] = []
             for rec in recs:
@@ -586,17 +570,17 @@ class Protocol:
             return tuple(names)
 
         names = ["model"]
-        for name, spec in cls.fields():
+        for name, spec in cls.fields:
             if not name.startswith("_") and isinstance(spec, BitsSpec):
                 names.append(name)
-        for prop_name, _ in cls.properties():
+        for prop_name, _ in cls.properties:
             if prop_name not in names:
                 names.append(prop_name)
-        for variant_cls in cls.variants():
-            for name, spec in variant_cls.fields():
+        for variant_cls in cls.variants:
+            for name, spec in variant_cls.fields:
                 if not name.startswith("_") and isinstance(spec, BitsSpec) and name not in names:
                     names.append(name)
-            for prop_name, _ in variant_cls.properties():
+            for prop_name, _ in variant_cls.properties:
                 if prop_name not in names:
                     names.append(prop_name)
         return tuple(names)
@@ -605,7 +589,7 @@ class Protocol:
     def referenced_protocols(cls) -> tuple[type[Protocol], ...]:
         """Sub-protocols referenced by Repeat[] fields."""
         result: list[type[Protocol]] = []
-        for fname, spec in cls.fields():
+        for fname, spec in cls.fields:
             if isinstance(spec, RepeatSpec):
                 sp = spec.sub_protocol
                 if not isinstance(sp, type) or not issubclass(sp, Protocol):
@@ -643,12 +627,12 @@ class Protocol:
         records.append(
             JsonRecord(key="model", label="", value=model_name, data_type="DATA_STRING")
         )
-        for name, spec in protocol_cls.fields():
+        for name, spec in protocol_cls.fields:
             if isinstance(spec, BitsSpec) and not name.startswith("_"):
                 records.append(
                     JsonRecord(key=name, label="", value=FieldRef(name), data_type="DATA_INT")
                 )
-        for prop_name, prop_type in protocol_cls.properties():
+        for prop_name, prop_type in protocol_cls.properties:
             records.append(
                 JsonRecord(
                     key=prop_name,
