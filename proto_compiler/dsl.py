@@ -347,7 +347,37 @@ class ManchesterDecode:
     max_bits: int = 0
 
 
-PipelineStep = Union[Invert, Reflect, FindRepeatedRow, SearchPreamble, SkipBits, ManchesterDecode]
+@dataclass(frozen=True)
+class FirstValidRow:
+    """Row-selection strategy: scan rows until one matches and decodes.
+
+    Alternative to :class:`FindRepeatedRow` (which picks a *repeated* row index).
+    Use ``FirstValidRow`` when the slicer may deliver multiple candidate rows and
+    the decoder must try each until length, checksum, and sanity pass.
+
+    Emitted as a ``for`` loop over ``bitbuffer->num_rows``. Only rows with
+    exactly *bits* are considered. If *reflect* is true, ``reflect_bytes`` is
+    applied to that row before checks. If *checksum_over_bytes* is N > 0, the
+    compiler emits ``add_bytes(b, N)`` vs ``b[N]`` (``continue`` on MIC mismatch,
+    ``return DECODE_FAIL_SANITY`` if the sum is zero).
+
+    Must be the **last** step in ``prepare()``; no steps may follow it. Do not
+    combine with :class:`FindRepeatedRow` in the same pipeline.
+    """
+    bits: int
+    reflect: bool = False
+    checksum_over_bytes: int = 0
+
+
+PipelineStep = Union[
+    Invert,
+    Reflect,
+    FindRepeatedRow,
+    SearchPreamble,
+    SkipBits,
+    ManchesterDecode,
+    FirstValidRow,
+]
 
 
 class BitbufferPipeline:
@@ -385,6 +415,17 @@ class BitbufferPipeline:
 
     def manchester_decode(self, max_bits: int = 0) -> BitbufferPipeline:
         return self._append(ManchesterDecode(max_bits))
+
+    def first_valid_row(
+        self,
+        bits: int,
+        *,
+        reflect: bool = False,
+        checksum_over_bytes: int = 0,
+    ) -> BitbufferPipeline:
+        return self._append(
+            FirstValidRow(bits, reflect, checksum_over_bytes)
+        )
 
 
 class Modulation(Enum):
