@@ -298,6 +298,95 @@ class JsonRecord(NamedTuple):
     when: FieldRef | Expr | UnaryExpr | bool | None = None
 
 
+# ---------------------------------------------------------------------------
+# Pipeline step descriptors – returned by BitbufferPipeline builder methods
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Invert:
+    """Invert all bits in the current buffer."""
+
+
+@dataclass(frozen=True)
+class Reflect:
+    """Reflect (bit-reverse) bytes in each row."""
+
+
+@dataclass(frozen=True)
+class FindRepeatedRow:
+    """Find a row repeated at least *min_repeats* times with *min_bits* bits."""
+    min_repeats: int
+    min_bits: int
+    max_bits: int | None = None
+
+
+@dataclass(frozen=True)
+class SearchPreamble:
+    """Search for a bit pattern in the bitbuffer."""
+    pattern: int
+    bit_length: int | None = None
+    scan_all_rows: bool = False
+
+    @property
+    def resolved_bit_length(self) -> int:
+        if self.bit_length is not None:
+            return self.bit_length
+        return max(1, self.pattern.bit_length())
+
+
+@dataclass(frozen=True)
+class SkipBits:
+    """Adjust offset by *count* bits (negative = backward)."""
+    count: int
+
+
+@dataclass(frozen=True)
+class ManchesterDecode:
+    """Manchester-decode from the current row/offset into a local packet buffer."""
+    max_bits: int = 0
+
+
+PipelineStep = Union[Invert, Reflect, FindRepeatedRow, SearchPreamble, SkipBits, ManchesterDecode]
+
+
+class BitbufferPipeline:
+    """Fluent builder that records an ordered sequence of pipeline steps."""
+
+    def __init__(self) -> None:
+        self.steps: list[PipelineStep] = []
+
+    def _append(self, step: PipelineStep) -> BitbufferPipeline:
+        self.steps.append(step)
+        return self
+
+    def invert(self) -> BitbufferPipeline:
+        return self._append(Invert())
+
+    def reflect(self) -> BitbufferPipeline:
+        return self._append(Reflect())
+
+    def find_repeated_row(
+        self, min_repeats: int, min_bits: int, *, max_bits: int | None = None
+    ) -> BitbufferPipeline:
+        return self._append(FindRepeatedRow(min_repeats, min_bits, max_bits))
+
+    def search_preamble(
+        self,
+        pattern: int,
+        *,
+        bit_length: int | None = None,
+        scan_all_rows: bool = False,
+    ) -> BitbufferPipeline:
+        return self._append(SearchPreamble(pattern, bit_length, scan_all_rows))
+
+    def skip_bits(self, count: int) -> BitbufferPipeline:
+        return self._append(SkipBits(count))
+
+    def manchester_decode(self, max_bits: int = 0) -> BitbufferPipeline:
+        return self._append(ManchesterDecode(max_bits))
+
+
 class Modulation(Enum):
     OOK_PULSE_MANCHESTER_ZEROBIT = auto()
     OOK_PULSE_PCM = auto()
@@ -362,17 +451,15 @@ class Repeat:
 
 
 # ---------------------------------------------------------------------------
-# Protocol configuration bundle
+# Modulation configuration bundle
 # ---------------------------------------------------------------------------
 
 
-class ProtocolConfig:
-    """Bundle of protocol-level radio/device parameters.
+class ModulationConfig:
+    """Bundle of modulation-level radio parameters for the r_device struct.
 
-    Subclass this inside a Protocol class (as a nested ``config`` class) and
-    override only the attributes that differ from the base.  Derived Protocol
-    classes automatically inherit their parent's ``config`` via Python's normal
-    class attribute lookup.
+    Subclass this inside a Protocol class (as a nested ``modulation_config``
+    class) and override only the attributes that differ from the base.
     """
 
     device_name: str | None = None
@@ -384,30 +471,9 @@ class ProtocolConfig:
     gap_limit: float | None = None
     sync_width: float | None = None
     tolerance: float | None = None
-    preamble: int | None = None
-    preamble_bit_length: int | None = None
-    manchester: bool = False
-    manchester_start_offset_bits: int | None = None
-    manchester_decode_max_bits: int = 0
-    scan_rows: str = "first"
-    invert: bool = False
-    reflect: bool = False
-    repeat_min_count: int | None = None
-    repeat_row_bits: int | None = None
 
-    @property
-    def resolved_preamble_bit_length(self) -> int:
-        if self.preamble_bit_length is not None:
-            return self.preamble_bit_length
-        if self.preamble is not None:
-            return max(1, self.preamble.bit_length())
-        return 0
 
-    @property
-    def resolved_manchester_start_offset_bits(self) -> int:
-        if self.manchester_start_offset_bits is not None:
-            return self.manchester_start_offset_bits
-        return self.resolved_preamble_bit_length
+ProtocolConfig = ModulationConfig
 
 
 # ---------------------------------------------------------------------------
@@ -415,7 +481,7 @@ class ProtocolConfig:
 # ---------------------------------------------------------------------------
 
 
-_EXCLUDED_CALLABLES: frozenset = frozenset(("decode", "from_hex", "to_json"))
+_EXCLUDED_CALLABLES: frozenset = frozenset(("decode", "from_hex", "to_json", "prepare"))
 _EXPR_TYPES = (FieldRef, Expr, UnaryExpr, int, float)
 
 
@@ -471,6 +537,11 @@ class Protocol:
     methods: ClassVar[tuple[str, ...]] = ()
     #: Consolidated return-annotated callables as ``(name, py_type)``, base-to-derived.
     properties: ClassVar[tuple[tuple[str, type], ...]] = ()
+
+    @property
+    def bitbuffer(self) -> BitbufferPipeline:
+        """Return a fresh pipeline builder for ``prepare()`` chains."""
+        return BitbufferPipeline()
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
@@ -622,7 +693,7 @@ class Protocol:
     def to_json(self) -> list[JsonRecord]:
         protocol_cls = getattr(self, "__protocol_cls__", None) or self.__class__
         records: list[JsonRecord] = []
-        cfg = getattr(protocol_cls, "config", ProtocolConfig)
+        cfg = getattr(protocol_cls, "modulation_config", ModulationConfig)
         model_name = cfg.output_model or cfg.device_name or protocol_cls.__name__
         records.append(
             JsonRecord(key="model", label="", value=model_name, data_type="DATA_STRING")

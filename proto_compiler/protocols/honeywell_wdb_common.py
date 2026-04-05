@@ -1,14 +1,14 @@
 """Honeywell ActivLink common protocol definition."""
 
-from proto_compiler.dsl import Bits, JsonRecord, Protocol, ProtocolConfig
+from proto_compiler.dsl import Bits, JsonRecord, ModulationConfig, Protocol
 
 
 class honeywell_wdb_base(Protocol):
-    class config(ProtocolConfig):
+    class modulation_config(ModulationConfig):
         output_model = "Honeywell-ActivLink"
-        invert = True
-        repeat_min_count = 4
-        repeat_row_bits = 48
+
+    def prepare(self):
+        return self.bitbuffer.find_repeated_row(4, 48).invert()
 
     device: Bits[20]
     _unused0: Bits[6]
@@ -32,7 +32,7 @@ class honeywell_wdb_base(Protocol):
         return self.battery_low == 0
 
     def to_json(self) -> list[JsonRecord]:
-        model = self.__protocol_cls__.config.output_model
+        model = self.__protocol_cls__.modulation_config.output_model
         # fmt: off
         return [
             JsonRecord("model",        "",            model,                "DATA_STRING"),

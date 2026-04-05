@@ -16,24 +16,26 @@ Packet nibbles:
 - C = Checksum, SUM bytes 0 to 6 = byte 7
 """
 
-from proto_compiler.dsl import Bits, JsonRecord, Modulation, Protocol, ProtocolConfig
+from proto_compiler.dsl import Bits, JsonRecord, Modulation, ModulationConfig, Protocol
 
 
 class tpms_ford(Protocol):
-    class config(ProtocolConfig):
+    class modulation_config(ModulationConfig):
         device_name = "Ford TPMS"
         output_model = "Ford"
         modulation = Modulation.FSK_PULSE_PCM
         short_width = 52
         long_width = 52
         reset_limit = 150
-        invert = True
-        preamble = 0xAAA9
-        preamble_bit_length = 16
-        manchester = True
-        manchester_start_offset_bits = 16
-        manchester_decode_max_bits = 160
-        scan_rows = "all"
+
+    def prepare(self):
+        return (
+            self.bitbuffer
+            .invert()
+            .search_preamble(0xAAA9, bit_length=16, scan_all_rows=True)
+            .skip_bits(16)
+            .manchester_decode(160)
+        )
 
     sensor_id: Bits[32]
     pressure_raw: Bits[8]

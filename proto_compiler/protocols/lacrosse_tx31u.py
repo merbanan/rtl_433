@@ -53,8 +53,8 @@ from proto_compiler.dsl import (
     F,
     Literal,
     Modulation,
+    ModulationConfig,
     Protocol,
-    ProtocolConfig,
     Repeat,
 )
 
@@ -65,14 +65,16 @@ class sensor_reading(Protocol):
 
 
 class lacrosse_tx31u(Protocol):
-    class config(ProtocolConfig):
+    class modulation_config(ModulationConfig):
         device_name = "LaCrosse TX31U-IT, The Weather Channel WS-1910TWC-IT"
         output_model = "LaCrosse-TX31UIT"
         modulation = Modulation.FSK_PULSE_PCM
         short_width = 116
         long_width = 116
         reset_limit = 20000
-        preamble = 0xAAAA2DD4
+
+    def prepare(self):
+        return self.bitbuffer.search_preamble(0xAAAA2DD4).skip_bits(32)
 
     _model: Literal[0xA, 4]
     sensor_id: Bits[6]

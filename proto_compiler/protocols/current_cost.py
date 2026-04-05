@@ -14,21 +14,19 @@ from proto_compiler.dsl import (
     F,
     JsonRecord,
     Modulation,
+    ModulationConfig,
     Protocol,
-    ProtocolConfig,
     Variant,
 )
 
 
 class current_cost_base(Protocol):
-    class config(ProtocolConfig):
+    class modulation_config(ModulationConfig):
         device_name = "CurrentCost Current Sensor"
         modulation = Modulation.FSK_PULSE_PCM
         short_width = 250
         long_width = 250
         reset_limit = 8000
-        invert = True
-        manchester = True
 
     msg_type: Bits[4]
     device_id: Bits[12]
@@ -59,10 +57,14 @@ class current_cost_base(Protocol):
 
 
 class current_cost_envir(current_cost_base):
-    class config(current_cost_base.config):
-        preamble = 0x55555555A457
-        preamble_bit_length = 48
-        manchester_start_offset_bits = 47
+    def prepare(self):
+        return (
+            self.bitbuffer
+            .invert()
+            .search_preamble(0x55555555A457, bit_length=48)
+            .skip_bits(47)
+            .manchester_decode()
+        )
 
     class meter(current_cost_base.meter):
         def to_json(self) -> list[JsonRecord]:
@@ -87,10 +89,14 @@ class current_cost_envir(current_cost_base):
 
 
 class current_cost_classic(current_cost_base):
-    class config(current_cost_base.config):
-        preamble = 0xCCCCCCCE915D
-        preamble_bit_length = 45
-        manchester_start_offset_bits = 45
+    def prepare(self):
+        return (
+            self.bitbuffer
+            .invert()
+            .search_preamble(0xCCCCCCCE915D, bit_length=45)
+            .skip_bits(45)
+            .manchester_decode()
+        )
 
     class meter(current_cost_base.meter):
         def to_json(self) -> list[JsonRecord]:

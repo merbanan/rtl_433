@@ -12,10 +12,16 @@ from .dsl import (
     CondSpec,
     Expr,
     FieldRef,
+    FindRepeatedRow,
+    Invert,
     JsonRecord,
     LiteralSpec,
-    ProtocolConfig,
+    ManchesterDecode,
+    ModulationConfig,
+    Reflect,
     RepeatSpec,
+    SearchPreamble,
+    SkipBits,
     UnaryExpr,
     _EXPR_TYPES,
 )
@@ -89,6 +95,19 @@ def _extract_bits(arr: str, offset, width: int) -> str:
 def _sanitize_c_comment(text: str) -> str:
     """Make arbitrary text safe to embed inside a C block comment."""
     return text.replace("*/", "* /")
+
+
+class LazyLine:
+    def __init__(self, text: str) -> None:
+        self._text = text
+        self._done = False
+
+    def emit(self, ctx: Any, line: str | None = None) -> bool:
+        if self._done:
+            return False
+        ctx._line(line if line is not None else self._text)
+        self._done = True
+        return True
 
 
 class _CompileContext:
@@ -183,7 +202,7 @@ class _CompileContext:
                 self._line(f"    {line}".rstrip())
             self._line("*/")
         else:
-            cfg = getattr(self.cls, "config", ProtocolConfig)
+            cfg = getattr(self.cls, "modulation_config", ModulationConfig)
             name = cfg.device_name or self.prefix
             self._line("/** @file")
             self._line(f"    {name} decoder.")
@@ -229,22 +248,20 @@ class _CompileContext:
                     self._line("if (ret > 0)")
                     with self.indent():
                         self._line("return ret;")
-                    # TODO: This undoes the invert and reflects from this delegate. If the
-                    # next delegate operates on the inverted or reflected inputs, it will
-                    # re-invert or re-reflect the bitbuffer, which causes a lot of unnecessary
-                    # shuffling. We really only need to run this flip if this delete's
-                    # config.invert != next delegate's config.invert.
                     if idx + 1 < len(self.delegates):
-                        cfg = getattr(delegate_cls, "config", ProtocolConfig)
-                        if cfg.invert:
-                            self._line("bitbuffer_invert(bitbuffer);")
-                        if cfg.reflect:
-                            with self.braced_block(
-                                "for (int i = 0; i < bitbuffer->num_rows; ++i)"
-                            ):
-                                self._line(
-                                    "reflect_bytes(bitbuffer->bb[i], (bitbuffer->bits_per_row[i] + 7) / 8);"
-                                )
+                        proxy = delegate_cls()
+                        for s in proxy.prepare().steps:
+                            if isinstance(s, ManchesterDecode):
+                                break
+                            if isinstance(s, Invert):
+                                self._line("bitbuffer_invert(bitbuffer);")
+                            elif isinstance(s, Reflect):
+                                with self.braced_block(
+                                    "for (int i = 0; i < bitbuffer->num_rows; ++i)"
+                                ):
+                                    self._line(
+                                        "reflect_bytes(bitbuffer->bb[i], (bitbuffer->bits_per_row[i] + 7) / 8);"
+                                    )
                 self._line("return ret;")
             return
 
@@ -252,8 +269,12 @@ class _CompileContext:
             f"static int {self.prefix}_decode(r_device *decoder, bitbuffer_t *bitbuffer)"
         )
         with self.braced_block():
-            self._emit_transforms()
-            self._emit_preamble_search()
+            proxy = self.cls()
+            if not hasattr(self.cls, "prepare"):
+                raise RuntimeError(
+                    f"Protocol {self.cls.__name__} must define a prepare() method"
+                )
+            self._emit_pipeline(proxy.prepare().steps)
             self._emit_fields(self.fields)
 
             if not self.variants:
@@ -261,119 +282,150 @@ class _CompileContext:
                 self._emit_property_calls()
                 self._emit_data_make()
 
-    def _emit_transforms(self):
-        cfg = getattr(self.cls, "config", ProtocolConfig)
-        has_repeat = cfg.repeat_min_count is not None
-        if cfg.invert and not has_repeat:
-            self._line("bitbuffer_invert(bitbuffer);")
-            self._blank()
-
-        if cfg.reflect:
-            with self.braced_block("for (int i = 0; i < bitbuffer->num_rows; ++i)"):
-                self._line(
-                    "reflect_bytes(bitbuffer->bb[i], (bitbuffer->bits_per_row[i] + 7) / 8);"
-                )
-            self._blank()
-
-    def _emit_preamble_search(self):
-        cfg = getattr(self.cls, "config", ProtocolConfig)()
-        preamble = cfg.preamble
-        manchester = cfg.manchester
-        scan_rows = cfg.scan_rows
-        repeat_min_count = cfg.repeat_min_count
-        repeat_row_bits = cfg.repeat_row_bits
-        need_search_row = manchester or scan_rows == "all"
-        has_repeat = repeat_min_count is not None
+    def _emit_pipeline(self, steps: list) -> None:
+        """Walk pipeline steps and emit corresponding C code for each."""
+        has_manchester = any(isinstance(s, ManchesterDecode) for s in steps)
+        has_scan_all = any(
+            isinstance(s, SearchPreamble) and s.scan_all_rows for s in steps
+        )
+        needs_search_row = has_manchester or has_scan_all
 
         row_expr = "0"
+        offset_decl = LazyLine("unsigned offset = 0;")
+        search_row_decl = LazyLine("unsigned search_row = 0;")
+        post_manchester = False
 
-        if has_repeat:
-            if repeat_row_bits is None:
-                raise RuntimeError(
-                    f"Protocol {self.cls.__name__} sets repeat_min_count but not repeat_row_bits"
-                )
-            self._line(
-                f"int row = bitbuffer_find_repeated_row(bitbuffer, {repeat_min_count}, {repeat_row_bits});"
-            )
-            self._line("if (row < 0)")
-            with self.indent():
-                self._line("return DECODE_ABORT_EARLY;")
-            self._line(f"if (bitbuffer->bits_per_row[row] != {repeat_row_bits})")
-            with self.indent():
-                self._line("return DECODE_ABORT_LENGTH;")
-            row_expr = "row"
-            self._blank()
-            if cfg.invert:
-                self._line("bitbuffer_invert(bitbuffer);")
+        for step in steps:
+            if isinstance(step, Invert):
+                if post_manchester:
+                    self._line("bitbuffer_invert(&packet_bits);")
+                else:
+                    self._line("bitbuffer_invert(bitbuffer);")
                 self._blank()
 
-        if need_search_row:
-            self._line(f"unsigned search_row = {row_expr};")
-
-        if preamble is not None:
-            preamble_bytes = _preamble_to_bytes(preamble)
-            preamble_bits = cfg.resolved_preamble_bit_length
-            start_offset = cfg.resolved_manchester_start_offset_bits
-            self._line(
-                f"uint8_t const preamble[] = {{{_hex_byte_literal(preamble_bytes)}}};"
-            )
-
-            self._line("if (bitbuffer->num_rows < 1)")
-            with self.indent():
-                self._line("return DECODE_ABORT_LENGTH;")
-
-            if scan_rows == "all":
-                self._line("unsigned offset = 0;")
-                self._line("int preamble_found = 0;")
-                self._line(
-                    "for (unsigned row = 0; row < (unsigned)bitbuffer->num_rows && !preamble_found; ++row) {"
-                )
-                with self.indent():
+            elif isinstance(step, Reflect):
+                if post_manchester:
                     self._line(
-                        f"unsigned pos = bitbuffer_search(bitbuffer, row, 0, preamble, {preamble_bits});"
+                        "reflect_bytes(packet_bits.bb[0], "
+                        "(packet_bits.bits_per_row[0] + 7) / 8);"
                     )
-                    self._line("if (pos < bitbuffer->bits_per_row[row]) {")
-                    with self.indent():
-                        self._line("search_row = row;")
-                        self._line("offset = pos;")
-                        self._line("preamble_found = 1;")
-                    self._line("}")
-                self._line("}")
-                self._line("if (!preamble_found)")
-                with self.indent():
-                    self._line("return DECODE_ABORT_EARLY;")
-            else:
-                self._line(
-                    f"unsigned offset = bitbuffer_search(bitbuffer, {row_expr}, 0, preamble, {preamble_bits});"
-                )
-                self._line(f"if (offset >= bitbuffer->bits_per_row[{row_expr}])")
-                with self.indent():
-                    self._line("return DECODE_ABORT_EARLY;")
-            self._line(f"offset += {start_offset};")
-            self._blank()
-        else:
-            self._line("unsigned offset = 0;")
-            self._blank()
+                else:
+                    with self.braced_block(
+                        "for (int i = 0; i < bitbuffer->num_rows; ++i)"
+                    ):
+                        self._line(
+                            "reflect_bytes(bitbuffer->bb[i], "
+                            "(bitbuffer->bits_per_row[i] + 7) / 8);"
+                        )
+                self._blank()
 
-        if manchester:
-            decode_max_bits = cfg.manchester_decode_max_bits
-            self._line("bitbuffer_t packet_bits = {0};")
-            self._line(
-                f"bitbuffer_manchester_decode(bitbuffer, {'search_row' if need_search_row else row_expr}, offset, &packet_bits, {decode_max_bits});"
-            )
-            self._blank()
+            elif isinstance(step, FindRepeatedRow):
+                self._line(
+                    f"int row = bitbuffer_find_repeated_row(bitbuffer, "
+                    f"{step.min_repeats}, {step.min_bits});"
+                )
+                self._line("if (row < 0)")
+                with self.indent():
+                    self._line("return DECODE_ABORT_EARLY;")
+                if step.max_bits is not None:
+                    self._line(f"if (bitbuffer->bits_per_row[row] > {step.max_bits})")
+                else:
+                    self._line(f"if (bitbuffer->bits_per_row[row] != {step.min_bits})")
+                with self.indent():
+                    self._line("return DECODE_ABORT_LENGTH;")
+                row_expr = "row"
+                self._blank()
+
+            elif isinstance(step, SearchPreamble):
+                if needs_search_row:
+                    search_row_decl.emit(
+                        self, f"unsigned search_row = {row_expr};"
+                    )
+                preamble_bytes = _preamble_to_bytes(step.pattern)
+                preamble_bits = step.resolved_bit_length
+                self._line(
+                    f"uint8_t const preamble[] = "
+                    f"{{{_hex_byte_literal(preamble_bytes)}}};"
+                )
+
+                self._line("if (bitbuffer->num_rows < 1)")
+                with self.indent():
+                    self._line("return DECODE_ABORT_LENGTH;")
+
+                if step.scan_all_rows:
+                    offset_decl.emit(self)
+                    self._line("int preamble_found = 0;")
+                    self._line(
+                        "for (unsigned row = 0; row < (unsigned)bitbuffer->num_rows "
+                        "&& !preamble_found; ++row) {"
+                    )
+                    with self.indent():
+                        self._line(
+                            f"unsigned pos = bitbuffer_search(bitbuffer, row, 0, "
+                            f"preamble, {preamble_bits});"
+                        )
+                        self._line("if (pos < bitbuffer->bits_per_row[row]) {")
+                        with self.indent():
+                            self._line("search_row = row;")
+                            self._line("offset = pos;")
+                            self._line("preamble_found = 1;")
+                        self._line("}")
+                    self._line("}")
+                    self._line("if (!preamble_found)")
+                    with self.indent():
+                        self._line("return DECODE_ABORT_EARLY;")
+                else:
+                    offset_decl.emit(
+                        self,
+                        f"unsigned offset = bitbuffer_search(bitbuffer, "
+                        f"{row_expr}, 0, preamble, {preamble_bits});",
+                    )
+                    self._line(f"if (offset >= bitbuffer->bits_per_row[{row_expr}])")
+                    with self.indent():
+                        self._line("return DECODE_ABORT_EARLY;")
+
+            elif isinstance(step, SkipBits):
+                if step.count < 0:
+                    back = -step.count
+                    self._line(f"if (offset < {back})")
+                    with self.indent():
+                        self._line("return DECODE_FAIL_SANITY;")
+                    self._line(f"offset -= {back};")
+                else:
+                    self._line(f"offset += {step.count};")
+                self._blank()
+
+            elif isinstance(step, ManchesterDecode):
+                if needs_search_row:
+                    search_row_decl.emit(
+                        self, f"unsigned search_row = {row_expr};"
+                    )
+                offset_decl.emit(self)
+                manchester_row = "search_row" if needs_search_row else row_expr
+                self._line("bitbuffer_t packet_bits = {0};")
+                self._line(
+                    f"bitbuffer_manchester_decode(bitbuffer, {manchester_row}, "
+                    f"offset, &packet_bits, {step.max_bits});"
+                )
+                self._blank()
+                post_manchester = True
+
+        if post_manchester:
             self._line("if (packet_bits.bits_per_row[0] < 8)")
             with self.indent():
                 self._line("return DECODE_ABORT_LENGTH;")
             self._line("uint8_t *b = packet_bits.bb[0];")
             self._blank()
         else:
+            if offset_decl.emit(self):
+                self._blank()
             total_bits = self._total_payload_bits(self.cls)
             total_bytes = (total_bits + 7) // 8
             if total_bytes > 0:
                 self._line(f"uint8_t b[{total_bytes}];")
                 self._line(
-                    f"bitbuffer_extract_bytes(bitbuffer, {row_expr}, offset, b, {total_bits});"
+                    f"bitbuffer_extract_bytes(bitbuffer, {row_expr}, offset, "
+                    f"b, {total_bits});"
                 )
                 self._blank()
 
@@ -554,7 +606,7 @@ class _CompileContext:
         self._line("/* clang-format off */")
         self._line("data_t *data = data_make(")
         with self.indent():
-            cfg = getattr(self.cls, "config", ProtocolConfig)
+            cfg = getattr(self.cls, "modulation_config", ModulationConfig)
             model_name = cfg.output_model or cfg.device_name or self.cls.__name__
             self._line(f'"model", "", DATA_STRING, "{model_name}",')
 
@@ -741,7 +793,7 @@ class _CompileContext:
 
     def _emit_r_device(self):
         device_cls = self.delegates[0] if self.delegates else self.cls
-        cfg = getattr(device_cls, "config", ProtocolConfig)
+        cfg = getattr(device_cls, "modulation_config", ModulationConfig)
         if cfg.modulation is None:
             raise RuntimeError(
                 f"Protocol {device_cls.__name__} must set modulation=Modulation.*"

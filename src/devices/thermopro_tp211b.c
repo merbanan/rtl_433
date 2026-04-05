@@ -54,10 +54,10 @@ static int thermopro_tp211b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t const preamble[] = {0x55, 0x2d, 0xd4};
     if (bitbuffer->num_rows < 1)
         return DECODE_ABORT_LENGTH;
-    unsigned offset = bitbuffer_search(bitbuffer, 0, 0, preamble, 23);
+    unsigned offset = bitbuffer_search(bitbuffer, 0, 0, preamble, 24);
     if (offset >= bitbuffer->bits_per_row[0])
         return DECODE_ABORT_EARLY;
-    offset += 23;
+    offset += 24;
 
     uint8_t b[8];
     bitbuffer_extract_bytes(bitbuffer, 0, offset, b, 64);
