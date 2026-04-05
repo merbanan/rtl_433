@@ -61,8 +61,11 @@ static int abmt_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b = packet_bits.bb[0];
 
     int id = bitrow_get_bits(b, 0, 8);
+    (void)(bitrow_get_bits(b, 8, 8));
+    (void)(bitrow_get_bits(b, 16, 8));
     int temp_bcd_byte = bitrow_get_bits(b, 24, 8);
     int temp_last_byte = bitrow_get_bits(b, 32, 8);
+    (void)(bitrow_get_bits(b, 40, 8));
 
     float temperature_c = ((((0xa * (temp_bcd_byte >> 4)) + (temp_bcd_byte & 0xf)) * 0xa) + (temp_last_byte >> 4));
 

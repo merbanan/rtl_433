@@ -25,11 +25,16 @@ static int honeywell_wdb_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, row, offset, b, 48);
 
     int device = bitrow_get_bits(b, 0, 20);
+    (void)(bitrow_get_bits(b, 20, 6));
     int class_raw = bitrow_get_bits(b, 26, 2);
+    (void)(bitrow_get_bits(b, 28, 10));
     int alert_raw = bitrow_get_bits(b, 38, 2);
+    (void)(bitrow_get_bits(b, 40, 3));
     int secret_knock = bitrow_get_bits(b, 43, 1);
     int relay = bitrow_get_bits(b, 44, 1);
+    (void)(bitrow_get_bits(b, 45, 1));
     int battery_low = bitrow_get_bits(b, 46, 1);
+    (void)(bitrow_get_bits(b, 47, 1));
 
     int valid = honeywell_wdb_validate(b);
     if (valid != 0)

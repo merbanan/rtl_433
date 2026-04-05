@@ -498,6 +498,7 @@ class _CompileContext:
                 off = "bit_pos" if is_dynamic else bit_offset
                 expr = _extract_bits(byte_array, off, spec.width)
                 if name.startswith("_"):
+                    self._line(f"(void)({expr});")
                     if is_dynamic:
                         self._line(f"bit_pos += {spec.width};")
                     else:
@@ -868,6 +869,9 @@ class _CompileContext:
                 self._line(f".tolerance   = {float(cfg.tolerance)},")
             self._line(f".decode_fn   = &{self.prefix}_decode,")
             self._line(".fields      = output_fields,")
+            disabled = getattr(cfg, "disabled", None)
+            if disabled is not None:
+                self._line(f".disabled    = {int(disabled)},")
 
     def _total_payload_bits(self, cls: type) -> int:
         """Estimate max payload bits for bitbuffer_extract_bytes size."""
