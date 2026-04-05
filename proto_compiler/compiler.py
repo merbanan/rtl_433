@@ -13,6 +13,7 @@ from .dsl import (
     Expr,
     FieldRef,
     FindRepeatedRow,
+    FirstValidRow,
     Invert,
     JsonRecord,
     LiteralSpec,
@@ -274,15 +275,66 @@ class _CompileContext:
                 raise RuntimeError(
                     f"Protocol {self.cls.__name__} must define a prepare() method"
                 )
-            self._emit_pipeline(proxy.prepare().steps)
+            steps = proxy.prepare().steps
+            if any(isinstance(s, FirstValidRow) for s in steps[:-1]):
+                raise RuntimeError(
+                    f"Protocol {self.cls.__name__}: FirstValidRow must be the last "
+                    "pipeline step"
+                )
+            fvr = steps[-1] if steps and isinstance(steps[-1], FirstValidRow) else None
+            if fvr is not None:
+                if self.variants:
+                    raise RuntimeError(
+                        f"Protocol {self.cls.__name__}: FirstValidRow is not supported "
+                        "with variants"
+                    )
+                pre = steps[:-1]
+                if any(isinstance(s, ManchesterDecode) for s in pre):
+                    raise RuntimeError(
+                        f"Protocol {self.cls.__name__}: FirstValidRow cannot be combined "
+                        "with ManchesterDecode"
+                    )
+                self._emit_first_valid_row_decode(pre, fvr)
+            else:
+                self._emit_pipeline(steps)
+                self._emit_fields(self.fields)
+
+                if not self.variants:
+                    self._emit_method_calls()
+                    self._emit_property_calls()
+                    self._emit_data_make()
+
+    def _emit_first_valid_row_decode(self, pre_steps: list, fvr: FirstValidRow) -> None:
+        """Emit decode body: optional pre-pipeline, then row loop with payload."""
+        self._line("int result = 0;")
+        self._emit_pipeline(pre_steps, skip_terminal_extract=True)
+        nbytes = (fvr.bits + 7) // 8
+        with self.braced_block("for (int row = 0; row < bitbuffer->num_rows; ++row)"):
+            with self.braced_block(
+                f"if (bitbuffer->bits_per_row[row] != {fvr.bits})"
+            ):
+                self._line("result = DECODE_ABORT_LENGTH;")
+                self._line("continue;")
+            self._line("uint8_t *b = bitbuffer->bb[row];")
+            if fvr.reflect:
+                self._line(f"reflect_bytes(b, {nbytes});")
+            self._blank()
+            if fvr.checksum_over_bytes > 0:
+                n = fvr.checksum_over_bytes
+                self._line(f"int sum = add_bytes(b, {n});")
+                with self.braced_block(f"if ((sum & 0xff) != b[{n}])"):
+                    self._line("result = DECODE_FAIL_MIC;")
+                    self._line("continue;")
+                with self.braced_block("if (sum == 0)"):
+                    self._line("return DECODE_FAIL_SANITY;")
+                self._blank()
             self._emit_fields(self.fields)
+            self._emit_method_calls()
+            self._emit_property_calls()
+            self._emit_data_make()
+        self._line("return result;")
 
-            if not self.variants:
-                self._emit_method_calls()
-                self._emit_property_calls()
-                self._emit_data_make()
-
-    def _emit_pipeline(self, steps: list) -> None:
+    def _emit_pipeline(self, steps: list, *, skip_terminal_extract: bool = False) -> None:
         """Walk pipeline steps and emit corresponding C code for each."""
         has_manchester = any(isinstance(s, ManchesterDecode) for s in steps)
         has_scan_all = any(
@@ -417,17 +469,20 @@ class _CompileContext:
             self._line("uint8_t *b = packet_bits.bb[0];")
             self._blank()
         else:
-            if offset_decl.emit(self):
-                self._blank()
-            total_bits = self._total_payload_bits(self.cls)
-            total_bytes = (total_bits + 7) // 8
-            if total_bytes > 0:
-                self._line(f"uint8_t b[{total_bytes}];")
-                self._line(
-                    f"bitbuffer_extract_bytes(bitbuffer, {row_expr}, offset, "
-                    f"b, {total_bits});"
-                )
-                self._blank()
+            if skip_terminal_extract:
+                pass
+            else:
+                if offset_decl.emit(self):
+                    self._blank()
+                total_bits = self._total_payload_bits(self.cls)
+                total_bytes = (total_bits + 7) // 8
+                if total_bytes > 0:
+                    self._line(f"uint8_t b[{total_bytes}];")
+                    self._line(
+                        f"bitbuffer_extract_bytes(bitbuffer, {row_expr}, offset, "
+                        f"b, {total_bits});"
+                    )
+                    self._blank()
 
     def _emit_fields(self, fields: list) -> int:
         """Emit C code for a list of (name, spec) fields.

@@ -11,6 +11,7 @@ set(PROTO_COMPILER_DEPS
 
 set(PROTO_PROTOCOL_STEMS
     abmt
+    acurite_01185m
     thermopro_tp211b
     lacrosse_tx31u
     tpms_ford

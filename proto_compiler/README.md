@@ -52,6 +52,11 @@ is declared in `prepare()`. This method chains bit process operations that inclu
 * `reflect()` — per-row `reflect_bytes`.
 * `find_repeated_row(min_repeats, min_bits, max_bits=…)` — locate a repeated row;
   `max_bits` allows a length upper bound instead of an exact `min_bits` match.
+* `first_valid_row(bits, reflect=False, checksum_over_bytes=0)` — try each row in
+  order until one has exactly *bits* (optional per-row reflect and add-with-carry
+  checksum vs the next byte); use this instead of `find_repeated_row` when the
+  slicer gives multiple candidates and validation picks the first good row. Must
+  be the last pipeline step.
 * `search_preamble(pattern, bit_length=None, scan_all_rows=False)` — search for
   a bit pattern; `bit_length` defaults to `pattern.bit_length()` when omitted.
   Use `scan_all_rows=True` when the match may appear on any row (e.g. TPMS).
