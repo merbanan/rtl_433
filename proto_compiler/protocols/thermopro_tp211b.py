@@ -21,18 +21,20 @@ Data layout after preamble:
 - CC:  {16} Checksum, XOR table based (see thermopro_tp211b.h).
 """
 
-from proto_compiler.dsl import Bits, Literal, Modulation, Protocol, ProtocolConfig
+from proto_compiler.dsl import Bits, Literal, Modulation, ModulationConfig, Protocol
 
 
 class thermopro_tp211b(Protocol):
-    class config(ProtocolConfig):
+    class modulation_config(ModulationConfig):
         device_name = "ThermoPro TP211B Thermometer"
         output_model = "ThermoPro-TP211B"
         modulation = Modulation.FSK_PULSE_PCM
         short_width = 105
         long_width = 105
         reset_limit = 1500
-        preamble = 0x552DD4
+
+    def prepare(self):
+        return self.bitbuffer.search_preamble(0x552DD4, bit_length=24).skip_bits(24)
 
     id: Bits[24]
     flags: Bits[4]
