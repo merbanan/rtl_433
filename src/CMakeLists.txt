@@ -12,6 +12,7 @@ set(PROTO_COMPILER_DEPS
 set(PROTO_PROTOCOL_STEMS
     abmt
     acurite_01185m
+    akhan_100F14
     thermopro_tp211b
     lacrosse_tx31u
     tpms_ford
@@ -24,6 +25,9 @@ foreach(STEM ${PROTO_PROTOCOL_STEMS})
     set(_EXTRA_DEPS "")
     if(STEM MATCHES "^honeywell_wdb")
         list(APPEND _EXTRA_DEPS ${CMAKE_SOURCE_DIR}/proto_compiler/protocols/honeywell_wdb_common.py)
+    endif()
+    if(STEM STREQUAL "akhan_100F14")
+        list(APPEND _EXTRA_DEPS ${CMAKE_CURRENT_SOURCE_DIR}/devices/akhan_100F14.h)
     endif()
     add_custom_command(
         OUTPUT  ${CMAKE_CURRENT_SOURCE_DIR}/devices/${STEM}.c

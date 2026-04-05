@@ -349,21 +349,7 @@ class ManchesterDecode:
 
 @dataclass(frozen=True)
 class FirstValidRow:
-    """Row-selection strategy: scan rows until one matches and decodes.
-
-    Alternative to :class:`FindRepeatedRow` (which picks a *repeated* row index).
-    Use ``FirstValidRow`` when the slicer may deliver multiple candidate rows and
-    the decoder must try each until length, checksum, and sanity pass.
-
-    Emitted as a ``for`` loop over ``bitbuffer->num_rows``. Only rows with
-    exactly *bits* are considered. If *reflect* is true, ``reflect_bytes`` is
-    applied to that row before checks. If *checksum_over_bytes* is N > 0, the
-    compiler emits ``add_bytes(b, N)`` vs ``b[N]`` (``continue`` on MIC mismatch,
-    ``return DECODE_FAIL_SANITY`` if the sum is zero).
-
-    Must be the **last** step in ``prepare()``; no steps may follow it. Do not
-    combine with :class:`FindRepeatedRow` in the same pipeline.
-    """
+    """Row-selection strategy: scan rows until one matches and decodes."""
     bits: int
     reflect: bool = False
     checksum_over_bytes: int = 0
@@ -512,6 +498,8 @@ class ModulationConfig:
     gap_limit: float | None = None
     sync_width: float | None = None
     tolerance: float | None = None
+    #: If set, emitted as ``r_device.disabled`` (e.g. ``1`` for default-off).
+    disabled: int | None = None
 
 
 ProtocolConfig = ModulationConfig

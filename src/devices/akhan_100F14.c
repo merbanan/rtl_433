@@ -1,83 +1,79 @@
+// Generated from akhan_100F14.py
 /** @file
-    Akhan remote keyless entry system.
+    Akhan 100F14 remote keyless entry.
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-*/
+    RKE using HS1527-style framing: preamble, 20-bit id, 4-bit command.
+    Row is 25 bits; the last bit is consumed as padding after the 24-bit message.
 
-/**
-Akhan remote keyless entry system.
-
-This RKE system uses a HS1527 OTP encoder (http://sc-tech.cn/en/hs1527.pdf)
-Each message consists of a preamble, 20 bit id and 4 data bits.
-
-(code based on chuango.c and generic_remote.c)
-
-Note: simple 24 bit fixed ID protocol (x1527 style) and should be handled by the flex decoder.
+    Reference: src/devices/akhan_100F14.c (hand-written; this module replaces it).
 */
 
 #include "decoder.h"
+#include "akhan_100F14.h"
 
-static int akhan_rke_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+/** @fn static int akhan_100F14_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+    Akhan 100F14 remote keyless entry.
+
+    RKE using HS1527-style framing: preamble, 20-bit id, 4-bit command.
+    Row is 25 bits; the last bit is consumed as padding after the 24-bit message.
+
+    Reference: src/devices/akhan_100F14.c (hand-written; this module replaces it).
+*/
+static int akhan_100F14_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
-    uint8_t *b;
-    int id;
-    int cmd;
-    char const *cmd_str;
-
-    if (bitbuffer->bits_per_row[0] != 25)
+    int row = bitbuffer_find_repeated_row(bitbuffer, 1, 25);
+    if (row < 0)
+        return DECODE_ABORT_EARLY;
+    if (bitbuffer->bits_per_row[row] != 25)
         return DECODE_ABORT_LENGTH;
-    b = bitbuffer->bb[0];
 
-    // invert bits, short pulse is 0, long pulse is 1
-    b[0] = ~b[0];
-    b[1] = ~b[1];
-    b[2] = ~b[2];
+    unsigned offset = 0;
 
-    id  = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
-    cmd = b[2] & 0x0F;
-    switch (cmd) {
-    case 0x1: cmd_str = "0x1 (Lock)"; break;
-    case 0x2: cmd_str = "0x2 (Unlock)"; break;
-    case 0x4: cmd_str = "0x4 (Mute)"; break;
-    case 0x8: cmd_str = "0x8 (Alarm)"; break;
-    default: cmd_str = NULL; break;
-    }
+    uint8_t b[4];
+    bitbuffer_extract_bytes(bitbuffer, row, offset, b, 25);
 
-    if (!cmd_str)
+    int b0 = bitrow_get_bits(b, 0, 8);
+    int b1 = bitrow_get_bits(b, 8, 8);
+    int b2 = bitrow_get_bits(b, 16, 8);
+    (void)(bitrow_get_bits(b, 24, 1));
+
+    if (!((((((((~b2) & 0xff) & 0xf) == 1) | ((((~b2) & 0xff) & 0xf) == 2)) | ((((~b2) & 0xff) & 0xf) == 4)) | ((((~b2) & 0xff) & 0xf) == 8))))
         return DECODE_FAIL_SANITY;
 
-    /* clang-format off */
-    data = data_make(
-            "model",    "",             DATA_STRING, "Akhan-100F14",
-            "id",       "ID (20bit)",   DATA_FORMAT, "0x%x", DATA_INT, id,
-            "data",     "Data (4bit)",  DATA_STRING, cmd_str,
-            NULL);
-    /* clang-format on */
+    int notb0 = ((~b0) & 0xff);
+    int notb1 = ((~b1) & 0xff);
+    int notb2 = ((~b2) & 0xff);
+    int id = (((notb0 << 0xc) | (notb1 << 4)) | (notb2 >> 4));
+    int cmd = (notb2 & 0xf);
+    const char * data_str = akhan_100F14_data_str(cmd);
 
+    /* clang-format off */
+    data_t *data = data_make(
+        "model", "", DATA_STRING, "Akhan-100F14",
+        "id", "ID (20bit)", DATA_FORMAT, "0x%x", DATA_INT, id,
+        "data", "Data (4bit)", DATA_STRING, data_str,
+        NULL);
+    /* clang-format on */
     decoder_output_data(decoder, data);
     return 1;
 }
 
 static char const *const output_fields[] = {
-        "model",
-        "id",
-        "data",
-        NULL,
+    "model",
+    "id",
+    "data",
+    NULL,
 };
 
 r_device const akhan_100F14 = {
-        .name        = "Akhan 100F14 remote keyless entry",
-        .modulation  = OOK_PULSE_PWM,
-        .short_width = 316,
-        .long_width  = 1020,
-        .reset_limit = 1800,
-        .sync_width  = 0,
-        .tolerance   = 80, // us
-        .decode_fn   = &akhan_rke_callback,
-        .fields      = output_fields,
-        .disabled    = 1, // false positives with generic EV1527 devices
+    .name        = "Akhan 100F14 remote keyless entry",
+    .modulation  = OOK_PULSE_PWM,
+    .short_width = 316.0,
+    .long_width  = 1020.0,
+    .reset_limit = 1800.0,
+    .sync_width  = 0.0,
+    .tolerance   = 80.0,
+    .decode_fn   = &akhan_100F14_decode,
+    .fields      = output_fields,
+    .disabled    = 1,
 };

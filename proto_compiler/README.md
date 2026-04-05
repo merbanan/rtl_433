@@ -12,6 +12,7 @@ about adding Lua to rtl_433.
 
 For examples, see:
 
+* [protocols/akhan_100F14.py](protocols/akhan_100F14.py)
 * [protocols/thermopro_tp211b.py](protocols/thermopro_tp211b.py)
 * [protocols/tpms_ford.py](protocols/tpms_ford.py)
 * [protocols/lacrosse_tx31u.py](protocols/lacrosse_tx31u.py)
@@ -95,6 +96,14 @@ equal `value`, returning `DECODE_FAIL_SANITY` on mismatch.  Fields whose names
 start with `_` are skipped (their bits are consumed but no variable is emitted).
 
 ### Methods and properties
+
+**Merge rule:** A user-defined callable **with** a return annotation (e.g.
+`-> int`, `-> float`, `-> str`) is treated as a **property** and emitted as a
+C local (`int name = expr;` or an extern call if the body is `...`). A callable
+**without** a return annotation is a **method** (e.g. `validate`) and is
+emitted in the method phase. Properties are emitted **after** methods, so a
+method body cannot reference a property that is defined later — use fields or
+duplicate the expression.
 
 Class methods are compiled to C. The compiler only understands simple arithmetic
 and bit manipulation expressions, and translates these to C expressions that
