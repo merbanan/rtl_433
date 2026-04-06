@@ -12,6 +12,7 @@ set(PROTO_COMPILER_DEPS
 set(PROTO_PROTOCOL_STEMS
     abmt
     acurite_01185m
+    alectov1
     akhan_100F14
     thermopro_tp211b
     lacrosse_tx31u
@@ -28,6 +29,9 @@ foreach(STEM ${PROTO_PROTOCOL_STEMS})
     endif()
     if(STEM STREQUAL "akhan_100F14")
         list(APPEND _EXTRA_DEPS ${CMAKE_CURRENT_SOURCE_DIR}/devices/akhan_100F14.h)
+    endif()
+    if(STEM STREQUAL "alectov1")
+        list(APPEND _EXTRA_DEPS ${CMAKE_CURRENT_SOURCE_DIR}/devices/alectov1.h)
     endif()
     add_custom_command(
         OUTPUT  ${CMAKE_CURRENT_SOURCE_DIR}/devices/${STEM}.c
@@ -91,7 +95,7 @@ add_library(r_433 STATIC
     devices/acurite.c
     devices/acurite_01185m.c
     devices/akhan_100F14.c
-    devices/alecto.c
+    devices/alectov1.c
     devices/ambient_weather.c
     devices/ambientweather_tx8300.c
     devices/ambientweather_wh31e.c

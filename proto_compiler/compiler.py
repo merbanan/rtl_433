@@ -8,9 +8,9 @@ from pathlib import PurePosixPath
 from typing import Any
 
 from .dsl import (
+    BinaryExpr,
     BitsSpec,
     CondSpec,
-    Expr,
     FieldRef,
     FindRepeatedRow,
     FirstValidRow,
@@ -21,8 +21,11 @@ from .dsl import (
     ModulationConfig,
     Reflect,
     RepeatSpec,
+    Rev8Expr,
+    RowsSpec,
     SearchPreamble,
     SkipBits,
+    Subscript,
     UnaryExpr,
     _EXPR_TYPES,
 )
@@ -57,7 +60,11 @@ def _emit_expr(node: Any) -> str:
         return repr(node)
     if isinstance(node, FieldRef):
         return node.name
-    if isinstance(node, Expr):
+    if isinstance(node, Subscript):
+        return f"({node.base.name}[{node.index}])"
+    if isinstance(node, Rev8Expr):
+        return f"(reverse8({_emit_expr(node.operand)}))"
+    if isinstance(node, BinaryExpr):
         return f"({_emit_expr(node.left)} {node.op} {_emit_expr(node.right)})"
     if isinstance(node, UnaryExpr):
         return f"({node.op}{_emit_expr(node.operand)})"
@@ -282,7 +289,13 @@ class _CompileContext:
                     "pipeline step"
                 )
             fvr = steps[-1] if steps and isinstance(steps[-1], FirstValidRow) else None
+            has_rows = any(isinstance(s, RowsSpec) for _, s in self.fields)
             if fvr is not None:
+                if has_rows:
+                    raise RuntimeError(
+                        f"Protocol {self.cls.__name__}: Rows[] is not supported "
+                        "with FirstValidRow"
+                    )
                 if self.variants:
                     raise RuntimeError(
                         f"Protocol {self.cls.__name__}: FirstValidRow is not supported "
@@ -296,6 +309,9 @@ class _CompileContext:
                     )
                 self._emit_first_valid_row_decode(pre, fvr)
             else:
+                for _, rspec in self.fields:
+                    if isinstance(rspec, RowsSpec):
+                        self._emit_rows_guards(rspec)
                 self._emit_pipeline(steps)
                 self._emit_fields(self.fields)
 
@@ -472,11 +488,11 @@ class _CompileContext:
             if skip_terminal_extract:
                 pass
             else:
-                if offset_decl.emit(self):
-                    self._blank()
                 total_bits = self._total_payload_bits(self.cls)
                 total_bytes = (total_bits + 7) // 8
                 if total_bytes > 0:
+                    if offset_decl.emit(self):
+                        self._blank()
                     self._line(f"uint8_t b[{total_bytes}];")
                     self._line(
                         f"bitbuffer_extract_bytes(bitbuffer, {row_expr}, offset, "
@@ -529,9 +545,13 @@ class _CompileContext:
                 is_dynamic = True
                 bit_offset = -1
 
+            elif isinstance(spec, RowsSpec):
+                self._emit_rows_field(name, spec)
+
         # Emit variant branches if present
         if self.variants:
             self._blank()
+            self._emit_method_calls()
             self._emit_variant_branches(self.variants, byte_array, bit_offset)
 
         self._blank()
@@ -600,13 +620,17 @@ class _CompileContext:
                         func_name = (
                             f"{self.prefix}_{variant_cls.__name__}_{method_name}"
                         )
-                        all_field_names = self._all_field_names_up_to(variant_cls)
-                        args = ", ".join(["b"] + all_field_names)
+                        v_ex = variant_cls.explicit_args().get(method_name)
+                        if v_ex:
+                            args = ", ".join(v_ex)
+                        else:
+                            all_field_names = self._all_field_names_up_to(variant_cls)
+                            args = ", ".join(["b"] + all_field_names)
                         if method_name == "validate":
-                            self._line(f"int valid = {func_name}({args});")
-                            self._line("if (valid != 0)")
+                            self._line(f"int vret = {func_name}({args});")
+                            self._line("if (vret != 0)")
                             with self.indent():
-                                self._line("return valid;")
+                                self._line("return vret;")
                         else:
                             self._line(f"{func_name}({args});")
 
@@ -618,8 +642,12 @@ class _CompileContext:
                     else:
                         func_name = f"{self.prefix}_{variant_cls.__name__}_{prop_name}"
                         c_type = _c_type_for(prop_type)
-                        field_args = self._all_field_names_up_to(variant_cls)
-                        args = ", ".join(field_args)
+                        v_ex = variant_cls.explicit_args().get(prop_name)
+                        if v_ex:
+                            args = ", ".join(v_ex)
+                        else:
+                            field_args = self._all_field_names_up_to(variant_cls)
+                            args = ", ".join(field_args)
                         self._line(f"{c_type} {prop_name} = {func_name}({args});")
 
                 self._emit_variant_data_make(variant_cls)
@@ -681,6 +709,55 @@ class _CompileContext:
         self._line("/* clang-format on */")
         self._line("decoder_output_data(decoder, data);")
         self._line("return 1;")
+
+    def _emit_rows_guards(self, spec: RowsSpec) -> None:
+        max_row = max(spec.rows)
+        self._line(f"if (bitbuffer->num_rows <= {max_row})")
+        with self.indent():
+            self._line("return DECODE_ABORT_LENGTH;")
+        for row, bits in spec.required_bits:
+            self._line(f"if (bitbuffer->bits_per_row[{row}] != {bits})")
+            with self.indent():
+                self._line("return DECODE_ABORT_LENGTH;")
+        self._blank()
+
+    def _emit_rows_field(self, name: str, spec: RowsSpec) -> None:
+        """Parse sub_protocol fields from each listed bitbuffer row into sparse arrays."""
+        sub_fields = spec.sub_protocol.fields
+        for sub_name, sub_spec in sub_fields:
+            if isinstance(sub_spec, (BitsSpec, LiteralSpec)):
+                self._line(f"int {name}_{sub_name}[BITBUF_ROWS];")
+            else:
+                raise RuntimeError(
+                    f"Protocol {self.cls.__name__}: Rows sub_protocol field "
+                    f"{sub_name!r} must be Bits or Literal in this compiler version"
+                )
+        rows_csv = ", ".join(str(r) for r in spec.rows)
+        nrows = len(spec.rows)
+        self._line(f"static uint16_t const _rows_{name}[] = {{{rows_csv}}};")
+        self._line(
+            f"for (size_t _kir_{name} = 0; _kir_{name} < {nrows}; ++_kir_{name}) {{"
+        )
+        with self.indent():
+            self._line(f"unsigned row_{name} = _rows_{name}[_kir_{name}];")
+            self._line(f"uint8_t *rowb_{name} = bitbuffer->bb[row_{name}];")
+            self._line(f"unsigned _roff_{name} = 0;")
+            for sub_name, sub_spec in sub_fields:
+                if isinstance(sub_spec, BitsSpec):
+                    ex = _extract_bits(f"rowb_{name}", f"_roff_{name}", sub_spec.width)
+                    if sub_name.startswith("_"):
+                        self._line(f"(void)({ex});")
+                    else:
+                        self._line(f"{name}_{sub_name}[row_{name}] = {ex};")
+                    self._line(f"_roff_{name} += {sub_spec.width};")
+                elif isinstance(sub_spec, LiteralSpec):
+                    ex = _extract_bits(f"rowb_{name}", f"_roff_{name}", sub_spec.width)
+                    self._line(f"if ({ex} != {hex(sub_spec.value)})")
+                    with self.indent():
+                        self._line("return DECODE_FAIL_SANITY;")
+                    self._line(f"_roff_{name} += {sub_spec.width};")
+        self._line("}")
+        self._blank()
 
     def _emit_repeat_field(
         self, name: str, spec: RepeatSpec, byte_array: str, bit_offset: int
@@ -894,6 +971,8 @@ class _CompileContext:
                     if isinstance(s, (BitsSpec, LiteralSpec))
                 )
                 total += sub_bits * max_repeat
+            elif isinstance(spec, RowsSpec):
+                pass
 
         max_var_bits = 0
         for variant_cls in cls.variants:

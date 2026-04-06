@@ -13,6 +13,7 @@ about adding Lua to rtl_433.
 For examples, see:
 
 * [protocols/akhan_100F14.py](protocols/akhan_100F14.py)
+* [protocols/alectov1.py](protocols/alectov1.py)
 * [protocols/thermopro_tp211b.py](protocols/thermopro_tp211b.py)
 * [protocols/tpms_ford.py](protocols/tpms_ford.py)
 * [protocols/lacrosse_tx31u.py](protocols/lacrosse_tx31u.py)
@@ -79,7 +80,7 @@ This prepares the bitbuffer for parsing it into bit fields.
 ### Fields
 
 Bit fields are parsed automatically. They're declared as class annotations using
-the `Bits`, `Literal`, `Cond`, and `Repeat` type constructors:
+the `Bits`, `Literal`, `Cond`, `Repeat`, and `Rows` type constructors:
 
 ```python
     id: Bits[24]
@@ -94,6 +95,22 @@ offsets. `Bits[n]` extracts an `n`-bit unsigned integer into a local C variable
 of the same name. `Literal[value, n]` extracts `n` bits and asserts that they
 equal `value`, returning `DECODE_FAIL_SANITY` on mismatch.  Fields whose names
 start with `_` are skipped (their bits are consumed but no variable is emitted).
+
+### Rows (multi-row bitbuffer)
+
+`Repeat[count, SubProtocol]` parses the same sub-layout multiple times along the
+single extracted `b[]` buffer. `Rows[rows_tuple, SubProtocol]` instead parses
+that sub-layout once per listed bitbuffer row index, using
+`bitrow_get_bits(bitbuffer->bb[row], …)` for each row. Optional third argument:
+`((row_index, exact_bits), …)` emits a `bits_per_row[row]` length check per pair.
+
+The compiler declares `int parent_subfield[BITBUF_ROWS]` for each sub-field and
+only writes indices present in `rows_tuple` (sparse indexing). In expressions,
+use `F.parent_subfield[row_index]` (i.e. `FieldRef.__getitem__`) to read a value.
+`Rev8(x)` emits `reverse8(x)` in C.
+
+The sub-protocol must not contain nested `Rows` or `Repeat` fields. `Rows` is
+incompatible with `FirstValidRow` as the last pipeline step.
 
 ### Methods and properties
 

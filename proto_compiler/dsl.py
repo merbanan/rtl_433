@@ -19,220 +19,177 @@ from typing import Any, ClassVar, NamedTuple, Union
 # ---------------------------------------------------------------------------
 
 
-@dataclass(frozen=True)
-class FieldRef:
-    """Reference to a previously parsed protocol field."""
-
-    name: str
-
-    # Comparison
-    def __eq__(self, other: Any) -> Expr:  # type: ignore[override]
-        return Expr("==", self, _wrap(other))
-
-    def __ne__(self, other: Any) -> Expr:  # type: ignore[override]
-        return Expr("!=", self, _wrap(other))
-
-    def __lt__(self, other: Any) -> Expr:
-        return Expr("<", self, _wrap(other))
-
-    def __le__(self, other: Any) -> Expr:
-        return Expr("<=", self, _wrap(other))
-
-    def __gt__(self, other: Any) -> Expr:
-        return Expr(">", self, _wrap(other))
-
-    def __ge__(self, other: Any) -> Expr:
-        return Expr(">=", self, _wrap(other))
-
-    # Bitwise
-    def __and__(self, other: Any) -> Expr:
-        return Expr("&", self, _wrap(other))
-
-    def __rand__(self, other: Any) -> Expr:
-        return Expr("&", _wrap(other), self)
-
-    def __or__(self, other: Any) -> Expr:
-        return Expr("|", self, _wrap(other))
-
-    def __ror__(self, other: Any) -> Expr:
-        return Expr("|", _wrap(other), self)
-
-    def __xor__(self, other: Any) -> Expr:
-        return Expr("^", self, _wrap(other))
-
-    def __rxor__(self, other: Any) -> Expr:
-        return Expr("^", _wrap(other), self)
-
-    def __invert__(self) -> UnaryExpr:
-        return UnaryExpr("~", self)
-
-    # Arithmetic
-    def __add__(self, other: Any) -> Expr:
-        return Expr("+", self, _wrap(other))
-
-    def __radd__(self, other: Any) -> Expr:
-        return Expr("+", _wrap(other), self)
-
-    def __sub__(self, other: Any) -> Expr:
-        return Expr("-", self, _wrap(other))
-
-    def __rsub__(self, other: Any) -> Expr:
-        return Expr("-", _wrap(other), self)
-
-    def __mul__(self, other: Any) -> Expr:
-        return Expr("*", self, _wrap(other))
-
-    def __rmul__(self, other: Any) -> Expr:
-        return Expr("*", _wrap(other), self)
-
-    def __truediv__(self, other: Any) -> Expr:
-        return Expr("/", self, _wrap(other))
-
-    def __rtruediv__(self, other: Any) -> Expr:
-        return Expr("/", _wrap(other), self)
-
-    def __floordiv__(self, other: Any) -> Expr:
-        return Expr("/", self, _wrap(other))
-
-    def __rfloordiv__(self, other: Any) -> Expr:
-        return Expr("/", _wrap(other), self)
-
-    def __mod__(self, other: Any) -> Expr:
-        return Expr("%", self, _wrap(other))
-
-    def __neg__(self) -> UnaryExpr:
-        return UnaryExpr("-", self)
-
-    # Shift
-    def __lshift__(self, other: Any) -> Expr:
-        return Expr("<<", self, _wrap(other))
-
-    def __rshift__(self, other: Any) -> Expr:
-        return Expr(">>", self, _wrap(other))
-
-    def __hash__(self) -> int:
-        return hash(("FieldRef", self.name))
-
-
-@dataclass(frozen=True)
 class Expr:
-    """Binary expression node in the expression tree."""
+    """Base for composable expressions. Operators build :class:`BinaryExpr` nodes."""
 
-    op: str
-    left: FieldRef | Expr | UnaryExpr | int
-    right: FieldRef | Expr | UnaryExpr | int
+    __slots__ = ()
 
-    # Allow further chaining: (F.x & 0x0F) == 3
-    def __eq__(self, other: Any) -> Expr:  # type: ignore[override]
-        return Expr("==", self, _wrap(other))
+    def __eq__(self, other: Any) -> BinaryExpr:  # type: ignore[override]
+        return BinaryExpr("==", self, _wrap(other))
 
-    def __ne__(self, other: Any) -> Expr:  # type: ignore[override]
-        return Expr("!=", self, _wrap(other))
+    def __ne__(self, other: Any) -> BinaryExpr:  # type: ignore[override]
+        return BinaryExpr("!=", self, _wrap(other))
 
-    def __lt__(self, other: Any) -> Expr:
-        return Expr("<", self, _wrap(other))
+    def __lt__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("<", self, _wrap(other))
 
-    def __le__(self, other: Any) -> Expr:
-        return Expr("<=", self, _wrap(other))
+    def __le__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("<=", self, _wrap(other))
 
-    def __gt__(self, other: Any) -> Expr:
-        return Expr(">", self, _wrap(other))
+    def __gt__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr(">", self, _wrap(other))
 
-    def __ge__(self, other: Any) -> Expr:
-        return Expr(">=", self, _wrap(other))
+    def __ge__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr(">=", self, _wrap(other))
 
-    def __and__(self, other: Any) -> Expr:
-        return Expr("&", self, _wrap(other))
+    def __and__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("&", self, _wrap(other))
 
-    def __rand__(self, other: Any) -> Expr:
-        return Expr("&", _wrap(other), self)
+    def __rand__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("&", _wrap(other), self)
 
-    def __or__(self, other: Any) -> Expr:
-        return Expr("|", self, _wrap(other))
+    def __or__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("|", self, _wrap(other))
 
-    def __ror__(self, other: Any) -> Expr:
-        return Expr("|", _wrap(other), self)
+    def __ror__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("|", _wrap(other), self)
 
-    def __xor__(self, other: Any) -> Expr:
-        return Expr("^", self, _wrap(other))
+    def __xor__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("^", self, _wrap(other))
+
+    def __rxor__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("^", _wrap(other), self)
 
     def __invert__(self) -> UnaryExpr:
         return UnaryExpr("~", self)
 
-    def __add__(self, other: Any) -> Expr:
-        return Expr("+", self, _wrap(other))
+    def __add__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("+", self, _wrap(other))
 
-    def __radd__(self, other: Any) -> Expr:
-        return Expr("+", _wrap(other), self)
+    def __radd__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("+", _wrap(other), self)
 
-    def __sub__(self, other: Any) -> Expr:
-        return Expr("-", self, _wrap(other))
+    def __sub__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("-", self, _wrap(other))
 
-    def __rsub__(self, other: Any) -> Expr:
-        return Expr("-", _wrap(other), self)
+    def __rsub__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("-", _wrap(other), self)
 
-    def __mul__(self, other: Any) -> Expr:
-        return Expr("*", self, _wrap(other))
+    def __mul__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("*", self, _wrap(other))
 
-    def __rmul__(self, other: Any) -> Expr:
-        return Expr("*", _wrap(other), self)
+    def __rmul__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("*", _wrap(other), self)
 
-    def __truediv__(self, other: Any) -> Expr:
-        return Expr("/", self, _wrap(other))
+    def __truediv__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("/", self, _wrap(other))
 
-    def __rtruediv__(self, other: Any) -> Expr:
-        return Expr("/", _wrap(other), self)
+    def __rtruediv__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("/", _wrap(other), self)
 
-    def __floordiv__(self, other: Any) -> Expr:
-        return Expr("/", self, _wrap(other))
+    def __floordiv__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("/", self, _wrap(other))
 
-    def __rfloordiv__(self, other: Any) -> Expr:
-        return Expr("/", _wrap(other), self)
+    def __rfloordiv__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("/", _wrap(other), self)
 
-    def __mod__(self, other: Any) -> Expr:
-        return Expr("%", self, _wrap(other))
+    def __mod__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("%", self, _wrap(other))
 
     def __neg__(self) -> UnaryExpr:
         return UnaryExpr("-", self)
 
-    def __lshift__(self, other: Any) -> Expr:
-        return Expr("<<", self, _wrap(other))
+    def __lshift__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr("<<", self, _wrap(other))
 
-    def __rshift__(self, other: Any) -> Expr:
-        return Expr(">>", self, _wrap(other))
-
-    def __hash__(self) -> int:
-        return hash(("Expr", self.op, self.left, self.right))
+    def __rshift__(self, other: Any) -> BinaryExpr:
+        return BinaryExpr(">>", self, _wrap(other))
 
 
-@dataclass(frozen=True)
-class UnaryExpr:
-    """Unary expression node (e.g. bitwise NOT)."""
+@dataclass(frozen=True, eq=False)
+class BinaryExpr(Expr):
+    """Binary operator node (``left op right``).
+
+    ``eq=False`` so :class:`Expr` comparison dunders build DSL nodes; dataclass
+    structural ``==`` would make ``(expr == 3)`` evaluate to Python ``bool``.
+    """
 
     op: str
-    operand: FieldRef | Expr | UnaryExpr | int
+    left: Any
+    right: Any
 
-    def __eq__(self, other: Any) -> Expr:  # type: ignore[override]
-        return Expr("==", self, _wrap(other))
+    def __hash__(self) -> int:
+        return hash(("BinaryExpr", self.op, self.left, self.right))
 
-    def __ne__(self, other: Any) -> Expr:  # type: ignore[override]
-        return Expr("!=", self, _wrap(other))
 
-    def __and__(self, other: Any) -> Expr:
-        return Expr("&", self, _wrap(other))
+@dataclass(frozen=True, eq=False)
+class Rev8Expr(Expr):
+    """``reverse8`` applied to a sub-expression (rtl_433 bit_util).
 
-    def __or__(self, other: Any) -> Expr:
-        return Expr("|", self, _wrap(other))
+    ``eq=False`` so comparisons delegate to :class:`Expr` (DSL AST), not dataclass
+    field equality.
+    """
+
+    operand: Any
+
+    def __hash__(self) -> int:
+        return hash(("Rev8Expr", self.operand))
+
+
+@dataclass(frozen=True, eq=False)
+class UnaryExpr(Expr):
+    """Unary expression node (e.g. bitwise NOT, negation)."""
+
+    op: str
+    operand: Any
 
     def __hash__(self) -> int:
         return hash(("UnaryExpr", self.op, self.operand))
 
 
-def _wrap(value: Any) -> FieldRef | Expr | UnaryExpr | int | float:
+def Rev8(operand: Expr | int) -> Rev8Expr:
+    """Build ``reverse8(operand)`` in generated C."""
+    if isinstance(operand, float):
+        raise TypeError("Rev8 does not accept float")
+    return Rev8Expr(operand=operand)
+
+
+@dataclass(frozen=True, eq=False)
+class FieldRef(Expr):
+    """Reference to a previously parsed protocol field."""
+
+    name: str
+
+    def __getitem__(self, row: int) -> Subscript:
+        if not isinstance(row, int):
+            raise TypeError("Row index must be int")
+        return Subscript(self, row)
+
+    def __hash__(self) -> int:
+        return hash(("FieldRef", self.name))
+
+
+_ExprLeaf = Union[Expr, int, float]
+
+
+def _wrap(value: Any) -> _ExprLeaf:
     """Ensure expression tree leaves are valid node types."""
-    if isinstance(value, (FieldRef, Expr, UnaryExpr, int, float)):
+    if isinstance(value, (int, float)):
+        return value
+    if isinstance(value, Expr):
         return value
     raise TypeError(f"Cannot use {type(value).__name__} in a field expression")
+
+
+@dataclass(frozen=True, eq=False)
+class Subscript(Expr):
+    """Index into a Rows-generated array: ``cells_b0[5]`` via ``F.cells_b0[5]``."""
+
+    base: FieldRef
+    index: int
+
+    def __hash__(self) -> int:
+        return hash(("Subscript", self.base, self.index))
 
 
 class _FieldProxy:
@@ -275,27 +232,36 @@ class LiteralSpec:
 
 @dataclass(frozen=True)
 class CondSpec:
-    expr: Expr | UnaryExpr | FieldRef
+    expr: Expr
     true_type: BitsSpec | LiteralSpec
     false_type: BitsSpec | LiteralSpec | None
 
 
 @dataclass(frozen=True)
 class RepeatSpec:
-    count_expr: Expr | UnaryExpr | FieldRef | int
+    count_expr: Expr | int
     sub_protocol: type  # a Protocol subclass
 
 
-FieldSpec = Union[BitsSpec, LiteralSpec, CondSpec, RepeatSpec]
+@dataclass(frozen=True)
+class RowsSpec:
+    """Repeat sub-fields over fixed bitbuffer row indices (see ``Rows``)."""
+
+    rows: tuple[int, ...]
+    sub_protocol: type
+    required_bits: tuple[tuple[int, int], ...] = ()
+
+
+FieldSpec = Union[BitsSpec, LiteralSpec, CondSpec, RepeatSpec, RowsSpec]
 
 
 class JsonRecord(NamedTuple):
     key: str
     label: str
-    value: FieldRef | Expr | UnaryExpr | int | float | str
+    value: Expr | int | float | str
     data_type: str  # "DATA_STRING" | "DATA_INT" | "DATA_DOUBLE"
     fmt: str | None = None
-    when: FieldRef | Expr | UnaryExpr | bool | None = None
+    when: Expr | bool | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -477,6 +443,41 @@ class Repeat:
         return RepeatSpec(count_expr=count_expr, sub_protocol=sub_protocol)
 
 
+class Rows:
+    """``Rows[(1, 2), RowProto]`` or ``Rows[..., RowProto, ((1, 36),)]`` -> ``RowsSpec``"""
+
+    def __class_getitem__(cls, params: tuple) -> RowsSpec:
+        if not isinstance(params, tuple) or len(params) not in (2, 3):
+            raise ValueError(
+                "Rows requires (rows_tuple, sub_protocol) or "
+                "(rows_tuple, sub_protocol, required_bits)"
+            )
+        rows_t, sub = params[0], params[1]
+        req: tuple[tuple[int, int], ...] = params[2] if len(params) == 3 else ()
+        if not isinstance(rows_t, tuple) or len(rows_t) == 0:
+            raise ValueError(
+                "Rows: first argument must be a non-empty tuple of int row indices"
+            )
+        for x in rows_t:
+            if not isinstance(x, int) or x < 0:
+                raise ValueError(f"Rows: invalid row index {x!r}")
+        if not isinstance(req, tuple):
+            raise ValueError("Rows: required_bits must be a tuple of (row, bits) pairs")
+        for pair in req:
+            if (
+                not isinstance(pair, tuple)
+                or len(pair) != 2
+                or not isinstance(pair[0], int)
+                or not isinstance(pair[1], int)
+            ):
+                raise ValueError(f"Rows: invalid required_bits entry {pair!r}")
+            if pair[0] not in rows_t:
+                raise ValueError(
+                    f"Rows: required_bits row {pair[0]} is not listed in rows tuple"
+                )
+        return RowsSpec(rows=tuple(rows_t), sub_protocol=sub, required_bits=req)
+
+
 # ---------------------------------------------------------------------------
 # Modulation configuration bundle
 # ---------------------------------------------------------------------------
@@ -511,7 +512,7 @@ ProtocolConfig = ModulationConfig
 
 
 _EXCLUDED_CALLABLES: frozenset = frozenset(("decode", "from_hex", "to_json", "prepare"))
-_EXPR_TYPES = (FieldRef, Expr, UnaryExpr, int, float)
+_EXPR_TYPES = (Expr, int, float)
 
 
 def _iter_user_callables(cls: type) -> list[tuple[str, Any]]:
@@ -577,7 +578,20 @@ class Protocol:
 
         merged_fields = dict(cls.fields)
         for name, ann in _evaluated_class_annotations(cls).items():
-            if isinstance(ann, (BitsSpec, LiteralSpec, CondSpec, RepeatSpec)):
+            if isinstance(ann, (BitsSpec, LiteralSpec, CondSpec, RepeatSpec, RowsSpec)):
+                if isinstance(ann, RowsSpec):
+                    sp = ann.sub_protocol
+                    if not isinstance(sp, type) or not issubclass(sp, Protocol):
+                        raise ValueError(
+                            f"{cls.__name__}.{name}: Rows sub_protocol must be a "
+                            f"Protocol subclass, got {sp!r}"
+                        )
+                    for sn, sspec in sp.fields:
+                        if isinstance(sspec, (RowsSpec, RepeatSpec)):
+                            raise ValueError(
+                                f"{cls.__name__}.{name}: Rows sub_protocol must not "
+                                f"contain Rows or Repeat (found on field {sn!r})"
+                            )
                 merged_fields[name] = ann
         cls.fields = tuple(merged_fields.items())
 
@@ -687,7 +701,7 @@ class Protocol:
 
     @classmethod
     def referenced_protocols(cls) -> tuple[type[Protocol], ...]:
-        """Sub-protocols referenced by Repeat[] fields."""
+        """Sub-protocols referenced by Repeat[] or Rows[] fields."""
         result: list[type[Protocol]] = []
         for fname, spec in cls.fields:
             if isinstance(spec, RepeatSpec):
@@ -695,6 +709,13 @@ class Protocol:
                 if not isinstance(sp, type) or not issubclass(sp, Protocol):
                     raise ValueError(
                         f"{cls.__name__} field {fname!r}: Repeat sub_protocol must be a Protocol subclass, got {sp!r}"
+                    )
+                result.append(sp)
+            elif isinstance(spec, RowsSpec):
+                sp = spec.sub_protocol
+                if not isinstance(sp, type) or not issubclass(sp, Protocol):
+                    raise ValueError(
+                        f"{cls.__name__} field {fname!r}: Rows sub_protocol must be a Protocol subclass, got {sp!r}"
                     )
                 result.append(sp)
         return tuple(result)
