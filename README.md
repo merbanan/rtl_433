@@ -386,6 +386,23 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [298]  TRW TPMS OOK OEM and Clone models
     [299]  TRW TPMS FSK OEM and Clone models
     [300]  Govee Water Leak Detector H5059
+    [301]  Astrostart 2000 Car Remote (-f 372.4M)
+    [302]  Compustar 1WG3R Car Remote
+    [303]  Chrysler Car Remote (-f 315.1M -s 920k)
+    [304]  Nidec Car Remote (-f 313.8M -s 1024k)
+    [305]  Audiovox PRO-OE3B Car Remote (-f 303.4M)
+    [306]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (Sync, 833 bit/s)
+    [307]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (Sync, 1667 bit/s)
+    [308]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (No Sync, 833 bit/s)
+    [309]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (No Sync, 1667 bit/s)
+    [310]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (PIWM, 2500 bit/s)
+    [311]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (PIWM, 5000 bit/s)
+    [312]  6SC2 Car Remote (-f 315.1M)
+    [313]  GM ABO1502T Car Remote (-f 314.9M)
+    [314]  Siemens 5WY72XX Car Remote (-f 315.1M)
+    [315]  Alps FWB1U545 Car Remote
+    [316]  Continental KR5V2X Car Remote (-f 313.8M -s 1024k)
+    [317]  Code Alarm FRDPC2002 Car Remote
 
 * Disabled by default, use -R n or a conf file to enable
 
