@@ -397,7 +397,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [309]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (No Sync, 1667 bit/s)
     [310]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (PIWM, 2500 bit/s)
     [311]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (PIWM, 5000 bit/s)
-    [312]  6SC2 Car Remote (-f 315.1M)
+    [312]  MIC 6SC2 Car Remote (-f 315.1M)
     [313]  GM ABO1502T Car Remote (-f 314.9M)
     [314]  Siemens 5WY72XX Car Remote (-f 315.1M)
     [315]  Alps FWB1U545 Car Remote

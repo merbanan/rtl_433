@@ -1,5 +1,5 @@
 /** @file
-    6SC2 - Car Remote.
+    MIC 6SC2 - Car Remote.
 
     Copyright (C) 2024 Ethan Halsall
 
@@ -12,10 +12,10 @@
 #include "decoder.h"
 
 /**
-6SC2 - Car Remote (315 MHz).
+MIC 6SC2 - Car Remote (315 MHz).
 
 Manufacturer:
-- Unknown
+- Unknown, MSOP-10 perhaps from MIC (Master Instrument Corporation)
 
 Supported Models:
 - 6SC2 CMGU
@@ -58,20 +58,20 @@ static int six_sc_two_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffe
         return DECODE_ABORT_LENGTH;
     }
 
-    uint8_t *bytes = bitbuffer->bb[row];
+    uint8_t *b = bitbuffer->bb[row];
 
-    if (bytes[0] != 0x55 || bytes[1] != 0x54) {
+    if (b[0] != 0x55 || b[1] != 0x54) {
         return DECODE_FAIL_SANITY;
     }
 
-    if (xor_bytes(bytes + 2, 9)) {
+    if (xor_bytes(b + 2, 9)) {
         return DECODE_FAIL_MIC;
     }
 
     // The transmission is LSB first, big endian.
-    uint32_t encrypted = (uint32_t)reverse8(bytes[5]) << 24 | (uint32_t)reverse8(bytes[4]) << 16 | (uint32_t)reverse8(bytes[3]) << 8 | reverse8(bytes[2]);
-    int button         = reverse8(bytes[6]) & 0xf;
-    int sequence       = (reverse8(bytes[8]) << 8) | reverse8(bytes[7]);
+    uint32_t encrypted = (uint32_t)reverse8(b[5]) << 24 | (uint32_t)reverse8(b[4]) << 16 | (uint32_t)reverse8(b[3]) << 8 | reverse8(b[2]);
+    int button         = reverse8(b[6]) & 0xf;
+    int sequence       = (reverse8(b[8]) << 8) | reverse8(b[7]);
 
     char encrypted_str[9];
     snprintf(encrypted_str, sizeof(encrypted_str), "%08X", encrypted);
@@ -90,7 +90,7 @@ static int six_sc_two_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffe
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",       "model",       DATA_STRING, "6SC2-CarRemote",
+            "model",       "model",       DATA_STRING, "MIC6SC2-CarRemote",
             "encrypted",   "",            DATA_STRING, encrypted_str,
             "button_code", "Button Code", DATA_INT,    button,
             "button_str",  "Button",      DATA_STRING, button_str,
@@ -114,7 +114,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const six_sc_two_car_remote = {
-        .name        = "6SC2 Car Remote (-f 315.1M)",
+        .name        = "MIC 6SC2 Car Remote (-f 315.1M)",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 250,
         .reset_limit = 10000,
