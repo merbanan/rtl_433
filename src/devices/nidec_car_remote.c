@@ -8,8 +8,11 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/** @fn int nidec_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-Nidec - Car Remote (313 MHz)
+
+#include "decoder.h"
+
+/**
+Nidec - Car Remote (313 MHz).
 
 Manufacturer:
 - Nidec
@@ -46,8 +49,6 @@ Format string:
 SEQUENCE hhhh ID: hhhhhh UNKNOWN: bbbb BUTTON: bbbb CODE: hhhh
 
 */
-
-#include "decoder.h"
 
 static int nidec_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {

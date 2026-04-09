@@ -8,8 +8,11 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/** @fn int six_sc_two_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-6SC2 - Car Remote (315 MHz)
+
+#include "decoder.h"
+
+/**
+6SC2 - Car Remote (315 MHz).
 
 Manufacturer:
 - Unknown
@@ -43,8 +46,6 @@ Format string:
 PREAMBLE: hhhh ENCRYPTED: hh hh hh hh BUTTON: bbbb UNKNOWN: bbbb SEQUENCE: hhhh CHECKSUM: hh
 
 */
-
-#include "decoder.h"
 
 static int six_sc_two_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {

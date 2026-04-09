@@ -8,8 +8,11 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/** @fn int gm_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-General Motors - Car Remote (315 MHz)
+
+#include "decoder.h"
+
+/**
+General Motors - Car Remote (315 MHz).
 
 Manufacturer:
 - General Motors
@@ -42,8 +45,6 @@ Format string:
 UNKNOWN: bbbbbbbb BUTTON_CHECKSUM: bbbb BUTTON: bbbb ID: hhhhhhhh SEQUENCE: hhhhhh ENCRYPTED: hhhhhh CHECKSUM: hh
 
 */
-
-#include "decoder.h"
 
 static int gm_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {

@@ -8,8 +8,11 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/** @fn int chrysler_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-Chrysler - Car Remote (315 MHz)
+
+#include "decoder.h"
+
+/**
+Chrysler - Car Remote (315 MHz).
 
 Manufacturer:
 - Chrysler
@@ -50,8 +53,6 @@ Format string:
 ID: hhhhhhhh BUTTON: bbbb x MULTIPLE: b xx CHECKSUM: bbbbbbbb
 
 */
-
-#include "decoder.h"
 
 static int chrysler_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {

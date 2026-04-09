@@ -8,8 +8,11 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/** @fn int audiovox_pro_oe3b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-Audiovox - Car Remote
+
+#include "decoder.h"
+
+/**
+Audiovox - Car Remote.
 
 Manufacturer:
 - Audiovox
@@ -41,8 +44,6 @@ Format string:
 ID: hhhh x b x TRUNK:b x UNLOCK: b x LOCK: b h
 
 */
-
-#include "decoder.h"
 
 static int audiovox_pro_oe3b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {

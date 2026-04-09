@@ -8,7 +8,10 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/** @fn int alps_fwb1u545_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+
+#include "decoder.h"
+
+/**
 Alps FWB1U545 - Car Remote.
 
 Manufacturer:
@@ -42,8 +45,6 @@ Format string:
 PREAMBLE: bbbbbbbb ID: hhhhhhhh BUTTON: bbbbbbbb BUTTON_XOR: bbbbbbbb SEQUENCE: hhhh UNKNOWN: bbbb
 
 */
-
-#include "decoder.h"
 
 static int alps_fwb1u545_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {

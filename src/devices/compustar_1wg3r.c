@@ -8,7 +8,12 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/** @fn int compustar_1wg3r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+
+#include "decoder.h"
+#include "fatal.h"
+#include <stdlib.h>
+
+/**
 Compustar 1WG3R - Car Remote
 
 Manufacturer:
@@ -54,10 +59,6 @@ Format string:
 ID: hhhh UNKNOWN: bbb BUTTON_INVERSE: bbbbbbbb BUTTON: bbbbbbbb UNKNOWN: b
 
 */
-
-#include "decoder.h"
-#include "fatal.h"
-#include <stdlib.h>
 
 static int compustar_1wg3r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {

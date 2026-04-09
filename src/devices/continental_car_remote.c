@@ -8,8 +8,11 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/** @fn int continental_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-Continental - Car Remote (313 MHz)
+
+#include "decoder.h"
+
+/**
+Continental - Car Remote (313 MHz).
 
 Manufacturer:
 - Continental
@@ -46,8 +49,6 @@ Format string:
 PREAMBLE: bbbbbbbb bbbbbbbb bbbb ID: hhhhhhhh UNKNOWN: bbbbbbbb BUTTON: bbbb UNKNOWN: bbbb SEQUENCE: hhhhhh CODE: hhhhhhhhhh CHECKSUM: hh
 
 */
-
-#include "decoder.h"
 
 static int continental_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {

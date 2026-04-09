@@ -8,8 +8,11 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/** @fn int astrostart_2000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-Astrostart 2000 - Car Remote 372.4 MHz
+
+#include "decoder.h"
+
+/**
+Astrostart 2000 - Car Remote 372.4 MHz.
 
 Manufacturer:
 - Astroflex
@@ -54,8 +57,6 @@ Format string:
 BUTTON: bbbbbbbb INVERSE: bbbbbbbb ID: hhhhhhhh CHECKSUM: h
 
 */
-
-#include "decoder.h"
 
 static int astrostart_2000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {

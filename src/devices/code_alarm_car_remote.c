@@ -8,8 +8,11 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/** @fn int code_alarm_frdpc2000_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-Code Alarm - Car Remote
+
+#include "decoder.h"
+
+/**
+Code Alarm - Car Remote.
 
 Manufacturer:
 - Code Alarm
@@ -38,8 +41,6 @@ Format string:
 PREAMBLE: hhhh UNKNOWN: bbbb BUTTON: bbbb ID: hhhhhhhh bbbbbbbb
 
 */
-
-#include "decoder.h"
 
 static int code_alarm_frdpc2000_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {

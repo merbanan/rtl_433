@@ -8,7 +8,10 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/** @fn hcs361_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+
+#include "decoder.h"
+
+/**
 Microchip HCS361 KeeLoq Code Hopping Encoder based remotes.
 
 Data Format:
@@ -58,8 +61,6 @@ Timing is selected by the two flags coded into the EEPROM.
   - When enabled, baud rate is 1667 bits / second.
 
 */
-
-#include "decoder.h"
 
 static int hcs361_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
