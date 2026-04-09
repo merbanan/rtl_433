@@ -10,11 +10,9 @@
 */
 
 #include "decoder.h"
-#include "fatal.h"
-#include <stdlib.h>
 
 /**
-Compustar 1WG3R - Car Remote
+Compustar 1WG3R - Car Remote.
 
 Manufacturer:
 - Compustar
@@ -62,40 +60,34 @@ Format string:
 
 static int compustar_1wg3r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int rows_data_idx  = -1;
-    data_t **rows_data = malloc(bitbuffer->num_rows * sizeof(data_t *));
-    if (!rows_data) {
-        WARN_MALLOC("compustar_1wg3r_decode()");
-        return -1; // NOTE: returns error on alloc failure.
-    }
-
     // loop through all of the rows and only return unique valid results
     // programming mode will send a sequence of key presses all in one message
+    int events = 0;
     int previous_row = -1;
     for (int current_row = 0; current_row < bitbuffer->num_rows; current_row++) {
-        uint8_t *bytes = bitbuffer->bb[current_row];
+        uint8_t *b = bitbuffer->bb[current_row];
 
         // reset row count for the row separator
-        if (bitbuffer->bits_per_row[current_row] == 5 && (bytes[0] & 0xf8) == 0xf8) {
+        if (bitbuffer->bits_per_row[current_row] == 5 && (b[0] & 0xf8) == 0xf8) {
             previous_row = -1;
             continue;
         }
 
-        if ((bytes[2] & 0xe0) != 0xe0 || (bytes[4] & 1) != 0x0) {
+        if ((b[2] & 0xe0) != 0xe0 || (b[4] & 1) != 0x0) {
             continue; // DECODE_ABORT_EARLY;
         }
 
-        if ((bytes[0] == 0xff && bytes[1] == 0xff) ||
-                (bytes[0] == 0x00 && bytes[1] == 0x00)) {
+        if ((b[0] == 0xff && b[1] == 0xff) ||
+                (b[0] == 0x00 && b[1] == 0x00)) {
             continue; // DECODE_FAIL_SANITY;
         }
 
-        uint16_t id = (bytes[0] << 8) | bytes[1];
+        uint16_t id = (b[0] << 8) | b[1];
         char id_str[5];
         snprintf(id_str, sizeof(id_str), "%04X", id);
 
-        int button_inverse = ((bytes[2] << 3) & 0xff) | bytes[3] >> 5;
-        int button         = ((bytes[3] << 3) & 0xff) | bytes[4] >> 5;
+        int button_inverse = ((b[2] << 3) & 0xff) | b[3] >> 5;
+        int button         = ((b[3] << 3) & 0xff) | b[4] >> 5;
 
         if ((~button_inverse & 0xff) != button) {
             continue; // DECODE_FAIL_MIC;
@@ -154,9 +146,8 @@ static int compustar_1wg3r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         previous_row = current_row;
-        rows_data_idx++;
         /* clang-format off */
-        rows_data[rows_data_idx] = data_make(
+        data_t *data = data_make(
                 "model",        "model",       DATA_STRING, "Compustar-1WG3R",
                 "id",           "ID",          DATA_STRING, id_str,
                 "button_code",  "Button Code", DATA_INT,    button,
@@ -164,20 +155,12 @@ static int compustar_1wg3r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "mic",          "Integrity",   DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
+
+        decoder_output_data(decoder, data);
+        events += 1;
     }
 
-    // send the messages in order
-    for (int i = 0; i <= rows_data_idx; i++) {
-        decoder_output_data(decoder, rows_data[i]);
-    }
-
-    free(rows_data);
-
-    if (rows_data_idx < 0) {
-        return DECODE_ABORT_EARLY;
-    }
-
-    return rows_data_idx + 1;
+    return events;
 }
 
 static char const *const output_fields[] = {
