@@ -1,7 +1,7 @@
 /* honeywell_wdb.h - hand-written helpers included by generated decoder. */
 #pragma once
 
-static int honeywell_wdb_validate(uint8_t *b)
+static int honeywell_wdb_validate_packet(uint8_t *b)
 {
     int parity = parity_bytes(b, 6);
 

@@ -33,18 +33,18 @@ static int akhan_100F14_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, row, offset, b, 25);
 
     int b0 = bitrow_get_bits(b, 0, 8);
-    int b1 = bitrow_get_bits(b, 8, 8);
-    int b2 = bitrow_get_bits(b, 16, 8);
-    (void)(bitrow_get_bits(b, 24, 1));
-
-    if (!((((((((~b2) & 0xff) & 0xf) == 1) | ((((~b2) & 0xff) & 0xf) == 2)) | ((((~b2) & 0xff) & 0xf) == 4)) | ((((~b2) & 0xff) & 0xf) == 8))))
-        return DECODE_FAIL_SANITY;
-
     int notb0 = ((~b0) & 0xff);
+    int b1 = bitrow_get_bits(b, 8, 8);
     int notb1 = ((~b1) & 0xff);
+    int b2 = bitrow_get_bits(b, 16, 8);
     int notb2 = ((~b2) & 0xff);
     int id = (((notb0 << 0xc) | (notb1 << 4)) | (notb2 >> 4));
     int cmd = (notb2 & 0xf);
+    if (!(((((cmd == 1) | (cmd == 2)) | (cmd == 4)) | (cmd == 8))))
+        return DECODE_FAIL_SANITY;
+
+    (void)(bitrow_get_bits(b, 24, 1));
+
     const char * data_str = akhan_100F14_data_str(cmd);
 
     /* clang-format off */

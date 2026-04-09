@@ -65,20 +65,20 @@ class acurite_01185m(Protocol):
     temp2_raw: Bits[16]
     _checksum: Bits[8]
 
-    def temp1_ok(self) -> int:
-        return (self.temp1_raw > 200) & (self.temp1_raw < 7000)
+    def temp1_ok(self, temp1_raw) -> int:
+        return (temp1_raw > 200) & (temp1_raw < 7000)
 
-    def temp2_ok(self) -> int:
-        return (self.temp2_raw > 200) & (self.temp2_raw < 7000)
+    def temp2_ok(self, temp2_raw) -> int:
+        return (temp2_raw > 200) & (temp2_raw < 7000)
 
-    def temp1_f(self) -> float:
-        return (self.temp1_raw - 900) * 0.1
+    def temp1_f(self, temp1_raw) -> float:
+        return (temp1_raw - 900) * 0.1
 
-    def temp2_f(self) -> float:
-        return (self.temp2_raw - 900) * 0.1
+    def temp2_f(self, temp2_raw) -> float:
+        return (temp2_raw - 900) * 0.1
 
-    def battery_ok(self) -> int:
-        return self.battery_low == 0
+    def battery_ok(self, battery_low) -> int:
+        return battery_low == 0
 
     def to_json(self) -> list[JsonRecord]:
         # fmt: off

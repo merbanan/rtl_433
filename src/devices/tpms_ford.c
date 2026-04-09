@@ -71,17 +71,17 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int pressure_raw = bitrow_get_bits(b, 32, 8);
     int temp_byte = bitrow_get_bits(b, 40, 8);
     int flags = bitrow_get_bits(b, 48, 8);
-    int checksum = bitrow_get_bits(b, 56, 8);
-
-    if (!((((((((((sensor_id >> 0x18) + ((sensor_id >> 0x10) & 0xff)) + ((sensor_id >> 8) & 0xff)) + (sensor_id & 0xff)) + pressure_raw) + temp_byte) + flags) & 0xff) == checksum)))
-        return DECODE_FAIL_SANITY;
-
     float pressure_psi = ((((flags & 0x20) << 3) | pressure_raw) * 0.25);
     int moving = ((flags & 0x44) == 0x44);
     int learn = ((flags & 0x4c) == 8);
     int code = (((pressure_raw << 0x10) | (temp_byte << 8)) | flags);
     int unknown = (flags & 0x90);
     int unknown_3 = (flags & 3);
+    int checksum = bitrow_get_bits(b, 56, 8);
+    if (!((((((((((sensor_id >> 0x18) + ((sensor_id >> 0x10) & 0xff)) + ((sensor_id >> 8) & 0xff)) + (sensor_id & 0xff)) + pressure_raw) + temp_byte) + flags) & 0xff) == checksum)))
+        return DECODE_FAIL_MIC;
+
+
 
     char json_str_2[64];
     snprintf(json_str_2, sizeof(json_str_2), "%08x", sensor_id);

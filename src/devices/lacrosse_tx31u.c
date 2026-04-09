@@ -135,10 +135,10 @@ static int lacrosse_tx31u_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int crc = bitrow_get_bits(b, bit_pos, 8);
     bit_pos += 8;
+    int vret_validate_crc = lacrosse_tx31u_validate_crc(b, measurements, crc);
+    if (vret_validate_crc != 0)
+        return vret_validate_crc;
 
-    int valid = lacrosse_tx31u_validate(b, measurements, crc);
-    if (valid != 0)
-        return valid;
 
     float temperature_c = lacrosse_tx31u_temperature_c(readings_sensor_type, readings_reading, measurements);
     int humidity = lacrosse_tx31u_humidity(readings_sensor_type, readings_reading, measurements);

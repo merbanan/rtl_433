@@ -6,7 +6,14 @@ Row is 25 bits; the last bit is consumed as padding after the 24-bit message.
 Reference: src/devices/akhan_100F14.c (hand-written; this module replaces it).
 """
 
-from proto_compiler.dsl import Bits, F, JsonRecord, Modulation, ModulationConfig, Protocol
+from proto_compiler.dsl import (
+    Bits,
+    DecodeFail,
+    JsonRecord,
+    Modulation,
+    ModulationConfig,
+    Protocol,
+)
 
 
 class akhan_100F14(Protocol):
@@ -29,30 +36,23 @@ class akhan_100F14(Protocol):
     b2: Bits[8]
     _trail: Bits[1]
 
-    def notb0(self) -> int:
-        return (~F.b0) & 0xFF
+    def notb0(self, b0) -> int:
+        return (~b0) & 0xFF
 
-    def notb1(self) -> int:
-        return (~F.b1) & 0xFF
+    def notb1(self, b1) -> int:
+        return (~b1) & 0xFF
 
-    def notb2(self) -> int:
-        return (~F.b2) & 0xFF
+    def notb2(self, b2) -> int:
+        return (~b2) & 0xFF
 
-    def id(self) -> int:
-        return (F.notb0 << 12) | (F.notb1 << 4) | (F.notb2 >> 4)
+    def id(self, notb0, notb1, notb2) -> int:
+        return (notb0 << 12) | (notb1 << 4) | (notb2 >> 4)
 
-    def cmd(self) -> int:
-        return F.notb2 & 0x0F
+    def cmd(self, notb2) -> int:
+        return notb2 & 0x0F
 
-    def validate(self):
-        # Methods run before properties; cannot use ``cmd`` here (not emitted yet).
-        # ``cmd`` == ``((~b2) & 0xFF) & 0x0F`` (same as ``notb2 & 0x0F``).
-        return (
-            ((((~F.b2) & 0xFF) & 0x0F) == 1)
-            | ((((~F.b2) & 0xFF) & 0x0F) == 2)
-            | ((((~F.b2) & 0xFF) & 0x0F) == 4)
-            | ((((~F.b2) & 0xFF) & 0x0F) == 8)
-        )
+    def validate_cmd(self, cmd, fail_value=DecodeFail.SANITY):
+        return (cmd == 1) | (cmd == 2) | (cmd == 4) | (cmd == 8)
 
     def data_str(self, cmd) -> str: ...
 

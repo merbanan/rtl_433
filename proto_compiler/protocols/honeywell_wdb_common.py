@@ -22,14 +22,14 @@ class honeywell_wdb_base(Protocol):
     battery_low: Bits[1]
     _parity_bit: Bits[1]
 
-    def validate(self, b): ...
+    def validate_packet(self, b): ...
 
     def subtype(self, class_raw) -> str: ...
 
     def alert(self, alert_raw) -> str: ...
 
-    def battery_ok(self) -> int:
-        return self.battery_low == 0
+    def battery_ok(self, battery_low) -> int:
+        return battery_low == 0
 
     def to_json(self) -> list[JsonRecord]:
         model = self.__protocol_cls__.modulation_config.output_model

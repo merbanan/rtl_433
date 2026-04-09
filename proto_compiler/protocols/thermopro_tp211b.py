@@ -42,7 +42,7 @@ class thermopro_tp211b(Protocol):
     fixed_aa: Literal[0xAA, 8]
     checksum: Bits[16]
 
-    def validate(self, b, checksum): ...
+    def validate_checksum(self, b, checksum): ...
 
-    def temperature_c(self) -> float:
-        return (self.temp_raw - 500) * 0.1
+    def temperature_c(self, temp_raw) -> float:
+        return (temp_raw - 500) * 0.1

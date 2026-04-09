@@ -23,7 +23,7 @@ static uint16_t tp211b_checksum(uint8_t const *b)
     return checksum;
 }
 
-static int thermopro_tp211b_validate(uint8_t *b, int checksum)
+static int thermopro_tp211b_validate_checksum(uint8_t *b, int checksum)
 {
     return ((int)tp211b_checksum(b) == checksum) ? 0 : DECODE_FAIL_MIC;
 }

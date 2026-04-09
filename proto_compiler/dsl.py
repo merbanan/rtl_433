@@ -7,15 +7,26 @@ A companion compiler reads these annotations and emits C++ decoder code.
 
 from __future__ import annotations
 
+import ast
 from dataclasses import dataclass
 from enum import Enum, auto
 import inspect
 import sys
+import textwrap
 from typing import Any, ClassVar, NamedTuple, Union
 
 
+class DecodeFail(str, Enum):
+    """rtl_433 ``decode_return_codes`` (``r_device.h``); use as ``fail_value=`` on ``validate_*``."""
+
+    MIC = "DECODE_FAIL_MIC"
+    SANITY = "DECODE_FAIL_SANITY"
+    ABORT_EARLY = "DECODE_ABORT_EARLY"
+    ABORT_LENGTH = "DECODE_ABORT_LENGTH"
+
+
 # ---------------------------------------------------------------------------
-# Expression tree – built by the F proxy via operator overloading
+# Expression tree – :class:`FieldRef` and operator overloading on :class:`Expr`
 # ---------------------------------------------------------------------------
 
 
@@ -107,6 +118,32 @@ class Expr:
 
 
 @dataclass(frozen=True, eq=False)
+class ExprIntLiteral(Expr):
+    """Integer constant in the expression AST (``bool`` is not an ``int`` here)."""
+
+    value: int
+
+    def __hash__(self) -> int:
+        return hash(("ExprIntLiteral", self.value))
+
+
+@dataclass(frozen=True, eq=False)
+class ExprFloatLiteral(Expr):
+    value: float
+
+    def __hash__(self) -> int:
+        return hash(("ExprFloatLiteral", self.value))
+
+
+@dataclass(frozen=True, eq=False)
+class ExprBoolLiteral(Expr):
+    value: bool
+
+    def __hash__(self) -> int:
+        return hash(("ExprBoolLiteral", self.value))
+
+
+@dataclass(frozen=True, eq=False)
 class BinaryExpr(Expr):
     """Binary operator node (``left op right``).
 
@@ -151,7 +188,31 @@ def Rev8(operand: Expr | int) -> Rev8Expr:
     """Build ``reverse8(operand)`` in generated C."""
     if isinstance(operand, float):
         raise TypeError("Rev8 does not accept float")
-    return Rev8Expr(operand=operand)
+    return Rev8Expr(operand=_wrap(operand))
+
+
+@dataclass(frozen=True, eq=False)
+class LfsrDigest8Expr(Expr):
+    """``lfsr_digest8`` over a byte list (``bit_util.h``)."""
+
+    bytes_args: tuple[Any, ...]
+    gen: int
+    key: int
+
+    def __hash__(self) -> int:
+        return hash(("LfsrDigest8Expr", self.bytes_args, self.gen, self.key))
+
+
+def LfsrDigest8(*bytes_args: Expr | int, gen: int, key: int) -> LfsrDigest8Expr:
+    """MIC-style digest: ``lfsr_digest8(bytes, n, gen, key)`` in emitted C."""
+    wrapped: list[Expr] = []
+    for a in bytes_args:
+        if isinstance(a, bool):
+            raise TypeError("LfsrDigest8 does not accept bool")
+        if isinstance(a, float):
+            raise TypeError("LfsrDigest8 does not accept float")
+        wrapped.append(_wrap(a))
+    return LfsrDigest8Expr(bytes_args=tuple(wrapped), gen=gen, key=key)
 
 
 @dataclass(frozen=True, eq=False)
@@ -169,39 +230,41 @@ class FieldRef(Expr):
         return hash(("FieldRef", self.name))
 
 
-_ExprLeaf = Union[Expr, int, float]
-
-
-def _wrap(value: Any) -> _ExprLeaf:
-    """Ensure expression tree leaves are valid node types."""
-    if isinstance(value, (int, float)):
-        return value
+def _wrap(value: Any) -> Expr:
+    """Wrap scalars as literal :class:`Expr` nodes; pass through existing ``Expr``."""
+    if isinstance(value, bool):
+        return ExprBoolLiteral(value)
+    if isinstance(value, int):
+        return ExprIntLiteral(value)
+    if isinstance(value, float):
+        return ExprFloatLiteral(value)
     if isinstance(value, Expr):
         return value
     raise TypeError(f"Cannot use {type(value).__name__} in a field expression")
 
 
+def _coerce_protocol_expr_result(value: Any) -> Expr | None:
+    """Normalize hook/property return values to a single :class:`Expr` root, or ``None``."""
+    if isinstance(value, Expr):
+        return value
+    if isinstance(value, bool):
+        return ExprBoolLiteral(value)
+    if isinstance(value, int):
+        return ExprIntLiteral(value)
+    if isinstance(value, float):
+        return ExprFloatLiteral(value)
+    return None
+
+
 @dataclass(frozen=True, eq=False)
 class Subscript(Expr):
-    """Index into a Rows-generated array: ``cells_b0[5]`` via ``F.cells_b0[5]``."""
+    """Index into a Rows-generated array, e.g. ``cells_b0[5]`` (``FieldRef`` + ``[row]``)."""
 
     base: FieldRef
     index: int
 
     def __hash__(self) -> int:
         return hash(("Subscript", self.base, self.index))
-
-
-class _FieldProxy:
-    """Singleton proxy: ``F.field_name`` produces a ``FieldRef``."""
-
-    def __getattr__(self, name: str) -> FieldRef:
-        if name.startswith("_"):
-            raise AttributeError(name)
-        return FieldRef(name)
-
-
-F = _FieldProxy()
 
 
 class _JsonProxy:
@@ -239,7 +302,7 @@ class CondSpec:
 
 @dataclass(frozen=True)
 class RepeatSpec:
-    count_expr: Expr | int
+    count_expr: Expr
     sub_protocol: type  # a Protocol subclass
 
 
@@ -417,8 +480,8 @@ class Literal:
 
 class Cond:
     """
-    ``Cond[F.flags & 1, Bits[16], Bits[12]]``  -> CondSpec with both branches
-    ``Cond[F.flags & 2, Bits[8]]``              -> CondSpec, false_type=None (optional)
+    ``Cond[FieldRef('flags') & 1, Bits[16], Bits[12]]`` -> CondSpec with both branches
+    ``Cond[FieldRef('flags') & 2, Bits[8]]`` -> CondSpec, false_type=None (optional)
     """
 
     def __class_getitem__(cls, params: tuple) -> CondSpec:
@@ -434,12 +497,22 @@ class Cond:
 
 
 class Repeat:
-    """``Repeat[F.measurements, SensorReading]`` -> RepeatSpec"""
+    """``Repeat[FieldRef('measurements'), SensorReading]`` or ``Repeat[3, Sub]`` -> RepeatSpec"""
 
     def __class_getitem__(cls, params: tuple) -> RepeatSpec:
         if not isinstance(params, tuple) or len(params) != 2:
             raise ValueError("Repeat requires (count_expr, sub_protocol)")
         count_expr, sub_protocol = params
+        if isinstance(count_expr, bool):
+            raise TypeError("Repeat count cannot be bool")
+        if isinstance(count_expr, int):
+            count_expr = ExprIntLiteral(count_expr)
+        elif isinstance(count_expr, float):
+            raise TypeError("Repeat count cannot be float")
+        elif not isinstance(count_expr, Expr):
+            raise TypeError(
+                f"Repeat count must be int or Expr, got {type(count_expr).__name__}"
+            )
         return RepeatSpec(count_expr=count_expr, sub_protocol=sub_protocol)
 
 
@@ -499,7 +572,6 @@ class ModulationConfig:
     gap_limit: float | None = None
     sync_width: float | None = None
     tolerance: float | None = None
-    #: If set, emitted as ``r_device.disabled`` (e.g. ``1`` for default-off).
     disabled: int | None = None
 
 
@@ -512,7 +584,108 @@ ProtocolConfig = ModulationConfig
 
 
 _EXCLUDED_CALLABLES: frozenset = frozenset(("decode", "from_hex", "to_json", "prepare"))
-_EXPR_TYPES = (Expr, int, float)
+
+
+def _callable_body_is_ellipsis(fn: Any) -> bool:
+    """True if the function body is only ``...`` (stub for hand-written C)."""
+    try:
+        src = inspect.getsource(fn)
+    except (OSError, TypeError):
+        return False
+    try:
+        tree = ast.parse(textwrap.dedent(src))
+    except SyntaxError:
+        return False
+    if not tree.body:
+        return False
+    fd = tree.body[0]
+    if not isinstance(fd, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        return False
+    if len(fd.body) != 1:
+        return False
+    st = fd.body[0]
+    return bool(
+        isinstance(st, ast.Expr)
+        and isinstance(st.value, ast.Constant)
+        and st.value.value is Ellipsis
+    )
+
+
+def _call_with_fieldref_kwargs(
+    fn: Any, proxy: Any, param_names: tuple[str, ...] | None
+) -> Any:
+    kwargs = {p: FieldRef(p) for p in (param_names or ())}
+    return fn(proxy, **kwargs)
+
+
+def property_inline_expr(cls_or_variant: type, prop_name: str) -> Any:
+    """If a return-annotated property inlines to C, return its expression AST; else ``None``."""
+    prop_names = {n for n, _ in cls_or_variant.properties}
+    if prop_name not in prop_names:
+        return None
+    fn = getattr(cls_or_variant, prop_name)
+    if _callable_body_is_ellipsis(fn):
+        return None
+    arg_names = cls_or_variant.explicit_args().get(prop_name)
+    proxy = cls_or_variant()
+    out = _call_with_fieldref_kwargs(fn, proxy, arg_names)
+    return _coerce_protocol_expr_result(out)
+
+
+def method_inline_expr(cls_or_variant: type, method_name: str) -> Any:
+    """If a void method inlines to a single C expression statement, return it; else ``None``."""
+    if method_name not in cls_or_variant.methods:
+        return None
+    fn = getattr(cls_or_variant, method_name)
+    if _callable_body_is_ellipsis(fn):
+        return None
+    arg_names = cls_or_variant.explicit_args().get(method_name)
+    proxy = cls_or_variant()
+    out = _call_with_fieldref_kwargs(fn, proxy, arg_names)
+    return _coerce_protocol_expr_result(out)
+
+
+def when_inline_expr(variant_cls: type) -> Any:
+    """If ``Variant.when`` inlines to the C branch predicate, return it; else ``None``."""
+    _Variant = globals().get("Variant")
+    if _Variant is None or not issubclass(variant_cls, _Variant) or variant_cls is _Variant:
+        return None
+    fn = getattr(variant_cls, "when", None)
+    if not callable(fn):
+        return None
+    if _callable_body_is_ellipsis(fn):
+        return None
+    arg_names = variant_cls.explicit_args().get("when")
+    proxy = variant_cls()
+    out = _call_with_fieldref_kwargs(fn, proxy, arg_names)
+    return _coerce_protocol_expr_result(out)
+
+
+def validation_hook_inline_expr(cls_or_variant: type, hook_name: str) -> Any:
+    """If ``validate_*`` can be compiled as one expression, return it; else ``None``.
+
+    Explicit parameters (except ``fail_value``) are bound to :class:`FieldRef` names
+    so hooks may depend on parsed fields or earlier inline properties.
+    """
+    if not hook_name.startswith("validate_"):
+        return None
+    fn = getattr(cls_or_variant, hook_name)
+    if _callable_body_is_ellipsis(fn):
+        return None
+    proxy = cls_or_variant()
+    arg_names = cls_or_variant.explicit_args()[hook_name]
+    sig = inspect.signature(fn)
+    kwargs: dict[str, Any] = {}
+    if arg_names:
+        for p in arg_names:
+            kwargs[p] = FieldRef(p)
+    if "fail_value" in sig.parameters:
+        fd = sig.parameters["fail_value"].default
+        if fd is inspect.Parameter.empty:
+            return None
+        kwargs["fail_value"] = fd
+    out = fn(proxy, **kwargs)
+    return _coerce_protocol_expr_result(out)
 
 
 def _iter_user_callables(cls: type) -> list[tuple[str, Any]]:
@@ -565,6 +738,8 @@ class Protocol:
     variants: ClassVar[tuple[type, ...]] = ()
     #: Consolidated void method names (no return annotation), base-to-derived.
     methods: ClassVar[tuple[str, ...]] = ()
+    #: ``validate_<suffix>`` hook names in lexicographic order (see compiler).
+    validation_hooks: ClassVar[tuple[str, ...]] = ()
     #: Consolidated return-annotated callables as ``(name, py_type)``, base-to-derived.
     properties: ClassVar[tuple[tuple[str, type], ...]] = ()
 
@@ -605,7 +780,20 @@ class Protocol:
 
         merged_methods = dict.fromkeys(cls.methods)
         merged_props = dict(cls.properties)
+        merged_vhooks = dict.fromkeys(getattr(cls, "validation_hooks", ()))
         for name, fn in _iter_user_callables(cls):
+            if name == "when":
+                continue
+            if name == "validate":
+                raise ValueError(
+                    f"{cls.__name__}.{name}: bare 'validate' is not supported; use "
+                    "validate_<purpose>(...) instead (see README: validation hooks)."
+                )
+            if name.startswith("validate_"):
+                merged_vhooks[name] = None
+                merged_methods.pop(name, None)
+                merged_props.pop(name, None)
+                continue
             ret = _evaluated_callable_annotations(fn).get("return")
             if ret is None:
                 merged_methods[name] = None
@@ -614,7 +802,16 @@ class Protocol:
                 merged_props[name] = ret
                 merged_methods.pop(name, None)
         cls.methods = tuple(merged_methods.keys())
+        cls.validation_hooks = tuple(sorted(merged_vhooks.keys()))
         cls.properties = tuple(merged_props.items())
+
+        if _Variant is not None and issubclass(cls, _Variant) and cls is not _Variant:
+            w = getattr(cls, "when", None)
+            if not callable(w):
+                raise ValueError(
+                    f"{cls.__name__}: Variant must define when(self, ...) -> bool "
+                    "(non-zero in C selects this branch)"
+                )
 
     def __getattr__(self, name: str) -> FieldRef:
         if name.startswith("_"):
@@ -627,10 +824,28 @@ class Protocol:
 
     @classmethod
     def explicit_args(cls) -> dict[str, tuple[str, ...] | None]:
-        """Collect explicit argument lists (excluding self) for methods and properties."""
+        """Collect explicit argument lists (excluding self) for methods and properties.
+
+        For ``validate_*``, a trailing ``fail_value`` parameter (inline hooks only)
+        is compile-time only and omitted from the C argument list.
+        """
         result: dict[str, tuple[str, ...] | None] = {}
-        for name in cls.methods + tuple(n for n, _ in cls.properties):
+        _Variant = globals().get("Variant")
+        if (
+            _Variant is not None
+            and issubclass(cls, _Variant)
+            and cls is not _Variant
+        ):
+            wfn = getattr(cls, "when", None)
+            if callable(wfn):
+                wparams = [
+                    p for p in inspect.signature(wfn).parameters if p != "self"
+                ]
+                result["when"] = tuple(wparams) if wparams else None
+        for name in cls.methods + cls.validation_hooks + tuple(n for n, _ in cls.properties):
             params = [p for p in inspect.signature(getattr(cls, name)).parameters if p != "self"]
+            if name.startswith("validate_") and params and params[-1] == "fail_value":
+                params = params[:-1]
             result[name] = tuple(params) if params else None
         return result
 
@@ -654,21 +869,26 @@ class Protocol:
     @classmethod
     def requires_external_helpers(cls) -> bool:
         """True if any method or property cannot be inlined as a pure expression."""
-        proxy = cls()
-        explicit = cls.explicit_args()
         for name in cls.methods:
-            if explicit.get(name) or not isinstance(getattr(proxy, name)(), _EXPR_TYPES):
+            if method_inline_expr(cls, name) is None:
+                return True
+        for name in cls.validation_hooks:
+            if validation_hook_inline_expr(cls, name) is None:
                 return True
         for name, _ in cls.properties:
-            if explicit.get(name) or not isinstance(getattr(proxy, name)(), _EXPR_TYPES):
+            if property_inline_expr(cls, name) is None:
                 return True
         for variant_cls in cls.variants:
-            if variant_cls.methods:
+            if when_inline_expr(variant_cls) is None:
                 return True
-            v_proxy = variant_cls()
-            v_explicit = variant_cls.explicit_args()
+            for name in variant_cls.methods:
+                if method_inline_expr(variant_cls, name) is None:
+                    return True
+            for name in variant_cls.validation_hooks:
+                if validation_hook_inline_expr(variant_cls, name) is None:
+                    return True
             for name, _ in variant_cls.properties:
-                if v_explicit.get(name) or not isinstance(getattr(v_proxy, name)(), _EXPR_TYPES):
+                if property_inline_expr(variant_cls, name) is None:
                     return True
         return False
 
@@ -766,7 +986,11 @@ class Protocol:
 
 
 class Variant(Protocol):
-    """Base class for variant payload definitions (nested in a Protocol)."""
+    """Base class for variant payload definitions (nested in a Protocol).
 
-    when = None
+    Subclasses must implement ``when(self, ...) -> bool`` with the same
+    explicit-dependency style as properties; the body must compile to a C
+    predicate (non-zero means this variant matches).
+    """
+
     repeat_count = None

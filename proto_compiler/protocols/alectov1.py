@@ -67,7 +67,7 @@ Derived from the former ``src/devices/alecto.c``; PPM timing unchanged.
 
 from proto_compiler.dsl import (
     Bits,
-    F,
+    DecodeFail,
     JsonRecord,
     Modulation,
     ModulationConfig,
@@ -103,37 +103,38 @@ class alectov1(Protocol):
     def prepare(self):
         return self.bitbuffer
 
-    def validate(self, decoder, bitbuffer):
-        """Hand-written in ``alectov1.h`` (parity rows, dual ``alecto_checksum``)."""
+    def validate_packet(self, decoder, bitbuffer):
+        """Row parity, then MIC checksum + log. Implemented in ``alectov1.h``."""
         ...
 
     cells: Rows[(1, 2, 3, 4, 5, 6), AlectoRow, ((1, 36),)]
 
     class Wind0(Variant):
-        when = (
-            (((F.cells_b1[1] & 0x60) >> 5) == 0x3)
-            & ((F.cells_b1[1] & 0x0F) != 0x0C)
-            & ((F.cells_b1[1] & 0xE) == 0x8)
-            & (F.cells_b2[1] == 0)
-        )
+        def when(self, cells_b1, cells_b2) -> bool:
+            return (
+                (((cells_b1[1] & 0x60) >> 5) == 0x3)
+                & ((cells_b1[1] & 0x0F) != 0x0C)
+                & ((cells_b1[1] & 0xE) == 0x8)
+                & (cells_b2[1] == 0)
+            )
 
-        def sensor_id(self) -> int:
-            return Rev8(F.cells_b0[1])
+        def sensor_id(self, cells_b0) -> int:
+            return Rev8(cells_b0[1])
 
-        def channel(self) -> int:
-            return (F.cells_b0[1] & 0xC) >> 2
+        def channel(self, cells_b0) -> int:
+            return (cells_b0[1] & 0xC) >> 2
 
-        def battery_ok(self) -> int:
-            return ((F.cells_b1[1] & 0x80) >> 7) == 0
+        def battery_ok(self, cells_b1) -> int:
+            return ((cells_b1[1] & 0x80) >> 7) == 0
 
-        def wind_avg_m_s(self) -> float:
-            return Rev8(F.cells_b3[1]) * 0.2
+        def wind_avg_m_s(self, cells_b3) -> float:
+            return Rev8(cells_b3[1]) * 0.2
 
-        def wind_max_m_s(self) -> float:
-            return Rev8(F.cells_b3[5]) * 0.2
+        def wind_max_m_s(self, cells_b3) -> float:
+            return Rev8(cells_b3[5]) * 0.2
 
-        def wind_dir_deg(self) -> int:
-            return (Rev8(F.cells_b2[5]) << 1) | (F.cells_b1[5] & 1)
+        def wind_dir_deg(self, cells_b1, cells_b2) -> int:
+            return (Rev8(cells_b2[5]) << 1) | (cells_b1[5] & 1)
 
         def to_json(self) -> list[JsonRecord]:
             return [
@@ -162,29 +163,28 @@ class alectov1(Protocol):
             ]
 
     class Wind4(Variant):
-        when = (
-            (((F.cells_b1[1] & 0x60) >> 5) == 0x3)
-            & ((F.cells_b1[1] & 0x0F) != 0x0C)
-            & ((F.cells_b1[1] & 0xE) == 0xE)
-        )
+        def when(self, cells_b1) -> bool:
+            return (
+                (((cells_b1[1] & 0x60) >> 5) == 0x3)
+                & ((cells_b1[1] & 0x0F) != 0x0C)
+                & ((cells_b1[1] & 0xE) == 0xE)
+            )
 
-        def sensor_id(self) -> int:
-            return Rev8(F.cells_b0[1])
+        def sensor_id(self, cells_b0) -> int:
+            return Rev8(cells_b0[1])
 
-        def channel(self) -> int:
-            return (F.cells_b0[1] & 0xC) >> 2
+        def channel(self, cells_b0) -> int:
+            return (cells_b0[1] & 0xC) >> 2
 
-        def battery_ok(self) -> int:
-            return ((F.cells_b1[1] & 0x80) >> 7) == 0
+        def battery_ok(self, cells_b1) -> int:
+            return ((cells_b1[1] & 0x80) >> 7) == 0
 
-        def wind_avg_m_s(self) -> float:
-            return Rev8(F.cells_b3[5]) * 0.2
+        def wind_avg_m_s(self, cells_b3) -> float:
+            return Rev8(cells_b3[5]) * 0.2
 
-        def wind_max_m_s(self, bitbuffer) -> float:
-            return 0.0
+        def wind_max_m_s(self, bitbuffer) -> float: ...
 
-        def wind_dir_deg(self, bitbuffer) -> int:
-            return 0
+        def wind_dir_deg(self, bitbuffer) -> int: ...
 
         def to_json(self) -> list[JsonRecord]:
             return [
@@ -213,19 +213,20 @@ class alectov1(Protocol):
             ]
 
     class Rain(Variant):
-        when = (((F.cells_b1[1] & 0x60) >> 5) == 0x3) & ((F.cells_b1[1] & 0x0F) == 0x0C)
+        def when(self, cells_b1) -> bool:
+            return (((cells_b1[1] & 0x60) >> 5) == 0x3) & ((cells_b1[1] & 0x0F) == 0x0C)
 
-        def sensor_id(self) -> int:
-            return Rev8(F.cells_b0[1])
+        def sensor_id(self, cells_b0) -> int:
+            return Rev8(cells_b0[1])
 
-        def channel(self) -> int:
-            return (F.cells_b0[1] & 0xC) >> 2
+        def channel(self, cells_b0) -> int:
+            return (cells_b0[1] & 0xC) >> 2
 
-        def battery_ok(self) -> int:
-            return ((F.cells_b1[1] & 0x80) >> 7) == 0
+        def battery_ok(self, cells_b1) -> int:
+            return ((cells_b1[1] & 0x80) >> 7) == 0
 
-        def rain_mm(self) -> float:
-            return ((Rev8(F.cells_b3[1]) << 8) | Rev8(F.cells_b2[1])) * 0.25
+        def rain_mm(self, cells_b2, cells_b3) -> float:
+            return ((Rev8(cells_b3[1]) << 8) | Rev8(cells_b2[1])) * 0.25
 
         def to_json(self) -> list[JsonRecord]:
             return [
@@ -240,36 +241,37 @@ class alectov1(Protocol):
             ]
 
     class Temperature(Variant):
-        when = (
-            (((F.cells_b1[1] & 0x60) >> 5) != 0x3)
-            & (F.cells_b0[2] == F.cells_b0[3])
-            & (F.cells_b0[3] == F.cells_b0[4])
-            & (F.cells_b0[4] == F.cells_b0[5])
-            & (F.cells_b0[5] == F.cells_b0[6])
-        )
+        def when(self, cells_b0, cells_b1) -> bool:
+            return (
+                (((cells_b1[1] & 0x60) >> 5) != 0x3)
+                & (cells_b0[2] == cells_b0[3])
+                & (cells_b0[3] == cells_b0[4])
+                & (cells_b0[4] == cells_b0[5])
+                & (cells_b0[5] == cells_b0[6])
+            )
 
-        def validate(self):
+        def validate_humidity(self, cells_b3, fail_value=DecodeFail.SANITY):
             # Original uses b = bb[1]; humidity from b[3] → cells_b3[1], not row 3 / b1.
-            hum = (Rev8(F.cells_b3[1]) >> 4) * 10 + (Rev8(F.cells_b3[1]) & 0xF)
+            hum = (Rev8(cells_b3[1]) >> 4) * 10 + (Rev8(cells_b3[1]) & 0xF)
             return hum <= 100
 
-        def sensor_id(self) -> int:
-            return Rev8(F.cells_b0[1])
+        def sensor_id(self, cells_b0) -> int:
+            return Rev8(cells_b0[1])
 
-        def channel(self) -> int:
-            return (F.cells_b0[1] & 0xC) >> 2
+        def channel(self, cells_b0) -> int:
+            return (cells_b0[1] & 0xC) >> 2
 
-        def battery_ok(self) -> int:
-            return ((F.cells_b1[1] & 0x80) >> 7) == 0
+        def battery_ok(self, cells_b1) -> int:
+            return ((cells_b1[1] & 0x80) >> 7) == 0
 
-        def temperature_C(self) -> float:
+        def temperature_C(self, cells_b1, cells_b2) -> float:
             # b = bb[1]: temp from b[1], b[2] → cells_b1[1], cells_b2[1].
             return (
-                ((Rev8(F.cells_b1[1]) & 0xF0) | (Rev8(F.cells_b2[1]) << 8)) >> 4
+                ((Rev8(cells_b1[1]) & 0xF0) | (Rev8(cells_b2[1]) << 8)) >> 4
             ) * 0.1
 
-        def humidity(self) -> int:
-            return (Rev8(F.cells_b3[1]) >> 4) * 10 + (Rev8(F.cells_b3[1]) & 0xF)
+        def humidity(self, cells_b3) -> int:
+            return (Rev8(cells_b3[1]) >> 4) * 10 + (Rev8(cells_b3[1]) & 0xF)
 
         def to_json(self) -> list[JsonRecord]:
             return [

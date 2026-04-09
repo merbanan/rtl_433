@@ -104,17 +104,17 @@ static int acurite_01185m_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         int id = bitrow_get_bits(b, 0, 8);
         int battery_low = bitrow_get_bits(b, 8, 1);
+        int battery_ok = (battery_low == 0);
         (void)(bitrow_get_bits(b, 9, 3));
         int channel = bitrow_get_bits(b, 12, 4);
         int temp1_raw = bitrow_get_bits(b, 16, 16);
+        int temp1_ok = ((temp1_raw > 0xc8) & (temp1_raw < 0x1b58));
+        float temp1_f = ((temp1_raw - 0x384) * 0.1);
         int temp2_raw = bitrow_get_bits(b, 32, 16);
+        int temp2_ok = ((temp2_raw > 0xc8) & (temp2_raw < 0x1b58));
+        float temp2_f = ((temp2_raw - 0x384) * 0.1);
         (void)(bitrow_get_bits(b, 48, 8));
 
-        int temp1_ok = ((temp1_raw > 0xc8) & (temp1_raw < 0x1b58));
-        int temp2_ok = ((temp2_raw > 0xc8) & (temp2_raw < 0x1b58));
-        float temp1_f = ((temp1_raw - 0x384) * 0.1);
-        float temp2_f = ((temp2_raw - 0x384) * 0.1);
-        int battery_ok = (battery_low == 0);
 
         /* clang-format off */
         data_t *data = data_make(

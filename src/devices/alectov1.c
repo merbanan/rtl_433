@@ -144,6 +144,10 @@ static int alectov1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[1] != 36)
         return DECODE_ABORT_LENGTH;
 
+    int vret_validate_packet = alectov1_validate_packet(decoder, bitbuffer);
+    if (vret_validate_packet != 0)
+        return vret_validate_packet;
+
     int cells_b0[BITBUF_ROWS];
     int cells_b1[BITBUF_ROWS];
     int cells_b2[BITBUF_ROWS];
@@ -166,10 +170,6 @@ static int alectov1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         _roff_cells += 4;
     }
 
-
-    int valid = alectov1_validate(decoder, bitbuffer);
-    if (valid != 0)
-        return valid;
 
     if (((((((cells_b1[1]) & 0x60) >> 5) == 3) & (((cells_b1[1]) & 0xf) != 0xc)) & (((cells_b1[1]) & 0xe) == 8)) & ((cells_b2[1]) == 0)) {
         int sensor_id = (reverse8((cells_b0[1])));
@@ -234,13 +234,14 @@ static int alectov1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_output_data(decoder, data);
         return 1;
     } else if ((((((((cells_b1[1]) & 0x60) >> 5) != 3) & ((cells_b0[2]) == (cells_b0[3]))) & ((cells_b0[3]) == (cells_b0[4]))) & ((cells_b0[4]) == (cells_b0[5]))) & ((cells_b0[5]) == (cells_b0[6]))) {
-        if (!((((((reverse8((cells_b3[1]))) >> 4) * 0xa) + ((reverse8((cells_b3[1]))) & 0xf)) <= 0x64)))
-            return DECODE_FAIL_SANITY;
         int sensor_id = (reverse8((cells_b0[1])));
         int channel = (((cells_b0[1]) & 0xc) >> 2);
         int battery_ok = ((((cells_b1[1]) & 0x80) >> 7) == 0);
         float temperature_C = (((((reverse8((cells_b1[1]))) & 0xf0) | ((reverse8((cells_b2[1]))) << 8)) >> 4) * 0.1);
         int humidity = ((((reverse8((cells_b3[1]))) >> 4) * 0xa) + ((reverse8((cells_b3[1]))) & 0xf));
+        if (!((((((reverse8((cells_b3[1]))) >> 4) * 0xa) + ((reverse8((cells_b3[1]))) & 0xf)) <= 0x64)))
+            return DECODE_FAIL_SANITY;
+
 
         /* clang-format off */
         data_t *data = data_make(

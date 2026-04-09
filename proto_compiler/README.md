@@ -13,7 +13,6 @@ about adding Lua to rtl_433.
 For examples, see:
 
 * [protocols/akhan_100F14.py](protocols/akhan_100F14.py)
-* [protocols/alectov1.py](protocols/alectov1.py)
 * [protocols/thermopro_tp211b.py](protocols/thermopro_tp211b.py)
 * [protocols/tpms_ford.py](protocols/tpms_ford.py)
 * [protocols/lacrosse_tx31u.py](protocols/lacrosse_tx31u.py)
@@ -106,11 +105,19 @@ that sub-layout once per listed bitbuffer row index, using
 
 The compiler declares `int parent_subfield[BITBUF_ROWS]` for each sub-field and
 only writes indices present in `rows_tuple` (sparse indexing). In expressions,
-use `F.parent_subfield[row_index]` (i.e. `FieldRef.__getitem__`) to read a value.
-`Rev8(x)` emits `reverse8(x)` in C.
+use `FieldRef('parent_subfield')[row_index]` (or a `def foo(self, parent_subfield): …`
+parameter bound to that array). `Rev8(x)` emits `reverse8(x)` in C.
 
 The sub-protocol must not contain nested `Rows` or `Repeat` fields. `Rows` is
 incompatible with `FirstValidRow` as the last pipeline step.
+
+### Variants
+
+Nested `Variant` subclasses split decoding after the parent protocol’s fields.
+Each variant must define `when(self, …) -> bool` with explicit parameters for
+every field or row-array column the predicate uses (same style as properties).
+The body must compile to C; a non-zero value selects that branch (`if` /
+`else if` in the emitted decoder).
 
 ### Methods and properties
 
@@ -156,8 +163,45 @@ The parameter list is inferred from the method's explicit arguments. If no
 explicit arguments are given, the compiler passes all extracted fields
 automatically.
 
-The `validate` method is handled slightly differently from other methods: if it
-returns False, the method aborts early with `DECODE_FAIL_SANITY`.
+The `validate` method is handled slightly differently from other methods: if its
+body is a DSL expression and that expression is false, the decode returns
+`DECODE_FAIL_SANITY`. If `validate` is external (body `...`), the helper must
+return `0` on success or a `DECODE_FAIL_*` / `DECODE_ABORT_*` code on failure.
+
+### `validate_*` hooks and `DecodeFail`
+
+Any method whose name starts with `validate_` (but not the bare name `validate`)
+is a **validation hook**. Hooks are emitted **after** all ordinary methods and
+**after** bare `validate`, and **before** properties and `data_make`. Hook names
+are ordered **lexicographically**, so choose names accordingly when checks must
+run in a fixed order (for example `validate_mic` before `validate_sanity_humidity`).
+
+The last parameter must be `fail_value=DecodeFail.*` with a **default** only;
+the compiler reads that default and emits `return DECODE_FAIL_MIC`,
+`return DECODE_FAIL_SANITY`, `return DECODE_ABORT_EARLY`, or
+`return DECODE_ABORT_LENGTH` when an **inline** hook’s expression is false.
+`fail_value` is **not** passed in generated C calls.
+
+- **Inline hook:** signature is `(self, fail_value=DecodeFail.MIC)` only (no other
+  parameters). The body must be a single DSL expression that is **true** when the
+  packet is OK. Emitted as `if (!(expr)) return <token>;`.
+- **External hook:** any extra parameters (e.g. `decoder`, field names). Emitted
+  as `int vret_<name> = prefix_<name>(...); if (vret_<name> != 0) return vret_<name>;`
+  (variant decoders use `prefix_<Variant>_<name>`). Implement the helper in C;
+  the Python method can stub with `...`.
+
+`DecodeFail` is re-exported from `proto_compiler` for use in hook signatures.
+
+### `LfsrDigest8`
+
+`LfsrDigest8(b0, b1, …, gen=0x98, key=0x3e)` builds an expression that calls
+rtl_433’s `lfsr_digest8` (`bit_util.h`) on the given byte expressions, for example:
+
+```c
+(lfsr_digest8((uint8_t const[]){b0, b1, b2}, 3, 0x98, 0x3e))
+```
+
+Use it inside `validate_*` (or properties) for MIC-style digests.
 
 ### to_json
 
@@ -204,7 +248,7 @@ but differ in their preamble, bit offset after the match, and the JSONs they
 emit. A base class captures everything they have in common:
 
 ```python
-from proto_compiler.dsl import Bits, F, JsonRecord, Modulation, ModulationConfig, Protocol, Variant
+from proto_compiler.dsl import Bits, JsonRecord, Modulation, ModulationConfig, Protocol, Variant
 
 class current_cost_base(Protocol):
     class modulation_config(ModulationConfig):
@@ -218,7 +262,9 @@ class current_cost_base(Protocol):
     device_id: Bits[12]
 
     class meter(Variant):
-        when = F.msg_type == 0
+        def when(self, msg_type) -> bool:
+            return msg_type == 0
+
         ch0_valid: Bits[1]
         ch0_power: Bits[15]
         ch1_valid: Bits[1]
@@ -226,17 +272,19 @@ class current_cost_base(Protocol):
         ch2_valid: Bits[1]
         ch2_power: Bits[15]
 
-        def power0_W(self) -> int:
-            return self.ch0_valid * self.ch0_power
+        def power0_W(self, ch0_valid, ch0_power) -> int:
+            return ch0_valid * ch0_power
 
-        def power1_W(self) -> int:
-            return self.ch1_valid * self.ch1_power
+        def power1_W(self, ch1_valid, ch1_power) -> int:
+            return ch1_valid * ch1_power
 
-        def power2_W(self) -> int:
-            return self.ch2_valid * self.ch2_power
+        def power2_W(self, ch2_valid, ch2_power) -> int:
+            return ch2_valid * ch2_power
 
     class counter(Variant):
-        when = F.msg_type == 4
+        def when(self, msg_type) -> bool:
+            return msg_type == 4
+
         _unused: Bits[8]
         sensor_type: Bits[8]
         impulse: Bits[32]
@@ -288,7 +336,7 @@ class current_cost_classic(current_cost_base):
             ]
 ```
 
-The field definitions, variant dispatch logic, and computed properties
+The field definitions, `when()` predicates, variant dispatch, and computed properties
 (`power0_W`, etc.) are inherited from `current_cost_base`.  While the Python
 code avoids duplication, the compiler is not smart enough to avoid
 duplication in the emitted code. It generates duplicate code paths for

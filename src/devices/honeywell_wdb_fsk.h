@@ -4,6 +4,6 @@
 
 #include "honeywell_wdb.h"
 
-#define honeywell_wdb_fsk_validate honeywell_wdb_validate
+#define honeywell_wdb_fsk_validate_packet honeywell_wdb_validate_packet
 #define honeywell_wdb_fsk_subtype  honeywell_wdb_subtype
 #define honeywell_wdb_fsk_alert    honeywell_wdb_alert

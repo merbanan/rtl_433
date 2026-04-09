@@ -22,8 +22,8 @@ static int alecto_checksum(uint8_t *b)
     return (csum == (b[4] >> 4));
 }
 
-/** C only: raw bb[][] parity, alecto_checksum, and decoder_log are not emitted from Python. */
-static inline int alectov1_validate(r_device *decoder, bitbuffer_t *bitbuffer)
+/** C only: row parity, then ``alecto_checksum`` on rows 1 and 5 + ``decoder_log`` on MIC failure. */
+static inline int alectov1_validate_packet(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     bitrow_t *bb = bitbuffer->bb;
 
@@ -37,7 +37,7 @@ static inline int alectov1_validate(r_device *decoder, bitbuffer_t *bitbuffer)
     return 0;
 }
 
-/** C only: row 9 is outside Rows[] (no F.cells_*[9]) and Wind4's (bitbuffer) property is call-only in codegen. */
+/** C only: row 9 is outside Rows[]; Wind4's (bitbuffer) properties are call-only in codegen. */
 static inline double alectov1_Wind4_wind_max_m_s(bitbuffer_t *bitbuffer)
 {
     return reverse8(bitbuffer->bb[9][3]) * 0.2;

@@ -43,9 +43,9 @@ class abmt(Protocol):
     temp_last_byte: Bits[8]
     _trailer: Bits[8]
 
-    def temperature_c(self) -> float:
-        return (10 * (self.temp_bcd_byte >> 4) + (self.temp_bcd_byte & 0xF)) * 10 + (
-            self.temp_last_byte >> 4
+    def temperature_c(self, temp_bcd_byte, temp_last_byte) -> float:
+        return (10 * (temp_bcd_byte >> 4) + (temp_bcd_byte & 0xF)) * 10 + (
+            temp_last_byte >> 4
         )
 
     def to_json(self) -> list[JsonRecord]:

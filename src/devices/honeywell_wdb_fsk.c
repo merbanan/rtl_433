@@ -24,6 +24,10 @@ static int honeywell_wdb_fsk_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t b[6];
     bitbuffer_extract_bytes(bitbuffer, row, offset, b, 48);
 
+    int vret_validate_packet = honeywell_wdb_fsk_validate_packet(b);
+    if (vret_validate_packet != 0)
+        return vret_validate_packet;
+
     int device = bitrow_get_bits(b, 0, 20);
     (void)(bitrow_get_bits(b, 20, 6));
     int class_raw = bitrow_get_bits(b, 26, 2);
@@ -34,15 +38,11 @@ static int honeywell_wdb_fsk_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int relay = bitrow_get_bits(b, 44, 1);
     (void)(bitrow_get_bits(b, 45, 1));
     int battery_low = bitrow_get_bits(b, 46, 1);
+    int battery_ok = (battery_low == 0);
     (void)(bitrow_get_bits(b, 47, 1));
-
-    int valid = honeywell_wdb_fsk_validate(b);
-    if (valid != 0)
-        return valid;
 
     const char * subtype = honeywell_wdb_fsk_subtype(class_raw);
     const char * alert = honeywell_wdb_fsk_alert(alert_raw);
-    int battery_ok = (battery_low == 0);
 
     /* clang-format off */
     data_t *data = data_make(

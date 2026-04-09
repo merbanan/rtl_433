@@ -3,6 +3,7 @@ Compiler: reads a Protocol subclass and emits a C++ decoder file for rtl_433.
 """
 
 from __future__ import annotations
+import inspect
 from contextlib import contextmanager
 from pathlib import PurePosixPath
 from typing import Any
@@ -11,12 +12,21 @@ from .dsl import (
     BinaryExpr,
     BitsSpec,
     CondSpec,
+    DecodeFail,
+    ExprBoolLiteral,
+    ExprFloatLiteral,
+    ExprIntLiteral,
     FieldRef,
+    method_inline_expr,
+    property_inline_expr,
+    validation_hook_inline_expr,
+    when_inline_expr,
     FindRepeatedRow,
     FirstValidRow,
     Invert,
     JsonRecord,
     LiteralSpec,
+    LfsrDigest8Expr,
     ManchesterDecode,
     ModulationConfig,
     Reflect,
@@ -27,7 +37,6 @@ from .dsl import (
     SkipBits,
     Subscript,
     UnaryExpr,
-    _EXPR_TYPES,
 )
 
 
@@ -50,6 +59,15 @@ def _preamble_to_bytes(value: int) -> bytes:
 
 def _emit_expr(node: Any) -> str:
     """Recursively render an expression tree node as a C expression string."""
+    if isinstance(node, ExprBoolLiteral):
+        return "1" if node.value else "0"
+    if isinstance(node, ExprIntLiteral):
+        v = node.value
+        if v < 0:
+            return str(v)
+        return hex(v) if v > 9 else str(v)
+    if isinstance(node, ExprFloatLiteral):
+        return repr(node.value)
     if isinstance(node, bool):
         return "1" if node else "0"
     if isinstance(node, int):
@@ -64,11 +82,76 @@ def _emit_expr(node: Any) -> str:
         return f"({node.base.name}[{node.index}])"
     if isinstance(node, Rev8Expr):
         return f"(reverse8({_emit_expr(node.operand)}))"
+    if isinstance(node, LfsrDigest8Expr):
+        parts = [_emit_expr(x) for x in node.bytes_args]
+        n = len(parts)
+        inner = ", ".join(parts)
+        return (
+            f"(lfsr_digest8((uint8_t const[]){{{inner}}}, {n}, "
+            f"{_emit_expr(node.gen)}, {_emit_expr(node.key)}))"
+        )
     if isinstance(node, BinaryExpr):
         return f"({_emit_expr(node.left)} {node.op} {_emit_expr(node.right)})"
     if isinstance(node, UnaryExpr):
         return f"({node.op}{_emit_expr(node.operand)})"
     raise TypeError(f"Cannot emit expression node: {type(node).__name__}")
+
+
+def _collect_count_expr_fieldrefs(expr: Any, sink: set[str]) -> None:
+    sink.update(_field_refs_in_expr(expr))
+
+
+def _field_refs_in_expr(node: Any) -> set[str]:
+    """Names referenced as :class:`FieldRef` or subscript base in a DSL expression."""
+    if isinstance(node, (int, float, bool)) or node is None:
+        return set()
+    found: set[str] = set()
+    stack: list[Any] = [node]
+    while stack:
+        cur = stack.pop()
+        if isinstance(cur, (int, float, bool)) or cur is None:
+            continue
+        if isinstance(cur, (ExprIntLiteral, ExprFloatLiteral, ExprBoolLiteral)):
+            continue
+        if isinstance(cur, FieldRef):
+            found.add(cur.name)
+        elif isinstance(cur, Subscript):
+            found.add(cur.base.name)
+            stack.append(cur.base)
+        elif isinstance(cur, BinaryExpr):
+            stack.append(cur.left)
+            stack.append(cur.right)
+        elif isinstance(cur, UnaryExpr):
+            stack.append(cur.operand)
+        elif isinstance(cur, Rev8Expr):
+            stack.append(cur.operand)
+        elif isinstance(cur, LfsrDigest8Expr):
+            for a in cur.bytes_args:
+                stack.append(a)
+    return found
+
+
+def _decode_fail_c_token(fn: Any) -> str:
+    """C token from inline ``validate_*`` hook ``fail_value=DecodeFail.*`` default."""
+    sig = inspect.signature(fn)
+    names = [n for n in sig.parameters if n != "self"]
+    if not names or names[-1] != "fail_value":
+        raise TypeError(
+            f"{getattr(fn, '__qualname__', fn)!r}: validate_* hooks must declare "
+            "fail_value=DecodeFail.... as the last parameter (after self)."
+        )
+    p = sig.parameters["fail_value"]
+    if p.default is inspect.Parameter.empty:
+        raise TypeError(
+            f"{getattr(fn, '__qualname__', fn)!r}: fail_value must have a default DecodeFail value."
+        )
+    d = p.default
+    if not isinstance(d, DecodeFail):
+        raise TypeError(
+            f"{getattr(fn, '__qualname__', fn)!r}: fail_value default must be DecodeFail.*, "
+            f"got {type(d).__name__!r}"
+        )
+    return d.value
 
 
 def _c_type_for(py_type: type) -> str:
@@ -136,17 +219,191 @@ class _CompileContext:
         self.json_records = cls.json_records()
         self.delegates = self.cls.delegated_protocols()
         self._inline = self._try_inline_on(cls)
+        self._inline_props_emitted: set[str] = set()
+        self._inline_methods_emitted: set[str] = set()
+
+    def _decode_uses_b_array(self) -> bool:
+        if not hasattr(self.cls, "prepare"):
+            return False
+        steps = self.cls().prepare().steps
+        if any(isinstance(s, ManchesterDecode) for s in steps):
+            return True
+        return self._total_payload_bits(self.cls) > 0
+
+    def _implicit_external_dep_names(
+        self, cls_or_variant: type, variant_cls: type | None
+    ) -> set[str]:
+        names: set[str] = {"b"}
+        if variant_cls is not None:
+            for n in self._all_field_names_up_to(variant_cls):
+                names.add(n)
+        else:
+            for name, spec in self.fields:
+                if isinstance(spec, BitsSpec):
+                    names.add(name)
+                elif isinstance(spec, RepeatSpec):
+                    for sub_name, sub_spec in spec.sub_protocol.fields:
+                        if isinstance(sub_spec, BitsSpec):
+                            names.add(f"{name}_{sub_name}")
+                    _collect_count_expr_fieldrefs(spec.count_expr, names)
+        return names
+
+    def _validation_hook_dep_names(
+        self, cls_or_variant: type, hook_name: str, *, variant_cls: type | None = None
+    ) -> set[str]:
+        field_params = cls_or_variant.explicit_args().get(hook_name)
+        if field_params:
+            return set(field_params)
+        inline = validation_hook_inline_expr(cls_or_variant, hook_name)
+        if inline is not None:
+            return _field_refs_in_expr(inline)
+        return self._implicit_external_dep_names(cls_or_variant, variant_cls)
+
+    def _initial_available_symbols(self) -> set[str]:
+        s = {"decoder", "bitbuffer"}
+        if self._decode_uses_b_array():
+            s.add("b")
+        return s
+
+    def _symbols_from_top_level_field(self, fname: str, spec: Any) -> set[str]:
+        """C names that become valid after emitting one top-level (or variant) field."""
+        if isinstance(spec, BitsSpec) and not fname.startswith("_"):
+            return {fname}
+        if isinstance(spec, CondSpec):
+            return {fname}
+        if isinstance(spec, RepeatSpec):
+            out: set[str] = set()
+            for sub_name, sub_spec in spec.sub_protocol.fields:
+                if isinstance(sub_spec, BitsSpec):
+                    out.add(f"{fname}_{sub_name}")
+            return out
+        if isinstance(spec, RowsSpec):
+            out = set()
+            for sub_name, sub_spec in spec.sub_protocol.fields:
+                if isinstance(sub_spec, (BitsSpec, LiteralSpec)):
+                    out.add(f"{fname}_{sub_name}")
+            return out
+        return set()
+
+    def _union_symbols_for_fields(self, fields: list) -> set[str]:
+        u: set[str] = set()
+        for fname, spec in fields:
+            u |= self._symbols_from_top_level_field(fname, spec)
+        return u
+
+    def _flush_runnable_validation_hooks(
+        self,
+        cls_or_variant: type,
+        variant_cls: type | None,
+        inline_try: Any,
+        available: set[str],
+        pending: set[str],
+    ) -> None:
+        """Emit every ``validate_*`` in *pending* whose dependencies ⊆ *available* (lex order)."""
+        while True:
+            batch = [
+                h
+                for h in sorted(pending)
+                if self._validation_hook_dep_names(
+                    cls_or_variant, h, variant_cls=variant_cls
+                )
+                <= available
+            ]
+            if not batch:
+                break
+            for hook in batch:
+                self._emit_one_validation_hook(
+                    cls_or_variant, hook, variant_cls, inline_try
+                )
+                pending.discard(hook)
+
+    def _flush_inline_properties_and_validates(
+        self,
+        cls_or_variant: type,
+        variant_cls: type | None,
+        inline_try: Any,
+        available: set[str],
+        pending_val: set[str],
+        emitted_props: set[str],
+        emitted_methods: set[str],
+    ) -> None:
+        """Emit inline properties and void methods when declared deps ⊆ *available*; run validates. Repeat."""
+        prop_items = list(cls_or_variant.properties)
+        method_items = list(cls_or_variant.methods)
+        while True:
+            progressed = False
+            for prop_name, prop_type in prop_items:
+                if prop_name in emitted_props:
+                    continue
+                inline = inline_try(prop_name)
+                if inline is None:
+                    continue
+                ex = cls_or_variant.explicit_args().get(prop_name)
+                deps = set(ex or ())
+                if deps <= available:
+                    c_type = _c_type_for(prop_type)
+                    self._line(f"{c_type} {prop_name} = {_emit_expr(inline)};")
+                    emitted_props.add(prop_name)
+                    available.add(prop_name)
+                    progressed = True
+            for method_name in sorted(method_items):
+                if method_name in emitted_methods:
+                    continue
+                inline = inline_try(method_name)
+                if inline is None:
+                    continue
+                ex = cls_or_variant.explicit_args().get(method_name)
+                deps = set(ex or ())
+                if deps <= available:
+                    self._line(f"{_emit_expr(inline)};")
+                    emitted_methods.add(method_name)
+                    progressed = True
+            self._flush_runnable_validation_hooks(
+                cls_or_variant, variant_cls, inline_try, available, pending_val
+            )
+            if not progressed:
+                break
+
+    def _emit_one_validation_hook(
+        self,
+        cls_or_variant: type,
+        hook_name: str,
+        variant_cls: type | None,
+        inline_try: Any,
+    ) -> None:
+        fn = getattr(cls_or_variant, hook_name)
+        inline = inline_try(hook_name)
+        if inline is not None:
+            fail_c = _decode_fail_c_token(fn)
+            self._line(f"if (!({_emit_expr(inline)}))")
+            with self.indent():
+                self._line(f"return {fail_c};")
+            self._blank()
+        else:
+            if variant_cls is not None:
+                func_name = f"{self.prefix}_{variant_cls.__name__}_{hook_name}"
+            else:
+                func_name = f"{self.prefix}_{hook_name}"
+            args = self._c_call_args_string(cls_or_variant, hook_name, variant_cls)
+            vname = f"vret_{hook_name}"
+            self._line(f"int {vname} = {func_name}({args});")
+            self._line(f"if ({vname} != 0)")
+            with self.indent():
+                self._line(f"return {vname};")
+            self._blank()
 
     def _try_inline_on(self, cls_or_variant: type):
         """Return a closure that tries to inline a callable as a pure expression."""
-        proxy = cls_or_variant()
-        explicit = cls_or_variant.explicit_args()
+        prop_names = {n for n, _ in cls_or_variant.properties}
 
         def try_one(name: str) -> Any:
-            if explicit.get(name):
-                return None
-            result = getattr(proxy, name)()
-            return result if isinstance(result, _EXPR_TYPES) else None
+            if name.startswith("validate_"):
+                return validation_hook_inline_expr(cls_or_variant, name)
+            if name in prop_names:
+                return property_inline_expr(cls_or_variant, name)
+            if name in cls_or_variant.methods:
+                return method_inline_expr(cls_or_variant, name)
+            return None
 
         return try_one
 
@@ -494,8 +751,11 @@ class _CompileContext:
                     if offset_decl.emit(self):
                         self._blank()
                     self._line(f"uint8_t b[{total_bytes}];")
+                    extract_row = (
+                        "search_row" if (has_scan_all and not post_manchester) else row_expr
+                    )
                     self._line(
-                        f"bitbuffer_extract_bytes(bitbuffer, {row_expr}, offset, "
+                        f"bitbuffer_extract_bytes(bitbuffer, {extract_row}, offset, "
                         f"b, {total_bits});"
                     )
                     self._blank()
@@ -508,6 +768,20 @@ class _CompileContext:
         byte_array = "b"
         bit_offset = 0
         is_dynamic = False
+
+        pending_val = set(self.cls.validation_hooks)
+        available_sym = self._initial_available_symbols()
+        self._inline_props_emitted.clear()
+        self._inline_methods_emitted.clear()
+        self._flush_inline_properties_and_validates(
+            self.cls,
+            None,
+            self._inline,
+            available_sym,
+            pending_val,
+            self._inline_props_emitted,
+            self._inline_methods_emitted,
+        )
 
         for name, spec in fields:
             if isinstance(spec, BitsSpec):
@@ -548,6 +822,23 @@ class _CompileContext:
             elif isinstance(spec, RowsSpec):
                 self._emit_rows_field(name, spec)
 
+            available_sym |= self._symbols_from_top_level_field(name, spec)
+            self._flush_inline_properties_and_validates(
+                self.cls,
+                None,
+                self._inline,
+                available_sym,
+                pending_val,
+                self._inline_props_emitted,
+                self._inline_methods_emitted,
+            )
+
+        if pending_val:
+            raise RuntimeError(
+                f"{self.cls.__name__}: cannot run validation hooks {sorted(pending_val)!r}; "
+                f"dependencies never satisfied (have {sorted(available_sym)!r})"
+            )
+
         # Emit variant branches if present
         if self.variants:
             self._blank()
@@ -585,12 +876,34 @@ class _CompileContext:
 
     def _emit_variant_branches(self, variants: list, byte_array: str, bit_offset: int):
         for i, variant_cls in enumerate(variants):
-            when_expr = _emit_expr(variant_cls.when)
+            when_ast = when_inline_expr(variant_cls)
+            if when_ast is None:
+                raise RuntimeError(
+                    f"{variant_cls.__name__}: when() must return an inline bool expression "
+                    "(same rules as properties; use explicit parameters for dependencies)"
+                )
+            when_expr = _emit_expr(when_ast)
             keyword = "if" if i == 0 else "} else if"
             # when_expr is already parenthesized by _emit_expr; avoid "if ((x == y))"
             self._line(f"{keyword} {when_expr} {{")
             with self.indent():
                 var_offset = bit_offset
+                variant_inline = self._try_inline_on(variant_cls)
+                pending_v = set(variant_cls.validation_hooks)
+                available_v = self._initial_available_symbols() | self._union_symbols_for_fields(
+                    self.fields
+                )
+                emitted_variant_inline_props: set[str] = set()
+                emitted_variant_inline_methods: set[str] = set()
+                self._flush_inline_properties_and_validates(
+                    variant_cls,
+                    variant_cls,
+                    variant_inline,
+                    available_v,
+                    pending_v,
+                    emitted_variant_inline_props,
+                    emitted_variant_inline_methods,
+                )
                 for name, spec in variant_cls.fields:
                     if isinstance(spec, BitsSpec):
                         if not name.startswith("_"):
@@ -605,36 +918,42 @@ class _CompileContext:
                         with self.indent():
                             self._line("return DECODE_FAIL_SANITY;")
                         var_offset += spec.width
+                    available_v |= self._symbols_from_top_level_field(name, spec)
+                    self._flush_inline_properties_and_validates(
+                        variant_cls,
+                        variant_cls,
+                        variant_inline,
+                        available_v,
+                        pending_v,
+                        emitted_variant_inline_props,
+                        emitted_variant_inline_methods,
+                    )
 
-                variant_inline = self._try_inline_on(variant_cls)
+                if pending_v:
+                    raise RuntimeError(
+                        f"{variant_cls.__name__}: cannot run validation hooks "
+                        f"{sorted(pending_v)!r}; dependencies never satisfied "
+                        f"(have {sorted(available_v)!r})"
+                    )
+
                 for method_name in variant_cls.methods:
+                    if method_name in emitted_variant_inline_methods:
+                        continue
                     inline = variant_inline(method_name)
                     if inline is not None:
-                        if method_name == "validate":
-                            self._line(f"if (!({_emit_expr(inline)}))")
-                            with self.indent():
-                                self._line("return DECODE_FAIL_SANITY;")
-                        else:
-                            self._line(f"{_emit_expr(inline)};")
+                        self._line(f"{_emit_expr(inline)};")
                     else:
                         func_name = (
                             f"{self.prefix}_{variant_cls.__name__}_{method_name}"
                         )
-                        v_ex = variant_cls.explicit_args().get(method_name)
-                        if v_ex:
-                            args = ", ".join(v_ex)
-                        else:
-                            all_field_names = self._all_field_names_up_to(variant_cls)
-                            args = ", ".join(["b"] + all_field_names)
-                        if method_name == "validate":
-                            self._line(f"int vret = {func_name}({args});")
-                            self._line("if (vret != 0)")
-                            with self.indent():
-                                self._line("return vret;")
-                        else:
-                            self._line(f"{func_name}({args});")
+                        args = self._c_call_args_string(
+                            variant_cls, method_name, variant_cls
+                        )
+                        self._line(f"{func_name}({args});")
 
                 for prop_name, prop_type in variant_cls.properties:
+                    if prop_name in emitted_variant_inline_props:
+                        continue
                     inline = variant_inline(prop_name)
                     if inline is not None:
                         c_type = _c_type_for(prop_type)
@@ -786,36 +1105,37 @@ class _CompileContext:
                     self._line(f"bit_pos += {sub_spec.width};")
         self._blank()
 
+    def _c_call_args_string(
+        self, cls_or_variant: type, method_name: str, variant_cls: type | None
+    ) -> str:
+        ex = cls_or_variant.explicit_args().get(method_name)
+        if ex:
+            return ", ".join(ex)
+        if variant_cls is not None:
+            return ", ".join(["b"] + self._all_field_names_up_to(variant_cls))
+        return ", ".join(["b"] + self._func_args())
+
     def _emit_method_calls(self):
         for method_name in self.methods:
+            if method_name in self._inline_methods_emitted:
+                continue
             inline = self._inline(method_name)
             if inline is not None:
-                if method_name == "validate":
-                    self._line(f"if (!({_emit_expr(inline)}))")
-                    with self.indent():
-                        self._line("return DECODE_FAIL_SANITY;")
-                    self._blank()
-                else:
-                    self._line(f"{_emit_expr(inline)};")
+                self._line(f"{_emit_expr(inline)};")
             else:
                 func_name = f"{self.prefix}_{method_name}"
                 args = ", ".join(
                     self._explicit_args(method_name) or (["b"] + self._func_args())
                 )
-                if method_name == "validate":
-                    self._line(f"int valid = {func_name}({args});")
-                    self._line("if (valid != 0)")
-                    with self.indent():
-                        self._line("return valid;")
-                    self._blank()
-                else:
-                    self._line(f"{func_name}({args});")
+                self._line(f"{func_name}({args});")
 
     def _emit_property_calls(self):
         property_items = self.properties
         if not property_items:
             return
         for prop_name, prop_type in property_items:
+            if prop_name in self._inline_props_emitted:
+                continue
             inline = self._inline(prop_name)
             if inline is not None:
                 c_type = _c_type_for(prop_type)

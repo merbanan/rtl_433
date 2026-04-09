@@ -14,6 +14,7 @@ set(PROTO_PROTOCOL_STEMS
     acurite_01185m
     alectov1
     akhan_100F14
+    ambient_weather
     thermopro_tp211b
     lacrosse_tx31u
     tpms_ford

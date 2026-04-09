@@ -50,12 +50,12 @@ static int current_cost_envir_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (msg_type == 0) {
         int ch0_valid = bitrow_get_bits(b, 16, 1);
         int ch0_power = bitrow_get_bits(b, 17, 15);
+        int power0_W = (ch0_valid * ch0_power);
         int ch1_valid = bitrow_get_bits(b, 32, 1);
         int ch1_power = bitrow_get_bits(b, 33, 15);
+        int power1_W = (ch1_valid * ch1_power);
         int ch2_valid = bitrow_get_bits(b, 48, 1);
         int ch2_power = bitrow_get_bits(b, 49, 15);
-        int power0_W = (ch0_valid * ch0_power);
-        int power1_W = (ch1_valid * ch1_power);
         int power2_W = (ch2_valid * ch2_power);
 
         /* clang-format off */
@@ -126,12 +126,12 @@ static int current_cost_classic_decode(r_device *decoder, bitbuffer_t *bitbuffer
     if (msg_type == 0) {
         int ch0_valid = bitrow_get_bits(b, 16, 1);
         int ch0_power = bitrow_get_bits(b, 17, 15);
+        int power0_W = (ch0_valid * ch0_power);
         int ch1_valid = bitrow_get_bits(b, 32, 1);
         int ch1_power = bitrow_get_bits(b, 33, 15);
+        int power1_W = (ch1_valid * ch1_power);
         int ch2_valid = bitrow_get_bits(b, 48, 1);
         int ch2_power = bitrow_get_bits(b, 49, 15);
-        int power0_W = (ch0_valid * ch0_power);
-        int power1_W = (ch1_valid * ch1_power);
         int power2_W = (ch2_valid * ch2_power);
 
         /* clang-format off */

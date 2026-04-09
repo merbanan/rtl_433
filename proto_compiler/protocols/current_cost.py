@@ -11,7 +11,6 @@ reading (msg_type 4).
 
 from proto_compiler.dsl import (
     Bits,
-    F,
     JsonRecord,
     Modulation,
     ModulationConfig,
@@ -32,7 +31,8 @@ class current_cost_base(Protocol):
     device_id: Bits[12]
 
     class meter(Variant):
-        when = F.msg_type == 0
+        def when(self, msg_type) -> bool:
+            return msg_type == 0
         ch0_valid: Bits[1]
         ch0_power: Bits[15]
         ch1_valid: Bits[1]
@@ -40,17 +40,18 @@ class current_cost_base(Protocol):
         ch2_valid: Bits[1]
         ch2_power: Bits[15]
 
-        def power0_W(self) -> int:
-            return self.ch0_valid * self.ch0_power
+        def power0_W(self, ch0_valid, ch0_power) -> int:
+            return ch0_valid * ch0_power
 
-        def power1_W(self) -> int:
-            return self.ch1_valid * self.ch1_power
+        def power1_W(self, ch1_valid, ch1_power) -> int:
+            return ch1_valid * ch1_power
 
-        def power2_W(self) -> int:
-            return self.ch2_valid * self.ch2_power
+        def power2_W(self, ch2_valid, ch2_power) -> int:
+            return ch2_valid * ch2_power
 
     class counter(Variant):
-        when = F.msg_type == 4
+        def when(self, msg_type) -> bool:
+            return msg_type == 4
         _unused: Bits[8]
         sensor_type: Bits[8]
         impulse: Bits[32]

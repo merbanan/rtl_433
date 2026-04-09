@@ -16,7 +16,7 @@ Packet nibbles:
 - C = Checksum, SUM bytes 0 to 6 = byte 7
 """
 
-from proto_compiler.dsl import Bits, JsonRecord, Modulation, ModulationConfig, Protocol
+from proto_compiler.dsl import Bits, DecodeFail, JsonRecord, Modulation, ModulationConfig, Protocol
 
 
 class tpms_ford(Protocol):
@@ -43,37 +43,45 @@ class tpms_ford(Protocol):
     flags: Bits[8]
     checksum: Bits[8]
 
-    def validate(self):
+    def validate_checksum(
+        self,
+        sensor_id,
+        pressure_raw,
+        temp_byte,
+        flags,
+        checksum,
+        fail_value=DecodeFail.MIC,
+    ):
         return (
             (
-                (self.sensor_id >> 24)
-                + ((self.sensor_id >> 16) & 0xFF)
-                + ((self.sensor_id >> 8) & 0xFF)
-                + (self.sensor_id & 0xFF)
-                + self.pressure_raw
-                + self.temp_byte
-                + self.flags
+                (sensor_id >> 24)
+                + ((sensor_id >> 16) & 0xFF)
+                + ((sensor_id >> 8) & 0xFF)
+                + (sensor_id & 0xFF)
+                + pressure_raw
+                + temp_byte
+                + flags
             )
             & 0xFF
-        ) == self.checksum
+        ) == checksum
 
-    def pressure_psi(self) -> float:
-        return (((self.flags & 0x20) << 3) | self.pressure_raw) * 0.25
+    def pressure_psi(self, flags, pressure_raw) -> float:
+        return (((flags & 0x20) << 3) | pressure_raw) * 0.25
 
-    def moving(self) -> int:
-        return (self.flags & 0x44) == 0x44
+    def moving(self, flags) -> int:
+        return (flags & 0x44) == 0x44
 
-    def learn(self) -> int:
-        return (self.flags & 0x4C) == 0x08
+    def learn(self, flags) -> int:
+        return (flags & 0x4C) == 0x08
 
-    def code(self) -> int:
-        return (self.pressure_raw << 16) | (self.temp_byte << 8) | self.flags
+    def code(self, pressure_raw, temp_byte, flags) -> int:
+        return (pressure_raw << 16) | (temp_byte << 8) | flags
 
-    def unknown(self) -> int:
-        return self.flags & 0x90
+    def unknown(self, flags) -> int:
+        return flags & 0x90
 
-    def unknown_3(self) -> int:
-        return self.flags & 0x03
+    def unknown_3(self, flags) -> int:
+        return flags & 0x03
 
     def to_json(self) -> list[JsonRecord]:
         # fmt: off

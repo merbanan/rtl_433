@@ -65,15 +65,15 @@ static int thermopro_tp211b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int id = bitrow_get_bits(b, 0, 24);
     int flags = bitrow_get_bits(b, 24, 4);
     int temp_raw = bitrow_get_bits(b, 28, 12);
+    float temperature_c = ((temp_raw - 0x1f4) * 0.1);
     if (bitrow_get_bits(b, 40, 8) != 0xaa)
         return DECODE_FAIL_SANITY;
     int checksum = bitrow_get_bits(b, 48, 16);
+    int vret_validate_checksum = thermopro_tp211b_validate_checksum(b, checksum);
+    if (vret_validate_checksum != 0)
+        return vret_validate_checksum;
 
-    int valid = thermopro_tp211b_validate(b, checksum);
-    if (valid != 0)
-        return valid;
 
-    float temperature_c = ((temp_raw - 0x1f4) * 0.1);
 
     /* clang-format off */
     data_t *data = data_make(

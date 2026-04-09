@@ -50,7 +50,7 @@ These readings have not been tested.
 
 from proto_compiler.dsl import (
     Bits,
-    F,
+    FieldRef,
     Literal,
     Modulation,
     ModulationConfig,
@@ -82,10 +82,10 @@ class lacrosse_tx31u(Protocol):
     no_ext: Bits[1]
     battery_low: Bits[1]
     measurements: Bits[3]
-    readings: Repeat[F.measurements, sensor_reading]
+    readings: Repeat[FieldRef("measurements"), sensor_reading]
     crc: Bits[8]
 
-    def validate(self, b, measurements, crc): ...
+    def validate_crc(self, b, measurements, crc): ...
 
     def temperature_c(
         self, readings_sensor_type, readings_reading, measurements

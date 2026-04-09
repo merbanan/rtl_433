@@ -1,9 +1,9 @@
 /* lacrosse_tx31u.h - hand-written helpers included by the generated decoder. */
 #pragma once
 
-/* validate: CRC-8 (poly 0x31, init 0x00) over the 2-byte header and all
+/* validate_crc: CRC-8 (poly 0x31, init 0x00) over the 2-byte header and all
    measurement pairs.  b[0] is the first payload byte (after preamble). */
-static int lacrosse_tx31u_validate(uint8_t *b, int measurements, int crc)
+static int lacrosse_tx31u_validate_crc(uint8_t *b, int measurements, int crc)
 {
     int expected = crc8(b, 2 + measurements * 2, 0x31, 0x00);
     return (crc == expected) ? 0 : DECODE_FAIL_MIC;
