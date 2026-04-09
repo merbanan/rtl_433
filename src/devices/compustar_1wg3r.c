@@ -46,7 +46,7 @@ Button presses sent in batches by the remote when secondary mode is activated.
 
 Data layout:
 
-IIII x bbbbbbbb iiiiiiii z
+    IIII x bbbbbbbb iiiiiiii z
 
 - I: 16 bit remote ID
 - x: 3 bit unknown (always set to 111)
@@ -56,7 +56,7 @@ IIII x bbbbbbbb iiiiiiii z
 
 Format string:
 
-ID: hhhh UNKNOWN: bbb BUTTON_INVERSE: bbbbbbbb BUTTON: bbbbbbbb UNKNOWN: b
+    ID: hhhh UNKNOWN: bbb BUTTON_INVERSE: bbbbbbbb BUTTON: bbbbbbbb UNKNOWN: b
 
 */
 

@@ -40,7 +40,8 @@ Data layout:
 
 Bytes are inverted and reflected
 
-IIIIIIII bbbb x d xx CC
+    IIIIIIII bbbb x d xx CC
+
 - I: 32 bit remote ID
 - b: 4 bit button code
 - x: 1 bit unknown
@@ -50,7 +51,7 @@ IIIIIIII bbbb x d xx CC
 
 Format string:
 
-ID: hhhhhhhh BUTTON: bbbb x MULTIPLE: b xx CHECKSUM: bbbbbbbb
+    ID: hhhhhhhh BUTTON: bbbb x MULTIPLE: b xx CHECKSUM: bbbbbbbb
 
 */
 

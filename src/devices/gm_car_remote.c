@@ -30,7 +30,7 @@ Pressing both lock and unlock appears to send a fixed code, possibly a PRNG seed
 
 Data layout:
 
-PP xxxx cccc IIIIIIII SSSSSS EEEEEE CC
+    PP xxxx cccc IIIIIIII SSSSSS EEEEEE CC
 
 - P: 8 bit unknown, possibly part of the ID
 - c: 4 bit checksum of button code
@@ -42,7 +42,7 @@ PP xxxx cccc IIIIIIII SSSSSS EEEEEE CC
 
 Format string:
 
-UNKNOWN: bbbbbbbb BUTTON_CHECKSUM: bbbb BUTTON: bbbb ID: hhhhhhhh SEQUENCE: hhhhhh ENCRYPTED: hhhhhh CHECKSUM: hh
+    UNKNOWN: bbbbbbbb BUTTON_CHECKSUM: bbbb BUTTON: bbbb ID: hhhhhhhh SEQUENCE: hhhhhh ENCRYPTED: hhhhhh CHECKSUM: hh
 
 */
 

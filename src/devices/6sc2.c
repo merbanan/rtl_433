@@ -32,7 +32,7 @@ Data layout:
 
 Bytes are reflected
 
-PPPP EEEEEEEE bbbb uuuu SSSS CC
+    PPPP EEEEEEEE bbbb uuuu SSSS CC
 
 - P: 16 bit preamble
 - E: 32 bit encrypted
@@ -43,7 +43,7 @@ PPPP EEEEEEEE bbbb uuuu SSSS CC
 
 Format string:
 
-PREAMBLE: hhhh ENCRYPTED: hh hh hh hh BUTTON: bbbb UNKNOWN: bbbb SEQUENCE: hhhh CHECKSUM: hh
+    PREAMBLE: hhhh ENCRYPTED: hh hh hh hh BUTTON: bbbb UNKNOWN: bbbb SEQUENCE: hhhh CHECKSUM: hh
 
 */
 

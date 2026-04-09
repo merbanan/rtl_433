@@ -28,7 +28,7 @@ Multiple buttons can be pressed to set multiple button flags.
 
 Data layout:
 
-PPPP uuuu bbbb IIIIIIII uuuu
+    PPPP uuuu bbbb IIIIIIII uuuu
 
 - P: 32 bit Preamble, all 0x00
 - u: 4 bit unknown
@@ -38,7 +38,7 @@ PPPP uuuu bbbb IIIIIIII uuuu
 
 Format string:
 
-PREAMBLE: hhhh UNKNOWN: bbbb BUTTON: bbbb ID: hhhhhhhh bbbbbbbb
+    PREAMBLE: hhhh UNKNOWN: bbbb BUTTON: bbbb ID: hhhhhhhh bbbbbbbb
 
 */
 

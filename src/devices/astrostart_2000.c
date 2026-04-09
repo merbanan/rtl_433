@@ -45,7 +45,7 @@ Note: The panic button will always send two messages on the primary serial numbe
 
 Data layout:
 
-B X IIII cccc
+    B X IIII cccc
 
 - B: 8 bit button code
 - X: 8 bit inverse of the button code
@@ -54,7 +54,7 @@ B X IIII cccc
 
 Format string:
 
-BUTTON: bbbbbbbb INVERSE: bbbbbbbb ID: hhhhhhhh CHECKSUM: h
+    BUTTON: bbbbbbbb INVERSE: bbbbbbbb ID: hhhhhhhh CHECKSUM: h
 
 */
 

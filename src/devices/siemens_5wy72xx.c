@@ -32,7 +32,7 @@ Data layout:
 
 Data is little endian
 
-PPPP IIIIIIII bbbbbbbb SSSS EEEEEEEE CC
+    PPPP IIIIIIII bbbbbbbb SSSS EEEEEEEE CC
 
 - P: 16 bit preamble (not included in XOR checksum)
 - c: 32 bit ID
@@ -43,7 +43,7 @@ PPPP IIIIIIII bbbbbbbb SSSS EEEEEEEE CC
 
 Format string:
 
-PREAMBLE: hhhh ID: hhhhhhhh BUTTON: bbbbbbbb SEQUENCE: hhhh ENCRYPTED: hhhhhhhh XOR: hh xxxx
+    PREAMBLE: hhhh ID: hhhhhhhh BUTTON: bbbbbbbb SEQUENCE: hhhh ENCRYPTED: hhhhhhhh XOR: hh xxxx
 
 */
 

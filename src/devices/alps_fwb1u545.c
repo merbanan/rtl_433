@@ -31,7 +31,7 @@ Data layout:
 
 Data is little endian
 
-PP IIIIIIII bbbbbbbb bbbbbbbb SSSS CC
+    PP IIIIIIII bbbbbbbb bbbbbbbb SSSS CC
 
 - P: 8 bit preamble
 - I: 32 bit ID
@@ -42,7 +42,7 @@ PP IIIIIIII bbbbbbbb bbbbbbbb SSSS CC
 
 Format string:
 
-PREAMBLE: bbbbbbbb ID: hhhhhhhh BUTTON: bbbbbbbb BUTTON_XOR: bbbbbbbb SEQUENCE: hhhh UNKNOWN: bbbb
+    PREAMBLE: bbbbbbbb ID: hhhhhhhh BUTTON: bbbbbbbb BUTTON_XOR: bbbbbbbb SEQUENCE: hhhh UNKNOWN: bbbb
 
 */
 

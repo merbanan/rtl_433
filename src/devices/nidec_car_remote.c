@@ -36,7 +36,7 @@ Bytes are inverted.
 
 The decoder will match on the last 64 bits of the preamble: 0xfffffff0
 
-SSSS IIIIII uuuu bbbb CC
+    SSSS IIIIII uuuu bbbb CC
 
 - I: 16 bit sequence that increments on each code transmitted
 - I: 24 bit remote ID
@@ -46,7 +46,7 @@ SSSS IIIIII uuuu bbbb CC
 
 Format string:
 
-SEQUENCE hhhh ID: hhhhhh UNKNOWN: bbbb BUTTON: bbbb CODE: hhhh
+    SEQUENCE hhhh ID: hhhhhh UNKNOWN: bbbb BUTTON: bbbb CODE: hhhh
 
 */
 
