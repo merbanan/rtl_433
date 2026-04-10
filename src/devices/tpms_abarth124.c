@@ -71,7 +71,6 @@ Data layout (nibbles):
 static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos, int type)
 {
     bitbuffer_t packet_bits = {0};
-    uint8_t *b;
     char id_str[4 * 2 + 1];
     char flags[1 * 2 + 1];
     int data_len;
@@ -91,12 +90,11 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
 
     // make sure we decoded the expected number of bits
     if (packet_bits.bits_per_row[0] < data_len) {
-        // decoder_logf(decoder, 0, __func__, "bitpos=%u start_pos=%u = %u", bitpos, start_pos, (start_pos - bitpos));
         decoder_log(decoder, 2, __func__, "Packet too short");
         return 0; //DECODE_FAIL_SANITY;
     }
 
-    b = packet_bits.bb[0];
+    uint8_t *b = packet_bits.bb[0];
 
     // check checksum (checksum8 xor) same for both type model
     int checksum = xor_bytes(b, 9);
@@ -124,7 +122,7 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
     /* clang-format off */
     data_t *data = data_make(
             "model",            "",             DATA_COND, type == MODEL_TG1C, DATA_STRING, "Abarth-124Spider",
-            "model",            "",             DATA_COND, type == MODEL_Q85,  DATA_STRING, "Shenzhen-EGQ-Q85",
+            "model",            "",             DATA_COND, type == MODEL_Q85,  DATA_STRING, "Shenzhen-EGQQ85",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,
             "flags",            "",             DATA_STRING, flags,
@@ -168,7 +166,7 @@ static int tpms_abarth124_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Find a preamble with enough bits after it that it could be a complete packet
     while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 24)) + 80 <=
             bitbuffer->bits_per_row[0]) {
-        events += tpms_abarth124_decode(decoder, bitbuffer, 0, bitpos + 24,type);
+        events += tpms_abarth124_decode(decoder, bitbuffer, 0, bitpos + 24, type);
         bitpos += 2;
     }
 
