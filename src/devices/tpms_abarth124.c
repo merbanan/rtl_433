@@ -33,7 +33,7 @@ TG1C (Abarth-124Spider):
 - Tire monitoring range value: 0kPa-350kPa+-7kPa (to be checked, VDO says 450/900kPa)
 
 Q85 (Shenzhen-EGQ-Q85):
-- Analysis asked by @js-3972 in issue #2556
+- Analysis asked by \@js-3972 in issue #2556
 - TPMS from Amazon here: https://www.amazon.com/dp/B0BK8SHDRZ?psc=1&ref=ppx_yo2ov_dt_b_product_details
 - Air pressure setting range: 0.1~6.0BA / 1.45~87psi
 - Temperature setting range: 60°C~110°C / 140ºF~230ºF
