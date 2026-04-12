@@ -114,7 +114,7 @@ static int shenzhen_wale_wl_th6r_decode(r_device *decoder, bitbuffer_t *bitbuffe
     // The temperature is an int16_t starting in b[3], use a cast to sign-extend
     int temp_raw = (int16_t)((b[3] << 8) | b[4]);
     // The temperature is stored as multiples of 0.1°C
-    double temp_c = temp_raw * 0.1f;
+    float temp_c = temp_raw * 0.1f;
     // The sensor's specified temperature range is -20°C to 60°C. The base station accepts more extreme values, the cloud API does not.
     // Note that the sensors actually do report values > 60°C.
     if (temp_c < -20.0f || temp_c > 60.0f) {
@@ -140,14 +140,16 @@ static int shenzhen_wale_wl_th6r_decode(r_device *decoder, bitbuffer_t *bitbuffe
 
     // Extract the pairing mode bit
     int pairing = b[7] >> 7;
-    // Extract the cycle counter. Every ~10s the sensor takes a measurement and increments the counter, but only
-    // transmits when there's enough of a change (e.g. +/- 0.3°C or +/- 3% RH) or more than five minutes have passed.
-    // A good way to test the counter behavior is to press the pairing button, which causes the sensor to send
-    // 13 transmissions in a row, incrementing the counter each time.
-    // Normally the counter goes from 0-64 (0x40) and then starts over, but there's some odd behavior for the
-    // first transmission after inserting batteries where the bits for the counter might be uninitialized,
-    // seemingly reusing memory used for the battery level. When inserting sufficiently fresh batteries this could
-    // lead to counter values > 64, so let's cap the value to something inside the expected range just in case.
+    /*
+    Extract the cycle counter. Every ~10s the sensor takes a measurement and increments the counter, but only
+    transmits when there's enough of a change (e.g. +/- 0.3°C or +/- 3% RH) or more than five minutes have passed.
+    A good way to test the counter behavior is to press the pairing button, which causes the sensor to send
+    13 transmissions in a row, incrementing the counter each time.
+    Normally the counter goes from 0-64 (0x40) and then starts over, but there's some odd behavior for the
+    first transmission after inserting batteries where the bits for the counter might be uninitialized,
+    seemingly reusing memory used for the battery level. When inserting sufficiently fresh batteries this could
+    lead to counter values > 64, so let's cap the value to something inside the expected range just in case.
+    */
     int cycle = (b[7] & 0x40) ? 0x40 : (b[7] & 0x3F);
 
     decoder_logf(decoder, 2, __func__, "Row index %d is valid", row);
