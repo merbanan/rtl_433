@@ -6,7 +6,7 @@
 #include "decoder.h"
 #include "honeywell_wdb.h"
 
-static constexpr int honeywell_wdb_battery_ok(int battery_low) {
+static inline int honeywell_wdb_battery_ok(int battery_low) {
   return (battery_low == 0);
 }
 

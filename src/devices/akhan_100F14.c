@@ -6,27 +6,27 @@
 #include "decoder.h"
 #include "akhan_100F14.h"
 
-static constexpr int akhan_100F14_notb0(int b0) {
+static inline int akhan_100F14_notb0(int b0) {
   return ((~b0) & 0xff);
 }
 
-static constexpr int akhan_100F14_notb1(int b1) {
+static inline int akhan_100F14_notb1(int b1) {
   return ((~b1) & 0xff);
 }
 
-static constexpr int akhan_100F14_notb2(int b2) {
+static inline int akhan_100F14_notb2(int b2) {
   return ((~b2) & 0xff);
 }
 
-static constexpr int akhan_100F14_id(int notb0, int notb1, int notb2) {
+static inline int akhan_100F14_id(int notb0, int notb1, int notb2) {
   return (((notb0 << 0xc) | (notb1 << 4)) | (notb2 >> 4));
 }
 
-static constexpr int akhan_100F14_cmd(int notb2) {
+static inline int akhan_100F14_cmd(int notb2) {
   return (notb2 & 0xf);
 }
 
-static constexpr bool akhan_100F14_validate_cmd(int cmd) {
+static inline bool akhan_100F14_validate_cmd(int cmd) {
   return ((((cmd == 1) | (cmd == 2)) | (cmd == 4)) | (cmd == 8));
 }
 
@@ -45,12 +45,12 @@ static int akhan_100F14_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
   int b2 = bitrow_get_bits(b, bit_pos, 8);
   bit_pos += 8;
   bit_pos += 1;
-  if (!akhan_100F14_validate_cmd(cmd))
+  if (!akhan_100F14_validate_cmd(akhan_100F14_cmd(akhan_100F14_notb2(b2))))
       return DECODE_FAIL_SANITY;
   data_t *data = data_make(
           "model", "", DATA_STRING, "Akhan-100F14",
-          "id", "ID (20bit)", DATA_FORMAT, "0x%x", DATA_INT, akhan_100F14_id(notb0, notb1, notb2),
-          "data", "Data (4bit)", DATA_STRING, akhan_100F14_data_str(cmd),
+          "id", "ID (20bit)", DATA_FORMAT, "0x%x", DATA_INT, akhan_100F14_id(akhan_100F14_notb0(b0), akhan_100F14_notb1(b1), akhan_100F14_notb2(b2)),
+          "data", "Data (4bit)", DATA_STRING, akhan_100F14_data_str(akhan_100F14_cmd(akhan_100F14_notb2(b2))),
           NULL);
   decoder_output_data(decoder, data);
   return 1;

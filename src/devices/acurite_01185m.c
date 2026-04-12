@@ -6,23 +6,51 @@
 #include "decoder.h"
 #include "acurite_01185m.h"
 
-static constexpr int acurite_01185m_temp1_ok(int data_temp1_raw) {
-  return ((data_temp1_raw > 0xc8) & (data_temp1_raw < 0x1b58));
-}
-
-static constexpr int acurite_01185m_temp2_ok(int data_temp2_raw) {
-  return ((data_temp2_raw > 0xc8) & (data_temp2_raw < 0x1b58));
-}
-
-static constexpr float acurite_01185m_temp1_f(int data_temp1_raw) {
+static inline float acurite_01185m_BothProbes_temp1_f(int data_temp1_raw) {
   return ((data_temp1_raw - 0x384) * 0.1);
 }
 
-static constexpr float acurite_01185m_temp2_f(int data_temp2_raw) {
+static inline float acurite_01185m_BothProbes_temp2_f(int data_temp2_raw) {
   return ((data_temp2_raw - 0x384) * 0.1);
 }
 
-static constexpr int acurite_01185m_battery_ok(int data_battery_low) {
+static inline int acurite_01185m_BothProbes_battery_ok(int data_battery_low) {
+  return (data_battery_low == 0);
+}
+
+static inline float acurite_01185m_MeatOnly_temp1_f(int data_temp1_raw) {
+  return ((data_temp1_raw - 0x384) * 0.1);
+}
+
+static inline float acurite_01185m_MeatOnly_temp2_f(int data_temp2_raw) {
+  return ((data_temp2_raw - 0x384) * 0.1);
+}
+
+static inline int acurite_01185m_MeatOnly_battery_ok(int data_battery_low) {
+  return (data_battery_low == 0);
+}
+
+static inline float acurite_01185m_AmbientOnly_temp1_f(int data_temp1_raw) {
+  return ((data_temp1_raw - 0x384) * 0.1);
+}
+
+static inline float acurite_01185m_AmbientOnly_temp2_f(int data_temp2_raw) {
+  return ((data_temp2_raw - 0x384) * 0.1);
+}
+
+static inline int acurite_01185m_AmbientOnly_battery_ok(int data_battery_low) {
+  return (data_battery_low == 0);
+}
+
+static inline float acurite_01185m_NoProbes_temp1_f(int data_temp1_raw) {
+  return ((data_temp1_raw - 0x384) * 0.1);
+}
+
+static inline float acurite_01185m_NoProbes_temp2_f(int data_temp2_raw) {
+  return ((data_temp2_raw - 0x384) * 0.1);
+}
+
+static inline int acurite_01185m_NoProbes_battery_ok(int data_battery_low) {
   return (data_battery_low == 0);
 }
 
@@ -61,21 +89,56 @@ static int acurite_01185m_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
     bit_pos += 16;
     data_checksum[_r] = bitrow_get_bits(b, bit_pos, 8);
     bit_pos += 8;
-    if (!acurite_01185m_validate_checksum(data_id, data_battery_low, data_mid, data_channel, data_temp1_raw, data_temp2_raw, data_checksum)) {
+    if (!acurite_01185m_validate_checksum(data_id[_r], data_battery_low[_r], data_mid[_r], data_channel[_r], data_temp1_raw[_r], data_temp2_raw[_r], data_checksum[_r])) {
       result = DECODE_FAIL_MIC;
       continue;
     }
-    data_t *data = data_make(
-            "model", "", DATA_STRING, "Acurite-01185M",
-            "id", "", DATA_INT, data_id,
-            "channel", "", DATA_INT, data_channel,
-            "battery_ok", "Battery", DATA_INT, acurite_01185m_battery_ok(data_battery_low),
-            "temperature_1_F", "Meat", DATA_COND, temp1_ok, DATA_FORMAT, "%.1f F", DATA_DOUBLE, (double)acurite_01185m_temp1_f(data_temp1_raw),
-            "temperature_2_F", "Ambient", DATA_COND, temp2_ok, DATA_FORMAT, "%.1f F", DATA_DOUBLE, (double)acurite_01185m_temp2_f(data_temp2_raw),
-            "mic", "Integrity", DATA_STRING, "CHECKSUM",
-            NULL);
-    decoder_output_data(decoder, data);
-    return 1;
+    if (((((data_temp1_raw[_r] > 0xc8) & (data_temp1_raw[_r] < 0x1b58)) & (data_temp2_raw[_r] > 0xc8)) & (data_temp2_raw[_r] < 0x1b58))) {
+      data_t *data = data_make(
+              "model", "", DATA_STRING, "Acurite-01185M",
+              "id", "", DATA_INT, data_id[_r],
+              "channel", "", DATA_INT, data_channel[_r],
+              "battery_ok", "Battery", DATA_INT, acurite_01185m_BothProbes_battery_ok(data_battery_low[_r]),
+              "temperature_1_F", "Meat", DATA_FORMAT, "%.1f F", DATA_DOUBLE, (double)acurite_01185m_BothProbes_temp1_f(data_temp1_raw[_r]),
+              "temperature_2_F", "Ambient", DATA_FORMAT, "%.1f F", DATA_DOUBLE, (double)acurite_01185m_BothProbes_temp2_f(data_temp2_raw[_r]),
+              "mic", "Integrity", DATA_STRING, "CHECKSUM",
+              NULL);
+      decoder_output_data(decoder, data);
+      return 1;
+    } else if ((((data_temp1_raw[_r] > 0xc8) & (data_temp1_raw[_r] < 0x1b58)) & ((data_temp2_raw[_r] <= 0xc8) | (data_temp2_raw[_r] >= 0x1b58)))) {
+      data_t *data = data_make(
+              "model", "", DATA_STRING, "Acurite-01185M",
+              "id", "", DATA_INT, data_id[_r],
+              "channel", "", DATA_INT, data_channel[_r],
+              "battery_ok", "Battery", DATA_INT, acurite_01185m_MeatOnly_battery_ok(data_battery_low[_r]),
+              "temperature_1_F", "Meat", DATA_FORMAT, "%.1f F", DATA_DOUBLE, (double)acurite_01185m_MeatOnly_temp1_f(data_temp1_raw[_r]),
+              "mic", "Integrity", DATA_STRING, "CHECKSUM",
+              NULL);
+      decoder_output_data(decoder, data);
+      return 1;
+    } else if (((((data_temp1_raw[_r] <= 0xc8) | (data_temp1_raw[_r] >= 0x1b58)) & (data_temp2_raw[_r] > 0xc8)) & (data_temp2_raw[_r] < 0x1b58))) {
+      data_t *data = data_make(
+              "model", "", DATA_STRING, "Acurite-01185M",
+              "id", "", DATA_INT, data_id[_r],
+              "channel", "", DATA_INT, data_channel[_r],
+              "battery_ok", "Battery", DATA_INT, acurite_01185m_AmbientOnly_battery_ok(data_battery_low[_r]),
+              "temperature_2_F", "Ambient", DATA_FORMAT, "%.1f F", DATA_DOUBLE, (double)acurite_01185m_AmbientOnly_temp2_f(data_temp2_raw[_r]),
+              "mic", "Integrity", DATA_STRING, "CHECKSUM",
+              NULL);
+      decoder_output_data(decoder, data);
+      return 1;
+    } else if ((((data_temp1_raw[_r] <= 0xc8) | (data_temp1_raw[_r] >= 0x1b58)) & ((data_temp2_raw[_r] <= 0xc8) | (data_temp2_raw[_r] >= 0x1b58)))) {
+      data_t *data = data_make(
+              "model", "", DATA_STRING, "Acurite-01185M",
+              "id", "", DATA_INT, data_id[_r],
+              "channel", "", DATA_INT, data_channel[_r],
+              "battery_ok", "Battery", DATA_INT, acurite_01185m_NoProbes_battery_ok(data_battery_low[_r]),
+              "mic", "Integrity", DATA_STRING, "CHECKSUM",
+              NULL);
+      decoder_output_data(decoder, data);
+      return 1;
+    }
+    return DECODE_FAIL_SANITY;
   }
   return result;
 }

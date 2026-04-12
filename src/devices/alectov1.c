@@ -6,83 +6,83 @@
 #include "decoder.h"
 #include "alectov1.h"
 
-static constexpr int alectov1_Wind0_sensor_id(int *cells_b0) {
+static inline int alectov1_Wind0_sensor_id(int *cells_b0) {
   return (reverse8((cells_b0[1])));
 }
 
-static constexpr int alectov1_Wind0_channel(int *cells_b0) {
+static inline int alectov1_Wind0_channel(int *cells_b0) {
   return (((cells_b0[1]) & 0xc) >> 2);
 }
 
-static constexpr int alectov1_Wind0_battery_ok(int *cells_b1) {
+static inline int alectov1_Wind0_battery_ok(int *cells_b1) {
   return ((((cells_b1[1]) & 0x80) >> 7) == 0);
 }
 
-static constexpr float alectov1_Wind0_wind_avg_m_s(int *cells_b3) {
+static inline float alectov1_Wind0_wind_avg_m_s(int *cells_b3) {
   return ((reverse8((cells_b3[1]))) * 0.2);
 }
 
-static constexpr float alectov1_Wind0_wind_max_m_s(int *cells_b3) {
+static inline float alectov1_Wind0_wind_max_m_s(int *cells_b3) {
   return ((reverse8((cells_b3[5]))) * 0.2);
 }
 
-static constexpr int alectov1_Wind0_wind_dir_deg(int *cells_b1, int *cells_b2) {
+static inline int alectov1_Wind0_wind_dir_deg(int *cells_b1, int *cells_b2) {
   return (((reverse8((cells_b2[5]))) << 1) | ((cells_b1[5]) & 1));
 }
 
-static constexpr int alectov1_Wind4_sensor_id(int *cells_b0) {
+static inline int alectov1_Wind4_sensor_id(int *cells_b0) {
   return (reverse8((cells_b0[1])));
 }
 
-static constexpr int alectov1_Wind4_channel(int *cells_b0) {
+static inline int alectov1_Wind4_channel(int *cells_b0) {
   return (((cells_b0[1]) & 0xc) >> 2);
 }
 
-static constexpr int alectov1_Wind4_battery_ok(int *cells_b1) {
+static inline int alectov1_Wind4_battery_ok(int *cells_b1) {
   return ((((cells_b1[1]) & 0x80) >> 7) == 0);
 }
 
-static constexpr float alectov1_Wind4_wind_avg_m_s(int *cells_b3) {
+static inline float alectov1_Wind4_wind_avg_m_s(int *cells_b3) {
   return ((reverse8((cells_b3[5]))) * 0.2);
 }
 
-static constexpr int alectov1_Rain_sensor_id(int *cells_b0) {
+static inline int alectov1_Rain_sensor_id(int *cells_b0) {
   return (reverse8((cells_b0[1])));
 }
 
-static constexpr int alectov1_Rain_channel(int *cells_b0) {
+static inline int alectov1_Rain_channel(int *cells_b0) {
   return (((cells_b0[1]) & 0xc) >> 2);
 }
 
-static constexpr int alectov1_Rain_battery_ok(int *cells_b1) {
+static inline int alectov1_Rain_battery_ok(int *cells_b1) {
   return ((((cells_b1[1]) & 0x80) >> 7) == 0);
 }
 
-static constexpr float alectov1_Rain_rain_mm(int *cells_b2, int *cells_b3) {
+static inline float alectov1_Rain_rain_mm(int *cells_b2, int *cells_b3) {
   return ((((reverse8((cells_b3[1]))) << 8) | (reverse8((cells_b2[1])))) * 0.25);
 }
 
-static constexpr bool alectov1_Temperature_validate_humidity(int *cells_b3) {
+static inline bool alectov1_Temperature_validate_humidity(int *cells_b3) {
   return (((((reverse8((cells_b3[1]))) >> 4) * 0xa) + ((reverse8((cells_b3[1]))) & 0xf)) <= 0x64);
 }
 
-static constexpr int alectov1_Temperature_sensor_id(int *cells_b0) {
+static inline int alectov1_Temperature_sensor_id(int *cells_b0) {
   return (reverse8((cells_b0[1])));
 }
 
-static constexpr int alectov1_Temperature_channel(int *cells_b0) {
+static inline int alectov1_Temperature_channel(int *cells_b0) {
   return (((cells_b0[1]) & 0xc) >> 2);
 }
 
-static constexpr int alectov1_Temperature_battery_ok(int *cells_b1) {
+static inline int alectov1_Temperature_battery_ok(int *cells_b1) {
   return ((((cells_b1[1]) & 0x80) >> 7) == 0);
 }
 
-static constexpr float alectov1_Temperature_temperature_C(int *cells_b1, int *cells_b2) {
+static inline float alectov1_Temperature_temperature_C(int *cells_b1, int *cells_b2) {
   return (((((reverse8((cells_b1[1]))) & 0xf0) | ((reverse8((cells_b2[1]))) << 8)) >> 4) * 0.1);
 }
 
-static constexpr int alectov1_Temperature_humidity(int *cells_b3) {
+static inline int alectov1_Temperature_humidity(int *cells_b3) {
   return ((((reverse8((cells_b3[1]))) >> 4) * 0xa) + ((reverse8((cells_b3[1]))) & 0xf));
 }
 

@@ -6,7 +6,7 @@
 #include "decoder.h"
 #include "thermopro_tp211b.h"
 
-static constexpr float thermopro_tp211b_temperature_c(int temp_raw) {
+static inline float thermopro_tp211b_temperature_c(int temp_raw) {
   return ((temp_raw - 0x1f4) * 0.1);
 }
 

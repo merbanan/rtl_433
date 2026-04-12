@@ -5,7 +5,7 @@
 
 #include "decoder.h"
 
-static constexpr float abmt_temperature_c(int temp_bcd_byte, int temp_last_byte) {
+static inline float abmt_temperature_c(int temp_bcd_byte, int temp_last_byte) {
   return ((((0xa * (temp_bcd_byte >> 4)) + (temp_bcd_byte & 0xf)) * 0xa) + (temp_last_byte >> 4));
 }
 

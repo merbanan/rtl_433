@@ -5,6 +5,30 @@
 
 #include "decoder.h"
 
+static inline int current_cost_envir_meter_power0_W(int ch0_valid, int ch0_power) {
+  return (ch0_valid * ch0_power);
+}
+
+static inline int current_cost_envir_meter_power1_W(int ch1_valid, int ch1_power) {
+  return (ch1_valid * ch1_power);
+}
+
+static inline int current_cost_envir_meter_power2_W(int ch2_valid, int ch2_power) {
+  return (ch2_valid * ch2_power);
+}
+
+static inline int current_cost_classic_meter_power0_W(int ch0_valid, int ch0_power) {
+  return (ch0_valid * ch0_power);
+}
+
+static inline int current_cost_classic_meter_power1_W(int ch1_valid, int ch1_power) {
+  return (ch1_valid * ch1_power);
+}
+
+static inline int current_cost_classic_meter_power2_W(int ch2_valid, int ch2_power) {
+  return (ch2_valid * ch2_power);
+}
+
 static int current_cost_envir_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
   bitbuffer_invert(bitbuffer);
   uint8_t const preamble[] = { 0x55, 0x55, 0x55, 0x55, 0xa4, 0x57 };

@@ -5,31 +5,31 @@
 
 #include "decoder.h"
 
-static constexpr bool tpms_ford_validate_checksum(int sensor_id, int pressure_raw, int temp_byte, int flags, int checksum) {
+static inline bool tpms_ford_validate_checksum(int sensor_id, int pressure_raw, int temp_byte, int flags, int checksum) {
   return (((((((((sensor_id >> 0x18) + ((sensor_id >> 0x10) & 0xff)) + ((sensor_id >> 8) & 0xff)) + (sensor_id & 0xff)) + pressure_raw) + temp_byte) + flags) & 0xff) == checksum);
 }
 
-static constexpr float tpms_ford_pressure_psi(int flags, int pressure_raw) {
+static inline float tpms_ford_pressure_psi(int flags, int pressure_raw) {
   return ((((flags & 0x20) << 3) | pressure_raw) * 0.25);
 }
 
-static constexpr int tpms_ford_moving(int flags) {
+static inline int tpms_ford_moving(int flags) {
   return ((flags & 0x44) == 0x44);
 }
 
-static constexpr int tpms_ford_learn(int flags) {
+static inline int tpms_ford_learn(int flags) {
   return ((flags & 0x4c) == 8);
 }
 
-static constexpr int tpms_ford_code(int pressure_raw, int temp_byte, int flags) {
+static inline int tpms_ford_code(int pressure_raw, int temp_byte, int flags) {
   return (((pressure_raw << 0x10) | (temp_byte << 8)) | flags);
 }
 
-static constexpr int tpms_ford_unknown(int flags) {
+static inline int tpms_ford_unknown(int flags) {
   return (flags & 0x90);
 }
 
-static constexpr int tpms_ford_unknown_3(int flags) {
+static inline int tpms_ford_unknown_3(int flags) {
   return (flags & 3);
 }
 
@@ -39,6 +39,7 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
   if (bitbuffer->num_rows < 1)
       return DECODE_ABORT_LENGTH;
   unsigned tip_row = 0;
+  unsigned offset = 0;
   int preamble_found = 0;
   for (unsigned row = 0; row < (unsigned)bitbuffer->num_rows && !preamble_found; ++row) {
     unsigned pos = bitbuffer_search(bitbuffer, row, 0, preamble, 16);

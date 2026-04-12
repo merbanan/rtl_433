@@ -5,35 +5,35 @@
 
 #include "decoder.h"
 
-static constexpr bool ambient_weather_validate_mic(int b0, int b1, int b2, int b3, int b4, int b5) {
+static inline bool ambient_weather_validate_mic(int b0, int b1, int b2, int b3, int b4, int b5) {
   return (((lfsr_digest8((uint8_t const[]){b0, b1, b2, b3, b4}, 5, 0x98, 0x3e)) ^ 0x64) == b5);
 }
 
-static constexpr bool ambient_weather_validate_sanity_humidity(int b4) {
+static inline bool ambient_weather_validate_sanity_humidity(int b4) {
   return (b4 <= 0x64);
 }
 
-static constexpr bool ambient_weather_validate_sanity_temperature(int b2, int b3) {
+static inline bool ambient_weather_validate_sanity_temperature(int b2, int b3) {
   return ((((b2 & 0xf) << 8) | b3) < 0xf00);
 }
 
-static constexpr int ambient_weather_sensor_id(int b1) {
+static inline int ambient_weather_sensor_id(int b1) {
   return b1;
 }
 
-static constexpr int ambient_weather_battery_ok(int b2) {
+static inline int ambient_weather_battery_ok(int b2) {
   return ((b2 & 0x80) == 0);
 }
 
-static constexpr int ambient_weather_channel(int b2) {
+static inline int ambient_weather_channel(int b2) {
   return (((b2 & 0x70) >> 4) + 1);
 }
 
-static constexpr float ambient_weather_temperature_F(int b2, int b3) {
+static inline float ambient_weather_temperature_F(int b2, int b3) {
   return (((((b2 & 0xf) << 8) | b3) - 0x190) * 0.1);
 }
 
-static constexpr int ambient_weather_humidity(int b4) {
+static inline int ambient_weather_humidity(int b4) {
   return b4;
 }
 
@@ -42,6 +42,7 @@ static int ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
   if (bitbuffer->num_rows < 1)
       return DECODE_ABORT_LENGTH;
   unsigned tip_row = 0;
+  unsigned offset = 0;
   int preamble_found = 0;
   for (unsigned row = 0; row < (unsigned)bitbuffer->num_rows && !preamble_found; ++row) {
     unsigned pos = bitbuffer_search(bitbuffer, row, 0, preamble, 12);
