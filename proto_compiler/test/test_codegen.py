@@ -75,7 +75,7 @@ class TestSimpleDecoder:
         assert '#include "decoder.h"' in self.code
 
     def test_static_constexpr_helper(self):
-        assert "static constexpr float simple_sensor_temperature_c" in self.code
+        assert "static inline float simple_sensor_temperature_c" in self.code
 
     def test_helper_body(self):
         # (temp_raw - 500) * 0.1 → ((temp_raw - 0x1f4) * 0.1)
@@ -141,7 +141,7 @@ class sensor_with_validate(Decoder):
     payload: Bits[16]
     checksum: Bits[8]
 
-    def validate_checksum(self, sensor_id, checksum, fail_value=DecodeFail.MIC):
+    def validate_checksum(self, sensor_id, checksum, fail_value=DecodeFail.MIC) -> bool:
         return (sensor_id + checksum) & 0xFF == 0
 
 
@@ -150,7 +150,7 @@ class TestValidateHook:
         self.code = _compile(sensor_with_validate())
 
     def test_validate_fn_emitted(self):
-        assert "static constexpr bool sensor_with_validate_validate_checksum" in self.code
+        assert "static inline bool sensor_with_validate_validate_checksum" in self.code
 
     def test_validate_called_automatically(self):
         # The guard must appear in the decode function body
@@ -686,7 +686,562 @@ class TestValidateOrder:
 
 
 # ---------------------------------------------------------------------------
-# 11. Annotation collection (regression test for Python 3.14 PEP 749)
+# 11. FirstValid combined with Variants
+# ---------------------------------------------------------------------------
+
+
+class FVVariantRow(Repeatable):
+    sensor_id: Bits[8]
+    flags: Bits[4]
+    value: Bits[12]
+
+
+class fv_variant_decoder(Decoder):
+    """Exercises FirstValid row iteration with variant dispatch.
+
+    The variant ``when`` conditions and the ``to_json`` field references all
+    touch FirstValid sub-fields, which live in ``int field[BITBUF_ROWS]``
+    arrays.  The codegen must subscript each reference with the loop index
+    ``[_r]``.
+    """
+
+    def modulation_config(self):
+        return ModulationConfig(
+            device_name="FV Variant Test",
+            modulation=Modulation.OOK_PULSE_PPM,
+            short_width=1000,
+            long_width=2000,
+            reset_limit=4000,
+        )
+
+    def prepare(self, buf):
+        return buf
+
+    data: Rows[FirstValid(24), FVVariantRow]
+
+    class TypeA(Variant):
+        def when(self, data_flags) -> bool:
+            return data_flags == 1
+
+        def to_json(self) -> list[JsonRecord]:
+            return [
+                JsonRecord("model", "", "FV-TypeA", "DATA_STRING"),
+                JsonRecord("sensor_id", "", self.data_sensor_id, "DATA_INT"),
+                JsonRecord("value", "", self.data_value, "DATA_INT"),
+            ]
+
+    class TypeB(Variant):
+        def when(self, data_flags) -> bool:
+            return data_flags == 2
+
+        def to_json(self) -> list[JsonRecord]:
+            return [
+                JsonRecord("model", "", "FV-TypeB", "DATA_STRING"),
+                JsonRecord("sensor_id", "", self.data_sensor_id, "DATA_INT"),
+            ]
+
+
+class TestFirstValidWithVariants:
+    def setup_method(self):
+        self.code = _compile(fv_variant_decoder())
+
+    def test_row_scanning_loop_present(self):
+        assert "for (int _r = 0; _r < bitbuffer->num_rows; ++_r)" in self.code
+
+    def test_subfields_declared_as_arrays(self):
+        assert "int data_sensor_id[BITBUF_ROWS];" in self.code
+        assert "int data_flags[BITBUF_ROWS];" in self.code
+        assert "int data_value[BITBUF_ROWS];" in self.code
+
+    def test_subfield_extraction_uses_row_index(self):
+        assert "data_sensor_id[_r] = bitrow_get_bits" in self.code
+        assert "data_flags[_r] = bitrow_get_bits" in self.code
+        assert "data_value[_r] = bitrow_get_bits" in self.code
+
+    def test_variant_when_uses_indexed_field(self):
+        # TypeA.when: data_flags == 1 → (data_flags[_r] == 1)
+        assert "(data_flags[_r] == 1)" in self.code
+        # TypeB.when: data_flags == 2 → (data_flags[_r] == 2)
+        assert "(data_flags[_r] == 2)" in self.code
+
+    def test_variant_data_make_uses_indexed_field(self):
+        # Each variant's data_make passes the per-row field values
+        assert "DATA_INT, data_sensor_id[_r]" in self.code
+        assert "DATA_INT, data_value[_r]" in self.code
+
+    def test_variant_bare_field_name_not_passed(self):
+        # Sanity: no unindexed array-name uses remain in data_make
+        assert "DATA_INT, data_sensor_id," not in self.code
+        assert "DATA_INT, data_value," not in self.code
+
+
+# ---------------------------------------------------------------------------
+# 12. Variant inheritance — shared methods via an abstract base Variant
+# ---------------------------------------------------------------------------
+
+
+class _SharedBaseVariant(Variant):
+    """Abstract base: carries shared methods, never fires.
+
+    Its ``when`` returns False so it's unreachable; its purpose is to let
+    concrete variants inherit helper methods without duplicating them.
+    """
+
+    def when(self) -> bool:
+        return False
+
+    def doubled(self, value) -> int:
+        return value * 2
+
+    def halved(self, value) -> int:
+        return value >> 1
+
+
+class variant_inherit_decoder(Decoder):
+    def modulation_config(self):
+        return ModulationConfig(
+            device_name="Variant Inherit Test",
+            modulation=Modulation.OOK_PULSE_PPM,
+            short_width=1000,
+            long_width=2000,
+            reset_limit=4000,
+        )
+
+    def prepare(self, buf):
+        return buf
+
+    flags: Bits[4]
+    value: Bits[12]
+
+    class TypeA(_SharedBaseVariant):
+        def when(self, flags) -> bool:
+            return flags == 1
+
+        def to_json(self) -> list[JsonRecord]:
+            return [
+                JsonRecord("model", "", "Inherit-TypeA", "DATA_STRING"),
+                JsonRecord("doubled", "", self.doubled, "DATA_INT"),
+            ]
+
+    class TypeB(_SharedBaseVariant):
+        def when(self, flags) -> bool:
+            return flags == 2
+
+        def to_json(self) -> list[JsonRecord]:
+            return [
+                JsonRecord("model", "", "Inherit-TypeB", "DATA_STRING"),
+                JsonRecord("halved", "", self.halved, "DATA_INT"),
+            ]
+
+
+class TestVariantInheritance:
+    """Methods inherited from a base Variant are emitted per-variant.
+
+    Each concrete variant gets its own copy of the inherited method, name-
+    prefixed with that variant's class name.  The call sites inside each
+    variant's data_make reference the variant-prefixed C name.
+    """
+
+    def setup_method(self):
+        self.code = _compile(variant_inherit_decoder())
+
+    def test_base_variant_not_dispatched(self):
+        # _SharedBaseVariant is a module-level class, not an inner class,
+        # so it's not registered as a variant — no C function named for it.
+        assert "variant_inherit_decoder__SharedBaseVariant" not in self.code
+        assert "_SharedBaseVariant" not in self.code
+
+    def test_typeA_emits_inherited_method(self):
+        # TypeA uses self.doubled → variant-prefixed definition emitted.
+        assert "static inline int variant_inherit_decoder_TypeA_doubled" in self.code
+
+    def test_typeB_emits_inherited_method(self):
+        # TypeB uses self.halved → variant-prefixed definition emitted.
+        assert "static inline int variant_inherit_decoder_TypeB_halved" in self.code
+
+    def test_typeA_call_site_uses_variant_prefix(self):
+        assert "variant_inherit_decoder_TypeA_doubled(value)" in self.code
+
+    def test_typeB_call_site_uses_variant_prefix(self):
+        assert "variant_inherit_decoder_TypeB_halved(value)" in self.code
+
+    def test_variant_when_dispatched_in_if_chain(self):
+        assert "(flags == 1)" in self.code
+        assert "(flags == 2)" in self.code
+
+    def test_base_when_false_not_dispatched(self):
+        # _SharedBaseVariant.when returns False and is not registered, so the
+        # if/else chain must not contain a "False" branch.
+        # (The Python expression `False` compiles to the C literal "0".)
+        # The chain structure is: if ((flags==1)) {...} else if ((flags==2)) {...}
+        assert "} else if ((flags == 2))" in self.code
+
+
+# ---------------------------------------------------------------------------
+# 12a. DSL rejects callables without return-type annotations (Bug 16)
+# ---------------------------------------------------------------------------
+
+
+class TestCallableRequiresReturnType:
+    """SEMANTICS.md §5: every callable must have a return type annotation.
+
+    The DSL should reject a class at definition time if any callable (other
+    than the reserved `when`/`prepare`/`to_json`/`dispatch`/`modulation_config`)
+    lacks a return annotation.
+    """
+
+    def test_missing_return_type_raises(self):
+        with pytest.raises(TypeError, match="missing a return type annotation"):
+            class bad_decoder(Decoder):
+                def modulation_config(self):
+                    return ModulationConfig(
+                        device_name="Bad",
+                        modulation=Modulation.OOK_PULSE_PPM,
+                        short_width=1000,
+                        long_width=2000,
+                        reset_limit=4000,
+                    )
+
+                def prepare(self, buf):
+                    return buf
+
+                value: Bits[16]
+
+                def doubled(self, value):  # no -> annotation
+                    return value * 2
+
+    def test_missing_return_type_on_validate_raises(self):
+        with pytest.raises(TypeError, match="missing a return type annotation"):
+            class bad_validate_decoder(Decoder):
+                def modulation_config(self):
+                    return ModulationConfig(
+                        device_name="BadValidate",
+                        modulation=Modulation.OOK_PULSE_PPM,
+                        short_width=1000,
+                        long_width=2000,
+                        reset_limit=4000,
+                    )
+
+                def prepare(self, buf):
+                    return buf
+
+                value: Bits[16]
+
+                def validate_nonzero(self, value, fail_value=DecodeFail.SANITY):
+                    return value != 0
+
+
+# ---------------------------------------------------------------------------
+# 12b. Variant without `to_json` — default output (Bug 15, xfail)
+# ---------------------------------------------------------------------------
+
+
+class default_json_decoder(Decoder):
+    """Variant that does NOT override to_json().
+
+    Per SEMANTICS.md 6.4, the compiler should emit a default data_make
+    covering: the parent's ``device_name`` as model, all non-private
+    parent and variant ``Bits[]`` fields, and all methods of both parent
+    and variant (in declaration order).
+
+    This test documents the current (buggy) output so regressions are
+    visible and future fixes can flip the xfail to pass.
+    """
+
+    def modulation_config(self):
+        return ModulationConfig(
+            device_name="Default JSON Parent",
+            modulation=Modulation.OOK_PULSE_PPM,
+            short_width=1000,
+            long_width=2000,
+            reset_limit=4000,
+        )
+
+    def prepare(self, buf):
+        return buf
+
+    device_id: Bits[12]
+    flags: Bits[4]
+
+    def parent_doubled(self, device_id) -> int:
+        return device_id * 2
+
+    class OnlyKind(Variant):
+        def when(self, flags) -> bool:
+            return flags == 1
+
+        value: Bits[16]
+
+        def variant_halved(self, value) -> int:
+            return value >> 1
+
+        # Deliberately: no to_json → exercises the default-synthesis path.
+
+
+class TestDefaultJsonVariant:
+    """Regression tests for Bug 15 — the synthesized default JSON for a
+    Variant that does not override `to_json` must use the parent's
+    `device_name` as model and include parent fields and non-validate
+    methods alongside the variant's own (SEMANTICS.md §6.4, §7.2).
+    """
+
+    def setup_method(self):
+        self.code = _compile(default_json_decoder())
+
+    def test_model_is_parent_device_name(self):
+        assert 'DATA_STRING, "Default JSON Parent"' in self.code
+
+    def test_parent_field_present(self):
+        body_start = self.code.index("if ((flags == 1))")
+        body = self.code[body_start:]
+        assert '"device_id", "", DATA_INT, device_id' in body
+
+    def test_parent_method_present(self):
+        # Parent-level method, called without the variant prefix.
+        body_start = self.code.index("if ((flags == 1))")
+        body = self.code[body_start:]
+        assert "default_json_decoder_parent_doubled(device_id)" in body
+
+    def test_variant_field_present(self):
+        body_start = self.code.index("if ((flags == 1))")
+        body = self.code[body_start:]
+        assert '"value", "", DATA_INT, value' in body
+
+    def test_variant_method_present(self):
+        # Variant-level method, called with the variant prefix.
+        body_start = self.code.index("if ((flags == 1))")
+        body = self.code[body_start:]
+        assert "default_json_decoder_OnlyKind_variant_halved(value)" in body
+
+    def test_parent_method_not_variant_prefixed(self):
+        # Negative: the parent method must NOT appear with the variant prefix,
+        # which would indicate a call-site/definition mismatch.
+        assert "default_json_decoder_OnlyKind_parent_doubled" not in self.code
+
+
+# ---------------------------------------------------------------------------
+# 13a. Pipeline — `scan_all_rows` preamble search declares `offset` (Bug 21)
+# ---------------------------------------------------------------------------
+
+
+class scan_all_rows_decoder(Decoder):
+    """Exercises ``search_preamble(..., scan_all_rows=True)``.
+
+    Bug 21: the scan_all_rows branch assigned to ``offset`` inside a for-loop
+    body but never declared it, producing C that fails to compile.  The fix
+    added ``unsigned offset = 0;`` before the loop.
+    """
+
+    def modulation_config(self):
+        return ModulationConfig(
+            device_name="Scan All Rows Test",
+            modulation=Modulation.OOK_PULSE_MANCHESTER_ZEROBIT,
+            short_width=500,
+            long_width=0,
+            reset_limit=2400,
+        )
+
+    def prepare(self, buf):
+        return buf.search_preamble(0x145, bit_length=12, scan_all_rows=True).skip_bits(8)
+
+    b0: Bits[8]
+    b1: Bits[8]
+
+
+class TestScanAllRowsDeclaresOffset:
+    def setup_method(self):
+        self.code = _compile(scan_all_rows_decoder())
+
+    def test_offset_declared_before_loop(self):
+        # A declaration "unsigned offset = 0;" must appear before any use.
+        decl_pos = self.code.find("unsigned offset = 0;")
+        assert decl_pos != -1, "scan_all_rows must declare `offset`"
+        # And it must appear before the for-loop that scans rows.
+        loop_pos = self.code.index("for (unsigned row = 0;")
+        assert decl_pos < loop_pos
+
+    def test_offset_assigned_inside_loop(self):
+        # The loop body still assigns offset = pos; on preamble hit.
+        assert "offset = pos;" in self.code
+
+    def test_offset_consumed_by_skip_bits(self):
+        # Downstream skip_bits(8) uses `offset += 8;`.
+        assert "offset += 8;" in self.code
+
+
+# ---------------------------------------------------------------------------
+# 13. Dispatcher — variant methods inside delegate variants are emitted
+# ---------------------------------------------------------------------------
+
+
+class disp_delegate_a(Decoder):
+    def modulation_config(self):
+        return ModulationConfig(
+            device_name="Disp Delegate A",
+            modulation=Modulation.FSK_PULSE_PCM,
+            short_width=100,
+            long_width=100,
+            reset_limit=1000,
+        )
+
+    def prepare(self, buf):
+        return buf.find_repeated_row(2, 20)
+
+    msg_type: Bits[4]
+    payload: Bits[16]
+
+    class Kind0(Variant):
+        def when(self, msg_type) -> bool:
+            return msg_type == 0
+
+        def shifted(self, payload) -> int:
+            return payload << 1
+
+        def to_json(self) -> list[JsonRecord]:
+            return [
+                JsonRecord("model", "", "A-Kind0", "DATA_STRING"),
+                JsonRecord("shifted", "", self.shifted, "DATA_INT"),
+            ]
+
+
+class disp_delegate_b(Decoder):
+    def modulation_config(self):
+        return ModulationConfig(
+            device_name="Disp Delegate B",
+            modulation=Modulation.FSK_PULSE_PCM,
+            short_width=200,
+            long_width=200,
+            reset_limit=2000,
+        )
+
+    def prepare(self, buf):
+        return buf.find_repeated_row(2, 20)
+
+    kind: Bits[4]
+    value: Bits[16]
+
+    class KindX(Variant):
+        def when(self, kind) -> bool:
+            return kind == 7
+
+        def halved(self, value) -> int:
+            return value >> 1
+
+        def to_json(self) -> list[JsonRecord]:
+            return [
+                JsonRecord("model", "", "B-KindX", "DATA_STRING"),
+                JsonRecord("halved", "", self.halved, "DATA_INT"),
+            ]
+
+
+class disp_parent(Dispatcher):
+    def modulation_config(self):
+        return ModulationConfig(
+            device_name="Disp Parent",
+            modulation=Modulation.FSK_PULSE_PCM,
+            short_width=100,
+            long_width=100,
+            reset_limit=1000,
+        )
+
+    def dispatch(self):
+        return (disp_delegate_a(), disp_delegate_b())
+
+
+class TestDispatcherVariantMethodsEmitted:
+    """Regression: Bug 22 — the dispatcher codegen emits method bodies for
+    callables defined *inside each delegate's variants*, not only for
+    callables defined at the delegate's parent level.
+
+    Without this, the delegate's decode function calls
+    ``disp_delegate_a_Kind0_shifted(payload)`` but the corresponding
+    ``static inline`` definition is missing and the C fails to link.
+    """
+
+    def setup_method(self):
+        self.code = _compile(disp_parent())
+
+    def test_delegate_a_variant_method_body_emitted(self):
+        assert "static inline int disp_delegate_a_Kind0_shifted(int payload)" in self.code
+
+    def test_delegate_b_variant_method_body_emitted(self):
+        assert "static inline int disp_delegate_b_KindX_halved(int value)" in self.code
+
+    def test_delegate_a_variant_method_called(self):
+        assert "disp_delegate_a_Kind0_shifted(payload)" in self.code
+
+    def test_delegate_b_variant_method_called(self):
+        assert "disp_delegate_b_KindX_halved(value)" in self.code
+
+
+# ---------------------------------------------------------------------------
+# 14. Callable arg expansion — callable-of-callable chains (Bug 20)
+# ---------------------------------------------------------------------------
+
+
+class callable_chain_decoder(Decoder):
+    """Exercises SEMANTICS.md §5.2: callable args that name other callables.
+
+    ``validate_cmd`` declares param ``cmd``, where ``cmd`` is a callable
+    depending on ``notb``, which depends on the raw field ``b``.  The codegen
+    must recursively expand each arg at the call site rather than passing the
+    bare callable name as an undeclared identifier.
+    """
+
+    def modulation_config(self):
+        return ModulationConfig(
+            device_name="Callable Chain Test",
+            modulation=Modulation.OOK_PULSE_PPM,
+            short_width=500,
+            long_width=1000,
+            reset_limit=5000,
+        )
+
+    def prepare(self, buf):
+        return buf.find_repeated_row(1, 8)
+
+    b: Bits[8]
+
+    def notb(self, b) -> int:
+        return (~b) & 0xFF
+
+    def cmd(self, notb) -> int:
+        return notb & 0x0F
+
+    def validate_cmd(self, cmd, fail_value=DecodeFail.SANITY) -> bool:
+        return (cmd == 1) | (cmd == 2)
+
+
+class TestCallableChainExpansion:
+    def setup_method(self):
+        self.code = _compile(callable_chain_decoder())
+
+    def test_validate_call_expands_callable_arg(self):
+        # validate_cmd(cmd) where cmd is a callable: must expand to
+        # validate_cmd(cmd(notb(b))).
+        expected = (
+            "callable_chain_decoder_validate_cmd("
+            "callable_chain_decoder_cmd("
+            "callable_chain_decoder_notb(b)))"
+        )
+        assert expected in self.code
+
+    def test_no_bare_callable_name_as_undeclared_identifier(self):
+        # Inside the decode body, the bare names "cmd" and "notb" must not
+        # appear as C identifiers — they're callables, not variables.
+        # (They may appear as function-parameter names in the outer
+        # static-inline definitions, so we only check the decode body.)
+        decode_start = self.code.index(
+            "static int callable_chain_decoder_decode"
+        )
+        decode_body = self.code[decode_start:]
+        assert "(cmd)" not in decode_body
+        assert ", cmd)" not in decode_body
+        assert ", notb)" not in decode_body
+
+
+# ---------------------------------------------------------------------------
+# 14. Annotation collection (regression test for Python 3.14 PEP 749)
 # ---------------------------------------------------------------------------
 
 

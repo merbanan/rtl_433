@@ -229,19 +229,10 @@ emitted:
 Each `JsonRecord` maps to one entry in the generated `data_make(...)` call. The
 `fmt` parameter emits a `DATA_FORMAT` directive.
 
-You can conditionally emit a row by supplying a `when` parameter, which emits a
-`DATA_COND` guard so the field only appears when the condition is true:
-
-```python
-            JsonRecord("humidity", "Humidity", self.humidity, "DATA_INT",
-                        when=self.has_humidity),
-```
-
-This compiles to a row in `data_make` that looks like this:
-
-```c
-"humidity", "Humidity", DATA_COND, has_humidity, DATA_INT, humidity,
-```
+To emit a row only under certain conditions, use variant dispatch: define
+multiple `Variant` classes whose `when` methods gate on the predicate and whose
+`to_json` lists include only the applicable fields.  See `acurite_01185m.py`
+for an example that splits on which temperature probes are plugged in.
 
 ## Code reuse through inheritance
 

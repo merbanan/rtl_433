@@ -435,14 +435,14 @@ The compiler classifies each callable by its name:
 
 | Name pattern | Class | C output |
 |---|---|---|
-| `validate_*` | *validation hook* | `constexpr` C function + auto-called guard |
-| anything else | *method* | `constexpr` C function + called at each use site |
+| `validate_*` | *validation hook* | `static inline` C function + auto-called guard |
+| anything else | *method* | `static inline` C function + called at each use site |
 
 Reserved names not compiled as callables: `prepare`, `to_json`, `when`,
 `dispatch`.
 
 All callables are *pure*: they take named inputs and return a value with no
-side effects.  The compiler emits each callable as a `constexpr` C function
+side effects.  The compiler emits each callable as a `static inline` C function
 defined before the decode function.  Methods are called directly at each use
 site (in expressions passed to `data_make`, or as arguments to other
 methods); no intermediate local variable is introduced for a method's result.
@@ -458,8 +458,8 @@ method object.  The code generator (`codegen.py`) reads that annotation to
 emit the C function body.
 
 A callable is *external* if its body is `...` (Ellipsis).  The compiler
-emits only a `constexpr` declaration; the user provides the definition in a
-companion `.h` file.  External callables must be declared `constexpr` in C so
+emits only a `static inline` declaration; the user provides the definition in a
+companion `.h` file.  External callables must be declared `static inline` in C so
 that they may be called freely at any use site without caching concerns.
 
 ### 5.2 Argument inference
@@ -470,11 +470,11 @@ parameter names (the compiler does not infer them).
 For inline callables, all `FieldRef`s in the expression body are collected
 automatically by `dsl.py`.  The emitted C function takes exactly those names
 as parameters.  At each call site the compiler passes the corresponding
-field locals or the results of other `constexpr` function calls.  The
+field locals or the results of other `static inline` function calls.  The
 compiler verifies that all referenced names are in scope at every call site.
 
 A callable may reference the result of another callable; because all callables
-are `constexpr` functions called at use sites, there is no ordering constraint
+are `static inline` functions called at use sites, there is no ordering constraint
 between them beyond what the field parse order dictates.
 
 ### 5.3 Methods
@@ -489,7 +489,7 @@ def temperature_c(self, temp_raw: int) -> float:
 Emits (before the decode function):
 
 ```c
-static constexpr float temperature_c(int temp_raw) {
+static inline float temperature_c(int temp_raw) {
     return ((temp_raw - 0x1f4) * 0.1);
 }
 ```
@@ -519,7 +519,7 @@ External method (body is `...`):
 def crc8(self, b: bytes, n: int) -> int: ...
 ```
 
-Emits only a declaration; the user provides a `constexpr` C definition in the
+Emits only a declaration; the user provides a `static inline` C definition in the
 companion header.
 
 ### 5.4 Emission ordering
@@ -538,7 +538,7 @@ parsed, regardless of where they appear in `to_json` or elsewhere.
 ### 5.5 Validation hooks (`validate_*`)
 
 A validation hook is a callable whose name starts with `validate_`.  Like
-other methods, its body is compiled to a `constexpr` C function.  Unlike other
+other methods, its body is compiled to a `static inline` C function.  Unlike other
 methods, its call is emitted *automatically* by the code generator as soon as
 all of its dependencies (declared parameters, excluding `fail_value`) have been
 parsed.
@@ -557,7 +557,7 @@ def validate_checksum(self, sensor_id: int, checksum: int,
 Emits (before the decode function):
 
 ```c
-static constexpr bool prefix_validate_checksum(int sensor_id, int checksum) {
+static inline bool prefix_validate_checksum(int sensor_id, int checksum) {
     return (((sensor_id & 0xff) + checksum) & 0xff) == 0;
 }
 ```
@@ -645,8 +645,10 @@ methods may reference parent fields as well as the variant's own fields.
 
 If the variant defines `to_json`, that override is used for the variant's
 `data_make`.  Otherwise, the compiler emits a default `data_make` covering
-the model name, all non-private parent and variant `Bits[]` fields, and all
-variant methods.
+the model name (the parent's `device_name`), all non-private parent and
+variant `Bits[]` fields, and all non-`validate_*` methods of both parent and
+variant.  `validate_*` hooks are emitted as guard conditions elsewhere in the
+decode function and never appear as JSON fields.
 
 ---
 
@@ -664,9 +666,12 @@ function calls.
 
 When no `to_json` is defined, the compiler generates a `data_make` call with:
 
-1. `"model"` key: string value = `device_name` from `modulation_config`.
+1. `"model"` key: string value = `device_name` from `modulation_config`.  For a
+   variant the parent decoder's `device_name` is used.
 2. All non-private `Bits[]` fields (parent then variant), in declaration order.
-3. All methods of the current class (parent or variant), in declaration order.
+3. All non-`validate_*` methods of the current class (parent or variant), in
+   declaration order.  `validate_*` hooks are emitted as guard conditions and
+   never appear as JSON fields.
 
 ### 7.3 Explicit `to_json`
 
@@ -684,12 +689,12 @@ The `value` of a `JsonRecord` may be:
 - A string literal → emitted verbatim in `data_make`.
 - A DSL expression (`FieldRef` or compound) → emitted as a C expression.
 - A method reference (`self.method_name`) → emitted as a call to the
-  corresponding `constexpr` C function at that point in `data_make`.
+  corresponding `static inline` C function at that point in `data_make`.
 
 ### 7.4 `JsonRecord` fields
 
 ```
-JsonRecord(key, label, value, data_type, fmt=None, when=None)
+JsonRecord(key, label, value, data_type, fmt=None)
 ```
 
 - **`key`** — JSON key string.
@@ -700,14 +705,11 @@ JsonRecord(key, label, value, data_type, fmt=None, when=None)
   data type.  When `data_type` is `"DATA_STRING"`, `fmt` is not `None`, and
   `value` is not a string literal, the compiler pre-declares a `char[64]`
   buffer and calls `snprintf` to format the value into it.
-- **`when`** — optional boolean DSL expression.  Emits `DATA_COND, cond_expr`
-  before the data type.
 
-Expanded form for a record with `when` and `fmt`:
-
-```c
-"key", "Label", DATA_COND, cond_expr, DATA_FORMAT, "fmt", DATA_INT, value,
-```
+For conditional field emission (include a field only when a predicate
+holds), use variant dispatch: define multiple `Variant` classes whose
+`when` methods gate on the predicate and whose `to_json` lists include
+only the applicable fields.  `acurite_01185m` demonstrates this pattern.
 
 ### 7.5 `output_fields` consistency
 
@@ -789,9 +791,9 @@ For a decoder instance of class `foo`:
 #include "decoder.h"
 #include "foo.h"          // only if external helpers are needed
 
-/* constexpr C functions for all methods and validation hooks */
-static constexpr float temperature_c(int temp_raw) { … }
-static constexpr bool  prefix_validate_checksum(int sensor_id, int checksum) { … }
+/* inline C functions for all methods and validation hooks */
+static inline float temperature_c(int temp_raw) { … }
+static inline bool  prefix_validate_checksum(int sensor_id, int checksum) { … }
 
 /* delegate decode functions (if dispatcher), then: */
 
@@ -801,7 +803,7 @@ static int foo_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* b = bitbuffer->bb[row];  bit_pos = offset; */
     /* field extractions */
     /* auto-inserted validate_* calls (return or continue on failure) */
-    /* variant dispatch or data_make with inline constexpr calls */
+    /* variant dispatch or data_make with inline inline calls */
     /* return 1; */
 }
 
@@ -827,7 +829,7 @@ r_device const foo = {
 ### 10.1 External helper header
 
 If any callable has a body of `...`, the compiler emits `#include "prefix.h"`.
-The user must provide that header with `constexpr` definitions for all external
+The user must provide that header with `static inline` definitions for all external
 C functions.
 
 ---
@@ -856,14 +858,14 @@ foo_decode(decoder, bitbuffer):
   if (when_expr_0) {
     emit variant_0 fields
     for each validate_* whose deps ⊆ parsed_so_far: emit guard (return or continue)
-    emit data_make with constexpr calls at use sites
+    emit data_make with inline calls at use sites
     return 1
   } else if (when_expr_1) { … }
   return DECODE_FAIL_SANITY
 
   // Non-variant path
   for each remaining validate_* whose deps now satisfied: emit guard
-  data_make(… constexpr calls inline …)
+  data_make(… inline calls inline …)
   decoder_output_data(decoder, data)
   return 1
 ```

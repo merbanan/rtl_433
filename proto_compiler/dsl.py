@@ -357,7 +357,6 @@ class JsonRecord:
     value: Any
     data_type: str
     fmt: "str | None" = None
-    when: Any = None
 
 
 # ---------------------------------------------------------------------------
@@ -369,7 +368,7 @@ class JsonRecord:
 class CallableEntry:
     """Metadata for a user-defined callable collected from a Protocol subclass."""
 
-    kind: str  # "validate" | "prop" | "method"
+    kind: str  # "validate" | "method"
     fn: Any
     expr_tree: Any  # Expr | None; None only for is_external
     return_type: Any  # Python type | None
@@ -822,11 +821,15 @@ class Protocol:
       _fields: tuple of (name, FieldSpec) in MRO order
       _variants: tuple of nested Variant subclasses
       _callables: dict mapping name -> callable entry dict
+      _parent_decoder: for a Variant, the enclosing Decoder class
+                       (used to source `device_name`, parent fields, and
+                       parent methods for the default `to_json`)
     """
 
     _fields: tuple = ()
     _variants: tuple = ()
     _callables: dict = {}  # dict[str, CallableEntry]
+    _parent_decoder: "type | None" = None
 
     def __getattr__(self, name: str) -> FieldRef:
         if name.startswith("_"):
@@ -857,6 +860,11 @@ class Protocol:
                 if _Variant is not None and issubclass(attr_val, _Variant):
                     merged_variants[attr_name] = attr_val
         cls._variants = tuple(merged_variants.values())
+        # Back-link each variant to its parent decoder so default `to_json`
+        # synthesis can reach the parent's modulation_config, fields, and
+        # callables (SEMANTICS.md §6.4, §7.2).
+        for vcls in cls._variants:
+            vcls._parent_decoder = cls
 
         # 3. Collect callables (methods, props, validate_*)
         merged_callables: dict[str, CallableEntry] = dict(cls._callables)
@@ -868,6 +876,17 @@ class Protocol:
             return_type = fn_anns.get("return")
             is_external = _callable_is_ellipsis(fn)
 
+            # SEMANTICS.md §5: "Every callable must have a return type
+            # annotation."  This applies equally to validate_* hooks (which
+            # must annotate `-> bool`) and to methods.
+            if return_type is None:
+                raise TypeError(
+                    f"{cls.__name__}.{attr_name}: callable is missing a return "
+                    f"type annotation. SEMANTICS.md §5 requires every callable "
+                    f"(including methods and validate_* hooks) to declare its "
+                    f"return type."
+                )
+
             if attr_name.startswith("validate_"):
                 params = _param_names(fn, exclude_fail_value=True)
                 kind = "validate"
@@ -876,15 +895,10 @@ class Protocol:
                     fail_c = _fail_value_default(fn)
                 except TypeError:
                     fail_c = "DECODE_FAIL_SANITY"
-            elif return_type is not None:
-                params = _param_names(fn)
-                kind = "prop"
-                entry_return_type = return_type
-                fail_c = None
             else:
                 params = _param_names(fn)
                 kind = "method"
-                entry_return_type = None
+                entry_return_type = return_type
                 fail_c = None
 
             param_types: dict[str, Any] = {}
@@ -949,21 +963,47 @@ class Protocol:
 
     @classmethod
     def _default_json_records(cls) -> tuple:
-        modulation_config = getattr(cls, "modulation_config", None)
+        """Synthesize the default JsonRecord tuple (SEMANTICS.md §7.2).
+
+        For a Variant (``cls._parent_decoder`` is set), the model string
+        comes from the parent's ``modulation_config.device_name``, and the
+        parent's fields and methods are emitted before the variant's own —
+        matching §6.4's "parent and variant" ordering.
+        """
+        parent = cls._parent_decoder
+        model_source = parent if parent is not None else cls
+        modulation_config = getattr(model_source, "modulation_config", None)
         if callable(modulation_config):
-            model = modulation_config(cls.__new__(cls)).device_name
+            model = modulation_config(model_source.__new__(model_source)).device_name
         else:
-            model = cls.__name__
+            model = model_source.__name__
+
         records: list[JsonRecord] = [JsonRecord("model", "", model, "DATA_STRING")]
-        for name, spec in cls._fields:
-            if isinstance(spec, BitsSpec) and not name.startswith("_"):
-                records.append(JsonRecord(name, "", FieldRef(name), "DATA_INT"))
-        for name, entry in cls._callables.items():
-            if entry.kind == "prop":
-                dtype = {float: "DATA_DOUBLE", int: "DATA_INT", str: "DATA_STRING"}.get(
-                    entry.return_type, "DATA_INT"
-                )
-                records.append(JsonRecord(name, "", FieldRef(name), dtype))
+        seen: set[str] = {"model"}
+
+        # Source classes in declaration order: parent first, then the
+        # variant's own class (if this is a variant).
+        sources: tuple = (parent, cls) if parent is not None else (cls,)
+
+        for src in sources:
+            for name, spec in src._fields:
+                if (
+                    isinstance(spec, BitsSpec)
+                    and not name.startswith("_")
+                    and name not in seen
+                ):
+                    records.append(JsonRecord(name, "", FieldRef(name), "DATA_INT"))
+                    seen.add(name)
+            for name, entry in src._callables.items():
+                if entry.kind == "method" and name not in seen:
+                    dtype = {
+                        float: "DATA_DOUBLE",
+                        int: "DATA_INT",
+                        str: "DATA_STRING",
+                    }.get(entry.return_type, "DATA_INT")
+                    records.append(JsonRecord(name, "", FieldRef(name), dtype))
+                    seen.add(name)
+
         return tuple(records)
 
     @classmethod

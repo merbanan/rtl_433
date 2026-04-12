@@ -4,11 +4,12 @@ Code generator for the proto-compiler DSL.
 Entry point: compile_decoder(instance) -> str
 
 Reads a Decoder instance and emits a complete C source file.
-C standard: C23 for generated files — uses `static constexpr`.
+C standard: C99 for generated files — uses `static inline`.
 """
 
 from __future__ import annotations
 
+import re
 from contextlib import contextmanager
 from typing import Any
 
@@ -304,6 +305,7 @@ def emit_pipeline(steps: list) -> tuple[CodeSnippet, str, str]:
                     snippet.append_line("unsigned tip_row = 0;")
                     row_var = "tip_row"
                     has_row_var = True
+                snippet.append_line("unsigned offset = 0;")
                 snippet.append_line("int preamble_found = 0;")
                 with snippet.block(
                     "for (unsigned row = 0; row < (unsigned)bitbuffer->num_rows && !preamble_found; ++row)"
@@ -463,20 +465,91 @@ def _expand_callable_params(entry: CallableEntry) -> list[str]:
     return c_params
 
 
-def _expand_callable_args(entry: CallableEntry) -> list[str]:
-    """Build the C argument list for a call to a callable, expanding Rows params."""
+def _effective_variant(
+    name: str, variant_name: str | None, variant_owned_names: set[str] | None,
+) -> str | None:
+    """Pick the right variant prefix for a callable reference.
+
+    When a variant's data_make references a parent-level callable, the call
+    site must use no variant prefix — the parent callable is emitted without
+    one.  *variant_owned_names* lists the callable names that belong to this
+    variant (including inherited ones emitted per-variant); names outside
+    that set fall back to the parent (``None``).
+    """
+    if variant_owned_names is not None and name not in variant_owned_names:
+        return None
+    return variant_name
+
+
+def _expand_callable_args(
+    entry: CallableEntry,
+    row_index: str | None = None,
+    indexed_fields: set[str] | None = None,
+    *,
+    decoder_name: str | None = None,
+    variant_name: str | None = None,
+    callables: dict[str, CallableEntry] | None = None,
+    variant_owned_names: set[str] | None = None,
+) -> list[str]:
+    """Build the C argument list for a call to a callable.
+
+    Each declared parameter is emitted as a C expression:
+
+    - A ``BitbufferPipeline`` parameter becomes the literal ``bitbuffer``.
+    - A ``Rows[...]`` parameter is expanded into one C arg per sub-field
+      (``{param}_{sub_field}``).
+    - A parameter that names another callable (per SEMANTICS.md §5.2) is
+      recursively expanded into a nested C call:
+      ``decoder_inner(inner_args...)``.  This requires *callables* and
+      *decoder_name* to be supplied; without them, the name falls through to
+      the plain-field path.  Inside a variant, *variant_owned_names* picks
+      whether the inner callable uses the variant prefix or the parent's.
+    - Otherwise the parameter is treated as a field local.  When *row_index*
+      is set (e.g. ``"_r"``) and the name appears in *indexed_fields*, it is
+      subscripted (``field[_r]``).  This is needed inside FirstValid loops
+      where fields are declared as arrays.
+    """
     c_args: list[str] = []
     for p in entry.params:
         pt = entry.param_types.get(p)
         if pt is BitbufferPipeline:
             c_args.append("bitbuffer")
-        else:
-            sub_fields = _rows_sub_fields_for_param(entry, p)
-            if sub_fields is not None:
-                for sf in sub_fields:
-                    c_args.append(f"{p}_{sf}")
-            else:
-                c_args.append(p)
+            continue
+
+        sub_fields = _rows_sub_fields_for_param(entry, p)
+        if sub_fields is not None:
+            for sf in sub_fields:
+                c_args.append(f"{p}_{sf}")
+            continue
+
+        # If this parameter names another callable, recursively expand it
+        # into a nested call.  SEMANTICS.md §5.2: "At each call site the
+        # compiler passes the corresponding field locals or the results of
+        # other static inline function calls."
+        if (
+            callables is not None
+            and decoder_name is not None
+            and p in callables
+        ):
+            inner_entry = callables[p]
+            inner_variant = _effective_variant(p, variant_name, variant_owned_names)
+            inner_args = _expand_callable_args(
+                inner_entry, row_index, indexed_fields,
+                decoder_name=decoder_name,
+                variant_name=variant_name,
+                callables=callables,
+                variant_owned_names=variant_owned_names,
+            )
+            inner_c_name = _callable_c_name(decoder_name, p, inner_variant)
+            inner_str = ", ".join(inner_args) if inner_args else ""
+            c_args.append(f"{inner_c_name}({inner_str})")
+            continue
+
+        # Plain field local (optionally subscripted inside FirstValid).
+        name = p
+        if row_index and indexed_fields and name in indexed_fields:
+            name = f"{name}[{row_index}]"
+        c_args.append(name)
     return c_args
 
 
@@ -486,7 +559,7 @@ def emit_callable(
     entry: CallableEntry,
     variant_name: str | None = None,
 ) -> CodeSnippet:
-    """Emit a static constexpr C function for a callable."""
+    """Emit a static inline C function for a callable."""
     if entry.is_external:
         return CodeSnippet()
 
@@ -497,7 +570,7 @@ def emit_callable(
     body = emit_expr(entry.expr_tree)
 
     snippet = CodeSnippet()
-    with snippet.block(f"static constexpr {c_ret} {c_name}({param_str})"):
+    with snippet.block(f"static inline {c_ret} {c_name}({param_str})"):
         snippet.append_line(f"return {body};")
     return snippet
 
@@ -512,6 +585,9 @@ def emit_data_make(
     decoder_name: str,
     variant_name: str | None,
     callables: dict[str, CallableEntry],
+    row_index: str | None = None,
+    indexed_fields: set[str] | None = None,
+    variant_owned_names: set[str] | None = None,
 ) -> CodeSnippet:
     """Emit data_make(...) and decoder_output_data(...). Returns a CodeSnippet."""
     snippet = CodeSnippet()
@@ -525,9 +601,12 @@ def emit_data_make(
         value = rec.value
         data_type = rec.data_type
         fmt = rec.fmt
-        when = rec.when
 
-        val_expr = _value_to_c(value, decoder_name, variant_name, callables)
+        val_expr = _value_to_c(
+            value, decoder_name, variant_name, callables,
+            row_index, indexed_fields,
+            variant_owned_names=variant_owned_names,
+        )
 
         # DATA_STRING + fmt + non-literal value → snprintf
         if (
@@ -545,9 +624,6 @@ def emit_data_make(
             fmt = None
 
         entry_parts = [f'"{key}"', f'"{label}"']
-        if when is not None:
-            when_c = emit_expr(when) if isinstance(when, Expr) else str(when)
-            entry_parts.append(f"DATA_COND, {when_c}")
         if fmt is not None:
             entry_parts.append(f'DATA_FORMAT, "{fmt}"')
         entry_parts.append(data_type)
@@ -568,6 +644,10 @@ def _value_to_c(
     decoder_name: str,
     variant_name: str | None,
     callables: dict[str, CallableEntry],
+    row_index: str | None = None,
+    indexed_fields: set[str] | None = None,
+    *,
+    variant_owned_names: set[str] | None = None,
 ) -> str:
     """Convert a JsonRecord value to a C expression string."""
     if isinstance(value, str):
@@ -575,16 +655,33 @@ def _value_to_c(
     if isinstance(value, FieldRef):
         # Check if it's a method reference
         callable_entry = callables.get(value.name)
-        if callable_entry is not None and callable_entry.kind in ("prop", "method"):
-            # Emit as function call — expand Rows params to flat arrays
-            param_str = ", ".join(_expand_callable_args(callable_entry))
-            c_name = _callable_c_name(decoder_name, value.name, variant_name)
+        if callable_entry is not None and callable_entry.kind == "method":
+            # Emit as function call — expand Rows params to flat arrays, and
+            # recursively expand any args that themselves name callables
+            # (SEMANTICS.md §5.2).  Inside a variant, parent-owned callables
+            # use no variant prefix even though the enclosing scope does.
+            effective_variant = _effective_variant(
+                value.name, variant_name, variant_owned_names,
+            )
+            param_str = ", ".join(
+                _expand_callable_args(
+                    callable_entry, row_index, indexed_fields,
+                    decoder_name=decoder_name,
+                    variant_name=variant_name,
+                    callables=callables,
+                    variant_owned_names=variant_owned_names,
+                )
+            )
+            c_name = _callable_c_name(decoder_name, value.name, effective_variant)
             call_expr = f"{c_name}({param_str})"
             if callable_entry.return_type is float:
                 call_expr = f"(double){call_expr}"
             return call_expr
         # Plain field reference
-        return value.name
+        name = value.name
+        if row_index and indexed_fields and name in indexed_fields:
+            name = f"{name}[{row_index}]"
+        return name
     if isinstance(value, Expr):
         return emit_expr(value)
     if isinstance(value, bool):
@@ -616,11 +713,26 @@ def emit_validate_call(
     entry: CallableEntry,
     fail_hard: bool = True,
     variant_name: str | None = None,
+    row_index: str | None = None,
+    indexed_fields: set[str] | None = None,
+    callables: dict[str, CallableEntry] | None = None,
+    variant_owned_names: set[str] | None = None,
 ) -> CodeSnippet:
     """Emit the if(!hook(...)) guard. Returns a CodeSnippet."""
     snippet = CodeSnippet()
-    c_name = _callable_c_name(decoder_name, hook_name, variant_name)
-    param_str = ", ".join(_expand_callable_args(entry))
+    effective_variant = _effective_variant(
+        hook_name, variant_name, variant_owned_names,
+    )
+    c_name = _callable_c_name(decoder_name, hook_name, effective_variant)
+    param_str = ", ".join(
+        _expand_callable_args(
+            entry, row_index, indexed_fields,
+            decoder_name=decoder_name,
+            variant_name=variant_name,
+            callables=callables,
+            variant_owned_names=variant_owned_names,
+        )
+    )
 
     if fail_hard:
         snippet.append_line(f"if (!{c_name}({param_str}))")
@@ -641,6 +753,9 @@ def _emit_pending_validates(
     parsed_fields: set[str],
     emitted_hooks: set[str],
     variant_name: str | None = None,
+    row_index: str | None = None,
+    indexed_fields: set[str] | None = None,
+    variant_owned_names: set[str] | None = None,
 ) -> None:
     """Emit all validate_* hooks whose deps are now satisfied."""
     for hname in sorted(callables):
@@ -651,7 +766,10 @@ def _emit_pending_validates(
             continue
         if _field_deps(entry).issubset(parsed_fields):
             snippet += emit_validate_call(
-                decoder_name, hname, entry, fail_hard, variant_name
+                decoder_name, hname, entry, fail_hard, variant_name,
+                row_index, indexed_fields,
+                callables=callables,
+                variant_owned_names=variant_owned_names,
             )
             emitted_hooks.add(hname)
 
@@ -802,12 +920,15 @@ def _emit_decode_tail(
     fail_hard: bool,
     parsed_fields: set[str],
     emitted_hooks: set[str],
+    row_index: str | None = None,
+    indexed_fields: set[str] | None = None,
 ) -> None:
     """Emit the resolve-deps → pending-validates → variants-or-data_make tail."""
     _resolve_callable_deps(callables, parsed_fields)
     _emit_pending_validates(
         snippet, callables, decoder_name, fail_hard,
         parsed_fields, emitted_hooks,
+        row_index=row_index, indexed_fields=indexed_fields,
     )
 
     variants = list(cls._variants)
@@ -815,10 +936,14 @@ def _emit_decode_tail(
         snippet += _emit_variants(
             cls, variants, decoder_name, callables,
             fail_hard, parsed_fields, emitted_hooks,
+            row_index=row_index, indexed_fields=indexed_fields,
         )
     else:
         records = list(cls.json_records())
-        snippet += emit_data_make(records, decoder_name, None, callables)
+        snippet += emit_data_make(
+            records, decoder_name, None, callables,
+            row_index, indexed_fields,
+        )
         snippet.append_line("return 1;")
 
 
@@ -881,9 +1006,12 @@ def emit_decode_fn(decoder_name: str, instance: Decoder) -> CodeSnippet:
                 if isinstance(s, BitsSpec) and not n.startswith("_")
             ]
 
+            fv_indexed_fields: set[str] = set()
             for sf_name, _ in sub_fields:
-                snippet.append_line(f"int {fv_name}_{sf_name}[BITBUF_ROWS];")
-                parsed_fields.add(f"{fv_name}_{sf_name}")
+                full_name = f"{fv_name}_{sf_name}"
+                snippet.append_line(f"int {full_name}[BITBUF_ROWS];")
+                parsed_fields.add(full_name)
+                fv_indexed_fields.add(full_name)
 
             snippet.append_line("int result = 0;")
             with snippet.block("for (int _r = 0; _r < bitbuffer->num_rows; ++_r)"):
@@ -907,6 +1035,7 @@ def emit_decode_fn(decoder_name: str, instance: Decoder) -> CodeSnippet:
                 _emit_decode_tail(
                     snippet, cls, callables, decoder_name, False,
                     parsed_fields, emitted_hooks,
+                    row_index="_r", indexed_fields=fv_indexed_fields,
                 )
 
             snippet.append_line("return result;")
@@ -946,16 +1075,31 @@ def _emit_variants(
     fail_hard: bool,
     parsed_fields: set,
     emitted_hooks: set,
+    row_index: str | None = None,
+    indexed_fields: set[str] | None = None,
 ) -> CodeSnippet:
     """Emit the if/else if chain for variants. Returns a CodeSnippet."""
     with ElifLadder() as ladder:
         for vcls in variants:
-            when_c = emit_expr(_call_inline(vcls.when))
-            with ladder.branch(when_c) as body:
+            when_expr = emit_expr(_call_inline(vcls.when))
+            # Subscript any FirstValid indexed fields in the when condition.
+            # Sort longest-first so e.g. "data_id" is matched before "data".
+            if row_index and indexed_fields:
+                for fname in sorted(indexed_fields, key=len, reverse=True):
+                    when_expr = re.sub(
+                        rf"\b{re.escape(fname)}\b",
+                        f"{fname}[{row_index}]",
+                        when_expr,
+                    )
+            with ladder.branch(when_expr) as body:
                 v_parsed = set(parsed_fields)
                 v_emitted_hooks = set(emitted_hooks)
                 all_callables = dict(parent_callables)
                 all_callables.update(vcls._callables)
+                # Any callable defined on (or inherited by) this variant is
+                # emitted variant-prefixed; names outside this set come from
+                # the parent and must be emitted unprefixed.
+                variant_owned_names = set(vcls._callables.keys())
 
                 body += emit_fields(
                     list(vcls._fields),
@@ -970,35 +1114,20 @@ def _emit_variants(
                 _emit_pending_validates(
                     body, all_callables, decoder_name, fail_hard,
                     v_parsed, v_emitted_hooks, variant_name=vcls.__name__,
+                    row_index=row_index, indexed_fields=indexed_fields,
+                    variant_owned_names=variant_owned_names,
                 )
 
-                records = list(vcls.json_records()) or _default_variant_records(cls, vcls)
+                records = list(vcls.json_records())
                 body += emit_data_make(
-                    records, decoder_name, vcls.__name__, all_callables
+                    records, decoder_name, vcls.__name__, all_callables,
+                    row_index, indexed_fields,
+                    variant_owned_names=variant_owned_names,
                 )
                 body.append_line("return 1;")
 
     ladder.snippet.append_line("return DECODE_FAIL_SANITY;")
     return ladder.snippet
-
-
-def _default_variant_records(parent_cls: type, vcls: type) -> list[JsonRecord]:
-    """Build default JsonRecord list for a variant."""
-    model = parent_cls.__new__(parent_cls).modulation_config().device_name
-    records = [JsonRecord("model", "", model, "DATA_STRING")]
-    seen = {"model"}
-
-    for name, spec in parent_cls._fields:
-        if isinstance(spec, BitsSpec) and not name.startswith("_") and name not in seen:
-            records.append(JsonRecord(name, "", FieldRef(name), "DATA_INT"))
-            seen.add(name)
-
-    for name, spec in vcls._fields:
-        if isinstance(spec, BitsSpec) and not name.startswith("_") and name not in seen:
-            records.append(JsonRecord(name, "", FieldRef(name), "DATA_INT"))
-            seen.add(name)
-
-    return records
 
 
 # ---------------------------------------------------------------------------
@@ -1122,7 +1251,7 @@ def _compile_single_decoder(instance: Decoder) -> str:
         result.append_line(f'#include "{decoder_name}.h"')
     result.append_line("")
 
-    # Emit static constexpr C functions for all inline callables
+    # Emit static inline C functions for all inline callables
     for c_name, entry in cls._callables.items():
         fn_snippet = emit_callable(decoder_name, c_name, entry)
         if fn_snippet.lines():
@@ -1158,7 +1287,8 @@ def _compile_dispatcher(instance: Dispatcher) -> str:
         result.append_line(f'#include "{decoder_name}.h"')
     result.append_line("")
 
-    # Emit static constexpr C functions for each delegate's callables
+    # Emit static inline C functions for each delegate's callables —
+    # including those nested inside each variant of the delegate.
     for delegate in delegates:
         d_name = type(delegate).__name__
         for c_name, entry in type(delegate)._callables.items():
@@ -1166,6 +1296,12 @@ def _compile_dispatcher(instance: Dispatcher) -> str:
             if fn_snippet.lines():
                 result += fn_snippet
                 result.append_line("")
+        for vcls in type(delegate)._variants:
+            for c_name, entry in vcls._callables.items():
+                fn_snippet = emit_callable(d_name, c_name, entry, vcls.__name__)
+                if fn_snippet.lines():
+                    result += fn_snippet
+                    result.append_line("")
 
     # Emit each delegate's decode function, then the dispatcher
     for delegate in delegates:

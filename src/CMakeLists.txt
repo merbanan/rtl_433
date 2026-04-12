@@ -45,9 +45,6 @@ foreach(STEM ${PROTO_PROTOCOL_STEMS})
         COMMENT "Generating ${STEM}.c"
         VERBATIM
     )
-    # Generated files use static constexpr (C23); rest of rtl_433 stays C99.
-    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/devices/${STEM}.c
-        PROPERTIES COMPILE_OPTIONS "-std=c23")
 endforeach()
 
 ########################################################################
