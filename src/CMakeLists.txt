@@ -5,7 +5,7 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 set(PROTO_BUILD_SCRIPT ${CMAKE_SOURCE_DIR}/proto_compiler/build.py)
 set(PROTO_COMPILER_DEPS
-    ${CMAKE_SOURCE_DIR}/proto_compiler/compiler.py
+    ${CMAKE_SOURCE_DIR}/proto_compiler/codegen.py
     ${CMAKE_SOURCE_DIR}/proto_compiler/dsl.py
 )
 
@@ -45,6 +45,9 @@ foreach(STEM ${PROTO_PROTOCOL_STEMS})
         COMMENT "Generating ${STEM}.c"
         VERBATIM
     )
+    # Generated files use static constexpr (C23); rest of rtl_433 stays C99.
+    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/devices/${STEM}.c
+        PROPERTIES COMPILE_OPTIONS "-std=c23")
 endforeach()
 
 ########################################################################

@@ -1,20 +1,23 @@
 /* honeywell_wdb.h - hand-written helpers included by generated decoder. */
 #pragma once
 
-static int honeywell_wdb_validate_packet(uint8_t *b)
+static inline bool honeywell_wdb_validate_packet(bitbuffer_t *bitbuffer)
 {
+    /* The decode function has already selected the repeated row and
+       extracted b = bitbuffer->bb[row].  We re-derive it from row 0
+       of the (possibly invert-modified) bitbuffer that the pipeline
+       left behind. */
+    uint8_t *b = bitbuffer->bb[0];
     int parity = parity_bytes(b, 6);
 
     if ((!b[0] && !b[2] && !b[4] && !b[5]) ||
-            (b[0] == 0xff && b[2] == 0xff && b[4] == 0xff && b[5] == 0xff)) {
-        return DECODE_FAIL_SANITY;
-    }
+            (b[0] == 0xff && b[2] == 0xff && b[4] == 0xff && b[5] == 0xff))
+        return false;
 
-    if (parity) {
-        return DECODE_FAIL_MIC;
-    }
+    if (parity)
+        return false;
 
-    return 0;
+    return true;
 }
 
 static const char *honeywell_wdb_subtype(int class_raw)

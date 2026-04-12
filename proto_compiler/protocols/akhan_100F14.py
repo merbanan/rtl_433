@@ -7,29 +7,31 @@ Reference: src/devices/akhan_100F14.c (hand-written; this module replaces it).
 """
 
 from proto_compiler.dsl import (
+    BitbufferPipeline,
     Bits,
     DecodeFail,
+    Decoder,
     JsonRecord,
     Modulation,
     ModulationConfig,
-    Protocol,
 )
 
 
-class akhan_100F14(Protocol):
-    class modulation_config(ModulationConfig):
-        device_name = "Akhan 100F14 remote keyless entry"
-        output_model = "Akhan-100F14"
-        modulation = Modulation.OOK_PULSE_PWM
-        short_width = 316
-        long_width = 1020
-        reset_limit = 1800
-        sync_width = 0
-        tolerance = 80
-        disabled = 1
+class akhan_100F14(Decoder):
+    def modulation_config(self):
+        return ModulationConfig(
+            device_name="Akhan 100F14 remote keyless entry",
+            modulation=Modulation.OOK_PULSE_PWM,
+            short_width=316,
+            long_width=1020,
+            reset_limit=1800,
+            sync_width=0,
+            tolerance=80,
+            disabled=1,
+        )
 
-    def prepare(self):
-        return self.bitbuffer.find_repeated_row(1, 25)
+    def prepare(self, buf: BitbufferPipeline) -> BitbufferPipeline:
+        return buf.find_repeated_row(1, 25)
 
     b0: Bits[8]
     b1: Bits[8]
@@ -51,7 +53,7 @@ class akhan_100F14(Protocol):
     def cmd(self, notb2) -> int:
         return notb2 & 0x0F
 
-    def validate_cmd(self, cmd, fail_value=DecodeFail.SANITY):
+    def validate_cmd(self, cmd, fail_value=DecodeFail.SANITY) -> bool:
         return (cmd == 1) | (cmd == 2) | (cmd == 4) | (cmd == 8)
 
     def data_str(self, cmd) -> str: ...
@@ -62,3 +64,6 @@ class akhan_100F14(Protocol):
             JsonRecord("id", "ID (20bit)", self.id, "DATA_INT", fmt="0x%x"),
             JsonRecord("data", "Data (4bit)", self.data_str, "DATA_STRING"),
         ]
+
+
+decoders = (akhan_100F14(),)

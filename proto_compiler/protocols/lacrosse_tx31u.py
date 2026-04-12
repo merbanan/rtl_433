@@ -49,32 +49,36 @@ These readings have not been tested.
 """
 
 from proto_compiler.dsl import (
+    BitbufferPipeline,
     Bits,
+    DecodeFail,
+    Decoder,
     FieldRef,
     Literal,
     Modulation,
     ModulationConfig,
-    Protocol,
+    Repeatable,
     Repeat,
 )
 
 
-class sensor_reading(Protocol):
+class sensor_reading(Repeatable):
     sensor_type: Bits[4]
     reading: Bits[12]
 
 
-class lacrosse_tx31u(Protocol):
-    class modulation_config(ModulationConfig):
-        device_name = "LaCrosse TX31U-IT, The Weather Channel WS-1910TWC-IT"
-        output_model = "LaCrosse-TX31UIT"
-        modulation = Modulation.FSK_PULSE_PCM
-        short_width = 116
-        long_width = 116
-        reset_limit = 20000
+class lacrosse_tx31u(Decoder):
+    def modulation_config(self):
+        return ModulationConfig(
+            device_name="LaCrosse TX31U-IT, The Weather Channel WS-1910TWC-IT",
+            modulation=Modulation.FSK_PULSE_PCM,
+            short_width=116,
+            long_width=116,
+            reset_limit=20000,
+        )
 
-    def prepare(self):
-        return self.bitbuffer.search_preamble(0xAAAA2DD4).skip_bits(32)
+    def prepare(self, buf: BitbufferPipeline) -> BitbufferPipeline:
+        return buf.search_preamble(0xAAAA2DD4).skip_bits(32)
 
     _model: Literal[0xA, 4]
     sensor_id: Bits[6]
@@ -85,10 +89,13 @@ class lacrosse_tx31u(Protocol):
     readings: Repeat[FieldRef("measurements"), sensor_reading]
     crc: Bits[8]
 
-    def validate_crc(self, b, measurements, crc): ...
+    def validate_crc(self, measurements, crc, fail_value=DecodeFail.MIC) -> bool: ...
 
     def temperature_c(
         self, readings_sensor_type, readings_reading, measurements
     ) -> float: ...
 
     def humidity(self, readings_sensor_type, readings_reading, measurements) -> int: ...
+
+
+decoders = (lacrosse_tx31u(),)

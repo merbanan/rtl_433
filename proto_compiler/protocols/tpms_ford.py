@@ -16,21 +16,22 @@ Packet nibbles:
 - C = Checksum, SUM bytes 0 to 6 = byte 7
 """
 
-from proto_compiler.dsl import Bits, DecodeFail, JsonRecord, Modulation, ModulationConfig, Protocol
+from proto_compiler.dsl import BitbufferPipeline, Bits, DecodeFail, Decoder, JsonRecord, Modulation, ModulationConfig
 
 
-class tpms_ford(Protocol):
-    class modulation_config(ModulationConfig):
-        device_name = "Ford TPMS"
-        output_model = "Ford"
-        modulation = Modulation.FSK_PULSE_PCM
-        short_width = 52
-        long_width = 52
-        reset_limit = 150
+class tpms_ford(Decoder):
+    def modulation_config(self):
+        return ModulationConfig(
+            device_name="Ford TPMS",
+            modulation=Modulation.FSK_PULSE_PCM,
+            short_width=52,
+            long_width=52,
+            reset_limit=150,
+        )
 
-    def prepare(self):
+    def prepare(self, buf: BitbufferPipeline) -> BitbufferPipeline:
         return (
-            self.bitbuffer
+            buf
             .invert()
             .search_preamble(0xAAA9, bit_length=16, scan_all_rows=True)
             .skip_bits(16)
@@ -51,7 +52,7 @@ class tpms_ford(Protocol):
         flags,
         checksum,
         fail_value=DecodeFail.MIC,
-    ):
+    ) -> bool:
         return (
             (
                 (sensor_id >> 24)
@@ -97,3 +98,6 @@ class tpms_ford(Protocol):
             JsonRecord("unknown_3",    "",          self.unknown_3,   "DATA_STRING", fmt="%01x"),
             JsonRecord("mic",          "Integrity", "CHECKSUM",       "DATA_STRING"),
         ]  # fmt: on
+
+
+decoders = (tpms_ford(),)

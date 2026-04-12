@@ -13,22 +13,30 @@ T - BCD coded temperature
 F - ones
 """
 
-from proto_compiler.dsl import Bits, JsonRecord, Modulation, ModulationConfig, Protocol
+from proto_compiler.dsl import (
+    BitbufferPipeline,
+    Bits,
+    Decoder,
+    JsonRecord,
+    Modulation,
+    ModulationConfig,
+)
 
 
-class abmt(Protocol):
-    class modulation_config(ModulationConfig):
-        device_name = "Amazon Basics Meat Thermometer"
-        output_model = "Basics-Meat"
-        modulation = Modulation.OOK_PULSE_PCM
-        short_width = 550
-        long_width = 550
-        gap_limit = 2000
-        reset_limit = 5000
+class abmt(Decoder):
+    def modulation_config(self):
+        return ModulationConfig(
+            device_name="Amazon Basics Meat Thermometer",
+            modulation=Modulation.OOK_PULSE_PCM,
+            short_width=550,
+            long_width=550,
+            gap_limit=2000,
+            reset_limit=5000,
+        )
 
-    def prepare(self):
+    def prepare(self, buf: BitbufferPipeline) -> BitbufferPipeline:
         return (
-            self.bitbuffer
+            buf
             .find_repeated_row(4, 90, max_bits=120)
             .search_preamble(0x55AAAA, bit_length=24)
             .skip_bits(-72)
@@ -43,7 +51,7 @@ class abmt(Protocol):
     temp_last_byte: Bits[8]
     _trailer: Bits[8]
 
-    def temperature_c(self, temp_bcd_byte, temp_last_byte) -> float:
+    def temperature_c(self, temp_bcd_byte: int, temp_last_byte: int) -> float:
         return (10 * (temp_bcd_byte >> 4) + (temp_bcd_byte & 0xF)) * 10 + (
             temp_last_byte >> 4
         )
@@ -58,7 +66,10 @@ class abmt(Protocol):
                 "Temperature",
                 self.temperature_c,
                 "DATA_DOUBLE",
-                fmt="%.1f C"
+                fmt="%.1f C",
             ),
         ]
         # fmt: on
+
+
+decoders = (abmt(),)

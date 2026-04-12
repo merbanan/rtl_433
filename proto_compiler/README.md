@@ -20,44 +20,45 @@ For examples, see:
 
 ## Protocol structure
 
-In this language, a decoder is a subclass of `Protocol`. The class has five
-main pieces: a `modulation_config` block, a `prepare()` method, field
-annotations, methods, and `to_json`. 
+In this language, a decoder is a subclass of `Decoder` (or `Dispatcher` for
+multi-decoder modules). The class has five main pieces: a `modulation_config()`
+method, a `prepare()` method, field annotations, methods, and `to_json`.
 
 ### ModulationConfig
 
 Radio parameters that belong in the `r_device` struct (modulation kind, pulse
-timing, limits) live in a nested `modulation_config` class that inherits from
-`ModulationConfig`. 
+timing, limits) are returned from a `modulation_config(self)` method as a
+`ModulationConfig` named tuple.
 
 ```python
-from proto_compiler.dsl import Bits, Literal, Modulation, ModulationConfig, Protocol
+from proto_compiler.dsl import Bits, Decoder, Literal, Modulation, ModulationConfig
 
-class thermopro_tp211b(Protocol):
-    class modulation_config(ModulationConfig):
-        device_name = "ThermoPro TP211B Thermometer"
-        output_model = "ThermoPro-TP211B"
-        modulation = Modulation.FSK_PULSE_PCM
-        short_width = 105
-        long_width = 105
-        reset_limit = 1500
+class thermopro_tp211b(Decoder):
+    def modulation_config(self):
+        return ModulationConfig(
+            device_name="ThermoPro TP211B Thermometer",
+            modulation=Modulation.FSK_PULSE_PCM,
+            short_width=105,
+            long_width=105,
+            reset_limit=1500,
+        )
 ```
+
+Required fields are `device_name`, `modulation`, `short_width`, `long_width`,
+and `reset_limit`. Optional fields are `gap_limit`, `sync_width`, `tolerance`,
+and `disabled`.
 
 ### prepare() and the bitbuffer pipeline
 
 Bitbuffer preprocessing (preamble search, Manchester decode, inverts, and so on)
-is declared in `prepare()`. This method chains bit process operations that include:
+is declared in `prepare(self, buf)`. The method takes a `BitbufferPipeline` and
+returns it after chaining bit-processing operations:
 
 * `invert()` — `bitbuffer_invert` on the row buffer (or on decoded packet bits
   after `manchester_decode`, depending on position in the chain).
 * `reflect()` — per-row `reflect_bytes`.
 * `find_repeated_row(min_repeats, min_bits, max_bits=…)` — locate a repeated row;
   `max_bits` allows a length upper bound instead of an exact `min_bits` match.
-* `first_valid_row(bits, reflect=False, checksum_over_bytes=0)` — try each row in
-  order until one has exactly *bits* (optional per-row reflect and add-with-carry
-  checksum vs the next byte); use this instead of `find_repeated_row` when the
-  slicer gives multiple candidates and validation picks the first good row. Must
-  be the last pipeline step.
 * `search_preamble(pattern, bit_length=None, scan_all_rows=False)` — search for
   a bit pattern; `bit_length` defaults to `pattern.bit_length()` when omitted.
   Use `scan_all_rows=True` when the match may appear on any row (e.g. TPMS).
@@ -67,11 +68,15 @@ is declared in `prepare()`. This method chains bit process operations that inclu
   offset into a temporary buffer; subsequent field bits are read from that
   decoded stream.
 
+For row-selection strategies (such as scanning multiple rows for a valid
+candidate), use `Rows[FirstValid(bits), SubProtocol]` as a field type rather
+than a pipeline step (see "Rows" below).
+
 Here's an example:
 
 ```python
-    def prepare(self):
-        return self.bitbuffer.search_preamble(0x552DD4, bit_length=24).skip_bits(24)
+    def prepare(self, buf):
+        return buf.search_preamble(0x552DD4, bit_length=24).skip_bits(24)
 ```
 
 This prepares the bitbuffer for parsing it into bit fields.
@@ -79,7 +84,7 @@ This prepares the bitbuffer for parsing it into bit fields.
 ### Fields
 
 Bit fields are parsed automatically. They're declared as class annotations using
-the `Bits`, `Literal`, `Cond`, `Repeat`, and `Rows` type constructors:
+the `Bits`, `Literal`, `Repeat`, and `Rows` type constructors:
 
 ```python
     id: Bits[24]
@@ -108,8 +113,9 @@ only writes indices present in `rows_tuple` (sparse indexing). In expressions,
 use `FieldRef('parent_subfield')[row_index]` (or a `def foo(self, parent_subfield): …`
 parameter bound to that array). `Rev8(x)` emits `reverse8(x)` in C.
 
-The sub-protocol must not contain nested `Rows` or `Repeat` fields. `Rows` is
-incompatible with `FirstValidRow` as the last pipeline step.
+The sub-protocol must not contain nested `Rows` or `Repeat` fields. To scan
+multiple rows for the first valid candidate, use the field-spec form
+`Rows[FirstValid(bits), SubProtocol]`.
 
 ### Variants
 
@@ -248,15 +254,17 @@ but differ in their preamble, bit offset after the match, and the JSONs they
 emit. A base class captures everything they have in common:
 
 ```python
-from proto_compiler.dsl import Bits, JsonRecord, Modulation, ModulationConfig, Protocol, Variant
+from proto_compiler.dsl import Bits, Decoder, JsonRecord, Modulation, ModulationConfig, Variant
 
-class current_cost_base(Protocol):
-    class modulation_config(ModulationConfig):
-        device_name = "CurrentCost Current Sensor"
-        modulation = Modulation.FSK_PULSE_PCM
-        short_width = 250
-        long_width = 250
-        reset_limit = 8000
+class current_cost_base(Decoder):
+    def modulation_config(self):
+        return ModulationConfig(
+            device_name="CurrentCost Current Sensor",
+            modulation=Modulation.FSK_PULSE_PCM,
+            short_width=250,
+            long_width=250,
+            reset_limit=8000,
+        )
 
     msg_type: Bits[4]
     device_id: Bits[12]
@@ -291,13 +299,14 @@ class current_cost_base(Protocol):
 ```
 
 The two concrete decoders inherit from this base and supply their own
-`prepare()` pipelines (and JSON overrides):
+`prepare()` pipelines (and JSON overrides), and a `Dispatcher` class chains
+them at runtime:
 
 ```python
 class current_cost_envir(current_cost_base):
-    def prepare(self):
+    def prepare(self, buf):
         return (
-            self.bitbuffer
+            buf
             .invert()
             .search_preamble(0x55555555A457, bit_length=48)
             .skip_bits(47)
@@ -316,9 +325,9 @@ class current_cost_envir(current_cost_base):
 
 
 class current_cost_classic(current_cost_base):
-    def prepare(self):
+    def prepare(self, buf):
         return (
-            self.bitbuffer
+            buf
             .invert()
             .search_preamble(0xCCCCCCCE915D, bit_length=45)
             .skip_bits(45)
@@ -334,6 +343,20 @@ class current_cost_classic(current_cost_base):
         def to_json(self) -> list[JsonRecord]:
             return [ # ...
             ]
+
+
+class current_cost(Dispatcher):
+    def modulation_config(self):
+        return ModulationConfig(
+            device_name="CurrentCost Current Sensor",
+            modulation=Modulation.FSK_PULSE_PCM,
+            short_width=250,
+            long_width=250,
+            reset_limit=8000,
+        )
+
+    def dispatch(self):
+        return (current_cost_envir(), current_cost_classic())
 ```
 
 The field definitions, `when()` predicates, variant dispatch, and computed properties
@@ -351,9 +374,9 @@ To generate the C code, the CMake files run
 python proto_compiler/build.py proto_compiler/protocols/thermopro_tp211b.py src/devices/thermopro_tp211b.c
 ```
 
-This loads the protocol module, finds the root `Protocol` subclass(es), compiles
-each one, and writes the resulting C file. If a module defines multiple root
-protocols (as `current_cost.py` does), one C file is generated per protocol.
+This loads the protocol module, reads its module-level `decoders` tuple, and
+emits one concatenated C source file. Each protocol module ends with
+`decoders = (foo(),)` where `foo` is the `Decoder` or `Dispatcher` to compile.
 
 ## Other ideas considered
 

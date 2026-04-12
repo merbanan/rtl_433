@@ -37,55 +37,59 @@ Data layout (56 bits):
 - X: 8 bit checksum, add-with-carry over first 6 bytes
 """
 
-from proto_compiler.dsl import Bits, JsonRecord, Modulation, ModulationConfig, Protocol
+from proto_compiler.dsl import BitbufferPipeline, Bits, DecodeFail, Decoder, FirstValid, JsonRecord, Modulation, ModulationConfig, Repeatable, Rows
 
 
-class acurite_01185m(Protocol):
-    class modulation_config(ModulationConfig):
-        device_name = "Acurite Grill/Meat Thermometer 01185M"
-        modulation = Modulation.OOK_PULSE_PWM
-        short_width = 840
-        long_width = 2070
-        sync_width = 6600
-        gap_limit = 3000
-        reset_limit = 6000
-
-    def prepare(self):
-        return (
-            self.bitbuffer
-            .invert()
-            .first_valid_row(56, reflect=True, checksum_over_bytes=6)
-        )
-
+class acurite_01185m_row(Repeatable):
     id: Bits[8]
     battery_low: Bits[1]
-    _mid: Bits[3]
+    mid: Bits[3]
     channel: Bits[4]
     temp1_raw: Bits[16]
     temp2_raw: Bits[16]
-    _checksum: Bits[8]
+    checksum: Bits[8]
 
-    def temp1_ok(self, temp1_raw) -> int:
-        return (temp1_raw > 200) & (temp1_raw < 7000)
 
-    def temp2_ok(self, temp2_raw) -> int:
-        return (temp2_raw > 200) & (temp2_raw < 7000)
+class acurite_01185m(Decoder):
+    def modulation_config(self):
+        return ModulationConfig(
+            device_name="Acurite Grill/Meat Thermometer 01185M",
+            modulation=Modulation.OOK_PULSE_PWM,
+            short_width=840,
+            long_width=2070,
+            sync_width=6600,
+            gap_limit=3000,
+            reset_limit=6000,
+        )
 
-    def temp1_f(self, temp1_raw) -> float:
-        return (temp1_raw - 900) * 0.1
+    def prepare(self, buf: BitbufferPipeline) -> BitbufferPipeline:
+        return buf.invert().reflect()
 
-    def temp2_f(self, temp2_raw) -> float:
-        return (temp2_raw - 900) * 0.1
+    data: Rows[FirstValid(56), acurite_01185m_row]
 
-    def battery_ok(self, battery_low) -> int:
-        return battery_low == 0
+    def validate_checksum(self, data_id, data_battery_low, data_mid, data_channel, data_temp1_raw, data_temp2_raw, data_checksum, fail_value=DecodeFail.MIC) -> bool: ...
+
+    def temp1_ok(self, data_temp1_raw) -> int:
+        return (data_temp1_raw > 200) & (data_temp1_raw < 7000)
+
+    def temp2_ok(self, data_temp2_raw) -> int:
+        return (data_temp2_raw > 200) & (data_temp2_raw < 7000)
+
+    def temp1_f(self, data_temp1_raw) -> float:
+        return (data_temp1_raw - 900) * 0.1
+
+    def temp2_f(self, data_temp2_raw) -> float:
+        return (data_temp2_raw - 900) * 0.1
+
+    def battery_ok(self, data_battery_low) -> int:
+        return data_battery_low == 0
 
     def to_json(self) -> list[JsonRecord]:
         # fmt: off
         return [
             JsonRecord("model", "", "Acurite-01185M", "DATA_STRING"),
-            JsonRecord("id", "", self.id, "DATA_INT"),
-            JsonRecord("channel", "", self.channel, "DATA_INT"),
+            JsonRecord("id", "", self.data_id, "DATA_INT"),
+            JsonRecord("channel", "", self.data_channel, "DATA_INT"),
             JsonRecord("battery_ok", "Battery", self.battery_ok, "DATA_INT"),
             JsonRecord(
                 "temperature_1_F",
@@ -106,3 +110,6 @@ class acurite_01185m(Protocol):
             JsonRecord("mic", "Integrity", "CHECKSUM", "DATA_STRING"),
         ]
         # fmt: on
+
+
+decoders = (acurite_01185m(),)

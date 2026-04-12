@@ -21,20 +21,21 @@ Data layout after preamble:
 - CC:  {16} Checksum, XOR table based (see thermopro_tp211b.h).
 """
 
-from proto_compiler.dsl import Bits, Literal, Modulation, ModulationConfig, Protocol
+from proto_compiler.dsl import BitbufferPipeline, Bits, DecodeFail, JsonRecord, Literal, Modulation, ModulationConfig, Decoder
 
 
-class thermopro_tp211b(Protocol):
-    class modulation_config(ModulationConfig):
-        device_name = "ThermoPro TP211B Thermometer"
-        output_model = "ThermoPro-TP211B"
-        modulation = Modulation.FSK_PULSE_PCM
-        short_width = 105
-        long_width = 105
-        reset_limit = 1500
+class thermopro_tp211b(Decoder):
+    def modulation_config(self):
+        return ModulationConfig(
+            device_name="ThermoPro TP211B Thermometer",
+            modulation=Modulation.FSK_PULSE_PCM,
+            short_width=105,
+            long_width=105,
+            reset_limit=1500,
+        )
 
-    def prepare(self):
-        return self.bitbuffer.search_preamble(0x552DD4, bit_length=24).skip_bits(24)
+    def prepare(self, buf: BitbufferPipeline) -> BitbufferPipeline:
+        return buf.search_preamble(0x552DD4, bit_length=24).skip_bits(24)
 
     id: Bits[24]
     flags: Bits[4]
@@ -42,7 +43,18 @@ class thermopro_tp211b(Protocol):
     fixed_aa: Literal[0xAA, 8]
     checksum: Bits[16]
 
-    def validate_checksum(self, b, checksum): ...
+    def validate_checksum(self, id, flags, temp_raw, checksum, fail_value=DecodeFail.MIC) -> bool: ...
 
     def temperature_c(self, temp_raw) -> float:
         return (temp_raw - 500) * 0.1
+
+    def to_json(self) -> list[JsonRecord]:
+        return [
+            JsonRecord("model", "", "ThermoPro-TP211B", "DATA_STRING"),
+            JsonRecord("id", "", self.id, "DATA_INT"),
+            JsonRecord("temperature_c", "Temperature", self.temperature_c, "DATA_DOUBLE", fmt="%.1f C"),
+            JsonRecord("mic", "Integrity", "CHECKSUM", "DATA_STRING"),
+        ]
+
+
+decoders = (thermopro_tp211b(),)

@@ -10,22 +10,29 @@ reading (msg_type 4).
 """
 
 from proto_compiler.dsl import (
+    BitbufferPipeline,
     Bits,
+    Decoder,
+    Dispatcher,
     JsonRecord,
     Modulation,
     ModulationConfig,
-    Protocol,
     Variant,
 )
 
 
-class current_cost_base(Protocol):
-    class modulation_config(ModulationConfig):
-        device_name = "CurrentCost Current Sensor"
-        modulation = Modulation.FSK_PULSE_PCM
-        short_width = 250
-        long_width = 250
-        reset_limit = 8000
+class current_cost_base(Decoder):
+    def modulation_config(self):
+        return ModulationConfig(
+            device_name="CurrentCost Current Sensor",
+            modulation=Modulation.FSK_PULSE_PCM,
+            short_width=250,
+            long_width=250,
+            reset_limit=8000,
+        )
+
+    def prepare(self, buf: BitbufferPipeline) -> BitbufferPipeline:
+        return buf
 
     msg_type: Bits[4]
     device_id: Bits[12]
@@ -58,9 +65,9 @@ class current_cost_base(Protocol):
 
 
 class current_cost_envir(current_cost_base):
-    def prepare(self):
+    def prepare(self, buf: BitbufferPipeline) -> BitbufferPipeline:
         return (
-            self.bitbuffer
+            buf
             .invert()
             .search_preamble(0x55555555A457, bit_length=48)
             .skip_bits(47)
@@ -90,9 +97,9 @@ class current_cost_envir(current_cost_base):
 
 
 class current_cost_classic(current_cost_base):
-    def prepare(self):
+    def prepare(self, buf: BitbufferPipeline) -> BitbufferPipeline:
         return (
-            self.bitbuffer
+            buf
             .invert()
             .search_preamble(0xCCCCCCCE915D, bit_length=45)
             .skip_bits(45)
@@ -121,5 +128,18 @@ class current_cost_classic(current_cost_base):
             ]  # fmt: on
 
 
-class current_cost(Protocol):
-    delegates = (current_cost_envir, current_cost_classic)
+class current_cost(Dispatcher):
+    def modulation_config(self):
+        return ModulationConfig(
+            device_name="CurrentCost Current Sensor",
+            modulation=Modulation.FSK_PULSE_PCM,
+            short_width=250,
+            long_width=250,
+            reset_limit=8000,
+        )
+
+    def dispatch(self):
+        return (current_cost_envir(), current_cost_classic())
+
+
+decoders = (current_cost(),)

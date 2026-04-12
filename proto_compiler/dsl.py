@@ -1,23 +1,35 @@
 """
-Annotation-style DSL for declaring binary protocol field layouts.
+DSL for declaring binary protocol field layouts (proto-compiler v2).
 
 Protocol subclasses use type annotations to describe bit-level fields.
-A companion compiler reads these annotations and emits C++ decoder code.
+codegen.py reads these annotations and emits C decoder code for rtl_433.
+
+Key classes:
+  Protocol, Repeatable, Variant, Decoder
+  ModulationConfig, Modulation, DecodeFail
+  Bits, Literal, Repeat, Rows, FirstValid
+  FieldRef, JsonRecord
+  Rev8, LfsrDigest8
+  Expr, BinaryExpr, UnaryExpr, ExprIntLiteral, ExprFloatLiteral,
+  ExprBoolLiteral, FieldRefSubscript
 """
 
 from __future__ import annotations
 
-import ast
-from dataclasses import dataclass
-from enum import Enum, auto
 import inspect
 import sys
-import textwrap
-from typing import Any, ClassVar, NamedTuple, Union
+from dataclasses import dataclass
+from enum import Enum, auto
+from typing import Any, NamedTuple, Union
+
+
+# ---------------------------------------------------------------------------
+# DecodeFail enum
+# ---------------------------------------------------------------------------
 
 
 class DecodeFail(str, Enum):
-    """rtl_433 ``decode_return_codes`` (``r_device.h``); use as ``fail_value=`` on ``validate_*``."""
+    """rtl_433 decode return codes; use as ``fail_value=`` on ``validate_*``."""
 
     MIC = "DECODE_FAIL_MIC"
     SANITY = "DECODE_FAIL_SANITY"
@@ -26,101 +38,112 @@ class DecodeFail(str, Enum):
 
 
 # ---------------------------------------------------------------------------
-# Expression tree – :class:`FieldRef` and operator overloading on :class:`Expr`
+# Expression tree
 # ---------------------------------------------------------------------------
 
 
 class Expr:
-    """Base for composable expressions. Operators build :class:`BinaryExpr` nodes."""
+    """Base for composable DSL expressions. Operators build expression tree nodes."""
 
     __slots__ = ()
 
-    def __eq__(self, other: Any) -> BinaryExpr:  # type: ignore[override]
+    def __eq__(self, other: Any) -> "BinaryExpr":  # type: ignore[override]
         return BinaryExpr("==", self, _wrap(other))
 
-    def __ne__(self, other: Any) -> BinaryExpr:  # type: ignore[override]
+    def __ne__(self, other: Any) -> "BinaryExpr":  # type: ignore[override]
         return BinaryExpr("!=", self, _wrap(other))
 
-    def __lt__(self, other: Any) -> BinaryExpr:
+    def __lt__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("<", self, _wrap(other))
 
-    def __le__(self, other: Any) -> BinaryExpr:
+    def __le__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("<=", self, _wrap(other))
 
-    def __gt__(self, other: Any) -> BinaryExpr:
+    def __gt__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr(">", self, _wrap(other))
 
-    def __ge__(self, other: Any) -> BinaryExpr:
+    def __ge__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr(">=", self, _wrap(other))
 
-    def __and__(self, other: Any) -> BinaryExpr:
+    def __and__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("&", self, _wrap(other))
 
-    def __rand__(self, other: Any) -> BinaryExpr:
+    def __rand__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("&", _wrap(other), self)
 
-    def __or__(self, other: Any) -> BinaryExpr:
+    def __or__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("|", self, _wrap(other))
 
-    def __ror__(self, other: Any) -> BinaryExpr:
+    def __ror__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("|", _wrap(other), self)
 
-    def __xor__(self, other: Any) -> BinaryExpr:
+    def __xor__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("^", self, _wrap(other))
 
-    def __rxor__(self, other: Any) -> BinaryExpr:
+    def __rxor__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("^", _wrap(other), self)
 
-    def __invert__(self) -> UnaryExpr:
+    def __invert__(self) -> "UnaryExpr":
         return UnaryExpr("~", self)
 
-    def __add__(self, other: Any) -> BinaryExpr:
+    def __add__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("+", self, _wrap(other))
 
-    def __radd__(self, other: Any) -> BinaryExpr:
+    def __radd__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("+", _wrap(other), self)
 
-    def __sub__(self, other: Any) -> BinaryExpr:
+    def __sub__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("-", self, _wrap(other))
 
-    def __rsub__(self, other: Any) -> BinaryExpr:
+    def __rsub__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("-", _wrap(other), self)
 
-    def __mul__(self, other: Any) -> BinaryExpr:
+    def __mul__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("*", self, _wrap(other))
 
-    def __rmul__(self, other: Any) -> BinaryExpr:
+    def __rmul__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("*", _wrap(other), self)
 
-    def __truediv__(self, other: Any) -> BinaryExpr:
+    def __truediv__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("/", self, _wrap(other))
 
-    def __rtruediv__(self, other: Any) -> BinaryExpr:
+    def __rtruediv__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("/", _wrap(other), self)
 
-    def __floordiv__(self, other: Any) -> BinaryExpr:
+    def __floordiv__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("/", self, _wrap(other))
 
-    def __rfloordiv__(self, other: Any) -> BinaryExpr:
+    def __rfloordiv__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("/", _wrap(other), self)
 
-    def __mod__(self, other: Any) -> BinaryExpr:
+    def __mod__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("%", self, _wrap(other))
 
-    def __neg__(self) -> UnaryExpr:
+    def __rmod__(self, other: Any) -> "BinaryExpr":
+        return BinaryExpr("%", _wrap(other), self)
+
+    def __neg__(self) -> "UnaryExpr":
         return UnaryExpr("-", self)
 
-    def __lshift__(self, other: Any) -> BinaryExpr:
+    def __lshift__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr("<<", self, _wrap(other))
 
-    def __rshift__(self, other: Any) -> BinaryExpr:
+    def __rlshift__(self, other: Any) -> "BinaryExpr":
+        return BinaryExpr("<<", _wrap(other), self)
+
+    def __rshift__(self, other: Any) -> "BinaryExpr":
         return BinaryExpr(">>", self, _wrap(other))
+
+    def __rrshift__(self, other: Any) -> "BinaryExpr":
+        return BinaryExpr(">>", _wrap(other), self)
+
+    def __hash__(self) -> int:
+        return id(self)
 
 
 @dataclass(frozen=True, eq=False)
 class ExprIntLiteral(Expr):
-    """Integer constant in the expression AST (``bool`` is not an ``int`` here)."""
-
+    """Integer constant in the expression tree."""
     value: int
 
     def __hash__(self) -> int:
@@ -129,6 +152,7 @@ class ExprIntLiteral(Expr):
 
 @dataclass(frozen=True, eq=False)
 class ExprFloatLiteral(Expr):
+    """Float constant in the expression tree."""
     value: float
 
     def __hash__(self) -> int:
@@ -137,6 +161,7 @@ class ExprFloatLiteral(Expr):
 
 @dataclass(frozen=True, eq=False)
 class ExprBoolLiteral(Expr):
+    """Boolean constant in the expression tree."""
     value: bool
 
     def __hash__(self) -> int:
@@ -145,57 +170,86 @@ class ExprBoolLiteral(Expr):
 
 @dataclass(frozen=True, eq=False)
 class BinaryExpr(Expr):
-    """Binary operator node (``left op right``).
-
-    ``eq=False`` so :class:`Expr` comparison dunders build DSL nodes; dataclass
-    structural ``==`` would make ``(expr == 3)`` evaluate to Python ``bool``.
-    """
-
+    """Binary operator node ``(left op right)``."""
     op: str
     left: Any
     right: Any
 
     def __hash__(self) -> int:
-        return hash(("BinaryExpr", self.op, self.left, self.right))
-
-
-@dataclass(frozen=True, eq=False)
-class Rev8Expr(Expr):
-    """``reverse8`` applied to a sub-expression (rtl_433 bit_util).
-
-    ``eq=False`` so comparisons delegate to :class:`Expr` (DSL AST), not dataclass
-    field equality.
-    """
-
-    operand: Any
-
-    def __hash__(self) -> int:
-        return hash(("Rev8Expr", self.operand))
+        return hash(("BinaryExpr", self.op, id(self.left), id(self.right)))
 
 
 @dataclass(frozen=True, eq=False)
 class UnaryExpr(Expr):
-    """Unary expression node (e.g. bitwise NOT, negation)."""
-
+    """Unary operator node ``(op operand)``."""
     op: str
     operand: Any
 
     def __hash__(self) -> int:
-        return hash(("UnaryExpr", self.op, self.operand))
+        return hash(("UnaryExpr", self.op, id(self.operand)))
 
 
-def Rev8(operand: Expr | int) -> Rev8Expr:
-    """Build ``reverse8(operand)`` in generated C."""
-    if isinstance(operand, float):
-        raise TypeError("Rev8 does not accept float")
-    return Rev8Expr(operand=_wrap(operand))
+@dataclass(frozen=True, eq=False)
+class FieldRef(Expr):
+    """Reference to a previously parsed protocol field by name."""
+    name: str
+
+    def __getitem__(self, index: int) -> "FieldRefSubscript":
+        if not isinstance(index, int):
+            raise TypeError(f"FieldRef subscript index must be int, got {type(index).__name__}")
+        return FieldRefSubscript(self, index)
+
+    def __hash__(self) -> int:
+        return hash(("FieldRef", self.name))
+
+
+@dataclass(frozen=True, eq=False)
+class FieldRefSubscript(Expr):
+    """Subscript into a Rows-generated sparse array: ``name[index]``."""
+    base: FieldRef
+    index: int
+
+    def __getattr__(self, name: str) -> "RowFieldAccess":
+        if name.startswith("_"):
+            raise AttributeError(name)
+        return RowFieldAccess(self.base.name, self.index, name)
+
+    def __hash__(self) -> int:
+        return hash(("FieldRefSubscript", self.base.name, self.index))
+
+
+@dataclass(frozen=True, eq=False)
+class RowFieldAccess(Expr):
+    """Access a sub-field of a Rows element: ``cells[1].b0``
+
+    Emitted in C as ``cells_b0[1]`` (flat array indexed by row).
+    """
+    rows_name: str
+    row_index: int
+    field_name: str
+
+    def __hash__(self) -> int:
+        return hash(("RowFieldAccess", self.rows_name, self.row_index, self.field_name))
+
+
+# Alias for codegen.py
+LiteralExpr = (ExprIntLiteral, ExprFloatLiteral, ExprBoolLiteral)
+FieldRefExpr = FieldRef
+
+
+@dataclass(frozen=True, eq=False)
+class Rev8Expr(Expr):
+    """``reverse8(operand)`` applied to an expression."""
+    operand: Any
+
+    def __hash__(self) -> int:
+        return hash(("Rev8Expr", id(self.operand)))
 
 
 @dataclass(frozen=True, eq=False)
 class LfsrDigest8Expr(Expr):
-    """``lfsr_digest8`` over a byte list (``bit_util.h``)."""
-
-    bytes_args: tuple[Any, ...]
+    """``lfsr_digest8(bytes, n, gen, key)`` over a byte list."""
+    bytes_args: tuple
     gen: int
     key: int
 
@@ -203,8 +257,28 @@ class LfsrDigest8Expr(Expr):
         return hash(("LfsrDigest8Expr", self.bytes_args, self.gen, self.key))
 
 
-def LfsrDigest8(*bytes_args: Expr | int, gen: int, key: int) -> LfsrDigest8Expr:
-    """MIC-style digest: ``lfsr_digest8(bytes, n, gen, key)`` in emitted C."""
+def _wrap(value: Any) -> Expr:
+    """Wrap scalars as literal Expr nodes; pass through existing Expr objects."""
+    if isinstance(value, bool):
+        return ExprBoolLiteral(value)
+    if isinstance(value, int):
+        return ExprIntLiteral(value)
+    if isinstance(value, float):
+        return ExprFloatLiteral(value)
+    if isinstance(value, Expr):
+        return value
+    raise TypeError(f"Cannot use {type(value).__name__!r} in a DSL expression")
+
+
+def Rev8(operand: Any) -> Rev8Expr:
+    """Build ``reverse8(operand)`` in generated C."""
+    if isinstance(operand, float):
+        raise TypeError("Rev8 does not accept float")
+    return Rev8Expr(operand=_wrap(operand))
+
+
+def LfsrDigest8(*bytes_args: Any, gen: int, key: int) -> LfsrDigest8Expr:
+    """Build ``lfsr_digest8(bytes, n, gen, key)`` in generated C."""
     wrapped: list[Expr] = []
     for a in bytes_args:
         if isinstance(a, bool):
@@ -215,120 +289,132 @@ def LfsrDigest8(*bytes_args: Expr | int, gen: int, key: int) -> LfsrDigest8Expr:
     return LfsrDigest8Expr(bytes_args=tuple(wrapped), gen=gen, key=key)
 
 
-@dataclass(frozen=True, eq=False)
-class FieldRef(Expr):
-    """Reference to a previously parsed protocol field."""
-
-    name: str
-
-    def __getitem__(self, row: int) -> Subscript:
-        if not isinstance(row, int):
-            raise TypeError("Row index must be int")
-        return Subscript(self, row)
-
-    def __hash__(self) -> int:
-        return hash(("FieldRef", self.name))
-
-
-def _wrap(value: Any) -> Expr:
-    """Wrap scalars as literal :class:`Expr` nodes; pass through existing ``Expr``."""
-    if isinstance(value, bool):
-        return ExprBoolLiteral(value)
-    if isinstance(value, int):
-        return ExprIntLiteral(value)
-    if isinstance(value, float):
-        return ExprFloatLiteral(value)
-    if isinstance(value, Expr):
-        return value
-    raise TypeError(f"Cannot use {type(value).__name__} in a field expression")
-
-
-def _coerce_protocol_expr_result(value: Any) -> Expr | None:
-    """Normalize hook/property return values to a single :class:`Expr` root, or ``None``."""
-    if isinstance(value, Expr):
-        return value
-    if isinstance(value, bool):
-        return ExprBoolLiteral(value)
-    if isinstance(value, int):
-        return ExprIntLiteral(value)
-    if isinstance(value, float):
-        return ExprFloatLiteral(value)
-    return None
-
-
-@dataclass(frozen=True, eq=False)
-class Subscript(Expr):
-    """Index into a Rows-generated array, e.g. ``cells_b0[5]`` (``FieldRef`` + ``[row]``)."""
-
-    base: FieldRef
-    index: int
-
-    def __hash__(self) -> int:
-        return hash(("Subscript", self.base, self.index))
-
-
-class _JsonProxy:
-    def __init__(self, protocol_cls: type):
-        self.__protocol_cls__ = protocol_cls
-
-    def __getattr__(self, name: str) -> FieldRef:
-        if name.startswith("_"):
-            raise AttributeError(name)
-        return FieldRef(name)
+def _collect_fieldrefs(node: Any) -> set[str]:
+    """Return all FieldRef names referenced in an expression tree."""
+    found: set[str] = set()
+    stack: list[Any] = [node]
+    while stack:
+        cur = stack.pop()
+        if cur is None or isinstance(cur, (int, float, bool)):
+            continue
+        if isinstance(cur, (ExprIntLiteral, ExprFloatLiteral, ExprBoolLiteral)):
+            continue
+        if isinstance(cur, FieldRef):
+            found.add(cur.name)
+        elif isinstance(cur, FieldRefSubscript):
+            found.add(cur.base.name)
+        elif isinstance(cur, RowFieldAccess):
+            found.add(cur.rows_name)
+        elif isinstance(cur, BinaryExpr):
+            stack.append(cur.left)
+            stack.append(cur.right)
+        elif isinstance(cur, UnaryExpr):
+            stack.append(cur.operand)
+        elif isinstance(cur, Rev8Expr):
+            stack.append(cur.operand)
+        elif isinstance(cur, LfsrDigest8Expr):
+            for a in cur.bytes_args:
+                stack.append(a)
+    return found
 
 
 # ---------------------------------------------------------------------------
-# Field spec descriptors – produced by __class_getitem__ on Bits, Literal, etc.
+# Field spec types
 # ---------------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
 class BitsSpec:
+    """Bits[n] — extract n bits as unsigned int."""
     width: int
 
 
 @dataclass(frozen=True)
 class LiteralSpec:
+    """Literal[value, n] — extract n bits and assert == value."""
     value: int
     width: int
 
 
 @dataclass(frozen=True)
-class CondSpec:
-    expr: Expr
-    true_type: BitsSpec | LiteralSpec
-    false_type: BitsSpec | LiteralSpec | None
+class RepeatSpec:
+    """Repeat[count_expr, sub] — parse Repeatable sub-protocol count times."""
+    count_expr: Any  # Expr or ExprIntLiteral
+    sub_protocol: type  # Repeatable subclass
 
 
 @dataclass(frozen=True)
-class RepeatSpec:
-    count_expr: Expr
-    sub_protocol: type  # a Protocol subclass
+class FirstValid:
+    """Row selection strategy for Rows[]: scan rows for the first matching bits."""
+    bits: int
 
 
 @dataclass(frozen=True)
 class RowsSpec:
-    """Repeat sub-fields over fixed bitbuffer row indices (see ``Rows``)."""
-
-    rows: tuple[int, ...]
-    sub_protocol: type
-    required_bits: tuple[tuple[int, int], ...] = ()
-
-
-FieldSpec = Union[BitsSpec, LiteralSpec, CondSpec, RepeatSpec, RowsSpec]
+    """Rows[row_spec, sub, required_bits=()] — parse sub-protocol over selected rows."""
+    row_spec: Any  # tuple[int, ...] or FirstValid
+    sub_protocol: type  # Repeatable subclass
+    required_bits: tuple = ()  # tuple of (row_index, exact_bits)
 
 
-class JsonRecord(NamedTuple):
-    key: str
-    label: str
-    value: Expr | int | float | str
-    data_type: str  # "DATA_STRING" | "DATA_INT" | "DATA_DOUBLE"
-    fmt: str | None = None
-    when: Expr | bool | None = None
+FieldSpec = Union[BitsSpec, LiteralSpec, RepeatSpec, RowsSpec]
 
 
 # ---------------------------------------------------------------------------
-# Pipeline step descriptors – returned by BitbufferPipeline builder methods
+# JsonRecord
+# ---------------------------------------------------------------------------
+
+
+class JsonRecord:
+    """A single entry in the data_make call."""
+
+    __slots__ = ("key", "label", "value", "data_type", "fmt", "when")
+
+    def __init__(
+        self,
+        key: str,
+        label: str,
+        value: Any,
+        data_type: str,
+        fmt: "str | None" = None,
+        when: Any = None,
+    ):
+        self.key = key
+        self.label = label
+        self.value = value
+        self.data_type = data_type
+        self.fmt = fmt
+        self.when = when
+
+    def __repr__(self) -> str:
+        return (
+            f"JsonRecord(key={self.key!r}, label={self.label!r}, "
+            f"value={self.value!r}, data_type={self.data_type!r}, "
+            f"fmt={self.fmt!r}, when={self.when!r})"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Callable entry
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class CallableEntry:
+    """Metadata for a user-defined callable collected from a Protocol subclass."""
+
+    kind: str  # "validate" | "prop" | "method"
+    fn: Any
+    expr_tree: Any  # Expr | None; None only for is_external
+    return_type: Any  # Python type | None
+    params: tuple  # param names, excludes 'self' and 'fail_value'
+    param_types: dict  # param name -> Python type
+    fail_c: str | None
+    is_external: bool
+
+
+# ---------------------------------------------------------------------------
+# Pipeline step descriptors
 # ---------------------------------------------------------------------------
 
 
@@ -344,17 +430,17 @@ class Reflect:
 
 @dataclass(frozen=True)
 class FindRepeatedRow:
-    """Find a row repeated at least *min_repeats* times with *min_bits* bits."""
+    """Find a row repeated at least min_repeats times with min_bits bits."""
     min_repeats: int
     min_bits: int
-    max_bits: int | None = None
+    max_bits: "int | None" = None
 
 
 @dataclass(frozen=True)
 class SearchPreamble:
     """Search for a bit pattern in the bitbuffer."""
     pattern: int
-    bit_length: int | None = None
+    bit_length: "int | None" = None
     scan_all_rows: bool = False
 
     @property
@@ -366,81 +452,67 @@ class SearchPreamble:
 
 @dataclass(frozen=True)
 class SkipBits:
-    """Adjust offset by *count* bits (negative = backward)."""
+    """Adjust offset by count bits (negative = backward)."""
     count: int
 
 
 @dataclass(frozen=True)
 class ManchesterDecode:
-    """Manchester-decode from the current row/offset into a local packet buffer."""
+    """Manchester-decode from current row/offset into a local packet buffer."""
     max_bits: int = 0
 
 
-@dataclass(frozen=True)
-class FirstValidRow:
-    """Row-selection strategy: scan rows until one matches and decodes."""
-    bits: int
-    reflect: bool = False
-    checksum_over_bytes: int = 0
-
-
 PipelineStep = Union[
-    Invert,
-    Reflect,
-    FindRepeatedRow,
-    SearchPreamble,
-    SkipBits,
-    ManchesterDecode,
-    FirstValidRow,
+    Invert, Reflect, FindRepeatedRow, SearchPreamble,
+    SkipBits, ManchesterDecode,
 ]
 
 
+# ---------------------------------------------------------------------------
+# BitbufferPipeline builder
+# ---------------------------------------------------------------------------
+
+
 class BitbufferPipeline:
-    """Fluent builder that records an ordered sequence of pipeline steps."""
+    """Fluent builder recording an ordered sequence of pipeline steps."""
 
     def __init__(self) -> None:
         self.steps: list[PipelineStep] = []
 
-    def _append(self, step: PipelineStep) -> BitbufferPipeline:
+    def _append(self, step: PipelineStep) -> "BitbufferPipeline":
         self.steps.append(step)
         return self
 
-    def invert(self) -> BitbufferPipeline:
+    def invert(self) -> "BitbufferPipeline":
         return self._append(Invert())
 
-    def reflect(self) -> BitbufferPipeline:
+    def reflect(self) -> "BitbufferPipeline":
         return self._append(Reflect())
 
     def find_repeated_row(
-        self, min_repeats: int, min_bits: int, *, max_bits: int | None = None
-    ) -> BitbufferPipeline:
+        self, min_repeats: int, min_bits: int, *, max_bits: "int | None" = None
+    ) -> "BitbufferPipeline":
         return self._append(FindRepeatedRow(min_repeats, min_bits, max_bits))
 
     def search_preamble(
         self,
         pattern: int,
         *,
-        bit_length: int | None = None,
+        bit_length: "int | None" = None,
         scan_all_rows: bool = False,
-    ) -> BitbufferPipeline:
+    ) -> "BitbufferPipeline":
         return self._append(SearchPreamble(pattern, bit_length, scan_all_rows))
 
-    def skip_bits(self, count: int) -> BitbufferPipeline:
+    def skip_bits(self, count: int) -> "BitbufferPipeline":
         return self._append(SkipBits(count))
 
-    def manchester_decode(self, max_bits: int = 0) -> BitbufferPipeline:
+    def manchester_decode(self, max_bits: int = 0) -> "BitbufferPipeline":
         return self._append(ManchesterDecode(max_bits))
 
-    def first_valid_row(
-        self,
-        bits: int,
-        *,
-        reflect: bool = False,
-        checksum_over_bytes: int = 0,
-    ) -> BitbufferPipeline:
-        return self._append(
-            FirstValidRow(bits, reflect, checksum_over_bytes)
-        )
+
+# ---------------------------------------------------------------------------
+# Modulation
+# ---------------------------------------------------------------------------
 
 
 class Modulation(Enum):
@@ -459,45 +531,54 @@ class Modulation(Enum):
     FSK_PULSE_MANCHESTER_ZEROBIT = auto()
 
 
+class ModulationConfig(NamedTuple):
+    """Bundle of modulation-level radio parameters for the r_device struct.
+
+    Required fields (device_name, modulation, short_width, long_width,
+    reset_limit) must be supplied. Optional fields default to None and are
+    omitted from the generated r_device entry when None.
+    """
+
+    device_name: str
+    modulation: Modulation
+    short_width: float
+    long_width: float
+    reset_limit: float
+    gap_limit: float | None = None
+    sync_width: float | None = None
+    tolerance: float | None = None
+    disabled: int | None = None
+
+
+
+# ---------------------------------------------------------------------------
+# Field spec classes (DSL subscript syntax)
+# ---------------------------------------------------------------------------
+
+
 class Bits:
-    """``Bits[24]`` -> ``BitsSpec(width=24)``"""
+    """``Bits[24]`` -> BitsSpec(width=24)"""
 
     def __class_getitem__(cls, width: int) -> BitsSpec:
-        if not isinstance(width, int) or width <= 0:
+        if not isinstance(width, int) or isinstance(width, bool) or width <= 0:
             raise ValueError(f"Bits width must be a positive int, got {width!r}")
         return BitsSpec(width=width)
 
 
 class Literal:
-    """``Literal[0xAA, 8]`` -> ``LiteralSpec(value=0xAA, width=8)``"""
+    """``Literal[0xAA, 8]`` -> LiteralSpec(value=0xAA, width=8)"""
 
-    def __class_getitem__(cls, params: tuple[int, int]) -> LiteralSpec:
+    def __class_getitem__(cls, params: tuple) -> LiteralSpec:
         if not isinstance(params, tuple) or len(params) != 2:
             raise ValueError("Literal requires (value, width), e.g. Literal[0xAA, 8]")
         value, width = params
+        if not isinstance(value, int) or not isinstance(width, int) or width <= 0:
+            raise ValueError(f"Literal requires (int, positive_int), got {params!r}")
         return LiteralSpec(value=value, width=width)
 
 
-class Cond:
-    """
-    ``Cond[FieldRef('flags') & 1, Bits[16], Bits[12]]`` -> CondSpec with both branches
-    ``Cond[FieldRef('flags') & 2, Bits[8]]`` -> CondSpec, false_type=None (optional)
-    """
-
-    def __class_getitem__(cls, params: tuple) -> CondSpec:
-        if not isinstance(params, tuple):
-            raise ValueError("Cond requires at least (expr, true_type)")
-        if len(params) == 2:
-            expr, true_type = params
-            return CondSpec(expr=expr, true_type=true_type, false_type=None)
-        if len(params) == 3:
-            expr, true_type, false_type = params
-            return CondSpec(expr=expr, true_type=true_type, false_type=false_type)
-        raise ValueError("Cond takes 2 or 3 arguments: (expr, true_type[, false_type])")
-
-
 class Repeat:
-    """``Repeat[FieldRef('measurements'), SensorReading]`` or ``Repeat[3, Sub]`` -> RepeatSpec"""
+    """``Repeat[count_expr, SubProtocol]`` -> RepeatSpec"""
 
     def __class_getitem__(cls, params: tuple) -> RepeatSpec:
         if not isinstance(params, tuple) or len(params) != 2:
@@ -505,10 +586,10 @@ class Repeat:
         count_expr, sub_protocol = params
         if isinstance(count_expr, bool):
             raise TypeError("Repeat count cannot be bool")
+        if isinstance(count_expr, float):
+            raise TypeError("Repeat count cannot be float")
         if isinstance(count_expr, int):
             count_expr = ExprIntLiteral(count_expr)
-        elif isinstance(count_expr, float):
-            raise TypeError("Repeat count cannot be float")
         elif not isinstance(count_expr, Expr):
             raise TypeError(
                 f"Repeat count must be int or Expr, got {type(count_expr).__name__}"
@@ -517,26 +598,34 @@ class Repeat:
 
 
 class Rows:
-    """``Rows[(1, 2), RowProto]`` or ``Rows[..., RowProto, ((1, 36),)]`` -> ``RowsSpec``"""
+    """``Rows[(1, 2), SubProtocol]`` or ``Rows[FirstValid(36), SubProtocol, ...]``"""
 
     def __class_getitem__(cls, params: tuple) -> RowsSpec:
         if not isinstance(params, tuple) or len(params) not in (2, 3):
             raise ValueError(
-                "Rows requires (rows_tuple, sub_protocol) or "
-                "(rows_tuple, sub_protocol, required_bits)"
+                "Rows requires (row_spec, sub_protocol) or "
+                "(row_spec, sub_protocol, required_bits)"
             )
-        rows_t, sub = params[0], params[1]
-        req: tuple[tuple[int, int], ...] = params[2] if len(params) == 3 else ()
-        if not isinstance(rows_t, tuple) or len(rows_t) == 0:
+        row_spec = params[0]
+        sub_protocol = params[1]
+        required_bits: tuple = params[2] if len(params) == 3 else ()
+
+        if isinstance(row_spec, FirstValid):
+            pass
+        elif isinstance(row_spec, tuple):
+            if len(row_spec) == 0:
+                raise ValueError("Rows: row tuple must be non-empty")
+            for x in row_spec:
+                if not isinstance(x, int) or x < 0:
+                    raise ValueError(f"Rows: invalid row index {x!r}")
+        else:
             raise ValueError(
-                "Rows: first argument must be a non-empty tuple of int row indices"
+                f"Rows: first argument must be a tuple of ints or FirstValid, got {row_spec!r}"
             )
-        for x in rows_t:
-            if not isinstance(x, int) or x < 0:
-                raise ValueError(f"Rows: invalid row index {x!r}")
-        if not isinstance(req, tuple):
-            raise ValueError("Rows: required_bits must be a tuple of (row, bits) pairs")
-        for pair in req:
+
+        if not isinstance(required_bits, tuple):
+            raise ValueError("Rows: required_bits must be a tuple")
+        for pair in required_bits:
             if (
                 not isinstance(pair, tuple)
                 or len(pair) != 2
@@ -544,453 +633,490 @@ class Rows:
                 or not isinstance(pair[1], int)
             ):
                 raise ValueError(f"Rows: invalid required_bits entry {pair!r}")
-            if pair[0] not in rows_t:
-                raise ValueError(
-                    f"Rows: required_bits row {pair[0]} is not listed in rows tuple"
-                )
-        return RowsSpec(rows=tuple(rows_t), sub_protocol=sub, required_bits=req)
+
+        return RowsSpec(row_spec=row_spec, sub_protocol=sub_protocol, required_bits=required_bits)
 
 
 # ---------------------------------------------------------------------------
-# Modulation configuration bundle
+# Helpers for callable introspection
 # ---------------------------------------------------------------------------
 
 
-class ModulationConfig:
-    """Bundle of modulation-level radio parameters for the r_device struct.
-
-    Subclass this inside a Protocol class (as a nested ``modulation_config``
-    class) and override only the attributes that differ from the base.
-    """
-
-    device_name: str | None = None
-    output_model: str | None = None
-    modulation: Modulation | None = None
-    short_width: float = 0.0
-    long_width: float = 0.0
-    reset_limit: float = 0.0
-    gap_limit: float | None = None
-    sync_width: float | None = None
-    tolerance: float | None = None
-    disabled: int | None = None
+def _get_annotations_own(cls: type) -> dict:
+    """Return only this class's own __annotations__ (not inherited)."""
+    return dict(cls.__dict__.get("__annotations__", {}))
 
 
-ProtocolConfig = ModulationConfig
+def _get_fn_annotations(fn: Any) -> dict:
+    """Return annotations for a function/method."""
+    return dict(fn.__annotations__) if hasattr(fn, "__annotations__") else {}
 
 
-# ---------------------------------------------------------------------------
-# Protocol and Variant base classes
-# ---------------------------------------------------------------------------
+_RESERVED_NAMES = frozenset(
+    ("prepare", "to_json", "when", "dispatch", "modulation_config")
+)
 
 
-_EXCLUDED_CALLABLES: frozenset = frozenset(("decode", "from_hex", "to_json", "prepare"))
-
-
-def _callable_body_is_ellipsis(fn: Any) -> bool:
-    """True if the function body is only ``...`` (stub for hand-written C)."""
-    try:
-        src = inspect.getsource(fn)
-    except (OSError, TypeError):
+def _is_user_callable(name: str, value: Any) -> bool:
+    """True if name/value in a class dict is a user-defined callable to process."""
+    if name.startswith("_"):
         return False
-    try:
-        tree = ast.parse(textwrap.dedent(src))
-    except SyntaxError:
+    if isinstance(value, (type, classmethod, staticmethod, property)):
         return False
-    if not tree.body:
+    if not callable(value):
         return False
+    if name in _RESERVED_NAMES:
+        return False
+    return True
+
+
+def _callable_is_ellipsis(fn: Any) -> bool:
+    """True if the function body is just ``...`` (optionally preceded by a docstring)."""
+    import ast
+    import textwrap
+
+    tree = ast.parse(textwrap.dedent(inspect.getsource(fn)))
     fd = tree.body[0]
-    if not isinstance(fd, (ast.FunctionDef, ast.AsyncFunctionDef)):
+    assert isinstance(fd, (ast.FunctionDef, ast.AsyncFunctionDef))
+    body = fd.body
+    # Strip leading docstring if present
+    if (
+        len(body) >= 2
+        and isinstance(body[0], ast.Expr)
+        and isinstance(body[0].value, ast.Constant)
+        and isinstance(body[0].value.value, str)
+    ):
+        body = body[1:]
+    if len(body) != 1:
         return False
-    if len(fd.body) != 1:
-        return False
-    st = fd.body[0]
-    return bool(
+    st = body[0]
+    return (
         isinstance(st, ast.Expr)
         and isinstance(st.value, ast.Constant)
-        and st.value.value is Ellipsis
+        and st.value.value is ...
     )
 
 
-def _call_with_fieldref_kwargs(
-    fn: Any, proxy: Any, param_names: tuple[str, ...] | None
-) -> Any:
-    kwargs = {p: FieldRef(p) for p in (param_names or ())}
-    return fn(proxy, **kwargs)
+class _FieldRefProxy:
+    """Proxy 'self' inside a callable — attribute accesses return FieldRef."""
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("_"):
+            raise AttributeError(name)
+        return FieldRef(name)
 
 
-def property_inline_expr(cls_or_variant: type, prop_name: str) -> Any:
-    """If a return-annotated property inlines to C, return its expression AST; else ``None``."""
-    prop_names = {n for n, _ in cls_or_variant.properties}
-    if prop_name not in prop_names:
-        return None
-    fn = getattr(cls_or_variant, prop_name)
-    if _callable_body_is_ellipsis(fn):
-        return None
-    arg_names = cls_or_variant.explicit_args().get(prop_name)
-    proxy = cls_or_variant()
-    out = _call_with_fieldref_kwargs(fn, proxy, arg_names)
-    return _coerce_protocol_expr_result(out)
+def _call_inline(fn: Any) -> "Expr | None":
+    """Call fn with FieldRef proxies and return the resulting expression tree.
 
-
-def method_inline_expr(cls_or_variant: type, method_name: str) -> Any:
-    """If a void method inlines to a single C expression statement, return it; else ``None``."""
-    if method_name not in cls_or_variant.methods:
-        return None
-    fn = getattr(cls_or_variant, method_name)
-    if _callable_body_is_ellipsis(fn):
-        return None
-    arg_names = cls_or_variant.explicit_args().get(method_name)
-    proxy = cls_or_variant()
-    out = _call_with_fieldref_kwargs(fn, proxy, arg_names)
-    return _coerce_protocol_expr_result(out)
-
-
-def when_inline_expr(variant_cls: type) -> Any:
-    """If ``Variant.when`` inlines to the C branch predicate, return it; else ``None``."""
-    _Variant = globals().get("Variant")
-    if _Variant is None or not issubclass(variant_cls, _Variant) or variant_cls is _Variant:
-        return None
-    fn = getattr(variant_cls, "when", None)
-    if not callable(fn):
-        return None
-    if _callable_body_is_ellipsis(fn):
-        return None
-    arg_names = variant_cls.explicit_args().get("when")
-    proxy = variant_cls()
-    out = _call_with_fieldref_kwargs(fn, proxy, arg_names)
-    return _coerce_protocol_expr_result(out)
-
-
-def validation_hook_inline_expr(cls_or_variant: type, hook_name: str) -> Any:
-    """If ``validate_*`` can be compiled as one expression, return it; else ``None``.
-
-    Explicit parameters (except ``fail_value``) are bound to :class:`FieldRef` names
-    so hooks may depend on parsed fields or earlier inline properties.
+    Returns None only if the body produced a value of an unsupported type;
+    any error inside fn propagates so the user sees the real failure.
     """
-    if not hook_name.startswith("validate_"):
-        return None
-    fn = getattr(cls_or_variant, hook_name)
-    if _callable_body_is_ellipsis(fn):
-        return None
-    proxy = cls_or_variant()
-    arg_names = cls_or_variant.explicit_args()[hook_name]
     sig = inspect.signature(fn)
+    params = [p for p in sig.parameters if p != "self"]
     kwargs: dict[str, Any] = {}
-    if arg_names:
-        for p in arg_names:
+    for p in params:
+        if p == "fail_value":
+            default = sig.parameters[p].default
+            kwargs[p] = default if default is not inspect.Parameter.empty else DecodeFail.SANITY
+        else:
             kwargs[p] = FieldRef(p)
-    if "fail_value" in sig.parameters:
-        fd = sig.parameters["fail_value"].default
-        if fd is inspect.Parameter.empty:
-            return None
-        kwargs["fail_value"] = fd
-    out = fn(proxy, **kwargs)
-    return _coerce_protocol_expr_result(out)
+    result = fn(_FieldRefProxy(), **kwargs)
+    if isinstance(result, bool):
+        return ExprBoolLiteral(result)
+    if isinstance(result, int):
+        return ExprIntLiteral(result)
+    if isinstance(result, float):
+        return ExprFloatLiteral(result)
+    if isinstance(result, Expr):
+        return result
+    return None
 
 
-def _iter_user_callables(cls: type) -> list[tuple[str, Any]]:
-    """Return (name, fn) pairs from a single class's __dict__.
+def _param_names(fn: Any, *, exclude_fail_value: bool = False) -> tuple:
+    """Return parameter names of fn, excluding 'self' (and optionally 'fail_value')."""
+    sig = inspect.signature(fn)
+    params = [p for p in sig.parameters if p != "self"]
+    if exclude_fail_value and params and params[-1] == "fail_value":
+        params = params[:-1]
+    return tuple(params)
 
-    Skips Protocol/Variant base classes, dunder names, nested types,
-    non-callables, and reserved framework method names.
+
+def _fail_value_default(fn: Any) -> str:
+    """Return the C token for fail_value default on a validate_* fn."""
+    sig = inspect.signature(fn)
+    params = list(sig.parameters)
+    if not params or params[-1] != "fail_value":
+        raise TypeError(
+            f"{fn.__qualname__}: validate_* must have "
+            "fail_value=DecodeFail.* as last param"
+        )
+    p = sig.parameters["fail_value"]
+    if p.default is inspect.Parameter.empty:
+        raise TypeError(
+            f"{fn.__qualname__}: fail_value must have a DecodeFail default"
+        )
+    d = p.default
+    if not isinstance(d, DecodeFail):
+        raise TypeError(
+            f"{fn.__qualname__}: fail_value default must be DecodeFail.*, "
+            f"got {type(d).__name__}"
+        )
+    return d.value
+
+
+class RowsParamType:
+    """Marker type for a callable parameter that refers to a Rows field.
+
+    Carries the sub-field names so codegen can expand a single Python
+    parameter like ``cells`` into multiple C pointer parameters like
+    ``int *cells_b0, int *cells_b1, ...``.
     """
-    _Variant = globals().get("Variant")
-    if cls is Protocol or cls is _Variant or cls is object:
-        return []
-    result = []
-    for attr_name, attr_value in cls.__dict__.items():
-        if attr_name.startswith("_"):
-            continue
-        if isinstance(attr_value, type):
-            continue
-        if not callable(attr_value):
-            continue
-        if attr_name in _EXCLUDED_CALLABLES:
-            continue
-        result.append((attr_name, attr_value))
-    return result
+    __slots__ = ("sub_fields",)
+
+    def __init__(self, sub_fields: tuple) -> None:
+        self.sub_fields = sub_fields
 
 
-def _json_data_type_for(py_type: type) -> str:
-    return {float: "DATA_DOUBLE", int: "DATA_INT", str: "DATA_STRING"}.get(py_type, "DATA_INT")
+def _infer_param_type(cls: type, param_name: str) -> Any:
+    """Infer the Python type for an unannotated callable parameter.
+
+    Checks, in order:
+    1. Top-level BitsSpec fields of cls and its MRO → int
+    2. Top-level Rows/Repeat field with this name → RowsParamType
+    3. BitsSpec fields of any Repeatable reached via Repeat/Rows specs → int
+    4. Return type of any callable with that name → its return_type
+    5. Default → int (all DSL primitives are integer-typed)
+    """
+    # 1. Top-level scalar fields
+    for name, spec in cls._fields:
+        if name == param_name and isinstance(spec, BitsSpec):
+            return int
+
+    # 2. Rows/Repeat field → RowsParamType with sub-field names
+    for name, spec in cls._fields:
+        if name == param_name and isinstance(spec, (RowsSpec, RepeatSpec)):
+            sub_cls = spec.sub_protocol
+            sub_names = tuple(
+                n for n, s in getattr(sub_cls, "_fields", ())
+                if isinstance(s, BitsSpec) and not n.startswith("_")
+            )
+            return RowsParamType(sub_names)
+
+    # 3. Fields of nested Repeatables (flat-name access like cells_b0)
+    for _, spec in cls._fields:
+        sub_cls = None
+        if isinstance(spec, RepeatSpec):
+            sub_cls = spec.sub_protocol
+        elif isinstance(spec, RowsSpec):
+            sub_cls = spec.sub_protocol
+        if sub_cls is not None:
+            for name, sub_spec in getattr(sub_cls, "_fields", ()):
+                if name == param_name and isinstance(sub_spec, BitsSpec):
+                    return int
+
+    # 4. Callable return type
+    existing = cls._callables.get(param_name)
+    if existing is not None and existing.return_type is not None:
+        return existing.return_type
+
+    # 5. Default: all bit-level data is integer
+    return int
 
 
-def _evaluated_class_annotations(cls: type) -> dict[str, Any]:
-    """Return evaluated class ``__annotations__`` (PEP 649–safe on Python 3.14+)."""
-    if sys.version_info >= (3, 10):
-        return dict(inspect.get_annotations(cls))
-    return dict(getattr(cls, "__annotations__", {}))
-
-
-def _evaluated_callable_annotations(fn: Any) -> dict[str, Any]:
-    """Return evaluated annotations for a function/method (PEP 649–safe)."""
-    if sys.version_info >= (3, 10):
-        return dict(inspect.get_annotations(fn))
-    return dict(getattr(fn, "__annotations__", {}))
+# ---------------------------------------------------------------------------
+# Protocol base class
+# ---------------------------------------------------------------------------
 
 
 class Protocol:
-    """Base class for protocol definitions."""
+    """Base class for all protocol definitions.
 
-    #: Consolidated field list, base-to-derived (derived overrides base).
-    fields: ClassVar[tuple[tuple[str, FieldSpec], ...]] = ()
-    #: Consolidated nested ``Variant`` subclasses, base-to-derived.
-    variants: ClassVar[tuple[type, ...]] = ()
-    #: Consolidated void method names (no return annotation), base-to-derived.
-    methods: ClassVar[tuple[str, ...]] = ()
-    #: ``validate_<suffix>`` hook names in lexicographic order (see compiler).
-    validation_hooks: ClassVar[tuple[str, ...]] = ()
-    #: Consolidated return-annotated callables as ``(name, py_type)``, base-to-derived.
-    properties: ClassVar[tuple[tuple[str, type], ...]] = ()
+    Subclasses use class-level annotations for field declarations and regular
+    methods for callables (properties/methods/validate_* hooks).
 
-    @property
-    def bitbuffer(self) -> BitbufferPipeline:
-        """Return a fresh pipeline builder for ``prepare()`` chains."""
-        return BitbufferPipeline()
+    Class-level attributes set by __init_subclass__:
+      _fields: tuple of (name, FieldSpec) in MRO order
+      _variants: tuple of nested Variant subclasses
+      _callables: dict mapping name -> callable entry dict
+    """
 
-    def __init_subclass__(cls, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)
-
-        merged_fields = dict(cls.fields)
-        for name, ann in _evaluated_class_annotations(cls).items():
-            if isinstance(ann, (BitsSpec, LiteralSpec, CondSpec, RepeatSpec, RowsSpec)):
-                if isinstance(ann, RowsSpec):
-                    sp = ann.sub_protocol
-                    if not isinstance(sp, type) or not issubclass(sp, Protocol):
-                        raise ValueError(
-                            f"{cls.__name__}.{name}: Rows sub_protocol must be a "
-                            f"Protocol subclass, got {sp!r}"
-                        )
-                    for sn, sspec in sp.fields:
-                        if isinstance(sspec, (RowsSpec, RepeatSpec)):
-                            raise ValueError(
-                                f"{cls.__name__}.{name}: Rows sub_protocol must not "
-                                f"contain Rows or Repeat (found on field {sn!r})"
-                            )
-                merged_fields[name] = ann
-        cls.fields = tuple(merged_fields.items())
-
-        _Variant = globals().get("Variant")
-        merged_variants = {v.__name__: v for v in cls.variants}
-        if _Variant is not None:
-            for name, val in cls.__dict__.items():
-                if isinstance(val, type) and issubclass(val, _Variant):
-                    merged_variants[name] = val
-        cls.variants = tuple(merged_variants.values())
-
-        merged_methods = dict.fromkeys(cls.methods)
-        merged_props = dict(cls.properties)
-        merged_vhooks = dict.fromkeys(getattr(cls, "validation_hooks", ()))
-        for name, fn in _iter_user_callables(cls):
-            if name == "when":
-                continue
-            if name == "validate":
-                raise ValueError(
-                    f"{cls.__name__}.{name}: bare 'validate' is not supported; use "
-                    "validate_<purpose>(...) instead (see README: validation hooks)."
-                )
-            if name.startswith("validate_"):
-                merged_vhooks[name] = None
-                merged_methods.pop(name, None)
-                merged_props.pop(name, None)
-                continue
-            ret = _evaluated_callable_annotations(fn).get("return")
-            if ret is None:
-                merged_methods[name] = None
-                merged_props.pop(name, None)
-            else:
-                merged_props[name] = ret
-                merged_methods.pop(name, None)
-        cls.methods = tuple(merged_methods.keys())
-        cls.validation_hooks = tuple(sorted(merged_vhooks.keys()))
-        cls.properties = tuple(merged_props.items())
-
-        if _Variant is not None and issubclass(cls, _Variant) and cls is not _Variant:
-            w = getattr(cls, "when", None)
-            if not callable(w):
-                raise ValueError(
-                    f"{cls.__name__}: Variant must define when(self, ...) -> bool "
-                    "(non-zero in C selects this branch)"
-                )
+    _fields: tuple = ()
+    _variants: tuple = ()
+    _callables: dict = {}  # dict[str, CallableEntry]
 
     def __getattr__(self, name: str) -> FieldRef:
         if name.startswith("_"):
             raise AttributeError(name)
         return FieldRef(name)
 
-    # ------------------------------------------------------------------
-    # Introspection classmethods – used by the compiler
-    # ------------------------------------------------------------------
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
 
-    @classmethod
-    def explicit_args(cls) -> dict[str, tuple[str, ...] | None]:
-        """Collect explicit argument lists (excluding self) for methods and properties.
+        # 1. Collect fields: inherit from parent _fields, then add own annotations
+        merged_fields: dict[str, Any] = dict(cls._fields)
+        for name, ann in _get_annotations_own(cls).items():
+            if isinstance(ann, (BitsSpec, LiteralSpec, RepeatSpec, RowsSpec)):
+                merged_fields[name] = ann
+        cls._fields = tuple(merged_fields.items())
 
-        For ``validate_*``, a trailing ``fail_value`` parameter (inline hooks only)
-        is compile-time only and omitted from the C argument list.
-        """
-        result: dict[str, tuple[str, ...] | None] = {}
+        # 2. Collect nested Variant subclasses
+        merged_variants: dict[str, type] = {v.__name__: v for v in cls._variants}
+        for attr_name, attr_val in cls.__dict__.items():
+            if (
+                isinstance(attr_val, type)
+                and attr_name not in ("__class__",)
+                and issubclass(attr_val, Protocol)
+                and attr_val is not Protocol
+            ):
+                # Check if it's a Variant subclass (Variant not yet defined for first pass)
+                _Variant = globals().get("Variant")
+                if _Variant is not None and issubclass(attr_val, _Variant):
+                    merged_variants[attr_name] = attr_val
+        cls._variants = tuple(merged_variants.values())
+
+        # 3. Collect callables (methods, props, validate_*)
+        merged_callables: dict[str, CallableEntry] = dict(cls._callables)
+        for attr_name, attr_val in cls.__dict__.items():
+            if not _is_user_callable(attr_name, attr_val):
+                continue
+            fn = attr_val
+            fn_anns = _get_fn_annotations(fn)
+            return_type = fn_anns.get("return")
+            is_external = _callable_is_ellipsis(fn)
+
+            if attr_name.startswith("validate_"):
+                params = _param_names(fn, exclude_fail_value=True)
+                kind = "validate"
+                entry_return_type: Any = bool
+                try:
+                    fail_c = _fail_value_default(fn)
+                except TypeError:
+                    fail_c = "DECODE_FAIL_SANITY"
+            elif return_type is not None:
+                params = _param_names(fn)
+                kind = "prop"
+                entry_return_type = return_type
+                fail_c = None
+            else:
+                params = _param_names(fn)
+                kind = "method"
+                entry_return_type = None
+                fail_c = None
+
+            param_types: dict[str, Any] = {}
+            for p in params:
+                ann = fn_anns.get(p)
+                if ann is None:
+                    ann = _infer_param_type(cls, p)
+                param_types[p] = ann
+
+            expr_tree = None if is_external else _call_inline(fn)
+            if not is_external and expr_tree is None:
+                raise TypeError(
+                    f"{cls.__name__}.{attr_name}: callable body could not be compiled to an expression"
+                )
+
+            entry = CallableEntry(
+                kind=kind,
+                fn=fn,
+                expr_tree=expr_tree,
+                return_type=entry_return_type,
+                params=params,
+                param_types=param_types,
+                fail_c=fail_c,
+                is_external=is_external,
+            )
+
+            merged_callables[attr_name] = entry
+        cls._callables = merged_callables
+
+        # 4. Validate: Variant subclasses must define when() with a compilable body
         _Variant = globals().get("Variant")
         if (
             _Variant is not None
             and issubclass(cls, _Variant)
             and cls is not _Variant
         ):
-            wfn = getattr(cls, "when", None)
-            if callable(wfn):
-                wparams = [
-                    p for p in inspect.signature(wfn).parameters if p != "self"
-                ]
-                result["when"] = tuple(wparams) if wparams else None
-        for name in cls.methods + cls.validation_hooks + tuple(n for n, _ in cls.properties):
-            params = [p for p in inspect.signature(getattr(cls, name)).parameters if p != "self"]
-            if name.startswith("validate_") and params and params[-1] == "fail_value":
-                params = params[:-1]
-            result[name] = tuple(params) if params else None
+            when_fn = cls.__dict__.get("when") or getattr(cls, "when", None)
+            if not callable(when_fn):
+                raise ValueError(
+                    f"{cls.__name__}: Variant must define when(self, ...) -> bool"
+                )
+            if _call_inline(when_fn) is None:
+                raise TypeError(
+                    f"{cls.__name__}.when: body could not be compiled to an expression"
+                )
+
+    @classmethod
+    def explicit_args(cls) -> dict:
+        """Return {name: tuple_of_param_names} for all callables."""
+        result: dict[str, Any] = {}
+        for name, entry in cls._callables.items():
+            result[name] = entry.params if entry.params else None
+        _Variant = globals().get("Variant")
+        if _Variant is not None and issubclass(cls, _Variant) and cls is not _Variant:
+            when_fn = getattr(cls, "when", None)
+            if callable(when_fn):
+                params = _param_names(when_fn)
+                result["when"] = params if params else None
         return result
 
+    def to_json(self) -> "list[JsonRecord] | None":
+        """Override in a subclass to customize the data_make output.
+
+        Default implementation returns None, which signals json_records() to
+        synthesize a default record list from the declared fields and props.
+        """
+        return None
+
     @classmethod
-    def json_records(cls) -> tuple[JsonRecord, ...]:
-        """Evaluate the class's to_json via a proxy (inherits Protocol.to_json)."""
-        json_fn = getattr(cls, "to_json")
-        records = json_fn(_JsonProxy(cls))
-        if not isinstance(records, (list, tuple)):
-            raise ValueError(
-                f"{cls.__name__}.to_json must return a list or tuple of JsonRecord, "
-                f"got {type(records).__name__}"
+    def json_records(cls) -> tuple:
+        """Return the JsonRecord tuple from to_json(), or a synthesized default."""
+        result = cls.to_json(_FieldRefProxy())
+        if result is None:
+            return cls._default_json_records()
+        if not isinstance(result, (list, tuple)):
+            raise TypeError(
+                f"{cls.__name__}.to_json must return list/tuple of JsonRecord"
             )
-        for i, rec in enumerate(records):
-            if not isinstance(rec, JsonRecord):
-                raise ValueError(
-                    f"{cls.__name__}.to_json item {i} must be JsonRecord, got {type(rec).__name__}"
-                )
-        return tuple(records)
-
-    @classmethod
-    def requires_external_helpers(cls) -> bool:
-        """True if any method or property cannot be inlined as a pure expression."""
-        for name in cls.methods:
-            if method_inline_expr(cls, name) is None:
-                return True
-        for name in cls.validation_hooks:
-            if validation_hook_inline_expr(cls, name) is None:
-                return True
-        for name, _ in cls.properties:
-            if property_inline_expr(cls, name) is None:
-                return True
-        for variant_cls in cls.variants:
-            if when_inline_expr(variant_cls) is None:
-                return True
-            for name in variant_cls.methods:
-                if method_inline_expr(variant_cls, name) is None:
-                    return True
-            for name in variant_cls.validation_hooks:
-                if validation_hook_inline_expr(variant_cls, name) is None:
-                    return True
-            for name, _ in variant_cls.properties:
-                if property_inline_expr(variant_cls, name) is None:
-                    return True
-        return False
-
-    @classmethod
-    def output_fields(cls) -> tuple[str, ...]:
-        """Ordered output field names for the r_device struct."""
-        recs = cls.json_records()
-        if recs:
-            names: list[str] = []
-            for rec in recs:
-                if rec.key not in names:
-                    names.append(rec.key)
-            return tuple(names)
-
-        names = ["model"]
-        for name, spec in cls.fields:
-            if not name.startswith("_") and isinstance(spec, BitsSpec):
-                names.append(name)
-        for prop_name, _ in cls.properties:
-            if prop_name not in names:
-                names.append(prop_name)
-        for variant_cls in cls.variants:
-            for name, spec in variant_cls.fields:
-                if not name.startswith("_") and isinstance(spec, BitsSpec) and name not in names:
-                    names.append(name)
-            for prop_name, _ in variant_cls.properties:
-                if prop_name not in names:
-                    names.append(prop_name)
-        return tuple(names)
-
-    @classmethod
-    def referenced_protocols(cls) -> tuple[type[Protocol], ...]:
-        """Sub-protocols referenced by Repeat[] or Rows[] fields."""
-        result: list[type[Protocol]] = []
-        for fname, spec in cls.fields:
-            if isinstance(spec, RepeatSpec):
-                sp = spec.sub_protocol
-                if not isinstance(sp, type) or not issubclass(sp, Protocol):
-                    raise ValueError(
-                        f"{cls.__name__} field {fname!r}: Repeat sub_protocol must be a Protocol subclass, got {sp!r}"
-                    )
-                result.append(sp)
-            elif isinstance(spec, RowsSpec):
-                sp = spec.sub_protocol
-                if not isinstance(sp, type) or not issubclass(sp, Protocol):
-                    raise ValueError(
-                        f"{cls.__name__} field {fname!r}: Rows sub_protocol must be a Protocol subclass, got {sp!r}"
-                    )
-                result.append(sp)
         return tuple(result)
 
     @classmethod
-    def delegated_protocols(cls) -> tuple[type[Protocol], ...]:
-        """Sub-protocols referenced via a wrapper ``delegates`` attribute."""
-        delegates = getattr(cls, "delegates", None)
-        if delegates is None:
-            return ()
-        if not isinstance(delegates, tuple):
-            raise ValueError(
-                f"{cls.__name__}.delegates must be a tuple of Protocol subclasses, "
-                f"got {type(delegates).__name__}"
-            )
-        if len(delegates) == 0:
-            raise ValueError(f"{cls.__name__}.delegates must not be empty")
-        for i, d in enumerate(delegates):
-            if not isinstance(d, type) or not issubclass(d, Protocol):
-                raise ValueError(
-                    f"{cls.__name__}.delegates[{i}] must be a Protocol subclass, got {d!r}"
-                )
-        return tuple(delegates)
-
-    def to_json(self) -> list[JsonRecord]:
-        protocol_cls = getattr(self, "__protocol_cls__", None) or self.__class__
-        records: list[JsonRecord] = []
-        cfg = getattr(protocol_cls, "modulation_config", ModulationConfig)
-        model_name = cfg.output_model or cfg.device_name or protocol_cls.__name__
-        records.append(
-            JsonRecord(key="model", label="", value=model_name, data_type="DATA_STRING")
-        )
-        for name, spec in protocol_cls.fields:
+    def _default_json_records(cls) -> tuple:
+        modulation_config = getattr(cls, "modulation_config", None)
+        if callable(modulation_config):
+            model = modulation_config(cls.__new__(cls)).device_name
+        else:
+            model = cls.__name__
+        records: list[JsonRecord] = [JsonRecord("model", "", model, "DATA_STRING")]
+        for name, spec in cls._fields:
             if isinstance(spec, BitsSpec) and not name.startswith("_"):
-                records.append(
-                    JsonRecord(key=name, label="", value=FieldRef(name), data_type="DATA_INT")
+                records.append(JsonRecord(name, "", FieldRef(name), "DATA_INT"))
+        for name, entry in cls._callables.items():
+            if entry.kind == "prop":
+                dtype = {float: "DATA_DOUBLE", int: "DATA_INT", str: "DATA_STRING"}.get(
+                    entry.return_type, "DATA_INT"
                 )
-        for prop_name, prop_type in protocol_cls.properties:
-            records.append(
-                JsonRecord(
-                    key=prop_name,
-                    label="",
-                    value=FieldRef(prop_name),
-                    data_type=_json_data_type_for(prop_type),
+                records.append(JsonRecord(name, "", FieldRef(name), dtype))
+        return tuple(records)
+
+    @classmethod
+    def output_fields(cls) -> tuple:
+        """Ordered list of output field names for r_device struct."""
+        recs = cls.json_records()
+        if recs:
+            seen: list[str] = []
+            for r in recs:
+                if r.key not in seen:
+                    seen.append(r.key)
+            return tuple(seen)
+        names: list[str] = ["model"]
+        for name, spec in cls._fields:
+            if not name.startswith("_") and isinstance(spec, BitsSpec) and name not in names:
+                names.append(name)
+        for name, entry in cls._callables.items():
+            if entry.kind == "prop" and name not in names:
+                names.append(name)
+        for vcls in cls._variants:
+            for name, spec in vcls._fields:
+                if not name.startswith("_") and isinstance(spec, BitsSpec) and name not in names:
+                    names.append(name)
+            for name, entry in vcls._callables.items():
+                if entry.kind == "prop" and name not in names:
+                    names.append(name)
+        return tuple(names)
+
+    @classmethod
+    def requires_external_helpers(cls) -> bool:
+        """True if any callable needs an external C implementation."""
+        for entry in cls._callables.values():
+            if entry.is_external:
+                return True
+        for vcls in cls._variants:
+            if vcls.requires_external_helpers():
+                return True
+            when_fn = getattr(vcls, "when", None)
+            if callable(when_fn) and _callable_is_ellipsis(when_fn):
+                return True
+        return False
+
+
+# ---------------------------------------------------------------------------
+# Repeatable and Variant
+# ---------------------------------------------------------------------------
+
+
+class Repeatable(Protocol):
+    """Protocol that may only contain Bits[] and Literal[] fields."""
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        # Validate: no Repeat[] or Rows[] in own annotations
+        for name, ann in _get_annotations_own(cls).items():
+            if isinstance(ann, (RepeatSpec, RowsSpec)):
+                raise ValueError(
+                    f"{cls.__name__}.{name}: Repeatable subclasses may only contain "
+                    "Bits[] and Literal[] fields, not Repeat[] or Rows[]"
                 )
-            )
-        return records
 
 
-class Variant(Protocol):
-    """Base class for variant payload definitions (nested in a Protocol).
+class Variant(Repeatable):
+    """Conditionally-decoded payload extension nested inside a Decoder.
 
-    Subclasses must implement ``when(self, ...) -> bool`` with the same
-    explicit-dependency style as properties; the body must compile to a C
-    predicate (non-zero means this variant matches).
+    Must define when(self, ...) -> bool.
+    """
+    pass
+
+
+def _validate_modulation_config(cls: type) -> None:
+    """Verify that cls.modulation_config(self) returns a ModulationConfig."""
+    fn = getattr(cls, "modulation_config", None)
+    if not callable(fn):
+        raise TypeError(
+            f"{cls.__name__}: must define modulation_config(self) -> ModulationConfig"
+        )
+    instance = cls.__new__(cls)
+    cfg = fn(instance)
+    if not isinstance(cfg, ModulationConfig):
+        raise TypeError(
+            f"{cls.__name__}.modulation_config() must return a ModulationConfig instance, "
+            f"got {type(cfg).__name__}"
+        )
+
+
+class Decoder(Protocol):
+    """Top-level decoder class.
+
+    Must define:
+      - modulation_config(self) -> ModulationConfig
+      - prepare(self, buf) -> BitbufferPipeline
     """
 
-    repeat_count = None
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        if cls is Decoder:
+            return
+        _validate_modulation_config(cls)
+
+
+class Dispatcher(Protocol):
+    """Top-level multi-decoder class.
+
+    A Dispatcher does not parse bits itself. It defines:
+      - modulation_config(self) -> ModulationConfig: produces the r_device entry
+      - dispatch(self) -> tuple[Decoder, ...]: returns the delegate decoders
+        the generated dispatcher tries in order.
+    """
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        if cls is Dispatcher:
+            return
+        _validate_modulation_config(cls)
+        dispatch = cls.__dict__.get("dispatch") or getattr(cls, "dispatch", None)
+        if not callable(dispatch):
+            raise TypeError(
+                f"{cls.__name__}: Dispatcher subclass must define dispatch(self) -> tuple[Decoder, ...]"
+            )
+
+
