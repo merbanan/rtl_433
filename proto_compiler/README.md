@@ -119,84 +119,127 @@ multiple rows for the first valid candidate, use the field-spec form
 
 ### Variants
 
-Nested `Variant` subclasses split decoding after the parent protocol’s fields.
+Nested `Variant` subclasses split decoding after the parent protocol's fields.
 Each variant must define `when(self, …) -> bool` with explicit parameters for
-every field or row-array column the predicate uses (same style as properties).
-The body must compile to C; a non-zero value selects that branch (`if` /
-`else if` in the emitted decoder).
+every field (parent or variant) the predicate uses — the same declaration
+style as methods.  The body must be a DSL expression; a non-zero value
+selects that branch (`if` / `else if` in the emitted decoder).  Variant
+subclasses may declare their own `Bits[]` / `Literal[]` fields and their own
+methods, which are extracted and emitted only on the branch where `when`
+holds.  Variants may not contain nested `Rows[]` or `Repeat[]`.  If no
+variant's `when` matches the decode function returns `DECODE_FAIL_SANITY`.
 
-### Methods and properties
+A variant inherits parent fields and parent methods for reference in its
+`when`, its methods, and its `to_json`.  Parent-level methods are emitted
+once (parent-prefixed) and called from variant bodies without the variant
+prefix; variant-level methods are emitted once per variant (variant-prefixed).
+`acurite_01185m.py` demonstrates conditional field output by splitting into
+four variants rather than using a run-time `DATA_COND` guard.
 
-**Merge rule:** A user-defined callable **with** a return annotation (e.g.
-`-> int`, `-> float`, `-> str`) is treated as a **property** and emitted as a
-C local (`int name = expr;` or an extern call if the body is `...`). A callable
-**without** a return annotation is a **method** (e.g. `validate`) and is
-emitted in the method phase. Properties are emitted **after** methods, so a
-method body cannot reference a property that is defined later — use fields or
-duplicate the expression.
+### Methods
 
-Class methods are compiled to C. The compiler only understands simple arithmetic
-and bit manipulation expressions, and translates these to C expressions that
-look almost identical to the Python expressions. For example, the method
+A method is any non-`validate_*` callable defined in the decoder (or variant)
+class body.  Every method must declare explicit parameters (naming the fields
+or other callables whose results it consumes) and an explicit return type
+annotation — the compiler rejects the class at import time if either is
+missing.
 
-
-```python
-    def temperature_c(self) -> float:
-        return (self.temp_raw - 500) * 0.1
-```
-
-compiles to
-
-```c
-float temperature_c = ((temp_raw - 0x1f4) * 0.1);
-```
-
-When the body is unspecified (using `...`), the compiler emits
-a call to an external C function that you provide in a companion `.h` file.
-For example in the class `thermopro_tp211b`,
+The compiler emits every method as a `static inline` C function defined ahead
+of the decode function, and calls it directly at each use site.  There is no
+intermediate C local for a method's result; the function is inlined wherever
+the value is needed.  For example:
 
 ```python
-    def validate(self, b, checksum): ...
+    def temperature_c(self, temp_raw: int) -> float:
+        return (temp_raw - 500) * 0.1
 ```
 
-compiles to
+compiles to a function definition
 
 ```c
-int valid = thermopro_tp211b_validate(b, checksum);
+static inline float thermopro_tp211b_temperature_c(int temp_raw) {
+    return ((temp_raw - 0x1f4) * 0.1);
+}
 ```
 
-The parameter list is inferred from the method's explicit arguments. If no
-explicit arguments are given, the compiler passes all extracted fields
-automatically.
+and, wherever `self.temperature_c` appears in `to_json`, a call such as
 
-The `validate` method is handled slightly differently from other methods: if its
-body is a DSL expression and that expression is false, the decode returns
-`DECODE_FAIL_SANITY`. If `validate` is external (body `...`), the helper must
-return `0` on success or a `DECODE_FAIL_*` / `DECODE_ABORT_*` code on failure.
+```c
+"temperature_C", "", DATA_DOUBLE, (double)thermopro_tp211b_temperature_c(temp_raw)
+```
+
+The return annotation picks the C type: `int` → `int`/`DATA_INT`, `float` →
+`float`/`DATA_DOUBLE`, `str` → `const char *`/`DATA_STRING`.
+
+A method may reference the result of another method — the compiler inlines
+the nested calls.  For example if a second method takes `cmd` as a parameter
+and `cmd` is itself a method defined on the class, the call site emits
+`outer(inner_cmd_prefix(…))` automatically.
+
+Parameters may be field names declared on the class, results of other
+callables, or (for validate hooks only — see below) the special
+`fail_value=DecodeFail.*`.  Names that cannot be resolved to a field, a
+callable, or a `BitbufferPipeline` parameter raise a compile-time error.
+
+#### External methods
+
+When the body is a bare `...` (Ellipsis), the method is *external*: the
+compiler emits only a `static inline` forward declaration and the user
+supplies the definition in a companion header.  For example, for
+`thermopro_tp211b`:
+
+```python
+    def validate_checksum(self, id: int, flags: int, temp_raw: int, checksum: int,
+                          fail_value=DecodeFail.MIC) -> bool: ...
+```
+
+the compiler writes `#include "thermopro_tp211b.h"` into the generated C.
+The header is expected to define
+`static inline bool thermopro_tp211b_validate_checksum(int id, int flags, int temp_raw, int checksum)`
+and is checked in under `src/devices/<stem>.h`.
 
 ### `validate_*` hooks and `DecodeFail`
 
-Any method whose name starts with `validate_` (but not the bare name `validate`)
-is a **validation hook**. Hooks are emitted **after** all ordinary methods and
-**after** bare `validate`, and **before** properties and `data_make`. Hook names
-are ordered **lexicographically**, so choose names accordingly when checks must
-run in a fixed order (for example `validate_mic` before `validate_sanity_humidity`).
+A method whose name starts with `validate_` is a *validation hook*.  Hooks
+share the method machinery — explicit parameters, explicit return type (must
+be `-> bool`), inline vs. external selection — plus two extras:
 
-The last parameter must be `fail_value=DecodeFail.*` with a **default** only;
-the compiler reads that default and emits `return DECODE_FAIL_MIC`,
-`return DECODE_FAIL_SANITY`, `return DECODE_ABORT_EARLY`, or
-`return DECODE_ABORT_LENGTH` when an **inline** hook’s expression is false.
-`fail_value` is **not** passed in generated C calls.
+1. The final parameter must be `fail_value=DecodeFail.*` with a default.  The
+   compiler reads that default to decide which `DECODE_*` token to return on
+   failure.  `fail_value` is not passed in the generated C call.
+2. The call is emitted *automatically* — the user never writes it.  The
+   codegen walks each hook's declared parameters (excluding `fail_value`) as
+   dependencies and emits `if (!hook(...)) return <token>;` at the earliest
+   point in the decode function where every dependency is in scope.  When
+   several hooks become eligible at the same checkpoint, the codegen orders
+   them lexicographically.
 
-- **Inline hook:** signature is `(self, fail_value=DecodeFail.MIC)` only (no other
-  parameters). The body must be a single DSL expression that is **true** when the
-  packet is OK. Emitted as `if (!(expr)) return <token>;`.
-- **External hook:** any extra parameters (e.g. `decoder`, field names). Emitted
-  as `int vret_<name> = prefix_<name>(...); if (vret_<name> != 0) return vret_<name>;`
-  (variant decoders use `prefix_<Variant>_<name>`). Implement the helper in C;
-  the Python method can stub with `...`.
+Inside a `FirstValid` row loop the return is replaced by
+`result = <token>; continue;`, so a failing row is skipped while the outer
+loop retries the next row.
 
-`DecodeFail` is re-exported from `proto_compiler` for use in hook signatures.
+Example:
+
+```python
+    def validate_checksum(self, sensor_id: int, checksum: int,
+                          fail_value=DecodeFail.MIC) -> bool:
+        return ((sensor_id & 0xFF) + checksum) & 0xFF == 0
+```
+
+compiles to a `static inline bool prefix_validate_checksum(int sensor_id, int checksum)`
+definition and an automatic guard
+
+```c
+if (!prefix_validate_checksum(sensor_id, checksum))
+    return DECODE_FAIL_MIC;
+```
+
+placed right after `sensor_id` and `checksum` are both extracted.
+
+As with regular methods, replacing the body with `...` turns the hook
+*external*: the compiler emits only a declaration and the user writes the
+implementation in the companion header.  `DecodeFail` is re-exported from
+`proto_compiler` for use in hook signatures.
 
 ### `LfsrDigest8`
 
@@ -207,13 +250,15 @@ rtl_433’s `lfsr_digest8` (`bit_util.h`) on the given byte expressions, for exa
 (lfsr_digest8((uint8_t const[]){b0, b1, b2}, 3, 0x98, 0x3e))
 ```
 
-Use it inside `validate_*` (or properties) for MIC-style digests.
+Use it inside `validate_*` or any method for MIC-style digests.
 
 ### to_json
 
 By default the compiler emits a `data_make` call that outputs every non-private
-field and every property. You can override `to_json` to change that behavior and
-explicitly specify every key names, label, data type, and formatting to be
+field and every non-`validate_*` method.  For a variant the model string comes
+from the parent decoder's `device_name` and parent fields/methods are included
+before the variant's own.  You can override `to_json` to change that behaviour
+and explicitly specify every key name, label, data type, and formatting to be
 emitted:
 
 ```python
@@ -350,7 +395,7 @@ class current_cost(Dispatcher):
         return (current_cost_envir(), current_cost_classic())
 ```
 
-The field definitions, `when()` predicates, variant dispatch, and computed properties
+The field definitions, `when()` predicates, variant dispatch, and computed methods
 (`power0_W`, etc.) are inherited from `current_cost_base`.  While the Python
 code avoids duplication, the compiler is not smart enough to avoid
 duplication in the emitted code. It generates duplicate code paths for
