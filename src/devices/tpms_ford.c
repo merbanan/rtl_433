@@ -1,113 +1,97 @@
 // Generated from tpms_ford.py
 /** @file
-    FSK 8 byte Manchester encoded TPMS with simple checksum.
-
-    Seen on Ford Fiesta, Focus, Kuga, Escape, Transit...
-
-    Seen on 315.00 MHz (United States) and 433.92 MHz.
-    Likely VDO-Sensors, Type "S180084730Z", built by "Continental Automotive GmbH".
-
-    Packet nibbles:
-
-        II II II II PP TT FF CC
-
-    - I = ID
-    - P = Pressure, as PSI * 4
-    - T = Temperature, as C + 56
-    - F = Flags
-    - C = Checksum, SUM bytes 0 to 6 = byte 7
+    Ford TPMS decoder.
 */
 
 #include "decoder.h"
 
-/** @fn static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-    FSK 8 byte Manchester encoded TPMS with simple checksum.
+static constexpr bool tpms_ford_validate_checksum(int sensor_id, int pressure_raw, int temp_byte, int flags, int checksum) {
+  return (((((((((sensor_id >> 0x18) + ((sensor_id >> 0x10) & 0xff)) + ((sensor_id >> 8) & 0xff)) + (sensor_id & 0xff)) + pressure_raw) + temp_byte) + flags) & 0xff) == checksum);
+}
 
-    Seen on Ford Fiesta, Focus, Kuga, Escape, Transit...
+static constexpr float tpms_ford_pressure_psi(int flags, int pressure_raw) {
+  return ((((flags & 0x20) << 3) | pressure_raw) * 0.25);
+}
 
-    Seen on 315.00 MHz (United States) and 433.92 MHz.
-    Likely VDO-Sensors, Type "S180084730Z", built by "Continental Automotive GmbH".
+static constexpr int tpms_ford_moving(int flags) {
+  return ((flags & 0x44) == 0x44);
+}
 
-    Packet nibbles:
+static constexpr int tpms_ford_learn(int flags) {
+  return ((flags & 0x4c) == 8);
+}
 
-        II II II II PP TT FF CC
+static constexpr int tpms_ford_code(int pressure_raw, int temp_byte, int flags) {
+  return (((pressure_raw << 0x10) | (temp_byte << 8)) | flags);
+}
 
-    - I = ID
-    - P = Pressure, as PSI * 4
-    - T = Temperature, as C + 56
-    - F = Flags
-    - C = Checksum, SUM bytes 0 to 6 = byte 7
-*/
-static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-{
-    bitbuffer_invert(bitbuffer);
+static constexpr int tpms_ford_unknown(int flags) {
+  return (flags & 0x90);
+}
 
-    unsigned search_row = 0;
-    uint8_t const preamble[] = {0xaa, 0xa9};
-    if (bitbuffer->num_rows < 1)
-        return DECODE_ABORT_LENGTH;
-    unsigned offset = 0;
-    int preamble_found = 0;
-    for (unsigned row = 0; row < (unsigned)bitbuffer->num_rows && !preamble_found; ++row) {
-        unsigned pos = bitbuffer_search(bitbuffer, row, 0, preamble, 16);
-        if (pos < bitbuffer->bits_per_row[row]) {
-            search_row = row;
-            offset = pos;
-            preamble_found = 1;
-        }
+static constexpr int tpms_ford_unknown_3(int flags) {
+  return (flags & 3);
+}
+
+static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+  bitbuffer_invert(bitbuffer);
+  uint8_t const preamble[] = { 0xaa, 0xa9 };
+  if (bitbuffer->num_rows < 1)
+      return DECODE_ABORT_LENGTH;
+  unsigned tip_row = 0;
+  int preamble_found = 0;
+  for (unsigned row = 0; row < (unsigned)bitbuffer->num_rows && !preamble_found; ++row) {
+    unsigned pos = bitbuffer_search(bitbuffer, row, 0, preamble, 16);
+    if (pos < bitbuffer->bits_per_row[row]) {
+      tip_row = row;
+      offset = pos;
+      preamble_found = 1;
     }
-    if (!preamble_found)
-        return DECODE_ABORT_EARLY;
-    offset += 16;
-
-    bitbuffer_t packet_bits = {0};
-    bitbuffer_manchester_decode(bitbuffer, search_row, offset, &packet_bits, 160);
-
-    if (packet_bits.bits_per_row[0] < 8)
-        return DECODE_ABORT_LENGTH;
-    uint8_t *b = packet_bits.bb[0];
-
-    int sensor_id = bitrow_get_bits(b, 0, 32);
-    int pressure_raw = bitrow_get_bits(b, 32, 8);
-    int temp_byte = bitrow_get_bits(b, 40, 8);
-    int flags = bitrow_get_bits(b, 48, 8);
-    float pressure_psi = ((((flags & 0x20) << 3) | pressure_raw) * 0.25);
-    int moving = ((flags & 0x44) == 0x44);
-    int learn = ((flags & 0x4c) == 8);
-    int code = (((pressure_raw << 0x10) | (temp_byte << 8)) | flags);
-    int unknown = (flags & 0x90);
-    int unknown_3 = (flags & 3);
-    int checksum = bitrow_get_bits(b, 56, 8);
-    if (!((((((((((sensor_id >> 0x18) + ((sensor_id >> 0x10) & 0xff)) + ((sensor_id >> 8) & 0xff)) + (sensor_id & 0xff)) + pressure_raw) + temp_byte) + flags) & 0xff) == checksum)))
-        return DECODE_FAIL_MIC;
-
-
-
-    char json_str_2[64];
-    snprintf(json_str_2, sizeof(json_str_2), "%08x", sensor_id);
-    char json_str_6[64];
-    snprintf(json_str_6, sizeof(json_str_6), "%06x", code);
-    char json_str_7[64];
-    snprintf(json_str_7, sizeof(json_str_7), "%02x", unknown);
-    char json_str_8[64];
-    snprintf(json_str_8, sizeof(json_str_8), "%01x", unknown_3);
-
-    /* clang-format off */
-    data_t *data = data_make(
-        "model", "", DATA_STRING, "Ford",
-        "type", "", DATA_STRING, "TPMS",
-        "id", "", DATA_FORMAT, "%08x", DATA_STRING, json_str_2,
-        "pressure_PSI", "Pressure", DATA_DOUBLE, pressure_psi,
-        "moving", "Moving", DATA_INT, moving,
-        "learn", "Learn", DATA_INT, learn,
-        "code", "", DATA_FORMAT, "%06x", DATA_STRING, json_str_6,
-        "unknown", "", DATA_FORMAT, "%02x", DATA_STRING, json_str_7,
-        "unknown_3", "", DATA_FORMAT, "%01x", DATA_STRING, json_str_8,
-        "mic", "Integrity", DATA_STRING, "CHECKSUM",
-        NULL);
-    /* clang-format on */
-    decoder_output_data(decoder, data);
-    return 1;
+  }
+  if (!preamble_found)
+      return DECODE_ABORT_EARLY;
+  offset += 16;
+  bitbuffer_t packet_bits = {0};
+  bitbuffer_manchester_decode(bitbuffer, tip_row, offset, &packet_bits, 160);
+  if (packet_bits.bits_per_row[0] < 8)
+      return DECODE_ABORT_LENGTH;
+  bitbuffer = &packet_bits;
+  uint8_t *b = bitbuffer->bb[0];
+  unsigned bit_pos = 0;
+  int sensor_id = bitrow_get_bits(b, bit_pos, 32);
+  bit_pos += 32;
+  int pressure_raw = bitrow_get_bits(b, bit_pos, 8);
+  bit_pos += 8;
+  int temp_byte = bitrow_get_bits(b, bit_pos, 8);
+  bit_pos += 8;
+  int flags = bitrow_get_bits(b, bit_pos, 8);
+  bit_pos += 8;
+  int checksum = bitrow_get_bits(b, bit_pos, 8);
+  bit_pos += 8;
+  if (!tpms_ford_validate_checksum(sensor_id, pressure_raw, temp_byte, flags, checksum))
+      return DECODE_FAIL_MIC;
+  char buf_id_0[64];
+  snprintf(buf_id_0, sizeof(buf_id_0), "%08x", sensor_id);
+  char buf_code_1[64];
+  snprintf(buf_code_1, sizeof(buf_code_1), "%06x", tpms_ford_code(pressure_raw, temp_byte, flags));
+  char buf_unknown_2[64];
+  snprintf(buf_unknown_2, sizeof(buf_unknown_2), "%02x", tpms_ford_unknown(flags));
+  char buf_unknown_3_3[64];
+  snprintf(buf_unknown_3_3, sizeof(buf_unknown_3_3), "%01x", tpms_ford_unknown_3(flags));
+  data_t *data = data_make(
+          "model", "", DATA_STRING, "Ford",
+          "type", "", DATA_STRING, "TPMS",
+          "id", "", DATA_STRING, buf_id_0,
+          "pressure_PSI", "Pressure", DATA_DOUBLE, (double)tpms_ford_pressure_psi(flags, pressure_raw),
+          "moving", "Moving", DATA_INT, tpms_ford_moving(flags),
+          "learn", "Learn", DATA_INT, tpms_ford_learn(flags),
+          "code", "", DATA_STRING, buf_code_1,
+          "unknown", "", DATA_STRING, buf_unknown_2,
+          "unknown_3", "", DATA_STRING, buf_unknown_3_3,
+          "mic", "Integrity", DATA_STRING, "CHECKSUM",
+          NULL);
+  decoder_output_data(decoder, data);
+  return 1;
 }
 
 static char const *const output_fields[] = {

@@ -1,63 +1,55 @@
 // Generated from honeywell_wdb.py
 /** @file
-    Honeywell ActivLink, wireless door bell, PIR Motion sensor (OOK).
+    Honeywell ActivLink, Wireless Doorbell decoder.
 */
 
 #include "decoder.h"
 #include "honeywell_wdb.h"
 
-/** @fn static int honeywell_wdb_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-    Honeywell ActivLink, wireless door bell, PIR Motion sensor (OOK).
-*/
-static int honeywell_wdb_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-{
-    int row = bitbuffer_find_repeated_row(bitbuffer, 4, 48);
-    if (row < 0)
-        return DECODE_ABORT_EARLY;
-    if (bitbuffer->bits_per_row[row] != 48)
-        return DECODE_ABORT_LENGTH;
+static constexpr int honeywell_wdb_battery_ok(int battery_low) {
+  return (battery_low == 0);
+}
 
-    bitbuffer_invert(bitbuffer);
-
-    unsigned offset = 0;
-
-    uint8_t b[6];
-    bitbuffer_extract_bytes(bitbuffer, row, offset, b, 48);
-
-    int vret_validate_packet = honeywell_wdb_validate_packet(b);
-    if (vret_validate_packet != 0)
-        return vret_validate_packet;
-
-    int device = bitrow_get_bits(b, 0, 20);
-    (void)(bitrow_get_bits(b, 20, 6));
-    int class_raw = bitrow_get_bits(b, 26, 2);
-    (void)(bitrow_get_bits(b, 28, 10));
-    int alert_raw = bitrow_get_bits(b, 38, 2);
-    (void)(bitrow_get_bits(b, 40, 3));
-    int secret_knock = bitrow_get_bits(b, 43, 1);
-    int relay = bitrow_get_bits(b, 44, 1);
-    (void)(bitrow_get_bits(b, 45, 1));
-    int battery_low = bitrow_get_bits(b, 46, 1);
-    int battery_ok = (battery_low == 0);
-    (void)(bitrow_get_bits(b, 47, 1));
-
-    const char * subtype = honeywell_wdb_subtype(class_raw);
-    const char * alert = honeywell_wdb_alert(alert_raw);
-
-    /* clang-format off */
-    data_t *data = data_make(
-        "model", "", DATA_STRING, "Honeywell-ActivLink",
-        "subtype", "Class", DATA_STRING, subtype,
-        "id", "Id", DATA_FORMAT, "%x", DATA_INT, device,
-        "battery_ok", "Battery", DATA_INT, battery_ok,
-        "alert", "Alert", DATA_STRING, alert,
-        "secret_knock", "Secret Knock", DATA_FORMAT, "%d", DATA_INT, secret_knock,
-        "relay", "Relay", DATA_FORMAT, "%d", DATA_INT, relay,
-        "mic", "Integrity", DATA_STRING, "PARITY",
-        NULL);
-    /* clang-format on */
-    decoder_output_data(decoder, data);
-    return 1;
+static int honeywell_wdb_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+  int row = bitbuffer_find_repeated_row(bitbuffer, 4, 48);
+  if (row < 0)
+      return DECODE_ABORT_EARLY;
+  if (bitbuffer->bits_per_row[row] != 48)
+      return DECODE_ABORT_LENGTH;
+  bitbuffer_invert(bitbuffer);
+  uint8_t *b = bitbuffer->bb[row];
+  unsigned bit_pos = 0;
+  int device = bitrow_get_bits(b, bit_pos, 20);
+  bit_pos += 20;
+  if (!honeywell_wdb_validate_packet(bitbuffer))
+      return DECODE_FAIL_SANITY;
+  bit_pos += 6;
+  int class_raw = bitrow_get_bits(b, bit_pos, 2);
+  bit_pos += 2;
+  bit_pos += 10;
+  int alert_raw = bitrow_get_bits(b, bit_pos, 2);
+  bit_pos += 2;
+  bit_pos += 3;
+  int secret_knock = bitrow_get_bits(b, bit_pos, 1);
+  bit_pos += 1;
+  int relay = bitrow_get_bits(b, bit_pos, 1);
+  bit_pos += 1;
+  bit_pos += 1;
+  int battery_low = bitrow_get_bits(b, bit_pos, 1);
+  bit_pos += 1;
+  bit_pos += 1;
+  data_t *data = data_make(
+          "model", "", DATA_STRING, "Honeywell-ActivLink",
+          "subtype", "Class", DATA_STRING, honeywell_wdb_subtype(class_raw),
+          "id", "Id", DATA_FORMAT, "%x", DATA_INT, device,
+          "battery_ok", "Battery", DATA_INT, honeywell_wdb_battery_ok(battery_low),
+          "alert", "Alert", DATA_STRING, honeywell_wdb_alert(alert_raw),
+          "secret_knock", "Secret Knock", DATA_FORMAT, "%d", DATA_INT, secret_knock,
+          "relay", "Relay", DATA_FORMAT, "%d", DATA_INT, relay,
+          "mic", "Integrity", DATA_STRING, "PARITY",
+          NULL);
+  decoder_output_data(decoder, data);
+  return 1;
 }
 
 static char const *const output_fields[] = {

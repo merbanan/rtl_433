@@ -144,6 +144,7 @@ class Expr:
 @dataclass(frozen=True, eq=False)
 class ExprIntLiteral(Expr):
     """Integer constant in the expression tree."""
+
     value: int
 
     def __hash__(self) -> int:
@@ -153,6 +154,7 @@ class ExprIntLiteral(Expr):
 @dataclass(frozen=True, eq=False)
 class ExprFloatLiteral(Expr):
     """Float constant in the expression tree."""
+
     value: float
 
     def __hash__(self) -> int:
@@ -162,6 +164,7 @@ class ExprFloatLiteral(Expr):
 @dataclass(frozen=True, eq=False)
 class ExprBoolLiteral(Expr):
     """Boolean constant in the expression tree."""
+
     value: bool
 
     def __hash__(self) -> int:
@@ -171,6 +174,7 @@ class ExprBoolLiteral(Expr):
 @dataclass(frozen=True, eq=False)
 class BinaryExpr(Expr):
     """Binary operator node ``(left op right)``."""
+
     op: str
     left: Any
     right: Any
@@ -182,6 +186,7 @@ class BinaryExpr(Expr):
 @dataclass(frozen=True, eq=False)
 class UnaryExpr(Expr):
     """Unary operator node ``(op operand)``."""
+
     op: str
     operand: Any
 
@@ -192,11 +197,14 @@ class UnaryExpr(Expr):
 @dataclass(frozen=True, eq=False)
 class FieldRef(Expr):
     """Reference to a previously parsed protocol field by name."""
+
     name: str
 
     def __getitem__(self, index: int) -> "FieldRefSubscript":
         if not isinstance(index, int):
-            raise TypeError(f"FieldRef subscript index must be int, got {type(index).__name__}")
+            raise TypeError(
+                f"FieldRef subscript index must be int, got {type(index).__name__}"
+            )
         return FieldRefSubscript(self, index)
 
     def __hash__(self) -> int:
@@ -206,6 +214,7 @@ class FieldRef(Expr):
 @dataclass(frozen=True, eq=False)
 class FieldRefSubscript(Expr):
     """Subscript into a Rows-generated sparse array: ``name[index]``."""
+
     base: FieldRef
     index: int
 
@@ -224,6 +233,7 @@ class RowFieldAccess(Expr):
 
     Emitted in C as ``cells_b0[1]`` (flat array indexed by row).
     """
+
     rows_name: str
     row_index: int
     field_name: str
@@ -235,6 +245,7 @@ class RowFieldAccess(Expr):
 @dataclass(frozen=True, eq=False)
 class Rev8Expr(Expr):
     """``reverse8(operand)`` applied to an expression."""
+
     operand: Any
 
     def __hash__(self) -> int:
@@ -244,6 +255,7 @@ class Rev8Expr(Expr):
 @dataclass(frozen=True, eq=False)
 class LfsrDigest8Expr(Expr):
     """``lfsr_digest8(bytes, n, gen, key)`` over a byte list."""
+
     bytes_args: tuple
     gen: int
     key: int
@@ -292,12 +304,14 @@ def LfsrDigest8(*bytes_args: Any, gen: int, key: int) -> LfsrDigest8Expr:
 @dataclass(frozen=True)
 class BitsSpec:
     """Bits[n] — extract n bits as unsigned int."""
+
     width: int
 
 
 @dataclass(frozen=True)
 class LiteralSpec:
     """Literal[value, n] — extract n bits and assert == value."""
+
     value: int
     width: int
 
@@ -305,6 +319,7 @@ class LiteralSpec:
 @dataclass(frozen=True)
 class RepeatSpec:
     """Repeat[count_expr, sub] — parse Repeatable sub-protocol count times."""
+
     count_expr: Any  # Expr or ExprIntLiteral
     sub_protocol: type  # Repeatable subclass
 
@@ -312,12 +327,14 @@ class RepeatSpec:
 @dataclass(frozen=True)
 class FirstValid:
     """Row selection strategy for Rows[]: scan rows for the first matching bits."""
+
     bits: int
 
 
 @dataclass(frozen=True)
 class RowsSpec:
     """Rows[row_spec, sub, required_bits=()] — parse sub-protocol over selected rows."""
+
     row_spec: Any  # tuple[int, ...] or FirstValid
     sub_protocol: type  # Repeatable subclass
     required_bits: tuple = ()  # tuple of (row_index, exact_bits)
@@ -380,6 +397,7 @@ class Reflect:
 @dataclass(frozen=True)
 class FindRepeatedRow:
     """Find a row repeated at least min_repeats times with min_bits bits."""
+
     min_repeats: int
     min_bits: int
     max_bits: "int | None" = None
@@ -388,6 +406,7 @@ class FindRepeatedRow:
 @dataclass(frozen=True)
 class SearchPreamble:
     """Search for a bit pattern in the bitbuffer."""
+
     pattern: int
     bit_length: "int | None" = None
     scan_all_rows: bool = False
@@ -402,18 +421,24 @@ class SearchPreamble:
 @dataclass(frozen=True)
 class SkipBits:
     """Adjust offset by count bits (negative = backward)."""
+
     count: int
 
 
 @dataclass(frozen=True)
 class ManchesterDecode:
     """Manchester-decode from current row/offset into a local packet buffer."""
+
     max_bits: int = 0
 
 
 PipelineStep = Union[
-    Invert, Reflect, FindRepeatedRow, SearchPreamble,
-    SkipBits, ManchesterDecode,
+    Invert,
+    Reflect,
+    FindRepeatedRow,
+    SearchPreamble,
+    SkipBits,
+    ManchesterDecode,
 ]
 
 
@@ -499,7 +524,6 @@ class ModulationConfig(NamedTuple):
     disabled: int | None = None
 
 
-
 # ---------------------------------------------------------------------------
 # Field spec classes (DSL subscript syntax)
 # ---------------------------------------------------------------------------
@@ -583,7 +607,9 @@ class Rows:
             ):
                 raise ValueError(f"Rows: invalid required_bits entry {pair!r}")
 
-        return RowsSpec(row_spec=row_spec, sub_protocol=sub_protocol, required_bits=required_bits)
+        return RowsSpec(
+            row_spec=row_spec, sub_protocol=sub_protocol, required_bits=required_bits
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -592,7 +618,13 @@ class Rows:
 
 
 def _get_annotations_own(cls: type) -> dict:
-    """Return only this class's own __annotations__ (not inherited)."""
+    """Return only this class's own __annotations__ (not inherited).
+
+    Uses inspect.get_annotations (3.10+) to handle PEP 749 deferred
+    annotations in Python 3.14+, with a fallback for older Pythons.
+    """
+    if hasattr(inspect, "get_annotations"):
+        return inspect.get_annotations(cls, eval_str=True)
     return dict(cls.__dict__.get("__annotations__", {}))
 
 
@@ -648,6 +680,7 @@ def _callable_is_ellipsis(fn: Any) -> bool:
 
 class _FieldRefProxy:
     """Proxy 'self' inside a callable — attribute accesses return FieldRef."""
+
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_"):
             raise AttributeError(name)
@@ -666,7 +699,9 @@ def _call_inline(fn: Any) -> "Expr | None":
     for p in params:
         if p == "fail_value":
             default = sig.parameters[p].default
-            kwargs[p] = default if default is not inspect.Parameter.empty else DecodeFail.SANITY
+            kwargs[p] = (
+                default if default is not inspect.Parameter.empty else DecodeFail.SANITY
+            )
         else:
             kwargs[p] = FieldRef(p)
     result = fn(_FieldRefProxy(), **kwargs)
@@ -701,9 +736,7 @@ def _fail_value_default(fn: Any) -> str:
         )
     p = sig.parameters["fail_value"]
     if p.default is inspect.Parameter.empty:
-        raise TypeError(
-            f"{fn.__qualname__}: fail_value must have a DecodeFail default"
-        )
+        raise TypeError(f"{fn.__qualname__}: fail_value must have a DecodeFail default")
     d = p.default
     if not isinstance(d, DecodeFail):
         raise TypeError(
@@ -720,6 +753,7 @@ class RowsParamType:
     parameter like ``cells`` into multiple C pointer parameters like
     ``int *cells_b0, int *cells_b1, ...``.
     """
+
     __slots__ = ("sub_fields",)
 
     def __init__(self, sub_fields: tuple) -> None:
@@ -746,7 +780,8 @@ def _infer_param_type(cls: type, param_name: str) -> Any:
         if name == param_name and isinstance(spec, (RowsSpec, RepeatSpec)):
             sub_cls = spec.sub_protocol
             sub_names = tuple(
-                n for n, s in getattr(sub_cls, "_fields", ())
+                n
+                for n, s in getattr(sub_cls, "_fields", ())
                 if isinstance(s, BitsSpec) and not n.startswith("_")
             )
             return RowsParamType(sub_names)
@@ -881,11 +916,7 @@ class Protocol:
 
         # 4. Validate: Variant subclasses must define when() with a compilable body
         _Variant = globals().get("Variant")
-        if (
-            _Variant is not None
-            and issubclass(cls, _Variant)
-            and cls is not _Variant
-        ):
+        if _Variant is not None and issubclass(cls, _Variant) and cls is not _Variant:
             when_fn = cls.__dict__.get("when") or getattr(cls, "when", None)
             if not callable(when_fn):
                 raise ValueError(
@@ -974,6 +1005,7 @@ class Variant(Repeatable):
 
     Must define when(self, ...) -> bool.
     """
+
     pass
 
 
@@ -1027,5 +1059,3 @@ class Dispatcher(Protocol):
             raise TypeError(
                 f"{cls.__name__}: Dispatcher subclass must define dispatch(self) -> tuple[Decoder, ...]"
             )
-
-

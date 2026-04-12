@@ -1,265 +1,172 @@
 // Generated from alectov1.py
 /** @file
-    AlectoV1 Weather Sensor decoder (proto_compiler Rows + Variants → ``alectov1.c``).
-
-    Documentation also at http://www.tfd.hu/tfdhu/files/wsprotocol/auriol_protocol_v20.pdf
-
-    Also Unitec W186-F (bought from Migros).
-
-    PPM with pulse width 500 us, long gap 4000 us, short gap 2000 us, sync gap 9000 us.
-
-    Some sensors transmit 8 long pulses (1-bits) as first row.
-    Some sensors transmit 3 lone pulses (sync bits) between packets.
-
-    Message Format: (9 nibbles, 36 bits):
-    Please note that bytes need to be reversed before processing!
-
-    Format for Temperature Humidity:
-
-        IIIICCII BMMP TTTT TTTT TTTT HHHHHHHH CCCC
-        RC       Type Temperature___ Humidity Checksum
-
-    - I: 8 bit Random Device ID, includes 2 bit channel (X, 1, 2, 3)
-    - B: 1 bit Battery status (0 normal, 1 voltage is below ~2.6 V)
-    - M: 2 bit Message type, Temp/Humidity if not '11' else wind/rain sensor
-    - P: 1 bit a 0 indicates regular transmission, 1 indicates requested by pushbutton
-    - T: 12 bit Temperature (two's complement)
-    - H: 8 bit Humidity BCD format
-    - C: 4 bit Checksum
-
-    Format for Rain:
-
-        IIIIIIII BMMP 1100 RRRR RRRR RRRR RRRR CCCC
-        RC       Type      Rain                Checksum
-
-    - I: 8 bit Random Device ID, includes 2 bit channel (X, 1, 2, 3)
-    - B: 1 bit Battery status (0 normal, 1 voltage is below ~2.6 V)
-    - M: 2 bit Message type, Temp/Humidity if not '11' else wind/rain sensor
-    - P: 1 bit a 0 indicates regular transmission, 1 indicates requested by pushbutton
-    - R: 16 bit Rain (bitvalue * 0.25 mm)
-    - C: 4 bit Checksum
-
-    Format for Windspeed:
-
-        IIIIIIII BMMP 1000 0000 0000 WWWWWWWW CCCC
-        RC       Type                Windspd  Checksum
-
-    - I: 8 bit Random Device ID, includes 2 bit channel (X, 1, 2, 3)
-    - B: 1 bit Battery status (0 normal, 1 voltage is below ~2.6 V)
-    - M: 2 bit Message type, Temp/Humidity if not '11' else wind/rain sensor
-    - P: 1 bit a 0 indicates regular transmission, 1 indicates requested by pushbutton
-    - W: 8 bit Windspeed  (bitvalue * 0.2 m/s, correction for webapp = 3600/1000 * 0.2 * 100 = 72)
-    - C: 4 bit Checksum
-
-    Format for Winddirection & Windgust:
-
-        IIIIIIII BMMP 111D DDDD DDDD GGGGGGGG CCCC
-        RC       Type      Winddir   Windgust Checksum
-
-    - I: 8 bit Random Device ID, includes 2 bit channel (X, 1, 2, 3)
-    - B: 1 bit Battery status (0 normal, 1 voltage is below ~2.6 V)
-    - M: 2 bit Message type, Temp/Humidity if not '11' else wind/rain sensor
-    - P: 1 bit a 0 indicates regular transmission, 1 indicates requested by pushbutton
-    - D: 9 bit Wind direction
-    - G: 8 bit Windgust (bitvalue * 0.2 m/s, correction for webapp = 3600/1000 * 0.2 * 100 = 72)
-    - C: 4 bit Checksum
-
-    Derived from the former ``src/devices/alecto.c``; PPM timing unchanged.
+    AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon) decoder.
 */
 
 #include "decoder.h"
 #include "alectov1.h"
 
-/** @fn static int alectov1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-    AlectoV1 Weather Sensor decoder (proto_compiler Rows + Variants → ``alectov1.c``).
+static constexpr int alectov1_Wind0_sensor_id(int *cells_b0) {
+  return (reverse8((cells_b0[1])));
+}
 
-    Documentation also at http://www.tfd.hu/tfdhu/files/wsprotocol/auriol_protocol_v20.pdf
+static constexpr int alectov1_Wind0_channel(int *cells_b0) {
+  return (((cells_b0[1]) & 0xc) >> 2);
+}
 
-    Also Unitec W186-F (bought from Migros).
+static constexpr int alectov1_Wind0_battery_ok(int *cells_b1) {
+  return ((((cells_b1[1]) & 0x80) >> 7) == 0);
+}
 
-    PPM with pulse width 500 us, long gap 4000 us, short gap 2000 us, sync gap 9000 us.
+static constexpr float alectov1_Wind0_wind_avg_m_s(int *cells_b3) {
+  return ((reverse8((cells_b3[1]))) * 0.2);
+}
 
-    Some sensors transmit 8 long pulses (1-bits) as first row.
-    Some sensors transmit 3 lone pulses (sync bits) between packets.
+static constexpr float alectov1_Wind0_wind_max_m_s(int *cells_b3) {
+  return ((reverse8((cells_b3[5]))) * 0.2);
+}
 
-    Message Format: (9 nibbles, 36 bits):
-    Please note that bytes need to be reversed before processing!
+static constexpr int alectov1_Wind0_wind_dir_deg(int *cells_b1, int *cells_b2) {
+  return (((reverse8((cells_b2[5]))) << 1) | ((cells_b1[5]) & 1));
+}
 
-    Format for Temperature Humidity:
+static constexpr int alectov1_Wind4_sensor_id(int *cells_b0) {
+  return (reverse8((cells_b0[1])));
+}
 
-        IIIICCII BMMP TTTT TTTT TTTT HHHHHHHH CCCC
-        RC       Type Temperature___ Humidity Checksum
+static constexpr int alectov1_Wind4_channel(int *cells_b0) {
+  return (((cells_b0[1]) & 0xc) >> 2);
+}
 
-    - I: 8 bit Random Device ID, includes 2 bit channel (X, 1, 2, 3)
-    - B: 1 bit Battery status (0 normal, 1 voltage is below ~2.6 V)
-    - M: 2 bit Message type, Temp/Humidity if not '11' else wind/rain sensor
-    - P: 1 bit a 0 indicates regular transmission, 1 indicates requested by pushbutton
-    - T: 12 bit Temperature (two's complement)
-    - H: 8 bit Humidity BCD format
-    - C: 4 bit Checksum
+static constexpr int alectov1_Wind4_battery_ok(int *cells_b1) {
+  return ((((cells_b1[1]) & 0x80) >> 7) == 0);
+}
 
-    Format for Rain:
+static constexpr float alectov1_Wind4_wind_avg_m_s(int *cells_b3) {
+  return ((reverse8((cells_b3[5]))) * 0.2);
+}
 
-        IIIIIIII BMMP 1100 RRRR RRRR RRRR RRRR CCCC
-        RC       Type      Rain                Checksum
+static constexpr int alectov1_Rain_sensor_id(int *cells_b0) {
+  return (reverse8((cells_b0[1])));
+}
 
-    - I: 8 bit Random Device ID, includes 2 bit channel (X, 1, 2, 3)
-    - B: 1 bit Battery status (0 normal, 1 voltage is below ~2.6 V)
-    - M: 2 bit Message type, Temp/Humidity if not '11' else wind/rain sensor
-    - P: 1 bit a 0 indicates regular transmission, 1 indicates requested by pushbutton
-    - R: 16 bit Rain (bitvalue * 0.25 mm)
-    - C: 4 bit Checksum
+static constexpr int alectov1_Rain_channel(int *cells_b0) {
+  return (((cells_b0[1]) & 0xc) >> 2);
+}
 
-    Format for Windspeed:
+static constexpr int alectov1_Rain_battery_ok(int *cells_b1) {
+  return ((((cells_b1[1]) & 0x80) >> 7) == 0);
+}
 
-        IIIIIIII BMMP 1000 0000 0000 WWWWWWWW CCCC
-        RC       Type                Windspd  Checksum
+static constexpr float alectov1_Rain_rain_mm(int *cells_b2, int *cells_b3) {
+  return ((((reverse8((cells_b3[1]))) << 8) | (reverse8((cells_b2[1])))) * 0.25);
+}
 
-    - I: 8 bit Random Device ID, includes 2 bit channel (X, 1, 2, 3)
-    - B: 1 bit Battery status (0 normal, 1 voltage is below ~2.6 V)
-    - M: 2 bit Message type, Temp/Humidity if not '11' else wind/rain sensor
-    - P: 1 bit a 0 indicates regular transmission, 1 indicates requested by pushbutton
-    - W: 8 bit Windspeed  (bitvalue * 0.2 m/s, correction for webapp = 3600/1000 * 0.2 * 100 = 72)
-    - C: 4 bit Checksum
+static constexpr bool alectov1_Temperature_validate_humidity(int *cells_b3) {
+  return (((((reverse8((cells_b3[1]))) >> 4) * 0xa) + ((reverse8((cells_b3[1]))) & 0xf)) <= 0x64);
+}
 
-    Format for Winddirection & Windgust:
+static constexpr int alectov1_Temperature_sensor_id(int *cells_b0) {
+  return (reverse8((cells_b0[1])));
+}
 
-        IIIIIIII BMMP 111D DDDD DDDD GGGGGGGG CCCC
-        RC       Type      Winddir   Windgust Checksum
+static constexpr int alectov1_Temperature_channel(int *cells_b0) {
+  return (((cells_b0[1]) & 0xc) >> 2);
+}
 
-    - I: 8 bit Random Device ID, includes 2 bit channel (X, 1, 2, 3)
-    - B: 1 bit Battery status (0 normal, 1 voltage is below ~2.6 V)
-    - M: 2 bit Message type, Temp/Humidity if not '11' else wind/rain sensor
-    - P: 1 bit a 0 indicates regular transmission, 1 indicates requested by pushbutton
-    - D: 9 bit Wind direction
-    - G: 8 bit Windgust (bitvalue * 0.2 m/s, correction for webapp = 3600/1000 * 0.2 * 100 = 72)
-    - C: 4 bit Checksum
+static constexpr int alectov1_Temperature_battery_ok(int *cells_b1) {
+  return ((((cells_b1[1]) & 0x80) >> 7) == 0);
+}
 
-    Derived from the former ``src/devices/alecto.c``; PPM timing unchanged.
-*/
-static int alectov1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-{
-    if (bitbuffer->num_rows <= 6)
-        return DECODE_ABORT_LENGTH;
-    if (bitbuffer->bits_per_row[1] != 36)
-        return DECODE_ABORT_LENGTH;
+static constexpr float alectov1_Temperature_temperature_C(int *cells_b1, int *cells_b2) {
+  return (((((reverse8((cells_b1[1]))) & 0xf0) | ((reverse8((cells_b2[1]))) << 8)) >> 4) * 0.1);
+}
 
-    int vret_validate_packet = alectov1_validate_packet(decoder, bitbuffer);
-    if (vret_validate_packet != 0)
-        return vret_validate_packet;
+static constexpr int alectov1_Temperature_humidity(int *cells_b3) {
+  return ((((reverse8((cells_b3[1]))) >> 4) * 0xa) + ((reverse8((cells_b3[1]))) & 0xf));
+}
 
-    int cells_b0[BITBUF_ROWS];
-    int cells_b1[BITBUF_ROWS];
-    int cells_b2[BITBUF_ROWS];
-    int cells_b3[BITBUF_ROWS];
-    int cells_b4[BITBUF_ROWS];
-    static uint16_t const _rows_cells[] = {1, 2, 3, 4, 5, 6};
-    for (size_t _kir_cells = 0; _kir_cells < 6; ++_kir_cells) {
-        unsigned row_cells = _rows_cells[_kir_cells];
-        uint8_t *rowb_cells = bitbuffer->bb[row_cells];
-        unsigned _roff_cells = 0;
-        cells_b0[row_cells] = bitrow_get_bits(rowb_cells, _roff_cells, 8);
-        _roff_cells += 8;
-        cells_b1[row_cells] = bitrow_get_bits(rowb_cells, _roff_cells, 8);
-        _roff_cells += 8;
-        cells_b2[row_cells] = bitrow_get_bits(rowb_cells, _roff_cells, 8);
-        _roff_cells += 8;
-        cells_b3[row_cells] = bitrow_get_bits(rowb_cells, _roff_cells, 8);
-        _roff_cells += 8;
-        cells_b4[row_cells] = bitrow_get_bits(rowb_cells, _roff_cells, 4);
-        _roff_cells += 4;
-    }
-
-
-    if (((((((cells_b1[1]) & 0x60) >> 5) == 3) & (((cells_b1[1]) & 0xf) != 0xc)) & (((cells_b1[1]) & 0xe) == 8)) & ((cells_b2[1]) == 0)) {
-        int sensor_id = (reverse8((cells_b0[1])));
-        int channel = (((cells_b0[1]) & 0xc) >> 2);
-        int battery_ok = ((((cells_b1[1]) & 0x80) >> 7) == 0);
-        float wind_avg_m_s = ((reverse8((cells_b3[1]))) * 0.2);
-        float wind_max_m_s = ((reverse8((cells_b3[5]))) * 0.2);
-        int wind_dir_deg = (((reverse8((cells_b2[5]))) << 1) | ((cells_b1[5]) & 1));
-
-        /* clang-format off */
-        data_t *data = data_make(
+static int alectov1_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+  uint8_t *b = bitbuffer->bb[0];
+  unsigned bit_pos = 0;
+  if (bitbuffer->bits_per_row[1] != 36)
+      return DECODE_ABORT_LENGTH;
+  int cells_b0[BITBUF_ROWS];
+  int cells_b1[BITBUF_ROWS];
+  int cells_b2[BITBUF_ROWS];
+  int cells_b3[BITBUF_ROWS];
+  int cells_b4[BITBUF_ROWS];
+  static uint16_t const _rows_cells[] = {1, 2, 3, 4, 5, 6};
+  for (size_t _k = 0; _k < 6; ++_k) {
+    unsigned _r = _rows_cells[_k];
+    uint8_t *b = bitbuffer->bb[_r];
+    unsigned bit_pos = 0;
+    cells_b0[_r] = bitrow_get_bits(b, bit_pos, 8);
+    bit_pos += 8;
+    cells_b1[_r] = bitrow_get_bits(b, bit_pos, 8);
+    bit_pos += 8;
+    cells_b2[_r] = bitrow_get_bits(b, bit_pos, 8);
+    bit_pos += 8;
+    cells_b3[_r] = bitrow_get_bits(b, bit_pos, 8);
+    bit_pos += 8;
+    cells_b4[_r] = bitrow_get_bits(b, bit_pos, 4);
+    bit_pos += 4;
+  }
+  if (!alectov1_validate_packet(bitbuffer))
+      return DECODE_FAIL_SANITY;
+  if ((((((((cells_b1[1]) & 0x60) >> 5) == 3) & (((cells_b1[1]) & 0xf) != 0xc)) & (((cells_b1[1]) & 0xe) == 8)) & ((cells_b2[1]) == 0))) {
+    data_t *data = data_make(
             "model", "", DATA_STRING, "AlectoV1-Wind",
-            "id", "House Code", DATA_INT, sensor_id,
-            "channel", "Channel", DATA_INT, channel,
-            "battery_ok", "Battery", DATA_INT, battery_ok,
-            "wind_avg_m_s", "Wind speed", DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, wind_avg_m_s,
-            "wind_max_m_s", "Wind gust", DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, wind_max_m_s,
-            "wind_dir_deg", "Wind Direction", DATA_INT, wind_dir_deg,
+            "id", "House Code", DATA_INT, alectov1_Wind0_sensor_id(cells_b0),
+            "channel", "Channel", DATA_INT, alectov1_Wind0_channel(cells_b0),
+            "battery_ok", "Battery", DATA_INT, alectov1_Wind0_battery_ok(cells_b1),
+            "wind_avg_m_s", "Wind speed", DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, (double)alectov1_Wind0_wind_avg_m_s(cells_b3),
+            "wind_max_m_s", "Wind gust", DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, (double)alectov1_Wind0_wind_max_m_s(cells_b3),
+            "wind_dir_deg", "Wind Direction", DATA_INT, alectov1_Wind0_wind_dir_deg(cells_b1, cells_b2),
             "mic", "Integrity", DATA_STRING, "CHECKSUM",
             NULL);
-        /* clang-format on */
-        decoder_output_data(decoder, data);
-        return 1;
-    } else if ((((((cells_b1[1]) & 0x60) >> 5) == 3) & (((cells_b1[1]) & 0xf) != 0xc)) & (((cells_b1[1]) & 0xe) == 0xe)) {
-        int sensor_id = (reverse8((cells_b0[1])));
-        int channel = (((cells_b0[1]) & 0xc) >> 2);
-        int battery_ok = ((((cells_b1[1]) & 0x80) >> 7) == 0);
-        float wind_avg_m_s = ((reverse8((cells_b3[5]))) * 0.2);
-        float wind_max_m_s = alectov1_Wind4_wind_max_m_s(bitbuffer);
-        int wind_dir_deg = alectov1_Wind4_wind_dir_deg(bitbuffer);
-
-        /* clang-format off */
-        data_t *data = data_make(
+    decoder_output_data(decoder, data);
+    return 1;
+  } else if (((((((cells_b1[1]) & 0x60) >> 5) == 3) & (((cells_b1[1]) & 0xf) != 0xc)) & (((cells_b1[1]) & 0xe) == 0xe))) {
+    data_t *data = data_make(
             "model", "", DATA_STRING, "AlectoV1-Wind",
-            "id", "House Code", DATA_INT, sensor_id,
-            "channel", "Channel", DATA_INT, channel,
-            "battery_ok", "Battery", DATA_INT, battery_ok,
-            "wind_avg_m_s", "Wind speed", DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, wind_avg_m_s,
-            "wind_max_m_s", "Wind gust", DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, wind_max_m_s,
-            "wind_dir_deg", "Wind Direction", DATA_INT, wind_dir_deg,
+            "id", "House Code", DATA_INT, alectov1_Wind4_sensor_id(cells_b0),
+            "channel", "Channel", DATA_INT, alectov1_Wind4_channel(cells_b0),
+            "battery_ok", "Battery", DATA_INT, alectov1_Wind4_battery_ok(cells_b1),
+            "wind_avg_m_s", "Wind speed", DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, (double)alectov1_Wind4_wind_avg_m_s(cells_b3),
+            "wind_max_m_s", "Wind gust", DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, (double)alectov1_Wind4_wind_max_m_s(),
+            "wind_dir_deg", "Wind Direction", DATA_INT, alectov1_Wind4_wind_dir_deg(),
             "mic", "Integrity", DATA_STRING, "CHECKSUM",
             NULL);
-        /* clang-format on */
-        decoder_output_data(decoder, data);
-        return 1;
-    } else if (((((cells_b1[1]) & 0x60) >> 5) == 3) & (((cells_b1[1]) & 0xf) == 0xc)) {
-        int sensor_id = (reverse8((cells_b0[1])));
-        int channel = (((cells_b0[1]) & 0xc) >> 2);
-        int battery_ok = ((((cells_b1[1]) & 0x80) >> 7) == 0);
-        float rain_mm = ((((reverse8((cells_b3[1]))) << 8) | (reverse8((cells_b2[1])))) * 0.25);
-
-        /* clang-format off */
-        data_t *data = data_make(
+    decoder_output_data(decoder, data);
+    return 1;
+  } else if ((((((cells_b1[1]) & 0x60) >> 5) == 3) & (((cells_b1[1]) & 0xf) == 0xc))) {
+    data_t *data = data_make(
             "model", "", DATA_STRING, "AlectoV1-Rain",
-            "id", "House Code", DATA_INT, sensor_id,
-            "channel", "Channel", DATA_INT, channel,
-            "battery_ok", "Battery", DATA_INT, battery_ok,
-            "rain_mm", "Total Rain", DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rain_mm,
+            "id", "House Code", DATA_INT, alectov1_Rain_sensor_id(cells_b0),
+            "channel", "Channel", DATA_INT, alectov1_Rain_channel(cells_b0),
+            "battery_ok", "Battery", DATA_INT, alectov1_Rain_battery_ok(cells_b1),
+            "rain_mm", "Total Rain", DATA_FORMAT, "%.2f mm", DATA_DOUBLE, (double)alectov1_Rain_rain_mm(cells_b2, cells_b3),
             "mic", "Integrity", DATA_STRING, "CHECKSUM",
             NULL);
-        /* clang-format on */
-        decoder_output_data(decoder, data);
-        return 1;
-    } else if ((((((((cells_b1[1]) & 0x60) >> 5) != 3) & ((cells_b0[2]) == (cells_b0[3]))) & ((cells_b0[3]) == (cells_b0[4]))) & ((cells_b0[4]) == (cells_b0[5]))) & ((cells_b0[5]) == (cells_b0[6]))) {
-        int sensor_id = (reverse8((cells_b0[1])));
-        int channel = (((cells_b0[1]) & 0xc) >> 2);
-        int battery_ok = ((((cells_b1[1]) & 0x80) >> 7) == 0);
-        float temperature_C = (((((reverse8((cells_b1[1]))) & 0xf0) | ((reverse8((cells_b2[1]))) << 8)) >> 4) * 0.1);
-        int humidity = ((((reverse8((cells_b3[1]))) >> 4) * 0xa) + ((reverse8((cells_b3[1]))) & 0xf));
-        if (!((((((reverse8((cells_b3[1]))) >> 4) * 0xa) + ((reverse8((cells_b3[1]))) & 0xf)) <= 0x64)))
-            return DECODE_FAIL_SANITY;
-
-
-        /* clang-format off */
-        data_t *data = data_make(
+    decoder_output_data(decoder, data);
+    return 1;
+  } else if (((((((((cells_b1[1]) & 0x60) >> 5) != 3) & ((cells_b0[2]) == (cells_b0[3]))) & ((cells_b0[3]) == (cells_b0[4]))) & ((cells_b0[4]) == (cells_b0[5]))) & ((cells_b0[5]) == (cells_b0[6])))) {
+    if (!alectov1_Temperature_validate_humidity(cells_b3))
+        return DECODE_FAIL_SANITY;
+    data_t *data = data_make(
             "model", "", DATA_STRING, "AlectoV1-Temperature",
-            "id", "House Code", DATA_INT, sensor_id,
-            "channel", "Channel", DATA_INT, channel,
-            "battery_ok", "Battery", DATA_INT, battery_ok,
-            "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temperature_C,
-            "humidity", "Humidity", DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "id", "House Code", DATA_INT, alectov1_Temperature_sensor_id(cells_b0),
+            "channel", "Channel", DATA_INT, alectov1_Temperature_channel(cells_b0),
+            "battery_ok", "Battery", DATA_INT, alectov1_Temperature_battery_ok(cells_b1),
+            "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, (double)alectov1_Temperature_temperature_C(cells_b1, cells_b2),
+            "humidity", "Humidity", DATA_FORMAT, "%u %%", DATA_INT, alectov1_Temperature_humidity(cells_b3),
             "mic", "Integrity", DATA_STRING, "CHECKSUM",
             NULL);
-        /* clang-format on */
-        decoder_output_data(decoder, data);
-        return 1;
-    }
-
-    return DECODE_FAIL_SANITY;
-
+    decoder_output_data(decoder, data);
+    return 1;
+  }
+  return DECODE_FAIL_SANITY;
 }
 
 static char const *const output_fields[] = {

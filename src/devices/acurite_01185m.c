@@ -1,136 +1,83 @@
 // Generated from acurite_01185m.py
 /** @file
-    Decoder for Acurite Grill/Meat Thermometer 01185M.
-
-    Copyright (C) 2021 Christian W. Zuckschwerdt <zany@triq.net>
-    Based on work by Joe "exeljb"
-
-    Modulation:
-
-    - 56 bit PWM data
-    - short is 840 us pulse, 2028 us gap
-    - long is 2070 us pulse, 800 us gap,
-    - sync is 6600 us pulse, 4080 gap,
-    - there is no packet gap and 8 repeats
-    - data is inverted (short=0, long=1) and byte-reflected
-
-    S.a. #1824
-
-    Temperature is 16 bit, degrees F, scaled x10 +900.
-    The first reading is the "Meat" channel and the second is for the "Ambient" or
-    grill temperature.
-
-    - A value of 0x1b58 (7000 / 610F) indicates the sensor is unplugged (E1).
-    - A value of 0x00c8 (200 / -70F) indicates a sensor problem (E2).
-
-    The battery status is the MSB of the second byte, 0 for good battery, 1 for low.
-
-    Channel appears random (often 3, 6, 12, 15).
-
-    Data layout (56 bits):
-
-        II BC MM MM TT TT XX
-
-    - I: 8 bit ID
-    - B: 1 bit battery-low (MSB of second byte); middle bits skipped below
-    - C: 4 bit channel (low nibble of second byte)
-    - M: 16 bit temperature 1 (F x10 +900)
-    - T: 16 bit temperature 2
-    - X: 8 bit checksum, add-with-carry over first 6 bytes
+    Acurite Grill/Meat Thermometer 01185M decoder.
 */
 
 #include "decoder.h"
+#include "acurite_01185m.h"
 
-/** @fn static int acurite_01185m_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-    Decoder for Acurite Grill/Meat Thermometer 01185M.
+static constexpr int acurite_01185m_temp1_ok(int data_temp1_raw) {
+  return ((data_temp1_raw > 0xc8) & (data_temp1_raw < 0x1b58));
+}
 
-    Copyright (C) 2021 Christian W. Zuckschwerdt <zany@triq.net>
-    Based on work by Joe "exeljb"
+static constexpr int acurite_01185m_temp2_ok(int data_temp2_raw) {
+  return ((data_temp2_raw > 0xc8) & (data_temp2_raw < 0x1b58));
+}
 
-    Modulation:
+static constexpr float acurite_01185m_temp1_f(int data_temp1_raw) {
+  return ((data_temp1_raw - 0x384) * 0.1);
+}
 
-    - 56 bit PWM data
-    - short is 840 us pulse, 2028 us gap
-    - long is 2070 us pulse, 800 us gap,
-    - sync is 6600 us pulse, 4080 gap,
-    - there is no packet gap and 8 repeats
-    - data is inverted (short=0, long=1) and byte-reflected
+static constexpr float acurite_01185m_temp2_f(int data_temp2_raw) {
+  return ((data_temp2_raw - 0x384) * 0.1);
+}
 
-    S.a. #1824
+static constexpr int acurite_01185m_battery_ok(int data_battery_low) {
+  return (data_battery_low == 0);
+}
 
-    Temperature is 16 bit, degrees F, scaled x10 +900.
-    The first reading is the "Meat" channel and the second is for the "Ambient" or
-    grill temperature.
-
-    - A value of 0x1b58 (7000 / 610F) indicates the sensor is unplugged (E1).
-    - A value of 0x00c8 (200 / -70F) indicates a sensor problem (E2).
-
-    The battery status is the MSB of the second byte, 0 for good battery, 1 for low.
-
-    Channel appears random (often 3, 6, 12, 15).
-
-    Data layout (56 bits):
-
-        II BC MM MM TT TT XX
-
-    - I: 8 bit ID
-    - B: 1 bit battery-low (MSB of second byte); middle bits skipped below
-    - C: 4 bit channel (low nibble of second byte)
-    - M: 16 bit temperature 1 (F x10 +900)
-    - T: 16 bit temperature 2
-    - X: 8 bit checksum, add-with-carry over first 6 bytes
-*/
-static int acurite_01185m_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-{
-    int result = 0;
-    bitbuffer_invert(bitbuffer);
-
-    for (int row = 0; row < bitbuffer->num_rows; ++row) {
-        if (bitbuffer->bits_per_row[row] != 56) {
-            result = DECODE_ABORT_LENGTH;
-            continue;
-        }
-        uint8_t *b = bitbuffer->bb[row];
-        reflect_bytes(b, 7);
-
-        int sum = add_bytes(b, 6);
-        if ((sum & 0xff) != b[6]) {
-            result = DECODE_FAIL_MIC;
-            continue;
-        }
-        if (sum == 0) {
-            return DECODE_FAIL_SANITY;
-        }
-
-        int id = bitrow_get_bits(b, 0, 8);
-        int battery_low = bitrow_get_bits(b, 8, 1);
-        int battery_ok = (battery_low == 0);
-        (void)(bitrow_get_bits(b, 9, 3));
-        int channel = bitrow_get_bits(b, 12, 4);
-        int temp1_raw = bitrow_get_bits(b, 16, 16);
-        int temp1_ok = ((temp1_raw > 0xc8) & (temp1_raw < 0x1b58));
-        float temp1_f = ((temp1_raw - 0x384) * 0.1);
-        int temp2_raw = bitrow_get_bits(b, 32, 16);
-        int temp2_ok = ((temp2_raw > 0xc8) & (temp2_raw < 0x1b58));
-        float temp2_f = ((temp2_raw - 0x384) * 0.1);
-        (void)(bitrow_get_bits(b, 48, 8));
-
-
-        /* clang-format off */
-        data_t *data = data_make(
+static int acurite_01185m_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+  bitbuffer_invert(bitbuffer);
+  for (int i = 0; i < bitbuffer->num_rows; ++i)
+      reflect_bytes(bitbuffer->bb[i], (bitbuffer->bits_per_row[i] + 7) / 8);
+  uint8_t *b = bitbuffer->bb[0];
+  unsigned bit_pos = 0;
+  int data_id[BITBUF_ROWS];
+  int data_battery_low[BITBUF_ROWS];
+  int data_mid[BITBUF_ROWS];
+  int data_channel[BITBUF_ROWS];
+  int data_temp1_raw[BITBUF_ROWS];
+  int data_temp2_raw[BITBUF_ROWS];
+  int data_checksum[BITBUF_ROWS];
+  int result = 0;
+  for (int _r = 0; _r < bitbuffer->num_rows; ++_r) {
+    if (bitbuffer->bits_per_row[_r] != 56) {
+      result = DECODE_ABORT_LENGTH;
+      continue;
+    }
+    uint8_t *b = bitbuffer->bb[_r];
+    unsigned bit_pos = 0;
+    data_id[_r] = bitrow_get_bits(b, bit_pos, 8);
+    bit_pos += 8;
+    data_battery_low[_r] = bitrow_get_bits(b, bit_pos, 1);
+    bit_pos += 1;
+    data_mid[_r] = bitrow_get_bits(b, bit_pos, 3);
+    bit_pos += 3;
+    data_channel[_r] = bitrow_get_bits(b, bit_pos, 4);
+    bit_pos += 4;
+    data_temp1_raw[_r] = bitrow_get_bits(b, bit_pos, 16);
+    bit_pos += 16;
+    data_temp2_raw[_r] = bitrow_get_bits(b, bit_pos, 16);
+    bit_pos += 16;
+    data_checksum[_r] = bitrow_get_bits(b, bit_pos, 8);
+    bit_pos += 8;
+    if (!acurite_01185m_validate_checksum(data_id, data_battery_low, data_mid, data_channel, data_temp1_raw, data_temp2_raw, data_checksum)) {
+      result = DECODE_FAIL_MIC;
+      continue;
+    }
+    data_t *data = data_make(
             "model", "", DATA_STRING, "Acurite-01185M",
-            "id", "", DATA_INT, id,
-            "channel", "", DATA_INT, channel,
-            "battery_ok", "Battery", DATA_INT, battery_ok,
-            "temperature_1_F", "Meat", DATA_COND, temp1_ok, DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp1_f,
-            "temperature_2_F", "Ambient", DATA_COND, temp2_ok, DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp2_f,
+            "id", "", DATA_INT, data_id,
+            "channel", "", DATA_INT, data_channel,
+            "battery_ok", "Battery", DATA_INT, acurite_01185m_battery_ok(data_battery_low),
+            "temperature_1_F", "Meat", DATA_COND, temp1_ok, DATA_FORMAT, "%.1f F", DATA_DOUBLE, (double)acurite_01185m_temp1_f(data_temp1_raw),
+            "temperature_2_F", "Ambient", DATA_COND, temp2_ok, DATA_FORMAT, "%.1f F", DATA_DOUBLE, (double)acurite_01185m_temp2_f(data_temp2_raw),
             "mic", "Integrity", DATA_STRING, "CHECKSUM",
             NULL);
-        /* clang-format on */
-        decoder_output_data(decoder, data);
-        return 1;
-    }
-    return result;
+    decoder_output_data(decoder, data);
+    return 1;
+  }
+  return result;
 }
 
 static char const *const output_fields[] = {
