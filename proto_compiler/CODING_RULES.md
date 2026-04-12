@@ -101,6 +101,24 @@ msg = "something went wrong"
 print("count", n)
 ```
 
+## No dead code
+
+Delete unused imports, unreferenced aliases, and methods that nothing calls. Dead code misleads readers into thinking it's load-bearing, drifts silently when the live code changes, and makes the file longer for no reason. If it's needed later, git has it.
+
+## Extract rather than copy-paste
+
+If the same logic appears in more than one place, extract it into a function. Duplicated code means duplicated bugs: a fix in one copy is a regression in the copy you forgot. When two blocks share the same structure but differ in a few parameters, those parameters become the function's arguments.
+
+**Signal:** if you're about to write a loop body that already exists elsewhere in the file, stop and extract.
+
+## One implementation per concept
+
+If the DSL exposes a method that computes X, codegen must not reimplement X. Parallel implementations drift: one gets fixed, the other doesn't. If the DSL's version doesn't quite fit codegen's needs, extend the DSL's version — don't write a second one.
+
+## Don't silently accept invalid input
+
+If a value should always be wrapped/normalized by an earlier layer, don't add a fallback that silently handles the unwrapped case. That hides bugs in the earlier layer. Raise instead, so the real problem surfaces.
+
 ## Name variables for what they are
 
 Variable names should reflect what the value is, not how it is computed or where it is going.
