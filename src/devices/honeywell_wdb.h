@@ -1,41 +1,47 @@
-/* honeywell_wdb.h - hand-written helpers included by generated decoder. */
-#pragma once
+/** @file
+    External helpers for Honeywell ActivLink (OOK) proto-compiled decoder.
+*/
 
+#ifndef INCLUDE_HONEYWELL_WDB_H_
+#define INCLUDE_HONEYWELL_WDB_H_
+
+#include "decoder.h"
+
+/// Parity validation over the 6-byte packet. Returns true if even parity.
 static inline bool honeywell_wdb_validate_packet(bitbuffer_t *bitbuffer)
 {
-    /* The decode function has already selected the repeated row and
-       extracted b = bitbuffer->bb[row].  We re-derive it from row 0
-       of the (possibly invert-modified) bitbuffer that the pipeline
-       left behind. */
-    uint8_t *b = bitbuffer->bb[0];
-    int parity = parity_bytes(b, 6);
+    int row = bitbuffer_find_repeated_row(bitbuffer, 4, 48);
+    if (row < 0)
+        return false;
+    uint8_t *bytes = bitbuffer->bb[row];
 
-    if ((!b[0] && !b[2] && !b[4] && !b[5]) ||
-            (b[0] == 0xff && b[2] == 0xff && b[4] == 0xff && b[5] == 0xff))
+    if ((!bytes[0] && !bytes[2] && !bytes[4] && !bytes[5])
+            || (bytes[0] == 0xff && bytes[2] == 0xff && bytes[4] == 0xff && bytes[5] == 0xff))
         return false;
 
-    if (parity)
-        return false;
-
-    return true;
+    return parity_bytes(bytes, 6) == 0;
 }
 
-static const char *honeywell_wdb_subtype(int class_raw)
+/// Map device class field to string.
+static inline char const *honeywell_wdb_subtype(int class_raw)
 {
     switch (class_raw) {
     case 0x1: return "PIR-Motion";
     case 0x2: return "Doorbell";
-    default: return "Unknown";
+    default:  return "Unknown";
     }
 }
 
-static const char *honeywell_wdb_alert(int alert_raw)
+/// Map alert field to string.
+static inline char const *honeywell_wdb_alert(int alert_raw)
 {
     switch (alert_raw) {
     case 0x0: return "Normal";
     case 0x1:
     case 0x2: return "High";
     case 0x3: return "Full";
-    default: return "Unknown";
+    default:  return "Unknown";
     }
 }
+
+#endif /* INCLUDE_HONEYWELL_WDB_H_ */
