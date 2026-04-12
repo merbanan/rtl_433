@@ -4,8 +4,13 @@ The proto_compiler lets you describe rtl_433 decoders as Python classes, similar
 to how the flex decoder lets you describe a protocol as a declarative key-value
 spec in a `.conf` file. But unlike the flex decoder, which interprets that spec
 at runtime, the proto_compiler compiles the Python class into C source code. The
-compiler is itself a Python program that inspects the input Python class and
-generates a complete `r_device` decoder.
+compiler is itself a Python program that looks at the instances of the classes
+you've authored, and generates a complete `r_device` decoder.
+
+The compiler is _not_ a generic Python to C compiler. Instead, it converts a
+data structure, which happens to be an instance of a Pythong class, to C code.
+That means you get to use all the nicities of Python to populate your data
+structure, like inheritance, loop comprehension, etc.
 
 The DSL is inspired by [this conversation](https://github.com/merbanan/rtl_433/pull/3399)
 about adding Lua to rtl_433.
@@ -20,9 +25,12 @@ For examples, see:
 
 ## Protocol structure
 
-In this language, a decoder is a subclass of `Decoder` (or `Dispatcher` for
-multi-decoder modules). The class has five main pieces: a `modulation_config()`
-method, a `prepare()` method, field annotations, methods, and `to_json`.
+In this language, a decoder is a subclass of `Decoder` (or `Dispatcher` for a
+multi-framing device).  The class has five main pieces: a `modulation_config()`
+method that fills the `r_device` struct, a `prepare()` method that describes
+the bitbuffer pipeline, bit-field declarations as class annotations, methods
+that derive values from those fields, and an optional `to_json` that shapes
+the `data_make` call.
 
 ### ModulationConfig
 
@@ -44,29 +52,39 @@ class thermopro_tp211b(Decoder):
         )
 ```
 
-Required fields are `device_name`, `modulation`, `short_width`, `long_width`,
-and `reset_limit`. Optional fields are `gap_limit`, `sync_width`, `tolerance`,
-and `disabled`.
 
 ### prepare() and the bitbuffer pipeline
 
-Bitbuffer preprocessing (preamble search, Manchester decode, inverts, and so on)
-is declared in `prepare(self, buf)`. The method takes a `BitbufferPipeline` and
-returns it after chaining bit-processing operations:
+You define all the bitbuffer preprocessing (preamble search, Manchester
+decode, inversion, and so on) in a method called `prepare`.  The method
+takes a `BitbufferPipeline` and returns it after chaining steps.  The
+pipeline carries a *tip*: a `(bitbuffer, row, offset)` state that starts at
+`(bitbuffer, 0, 0)` and gets narrowed by each step.  Every step operates on
+the current tip — there is no distinction between "row buffer" and
+"post-manchester bits" for the user; it's always "whatever the tip points
+at right now".
 
-* `invert()` — `bitbuffer_invert` on the row buffer (or on decoded packet bits
-  after `manchester_decode`, depending on position in the chain).
-* `reflect()` — per-row `reflect_bytes`.
-* `find_repeated_row(min_repeats, min_bits, max_bits=…)` — locate a repeated row;
-  `max_bits` allows a length upper bound instead of an exact `min_bits` match.
-* `search_preamble(pattern, bit_length=None, scan_all_rows=False)` — search for
-  a bit pattern; `bit_length` defaults to `pattern.bit_length()` when omitted.
-  Use `scan_all_rows=True` when the match may appear on any row (e.g. TPMS).
-* `skip_bits(n)` — adjust the bit offset after the search: positive skips
-  forward, negative skips backward (with a sanity check in C).
-* `manchester_decode(max_bits=0)` — Manchester-decode from the current row and
-  offset into a temporary buffer; subsequent field bits are read from that
-  decoded stream.
+* `invert()` — emits `bitbuffer_invert(bitbuffer);`, flipping every bit in
+  every row of the tip.
+* `reflect()` — per-row `reflect_bytes`, bit-reversing each byte in place.
+* `find_repeated_row(min_repeats, min_bits, max_bits=None)` — locate a
+  repeated row and pin the tip's `row` to it.  With `max_bits=None` the
+  length must match `min_bits` exactly; otherwise the length must be
+  `<= max_bits`.
+* `search_preamble(pattern, bit_length=None, scan_all_rows=False)` — search
+  for a bit pattern and advance the tip's `offset` to just after the match.
+  `bit_length` defaults to `pattern.bit_length()`.  Use
+  `scan_all_rows=True` when the match may appear on any row (e.g. TPMS);
+  the compiler emits an outer row-scan loop and records which row matched.
+* `skip_bits(n)` — adjust the tip's `offset` by `n` bits.  Positive skips
+  forward; negative skips backward (with a C runtime sanity check that the
+  offset does not underflow).
+* `manchester_decode(max_bits=0)` — Manchester-decode from the tip
+  `(row, offset)` into a freshly declared `bitbuffer_t packet_bits`, then
+  rebind the tip: `bitbuffer = &packet_bits;` and `row = 0`, `offset = 0`.
+  Subsequent pipeline steps and field extractions run against `packet_bits`.
+  Because the rebinding is transparent, a later `invert()` or `reflect()`
+  simply operates on the decoded packet.
 
 For row-selection strategies (such as scanning multiple rows for a valid
 candidate), use `Rows[FirstValid(bits), SubProtocol]` as a field type rather
