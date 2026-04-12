@@ -405,6 +405,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [315]  Alps FWB1U545 Car Remote
     [316]  Continental KR5V2X Car Remote (-f 313.8M -s 1024k)
     [317]  Code Alarm FRDPC2002 Car Remote
+    [318]  RFM69 LowPowerLab Moteino board (-s 1000k)
 
 * Disabled by default, use -R n or a conf file to enable
 
