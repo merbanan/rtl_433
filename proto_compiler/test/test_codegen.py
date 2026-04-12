@@ -10,6 +10,7 @@ import pytest
 from proto_compiler.dsl import (
     BitbufferPipeline,
     Bits,
+    BitsSpec,
     Decoder,
     DecodeFail,
     Dispatcher,
@@ -23,6 +24,7 @@ from proto_compiler.dsl import (
     Rows,
     Variant,
     FieldRef,
+    _get_annotations_own,
 )
 from proto_compiler.codegen import compile_decoder
 
@@ -681,3 +683,32 @@ class TestValidateOrder:
         pos_va = self._call_site_pos("validate_a")
         pos_vbuf = self._call_site_pos("validate_buf")
         assert pos_va < pos_vbuf
+
+
+# ---------------------------------------------------------------------------
+# 11. Annotation collection (regression test for Python 3.14 PEP 749)
+# ---------------------------------------------------------------------------
+
+
+class TestAnnotationCollection:
+    """Verify that _get_annotations_own and _fields work across Python versions.
+
+    Python 3.14 defers annotation evaluation (PEP 749), so
+    cls.__dict__['__annotations__'] is empty. _get_annotations_own must
+    still return the correct field specs.
+    """
+
+    def test_get_annotations_own_returns_field_specs(self):
+        anns = _get_annotations_own(simple_sensor)
+        assert "sensor_id" in anns
+        assert "temp_raw" in anns
+        assert "humidity" in anns
+        assert isinstance(anns["sensor_id"], BitsSpec)
+        assert isinstance(anns["temp_raw"], BitsSpec)
+        assert isinstance(anns["humidity"], BitsSpec)
+
+    def test_protocol_fields_nonempty(self):
+        field_names = [name for name, _ in simple_sensor._fields]
+        assert "sensor_id" in field_names
+        assert "temp_raw" in field_names
+        assert "humidity" in field_names
