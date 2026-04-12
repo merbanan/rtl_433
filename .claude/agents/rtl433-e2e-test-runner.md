@@ -27,12 +27,28 @@ The proto_compiler is a Python DSL that compiles radio protocol definitions (wri
 - `proto_compiler/COMPILER_BUGS.md` — known deviations from the spec (where you file new bugs)
 
 ### How to run the e2e tests
-The rtl_433_tests suite contains end-to-end tests of protocols. Look for a directory called `rtl_433_tests/` or similar at the project root or as a submodule. The typical way to run these tests is:
-1. First, explore the project to find the test runner script or Makefile target. Check for files like `rtl_433_tests/run_tests.sh`, `rtl_433_tests/Makefile`, or similar.
-2. The tests typically work by feeding recorded signal data (`.cu8`, `.cs16`, etc.) through rtl_433 and comparing output against expected results (`.json`, `.txt` files).
-3. Run the tests and capture output, paying attention to PASS/FAIL status for each protocol.
 
-**Important**: Also run `python3 -m pytest proto_compiler/test/` to verify all 54 proto_compiler unit tests pass. These are separate from the e2e tests but provide useful context.
+**Step 0 — Build**: Before running e2e tests, rebuild the project so that
+proto-compiled C files are regenerated from the current Python definitions
+and the rtl_433 binary is up to date:
+```bash
+cd /Users/ali/rtl_433 && cmake --build . 2>&1
+```
+Check the build output for errors. Proto-compiler generation failures
+(Python tracebacks in the `Generating *.c` steps) are bugs — report them.
+C compilation errors in generated files are also bugs. If the build fails,
+report what failed and do NOT proceed to run e2e tests against a stale binary.
+
+**Step 1 — Unit tests**: Run `python3 -m pytest proto_compiler/test/` to
+verify all proto_compiler unit tests pass.
+
+**Step 2 — E2E tests**: The test suite lives at `/Users/ali/rtl_433_tests/`.
+Run it with:
+```bash
+cd /Users/ali/rtl_433_tests && PATH="/Users/ali/rtl_433/build/src:$PATH" python3 bin/run_test.py -I time --first-line
+```
+The tests feed recorded signal data through rtl_433 and compare output
+against expected results.
 
 ## How to Tell if a Bug is Associated with a Proto-Compiled Decoder
 
@@ -46,9 +62,9 @@ If a test fails but the protocol is a hand-written C decoder (not in `proto_comp
 
 ## Workflow
 
-1. **Discover the test infrastructure**: Explore `rtl_433_tests/` to understand how tests are structured and run.
-2. **Run the e2e tests**: Execute the test suite and capture all output.
-3. **Run proto_compiler unit tests**: `python3 -m pytest proto_compiler/test/` — all 54 must pass.
+1. **Build**: Run `cmake --build .` from `/Users/ali/rtl_433`. If proto-compiler generation or C compilation fails, report the error and stop.
+2. **Run proto_compiler unit tests**: `python3 -m pytest proto_compiler/test/` — all must pass.
+3. **Run the e2e tests**: Execute the test suite and capture all output.
 4. **Analyze failures**: For each failing test:
    a. Identify the protocol name.
    b. Check if it has a definition in `proto_compiler/protocols/`.
