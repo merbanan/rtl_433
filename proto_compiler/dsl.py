@@ -232,11 +232,6 @@ class RowFieldAccess(Expr):
         return hash(("RowFieldAccess", self.rows_name, self.row_index, self.field_name))
 
 
-# Alias for codegen.py
-LiteralExpr = (ExprIntLiteral, ExprFloatLiteral, ExprBoolLiteral)
-FieldRefExpr = FieldRef
-
-
 @dataclass(frozen=True, eq=False)
 class Rev8Expr(Expr):
     """``reverse8(operand)`` applied to an expression."""
@@ -289,35 +284,6 @@ def LfsrDigest8(*bytes_args: Any, gen: int, key: int) -> LfsrDigest8Expr:
     return LfsrDigest8Expr(bytes_args=tuple(wrapped), gen=gen, key=key)
 
 
-def _collect_fieldrefs(node: Any) -> set[str]:
-    """Return all FieldRef names referenced in an expression tree."""
-    found: set[str] = set()
-    stack: list[Any] = [node]
-    while stack:
-        cur = stack.pop()
-        if cur is None or isinstance(cur, (int, float, bool)):
-            continue
-        if isinstance(cur, (ExprIntLiteral, ExprFloatLiteral, ExprBoolLiteral)):
-            continue
-        if isinstance(cur, FieldRef):
-            found.add(cur.name)
-        elif isinstance(cur, FieldRefSubscript):
-            found.add(cur.base.name)
-        elif isinstance(cur, RowFieldAccess):
-            found.add(cur.rows_name)
-        elif isinstance(cur, BinaryExpr):
-            stack.append(cur.left)
-            stack.append(cur.right)
-        elif isinstance(cur, UnaryExpr):
-            stack.append(cur.operand)
-        elif isinstance(cur, Rev8Expr):
-            stack.append(cur.operand)
-        elif isinstance(cur, LfsrDigest8Expr):
-            for a in cur.bytes_args:
-                stack.append(a)
-    return found
-
-
 # ---------------------------------------------------------------------------
 # Field spec types
 # ---------------------------------------------------------------------------
@@ -365,33 +331,16 @@ FieldSpec = Union[BitsSpec, LiteralSpec, RepeatSpec, RowsSpec]
 # ---------------------------------------------------------------------------
 
 
+@dataclass(frozen=True)
 class JsonRecord:
     """A single entry in the data_make call."""
 
-    __slots__ = ("key", "label", "value", "data_type", "fmt", "when")
-
-    def __init__(
-        self,
-        key: str,
-        label: str,
-        value: Any,
-        data_type: str,
-        fmt: "str | None" = None,
-        when: Any = None,
-    ):
-        self.key = key
-        self.label = label
-        self.value = value
-        self.data_type = data_type
-        self.fmt = fmt
-        self.when = when
-
-    def __repr__(self) -> str:
-        return (
-            f"JsonRecord(key={self.key!r}, label={self.label!r}, "
-            f"value={self.value!r}, data_type={self.data_type!r}, "
-            f"fmt={self.fmt!r}, when={self.when!r})"
-        )
+    key: str
+    label: str
+    value: Any
+    data_type: str
+    fmt: "str | None" = None
+    when: Any = None
 
 
 # ---------------------------------------------------------------------------
@@ -947,20 +896,6 @@ class Protocol:
                     f"{cls.__name__}.when: body could not be compiled to an expression"
                 )
 
-    @classmethod
-    def explicit_args(cls) -> dict:
-        """Return {name: tuple_of_param_names} for all callables."""
-        result: dict[str, Any] = {}
-        for name, entry in cls._callables.items():
-            result[name] = entry.params if entry.params else None
-        _Variant = globals().get("Variant")
-        if _Variant is not None and issubclass(cls, _Variant) and cls is not _Variant:
-            when_fn = getattr(cls, "when", None)
-            if callable(when_fn):
-                params = _param_names(when_fn)
-                result["when"] = params if params else None
-        return result
-
     def to_json(self) -> "list[JsonRecord] | None":
         """Override in a subclass to customize the data_make output.
 
@@ -999,32 +934,6 @@ class Protocol:
                 )
                 records.append(JsonRecord(name, "", FieldRef(name), dtype))
         return tuple(records)
-
-    @classmethod
-    def output_fields(cls) -> tuple:
-        """Ordered list of output field names for r_device struct."""
-        recs = cls.json_records()
-        if recs:
-            seen: list[str] = []
-            for r in recs:
-                if r.key not in seen:
-                    seen.append(r.key)
-            return tuple(seen)
-        names: list[str] = ["model"]
-        for name, spec in cls._fields:
-            if not name.startswith("_") and isinstance(spec, BitsSpec) and name not in names:
-                names.append(name)
-        for name, entry in cls._callables.items():
-            if entry.kind == "prop" and name not in names:
-                names.append(name)
-        for vcls in cls._variants:
-            for name, spec in vcls._fields:
-                if not name.startswith("_") and isinstance(spec, BitsSpec) and name not in names:
-                    names.append(name)
-            for name, entry in vcls._callables.items():
-                if entry.kind == "prop" and name not in names:
-                    names.append(name)
-        return tuple(names)
 
     @classmethod
     def requires_external_helpers(cls) -> bool:

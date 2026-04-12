@@ -46,7 +46,6 @@ from proto_compiler.dsl import (
     SkipBits,
     UnaryExpr,
     _call_inline,
-    _collect_fieldrefs,
 )
 
 
@@ -177,17 +176,6 @@ def emit_expr(node: Any) -> str:
         gen = hex(node.gen)
         key = hex(node.key)
         return f"(lfsr_digest8((uint8_t const[]){{{byte_strs}}}, {n}, {gen}, {key}))"
-    # Fallback: Python scalars
-    if isinstance(node, bool):
-        return "1" if node else "0"
-    if isinstance(node, int):
-        if node < 0:
-            return str(node)
-        if node > 9:
-            return hex(node)
-        return str(node)
-    if isinstance(node, float):
-        return repr(node)
     raise TypeError(f"emit_expr: unknown node type {type(node).__name__}: {node!r}")
 
 
@@ -232,16 +220,6 @@ def _modulation_c_name(mod: Modulation) -> str:
 
 def _decoder_name(instance: Any) -> str:
     return type(instance).__name__
-
-
-# ---------------------------------------------------------------------------
-# Collect callables from a class (in definition order)
-# ---------------------------------------------------------------------------
-
-
-def _get_callables(cls: type) -> list[tuple[str, CallableEntry]]:
-    """Return (name, entry) pairs for all callables in cls._callables, in definition order."""
-    return list(cls._callables.items())
 
 
 # ---------------------------------------------------------------------------
@@ -397,17 +375,17 @@ def _callable_c_name(
     return f"{decoder_name}_{callable_name}"
 
 
-def _collect_row_field_accesses(node: Any) -> dict[str, set[str]]:
-    """Walk an expression tree and return {rows_name: {sub_field, ...}} for all RowFieldAccess nodes."""
-    result: dict[str, set[str]] = {}
+def _walk_expr(node: Any):
+    """Yield all nodes in an expression tree (depth-first)."""
     stack: list[Any] = [node]
     while stack:
         cur = stack.pop()
         if cur is None or isinstance(cur, (int, float, bool)):
             continue
-        if isinstance(cur, RowFieldAccess):
-            result.setdefault(cur.rows_name, set()).add(cur.field_name)
-        elif isinstance(cur, BinaryExpr):
+        if isinstance(cur, (ExprIntLiteral, ExprFloatLiteral, ExprBoolLiteral)):
+            continue
+        yield cur
+        if isinstance(cur, BinaryExpr):
             stack.append(cur.left)
             stack.append(cur.right)
         elif isinstance(cur, UnaryExpr):
@@ -416,6 +394,14 @@ def _collect_row_field_accesses(node: Any) -> dict[str, set[str]]:
             stack.append(cur.operand)
         elif isinstance(cur, LfsrDigest8Expr):
             stack.extend(cur.bytes_args)
+
+
+def _collect_row_field_accesses(node: Any) -> dict[str, set[str]]:
+    """Walk an expression tree and return {rows_name: {sub_field, ...}} for all RowFieldAccess nodes."""
+    result: dict[str, set[str]] = {}
+    for cur in _walk_expr(node):
+        if isinstance(cur, RowFieldAccess):
+            result.setdefault(cur.rows_name, set()).add(cur.field_name)
     return result
 
 
@@ -647,6 +633,74 @@ def emit_validate_call(
     return snippet
 
 
+def _emit_pending_validates(
+    snippet: CodeSnippet,
+    callables: dict[str, CallableEntry],
+    decoder_name: str,
+    fail_hard: bool,
+    parsed_fields: set[str],
+    emitted_hooks: set[str],
+    variant_name: str | None = None,
+) -> None:
+    """Emit all validate_* hooks whose deps are now satisfied."""
+    for hname in sorted(callables):
+        if hname in emitted_hooks:
+            continue
+        entry = callables[hname]
+        if entry.kind != "validate":
+            continue
+        if _field_deps(entry).issubset(parsed_fields):
+            snippet += emit_validate_call(
+                decoder_name, hname, entry, fail_hard, variant_name
+            )
+            emitted_hooks.add(hname)
+
+
+def _emit_literal_check(
+    snippet: CodeSnippet, width: int, value: int, fail_hard: bool,
+) -> None:
+    """Emit a bitrow_get_bits literal comparison and advance bit_pos."""
+    val_c = hex(value)
+    if fail_hard:
+        snippet.append_line(
+            f"if (bitrow_get_bits(b, bit_pos, {width}) != {val_c})"
+        )
+        with snippet.with_indent(4):
+            _emit_decode_failure(snippet, "DECODE_FAIL_SANITY", fail_hard)
+    else:
+        with snippet.block(
+            f"if (bitrow_get_bits(b, bit_pos, {width}) != {val_c})"
+        ):
+            _emit_decode_failure(snippet, "DECODE_FAIL_SANITY", fail_hard)
+    snippet.append_line(f"bit_pos += {width};")
+
+
+def _emit_sub_fields(
+    snippet: CodeSnippet,
+    sub_fields: tuple,
+    array_prefix: str,
+    index_var: str,
+    fail_hard: bool,
+) -> None:
+    """Emit bitrow_get_bits extraction for each field in a Repeatable's _fields.
+
+    For BitsSpec: emits ``array_prefix_name[index_var] = bitrow_get_bits(...)``.
+    For LiteralSpec: emits a sanity check with the appropriate failure mode.
+    Skip fields (``_``-prefixed) just advance ``bit_pos``.
+    """
+    for sf_name, sf_spec in sub_fields:
+        if isinstance(sf_spec, BitsSpec):
+            if sf_name.startswith("_"):
+                snippet.append_line(f"bit_pos += {sf_spec.width};")
+            else:
+                snippet.append_line(
+                    f"{array_prefix}_{sf_name}[{index_var}] = bitrow_get_bits(b, bit_pos, {sf_spec.width});"
+                )
+                snippet.append_line(f"bit_pos += {sf_spec.width};")
+        elif isinstance(sf_spec, LiteralSpec):
+            _emit_literal_check(snippet, sf_spec.width, sf_spec.value, fail_hard)
+
+
 # ---------------------------------------------------------------------------
 # Field extraction code generation
 # ---------------------------------------------------------------------------
@@ -664,10 +718,6 @@ def emit_fields(
     """Emit field extraction code and auto-insert validate_* calls. Returns a CodeSnippet."""
     snippet = CodeSnippet()
 
-    validate_hooks = {
-        name: entry for name, entry in callables.items() if entry.kind == "validate"
-    }
-
     for field_name, spec in fields:
         if isinstance(spec, BitsSpec):
             n = spec.width
@@ -681,19 +731,7 @@ def emit_fields(
                 parsed_fields.add(field_name)
 
         elif isinstance(spec, LiteralSpec):
-            val_c = hex(spec.value)
-            if fail_hard:
-                snippet.append_line(
-                    f"if (bitrow_get_bits(b, bit_pos, {spec.width}) != {val_c})"
-                )
-                with snippet.with_indent(4):
-                    _emit_decode_failure(snippet, "DECODE_FAIL_SANITY", fail_hard)
-            else:
-                with snippet.block(
-                    f"if (bitrow_get_bits(b, bit_pos, {spec.width}) != {val_c})"
-                ):
-                    _emit_decode_failure(snippet, "DECODE_FAIL_SANITY", fail_hard)
-            snippet.append_line(f"bit_pos += {spec.width};")
+            _emit_literal_check(snippet, spec.width, spec.value, fail_hard)
 
         elif isinstance(spec, RepeatSpec):
             sub_fields = [
@@ -705,29 +743,7 @@ def emit_fields(
             for sf_name, _ in sub_fields:
                 snippet.append_line(f"int {field_name}_{sf_name}[{count_expr}];")
             with snippet.block(f"for (int _i = 0; _i < {count_expr}; _i++)"):
-                for sf_name, sf_spec in spec.sub_protocol._fields:
-                    if isinstance(sf_spec, BitsSpec):
-                        if sf_name.startswith("_"):
-                            snippet.append_line(f"bit_pos += {sf_spec.width};")
-                        else:
-                            snippet.append_line(
-                                f"{field_name}_{sf_name}[_i] = bitrow_get_bits(b, bit_pos, {sf_spec.width});"
-                            )
-                            snippet.append_line(f"bit_pos += {sf_spec.width};")
-                    elif isinstance(sf_spec, LiteralSpec):
-                        val_c = hex(sf_spec.value)
-                        if fail_hard:
-                            snippet.append_line(
-                                f"if (bitrow_get_bits(b, bit_pos, {sf_spec.width}) != {val_c})"
-                            )
-                            with snippet.with_indent(4):
-                                _emit_decode_failure(snippet, "DECODE_FAIL_SANITY", fail_hard)
-                        else:
-                            with snippet.block(
-                                f"if (bitrow_get_bits(b, bit_pos, {sf_spec.width}) != {val_c})"
-                            ):
-                                _emit_decode_failure(snippet, "DECODE_FAIL_SANITY", fail_hard)
-                        snippet.append_line(f"bit_pos += {sf_spec.width};")
+                _emit_sub_fields(snippet, spec.sub_protocol._fields, field_name, "_i", fail_hard)
             for sf_name, _ in sub_fields:
                 parsed_fields.add(f"{field_name}_{sf_name}")
             parsed_fields.add(field_name)
@@ -740,96 +756,35 @@ def emit_fields(
                 with snippet.with_indent(4):
                     snippet.append_line("return DECODE_ABORT_LENGTH;")
 
-            if isinstance(spec.row_spec, FirstValid):
-                bits = spec.row_spec.bits
-                sub_fields = [
-                    (n, s)
-                    for n, s in spec.sub_protocol._fields
-                    if isinstance(s, BitsSpec) and not n.startswith("_")
-                ]
-                for sf_name, _ in sub_fields:
-                    snippet.append_line(f"int {field_name}_{sf_name}[BITBUF_ROWS];")
-                    parsed_fields.add(f"{field_name}_{sf_name}")
-                parsed_fields.add(field_name)
-                snippet.append_line("int result = 0;")
-                with snippet.block("for (int _r = 0; _r < bitbuffer->num_rows; ++_r)"):
-                    with snippet.block(f"if (bitbuffer->bits_per_row[_r] != {bits})"):
-                        snippet.append_line("result = DECODE_ABORT_LENGTH;")
-                        snippet.append_line("continue;")
-                    snippet.append_line("uint8_t *b = bitbuffer->bb[_r];")
-                    snippet.append_line("unsigned bit_pos = 0;")
-                    for sf_name, sf_spec in spec.sub_protocol._fields:
-                        if isinstance(sf_spec, BitsSpec):
-                            if sf_name.startswith("_"):
-                                snippet.append_line(f"bit_pos += {sf_spec.width};")
-                            else:
-                                snippet.append_line(
-                                    f"{field_name}_{sf_name}[_r] = bitrow_get_bits(b, bit_pos, {sf_spec.width});"
-                                )
-                                snippet.append_line(f"bit_pos += {sf_spec.width};")
-                        elif isinstance(sf_spec, LiteralSpec):
-                            val_c = hex(sf_spec.value)
-                            with snippet.block(
-                                f"if (bitrow_get_bits(b, bit_pos, {sf_spec.width}) != {val_c})"
-                            ):
-                                snippet.append_line("result = DECODE_FAIL_SANITY;")
-                                snippet.append_line("continue;")
-                            snippet.append_line(f"bit_pos += {sf_spec.width};")
-                snippet.append_line("return result;")
+            # FirstValid RowsSpec is handled by emit_decode_fn directly;
+            # emit_fields only sees static-tuple RowsSpec.
+            assert not isinstance(spec.row_spec, FirstValid)
 
-            else:
-                row_indices = spec.row_spec
-                n_rows = len(row_indices)
-                sub_fields = [
-                    (n, s)
-                    for n, s in spec.sub_protocol._fields
-                    if isinstance(s, BitsSpec) and not n.startswith("_")
-                ]
-                for sf_name, _ in sub_fields:
-                    snippet.append_line(f"int {field_name}_{sf_name}[BITBUF_ROWS];")
-                    parsed_fields.add(f"{field_name}_{sf_name}")
-                parsed_fields.add(field_name)
-                rows_c = ", ".join(str(r) for r in row_indices)
-                snippet.append_line(
-                    f"static uint16_t const _rows_{field_name}[] = {{{rows_c}}};"
-                )
-                with snippet.block(f"for (size_t _k = 0; _k < {n_rows}; ++_k)"):
-                    snippet.append_line(f"unsigned _r = _rows_{field_name}[_k];")
-                    snippet.append_line("uint8_t *b = bitbuffer->bb[_r];")
-                    snippet.append_line("unsigned bit_pos = 0;")
-                    for sf_name, sf_spec in spec.sub_protocol._fields:
-                        if isinstance(sf_spec, BitsSpec):
-                            if sf_name.startswith("_"):
-                                snippet.append_line(f"bit_pos += {sf_spec.width};")
-                            else:
-                                snippet.append_line(
-                                    f"{field_name}_{sf_name}[_r] = bitrow_get_bits(b, bit_pos, {sf_spec.width});"
-                                )
-                                snippet.append_line(f"bit_pos += {sf_spec.width};")
-                        elif isinstance(sf_spec, LiteralSpec):
-                            val_c = hex(sf_spec.value)
-                            if fail_hard:
-                                snippet.append_line(
-                                    f"if (bitrow_get_bits(b, bit_pos, {sf_spec.width}) != {val_c})"
-                                )
-                                with snippet.with_indent(4):
-                                    _emit_decode_failure(snippet, "DECODE_FAIL_SANITY", fail_hard)
-                            else:
-                                with snippet.block(
-                                    f"if (bitrow_get_bits(b, bit_pos, {sf_spec.width}) != {val_c})"
-                                ):
-                                    _emit_decode_failure(snippet, "DECODE_FAIL_SANITY", fail_hard)
-                            snippet.append_line(f"bit_pos += {sf_spec.width};")
+            row_indices = spec.row_spec
+            n_rows = len(row_indices)
+            sub_fields = [
+                (n, s)
+                for n, s in spec.sub_protocol._fields
+                if isinstance(s, BitsSpec) and not n.startswith("_")
+            ]
+            for sf_name, _ in sub_fields:
+                snippet.append_line(f"int {field_name}_{sf_name}[BITBUF_ROWS];")
+                parsed_fields.add(f"{field_name}_{sf_name}")
+            parsed_fields.add(field_name)
+            rows_c = ", ".join(str(r) for r in row_indices)
+            snippet.append_line(
+                f"static uint16_t const _rows_{field_name}[] = {{{rows_c}}};"
+            )
+            with snippet.block(f"for (size_t _k = 0; _k < {n_rows}; ++_k)"):
+                snippet.append_line(f"unsigned _r = _rows_{field_name}[_k];")
+                snippet.append_line("uint8_t *b = bitbuffer->bb[_r];")
+                snippet.append_line("unsigned bit_pos = 0;")
+                _emit_sub_fields(snippet, spec.sub_protocol._fields, field_name, "_r", fail_hard)
 
-        for hname in sorted(validate_hooks.keys()):
-            if hname in emitted_hooks:
-                continue
-            entry = validate_hooks[hname]
-            if _field_deps(entry).issubset(parsed_fields):
-                snippet += emit_validate_call(
-                    decoder_name, hname, entry, fail_hard, variant_name
-                )
-                emitted_hooks.add(hname)
+        _emit_pending_validates(
+            snippet, callables, decoder_name, fail_hard,
+            parsed_fields, emitted_hooks, variant_name,
+        )
 
     return snippet
 
@@ -837,6 +792,34 @@ def emit_fields(
 # ---------------------------------------------------------------------------
 # Decode function generation
 # ---------------------------------------------------------------------------
+
+
+def _emit_decode_tail(
+    snippet: CodeSnippet,
+    cls: type,
+    callables: dict[str, CallableEntry],
+    decoder_name: str,
+    fail_hard: bool,
+    parsed_fields: set[str],
+    emitted_hooks: set[str],
+) -> None:
+    """Emit the resolve-deps → pending-validates → variants-or-data_make tail."""
+    _resolve_callable_deps(callables, parsed_fields)
+    _emit_pending_validates(
+        snippet, callables, decoder_name, fail_hard,
+        parsed_fields, emitted_hooks,
+    )
+
+    variants = list(cls._variants)
+    if variants:
+        snippet += _emit_variants(
+            cls, variants, decoder_name, callables,
+            fail_hard, parsed_fields, emitted_hooks,
+        )
+    else:
+        records = list(cls.json_records())
+        snippet += emit_data_make(records, decoder_name, None, callables)
+        snippet.append_line("return 1;")
 
 
 def emit_decode_fn(decoder_name: str, instance: Decoder) -> CodeSnippet:
@@ -910,23 +893,7 @@ def emit_decode_fn(decoder_name: str, instance: Decoder) -> CodeSnippet:
                 snippet.append_line("uint8_t *b = bitbuffer->bb[_r];")
                 snippet.append_line("unsigned bit_pos = 0;")
 
-                for sf_name, sf_spec in fv_spec.sub_protocol._fields:
-                    if isinstance(sf_spec, BitsSpec):
-                        if sf_name.startswith("_"):
-                            snippet.append_line(f"bit_pos += {sf_spec.width};")
-                        else:
-                            snippet.append_line(
-                                f"{fv_name}_{sf_name}[_r] = bitrow_get_bits(b, bit_pos, {sf_spec.width});"
-                            )
-                            snippet.append_line(f"bit_pos += {sf_spec.width};")
-                    elif isinstance(sf_spec, LiteralSpec):
-                        val_c = hex(sf_spec.value)
-                        with snippet.block(
-                            f"if (bitrow_get_bits(b, bit_pos, {sf_spec.width}) != {val_c})"
-                        ):
-                            snippet.append_line("result = DECODE_FAIL_SANITY;")
-                            snippet.append_line("continue;")
-                        snippet.append_line(f"bit_pos += {sf_spec.width};")
+                _emit_sub_fields(snippet, fv_spec.sub_protocol._fields, fv_name, "_r", False)
 
                 snippet += emit_fields(
                     post_fields,
@@ -937,35 +904,10 @@ def emit_decode_fn(decoder_name: str, instance: Decoder) -> CodeSnippet:
                     emitted_hooks,
                 )
 
-                _resolve_callable_deps(callables, parsed_fields)
-
-                validate_hooks = {
-                    n: e for n, e in callables.items() if e.kind == "validate"
-                }
-                for hname in sorted(validate_hooks.keys()):
-                    if hname not in emitted_hooks:
-                        entry = validate_hooks[hname]
-                        if _field_deps(entry).issubset(parsed_fields):
-                            snippet += emit_validate_call(
-                                decoder_name, hname, entry, False
-                            )
-                            emitted_hooks.add(hname)
-
-                variants = list(cls._variants)
-                if variants:
-                    snippet += _emit_variants(
-                        cls,
-                        variants,
-                        decoder_name,
-                        callables,
-                        False,
-                        parsed_fields,
-                        emitted_hooks,
-                    )
-                else:
-                    records = list(cls.json_records())
-                    snippet += emit_data_make(records, decoder_name, None, cls._callables)
-                    snippet.append_line("return 1;")
+                _emit_decode_tail(
+                    snippet, cls, callables, decoder_name, False,
+                    parsed_fields, emitted_hooks,
+                )
 
             snippet.append_line("return result;")
 
@@ -975,35 +917,10 @@ def emit_decode_fn(decoder_name: str, instance: Decoder) -> CodeSnippet:
                 fields, callables, decoder_name, True, parsed_fields, emitted_hooks
             )
 
-            # Resolve callable deps: callables whose own deps are satisfied
-            # become available as deps for validate hooks.
-            _resolve_callable_deps(callables, parsed_fields)
-
-            validate_hooks = {
-                n: e for n, e in callables.items() if e.kind == "validate"
-            }
-            for hname in sorted(validate_hooks.keys()):
-                if hname not in emitted_hooks:
-                    entry = validate_hooks[hname]
-                    if _field_deps(entry).issubset(parsed_fields):
-                        snippet += emit_validate_call(decoder_name, hname, entry, True)
-                        emitted_hooks.add(hname)
-
-            variants = list(cls._variants)
-            if variants:
-                snippet += _emit_variants(
-                    cls,
-                    variants,
-                    decoder_name,
-                    callables,
-                    True,
-                    parsed_fields,
-                    emitted_hooks,
-                )
-            else:
-                records = list(cls.json_records())
-                snippet += emit_data_make(records, decoder_name, None, cls._callables)
-                snippet.append_line("return 1;")
+            _emit_decode_tail(
+                snippet, cls, callables, decoder_name, True,
+                parsed_fields, emitted_hooks,
+            )
 
     # Check for validate hooks that never fired.
     all_validate = {n for n, e in callables.items() if e.kind == "validate"}
@@ -1039,9 +956,6 @@ def _emit_variants(
                 v_emitted_hooks = set(emitted_hooks)
                 all_callables = dict(parent_callables)
                 all_callables.update(vcls._callables)
-                variant_validate = {
-                    n: e for n, e in vcls._callables.items() if e.kind == "validate"
-                }
 
                 body += emit_fields(
                     list(vcls._fields),
@@ -1053,15 +967,10 @@ def _emit_variants(
                     variant_name=vcls.__name__,
                 )
 
-                for hname in sorted(variant_validate.keys()):
-                    if hname not in v_emitted_hooks:
-                        entry = variant_validate[hname]
-                        if _field_deps(entry).issubset(v_parsed):
-                            body += emit_validate_call(
-                                decoder_name, hname, entry, fail_hard,
-                                variant_name=vcls.__name__,
-                            )
-                            v_emitted_hooks.add(hname)
+                _emit_pending_validates(
+                    body, all_callables, decoder_name, fail_hard,
+                    v_parsed, v_emitted_hooks, variant_name=vcls.__name__,
+                )
 
                 records = list(vcls.json_records()) or _default_variant_records(cls, vcls)
                 body += emit_data_make(
@@ -1214,13 +1123,13 @@ def _compile_single_decoder(instance: Decoder) -> str:
     result.append_line("")
 
     # Emit static constexpr C functions for all inline callables
-    for c_name, entry in _get_callables(cls):
+    for c_name, entry in cls._callables.items():
         fn_snippet = emit_callable(decoder_name, c_name, entry)
         if fn_snippet.lines():
             result += fn_snippet
             result.append_line("")
     for vcls in cls._variants:
-        for c_name, entry in _get_callables(vcls):
+        for c_name, entry in vcls._callables.items():
             fn_snippet = emit_callable(decoder_name, c_name, entry, vcls.__name__)
             if fn_snippet.lines():
                 result += fn_snippet
@@ -1252,7 +1161,7 @@ def _compile_dispatcher(instance: Dispatcher) -> str:
     # Emit static constexpr C functions for each delegate's callables
     for delegate in delegates:
         d_name = type(delegate).__name__
-        for c_name, entry in _get_callables(type(delegate)):
+        for c_name, entry in type(delegate)._callables.items():
             fn_snippet = emit_callable(d_name, c_name, entry)
             if fn_snippet.lines():
                 result += fn_snippet
