@@ -50,61 +50,54 @@ class thermopro_tp211b(Decoder):
             long_width=105,
             reset_limit=1500,
         )
+    …
 ```
 
 
 ### prepare() and the bitbuffer pipeline
 
 You define all the bitbuffer preprocessing (preamble search, Manchester
-decode, inversion, and so on) in a method called `prepare`.  The method
-takes a `BitbufferPipeline` and returns it after chaining steps.  The
-pipeline carries a *tip*: a `(bitbuffer, row, offset)` state that starts at
-`(bitbuffer, 0, 0)` and gets narrowed by each step.  Every step operates on
-the current tip — there is no distinction between "row buffer" and
-"post-manchester bits" for the user; it's always "whatever the tip points
-at right now".
+decode, inversion, and so on) in a method called `prepare`. The method transforms the bitbuffer by applying the following operations in the specified order
+and updating a `row` and `offset` variable that describe from which row and which bit offset of the resulting bitbuffer to start parsing:
 
-* `invert()` — emits `bitbuffer_invert(bitbuffer);`, flipping every bit in
-  every row of the tip.
-* `reflect()` — per-row `reflect_bytes`, bit-reversing each byte in place.
-* `find_repeated_row(min_repeats, min_bits, max_bits=None)` — locate a
-  repeated row and pin the tip's `row` to it.  With `max_bits=None` the
-  length must match `min_bits` exactly; otherwise the length must be
-  `<= max_bits`.
-* `search_preamble(pattern, bit_length=None, scan_all_rows=False)` — search
-  for a bit pattern and advance the tip's `offset` to just after the match.
-  `bit_length` defaults to `pattern.bit_length()`.  Use
-  `scan_all_rows=True` when the match may appear on any row (e.g. TPMS);
-  the compiler emits an outer row-scan loop and records which row matched.
-* `skip_bits(n)` — adjust the tip's `offset` by `n` bits.  Positive skips
-  forward; negative skips backward (with a C runtime sanity check that the
-  offset does not underflow).
-* `manchester_decode(max_bits=0)` — Manchester-decode from the tip
-  `(row, offset)` into a freshly declared `bitbuffer_t packet_bits`, then
-  rebind the tip: `bitbuffer = &packet_bits;` and `row = 0`, `offset = 0`.
-  Subsequent pipeline steps and field extractions run against `packet_bits`.
-  Because the rebinding is transparent, a later `invert()` or `reflect()`
-  simply operates on the decoded packet.
-
-For row-selection strategies (such as scanning multiple rows for a valid
-candidate), use `Rows[FirstValid(bits), SubProtocol]` as a field type rather
-than a pipeline step (see "Rows" below).
+* `invert()` emits `bitbuffer_invert(bitbuffer);`, flips every bit in every
+  row.
+* `reflect()` applies per-row `reflect_bytes`, bit-reversing each byte.
+* `find_repeated_row(min_repeats, min_bits, max_bits=None)` locates a repeated
+  row and pins the tip's `row` to it. With `max_bits=None` the length must
+  match `min_bits` exactly; otherwise the length must be `<= max_bits`.
+* `search_preamble(pattern, bit_length=None, scan_all_rows=False)` searches for
+  a bit pattern and advances the tip's `offset` to just after the match.
+  `bit_length` defaults to `pattern.bit_length()`. Use `scan_all_rows=True`
+  when the match may appear on any row. The compiler emits an outer
+  row-scan loop and records which row matched.
+* `skip_bits(n)` adjusts the tip's `offset` by `n` bits. Positive values skip
+  forward; negative values skip backward. The C runtime checks that the offset
+  does not underflow.
+* `manchester_decode(max_bits=0)` decodes Manchester-encoded bits.
 
 Here's an example:
 
 ```python
+class thermopro_tp211b(Decoder):
+    …
+
     def prepare(self, buf):
         return buf.search_preamble(0x552DD4, bit_length=24).skip_bits(24)
+
+    …
 ```
 
-This prepares the bitbuffer for parsing it into bit fields.
 
 ### Fields
 
-Bit fields are parsed automatically. They're declared as class annotations using
-the `Bits`, `Literal`, `Repeat`, and `Rows` type constructors:
+Bit fields are parsed automatically. They're declared fields in your Protocol class using
+type annotations like `Bits`, `Literal`, `Repeat`, and `Rows` type constructors:
 
 ```python
+class thermopro_tp211b(Decoder):
+    …
+
     id: Bits[24]
     flags: Bits[4]
     temp_raw: Bits[12]
@@ -113,61 +106,25 @@ the `Bits`, `Literal`, `Repeat`, and `Rows` type constructors:
 ```
 
 The compiler converts these into bit-extraction code at the corresponding
-offsets. `Bits[n]` extracts an `n`-bit unsigned integer into a local C variable
-of the same name. `Literal[value, n]` extracts `n` bits and asserts that they
-equal `value`, returning `DECODE_FAIL_SANITY` on mismatch.  Fields whose names
-start with `_` are skipped (their bits are consumed but no variable is emitted).
-
-### Rows (multi-row bitbuffer)
-
-`Repeat[count, SubProtocol]` parses the same sub-layout multiple times along the
-single extracted `b[]` buffer. `Rows[rows_tuple, SubProtocol]` instead parses
-that sub-layout once per listed bitbuffer row index, using
-`bitrow_get_bits(bitbuffer->bb[row], …)` for each row. Optional third argument:
-`((row_index, exact_bits), …)` emits a `bits_per_row[row]` length check per pair.
-
-The compiler declares `int parent_subfield[BITBUF_ROWS]` for each sub-field and
-only writes indices present in `rows_tuple` (sparse indexing). In expressions,
-use `FieldRef('parent_subfield')[row_index]` (or a `def foo(self, parent_subfield): …`
-parameter bound to that array). `Rev8(x)` emits `reverse8(x)` in C.
-
-The sub-protocol must not contain nested `Rows` or `Repeat` fields. To scan
-multiple rows for the first valid candidate, use the field-spec form
-`Rows[FirstValid(bits), SubProtocol]`.
-
-### Variants
-
-Nested `Variant` subclasses split decoding after the parent protocol's fields.
-Each variant must define `when(self, …) -> bool` with explicit parameters for
-every field (parent or variant) the predicate uses — the same declaration
-style as methods.  The body must be a DSL expression; a non-zero value
-selects that branch (`if` / `else if` in the emitted decoder).  Variant
-subclasses may declare their own `Bits[]` / `Literal[]` fields and their own
-methods, which are extracted and emitted only on the branch where `when`
-holds.  Variants may not contain nested `Rows[]` or `Repeat[]`.  If no
-variant's `when` matches the decode function returns `DECODE_FAIL_SANITY`.
-
-A variant inherits parent fields and parent methods for reference in its
-`when`, its methods, and its `to_json`.  Parent-level methods are emitted
-once (parent-prefixed) and called from variant bodies without the variant
-prefix; variant-level methods are emitted once per variant (variant-prefixed).
-`acurite_01185m.py` demonstrates conditional field output by splitting into
-four variants rather than using a run-time `DATA_COND` guard.
+offsets. `Bits[n]` extracts an `n`-bit unsigned integer.  `Literal[value, n]`
+extracts `n` bits and asserts that they equal `value`, returning
+`DECODE_FAIL_SANITY` on mismatch.  Fields whose names start with `_` are
+skipped.
 
 ### Methods
 
-A method is any non-`validate_*` callable defined in the decoder (or variant)
-class body.  Every method must declare explicit parameters (naming the fields
-or other callables whose results it consumes) and an explicit return type
-annotation — the compiler rejects the class at import time if either is
-missing.
+A method is a Python function defined in the decoder class.  Methods are simple
+Python arithmetic expressions that are directly compiled to C. They act like
+computed counterparts of fields. They can be used like fields in most places,
+but they're expressions that derive their value from bit fields that were
+parsed, or from other methods.
 
-The compiler emits every method as a `static inline` C function defined ahead
-of the decode function, and calls it directly at each use site.  There is no
-intermediate C local for a method's result; the function is inlined wherever
-the value is needed.  For example:
+For example:
 
 ```python
+class thermopro_tp211b(Decoder):
+    …
+
     def temperature_c(self, temp_raw: int) -> float:
         return (temp_raw - 500) * 0.1
 ```
@@ -180,38 +137,30 @@ static inline float thermopro_tp211b_temperature_c(int temp_raw) {
 }
 ```
 
-and, wherever `self.temperature_c` appears in `to_json`, a call such as
+and, wherever `self.temperature_c` appears in `to_json`, a call like this is emitted:
 
 ```c
 "temperature_C", "", DATA_DOUBLE, (double)thermopro_tp211b_temperature_c(temp_raw)
 ```
 
-The return annotation picks the C type: `int` → `int`/`DATA_INT`, `float` →
-`float`/`DATA_DOUBLE`, `str` → `const char *`/`DATA_STRING`.
-
-A method may reference the result of another method — the compiler inlines
-the nested calls.  For example if a second method takes `cmd` as a parameter
-and `cmd` is itself a method defined on the class, the call site emits
-`outer(inner_cmd_prefix(…))` automatically.
-
-Parameters may be field names declared on the class, results of other
-callables, or (for validate hooks only — see below) the special
-`fail_value=DecodeFail.*`.  Names that cannot be resolved to a field, a
-callable, or a `BitbufferPipeline` parameter raise a compile-time error.
+TODO: introduce here the set of operators that an expression can use. you can say "in addition to the usual arithmetic operators (-,+, &, etc), you can use predefined operators like Reverse8, ..."
 
 #### External methods
 
-When the body is a bare `...` (Ellipsis), the method is *external*: the
-compiler emits only a `static inline` forward declaration and the user
-supplies the definition in a companion header.  For example, for
-`thermopro_tp211b`:
+If the method is too complicated to express as a simple Python arithmetic expression, you can specify it as a C function in a companion
+header file. In that case, you still have to define the signature of the method in Python, but you can give it a bare body using the Python
+ellipsis literal `...`. We call such methods "external".
+
+For example,
 
 ```python
+class thermopro_tp211b(Decoder):
+    …
     def validate_checksum(self, id: int, flags: int, temp_raw: int, checksum: int,
                           fail_value=DecodeFail.MIC) -> bool: ...
 ```
 
-the compiler writes `#include "thermopro_tp211b.h"` into the generated C.
+The compiler writes `#include "thermopro_tp211b.h"` into the generated C.
 The header is expected to define
 `static inline bool thermopro_tp211b_validate_checksum(int id, int flags, int temp_raw, int checksum)`
 and is checked in under `src/devices/<stem>.h`.
@@ -219,65 +168,187 @@ and is checked in under `src/devices/<stem>.h`.
 ### `validate_*` hooks and `DecodeFail`
 
 A method whose name starts with `validate_` is a *validation hook*.  Hooks
-share the method machinery — explicit parameters, explicit return type (must
-be `-> bool`), inline vs. external selection — plus two extras:
+share the method machinery, with two twists:
 
-1. The final parameter must be `fail_value=DecodeFail.*` with a default.  The
-   compiler reads that default to decide which `DECODE_*` token to return on
-   failure.  `fail_value` is not passed in the generated C call.
-2. The call is emitted *automatically* — the user never writes it.  The
-   codegen walks each hook's declared parameters (excluding `fail_value`) as
-   dependencies and emits `if (!hook(...)) return <token>;` at the earliest
-   point in the decode function where every dependency is in scope.  When
-   several hooks become eligible at the same checkpoint, the codegen orders
-   them lexicographically.
+1. The final parameter of a validation hook must be `fail_value=DecodeFail.*`
+   with a default.  The compiler reads that default to decide which
+   `DECODE_*` token to return on failure.  `fail_value` is not passed in the
+   generated C call.
+2. The call is emitted *automatically* — the user never invokes a hook from
+   `to_json` or anywhere else.  As soon as every field declared in the
+   hook's signature has been parsed, the compiler emits a guard that exits
+   with the `fail_value` token if the hook returns false.
 
-Inside a `FirstValid` row loop the return is replaced by
-`result = <token>; continue;`, so a failing row is skipped while the outer
-loop retries the next row.
-
-Example:
+For example, given
 
 ```python
-    def validate_checksum(self, sensor_id: int, checksum: int,
+    sensor_id: Bits[8]
+    checksum: Bits[8]
+
+    def validate_checksum(self, sensor_id, checksum,
                           fail_value=DecodeFail.MIC) -> bool:
         return ((sensor_id & 0xFF) + checksum) & 0xFF == 0
 ```
 
-compiles to a `static inline bool prefix_validate_checksum(int sensor_id, int checksum)`
-definition and an automatic guard
+the compiler emits the hook definition near the top of the file and, inside
+the decode function, injects the guard right after both dependencies are
+in scope:
 
 ```c
+static inline bool prefix_validate_checksum(int sensor_id, int checksum) {
+    return (((sensor_id & 0xff) + checksum) & 0xff) == 0;
+}
+/* … */
+int sensor_id = bitrow_get_bits(b, bit_pos, 8);
+bit_pos += 8;
+int checksum = bitrow_get_bits(b, bit_pos, 8);
+bit_pos += 8;
 if (!prefix_validate_checksum(sensor_id, checksum))
     return DECODE_FAIL_MIC;
 ```
-
-placed right after `sensor_id` and `checksum` are both extracted.
 
 As with regular methods, replacing the body with `...` turns the hook
 *external*: the compiler emits only a declaration and the user writes the
 implementation in the companion header.  `DecodeFail` is re-exported from
 `proto_compiler` for use in hook signatures.
 
-### `LfsrDigest8`
+### Repeat (variable-length sub-layouts in one row)
 
-`LfsrDigest8(b0, b1, …, gen=0x98, key=0x3e)` builds an expression that calls
-rtl_433’s `lfsr_digest8` (`bit_util.h`) on the given byte expressions, for example:
+Some payloads contain a variable number of same-shape records back-to-back
+in the same row.  The `Repeat[count_expr, SubProtocol]` field spec handles this. The resulting code
+parses `SubProtocol`'s layout `count_expr` times in a row and stores the result
+in parallel arrays.
 
-```c
-(lfsr_digest8((uint8_t const[]){b0, b1, b2}, 3, 0x98, 0x3e))
+For example,
+
+```python
+class sensor_reading(Repeatable):
+    sensor_type: Bits[4]
+    reading: Bits[12]
+
+class lacrosse_tx31u(Decoder):
+    …
+    measurements: Bits[3]
+    readings: Repeat[FieldRef("measurements"), sensor_reading]
 ```
 
-Use it inside `validate_*` or any method for MIC-style digests.
+Each sub-field becomes a C array sized by `count_expr`, populated inside a
+`for` loop that advances `bit_pos` by the sub-layout width per iteration:
+
+```c
+int readings_sensor_type[measurements];
+int readings_reading[measurements];
+for (int _i = 0; _i < measurements; _i++) {
+    readings_sensor_type[_i] = bitrow_get_bits(b, bit_pos, 4);
+    bit_pos += 4;
+    readings_reading[_i] = bitrow_get_bits(b, bit_pos, 12);
+    bit_pos += 12;
+}
+```
+
+`count_expr` may be an integer literal or the name of a field
+wrapped in `FieldRef(…)`.  The `SubProtocol`
+class must inherit from `Repeatable` and may declare only `Bits[]` and
+`Literal[]` fields. Deeply nested Repeatable's aren't supposed.
+
+### Rows (fields that live on specific bitbuffer rows)
+
+Some protocols spread information across multiple rows of the raw
+bitbuffer rather than packing everything into one.  The `Rows[row_spec, SubProtocol]` handles
+these situations. It parses a
+sub-layout once for each row specified in `row_spec`:
+
+```python
+class row_layout(Repeatable):
+    b0: Bits[8]
+    b1: Bits[8]
+    b2: Bits[8]
+    b3: Bits[8]
+    b4: Bits[4]
+
+class alectov1(Decoder):
+    …
+    cells: Rows[(1, 2, 3, 4, 5, 6), row_layout, ((1, 36),)]
+```
+
+`row_spec` can be either either:
+
+- **A tuple of row indices** `(row1, row2, …)`. The emitted code parses exactly those rows.
+- **`FirstValid(bits)`**. The emitted code scans every row for the first one whose length
+  equals `bits` and for which no `validate_*` hook fails.
+
+In methods, you can reference the resulting fields like with `cells[1].b0`.
+
+### Variants
+
+Some protocols change layout depending on a header field. For example, a weather sensor
+can have a "message_id" field that determines whether the rest of the packet has 
+humidity readings or temperature readings.
+You can express these variable packets in Python using
+a `Variant` subclasses nested inside the parent
+`Decoder`.  At decode time the compiler extracts the parent's fields first,
+then evaluates each variant's `when()` predicate to decide which variant to actually parse.
+
+Here's an example:
+
+```python
+class current_cost_base(Decoder):
+    …
+    msg_type: Bits[4]
+    device_id: Bits[12]
+
+    class meter(Variant):
+        def when(self, msg_type) -> bool:
+            return msg_type == 0
+
+        ch0_valid: Bits[1]
+        ch0_power: Bits[15]
+        ch1_valid: Bits[1]
+        ch1_power: Bits[15]
+
+        def power0_W(self, ch0_valid, ch0_power) -> int:
+            return ch0_valid * ch0_power
+
+    class counter(Variant):
+        def when(self, msg_type) -> bool:
+            return msg_type == 4
+
+        sensor_type: Bits[8]
+        impulse: Bits[32]
+```
+
+compiles to something like
+
+```c
+int msg_type = bitrow_get_bits(b, bit_pos, 4);  bit_pos += 4;
+int device_id = bitrow_get_bits(b, bit_pos, 12); bit_pos += 12;
+if ((msg_type == 0)) {
+    int ch0_valid = bitrow_get_bits(b, bit_pos, 1);  bit_pos += 1;
+    /* … meter body, data_make, return 1; */
+} else if ((msg_type == 4)) {
+    int sensor_type = bitrow_get_bits(b, bit_pos, 8); bit_pos += 8;
+    /* … counter body, data_make, return 1; */
+}
+return DECODE_FAIL_SANITY;
+```
+
+Each variant must define `when(self, …) -> bool`. If this method returns true, the
+Variant is selected. 
+If no variant's `when` matches, the decode function returns `DECODE_FAIL_SANITY`.
+
+Variants may not contain nested `Rows[]` or `Repeat[]`.
+
+A variant inherits parent fields and parent methods for reference in its
+`when`, its methods, and its `to_json`.  
 
 ### to_json
 
 By default the compiler emits a `data_make` call that outputs every non-private
-field and every non-`validate_*` method.  For a variant the model string comes
-from the parent decoder's `device_name` and parent fields/methods are included
-before the variant's own.  You can override `to_json` to change that behaviour
-and explicitly specify every key name, label, data type, and formatting to be
-emitted:
+field and every method (except special ones like `validate_*` methods).  You can
+override `to_json` to change this behavior. You can explicitly specify the key
+name, label, data type, and formatting to be emitted.
+
+For example, your decoder might supply
 
 ```python
     def to_json(self) -> list[JsonRecord]:
@@ -289,13 +360,8 @@ emitted:
         ]
 ```
 
-Each `JsonRecord` maps to one entry in the generated `data_make(...)` call. The
+Each `JsonRecord` maps to one entry in the generated `data_make(…)` call. The
 `fmt` parameter emits a `DATA_FORMAT` directive.
-
-To emit a row only under certain conditions, use variant dispatch: define
-multiple `Variant` classes whose `when` methods gate on the predicate and whose
-`to_json` lists include only the applicable fields.  See `acurite_01185m.py`
-for an example that splits on which temperature probes are plugged in.
 
 ## Code reuse through inheritance
 
@@ -323,38 +389,12 @@ class current_cost_base(Decoder):
     msg_type: Bits[4]
     device_id: Bits[12]
 
-    class meter(Variant):
-        def when(self, msg_type) -> bool:
-            return msg_type == 0
-
-        ch0_valid: Bits[1]
-        ch0_power: Bits[15]
-        ch1_valid: Bits[1]
-        ch1_power: Bits[15]
-        ch2_valid: Bits[1]
-        ch2_power: Bits[15]
-
-        def power0_W(self, ch0_valid, ch0_power) -> int:
-            return ch0_valid * ch0_power
-
-        def power1_W(self, ch1_valid, ch1_power) -> int:
-            return ch1_valid * ch1_power
-
-        def power2_W(self, ch2_valid, ch2_power) -> int:
-            return ch2_valid * ch2_power
-
-    class counter(Variant):
-        def when(self, msg_type) -> bool:
-            return msg_type == 4
-
-        _unused: Bits[8]
-        sensor_type: Bits[8]
-        impulse: Bits[32]
+    ...
 ```
 
 The two concrete decoders inherit from this base and supply their own
-`prepare()` pipelines (and JSON overrides), and a `Dispatcher` class chains
-them at runtime:
+`prepare()` pipelines and JSON overrides
+
 
 ```python
 class current_cost_envir(current_cost_base):
@@ -369,12 +409,12 @@ class current_cost_envir(current_cost_base):
 
     class meter(current_cost_base.meter):
         def to_json(self) -> list[JsonRecord]:
-            return [ # ...
+            return [ # …
             ]
 
     class counter(current_cost_base.counter):
         def to_json(self) -> list[JsonRecord]:
-            return [ # ...
+            return [ # …
             ]
 
 
@@ -390,15 +430,19 @@ class current_cost_classic(current_cost_base):
 
     class meter(current_cost_base.meter):
         def to_json(self) -> list[JsonRecord]:
-            return [ # ...
+            return [ # …
             ]
 
     class counter(current_cost_base.counter):
         def to_json(self) -> list[JsonRecord]:
-            return [ # ...
+            return [ # …
             ]
+```
 
 
+Then a `Dispatcher` class chains them at runtime:
+
+```python
 class current_cost(Dispatcher):
     def modulation_config(self):
         return ModulationConfig(
@@ -413,12 +457,6 @@ class current_cost(Dispatcher):
         return (current_cost_envir(), current_cost_classic())
 ```
 
-The field definitions, `when()` predicates, variant dispatch, and computed methods
-(`power0_W`, etc.) are inherited from `current_cost_base`.  While the Python
-code avoids duplication, the compiler is not smart enough to avoid
-duplication in the emitted code. It generates duplicate code paths for
-`current_cost_envir` and `current_cost_classic`. This creates a small amount of
-bloat in the binary, which I'm leaving for future work to address.
 
 ## Building
 
