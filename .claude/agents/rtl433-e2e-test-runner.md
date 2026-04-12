@@ -30,9 +30,11 @@ The proto_compiler is a Python DSL that compiles radio protocol definitions (wri
 
 **Step 0 — Build**: Before running e2e tests, rebuild the project so that
 proto-compiled C files are regenerated from the current Python definitions
-and the rtl_433 binary is up to date:
+and the rtl_433 binary is up to date. IMPORTANT: always build from the
+`build/` subdirectory, NOT from the project root — the root has no CMake
+configuration:
 ```bash
-cd /Users/ali/rtl_433 && cmake --build . 2>&1
+cd /Users/ali/rtl_433/build && cmake --build . 2>&1
 ```
 Check the build output for errors. Proto-compiler generation failures
 (Python tracebacks in the `Generating *.c` steps) are bugs — report them.
@@ -62,7 +64,7 @@ If a test fails but the protocol is a hand-written C decoder (not in `proto_comp
 
 ## Workflow
 
-1. **Build**: Run `cmake --build .` from `/Users/ali/rtl_433`. If proto-compiler generation or C compilation fails, report the error and stop.
+1. **Build**: Run `cmake --build .` from `/Users/ali/rtl_433/build` (NOT the project root). If proto-compiler generation or C compilation fails, report the error and stop.
 2. **Run proto_compiler unit tests**: `python3 -m pytest proto_compiler/test/` — all must pass.
 3. **Run the e2e tests**: Execute the test suite and capture all output.
 4. **Analyze failures**: For each failing test:

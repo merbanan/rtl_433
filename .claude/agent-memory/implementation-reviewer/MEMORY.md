@@ -1,0 +1,1 @@
+- [Codegen refactor patterns](feedback_codegen_refactor.md) — common duplication and inconsistency patterns found in proto_compiler codegen/dsl refactors

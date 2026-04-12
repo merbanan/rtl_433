@@ -1,6 +1,15 @@
 # CMake out-of-tree builds
 build*/
 
+# Stale in-source CMake artifacts (use build/ subdirectory instead)
+/CMakeCache.txt
+/CMakeFiles/
+/CTestTestfile.cmake
+/DartConfiguration.tcl
+/Makefile
+/cmake_install.cmake
+/cmake_uninstall.cmake
+
 # IDE files
 .cproject
 .settings
