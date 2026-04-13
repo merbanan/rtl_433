@@ -3,6 +3,8 @@
     Ford TPMS decoder.
 */
 
+#include <stdbool.h>
+
 #include "decoder.h"
 
 static inline bool tpms_ford_validate_checksum(int sensor_id, int pressure_raw, int temp_byte, int flags, int checksum) {
@@ -33,7 +35,11 @@ static inline int tpms_ford_unknown_3(int flags) {
   return (flags & 3);
 }
 
-static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+/**
+Ford TPMS decoder.
+*/
+static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
   bitbuffer_invert(bitbuffer);
   uint8_t const preamble[] = { 0xaa, 0xa9 };
   if (bitbuffer->num_rows < 1)

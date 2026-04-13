@@ -3,6 +3,8 @@
     CurrentCost Current Sensor decoder.
 */
 
+#include <stdbool.h>
+
 #include "decoder.h"
 
 static inline int current_cost_envir_meter_power0_W(int ch0_valid, int ch0_power) {
@@ -29,7 +31,11 @@ static inline int current_cost_classic_meter_power2_W(int ch2_valid, int ch2_pow
   return (ch2_valid * ch2_power);
 }
 
-static int current_cost_envir_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+/**
+CurrentCost Current Sensor decoder.
+*/
+static int current_cost_envir_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
   bitbuffer_invert(bitbuffer);
   uint8_t const preamble[] = { 0x55, 0x55, 0x55, 0x55, 0xa4, 0x57 };
   if (bitbuffer->num_rows < 1)
@@ -89,7 +95,11 @@ static int current_cost_envir_decode(r_device *decoder, bitbuffer_t *bitbuffer) 
   return DECODE_FAIL_SANITY;
 }
 
-static int current_cost_classic_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+/**
+CurrentCost Current Sensor decoder.
+*/
+static int current_cost_classic_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
   bitbuffer_invert(bitbuffer);
   uint8_t const preamble[] = { 0xcc, 0xcc, 0xcc, 0xce, 0x91, 0x5d };
   if (bitbuffer->num_rows < 1)
@@ -149,7 +159,14 @@ static int current_cost_classic_decode(r_device *decoder, bitbuffer_t *bitbuffer
   return DECODE_FAIL_SANITY;
 }
 
-static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+/**
+current_cost dispatcher.
+
+@sa current_cost_envir_decode()
+@sa current_cost_classic_decode()
+*/
+static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
   bitbuffer_t saved = *bitbuffer;
   int ret = DECODE_ABORT_EARLY;
   ret = current_cost_envir_decode(decoder, bitbuffer);

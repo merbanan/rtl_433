@@ -3,6 +3,8 @@
     Acurite Grill/Meat Thermometer 01185M decoder.
 */
 
+#include <stdbool.h>
+
 #include "decoder.h"
 #include "acurite_01185m.h"
 
@@ -54,7 +56,11 @@ static inline int acurite_01185m_NoProbes_battery_ok(int data_battery_low) {
   return (data_battery_low == 0);
 }
 
-static int acurite_01185m_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+/**
+Acurite Grill/Meat Thermometer 01185M decoder.
+*/
+static int acurite_01185m_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
   bitbuffer_invert(bitbuffer);
   for (int i = 0; i < bitbuffer->num_rows; ++i)
       reflect_bytes(bitbuffer->bb[i], (bitbuffer->bits_per_row[i] + 7) / 8);

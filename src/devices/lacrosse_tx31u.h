@@ -5,6 +5,8 @@
 #ifndef INCLUDE_LACROSSE_TX31U_H_
 #define INCLUDE_LACROSSE_TX31U_H_
 
+#include <stdbool.h>
+
 #include "decoder.h"
 
 /// Validate CRC-8 over measurement bytes.

@@ -3,6 +3,8 @@
     Akhan 100F14 remote keyless entry decoder.
 */
 
+#include <stdbool.h>
+
 #include "decoder.h"
 #include "akhan_100F14.h"
 
@@ -30,7 +32,11 @@ static inline bool akhan_100F14_validate_cmd(int cmd) {
   return ((((cmd == 1) | (cmd == 2)) | (cmd == 4)) | (cmd == 8));
 }
 
-static int akhan_100F14_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+/**
+Akhan 100F14 remote keyless entry decoder.
+*/
+static int akhan_100F14_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
   int row = bitbuffer_find_repeated_row(bitbuffer, 1, 25);
   if (row < 0)
       return DECODE_ABORT_EARLY;

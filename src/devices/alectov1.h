@@ -5,6 +5,8 @@
 #ifndef INCLUDE_ALECTOV1_H_
 #define INCLUDE_ALECTOV1_H_
 
+#include <stdbool.h>
+
 #include "decoder.h"
 
 /// Validate checksum on rows 1 and 5 of the bitbuffer.

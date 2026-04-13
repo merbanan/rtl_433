@@ -5,6 +5,8 @@
 #ifndef INCLUDE_ACURITE_01185M_H_
 #define INCLUDE_ACURITE_01185M_H_
 
+#include <stdbool.h>
+
 #include "decoder.h"
 
 /// Validate add-with-carry checksum: sum of first 6 bytes vs byte 7.

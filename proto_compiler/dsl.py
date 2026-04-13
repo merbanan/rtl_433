@@ -521,6 +521,12 @@ class ModulationConfig(NamedTuple):
     sync_width: float | None = None
     tolerance: float | None = None
     disabled: int | None = None
+    # Canonical model string emitted in the "model" JSON field.
+    # Must match the symbolizer pattern: start with a letter, contain only
+    # [A-Za-z0-9], optionally joined with '-'. If None, falls back to
+    # ``device_name`` (which may fail the symbolizer check if it has spaces
+    # or punctuation).
+    model: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -974,7 +980,8 @@ class Protocol:
         model_source = parent if parent is not None else cls
         modulation_config = getattr(model_source, "modulation_config", None)
         if callable(modulation_config):
-            model = modulation_config(model_source.__new__(model_source)).device_name
+            cfg = modulation_config(model_source.__new__(model_source))
+            model = cfg.model if cfg.model is not None else cfg.device_name
         else:
             model = model_source.__name__
 

@@ -3,6 +3,8 @@
     Honeywell ActivLink, Wireless Doorbell (FSK) decoder.
 */
 
+#include <stdbool.h>
+
 #include "decoder.h"
 #include "honeywell_wdb_fsk.h"
 
@@ -10,7 +12,11 @@ static inline int honeywell_wdb_fsk_battery_ok(int battery_low) {
   return (battery_low == 0);
 }
 
-static int honeywell_wdb_fsk_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+/**
+Honeywell ActivLink, Wireless Doorbell (FSK) decoder.
+*/
+static int honeywell_wdb_fsk_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
   int row = bitbuffer_find_repeated_row(bitbuffer, 4, 48);
   if (row < 0)
       return DECODE_ABORT_EARLY;

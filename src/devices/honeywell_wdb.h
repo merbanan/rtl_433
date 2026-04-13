@@ -5,6 +5,8 @@
 #ifndef INCLUDE_HONEYWELL_WDB_H_
 #define INCLUDE_HONEYWELL_WDB_H_
 
+#include <stdbool.h>
+
 #include "decoder.h"
 
 /// Parity validation over the 6-byte packet. Returns true if even parity.

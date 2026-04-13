@@ -93,9 +93,17 @@ class CodeSnippet:
             self._indent -= amount
 
     @contextmanager
-    def block(self, lead: str):
-        """Emit `lead {`, indent, yield, dedent, emit `}`."""
-        self.append_line(lead + " {")
+    def block(self, lead: str, *, brace_on_newline: bool = False):
+        """Emit `lead {`, indent, yield, dedent, emit `}`.
+
+        With `brace_on_newline=True`, emit `lead` and `{` on separate lines
+        (the project's function-definition style).
+        """
+        if brace_on_newline:
+            self.append_line(lead)
+            self.append_line("{")
+        else:
+            self.append_line(lead + " {")
         with self.with_indent():
             yield self
         self.append_line("}")
@@ -953,6 +961,11 @@ def emit_decode_fn(decoder_name: str, instance: Decoder) -> CodeSnippet:
     fn_name = f"{decoder_name}_decode"
     cls = type(instance)
 
+    device_name = instance.modulation_config().device_name
+    snippet.append_line("/**")
+    snippet.append_line(f"{device_name} decoder.")
+    snippet.append_line("*/")
+
     pipeline = list(instance.prepare(BitbufferPipeline()).steps)
 
     pipeline_snippet, row_var, offset_var = emit_pipeline(pipeline)
@@ -968,7 +981,8 @@ def emit_decode_fn(decoder_name: str, instance: Decoder) -> CodeSnippet:
     )
 
     with snippet.block(
-        f"static int {fn_name}(r_device *decoder, bitbuffer_t *bitbuffer)"
+        f"static int {fn_name}(r_device *decoder, bitbuffer_t *bitbuffer)",
+        brace_on_newline=True,
     ):
         snippet += pipeline_snippet
 
@@ -1142,8 +1156,15 @@ def emit_dispatcher(dispatcher_name: str, delegates: list[Decoder]) -> CodeSnipp
     delegate's in-place pipeline mutations don't affect the next.
     """
     snippet = CodeSnippet()
+    snippet.append_line("/**")
+    snippet.append_line(f"{dispatcher_name} dispatcher.")
+    snippet.append_line("")
+    for delegate in delegates:
+        snippet.append_line(f"@sa {_decoder_name(delegate)}_decode()")
+    snippet.append_line("*/")
     with snippet.block(
-        f"static int {dispatcher_name}_decode(r_device *decoder, bitbuffer_t *bitbuffer)"
+        f"static int {dispatcher_name}_decode(r_device *decoder, bitbuffer_t *bitbuffer)",
+        brace_on_newline=True,
     ):
         snippet.append_line("bitbuffer_t saved = *bitbuffer;")
         snippet.append_line("int ret = DECODE_ABORT_EARLY;")
@@ -1236,6 +1257,8 @@ def _emit_file_header(instance: Protocol) -> CodeSnippet:
     snippet.append_line("/** @file")
     snippet.append_line(f"    {instance.modulation_config().device_name} decoder.")
     snippet.append_line("*/")
+    snippet.append_line("")
+    snippet.append_line("#include <stdbool.h>")
     snippet.append_line("")
     snippet.append_line('#include "decoder.h"')
     return snippet

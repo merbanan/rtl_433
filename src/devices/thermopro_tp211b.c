@@ -3,6 +3,8 @@
     ThermoPro TP211B Thermometer decoder.
 */
 
+#include <stdbool.h>
+
 #include "decoder.h"
 #include "thermopro_tp211b.h"
 
@@ -10,7 +12,11 @@ static inline float thermopro_tp211b_temperature_c(int temp_raw) {
   return ((temp_raw - 0x1f4) * 0.1);
 }
 
-static int thermopro_tp211b_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+/**
+ThermoPro TP211B Thermometer decoder.
+*/
+static int thermopro_tp211b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
   uint8_t const preamble[] = { 0x55, 0x2d, 0xd4 };
   if (bitbuffer->num_rows < 1)
       return DECODE_ABORT_LENGTH;

@@ -3,10 +3,16 @@
     LaCrosse TX31U-IT, The Weather Channel WS-1910TWC-IT decoder.
 */
 
+#include <stdbool.h>
+
 #include "decoder.h"
 #include "lacrosse_tx31u.h"
 
-static int lacrosse_tx31u_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+/**
+LaCrosse TX31U-IT, The Weather Channel WS-1910TWC-IT decoder.
+*/
+static int lacrosse_tx31u_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
   uint8_t const preamble[] = { 0xaa, 0xaa, 0x2d, 0xd4 };
   if (bitbuffer->num_rows < 1)
       return DECODE_ABORT_LENGTH;
@@ -42,7 +48,7 @@ static int lacrosse_tx31u_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
   if (!lacrosse_tx31u_validate_crc(measurements, crc))
       return DECODE_FAIL_MIC;
   data_t *data = data_make(
-          "model", "", DATA_STRING, "LaCrosse TX31U-IT, The Weather Channel WS-1910TWC-IT",
+          "model", "", DATA_STRING, "LaCrosse-TX31U",
           "sensor_id", "", DATA_INT, sensor_id,
           "training", "", DATA_INT, training,
           "no_ext", "", DATA_INT, no_ext,

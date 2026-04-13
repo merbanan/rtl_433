@@ -3,6 +3,8 @@
     Ambient Weather F007TH, TFA 30.3208.02, SwitchDocLabs F016TH temperature sensor decoder.
 */
 
+#include <stdbool.h>
+
 #include "decoder.h"
 
 static inline bool ambient_weather_validate_mic(int b0, int b1, int b2, int b3, int b4, int b5) {
@@ -37,7 +39,11 @@ static inline int ambient_weather_humidity(int b4) {
   return b4;
 }
 
-static int ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+/**
+Ambient Weather F007TH, TFA 30.3208.02, SwitchDocLabs F016TH temperature sensor decoder.
+*/
+static int ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
   uint8_t const preamble[] = { 0x01, 0x45 };
   if (bitbuffer->num_rows < 1)
       return DECODE_ABORT_LENGTH;

@@ -71,6 +71,7 @@ class lacrosse_tx31u(Decoder):
     def modulation_config(self):
         return ModulationConfig(
             device_name="LaCrosse TX31U-IT, The Weather Channel WS-1910TWC-IT",
+            model="LaCrosse-TX31U",
             modulation=Modulation.FSK_PULSE_PCM,
             short_width=116,
             long_width=116,

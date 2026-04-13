@@ -3,13 +3,19 @@
     Amazon Basics Meat Thermometer decoder.
 */
 
+#include <stdbool.h>
+
 #include "decoder.h"
 
 static inline float abmt_temperature_c(int temp_bcd_byte, int temp_last_byte) {
   return ((((0xa * (temp_bcd_byte >> 4)) + (temp_bcd_byte & 0xf)) * 0xa) + (temp_last_byte >> 4));
 }
 
-static int abmt_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+/**
+Amazon Basics Meat Thermometer decoder.
+*/
+static int abmt_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
   int row = bitbuffer_find_repeated_row(bitbuffer, 4, 90);
   if (row < 0)
       return DECODE_ABORT_EARLY;

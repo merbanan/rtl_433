@@ -3,6 +3,8 @@
     AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon) decoder.
 */
 
+#include <stdbool.h>
+
 #include "decoder.h"
 #include "alectov1.h"
 
@@ -86,7 +88,11 @@ static inline int alectov1_Temperature_humidity(int *cells_b3) {
   return ((((reverse8((cells_b3[1]))) >> 4) * 0xa) + ((reverse8((cells_b3[1]))) & 0xf));
 }
 
-static int alectov1_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+/**
+AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon) decoder.
+*/
+static int alectov1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
   uint8_t *b = bitbuffer->bb[0];
   unsigned bit_pos = 0;
   if (bitbuffer->bits_per_row[1] != 36)

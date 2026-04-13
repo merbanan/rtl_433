@@ -5,6 +5,8 @@
 #ifndef INCLUDE_THERMOPRO_TP211B_H_
 #define INCLUDE_THERMOPRO_TP211B_H_
 
+#include <stdbool.h>
+
 #include "decoder.h"
 
 static inline uint16_t thermopro_tp211b_xor_checksum(uint8_t const *b)
