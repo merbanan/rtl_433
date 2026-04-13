@@ -1,4 +1,4 @@
-"""AlectoV1 Weather Sensor decoder (proto_compiler Rows + Variants → ``alectov1.c``).
+"""AlectoV1 Weather Sensor decoder (proto_compiler Rows + Variants → ``alecto.c``).
 
 Documentation also at http://www.tfd.hu/tfdhu/files/wsprotocol/auriol_protocol_v20.pdf
 

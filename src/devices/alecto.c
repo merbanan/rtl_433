@@ -1,4 +1,4 @@
-// Generated from alectov1.py
+// Generated from alecto.py
 /** @file
     AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon) decoder.
 */

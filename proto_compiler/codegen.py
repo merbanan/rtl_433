@@ -1251,9 +1251,9 @@ def emit_r_device(decoder_name: str, instance: Protocol) -> CodeSnippet:
 
 def _emit_file_header(instance: Protocol) -> CodeSnippet:
     """Emit the `// Generated from ...` comment and the `/** @file */` doc block."""
-    decoder_name = type(instance).__name__
+    source_name = type(instance).__module__
     snippet = CodeSnippet()
-    snippet.append_line(f"// Generated from {decoder_name}.py")
+    snippet.append_line(f"// Generated from {source_name}.py")
     snippet.append_line("/** @file")
     snippet.append_line(f"    {instance.modulation_config().device_name} decoder.")
     snippet.append_line("*/")
