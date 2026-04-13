@@ -1,2 +1,0 @@
-- [E2E Test Infrastructure](e2e_infrastructure.md) — test runner location, invocation, and pass/fail patterns
-- [Proto-Compiler Protocol Mapping](protocol_mapping.md) — which rtl_433 protocols have proto_compiler definitions

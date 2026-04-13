@@ -1,2 +1,0 @@
-- [Private sub-field deps](feedback_private_subfield_deps.md) -- private Rows sub-fields can silently break validate hook dep resolution
-- [Default variant to_json](project_default_variant_tojson.md) -- _default_variant_records is dead code; variant default to_json path is broken
