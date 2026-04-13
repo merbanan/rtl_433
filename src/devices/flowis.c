@@ -28,7 +28,7 @@ Message layout type 1 (0x15 bytes of length), 4-bit nibble:
 
 - S 32b: 2 x 16 bit sync words d391 d391 (32 bits)
 - L  8b: message length, different message types have different lengths
-- Y  8b: message type (1 and 2 has been observed
+- Y  8b: message type (1 and 2 has been observed)
 - I 32b: meter id, visible on the actual meter
 - ?  8b: unknown
 - T 32b: timestamp, bitpacked
@@ -107,7 +107,7 @@ static int flowis_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data = data_make(
             "model",        "",             DATA_STRING, "Flowis",
             "id",           "Meter id",     DATA_INT,    id,
-            "type",         "Type",         DATA_INT,    type,
+            "msg_type",     "Message Type", DATA_INT,    type,
             "volume_m3",    "Volume",       DATA_FORMAT, "%.3f m3", DATA_DOUBLE, volume/1000.0,
             "device_time",  "Device time",  DATA_STRING, fts_str,
             "alarm",        "Alarm",        DATA_INT,    b[15],
@@ -123,7 +123,7 @@ static int flowis_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
-        "type",
+        "msg_type",
         "volume_m3",
         "device_time",
         "alarm",

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """MQTT monitoring relay for rtl_433 communication."""
 

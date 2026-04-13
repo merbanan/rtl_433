@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding=utf-8
 
 from __future__ import print_function
@@ -350,7 +350,7 @@ mappings = {
         "config": {
             "device_class": "wind_speed",
             "name": "Wind Speed",
-            "unit_of_measurement": "mi/h",
+            "unit_of_measurement": "mph",
             "value_template": "{{ value|float }}",
             "state_class": "measurement"
         }
@@ -535,6 +535,17 @@ mappings = {
         }
     },
 
+    "closed": {
+        "device_type": "binary_sensor",
+        "object_suffix": "opening",
+        "config": {
+            "device_class": "opening",
+            "force_update": "true",
+            "payload_on": "0",
+            "payload_off": "1"
+        }
+    },
+
     "rssi": {
         "device_type": "sensor",
         "object_suffix": "rssi",
@@ -657,8 +668,8 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "uv",
         "config": {
-            "name": "UV Index",
-            "unit_of_measurement": "UV Index",
+            "name": "UV Value",
+            "unit_of_measurement": "UV",
             "value_template": "{{ value|float|round(1) }}",
             "state_class": "measurement"
         }
@@ -954,8 +965,13 @@ def publish_config(mqttc, topic, model, object_id, mapping, key=None):
         config["state_topic"] = topic
         config["unique_id"] = object_name
         config["name"] = readable_name
-    config["device"] = { "identifiers": [object_id], "name": object_id, "model": model, "manufacturer": "rtl_433" }
 
+    try:
+        hassio_device_mfgr, hassio_device_modl = model.split('-', 1)
+        config["device"] = { "identifiers": [object_id], "name": object_id, "model": hassio_device_modl, "manufacturer": hassio_device_mfgr }
+    except ValueError:
+        config["device"] = { "identifiers": [object_id], "name": object_id, "model": model, "manufacturer": "rtl_433" }
+  
     if args.force_update:
         config["force_update"] = "true"
 

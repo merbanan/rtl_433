@@ -57,7 +57,7 @@ static int ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, "FT-004B",
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
             NULL);
     /* clang-format on */
     decoder_output_data(decoder, data);

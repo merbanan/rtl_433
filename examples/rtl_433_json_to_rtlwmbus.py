@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 $ rtl_433 -R 104 -F json | rtl_433_json_to_rtlwmbus.py
 

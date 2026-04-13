@@ -159,9 +159,14 @@ static bool parse_rfraw(pulse_data_t *data, char const **p)
             data->num_pulses++;
             pulse_needed = true;
         }
+        // abort reading if the pulse data array is full
+        if (data->num_pulses >= PD_MAX_PULSES) {
+            break;
+        }
     }
     //data->gap[data->num_pulses - 1] = 3000; // TODO: extend last gap?
 
+    // expand reapeats as long as the pulse data array has enough space
     unsigned pkt_pulses = data->num_pulses - prev_pulses;
     for (int i = 1; i < repeats && data->num_pulses + pkt_pulses <= PD_MAX_PULSES; ++i) {
         memcpy(&data->pulse[data->num_pulses], &data->pulse[prev_pulses], pkt_pulses * sizeof (*data->pulse));

@@ -117,7 +117,7 @@ static int companion_wtr001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",         "",            DATA_STRING, "Companion-WTR001",
-            "temperature_C", "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
+            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
             "mic",           "Integrity",   DATA_STRING, "PARITY",
             NULL);
     /* clang-format on */

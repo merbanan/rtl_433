@@ -1,0 +1,123 @@
+/** @file
+    MIC 6SC2 - Car Remote.
+
+    Copyright (C) 2024 Ethan Halsall
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+
+#include "decoder.h"
+
+/**
+MIC 6SC2 - Car Remote (315 MHz).
+
+Manufacturer:
+- Unknown, MSOP-10 perhaps from MIC (Master Instrument Corporation)
+
+Supported Models:
+- 6SC2 CMGU
+- 6SC2 CDFA
+
+Data structure:
+
+The transmitter uses a rolling code message with an unencrypted sequence number.
+
+Button operation:
+This transmitter has up to 4 buttons which can be pressed once to transmit a single message
+
+Data layout:
+
+Bytes are reflected
+
+    PPPP EEEEEEEE bbbb uuuu SSSS CC
+
+- P: 16 bit preamble
+- E: 32 bit encrypted
+- b: 4 bit button
+- u: 4 bit unknown
+- S: 16 bit sequence
+- C: 8 bit checksum
+
+Format string:
+
+    PREAMBLE: hhhh ENCRYPTED: hh hh hh hh BUTTON: bbbb UNKNOWN: bbbb SEQUENCE: hhhh CHECKSUM: hh
+
+*/
+
+static int six_sc_two_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    int row = bitbuffer_find_repeated_row(bitbuffer, 1, 48);
+    if (row < 0) {
+        return DECODE_ABORT_EARLY;
+    }
+
+    if (bitbuffer->bits_per_row[row] > 88) {
+        return DECODE_ABORT_LENGTH;
+    }
+
+    uint8_t *b = bitbuffer->bb[row];
+
+    if (b[0] != 0x55 || b[1] != 0x54) {
+        return DECODE_FAIL_SANITY;
+    }
+
+    if (xor_bytes(b + 2, 9)) {
+        return DECODE_FAIL_MIC;
+    }
+
+    // The transmission is LSB first, big endian.
+    uint32_t encrypted = (uint32_t)reverse8(b[5]) << 24 | (uint32_t)reverse8(b[4]) << 16 | (uint32_t)reverse8(b[3]) << 8 | reverse8(b[2]);
+    int button         = reverse8(b[6]) & 0xf;
+    int sequence       = (reverse8(b[8]) << 8) | reverse8(b[7]);
+
+    char encrypted_str[9];
+    snprintf(encrypted_str, sizeof(encrypted_str), "%08X", encrypted);
+
+    char const *button_str;
+
+    /* clang-format off */
+    switch (button) {
+        case 0x1: button_str = "Unlock"; break;
+        case 0x2: button_str = "Lock"; break;
+        case 0x3: button_str = "Trunk"; break;
+        case 0x4: button_str = "Panic"; break;
+        default:  button_str = "?"; break;
+    }
+    /* clang-format on */
+
+    /* clang-format off */
+    data_t *data = data_make(
+            "model",       "model",       DATA_STRING, "MIC6SC2-CarRemote",
+            "encrypted",   "",            DATA_STRING, encrypted_str,
+            "button_code", "Button Code", DATA_INT,    button,
+            "button_str",  "Button",      DATA_STRING, button_str,
+            "sequence",    "Sequence",    DATA_INT,    sequence,
+            "mic",         "Integrity",   DATA_STRING, "CHECKSUM",
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
+static char const *const output_fields[] = {
+        "model",
+        "encrypted",
+        "button_code",
+        "button_str",
+        "sequence",
+        "mic",
+        NULL,
+};
+
+r_device const six_sc_two_car_remote = {
+        .name        = "MIC 6SC2 Car Remote (-f 315.1M)",
+        .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
+        .short_width = 250,
+        .reset_limit = 10000,
+        .decode_fn   = &six_sc_two_car_remote_decode,
+        .fields      = output_fields,
+};

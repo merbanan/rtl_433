@@ -17,6 +17,7 @@ Largely the same as Esperanza EWS, s3318p.
 List of known supported devices:
 - Vauno EN8822C-1
 - FUZHOU ESUN ELECTRONIC outdoor T21 sensor
+- Auriol AFT 77 A1
 
 Frame structure (42 bits):
 

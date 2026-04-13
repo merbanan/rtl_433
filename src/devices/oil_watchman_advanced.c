@@ -38,8 +38,9 @@ Data Layout:
   - 0x80 - the first one or two transmissions after the sync period when the device seems to be calibrating itself
   - 0x98 - normal, live value that you'll see on every transmission when the device is up and running
 - 1 byte temperature, in intervals of 0.5 degrees, offset by 0x48
-- 2 byte - varying bytes which could be the raw sensor reading
-- 1 byte integer depth (i.e. the distance between the sensor and the oil in the tank)
+- 1 byte - varying bytes which could be the raw sensor reading
+- 4 bits - varying bytes which could be the raw sensor reading
+- 12 bits - integer depth (i.e. the distance between the sensor and the oil in the tank)
 - 4 byte of 0x01050300 - constant values which could be a version number? (1.5.3.0)
 - 2 byte CRC-16 poly 0x8005 init 0
 */
@@ -81,13 +82,13 @@ static int oil_watchman_advanced_decode(r_device *decoder, bitbuffer_t *bitbuffe
         uint32_t serial   = (b[3] << 16) | (b[4] << 8) | b[5];
         uint8_t status    = b[6];
         float temperature = (b[7] - 0x48) / 2; // truncate to whole number
-        uint8_t depth     = b[10];
+        uint16_t depth     = ((b[9] & 0x0f) << 8) | b[10];
 
         /* clang-format off */
         data_t *data = data_make(
                 "model",                "Model",        DATA_STRING, "Oil-SonicAdv",
                 "id",                   "ID",           DATA_FORMAT, "%08d", DATA_INT, serial,
-                "temperature_C",        "Temperature",  DATA_DOUBLE, temperature,
+                "temperature_C",        "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
                 "depth_cm",             "Depth",        DATA_INT,    depth,
                 "status",               "Status",       DATA_FORMAT, "%02x", DATA_INT, status,
                 "mic",                  "Integrity",    DATA_STRING, "CRC",

@@ -83,7 +83,8 @@ static int schraeder_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 TPMS Model: Schrader Electronics EG53MA4.
 Contributed by: Leonardo Hamada (hkazu).
 
-Also Schrader PA66-GF35 (OPEL OEM 13348393) TPMS Sensor.
+Also Schrader Opel OEM No. 13348393 TPMS Sensor (might be found in Saab, Opel, Vauxhall, Chevrolet).
+GM (Chevrolet) OEM No. 13540600 for 2006-2025 GM.
 
 Probable packet payload:
 
@@ -325,7 +326,7 @@ r_device const schraeder = {
 };
 
 r_device const schrader_EG53MA4 = {
-        .name        = "Schrader TPMS EG53MA4, PA66GF35",
+        .name        = "Schrader TPMS EG53MA4, Saab, Opel, Vauxhall, Chevrolet",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 123,
         .long_width  = 0,

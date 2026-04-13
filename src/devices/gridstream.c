@@ -134,19 +134,20 @@ static int gridstream_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t b[256];
     int decoded_len;
     int protocol_version;
-    unsigned offset = bitbuffer_search(bitbuffer, 0, 0, preambleV4, 36);
+    unsigned offset = bitbuffer_search(bitbuffer, 0, 0, preambleV4, 36) + 36;
     if (offset >= bitbuffer->bits_per_row[0]) {
-        offset = bitbuffer_search(bitbuffer, 0, 0, preambleV5, 37);
+        offset = bitbuffer_search(bitbuffer, 0, 0, preambleV5, 37) + 37;
         if (offset >= bitbuffer->bits_per_row[0]) {
             return DECODE_FAIL_SANITY;
         }
-
-        decoded_len      = extract_bytes_uart(bitbuffer->bb[0], offset + 37, bitbuffer->bits_per_row[0] - offset - 37, b);
-        protocol_version = 5;
+        unsigned num_bits = MIN(bitbuffer->bits_per_row[0] - offset, sizeof(b) * 10);
+        decoded_len       = extract_bytes_uart(bitbuffer->bb[0], offset, num_bits, b);
+        protocol_version  = 5;
     }
     else {
-        decoded_len      = extract_bytes_uart(bitbuffer->bb[0], offset + 36, bitbuffer->bits_per_row[0] - offset - 36, b);
-        protocol_version = 4;
+        unsigned num_bits = MIN(bitbuffer->bits_per_row[0] - offset, sizeof(b) * 10);
+        decoded_len       = extract_bytes_uart(bitbuffer->bb[0], offset, num_bits, b);
+        protocol_version  = 4;
     }
 
     if (decoded_len < 5) {

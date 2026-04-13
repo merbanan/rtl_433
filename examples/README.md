@@ -11,7 +11,7 @@ require writing new code, with some kind of filtering and
 transformation.
 
 Generally, python scripts should work with relatively recent Python 3.
-(While they might work with 2.7, no one is paying attention to that.)
+(Python 2.7 is no longer supported.)
 
 These scripts typically send data to some other system, store it in a
 database, or process it in some way.  Recall that rtl_433's philosophy

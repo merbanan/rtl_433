@@ -268,7 +268,7 @@
     DECL(chamberlain_cwpirc) \
     DECL(thermopro_tp829b) \
     DECL(arad_ms_meter) \
-    DECL(geevon) \
+    DECL(geevon_tx16) \
     DECL(fineoffset_wh46) \
     DECL(vevor_7in1) \
     DECL(arexx_ml) \
@@ -285,7 +285,47 @@
     DECL(tpms_gm) \
     DECL(rainpoint_hcs012arf) \
     DECL(apator_metra_erm30) \
-
+    DECL(thermopro_tx7b) \
+    DECL(nexus_sauna) \
+    DECL(homelead_hg9901) \
+    DECL(maverick_xr50) \
+    DECL(orion_endpoint) \
+    DECL(fineoffset_wh43) \
+    DECL(baldr_therm) \
+    DECL(bm5) \
+    DECL(universalfanctrl) \
+    DECL(fineoffset_ws85) \
+    DECL(oria_wa150km) \
+    DECL(ec3k) \
+    DECL(orion_endpoint_2020) \
+    DECL(geevon_tx19) \
+    DECL(wallarge_cltx001) \
+    DECL(sainlogic_sa8) \
+    DECL(thermopro_tp862b) \
+    DECL(tpms_airpuxem) \
+    DECL(apator_metra_eitn30) \
+    DECL(thermopro_tp211b) \
+    DECL(tpms_trw_ook) \
+    DECL(tpms_trw_fsk) \
+    DECL(govee_h5059) \
+    DECL(astrostart_2000) \
+    DECL(compustar_1wg3r) \
+    DECL(chrysler_car_remote) \
+    DECL(nidec_car_remote) \
+    DECL(audiovox_pro_oe3b) \
+    DECL(hcs361_txwak_0_bsel_0) \
+    DECL(hcs361_txwak_0_bsel_1) \
+    DECL(hcs361_txwak_1_bsel_0) \
+    DECL(hcs361_txwak_1_bsel_1) \
+    DECL(hcs361_vpwm_1_bsel_0) \
+    DECL(hcs361_vpwm_1_bsel_1) \
+    DECL(six_sc_two_car_remote) \
+    DECL(gm_car_remote) \
+    DECL(siemens_5wy72xx_car_remote) \
+    DECL(alps_fwb1u545_car_remote) \
+    DECL(continental_car_remote) \
+    DECL(code_alarm_frdpc2000_car_remote) \
+    DECL(rfm69_lowpowerlab_moteino) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
