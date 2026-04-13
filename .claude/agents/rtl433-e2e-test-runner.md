@@ -52,6 +52,35 @@ cd /Users/ali/rtl_433_tests && PATH="/Users/ali/rtl_433/build/src:$PATH" python3
 The tests feed recorded signal data through rtl_433 and compare output
 against expected results.
 
+**Step 3 — CI checks**: Run the same lint/analyzer checks the upstream
+GitHub CI runs. Each of these must exit 0 (or produce no new output from
+proto-generated files). Failures here block the PR from going green even
+if e2e tests pass.
+
+```bash
+cd /Users/ali/rtl_433
+
+# Style check (brace placement, trailing whitespace, line length, etc.)
+node .github/actions/style-check/index.js
+
+# Symbolizer: validates model names, doc blocks, @sa links.
+# Warnings produced via err() count as failures — a missing doc comment
+# on a decode function is treated as an error.
+./tests/symbolizer.py check
+
+# Clang static analyzer. The CI step fails if analyzer.out has any
+# content. Focus on errors/warnings added by proto-generated files in
+# src/devices/*.c and the hand-written companion headers in src/devices/*.h.
+clang -Iinclude -DTHREADS --analyze -Xanalyzer -analyzer-output=text \
+    -Xanalyzer -analyzer-disable-checker=deadcode.DeadStores \
+    include/[a-ikln-z]*.h src/[a-ikln-z]*.c src/devices/*.c 2>&1 | \
+    tee /tmp/analyze.out
+```
+
+**Compiler standard**: the project builds with `-std=c99`. Do not bump
+the C standard in CMakeLists.txt — CI runners (macOS-14 clang, older
+gcc) do not support C23.
+
 ## How to Tell if a Bug is Associated with a Proto-Compiled Decoder
 
 A failing test is associated with a proto-compiled decoder if:
@@ -67,13 +96,14 @@ If a test fails but the protocol is a hand-written C decoder (not in `proto_comp
 1. **Build**: Run `cmake --build .` from `/Users/ali/rtl_433/build` (NOT the project root). If proto-compiler generation or C compilation fails, report the error and stop.
 2. **Run proto_compiler unit tests**: `python3 -m pytest proto_compiler/test/` — all must pass.
 3. **Run the e2e tests**: Execute the test suite and capture all output.
-4. **Analyze failures**: For each failing test:
+4. **Run CI checks**: style-check, symbolizer, clang analyzer (see Step 3 above). These gate CI independent of the e2e suite — a green e2e run with failing CI checks still fails the PR.
+5. **Analyze failures**: For each failing test:
    a. Identify the protocol name.
    b. Check if it has a definition in `proto_compiler/protocols/`.
    c. If yes, investigate whether the bug is in the generated C code.
    d. Compare generated code against SEMANTICS.md expectations.
-5. **File bug reports**: For proto-compiler-related failures, append to `proto_compiler/COMPILER_BUGS.md` following the existing format in that file. Read the file first to understand the format and to avoid duplicating already-known bugs.
-6. **Report results**: Summarize all test results — total pass/fail counts, which protocols failed, which were proto-compiler bugs vs other issues.
+6. **File bug reports**: For proto-compiler-related failures, append to `proto_compiler/COMPILER_BUGS.md` following the existing format in that file. Read the file first to understand the format and to avoid duplicating already-known bugs.
+7. **Report results**: Summarize all test results — total pass/fail counts, which protocols failed, which were proto-compiler bugs vs other issues, plus style/symbolizer/analyzer status.
 
 ## Bug Report Format
 
