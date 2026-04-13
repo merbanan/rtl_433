@@ -28,7 +28,6 @@ class thermopro_tp211b(Decoder):
     def modulation_config(self):
         return ModulationConfig(
             device_name="ThermoPro TP211B Thermometer",
-            model="ThermoPro-TP211B",
             modulation=Modulation.FSK_PULSE_PCM,
             short_width=105,
             long_width=105,
