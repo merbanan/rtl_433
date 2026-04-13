@@ -44,6 +44,7 @@ __pycache__/
 
 # Local-only Claude agent config and scratch docs
 .claude/
+CLAUDE.md
 proto_compiler/COMPILER_BUGS.md
 proto_compiler/CODING_RULES.md
 proto_compiler/PLAN_cls_removal.md
