@@ -84,6 +84,7 @@ TPMS Model: Schrader Electronics EG53MA4.
 Contributed by: Leonardo Hamada (hkazu).
 
 Also Schrader Opel OEM No. 13348393 TPMS Sensor (might be found in Saab, Opel, Vauxhall, Chevrolet).
+GM (Chevrolet) OEM No. 13540600 for 2006-2025 GM.
 
 Probable packet payload:
 

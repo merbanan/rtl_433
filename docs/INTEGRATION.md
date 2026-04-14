@@ -2,7 +2,7 @@
 
 Integration of rtl_433 output into various home automation gateways.
 
-::: tip
+:::tip
 If you are a user of one these systems, please help to confirm and extend the information here.
 :::
 
@@ -103,17 +103,17 @@ Domoticz has built-in support for reading from rtl_433 using pipes.
 
 There is also a newer plugin using MQTT: [enesbcs/pyrtl433](https://github.com/enesbcs/pyrtl433).
 
-::: warning
+:::warning
 Testing and example needed
 :::
 
-# NodeRED
+## NodeRED
 
 [NodeRED](https://nodered.org/) - Flow-based programming for the Internet of Things
 
 Node RED has built-in support for reading from MQTT and thus rtl_433 events.
 
-::: warning
+:::warning
 Example needed
 :::
 

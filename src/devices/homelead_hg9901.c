@@ -42,12 +42,12 @@ matches Moisture 59%, Temperature 24 C, Light Level: 6.
 
 The minimum battery voltage seems to be 1.18V.
 
-# Data transmission
+## Data transmission
 
 9 repeats of 433.92 MHz (EU region).
 Modulation is OOK PWM with 400/1200 us timing, inverted bits.
 
-# Data Layout
+## Data Layout
 
         PPPP PPPP PPPP PPPP IIII IIII IIII IIII MMMM MMMM STTT TTTT QQBB LLLL CCCC XXXXXXXX
 

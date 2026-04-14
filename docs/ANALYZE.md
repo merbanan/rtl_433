@@ -18,12 +18,12 @@ Get on overview of the band. Check if the transmission is visible and in the exp
 Use CubicSDR, Gqrx, SigDigger, SDR#, SDRangel or similar SDR UIs to verify you receice a signal.
 If you have the SDR receiver on a headless machine try `rtl_tcp` to transport data to a GUI.
 
-::: tip
+:::tip
 A quick substitute for an SDR UI is to record a sample, e.g. `-w file_433.92M_250k.cu8 -T 60` (adjust for the actual frequency and sample rate).
 Now drop that .cu8 sample file on https://triq.org/pdv/ to visually inspect the spectrogram (a sideways view of the common SDR waterfalls).
 :::
 
-::: warning
+:::warning
 Do not plug the receiver directly in a USB port, avoid noise and use a short USB cable.
 :::
 
@@ -33,7 +33,7 @@ Note the frequency, pick a frequency a little off, e.g 50k above or below.
 Then grab the signal with rtl_433, e.g. `rtl_433 -f 433.92M -S unknown`
 Visually verify the samples in https://triq.org/pdv
 
-::: tip
+:::tip
 The modes for the sample grabber are
 - `-S all`: grab all frames found
 - `-S unknown`: grab frames that are not decoded by any decoder
@@ -56,7 +56,7 @@ or `rtl_433 -w OOK:- SAMPLE.cu8` to see the raw data.
 Write the pulses to a file with `rtl_433 -w SAMPLE.ook SAMPLE.cu8`
 and visualize the file with https://triq.org/pdv
 
-::: warning
+:::warning
 You need to give the sample rate if it's not 250k, look at the file name, e.g. use `rtl_433 -s 1000k -A SAMPLE_1000k.cu8`
 :::
 

@@ -8,8 +8,11 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/**
-# WallarGe CLTX001 Outdoor Temperature Sensor.
+
+#include "decoder.h"
+
+/** @fn int wallarge_cltx001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+WallarGe CLTX001 Outdoor Temperature Sensor.
 
 FCC ID: 2AYIQ-TX100 (https://fcc.report/FCC-ID/2AYIQ-TX100)
 
@@ -99,8 +102,6 @@ Range: -204.8 to 204.7°C.
 The clock will show HH.H above 70°C (158°F) and LL.L below -40°C (-40°F).
 
 */
-
-#include "decoder.h"
 
 #define BITS_PER_ROW  56
 #define BYTES_PER_ROW 7

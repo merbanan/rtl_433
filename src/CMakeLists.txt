@@ -48,6 +48,7 @@ add_library(r_433 STATIC
     devices/acurite_01185m.c
     devices/akhan_100F14.c
     devices/alecto.c
+    devices/alps_fwb1u545.c
     devices/ambient_weather.c
     devices/ambientweather_tx8300.c
     devices/ambientweather_wh31e.c
@@ -57,7 +58,9 @@ add_library(r_433 STATIC
     devices/arad_ms_meter.c
     devices/archos_tbh.c
     devices/arexx_ml.c
+    devices/astrostart_2000.c
     devices/atech_ws308.c
+    devices/audiovox_pro_oe3b.c
     devices/auriol_4ld5661.c
     devices/auriol_aft77b2.c
     devices/auriol_afw2a1.c
@@ -86,9 +89,13 @@ add_library(r_433 STATIC
     devices/ced7000.c
     devices/celsia_czc1.c
     devices/chamberlain_cwpirc.c
+    devices/chrysler_car_remote.c
     devices/chuango.c
     devices/cmr113.c
+    devices/code_alarm_car_remote.c
     devices/companion_wtr001.c
+    devices/compustar_1wg3r.c
+    devices/continental_car_remote.c
     devices/cotech_36_7959.c
     devices/current_cost.c
     devices/danfoss.c
@@ -142,12 +149,15 @@ add_library(r_433 STATIC
     devices/generic_remote.c
     devices/generic_temperature_sensor.c
     devices/geo_minim.c
+    devices/gm_car_remote.c
     devices/govee.c
+    devices/govee_h5059.c
     devices/gridstream.c
     devices/gt_tmbbq05.c
     devices/gt_wt_02.c
     devices/gt_wt_03.c
     devices/hcs200.c
+    devices/hcs361.c
     devices/hideki.c
     devices/holman_ws5029.c
     devices/homelead_hg9901.c
@@ -189,6 +199,7 @@ add_library(r_433 STATIC
     devices/maverick_xr50.c
     devices/mebus.c
     devices/megacode.c
+    devices/mic6sc2_car_remote.c
     devices/missil_ml0757.c
     devices/mueller_hotrod.c
     devices/neptune_r900.c
@@ -197,6 +208,7 @@ add_library(r_433 STATIC
     devices/nexa.c
     devices/nexus.c
     devices/nice_flor_s.c
+    devices/nidec_car_remote.c
     devices/norgo.c
     devices/oil_smart.c
     devices/oil_standard.c
@@ -221,6 +233,7 @@ add_library(r_433 STATIC
     devices/regency_fan.c
     devices/revolt_nc5462.c
     devices/revolt_zx7717.c
+    devices/rfm69_lowpowerlab_moteino.c
     devices/rftech.c
     devices/risco_agility.c
     devices/rojaflex.c
@@ -236,6 +249,7 @@ add_library(r_433 STATIC
     devices/secplus_v1.c
     devices/secplus_v2.c
     devices/sharp_spc775.c
+    devices/siemens_5wy72xx.c
     devices/silvercrest.c
     devices/simplisafe.c
     devices/simplisafe_gen3.c
@@ -256,6 +270,7 @@ add_library(r_433 STATIC
     devices/tfa_twin_plus_30.3049.c
     devices/thermopro_tp11.c
     devices/thermopro_tp12.c
+    devices/thermopro_tp211b.c
     devices/thermopro_tp28b.c
     devices/thermopro_tp82xb.c
     devices/thermopro_tp862b.c
@@ -284,6 +299,7 @@ add_library(r_433 STATIC
     devices/tpms_renault_0435r.c
     devices/tpms_toyota.c
     devices/tpms_truck.c
+    devices/tpms_trw.c
     devices/tpms_tyreguard400.c
     devices/ts_ft002.c
     devices/ttx201.c

@@ -85,6 +85,7 @@ def process_source(path, name):
         fileDoc = False
         dLine = None
         dSee = None
+        dSee2 = None
         doc = None
         for i, line in enumerate(f):
             # look for documentation comments:
@@ -109,9 +110,12 @@ def process_source(path, name):
                 continue
             if captureDoc:
                 doc += line
-                m = re.match(r'\s*\@sa\s+(.*?)\(\)\s*', line)
+                # TODO: we should use a list
+                m = re.match(r'\s*\@sa\s+(.*?)\(\)\s*(?:(.*?)\(\))?', line)
                 if m:
                     dSee = m.group(1)
+                    if m.group(2):
+                        dSee2 = m.group(2)
                 continue
             # inline link /** @sa func() */
             m = re.match(r'\s*/\*\*\s*\@sa\s+(.*?)\(\)\s*\*/', line)
@@ -236,6 +240,9 @@ def process_source(path, name):
                 if dSee:
                     links[fName].update({"doc_line": dLine, "doc_see": dSee})
                     dSee = None
+                if dSee2:
+                    links[fName].update({"doc_line": dLine, "doc_see2": dSee2})
+                    dSee2 = None
                 if doc:
                     links[fName].update({"doc_line": dLine, "doc": doc})
                     doc = None

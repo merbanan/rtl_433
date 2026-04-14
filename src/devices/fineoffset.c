@@ -341,7 +341,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 Fine Offset Electronics WH0290 Wireless Air Quality Monitor
 Also: Ambient Weather PM25
 Also: Misol PM25
-Also: EcoWitt WH0290, EcoWitt WH41
+Also: Ecowitt WH0290, Ecowitt WH41
 
 The sensor sends a data burst every 10 minutes.  The bits are PCM
 modulated with Frequency Shift Keying.
@@ -583,9 +583,10 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
-Fine Offset WH51, ECOWITT WH51, MISOL/1 Soil Moisture Sensor.
+Fine Offset WH51, Ecowitt WH51, WN31, MISOL/1 Soil Moisture Sensor.
 
 Also: SwitchDoc Labs SM23 Soil Moisture Sensor.
+Also: Ecowitt WN31 temperature humidity sensor.
 
 Test decoding with: rtl_433 -f 433920000  -X "n=soil_sensor,m=FSK_PCM,s=58,l=58,t=5,r=5000,g=4000,preamble=aa2dd4"
 
@@ -599,7 +600,7 @@ Data format:
 
 - Sync:     aa aa aa ...
 - Preamble: 2d d4
-- FF:       Family code 0x51 (ECOWITT/FineOffset WH51)
+- FF:       Family code 0x51 (Ecowitt/FineOffset WH51)
 - IIIIII:   ID (3 bytes)
 - T:        Transmission period boost: highest 3 bits set to 111 on moisture change and decremented each transmission;
 -           if T = 0 period is 70 sec, if T > 0 period is 10 sec
@@ -1061,7 +1062,7 @@ r_device const fineoffset_WH25 = {
 };
 
 r_device const fineoffset_WH51 = {
-        .name        = "Fine Offset Electronics/ECOWITT WH51, SwitchDoc Labs SM23 Soil Moisture Sensor",
+        .name        = "Fine Offset Electronics/Ecowitt WH51, WN31, SwitchDoc Labs SM23 Soil Moisture Sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 58, // Bit width = 58µs (measured across 580 samples / 40 bits / 250 kHz)
         .long_width  = 58, // NRZ encoding (bit width = pulse width)
