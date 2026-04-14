@@ -248,6 +248,7 @@ add_library(r_433 STATIC
     devices/secplus_v1.c
     devices/secplus_v2.c
     devices/sharp_spc775.c
+    devices/shenzhen_wale_wl_th6r.c
     devices/siemens_5wy72xx.c
     devices/silvercrest.c
     devices/simplisafe.c
