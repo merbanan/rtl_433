@@ -141,12 +141,12 @@ static int gridstream_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             return DECODE_FAIL_SANITY;
         }
         unsigned num_bits = MIN(bitbuffer->bits_per_row[0] - offset, sizeof(b) * 10);
-        decoded_len       = extract_bytes_uart(bitbuffer->bb[0], offset, num_bits, b);
+        decoded_len       = extract_bytes_uart_8n1(bitbuffer->bb[0], offset, num_bits, b);
         protocol_version  = 5;
     }
     else {
         unsigned num_bits = MIN(bitbuffer->bits_per_row[0] - offset, sizeof(b) * 10);
-        decoded_len       = extract_bytes_uart(bitbuffer->bb[0], offset, num_bits, b);
+        decoded_len       = extract_bytes_uart_8n1(bitbuffer->bb[0], offset, num_bits, b);
         protocol_version  = 4;
     }
 
