@@ -55,6 +55,7 @@ struct dm_state {
     pulse_data_t    pulse_data;
     pulse_data_t    fsk_pulse_data;
     unsigned frame_event_count;
+    int frame_quality;
     unsigned frame_start_ago;
     unsigned frame_end_ago;
     struct timeval now;

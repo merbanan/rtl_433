@@ -81,7 +81,7 @@ static int sainlogic_sa8_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int num_bits = bitbuffer->bits_per_row[0] - offset;
     num_bits = MIN((size_t)num_bits, sizeof (b) * 10);
-    int len = extract_bytes_uart(bitbuffer->bb[0], offset, num_bits, b);
+    int len = extract_bytes_uart_8n1(bitbuffer->bb[0], offset, num_bits, b);
 
     if (len < 41) {
         decoder_log(decoder, 2, __func__, "Message too short");

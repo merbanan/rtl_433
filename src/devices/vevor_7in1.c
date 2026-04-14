@@ -38,8 +38,8 @@ Data Layout:
 - BF: {8} Battery Flag 0x9d = battery low, 0x1d = normal battery, may be pairing button to be confirmed ?
 - T: {12} temperature in C, offset 500, scale 10
 - H:  {8} humidity %
-- W: {16} Wind speed, scale 10, offset 257 (0x0101)
-- G:  {8} Wind Gust m/s scale 1.5
+- W: {16} Wind speed, scale 8.333 (km/h), offset 257 (0x0101)
+- G:  {8} Wind Gust, scale 1.25 (km/h)
 - D: {12} Wind Direction, offset 257
 - R: {16} Total Rain mm/m2, 0.4 mm/m²/tips , offset 257
 - U:  {5} UV index from 0 to 16, offset 1
@@ -104,9 +104,9 @@ static int vevor_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             float temp_c      = (temp_raw - 500) * 0.1f;
             int humidity      = b[7];
             int wind_raw      = ((b[8] << 8) | b[9]) - 257; // need to remove 0x0101.
-            float speed_kmh   = wind_raw / 10.0f  ; // wind_raw / 36.0f for m/s
+            float speed_kmh   = wind_raw / 8.333f; // wind_raw / 30.0f for m/s
             int gust_raw      = b[10];
-            float gust_kmh    = gust_raw / 1.5f ; // gust_raw / 1.5f / 3.6f m/s, + 0.1f offset from the weather display
+            float gust_kmh    = gust_raw / 1.25f; // gust_raw / 4.5f for m/s
             int direction_deg = (((b[11] & 0x0f) << 8) | b[12]) - 257; // need to remove 0x101.
             int rain_raw      = ((b[13] << 8) | b[14]) - 257; // need to remove 0x101.
             float rain_mm     = rain_raw * 0.233f; // calculation is 0.43f but display is 0.5f
