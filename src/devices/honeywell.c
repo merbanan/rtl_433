@@ -58,6 +58,7 @@ static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
     uint8_t b[10] = {0};
+    uint16_t crc_calculated = 0;
     bitbuffer_extract_bytes(bitbuffer, row, pos, b, 80);
 
     int channel   = b[0] >> 4;

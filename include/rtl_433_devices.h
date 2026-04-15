@@ -326,6 +326,7 @@
     DECL(continental_car_remote) \
     DECL(code_alarm_frdpc2000_car_remote) \
     DECL(rfm69_lowpowerlab_moteino) \
+    DECL(shenzhen_wale_wl_th6r) \
     DECL(opel_mokka) \
     /* Add new decoders here. */
 

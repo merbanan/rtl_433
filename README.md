@@ -406,7 +406,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [316]  Continental KR5V2X Car Remote (-f 313.8M -s 1024k)
     [317]  Code Alarm FRDPC2002 Car Remote
     [318]  RFM69 LowPowerLab Moteino board (-s 1000k)
-    [319]  Opel Mokka Car Key
+    [319]  Shenzhen Wale WL-TH6R Temperature & Humidity Sensor
+    [320]  Opel Mokka Car Key
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -479,7 +480,7 @@ Available options are:
 		use opt>=n to match at least <n> and opt<=n to match at most <n>
 	invert : invert all bits
 	reflect : reflect each byte (MSB first to MSB last)
-	decode_uart : UART 8n1 (10-to-8) decode
+	decode_uart=<8n1|8n2|8o1> : UART 8n1 (10-to-8), 8n2, 8o1 (11-to-8) decode
 	decode_dm : Differential Manchester decode
 	decode_mc : Manchester decode
 	match=<bits> : only match if the <bits> are found

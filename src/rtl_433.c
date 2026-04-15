@@ -407,6 +407,7 @@ static void reset_sdr_callback(r_cfg_t *cfg)
     demod->frame_start_ago   = 0;
     demod->frame_end_ago     = 0;
     demod->frame_event_count = 0;
+    demod->frame_quality     = 0;
 
     demod->min_level_auto = 0.0f;
     demod->noise_level    = 0.0f;
@@ -594,6 +595,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                     r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
                     pulse_analyzer(&demod->pulse_data, package_type, &device);
                 }
+                if (cfg->grab_mode == 4 && p_events == 0) {
+                    r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
+                    int p_quality   = pulse_analyzer_check(&demod->pulse_data, package_type, &device);
+                    demod->frame_quality = p_quality > demod->frame_quality ? p_quality : demod->frame_quality;
+                }
 
             } else if (package_type == PULSE_DATA_FSK) {
                 calc_rssi_snr(cfg, &demod->fsk_pulse_data);
@@ -621,6 +627,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                     r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
                     pulse_analyzer(&demod->fsk_pulse_data, package_type, &device);
                 }
+                if (cfg->grab_mode == 4 && p_events == 0) {
+                    r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
+                    int p_quality   = pulse_analyzer_check(&demod->fsk_pulse_data, package_type, &device);
+                    demod->frame_quality = p_quality > demod->frame_quality ? p_quality : demod->frame_quality;
+                }
             } // if (package_type == ...
             d_events += p_events;
         } // while (package_type)...
@@ -633,7 +644,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             if (demod->samp_grab) {
                 if (cfg->grab_mode == 1
                         || (cfg->grab_mode == 2 && demod->frame_event_count == 0)
-                        || (cfg->grab_mode == 3 && demod->frame_event_count > 0)) {
+                        || (cfg->grab_mode == 3 && demod->frame_event_count > 0)
+                        || (cfg->grab_mode == 4 && demod->frame_event_count == 0 && demod->frame_quality > 0)) {
                     unsigned frame_pad = n_samples / 8; // this could also be a fixed value, e.g. 10000 samples
                     unsigned start_padded = demod->frame_start_ago + frame_pad;
                     unsigned end_padded = demod->frame_end_ago - frame_pad;
@@ -641,8 +653,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                     samp_grab_write(demod->samp_grab, len_padded, end_padded);
                 }
             }
-            demod->frame_start_ago = 0;
+            demod->frame_start_ago   = 0;
             demod->frame_event_count = 0;
+            demod->frame_quality     = 0;
         }
 
         // dump partial pulse_data for this buffer
@@ -1060,6 +1073,8 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             cfg->grab_mode = 2;
         else if (strcasecmp(arg, "known") == 0)
             cfg->grab_mode = 3;
+        else if (strcasecmp(arg, "undecoded") == 0)
+            cfg->grab_mode = 4;
         else
             cfg->grab_mode = atobv(arg, 1);
         if (cfg->grab_mode && !cfg->demod->samp_grab)
