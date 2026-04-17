@@ -10,11 +10,20 @@
     (at your option) any later version.
 */
 
-/**
+/** @fn int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+Security+ 2.0 rolling code.
+
+@attention stateful
+This decoder has an internal state that may change between invocations and influence the output.
+The Security+ 2.0 protocol transmits two packets ~10ms apart; the first half is cached until the second arrives.
+
+@attention time-based
+This decoder depends on wall clock time and exact timing might influence the output.
+The cache expires after 800ms to avoid combining unrelated transmissions.
+
 Freq 310, 315 and 390 MHz.
 
 Security+ 2.0  is described in [US patent application US20110317835A1](https://patents.google.com/patent/US20110317835A1/)
-
 
 */
 
