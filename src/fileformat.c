@@ -203,10 +203,10 @@ static void file_type(char const *filename, file_info_t *info)
             else if (len == 4 && !strncasecmp("cf32", t, 4)) file_type_set_format(&info->format, F_CF32);
             else if (len == 5 && !strncasecmp("cfile", t, 5)) file_type_set_format(&info->format, F_CF32); // compat
             else if (len == 5 && !strncasecmp("logic", t, 5)) file_type_set_content(&info->format, F_LOGIC);
-            else if (len == 3 && !strncasecmp("complex16u", t, 10)) file_type_set_format(&info->format, F_CU8); // compat
-            else if (len == 3 && !strncasecmp("complex16s", t, 10)) file_type_set_format(&info->format, F_CS8); // compat
-            else if (len == 4 && !strncasecmp("complex", t, 7)) file_type_set_format(&info->format, F_CF32); // compat
-            //else fprintf(stderr, "Skipping type (len %ld) %s\n", len, t);
+            else if (len == 10 && !strncasecmp("complex16u", t, 10)) file_type_set_format(&info->format, F_CU8); // compat
+            else if (len == 10 && !strncasecmp("complex16s", t, 10)) file_type_set_format(&info->format, F_CS8); // compat
+            else if (len == 7 && !strncasecmp("complex", t, 7)) file_type_set_format(&info->format, F_CF32); // compat
+            //else fprintf(stderr, "Skipping type (len %lu) %s\n", (unsigned long)len, t);
         } else {
             p++; // skip non-alphanum char otherwise
         }
@@ -278,30 +278,34 @@ int file_info_parse_filename(file_info_t *info, char const *filename)
 
 // Unit testing
 #ifdef _TEST
+static unsigned passed = 0;
+static unsigned failed = 0;
+
 static void assert_file_type(int check, char const *spec)
 {
     file_info_t info = {0};
     int ret = file_info_parse_filename(&info, spec);
     if (check != ret) {
+        ++failed;
         fprintf(stderr, "\nTEST failed: determine_file_type(\"%s\", &foo) = %8x == %8x\n", spec, ret, check);
     } else {
-        fprintf(stderr, ".");
+        ++passed;
     }
 }
 
 static void assert_str_equal(char const *a, char const *b)
 {
     if (a != b && (!a || !b || strcmp(a, b))) {
+        ++failed;
         fprintf(stderr, "\nTEST failed: \"%s\" == \"%s\"\n", a, b);
     } else {
-        fprintf(stderr, ".");
+        ++passed;
     }
 }
 
 int main(void)
 {
-    fprintf(stderr, "Testing:\n");
-
+    fprintf(stderr, "fileformat:: last_plain_colon\n");
     assert_str_equal(last_plain_colon("foo:bar:baz"), ":baz");
     assert_str_equal(last_plain_colon("foo"), NULL);
     assert_str_equal(last_plain_colon(":foo"), ":foo");
@@ -309,9 +313,13 @@ int main(void)
     assert_str_equal(last_plain_colon("foo:bar:C:\\path.txt"), ":C:\\path.txt");
     assert_str_equal(last_plain_colon("foo:bar:C:\\path.txt:baz"), ":C:\\path.txt:baz");
 
+    fprintf(stderr, "fileformat:: file_info_parse_filename\n");
     assert_file_type(CU8_IQ, "cu8:");
     assert_file_type(CS16_IQ, "cs16:");
     assert_file_type(CF32_IQ, "cf32:");
+    assert_file_type(CU8_IQ, "complex16u:");
+    assert_file_type(CS8_IQ, "complex16s:");
+    assert_file_type(CF32_IQ, "complex:");
     assert_file_type(S16_AM, "am:");
     assert_file_type(S16_AM, "am.s16:");
     assert_file_type(S16_AM, "am-s16:");
@@ -351,6 +359,8 @@ int main(void)
     assert_file_type(S16_FM, ".s16_fm");
     assert_file_type(S16_FM, ".s16,fm");
 
-    fprintf(stderr, "\nDone!\n");
+    fprintf(stderr, "fileformat:: test (%u/%u) passed, (%u) failed.\n", passed, passed + failed, failed);
+
+    return failed > 0 ? 1 : 0;
 }
 #endif /* _TEST */
