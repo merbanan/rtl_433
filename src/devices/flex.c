@@ -12,6 +12,7 @@
 #include "decoder.h"
 #include "optparse.h"
 #include "fatal.h"
+#include "rtl_433_devices.h"
 #include <stdlib.h>
 
 enum uart_mode {
@@ -657,10 +658,23 @@ static unsigned parse_uart_mode(char const *str)
     return 0;
 }
 
-// NOTE: this is declared in rtl_433.c also.
-r_device *flex_create_device(char *spec);
+static void flex_destroy_device(r_device *dev)
+{
+    struct flex_params *params = decoder_user_data(dev);
+    free((void *)dev->name);
+    free(params->name);
+    for (int idx=0; idx < GETTER_SLOTS; ++idx) {
+        free(params->getter[idx].name);
+        free(params->getter[idx].format);
+        for (int map_idx=0; map_idx < GETTER_MAP_SLOTS; ++map_idx) {
+            free(params->getter[idx].map[map_idx].val);
+        }
+    }
+    free(dev->decode_ctx);
+    free(dev);
+}
 
-r_device *flex_create_device(char *spec)
+static r_device *flex_create_device(char const *spec)
 {
     if (!spec || !*spec || *spec == '?' || !strncasecmp(spec, "help", strlen(spec))) {
         help();
@@ -673,15 +687,19 @@ r_device *flex_create_device(char *spec)
     struct flex_params *params = decoder_user_data(dev);
     int get_count = 0;
 
-    spec = strdup(spec);
-    if (!spec)
+    char * mutable_spec = strdup(spec); // spec will be mutated by getkwargs()
+    if (!mutable_spec)
         FATAL_STRDUP("flex_create_device()");
+    spec = mutable_spec;
 
+    // Copy const fields from static global struct
+    dev->create_fn = flex_create_device;
+    dev->destroy_fn = flex_destroy_device;
     dev->decode_fn = flex_callback;
     dev->fields = output_fields;
 
     char *key, *val;
-    while (getkwargs(&spec, &key, &val)) {
+    while (getkwargs(&mutable_spec, &key, &val)) {
         key = remove_ws(key);
         val = trim_ws(val);
 
@@ -858,6 +876,14 @@ r_device *flex_create_device(char *spec)
                 params->min_rows, params->min_bits, params->min_repeats, params->invert, params->reflect, params->match_len, params->preamble_len);
     */
 
-    free(spec);
+    free((void*)spec);
     return dev;
 }
+
+r_device const flex_decoder = {
+        .name        = "General purpose decoder",
+        .create_fn   = &flex_create_device,
+        .destroy_fn  = &flex_destroy_device,
+        .decode_fn   = &flex_callback,
+        .fields      = output_fields,
+};
