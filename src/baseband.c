@@ -86,7 +86,7 @@ float magnitude_true_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
     for (i = 0; i < len; i++) {
         int16_t x = iq_buf[2 * i] - 128;
         int16_t y = iq_buf[2 * i + 1] - 128;
-        y_buf[i]  = (uint16_t)(sqrt(x * x + y * y) * 128.0); // max 181, scaled 23170, fs 16384
+        y_buf[i]  = (uint16_t)(sqrt((double)x * x + (double)y * y) * 128.0); // max 181, scaled 23170, fs 16384
         sum += y_buf[i];
     }
     return len > 0 && sum >= len ? MAG_TO_DB((float)sum / len) : MAG_TO_DB(1);
@@ -117,7 +117,7 @@ float magnitude_true_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
     for (i = 0; i < len; i++) {
         int32_t x = iq_buf[2 * i];
         int32_t y = iq_buf[2 * i + 1];
-        y_buf[i]  = (int)sqrt(x * x + y * y) >> 1; // max 46341, scaled 23170, fs 16384
+        y_buf[i]  = (int)sqrt((double)x * x + (double)y * y) >> 1; // max 46341, scaled 23170, fs 16384
         sum += y_buf[i];
     }
     return len > 0 && sum >= len ? MAG_TO_DB((float)sum / len) : MAG_TO_DB(1);
@@ -130,7 +130,7 @@ void baseband_low_pass_filter_reset(filter_state_t *lowpass_filter)
 
 // Fixed-point arithmetic on Q0.15
 #define F_SCALE 15
-#define S_CONST (1 << F_SCALE)
+#define S_CONST ((int)(1 << F_SCALE))
 #define FIX(x) ((int)(x * S_CONST))
 
 /** Something that might look like a IIR lowpass filter.
@@ -221,7 +221,7 @@ void baseband_demod_FM(demodfm_state_t *state, uint8_t const *x_buf, int16_t *y_
             low_pass = 1e6f / low_pass / samp_rate;
         }
         print_logf(LOG_NOTICE, "Baseband", "low pass filter for %u Hz at cutoff %.0f Hz, %.1f us",
-                samp_rate, samp_rate * low_pass, 1e6 / (samp_rate * low_pass));
+                samp_rate, samp_rate * (double)low_pass, 1e6 / (samp_rate * (double)low_pass));
         double ita  = 1.0 / tan(M_PI_2 * low_pass);
         double gain = 1.0 / (1.0 + ita) / 2; // prescaled by div 2
         state->alp_16[0] = FIX(1.0);
@@ -274,7 +274,7 @@ void baseband_demod_FM(demodfm_state_t *state, uint8_t const *x_buf, int16_t *y_
 
 // Fixed-point arithmetic on Q0.31 (actually Q0.30 to counter 64 signed trouble)
 #define F_SCALE32 30
-#define S_CONST32 (1 << F_SCALE32)
+#define S_CONST32 ((int)(1 << F_SCALE32))
 #define FIX32(x) ((int)(x * S_CONST32))
 
 /// for evaluation.
@@ -314,7 +314,7 @@ void baseband_demod_FM_cs16(demodfm_state_t *state, int16_t const *x_buf, int16_
             low_pass = 1e6f / low_pass / samp_rate;
         }
         print_logf(LOG_NOTICE, "Baseband", "low pass filter for %u Hz at cutoff %.0f Hz, %.1f us",
-                samp_rate, samp_rate * low_pass, 1e6 / (samp_rate * low_pass));
+                samp_rate, samp_rate * (double)low_pass, 1e6 / (samp_rate * (double)low_pass));
         double ita  = 1.0 / tan(M_PI_2 * low_pass);
         double gain = 1.0 / (1.0 + ita);
         state->alp_32[0] = FIX32(1.0);
