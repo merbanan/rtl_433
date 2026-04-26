@@ -61,6 +61,7 @@ static int ctt_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     int events = 0;
+    int saw_bad_crc = 0;
 
     // Expect at least sync + payload (56 bits), but allow extra (e.g., preamble)
     const int min_bits = 56;
@@ -86,15 +87,21 @@ static int ctt_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t payload[5];
         bitbuffer_extract_bytes(bitbuffer, row, sync_pos + 16, payload, 40);
 
-        // SMBus CRC-8
-        if (crc8(payload, 5, 0x07, 0x00) != 0) {
-            decoder_logf(decoder, 2, __func__, "CRC fail (calc 0x%02X != rx 0x%02X)", crc8(payload, 5, 0x07, 0x00), 0);
-            return DECODE_FAIL_SANITY; // Integrity check failed - no point in continuing
+        // SMBus CRC-8 over the 4 encoded ID bytes.
+        uint8_t calc_crc = crc8(payload, 4, 0x07, 0x00);
+        if (calc_crc != payload[4]) {
+            decoder_logf(decoder, 2, __func__, "CRC fail (calc 0x%02X != rx 0x%02X)", calc_crc, payload[4]);
+            saw_bad_crc = 1;
+            continue;
         }
 
-        uint32_t id = (payload[0] << 24) | (payload[1] << 16) | (payload[2] << 8) | payload[3];
+        uint32_t id =
+                ((uint32_t)payload[0] << 24) |
+                ((uint32_t)payload[1] << 16) |
+                ((uint32_t)payload[2] << 8) |
+                (uint32_t)payload[3];
 
-        // Check if all 4 bytes are present in motus_code - this tips us off that the tag is valid for Motus use
+        // Check if all 4 ID bytes are in the Motus code dictionary; indicates a Motus-registered tag
         int motus_tag =
                 byte_in_motus_code(payload[0]) &&
                 byte_in_motus_code(payload[1]) &&
@@ -103,7 +110,7 @@ static int ctt_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-            "model",       "",                        DATA_STRING, "CTT - Life/Power/Hybrid Tag",
+            "model",       "",                        DATA_STRING, "CTT-Tag",
             "id",          "Tag ID",                  DATA_FORMAT, "0x%08X", DATA_INT, id,
             "valid_motus", "Valid Motus tag",         DATA_INT, motus_tag,
             "mic",         "Integrity",               DATA_STRING, "CRC",
@@ -114,10 +121,10 @@ static int ctt_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         events++;
     }
 
-    return events;
+    return events > 0 ? events : saw_bad_crc ? DECODE_FAIL_MIC : 0;
 }
 
-static const char *output_fields[] = {
+static char const *const output_fields[] = {
         "model",
         "id",
         "valid_motus",
