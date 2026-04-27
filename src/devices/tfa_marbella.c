@@ -23,14 +23,17 @@ The Marbella sensor operates at 868MHz frequency band.
 FSK_PCM with 105 us long high durations
 
 AA 2D D4 68 3F 16 0A 31 9A AA XX
-PP SS SS RR RR RR ZC TT TA AA LL
+PP SS SS RR RR RR FF TT TA AA LL
 
 
 P - preamble 0xA
 S - common sync 0x2dd4
 R - serial number of sensor
-Z - always zero
-C - 3 bit counter
+F - flags byte:
+      bit 7   battery low indicator
+      bit 6-4  reserved / unknown
+      bit 3-1  3-bit rolling counter
+      bit 0    reserved / unknown
 T - 12 bit temperature in degree celsius
 A - always 0xA
 L - lsfr, byte reflected reverse galois with 0x31 key and generator
@@ -67,7 +70,8 @@ static int tfa_marbella_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int temp_raw = (msg[7] << 4) | (msg[8] >> 4);
     float temp_c = (temp_raw - 400) * 0.1f;
-    int counter  = (msg[6] & 0xF) >> 1;
+    int battery_low = (msg[6] >> 7) & 0x01;
+    int counter = (msg[6] >> 1) & 0x07;
     int serialnr = msg[3] << 16 | msg[4] << 8 | msg[5];
 
     char serialnr_str[6 * 2 + 1];
@@ -78,6 +82,7 @@ static int tfa_marbella_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, "TFA-Marbella",
             "id",               "",             DATA_STRING, serialnr_str,
             "counter",          "",             DATA_INT,    counter,
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
@@ -91,6 +96,7 @@ static char const *const output_fields[] = {
         "model",
         "id",
         "counter",
+        "battery_ok",
         "temperature_C",
         "mic",
         NULL,
