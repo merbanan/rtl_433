@@ -407,6 +407,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [317]  Code Alarm FRDPC2002 Car Remote
     [318]  RFM69 LowPowerLab Moteino board (-s 1000k)
     [319]  Shenzhen Wale WL-TH6R Temperature & Humidity Sensor
+    [320]  Opel Mokka Car Key
 
 * Disabled by default, use -R n or a conf file to enable
 

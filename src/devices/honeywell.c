@@ -77,7 +77,8 @@ static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // 2GIG brand, also Type 0xC for Tilt Sensor
 
         crc_calculated = crc16(b, 4, 0x8050, 0);
-    } else { // channel == 0x8
+    }
+    else { // channel == 0x8
         crc_calculated = crc16(b, 4, 0x8005, 0);
     }
     if (crc != crc_calculated) {
