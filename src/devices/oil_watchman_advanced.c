@@ -49,7 +49,7 @@ static int oil_watchman_advanced_decode(r_device *decoder, bitbuffer_t *bitbuffe
 {
     static uint8_t const PREAMBLE_SYNC_LENGTH_BITS = 40;
     static uint8_t const HEADER_LENGTH_BITS        = 8;
-    static uint8_t const BODY_LENGTH_BITS          = 144;
+    static uint8_t const BODY_LENGTH_BITS          = 128; // payload 14 byte + crc 2 byte, issue #3525 
     // no need to match all the preamble; 24 bits worth should do
     // include part of preamble, sync-word, length, message identifier
     uint8_t const preamble_pattern[] = {0xaa, 0xaa, 0xaa, 0x2d, 0xd4, 0x0e};
