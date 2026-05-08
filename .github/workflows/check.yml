@@ -9,7 +9,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Build on ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup
         run: brew install soapysdr librtlsdr
       - name: Configure
@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build with CMake
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup
         run: |
           sudo apt-get update -q -y
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build documentation
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Doxygen
         run: |
           sudo apt-get update -q -y
@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Check code style
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Style Check
         uses: ./.github/actions/style-check
 
@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Needs maintainer_update
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Working directory clean excluding untracked files
         run: |
           ./maintainer_update.py
@@ -73,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Check symbol errors
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Symbolizer report
         run: |
           ./tests/symbolizer.py check
@@ -91,7 +91,7 @@ jobs:
     runs-on: ubuntu-24.04
     name: Analyze with Clang
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Clang
         run: |
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key 2>/dev/null | sudo apt-key add -

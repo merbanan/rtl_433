@@ -16,7 +16,7 @@ jobs:
     #runs-on: ubuntu-latest
     runs-on: windows-latest
     steps:
-    - uses: actions/cache@v4
+    - uses: actions/cache@v5
       id: downloads
       with:
         path: ${{ runner.workspace }}/${{ env.pothos-exe }}
@@ -34,7 +34,7 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       release_version: ${{ env.RELEASE_VERSION }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         fetch-depth: 0
     - name: Create Release info
@@ -53,7 +53,7 @@ jobs:
         echo "RELEASE_NAME=Pre-Release ${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
         echo "PRERELEASE=true" >> $GITHUB_ENV
         ./.deploy/gen_nightly_info.sh
-    - uses: softprops/action-gh-release@v2
+    - uses: softprops/action-gh-release@v3
       id: create_release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -79,7 +79,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Build with ${{ matrix.feat }} for ${{ matrix.arch }} on ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup tools
         run: brew install librtlsdr openssl@3
       - name: Setup SoapySDR deps
@@ -135,7 +135,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Build with ${{ matrix.feat }} for ${{ matrix.arch }} on ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup tools
         run: |
           sudo apt-get update -q -y
@@ -179,7 +179,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Build with ${{ matrix.feat }} for ${{ matrix.arch }} on ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup tools
         run: |
           sudo apt-get update -q -y
@@ -242,7 +242,7 @@ jobs:
         run: |
           apt-get update -q -y
           apt-get install -q -y --no-install-recommends git ca-certificates curl file zip
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Fix Ownership issue
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
       - name: Add Architecture
@@ -291,7 +291,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build with Mingw-w64 on ${{ matrix.arch }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: "Install Mingw-w64"
       run: |
         sudo apt-get update -q -y
@@ -339,8 +339,8 @@ jobs:
     steps:
     - run: choco install openssl --yes --no-progress
       if: matrix.platform == 'x64'
-    - uses: actions/checkout@v4
-    - uses: actions/cache@v4
+    - uses: actions/checkout@v5
+    - uses: actions/cache@v5
       id: downloads
       if: matrix.platform == 'x64'
       with:
@@ -462,7 +462,7 @@ jobs:
             distro: buster
     name: Build on ${{ matrix.distro }} ${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: uraimo/run-on-arch-action@v2.0.8
         id: runcmd
         with:

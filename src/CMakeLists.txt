@@ -21,6 +21,7 @@ add_library(r_433 STATIC
     jsmn.c
     list.c
     logger.c
+    microtar.c
     mongoose.c
     optparse.c
     output_file.c
@@ -41,6 +42,7 @@ add_library(r_433 STATIC
     rfraw.c
     samp_grab.c
     sdr.c
+    sigmf.c
     term_ctl.c
     write_sigrok.c
     devices/abmt.c
@@ -97,6 +99,7 @@ add_library(r_433 STATIC
     devices/compustar_1wg3r.c
     devices/continental_car_remote.c
     devices/cotech_36_7959.c
+    devices/ctt_life_power_hybrid.c
     devices/current_cost.c
     devices/danfoss.c
     devices/deltadore_x3d.c
