@@ -30,8 +30,22 @@ Data Layout:
 
     Byte position                      0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18
     Sample       aa aa aa aa aa 2d d4[0e 04 01 00 25 9e 80 4f aa 60 28 01 05 03 00]25 3d
-                 PP PP PP PP PP SS SS[HH MM MM II II II FF TT RR rD DD VV VV VV VV]CC CC
+    Shifted CRC  aa aa aa aa aa 2d d4[0e 04 01 53 b5 cb 90 63 89 80 67 01 07 03 00]3b 30 8
+                 PP PP PP PP PP SS SS[HH MM MM II II II FF TT RR rD DD VV VV VV VV]CC CC X
                                         [BODY                                           ]
+
+Message sample with shifted CRC, issue #3525:
+
+         PREAMBLE   SYNC LEN MESSAGE                      SHIFTED CRC --> First CRC check failed
+    {194}aaaaaaaaaa 2dd4 0e  040153b5cb906389806701070300 3b308
+
+if you shift by 1 bit left 0x3b308 << 1 = 0x7661 = expected crc 16 value
+
+Same message, second check with unshifted CRC
+
+         PREAMBLE   SYNC LEN MESSAGE                      UNSHIFTED CRC --> Second CRC check validated
+    {194}aaaaaaaaaa 2dd4 0e  040153b5cb906389806701070300 7661
+
 
 - PP: 40 bits of preamble, i.e. 10101010 etc.
 - SS: 2 byte of 0x2dd4 - 'standard' sync word
@@ -48,6 +62,7 @@ Data Layout:
 - DD: 12 bits - integer depth (i.e. the distance between the sensor and the oil in the tank)
 - VV: 4 byte of 0x01050300 - constant values which could be a version number? (1.5.3.0)
 - CC: 2 byte CRC-16 poly 0x8005 init 0
+-  X: 1 extra bit, used to unshift the CRC 16
 */
 
 static int oil_watchman_advanced_decode(r_device *decoder, bitbuffer_t *bitbuffer)
