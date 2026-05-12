@@ -43,7 +43,12 @@
 #include "logger.h"
 #include "fatal.h"
 #include "http_server.h"
+
+#if defined __has_include
+#if __has_include("version.h")
 #include "version.h"
+#endif
+#endif
 
 #ifndef _WIN32
 #include <sys/stat.h>
