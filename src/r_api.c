@@ -43,6 +43,7 @@
 #include "logger.h"
 #include "fatal.h"
 #include "http_server.h"
+#include "version.h"
 
 #ifndef _WIN32
 #include <sys/stat.h>
@@ -69,17 +70,13 @@ char const *version_string(void)
 {
     return "rtl_433"
 #ifdef GIT_VERSION
-#define STR_VALUE(arg) #arg
-#define STR_EXPAND(s) STR_VALUE(s)
-            " version " STR_EXPAND(GIT_VERSION)
+            " version " GIT_VERSION
 #ifdef GIT_BRANCH
-            " branch " STR_EXPAND(GIT_BRANCH)
+            " branch " GIT_BRANCH
 #endif
 #ifdef GIT_TIMESTAMP
-            " at " STR_EXPAND(GIT_TIMESTAMP)
+            " at " GIT_TIMESTAMP
 #endif
-#undef STR_VALUE
-#undef STR_EXPAND
 #else
             " version unknown"
 #endif
