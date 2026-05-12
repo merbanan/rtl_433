@@ -44,12 +44,6 @@
 #include "fatal.h"
 #include "http_server.h"
 
-#if defined __has_include
-#if __has_include("version.h")
-#include "version.h"
-#endif
-#endif
-
 #ifndef _WIN32
 #include <sys/stat.h>
 #endif
@@ -70,33 +64,6 @@
 #else
 #include "getopt/getopt.h"
 #endif
-
-char const *version_string(void)
-{
-    return "rtl_433"
-#ifdef GIT_VERSION
-            " version " GIT_VERSION
-#ifdef GIT_BRANCH
-            " branch " GIT_BRANCH
-#endif
-#ifdef GIT_TIMESTAMP
-            " at " GIT_TIMESTAMP
-#endif
-#else
-            " version unknown"
-#endif
-            " inputs file rtl_tcp"
-#ifdef RTLSDR
-            " RTL-SDR"
-#endif
-#ifdef SOAPYSDR
-            " SoapySDR"
-#endif
-#ifdef OPENSSL
-            " with TLS"
-#endif
-            ;
-}
 
 /* helper */
 

@@ -32,6 +32,7 @@
 #include "r_private.h"
 #include "r_device.h"
 #include "r_api.h"
+#include "r_version.h"
 #include "sdr.h"
 #include "baseband.h"
 #include "pulse_analyzer.h"
