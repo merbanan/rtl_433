@@ -496,8 +496,10 @@ Format string:
 */
 static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const preamble_pattern[] = {0x85, 0x37};
-    arad_mm_ctx_t *ctx               = (arad_mm_ctx_t *)decoder_user_data(decoder);
+    uint8_t const preamble_pattern[]            = {0xf5, 0x13, 0x85, 0x37}; //Full preamble (inverted polarity): 96 f5 13 85 37 b4
+    unsigned const preamble_pattern_bits        = 32;
+    unsigned const preamble_pattern_offset_bits = 8; // f5 starts 8 bits after full preamble start
+    arad_mm_ctx_t *ctx                          = (arad_mm_ctx_t *)decoder_user_data(decoder);
     uint8_t b[16];
     uint8_t u[7];
     uint64_t xor_raw;
@@ -505,8 +507,10 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char uid_str[15];
     char sernoout[12];
     int row = 0;
-    int start_uid;
-    unsigned start_pos;
+    unsigned match_pos;
+    int full_preamble_start;
+    unsigned payload_start;
+    unsigned uid_bits;
     int corrections = 0;
     int leaking;
     uint32_t serno;
@@ -526,23 +530,30 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[row] < 18 * 8)
         return DECODE_ABORT_LENGTH;
 
-    start_pos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, 16);
-    if (start_pos + 144 > bitbuffer->bits_per_row[row]) {
+    match_pos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, preamble_pattern_bits);
+    if (match_pos + preamble_pattern_bits > bitbuffer->bits_per_row[row]) {
         decoder_log(decoder, 2, __func__, "Sync word not found");
         return DECODE_ABORT_LENGTH;
     }
 
-    start_uid = (int)start_pos - 32;
-    if (start_uid < 0)
-        start_uid = 0;
+    full_preamble_start = (int)match_pos - (int)preamble_pattern_offset_bits;
+    if (full_preamble_start < 0)
+        return DECODE_ABORT_EARLY;
 
-    start_pos += 16;
+    payload_start = (unsigned)full_preamble_start + 48;
+    if (payload_start + 128 > bitbuffer->bits_per_row[row])
+        return DECODE_ABORT_LENGTH;
+
+    uid_bits = payload_start - (unsigned)full_preamble_start;
+    if (uid_bits > sizeof(u) * 8)
+        uid_bits = sizeof(u) * 8;
+
     bitbuffer_invert(bitbuffer);
 
-    bitbuffer_extract_bytes(bitbuffer, row, start_uid, u, start_pos + 8 - (unsigned)start_uid);
-    bitrow_snprint(u, start_pos + 8 - (unsigned)start_uid, uid_str, sizeof(uid_str));
+    bitbuffer_extract_bytes(bitbuffer, row, (unsigned)full_preamble_start, u, uid_bits);
+    bitrow_snprint(u, uid_bits, uid_str, sizeof(uid_str));
 
-    bitbuffer_extract_bytes(bitbuffer, row, start_pos, b, 128);
+    bitbuffer_extract_bytes(bitbuffer, row, payload_start, b, 128);
     decoder_log_bitrow(decoder, 2, __func__, b, 128, "MSG Extracted");
 
     xor_raw = ((uint64_t)b[11] << 32) | ((uint64_t)b[12] << 24) | ((uint64_t)b[13] << 16) | ((uint64_t)b[14] << 8) | b[15];
