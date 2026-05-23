@@ -321,9 +321,14 @@ preamble=<bits> : match and align at the <bits> preamble
 .RS
 unique : suppress duplicate row output
 .RE
-
 .RS
 countonly : suppress detailed row output
+.RE
+.RS
+lua : a filename containing a lua script defining validate and/or decode functions
+.RE
+.RS
+luacode : a lua script defining validate and/or decode functions
 .RE
 
 E.g. \-X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repeats>=3"

@@ -366,6 +366,61 @@ char const *kwargs_skip(char const *s)
     return s;
 }
 
+char *getkwargswithvalescape(char **s, char **key, char **val)
+{
+    // Find the = and see if next token is [[.
+    // if not, then chain to old code
+    if (s && *s) {
+        char *eq = strchr(*s, '=');
+        if (eq) {
+            char *v = eq + 1;
+            while (*v == ' ' || *v == '\t')
+                v++;
+
+            if (v[0] == '[' && v[1] == '[') {
+                // We are in the escaping mode
+                char *k = *s;
+                *eq     = '\0'; // null terminate the key
+                v += 2;
+
+                char *vend = v;
+                while (vend[0]) {
+                    while (vend[0] && (vend[0] != ']' || vend[1] != ']')) {
+                        vend++;
+                    }
+                    // exit condition is end of input data or at ']]'
+                    if (vend[0]) {
+                        char *veol = vend + 2;
+                        while (*veol == ' ' || *veol == '\t') {
+                            veol++;
+                        }
+                        if (*veol == '\n' || *veol == '\r')
+                            break;
+                        vend = veol;
+                    }
+                    else {
+                        break;
+                    }
+                }
+
+                if (*vend) {
+                    // Must be pointing to ]]
+                    *vend = '\0';
+                    vend += 2;
+                }
+
+                if (key)
+                    *key = k;
+                if (val)
+                    *val = v;
+                *s = vend;
+                return k;
+            }
+        }
+    }
+    return getkwargs(s, key, val);
+}
+
 char *getkwargs(char **s, char **key, char **val)
 {
     char *v = asepc(s, ',');

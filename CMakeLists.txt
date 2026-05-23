@@ -187,6 +187,39 @@ else()
 endif()
 
 ########################################################################
+# Find LUA dependencies
+########################################################################
+# Find Lua 5.3/5.4
+# The FindLua module will set variables like Lua_FOUND, LUA_INCLUDE_DIR, and LUA_LIBRARIES.
+set(ENABLE_LUA AUTO CACHE STRING "Enable Flex LUA support")
+set_property(CACHE ENABLE_LUA PROPERTY STRINGS AUTO ON OFF)
+if(ENABLE_LUA) # AUTO / ON
+
+find_package(Lua 5.3 QUIET)
+# Check if the library was found
+if(Lua_FOUND)
+    message(STATUS "Found Lua ${Lua_VERSION}: ${LUA_LIBRARIES}")
+
+    # Set the preprocessor definition -DHAS_LUA=1 for C/C++ source code
+    # PUBLIC visibility means targets linked to 'your_project_target' will also see this definition.
+    ADD_DEFINITIONS(-DHAS_LUA)
+
+    # Link the target with the found Lua libraries
+    list(APPEND SDR_LIBRARIES ${LUA_LIBRARIES})
+
+    # Add the necessary include directories
+    include_directories(${LUA_INCLUDE_DIR})
+elseif(ENABLE_LUA STREQUAL "AUTO")
+    message(STATUS "LUA development files not found, Flex LUA won't be possible.")
+else()
+    message(FATAL_ERROR "LUA development files not found.")
+endif()
+
+else()
+    message(STATUS "Flex LUA disabled.")
+endif()
+
+########################################################################
 # Find OpenSSL build dependencies
 ########################################################################
 set(ENABLE_OPENSSL AUTO CACHE STRING "Enable OpenSSL TLS support")

@@ -107,13 +107,35 @@ Purge all SoapySDR packages and source installation from /usr/local.
 Then install only from packages (version 0.7) or only from source (version 0.8).
 :::
 
+## LUA Support
+
+If you want LUA support, then you may need to install the LUA 5.4 or the LUA 5.3 development libraries for your platform.
+
+### Debian
+
+`sudo apt install liblua5.4-dev`
+
+### MacOS
+
+`brew install lua`
+
+or
+
+`sudo port install lua5.4`
+
+### Windows
+
+Untested at the moment.
+
 ## Package maintainers
 
 To properly configure builds without relying on automatic feature detection you should set all options explicitly, e.g.
 
-    cmake -DENABLE_RTLSDR=ON -DENABLE_SOAPYSDR=ON -DENABLE_OPENSSL=ON -DBUILD_DOCUMENTATION=OFF -DCMAKE_BUILD_TYPE=Release -GNinja -B build
+    cmake -DENABLE_LUA=ON -DENABLE_RTLSDR=ON -DENABLE_SOAPYSDR=ON -DENABLE_OPENSSL=ON -DBUILD_DOCUMENTATION=OFF -DCMAKE_BUILD_TYPE=Release -GNinja -B build
     cmake --build build -j 10
     DESTDIR=/tmp/destdir cmake --build build --target install
+
+If you don't want to include the LUA feature, then set `-DENABLE_LUA=OFF` to ensure that the LUA feature is not built even if the libraries are present on the build system.
 
 ## Windows
 

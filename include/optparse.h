@@ -142,6 +142,21 @@ char const *kwargs_skip(char const *s);
 ///
 /// The input string will be modified and the pointer advanced.
 /// The key and val pointers will be into the original string.
+/// Note that the val can be surrounded by [[ and ]]. Inside the
+/// [[ quoting, newlines, commas, etc are allowed. The terminating
+/// ]] must be at the end of a line. This really only makes sense inside
+/// a { } quoted statement.
+///
+/// @param[in,out] s String of key=value pairs, separated by commas
+/// @param[out] key keyword argument if found, NULL otherwise
+/// @param[out] val value if found, NULL otherwise
+/// @return the original value of *stringp (the keyword found)
+char *getkwargswithvalescape(char **s, char **key, char **val);
+
+/// Parse a comma-separated list of key/value pairs into kwargs.
+///
+/// The input string will be modified and the pointer advanced.
+/// The key and val pointers will be into the original string.
 ///
 /// @param[in,out] s String of key=value pairs, separated by commas
 /// @param[out] key keyword argument if found, NULL otherwise
