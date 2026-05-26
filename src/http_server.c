@@ -1096,8 +1096,7 @@ static void ev_handler(struct mg_connection *nc, int ev, void *ev_data)
             handle_options(nc, hm);
         }
         else if (mg_vcmp(&hm->uri, "/") == 0) {
-            handle_get(nc, hm, INDEX_HTML, sizeof(INDEX_HTML));
-            handle_redirect(nc, hm);
+            handle_get(nc, hm, INDEX_HTML, sizeof(INDEX_HTML) - 1);
         }
         else if (mg_vcmp(&hm->uri, "/ui") == 0) {
             handle_redirect(nc, hm);
