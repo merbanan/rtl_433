@@ -409,7 +409,7 @@ Programmable parameters:
 - Meter User ID:
   A municipal Meter ID number of up to 5 digits (16 or 17 bits needed)
 - Transponder No:
-  Meter’s Dialog 3GTM transponder number of up to 12 digits (40 bits needed)
+  Meter's Dialog 3GTM transponder number of up to 12 digits (40 bits needed)
 - Reading:
   The transmitted Dialog 3G TM meter reading (up to 9 digits), (30 bits needed)
   the accumulated and the display readout are always equivalent.
