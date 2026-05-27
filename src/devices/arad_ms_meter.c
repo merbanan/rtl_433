@@ -632,5 +632,6 @@ r_device const arad_ms_meter = {
         .reset_limit = 100,
         .decode_fn   = &arad_mm_dialog3g_decode,
         .create_fn   = &arad_ms_meter_create,
+        .disabled    = 0,
         .fields      = output_fields,
 };
