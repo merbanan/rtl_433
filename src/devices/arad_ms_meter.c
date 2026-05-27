@@ -496,9 +496,9 @@ Format string:
 */
 static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const preamble_pattern[]            = {0xf5, 0x13, 0x85, 0x37}; //Full preamble (inverted polarity): 96 f5 13 85 37 b4
+    uint8_t const preamble_pattern[]            = {0xf5, 0x13, 0x85, 0x37};
     unsigned const preamble_pattern_bits        = 32;
-    unsigned const preamble_pattern_offset_bits = 8; // f5 starts 8 bits after full preamble start
+    unsigned const preamble_pattern_offset_bits = 16; /* f5 starts 16 bits after UID start */
     arad_mm_ctx_t *ctx                          = (arad_mm_ctx_t *)decoder_user_data(decoder);
     uint8_t b[16];
     uint8_t u[7];
@@ -508,7 +508,7 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char sernoout[12];
     int row = 0;
     unsigned match_pos;
-    int full_preamble_start;
+    int uid_start;
     unsigned payload_start;
     unsigned uid_bits;
     int corrections = 0;
@@ -536,21 +536,30 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
-    full_preamble_start = (int)match_pos - (int)preamble_pattern_offset_bits;
-    if (full_preamble_start < 0)
+    uid_start = (int)match_pos - (int)preamble_pattern_offset_bits;
+    if (uid_start < 0)
         return DECODE_ABORT_EARLY;
 
-    payload_start = (unsigned)full_preamble_start + 48;
+    /*
+     * Payload starts at byte 0xb4 in the non-inverted stream.
+     * After bitbuffer_invert(), this becomes 0x4b, the first checksum byte.
+     *
+     * For sync f5 13 85 37:
+     *   match_pos points to f5
+     *   payload starts after the matched 4 bytes, at b4
+     */
+    payload_start = match_pos + preamble_pattern_bits;
+
     if (payload_start + 128 > bitbuffer->bits_per_row[row])
         return DECODE_ABORT_LENGTH;
 
-    uid_bits = payload_start - (unsigned)full_preamble_start;
+    uid_bits = payload_start - (unsigned)uid_start;
     if (uid_bits > sizeof(u) * 8)
         uid_bits = sizeof(u) * 8;
 
     bitbuffer_invert(bitbuffer);
 
-    bitbuffer_extract_bytes(bitbuffer, row, (unsigned)full_preamble_start, u, uid_bits);
+    bitbuffer_extract_bytes(bitbuffer, row, (unsigned)uid_start, u, uid_bits);
     bitrow_snprint(u, uid_bits, uid_str, sizeof(uid_str));
 
     bitbuffer_extract_bytes(bitbuffer, row, payload_start, b, 128);
