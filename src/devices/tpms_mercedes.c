@@ -117,7 +117,7 @@ r_device const tpms_mercedes = {
         .modulation  = FSK_PULSE_PCM,
         .short_width = 52,
         .long_width  = 52,
-        .reset_limit = 150,
+        .reset_limit = 53248,
         .decode_fn   = &tpms_mercedes_callback,
         .fields      = output_fields,
 };
