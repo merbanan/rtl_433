@@ -209,6 +209,7 @@
     DECL(megacode) \
     DECL(auriol_4ld5661) \
     DECL(tpms_truck) \
+    DECL(tpms_mercedes) \
     DECL(funkbus_remote) \
     DECL(tpms_porsche) \
     DECL(jasco) \
