@@ -496,10 +496,8 @@ Format string:
 */
 static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const preamble_pattern[]            = {0xf5, 0x13, 0x85, 0x37};
-    unsigned const preamble_pattern_bits        = 32;
-    unsigned const preamble_pattern_offset_bits = 16; /* f5 starts 16 bits after UID start */
-    arad_mm_ctx_t *ctx                          = (arad_mm_ctx_t *)decoder_user_data(decoder);
+    uint8_t const sync4[] = {0xf5, 0x13, 0x85, 0x37};
+    arad_mm_ctx_t *ctx    = (arad_mm_ctx_t *)decoder_user_data(decoder);
     uint8_t b[16];
     uint8_t u[7];
     uint64_t xor_raw;
@@ -508,9 +506,9 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char sernoout[12];
     int row = 0;
     unsigned match_pos;
-    int uid_start;
     unsigned payload_start;
     unsigned uid_bits;
+    int uid_start;
     int corrections = 0;
     int leaking;
     uint32_t serno;
@@ -522,34 +520,21 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float scale      = 0.1f;
     float volume;
 
-    if (bitbuffer->num_rows > 1) {
-        decoder_logf(decoder, 1, __func__, "Too many rows: %d", bitbuffer->num_rows);
+    if (bitbuffer->num_rows > 1)
         return DECODE_FAIL_SANITY;
-    }
 
     if (bitbuffer->bits_per_row[row] < 18 * 8)
         return DECODE_ABORT_LENGTH;
 
-    match_pos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, preamble_pattern_bits);
-    if (match_pos + preamble_pattern_bits > bitbuffer->bits_per_row[row]) {
-        decoder_log(decoder, 2, __func__, "Sync word not found");
+    match_pos = bitbuffer_search(bitbuffer, row, 0, sync4, 32);
+    if (match_pos + 32 > bitbuffer->bits_per_row[row])
         return DECODE_ABORT_LENGTH;
-    }
 
-    uid_start = (int)match_pos - (int)preamble_pattern_offset_bits;
+    uid_start = (int)match_pos - 16;
     if (uid_start < 0)
-        return DECODE_ABORT_EARLY;
+        uid_start = 0;
 
-    /*
-     * Payload starts at byte 0xb4 in the non-inverted stream.
-     * After bitbuffer_invert(), this becomes 0x4b, the first checksum byte.
-     *
-     * For sync f5 13 85 37:
-     *   match_pos points to f5
-     *   payload starts after the matched 4 bytes, at b4
-     */
-    payload_start = match_pos + preamble_pattern_bits;
-
+    payload_start = match_pos + 32;
     if (payload_start + 128 > bitbuffer->bits_per_row[row])
         return DECODE_ABORT_LENGTH;
 
@@ -559,13 +544,19 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_invert(bitbuffer);
 
+    memset(u, 0, sizeof(u));
     bitbuffer_extract_bytes(bitbuffer, row, (unsigned)uid_start, u, uid_bits);
     bitrow_snprint(u, uid_bits, uid_str, sizeof(uid_str));
 
+    memset(b, 0, sizeof(b));
     bitbuffer_extract_bytes(bitbuffer, row, payload_start, b, 128);
-    decoder_log_bitrow(decoder, 2, __func__, b, 128, "MSG Extracted");
 
-    xor_raw = ((uint64_t)b[11] << 32) | ((uint64_t)b[12] << 24) | ((uint64_t)b[13] << 16) | ((uint64_t)b[14] << 8) | b[15];
+    xor_raw = ((uint64_t)b[11] << 32) |
+              ((uint64_t)b[12] << 24) |
+              ((uint64_t)b[13] << 16) |
+              ((uint64_t)b[14] << 8) |
+              b[15];
+
     xor_cal = arad_checksum(b);
     if (xor_raw != xor_cal) {
         corrections = arad_correct_bits(b, xor_raw ^ xor_cal);
@@ -580,16 +571,21 @@ static int arad_mm_dialog3g_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     wreadraw = (uint32_t)b[6] | ((uint32_t)b[7] << 8) | ((uint32_t)b[8] << 16);
     flags2   = b[10];
 
-    if (sn_sufx == 0x00 && (flags1 == 0x00 || flags1 == 0x40))
+    if (sn_sufx == 0x00 && (flags1 == 0x00 || flags1 == 0x40)) {
         scale = 0.01f;
-    else if (sn_sufx == 0x27 && flags1 == 0x00)
-        unit = ARAD_UNIT_USG;
+        unit  = ARAD_UNIT_M3;
+    }
+    else if (sn_sufx == 0x27 && flags1 == 0x00) {
+        scale = 0.1f;
+        unit  = ARAD_UNIT_USG;
+    }
 
     if (ctx && !arad_match_serial(ctx, serno, sn_sufx))
         return DECODE_ABORT_EARLY;
 
     if (ctx && ctx->user_gear_set)
         scale = ctx->user_gear;
+
     if (ctx && ctx->user_units_set)
         unit = ctx->user_units;
 
