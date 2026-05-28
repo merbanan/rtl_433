@@ -20,17 +20,18 @@ searches each row for an 80 bit packet with the observed CRC.
 
 Data layout:
 
-    II II II II II TT PP NN FF CC
+    II II II II II UU PP NN FF CC
 
 - I: 40 bit sensor ID
-- T: 8 bit temperature, likely deg C offset by 145
-- P: 8 bit pressure in PSI
+- U: 8 bit unknown, possibly temperature-related
+- P: 8 bit pressure, appears to be PSI in the first captures
 - N: 8 bit rolling counter
-- F: 8 bit fixed value, observed as 0x6b
+- F: 8 bit flags/status, observed as 0x6b in the first captures
 - C: CRC-8, poly 0x2f, init 0xaa
 
-The temperature scale needs confirmation with more captures. The pressure byte
-matches the reported cold tire pressure of around 65 PSI.
+More captures with known tire positions, pressures, and temperatures are needed
+to confirm the unknown byte and all possible flag values. The pressure byte
+matches the reported cold tire pressure of around 65 PSI in the provided set.
 */
 
 #include "decoder.h"
@@ -45,21 +46,20 @@ static int tpms_mercedes_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
         return DECODE_FAIL_MIC;
     }
 
-    int temp_raw     = b[5];
+    int unknown      = b[5];
     int pressure_psi = b[6];
     int counter      = b[7];
-    int fixed        = b[8];
+    int flags        = b[8];
 
-    // Keep this conservative while more tire IDs and temperatures are gathered.
-    if (pressure_psi < 10 || pressure_psi > 150 || temp_raw < 80 || temp_raw > 230 || fixed != 0x6b) {
+    // Keep the provisional flag filter while more sample sets are gathered.
+    if (pressure_psi < 10 || pressure_psi > 150 || flags != 0x6b) {
         return DECODE_ABORT_EARLY;
     }
 
     char id_str[5 * 2 + 1];
     snprintf(id_str, sizeof(id_str), "%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4]);
 
-    double temperature_c = (double)temp_raw - 145.0;
-    double pressure_kpa  = psi2kpa((float)pressure_psi);
+    double pressure_kpa = psi2kpa((float)pressure_psi);
 
     /* clang-format off */
     data_t *data = data_make(
@@ -68,10 +68,9 @@ static int tpms_mercedes_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
             "id",               "",            DATA_STRING, id_str,
             "pressure_PSI",     "Pressure",    DATA_FORMAT, "%d PSI",   DATA_INT,    pressure_psi,
             "pressure_kPa",     "Pressure",    DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, pressure_kpa,
-            "temperature_C",    "Temperature", DATA_FORMAT, "%.0f C",   DATA_DOUBLE, temperature_c,
-            "temperature_raw",  "",            DATA_INT,    temp_raw,
+            "unknown",          "",            DATA_FORMAT, "0x%02x",   DATA_INT,    unknown,
             "counter",          "",            DATA_INT,    counter,
-            "fixed",            "",            DATA_FORMAT, "0x%02x",   DATA_INT,    fixed,
+            "flags",            "",            DATA_FORMAT, "0x%02x",   DATA_INT,    flags,
             "mic",              "Integrity",   DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -104,10 +103,9 @@ static char const *const output_fields[] = {
         "id",
         "pressure_PSI",
         "pressure_kPa",
-        "temperature_C",
-        "temperature_raw",
+        "unknown",
         "counter",
-        "fixed",
+        "flags",
         "mic",
         NULL,
 };
