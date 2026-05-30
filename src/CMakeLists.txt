@@ -205,6 +205,7 @@ add_library(r_433 STATIC
     devices/mic6sc2_car_remote.c
     devices/missil_ml0757.c
     devices/mueller_hotrod.c
+    devices/nedis_wifiwest500wt.c
     devices/neptune_r900.c
     devices/new_template.c
     devices/newkaku.c

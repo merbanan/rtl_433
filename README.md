@@ -408,6 +408,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [318]  RFM69 LowPowerLab Moteino board (-s 1000k)
     [319]  Shenzhen Wale WL-TH6R Temperature & Humidity Sensor
     [320]  Cellular Tracking Technologies LifeTag/PowerTag/HybridTag
+    [321]  Nedis WIFIWEST500WT
 
 * Disabled by default, use -R n or a conf file to enable
 
