@@ -65,37 +65,6 @@
 #include "getopt/getopt.h"
 #endif
 
-char const *version_string(void)
-{
-    return "rtl_433"
-#ifdef GIT_VERSION
-#define STR_VALUE(arg) #arg
-#define STR_EXPAND(s) STR_VALUE(s)
-            " version " STR_EXPAND(GIT_VERSION)
-#ifdef GIT_BRANCH
-            " branch " STR_EXPAND(GIT_BRANCH)
-#endif
-#ifdef GIT_TIMESTAMP
-            " at " STR_EXPAND(GIT_TIMESTAMP)
-#endif
-#undef STR_VALUE
-#undef STR_EXPAND
-#else
-            " version unknown"
-#endif
-            " inputs file rtl_tcp"
-#ifdef RTLSDR
-            " RTL-SDR"
-#endif
-#ifdef SOAPYSDR
-            " SoapySDR"
-#endif
-#ifdef OPENSSL
-            " with TLS"
-#endif
-            ;
-}
-
 /* helper */
 
 struct mg_mgr *get_mgr(r_cfg_t *cfg)

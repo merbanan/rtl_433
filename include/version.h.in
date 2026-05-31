@@ -1,0 +1,3 @@
+#cmakedefine GIT_VERSION "@GIT_VERSION@"
+#cmakedefine GIT_BRANCH "@GIT_BRANCH@"
+#cmakedefine GIT_TIMESTAMP "@GIT_TIMESTAMP@"
