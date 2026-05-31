@@ -20,17 +20,18 @@ captures show the same payload behind a 25 us inverted Manchester path after a
 
 Data layout:
 
-    II II II II II PP UU NN FF CC
+    II II II II II PP TT FN SS CC
 
 - I: 40 bit sensor ID
-- P: 8 bit pressure, 2.5 kPa units
-- U: 8 bit unknown
-- N: 8 bit rolling counter
-- F: 8 bit flags/status, observed as 0x6b in the first captures
+- P: 8 bit pressure, PSI = raw / 2.75
+- T: 8 bit temperature, degrees C = raw - 51 in the current captures
+- F: 3 bit flags/status, observed as 0x02 in the current captures
+- N: 5 bit rolling counter, observed 1..31 and never 0
+- S: 8 bit fixed/status value, observed as 0x6b in the current captures
 - C: CRC-8, poly 0x2f, init 0xaa
 
-More captures with known tire positions, pressures, and temperatures are needed
-to confirm the unknown byte and all possible flag values. The pressure scaling
+More captures across temperatures and sensor states are needed to confirm the
+temperature offset and all possible flag/status values. The pressure scaling
 matches the later reported driver-side front and rear tire pressure samples.
 */
 
@@ -46,15 +47,17 @@ static int tpms_mercedes_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
         return DECODE_FAIL_MIC;
     }
 
-    int pressure_raw = b[5];
-    int unknown      = b[6];
-    int counter      = b[7];
-    int flags        = b[8];
-    double pressure_kpa = pressure_raw * 2.5;
-    double pressure_psi = kpa2psi((float)pressure_kpa);
+    int pressure_raw    = b[5];
+    int temperature_raw = b[6];
+    int flags           = b[7] >> 5;
+    int counter         = b[7] & 0x1f;
+    int status          = b[8];
+    double pressure_psi = pressure_raw / 2.75;
+    double pressure_kpa = psi2kpa((float)pressure_psi);
+    double temperature_c = temperature_raw - 51.0;
 
-    // Keep the provisional flag filter while more sample sets are gathered.
-    if (pressure_psi < 10.0 || pressure_psi > 150.0 || flags != 0x6b) {
+    // Keep the provisional status filter while more sample sets are gathered.
+    if (pressure_psi < 10.0 || pressure_psi > 150.0 || counter == 0 || status != 0x6b) {
         return DECODE_ABORT_EARLY;
     }
 
@@ -68,9 +71,10 @@ static int tpms_mercedes_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
             "id",               "",            DATA_STRING, id_str,
             "pressure_kPa",     "Pressure",    DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, pressure_kpa,
             "pressure_PSI",     "Pressure",    DATA_FORMAT, "%.1f PSI", DATA_DOUBLE, pressure_psi,
-            "unknown",          "",            DATA_FORMAT, "0x%02x",   DATA_INT,    unknown,
+            "temperature_C",    "Temperature", DATA_FORMAT, "%.0f C",    DATA_DOUBLE, temperature_c,
+            "flags",            "",            DATA_FORMAT, "0x%x",     DATA_INT,    flags,
             "counter",          "",            DATA_INT,    counter,
-            "flags",            "",            DATA_FORMAT, "0x%02x",   DATA_INT,    flags,
+            "status",           "",            DATA_FORMAT, "0x%02x",   DATA_INT,    status,
             "mic",              "Integrity",   DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -131,9 +135,10 @@ static char const *const output_fields[] = {
         "id",
         "pressure_kPa",
         "pressure_PSI",
-        "unknown",
-        "counter",
+        "temperature_C",
         "flags",
+        "counter",
+        "status",
         "mic",
         NULL,
 };
