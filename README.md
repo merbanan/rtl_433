@@ -289,126 +289,127 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [199]  Linear Megacode Garage/Gate Remotes
     [200]* Auriol 4-LD5661/4-LD5972/4-LD6313 temperature/rain sensors
     [201]  Unbranded SolarTPMS for trucks
-    [202]  Mercedes-Benz Sprinter TPMS
-    [203]  Funkbus / Instafunk (Berker, Gira, Jung)
-    [204]  Porsche Boxster/Cayman TPMS
-    [205]  Jasco/GE Choice Alert Security Devices
-    [206]  Telldus weather station FT0385R sensors
-    [207]  LaCrosse TX34-IT rain gauge
-    [208]  SmartFire Proflame 2 remote control
-    [209]  AVE TPMS
-    [210]  SimpliSafe Gen 3 Home Security System
-    [211]  Yale HSA (Home Security Alarm), YES-Alarmkit
-    [212]  Regency Ceiling Fan Remote (-f 303.75M to 303.96M)
-    [213]  Renault 0435R TPMS
-    [214]  Fine Offset Electronics WS80 weather station
-    [215]  EMOS E6016 weatherstation with DCF77
-    [216]  Emax W6, rebrand Altronics x7063/4/x7064A, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025, Protmex PT3390A, Jula Marquant 014331/32, TechniSat IMETEO X6 76-4924-00, Weather Station or temperature/humidity sensor
-    [217]* ANT and ANT+ devices
-    [218]  EMOS E6016 rain gauge
-    [219]  Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes (FSK)
-    [220]  Fine Offset Electronics WH45 air quality sensor
-    [221]  Maverick XR-30 BBQ Sensor
-    [222]  Fine Offset Electronics WN34S/L/D and Froggit DP150/D35 temperature sensor
-    [223]  Rubicson Pool Thermometer 48942
-    [224]  Badger ORION water meter, 100kbps (-f 916.45M -s 1200k)
-    [225]  GEO minim+ energy monitor
-    [226]  TyreGuard 400 TPMS
-    [227]  Kia TPMS (-s 1000k)
-    [228]  SRSmith Pool Light Remote Control SRS-2C-TX (-f 915M)
-    [229]  Neptune R900 flow meters
-    [230]  WEC-2103 temperature/humidity sensor
-    [231]  Vauno EN8822C
-    [232]  Govee Water Leak Detector H5054
-    [233]  TFA Dostmann 14.1504.V2 Radio-controlled grill and meat thermometer
-    [234]* CED7000 Shot Timer
-    [235]  Watchman Sonic Advanced / Plus, Tekelek
-    [236]  Oil Ultrasonic SMART FSK
-    [237]  Gasmate BA1008 meat thermometer
-    [238]  Flowis flow meters
-    [239]  Wireless M-Bus, Mode T, 32.768kbps (-f 868.3M -s 1000k)
-    [240]  Revolt NC-5642 Energy Meter
-    [241]  LaCrosse TX31U-IT, The Weather Channel WS-1910TWC-IT
-    [242]  EezTire E618, Carchet TPMS, TST-507 TPMS
-    [243]* Baldr / RainPoint rain gauge.
-    [244]  Celsia CZC1 Thermostat
-    [245]  Fine Offset Electronics WS90 weather station
-    [246]* ThermoPro TX-2C Thermometer and Humidity sensor
-    [247]  TFA 30.3151 Weather Station
-    [248]  Bresser water leakage
-    [249]* Nissan TPMS
-    [250]  Bresser lightning
-    [251]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge, TFA Dostmann 30.3252.01/47.3006.01 Rain Gauge and Thermometer, ADE WS1907
-    [252]  Fine Offset / Ecowitt WH55 water leak sensor
-    [253]  BMW Gen4-Gen5 TPMS and Audi TPMS Pressure Alert, multi-brand HUF/Beru, Continental, Schrader/Sensata, Audi
-    [254]  Watts WFHT-RF Thermostat
-    [255]  Thermor DG950 weather station
-    [256]  Mueller Hot Rod water meter
-    [257]  ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill
-    [258]  BMW Gen2 and Gen3 TPMS
-    [259]  Chamberlain CWPIRC PIR Sensor
-    [260]  ThermoPro Meat Thermometers, TP829B 4 probes with temp only
-    [261]* Arad/Master Meter Dialog3G water utility meter
-    [262]  Geevon TX16-3 outdoor sensor
-    [263]  Fine Offset Electronics WH46 air quality sensor
-    [264]  Vevor Wireless Weather Station 7-in-1
-    [265]  Arexx Multilogger IP-HA90, IP-TH78EXT, TSN-70E
-    [266]  Rosstech Digital Control Unit DCU-706/Sundance/Jacuzzi
-    [267]  Risco 2 Way Agility protocol, Risco PIR/PET Sensor RWX95P
-    [268]  ThermoPro Meat Thermometers, TP828B 2 probes with Temp, BBQ Target LO and HI
-    [269]  Bresser Thermo-/Hygro-Sensor Explore Scientific ST1005H
-    [270]  DeltaDore X3D devices
-    [271]* Quinetic
-    [272]  Landis & Gyr Gridstream Power Meters 9.6k
-    [273]  Landis & Gyr Gridstream Power Meters 19.2k
-    [274]  Landis & Gyr Gridstream Power Meters 38.4k
-    [275]  Revolt ZX-7717 power meter
-    [276]  GM-Aftermarket TPMS
-    [277]  RainPoint HCS012ARF Rain Gauge sensor
-    [278]  Apator Metra E-RM 30 water meter
-    [279]  ThermoPro TX-7B Outdoor Thermometer Hygrometer
-    [280]  Nexus, CRX, Prego sauna temperature sensor
-    [281]  Homelead HG9901 (Geevon, Dr.Meter, Royal Gardineer) soil moisture/temp/light level sensor
-    [282]  Maverick XR-50 BBQ Sensor
-    [283]  Orion Endpoint from Badger Meter, GIF2014W-OSE, water meter, hopping from 904.4 Mhz to 924.6Mhz (-s 1600k)
-    [284]  Fine Offset Electronics WH43 air quality sensor
-    [285]  Baldr E0666TH Thermo-Hygrometer
-    [286]  bm5-v2 12V Battery Monitor
-    [287]  Universal (Reverseable) 24V Fan Controller
-    [288]  Fine Offset Electronics WS85 weather station
-    [289]  Oria WA150KM freezer and fridge thermometer
-    [290]  Voltcraft EnergyCount 3000 (ec3k)
-    [291]  Orion Endpoint from Badger Meter, GIF2020OCECNA, water meter, hopping from 904.4 Mhz to 924.6Mhz (-s 1600k)
-    [292]  Geevon TX19-1 outdoor sensor
-    [293]  WallarGe CLTX001 Outdoor Temperature Sensor
-    [294]  Sainlogic SA8, Gevanti SA8 Weather Station
-    [295]  ThermoPro TP862b TempSpike XR Wireless Dual-Probe Meat Thermometer
-    [296]  Airpuxem TPMS TYH11_EU6_ZQ
-    [297]  Apator Metra E-ITN 30 heat cost allocator
-    [298]  ThermoPro TP211B Thermometer
-    [299]  TRW TPMS OOK OEM and Clone models
-    [300]  TRW TPMS FSK OEM and Clone models
-    [301]  Govee Water Leak Detector H5059
-    [302]  Astrostart 2000 Car Remote (-f 372.4M)
-    [303]  Compustar 1WG3R Car Remote
-    [304]  Chrysler Car Remote (-f 315.1M -s 920k)
-    [305]  Nidec Car Remote (-f 313.8M -s 1024k)
-    [306]  Audiovox PRO-OE3B Car Remote (-f 303.4M)
-    [307]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (Sync, 833 bit/s)
-    [308]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (Sync, 1667 bit/s)
-    [309]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (No Sync, 833 bit/s)
-    [310]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (No Sync, 1667 bit/s)
-    [311]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (PIWM, 2500 bit/s)
-    [312]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (PIWM, 5000 bit/s)
-    [313]  MIC 6SC2 Car Remote (-f 315.1M)
-    [314]  GM ABO1502T Car Remote (-f 314.9M)
-    [315]  Siemens 5WY72XX Car Remote (-f 315.1M)
-    [316]  Alps FWB1U545 Car Remote
-    [317]  Continental KR5V2X Car Remote (-f 313.8M -s 1024k)
-    [318]  Code Alarm FRDPC2002 Car Remote
-    [319]  RFM69 LowPowerLab Moteino board (-s 1000k)
-    [320]  Shenzhen Wale WL-TH6R Temperature & Humidity Sensor
-    [321]  Cellular Tracking Technologies LifeTag/PowerTag/HybridTag
+    [202]  Mercedes-Benz Sprinter TPMS (FSK PCM)
+    [203]  Mercedes-Benz Sprinter TPMS (FSK MC)
+    [204]  Funkbus / Instafunk (Berker, Gira, Jung)
+    [205]  Porsche Boxster/Cayman TPMS
+    [206]  Jasco/GE Choice Alert Security Devices
+    [207]  Telldus weather station FT0385R sensors
+    [208]  LaCrosse TX34-IT rain gauge
+    [209]  SmartFire Proflame 2 remote control
+    [210]  AVE TPMS
+    [211]  SimpliSafe Gen 3 Home Security System
+    [212]  Yale HSA (Home Security Alarm), YES-Alarmkit
+    [213]  Regency Ceiling Fan Remote (-f 303.75M to 303.96M)
+    [214]  Renault 0435R TPMS
+    [215]  Fine Offset Electronics WS80 weather station
+    [216]  EMOS E6016 weatherstation with DCF77
+    [217]  Emax W6, rebrand Altronics x7063/4/x7064A, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025, Protmex PT3390A, Jula Marquant 014331/32, TechniSat IMETEO X6 76-4924-00, Weather Station or temperature/humidity sensor
+    [218]* ANT and ANT+ devices
+    [219]  EMOS E6016 rain gauge
+    [220]  Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes (FSK)
+    [221]  Fine Offset Electronics WH45 air quality sensor
+    [222]  Maverick XR-30 BBQ Sensor
+    [223]  Fine Offset Electronics WN34S/L/D and Froggit DP150/D35 temperature sensor
+    [224]  Rubicson Pool Thermometer 48942
+    [225]  Badger ORION water meter, 100kbps (-f 916.45M -s 1200k)
+    [226]  GEO minim+ energy monitor
+    [227]  TyreGuard 400 TPMS
+    [228]  Kia TPMS (-s 1000k)
+    [229]  SRSmith Pool Light Remote Control SRS-2C-TX (-f 915M)
+    [230]  Neptune R900 flow meters
+    [231]  WEC-2103 temperature/humidity sensor
+    [232]  Vauno EN8822C
+    [233]  Govee Water Leak Detector H5054
+    [234]  TFA Dostmann 14.1504.V2 Radio-controlled grill and meat thermometer
+    [235]* CED7000 Shot Timer
+    [236]  Watchman Sonic Advanced / Plus, Tekelek
+    [237]  Oil Ultrasonic SMART FSK
+    [238]  Gasmate BA1008 meat thermometer
+    [239]  Flowis flow meters
+    [240]  Wireless M-Bus, Mode T, 32.768kbps (-f 868.3M -s 1000k)
+    [241]  Revolt NC-5642 Energy Meter
+    [242]  LaCrosse TX31U-IT, The Weather Channel WS-1910TWC-IT
+    [243]  EezTire E618, Carchet TPMS, TST-507 TPMS
+    [244]* Baldr / RainPoint rain gauge.
+    [245]  Celsia CZC1 Thermostat
+    [246]  Fine Offset Electronics WS90 weather station
+    [247]* ThermoPro TX-2C Thermometer and Humidity sensor
+    [248]  TFA 30.3151 Weather Station
+    [249]  Bresser water leakage
+    [250]* Nissan TPMS
+    [251]  Bresser lightning
+    [252]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge, TFA Dostmann 30.3252.01/47.3006.01 Rain Gauge and Thermometer, ADE WS1907
+    [253]  Fine Offset / Ecowitt WH55 water leak sensor
+    [254]  BMW Gen4-Gen5 TPMS and Audi TPMS Pressure Alert, multi-brand HUF/Beru, Continental, Schrader/Sensata, Audi
+    [255]  Watts WFHT-RF Thermostat
+    [256]  Thermor DG950 weather station
+    [257]  Mueller Hot Rod water meter
+    [258]  ThermoPro TP28b Super Long Range Wireless Meat Thermometer for Smoker BBQ Grill
+    [259]  BMW Gen2 and Gen3 TPMS
+    [260]  Chamberlain CWPIRC PIR Sensor
+    [261]  ThermoPro Meat Thermometers, TP829B 4 probes with temp only
+    [262]* Arad/Master Meter Dialog3G water utility meter
+    [263]  Geevon TX16-3 outdoor sensor
+    [264]  Fine Offset Electronics WH46 air quality sensor
+    [265]  Vevor Wireless Weather Station 7-in-1
+    [266]  Arexx Multilogger IP-HA90, IP-TH78EXT, TSN-70E
+    [267]  Rosstech Digital Control Unit DCU-706/Sundance/Jacuzzi
+    [268]  Risco 2 Way Agility protocol, Risco PIR/PET Sensor RWX95P
+    [269]  ThermoPro Meat Thermometers, TP828B 2 probes with Temp, BBQ Target LO and HI
+    [270]  Bresser Thermo-/Hygro-Sensor Explore Scientific ST1005H
+    [271]  DeltaDore X3D devices
+    [272]* Quinetic
+    [273]  Landis & Gyr Gridstream Power Meters 9.6k
+    [274]  Landis & Gyr Gridstream Power Meters 19.2k
+    [275]  Landis & Gyr Gridstream Power Meters 38.4k
+    [276]  Revolt ZX-7717 power meter
+    [277]  GM-Aftermarket TPMS
+    [278]  RainPoint HCS012ARF Rain Gauge sensor
+    [279]  Apator Metra E-RM 30 water meter
+    [280]  ThermoPro TX-7B Outdoor Thermometer Hygrometer
+    [281]  Nexus, CRX, Prego sauna temperature sensor
+    [282]  Homelead HG9901 (Geevon, Dr.Meter, Royal Gardineer) soil moisture/temp/light level sensor
+    [283]  Maverick XR-50 BBQ Sensor
+    [284]  Orion Endpoint from Badger Meter, GIF2014W-OSE, water meter, hopping from 904.4 Mhz to 924.6Mhz (-s 1600k)
+    [285]  Fine Offset Electronics WH43 air quality sensor
+    [286]  Baldr E0666TH Thermo-Hygrometer
+    [287]  bm5-v2 12V Battery Monitor
+    [288]  Universal (Reverseable) 24V Fan Controller
+    [289]  Fine Offset Electronics WS85 weather station
+    [290]  Oria WA150KM freezer and fridge thermometer
+    [291]  Voltcraft EnergyCount 3000 (ec3k)
+    [292]  Orion Endpoint from Badger Meter, GIF2020OCECNA, water meter, hopping from 904.4 Mhz to 924.6Mhz (-s 1600k)
+    [293]  Geevon TX19-1 outdoor sensor
+    [294]  WallarGe CLTX001 Outdoor Temperature Sensor
+    [295]  Sainlogic SA8, Gevanti SA8 Weather Station
+    [296]  ThermoPro TP862b TempSpike XR Wireless Dual-Probe Meat Thermometer
+    [297]  Airpuxem TPMS TYH11_EU6_ZQ
+    [298]  Apator Metra E-ITN 30 heat cost allocator
+    [299]  ThermoPro TP211B Thermometer
+    [300]  TRW TPMS OOK OEM and Clone models
+    [301]  TRW TPMS FSK OEM and Clone models
+    [302]  Govee Water Leak Detector H5059
+    [303]  Astrostart 2000 Car Remote (-f 372.4M)
+    [304]  Compustar 1WG3R Car Remote
+    [305]  Chrysler Car Remote (-f 315.1M -s 920k)
+    [306]  Nidec Car Remote (-f 313.8M -s 1024k)
+    [307]  Audiovox PRO-OE3B Car Remote (-f 303.4M)
+    [308]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (Sync, 833 bit/s)
+    [309]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (Sync, 1667 bit/s)
+    [310]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (No Sync, 833 bit/s)
+    [311]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (No Sync, 1667 bit/s)
+    [312]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (PIWM, 2500 bit/s)
+    [313]  Microchip HCS361 KeeLoq Hopping Encoder based remotes (-f 315.1M) (PIWM, 5000 bit/s)
+    [314]  MIC 6SC2 Car Remote (-f 315.1M)
+    [315]  GM ABO1502T Car Remote (-f 314.9M)
+    [316]  Siemens 5WY72XX Car Remote (-f 315.1M)
+    [317]  Alps FWB1U545 Car Remote
+    [318]  Continental KR5V2X Car Remote (-f 313.8M -s 1024k)
+    [319]  Code Alarm FRDPC2002 Car Remote
+    [320]  RFM69 LowPowerLab Moteino board (-s 1000k)
+    [321]  Shenzhen Wale WL-TH6R Temperature & Humidity Sensor
+    [322]  Cellular Tracking Technologies LifeTag/PowerTag/HybridTag
 
 * Disabled by default, use -R n or a conf file to enable
 
