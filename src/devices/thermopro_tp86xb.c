@@ -10,7 +10,6 @@
 */
 
 #include "decoder.h"
-#include <stdbool.h>
 
 /** @fn int thermopro_tp86xb_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 ThermoPro TempSpike XR TP862b / TP863b Wireless Dual-Probe Meat Thermometer.
@@ -19,14 +18,14 @@ Example data:
 
     rtl_433 -f 915M -R 0 -F json -X 'n=ThermoPro-TempSpikeXR,m=FSK_PCM,s=104,l=104,r=2000,preamble=d2552dd4,bits=165' | jq --unbuffered -r '.codes[0]'
 
-        {74}9c9a2bc2c50b1fa8570
-        {77}9c9a2bc2c5cb116f0000
-        {74}9c9a2bc2c50b1fa8570
-        {77}9c9a2bc2c5cb116f0000
+    {74}9c9a2bc2c50b1fa8570
+    {77}9c9a2bc2c5cb116f0000
+    {74}9c9a2bc2c50b1fa8570
+    {77}9c9a2bc2c5cb116f0000
 
 Data layout:
-        ID:8d 1x IS_DOCKED:1b 1x COLOR:1b 4x INT:12d AMB:12d IS_BOOSTER:2b 8x PROBE_BAT:2d IS_PROBE:2b BOOSTER_BAT:2d CHK_A:8h CHK_B:~8h
-Byte:   0     1                              2               5                 6                                      7        8
+    ID:8d 1x IS_DOCKED:1b 1x COLOR:1b 4x INT:12d AMB:12d IS_BOOSTER:2b 8x PROBE_BAT:2d IS_PROBE:2b BOOSTER_BAT:2d CHK_A:8h CHK_B:~8h
+    0     1                              2               5                 6                                      7        8
 
 Payload format:
 - Preamble         {28} 0xd2552dd4
