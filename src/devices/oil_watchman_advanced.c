@@ -28,21 +28,41 @@ The format might be most easily summarised in a BitBench string:
 
 Data Layout:
 
-- 40 bits of preamble, i.e. 10101010 etc.
-- 2 byte of 0x2dd4 - 'standard' sync word
-- 1 byte - message length, fixed 0x0e (14)
-- 2 byte - fixed 0x0401 or 0x0106 - presumably a model identifier, common at least to the devices we have tested
-- 3 byte integer serial number - as printed on a label attached to the device itself
-- 1 byte status:
+    Byte position                      0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18
+    Sample       aa aa aa aa aa 2d d4[0e 04 01 00 25 9e 80 4f aa 60 28 01 05 03 00]25 3d
+    Shifted CRC  aa aa aa aa aa 2d d4[0e 04 01 53 b5 cb 90 63 89 80 67 01 07 03 00]3b 30 8
+                 PP PP PP PP PP SS SS[HH MM MM II II II FF TT RR rD DD VV VV VV VV]CC CC X
+                                        [BODY                                           ]
+
+Message sample with shifted CRC, issue #3525:
+
+         PREAMBLE   SYNC LEN MESSAGE                      SHIFTED CRC --> First CRC check failed
+    {194}aaaaaaaaaa 2dd4 0e  040153b5cb906389806701070300 3b308
+
+if you shift by 1 bit left 0x3b308 << 1 = 0x7661 = expected crc 16 value
+
+Same message, second check with unshifted CRC
+
+         PREAMBLE   SYNC LEN MESSAGE                      UNSHIFTED CRC --> Second CRC check validated
+    {194}aaaaaaaaaa 2dd4 0e  040153b5cb906389806701070300 7661
+
+
+- PP: 40 bits of preamble, i.e. 10101010 etc.
+- SS: 2 byte of 0x2dd4 - 'standard' sync word
+- HH: 1 byte - hearder message length, fixed 0x0e (14)
+- MM: 2 byte - fixed 0x0401 or 0x0106 - presumably a model identifier, common at least to the devices we have tested
+- II: 3 byte integer serial number - as printed on a label attached to the device itself
+- FF: 1 byte status:
   - 0xC0 - during the first 20ish minutes after sync with the receiver when the device is transmitting once per second
   - 0x80 - the first one or two transmissions after the sync period when the device seems to be calibrating itself
   - 0x98 - normal, live value that you'll see on every transmission when the device is up and running
-- 1 byte temperature, in intervals of 0.5 degrees, offset by 0x48
-- 1 byte - varying bytes which could be the raw sensor reading
-- 4 bits - varying bytes which could be the raw sensor reading
-- 12 bits - integer depth (i.e. the distance between the sensor and the oil in the tank)
-- 4 byte of 0x01050300 - constant values which could be a version number? (1.5.3.0)
-- 2 byte CRC-16 poly 0x8005 init 0
+- TT: 1 byte temperature, in intervals of 0.5 degrees, offset by 0x48
+- RR: 1 byte - varying bytes which could be the raw sensor reading
+- r:  4 bits - varying bytes which could be the raw sensor reading
+- DD: 12 bits - integer depth (i.e. the distance between the sensor and the oil in the tank)
+- VV: 4 byte of 0x01050300 - constant values which could be a version number? (1.5.3.0)
+- CC: 2 byte CRC-16 poly 0x8005 init 0
+-  X: 1 extra bit, used to unshift the CRC 16
 */
 
 static int oil_watchman_advanced_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -57,19 +77,25 @@ static int oil_watchman_advanced_decode(r_device *decoder, bitbuffer_t *bitbuffe
     unsigned bitpos = 0;
     int events      = 0;
 
-    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, PREAMBLE_SYNC_LENGTH_BITS + HEADER_LENGTH_BITS)) + BODY_LENGTH_BITS <=
+    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, PREAMBLE_SYNC_LENGTH_BITS + HEADER_LENGTH_BITS)) + BODY_LENGTH_BITS + 1 <=
             bitbuffer->bits_per_row[0]) {
 
         bitpos += PREAMBLE_SYNC_LENGTH_BITS;
         // get buffer including model ID, as we need this in CRC calculation
-        uint8_t msg[19];
-        bitbuffer_extract_bytes(bitbuffer, 0, bitpos, msg, BODY_LENGTH_BITS + HEADER_LENGTH_BITS);
+        uint8_t msg[18];
+        bitbuffer_extract_bytes(bitbuffer, 0, bitpos, msg, BODY_LENGTH_BITS + HEADER_LENGTH_BITS + 1); // + 1 extra bit to shift the CRC in case of error
         bitpos += BODY_LENGTH_BITS + HEADER_LENGTH_BITS;
 
         uint8_t *b = msg;
-        if (crc16(b, (BODY_LENGTH_BITS + HEADER_LENGTH_BITS) / 8, 0x8005, 0) != 0) {
-            decoder_log(decoder, 2, __func__, "failed CRC check");
-            return DECODE_FAIL_MIC;
+        uint16_t crc_msg  = (b[15] << 8) | b[16];
+        uint16_t crc_calc = crc16(b, 15, 0x8005, 0);
+        if (crc_calc != crc_msg) {
+            uint16_t crc_msg2  = (b[15] << 9) | (b[16] << 1) | (b[17] >> 7); // check with the extrat bit and left shift crc 2 byte, issue #3525
+            if (crc_calc != crc_msg2) {
+                decoder_logf(decoder, 2, __func__, "failed CRC, calculated %04x, expected %04x",crc_calc, crc_msg2);
+                return DECODE_FAIL_MIC;
+            }
+            decoder_logf(decoder, 2, __func__, "CRC, calculated %04x, crc msg %04x, crc left shifted %04x", crc_calc, crc_msg, crc_msg2);
         }
 
         int mcode = (b[1] << 8) | b[2];
@@ -82,12 +108,15 @@ static int oil_watchman_advanced_decode(r_device *decoder, bitbuffer_t *bitbuffe
         uint32_t serial   = (b[3] << 16) | (b[4] << 8) | b[5];
         uint8_t status    = b[6];
         float temperature = (b[7] - 0x48) / 2; // truncate to whole number
-        uint16_t depth     = ((b[9] & 0x0f) << 8) | b[10];
+        uint16_t depth    = ((b[9] & 0x0f) << 8) | b[10];
+        char version[15];
+        sprintf(version, "%u.%u.%u.%u", (b[11] & 0x0f), (b[12] & 0x0f), (b[13] & 0x0f), (b[14] & 0x0f));
 
         /* clang-format off */
         data_t *data = data_make(
                 "model",                "Model",        DATA_STRING, "Oil-SonicAdv",
                 "id",                   "ID",           DATA_FORMAT, "%08d", DATA_INT, serial,
+                "version",              "Version",      DATA_STRING, version,
                 "temperature_C",        "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
                 "depth_cm",             "Depth",        DATA_INT,    depth,
                 "status",               "Status",       DATA_FORMAT, "%02x", DATA_INT, status,
@@ -104,6 +133,7 @@ static int oil_watchman_advanced_decode(r_device *decoder, bitbuffer_t *bitbuffe
 static char const *const output_fields[] = {
         "model",
         "id",
+        "version",
         "temperature_C",
         "depth_cm",
         "mic",
