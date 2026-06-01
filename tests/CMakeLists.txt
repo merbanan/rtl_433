@@ -34,6 +34,36 @@ endforeach(testSrc)
 ########################################################################
 add_test(rtl_433_help ../src/rtl_433 -h)
 
+# Black-box test of the HTTP/WS API server. Starts rtl_433 in manual device
+# mode (no SDR), exercises each endpoint, and shuts it down cleanly. Skipped
+# on Windows (POSIX shell script) and when python3/curl are unavailable.
+if(UNIX)
+    find_program(BASH_PROGRAM sh)
+    find_program(CURL_PROGRAM curl)
+    find_program(PYTHON3_PROGRAM python3)
+    if(BASH_PROGRAM AND CURL_PROGRAM)
+        add_test(
+            NAME http_server_integration
+            COMMAND ${BASH_PROGRAM}
+                ${CMAKE_CURRENT_SOURCE_DIR}/http-integration-test.sh
+                $<TARGET_FILE:rtl_433>)
+        # Feeds a synthetic OOK signal over a fake rtl_tcp server so rtl_433 runs
+        # its live poll loop, then reads the decode back over the WS API. Needs
+        # python3 for the rtl_tcp server and ws probe.
+        if(PYTHON3_PROGRAM)
+            add_test(
+                NAME http_server_rtltcp
+                COMMAND ${BASH_PROGRAM}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/http-rtltcp-test.sh
+                    $<TARGET_FILE:rtl_433>)
+        else()
+            message(STATUS "Skipping http_server_rtltcp test (need python3)")
+        endif()
+    else()
+        message(STATUS "Skipping http_server_integration test (need sh and curl)")
+    endif()
+endif()
+
 ########################################################################
 # Define style checks
 ########################################################################
