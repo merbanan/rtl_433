@@ -94,7 +94,7 @@ static int tpms_trw_decode(r_device *decoder, bitbuffer_t *bitbuffer, int type)
         return DECODE_FAIL_MIC;
     }
 
-    decoder_log_bitrow(decoder, 0, __func__, b, 88, "MSG");
+    decoder_log_bitrow(decoder, 2, __func__, b, 88, "MSG");
 
     int mode               = b[0];
     int id                 = b[1] << 24 | b[2] << 16 | b[3] << 8 | b[4];
