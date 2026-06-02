@@ -13,8 +13,13 @@
 /** @fn int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 Security+ 1.0 rolling code
 
-@warning This decoder is not stateless.
-@warning This decoder is dependent on elapsed time.
+@attention stateful
+This decoder has an internal state that may change between invocations and influence the output.
+The Security+ 1.0 protocol transmits two packets per button press; the first half is cached until the second arrives.
+
+@attention time-based
+This decoder depends on wall clock time and exact timing might influence the output.
+The cache expires after 800ms to avoid combining unrelated transmissions.
 
 Freq 310, 315 and 390 MHz.
 
