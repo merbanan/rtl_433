@@ -428,7 +428,7 @@ void pulse_analyzer(pulse_data_t *data, int package_type, r_device* device)
             hexstr_push_byte(&hexstr, 0xb1);
             hexstr_push_byte(&hexstr, hist_timings.bins_count);
             for (unsigned b = 0; b < hist_timings.bins_count; ++b) {
-                double w = hist_timings.bins[b].mean * to_us;
+                double w = MAX(0, hist_timings.bins[b].mean * to_us); // clamp negative values
                 hexstr_push_word(&hexstr, w < USHRT_MAX ? w : USHRT_MAX);
             }
             for (unsigned i = 0; i < data->num_pulses; ++i) {
@@ -461,7 +461,7 @@ void pulse_analyzer(pulse_data_t *data, int package_type, r_device* device)
                 hexstr_push_byte(hexstr, hist_timings.bins_count);
                 hexstr_push_byte(hexstr, 1); // repeats
                 for (unsigned b = 0; b < hist_timings.bins_count; ++b) {
-                    double w =hist_timings.bins[b].mean * to_us;
+                    double w = MAX(0, hist_timings.bins[b].mean * to_us); // clamp negative values
                     hexstr_push_word(hexstr, w < USHRT_MAX ? w : USHRT_MAX);
                 }
                 for (; i < data->num_pulses; ++i) {
