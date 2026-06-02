@@ -523,7 +523,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     // Select the correct fsk pulse detector
     unsigned fpdm = cfg->fsk_pulse_detect_mode;
     if (cfg->fsk_pulse_detect_mode == FSK_PULSE_DETECT_AUTO) {
-        if (cfg->frequency[cfg->frequency_index] > FSK_PULSE_DETECTOR_LIMIT)
+        if (cfg->center_frequency > FSK_PULSE_DETECTOR_LIMIT)
             fpdm = FSK_PULSE_DETECT_NEW;
         else
             fpdm = FSK_PULSE_DETECT_OLD;
