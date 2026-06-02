@@ -93,6 +93,10 @@ static int arexx_ml_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_log(decoder, 2, __func__, "Couldn't find preamble");
         return DECODE_FAIL_SANITY;
     }
+    if (msg_len > (int)sizeof(b) - 2) { // Check max data length excluding checksums
+        decoder_log(decoder, 2, __func__, "Invalid msg length field");
+        return DECODE_FAIL_SANITY;
+    }
 
     int chk = crc8le(b, msg_len, 0x31, 0x00);
     if (chk != b[msg_len]) { // || (chk ^ b[msg_len + 1]) != 0) {
