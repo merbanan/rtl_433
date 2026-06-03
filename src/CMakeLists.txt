@@ -310,6 +310,7 @@ add_library(r_433 STATIC
     devices/universalfanctrl.c
     devices/vaillant_vrt340f.c
     devices/vauno_en8822c.c
+    devices/venduro_hood.c
     devices/vevor_7in1.c
     devices/visonic_powercode.c
     devices/wallarge_cltx001.c
