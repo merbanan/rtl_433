@@ -106,18 +106,24 @@ static int venduro_hood_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             size_t pos = 0;
             action_buf[0] = '\0';
 
-            if (b[14] & 0x20)
+            if (b[14] & 0x20) {
                 pos += snprintf(action_buf + pos, sizeof(action_buf) - pos, "%sLight Down", pos ? "+" : "");
-            if (b[14] & 0x10)
+            }
+            if (b[14] & 0x10) {
                 pos += snprintf(action_buf + pos, sizeof(action_buf) - pos, "%sLight Up", pos ? "+" : "");
-            if (b[14] & 0x08)
+            }
+            if (b[14] & 0x08) {
                 pos += snprintf(action_buf + pos, sizeof(action_buf) - pos, "%sLight Toggle", pos ? "+" : "");
-            if (b[14] & 0x04)
+            }
+            if (b[14] & 0x04) {
                 pos += snprintf(action_buf + pos, sizeof(action_buf) - pos, "%sFan Down", pos ? "+" : "");
-            if (b[14] & 0x02)
+            }
+            if (b[14] & 0x02) {
                 pos += snprintf(action_buf + pos, sizeof(action_buf) - pos, "%sFan Up", pos ? "+" : "");
-            if (b[14] & 0x01)
+            }
+            if (b[14] & 0x01) {
                 pos += snprintf(action_buf + pos, sizeof(action_buf) - pos, "%sFan Off", pos ? "+" : "");
+            }
 
             action_str = action_buf[0] ? action_buf : "Unknown";
         }
@@ -130,11 +136,21 @@ static int venduro_hood_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         // Parse the "Fill Bar" LED bits (lower 4 bits)
         uint8_t fan_bits = b[14] & 0x0F;
-        if (fan_bits == 0x01) fan_level = 1;      // 0001
-        else if (fan_bits == 0x03) fan_level = 2; // 0011
-        else if (fan_bits == 0x07) fan_level = 3; // 0111
-        else if (fan_bits == 0x0F) fan_level = 4; // 1111
-        else fan_level = 0; // Off or unknown
+        if (fan_bits == 0x01) {
+            fan_level = 1; // 0001
+        }
+        else if (fan_bits == 0x03) {
+            fan_level = 2; // 0011
+        }
+        else if (fan_bits == 0x07) {
+            fan_level = 3; // 0111
+        }
+        else if (fan_bits == 0x0F) {
+            fan_level = 4; // 1111
+        }
+        else {
+            fan_level = 0; // Off or unknown
+        }
 
         // Parse the 5th bit for the Filter Replacement Alarm
         filter_alarm = (b[14] >> 4) & 0x01;
