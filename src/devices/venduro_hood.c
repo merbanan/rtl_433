@@ -36,15 +36,17 @@ Hood -> Remote ACK bytes [11..14]:     00 4E 85 STATE
 */
 static int venduro_hood_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    if (bitbuffer->num_rows == 0)
+    if (bitbuffer->num_rows == 0) {
         return DECODE_ABORT_EARLY;
+    }
 
     unsigned row = 0;
     uint8_t const sync_word[] = {0xD3, 0x91};
     unsigned offset = bitbuffer_search(bitbuffer, row, 0, sync_word, 16);
 
-    if (offset >= bitbuffer->bits_per_row[row])
+    if (offset >= bitbuffer->bits_per_row[row]) {
         return DECODE_ABORT_EARLY;
+    }
 
     // The CC1101 hardware often repeats the sync word. Skip ahead to the true payload.
     uint8_t tmp[2];
@@ -57,8 +59,9 @@ static int venduro_hood_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     offset += 16; // Step past the final sync word
 
     // Ensure we have at least the length byte
-    if (offset + 8 > bitbuffer->bits_per_row[row])
+    if (offset + 8 > bitbuffer->bits_per_row[row]) {
         return DECODE_ABORT_LENGTH;
+    }
 
     uint8_t b_len[1];
     bitbuffer_extract_bytes(bitbuffer, row, offset, b_len, 8);
@@ -68,12 +71,14 @@ static int venduro_hood_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned total_bytes = 1 + payload_len + 2;
     unsigned total_bits  = total_bytes * 8;
 
-    if (offset + total_bits > bitbuffer->bits_per_row[row])
+    if (offset + total_bits > bitbuffer->bits_per_row[row]) {
         return DECODE_ABORT_LENGTH;
+    }
 
     uint8_t b[32]; // Max CC1101 FIFO is usually 64, 32 is plenty
-    if (total_bytes > sizeof(b))
+    if (total_bytes > sizeof(b)) {
         return DECODE_ABORT_LENGTH;
+    }
 
     bitbuffer_extract_bytes(bitbuffer, row, offset, b, total_bits);
 
