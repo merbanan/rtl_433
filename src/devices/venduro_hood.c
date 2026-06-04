@@ -89,6 +89,7 @@ static int venduro_hood_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char src_mac_str[12];
     char dst_mac_str[12];
     char raw_cmd_str[9];
+    char action_buf[64];
     char const *action_str = "Unknown";
     char const *direction  = "Unknown";
     int is_ack             = 0;
@@ -98,14 +99,27 @@ static int venduro_hood_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Typical Venduro Remote -> Hood command prefix is 00 27 5A
     if (b[11] == 0x00 && b[12] == 0x27 && b[13] == 0x5A) {
         direction = "Tx";
-        switch (b[14]) {
-        case 0x20: action_str = "Light Down"; break;
-        case 0x10: action_str = "Light Up"; break;
-        case 0x08: action_str = "Light Toggle"; break;
-        case 0x04: action_str = "Fan Down"; break;
-        case 0x02: action_str = "Fan Up"; break;
-        case 0x01: action_str = "Fan Off"; break;
-        case 0x00: action_str = "Button Released"; break;
+        if (b[14] == 0x00) {
+            action_str = "Button Released";
+        }
+        else {
+            size_t pos = 0;
+            action_buf[0] = '\0';
+
+            if (b[14] & 0x20)
+                pos += snprintf(action_buf + pos, sizeof(action_buf) - pos, "%sLight Down", pos ? "+" : "");
+            if (b[14] & 0x10)
+                pos += snprintf(action_buf + pos, sizeof(action_buf) - pos, "%sLight Up", pos ? "+" : "");
+            if (b[14] & 0x08)
+                pos += snprintf(action_buf + pos, sizeof(action_buf) - pos, "%sLight Toggle", pos ? "+" : "");
+            if (b[14] & 0x04)
+                pos += snprintf(action_buf + pos, sizeof(action_buf) - pos, "%sFan Down", pos ? "+" : "");
+            if (b[14] & 0x02)
+                pos += snprintf(action_buf + pos, sizeof(action_buf) - pos, "%sFan Up", pos ? "+" : "");
+            if (b[14] & 0x01)
+                pos += snprintf(action_buf + pos, sizeof(action_buf) - pos, "%sFan Off", pos ? "+" : "");
+
+            action_str = action_buf[0] ? action_buf : "Unknown";
         }
     }
     // Typical Venduro Hood -> Remote ACK prefix is 00 4E 85
