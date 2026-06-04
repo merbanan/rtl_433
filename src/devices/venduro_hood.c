@@ -36,36 +36,18 @@ Hood -> Remote ACK bytes [11..14]:     00 4E 85 STATE
 */
 static int venduro_hood_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    if (bitbuffer->num_rows == 0) {
-        return DECODE_ABORT_EARLY;
-    }
-
     unsigned row = 0;
-    uint8_t const sync_word[] = {0xD3, 0x91};
-    unsigned offset = bitbuffer_search(bitbuffer, row, 0, sync_word, 16);
-
-    if (offset >= bitbuffer->bits_per_row[row]) {
-        return DECODE_ABORT_EARLY;
-    }
-
-    // The CC1101 hardware often repeats the sync word. Skip ahead to the true payload.
-    uint8_t tmp[2];
-    while (offset + 32 <= bitbuffer->bits_per_row[row]) {
-        bitbuffer_extract_bytes(bitbuffer, row, offset + 16, tmp, 16);
-        if (tmp[0] != 0xD3 || tmp[1] != 0x91)
-            break;
-        offset += 16;
-    }
-    offset += 16; // Step past the final sync word
+    uint8_t const sync_word[] = {0xD3, 0x91, 0xD3, 0x91};
+    unsigned offset = bitbuffer_search(bitbuffer, row, 0, sync_word, 32);
+    offset += 32; // Step past the sync word
 
     // Ensure we have at least the length byte
     if (offset + 8 > bitbuffer->bits_per_row[row]) {
         return DECODE_ABORT_LENGTH;
     }
 
-    uint8_t b_len[1];
-    bitbuffer_extract_bytes(bitbuffer, row, offset, b_len, 8);
-    uint8_t payload_len = b_len[0];
+    uint8_t payload_len;
+    bitbuffer_extract_bytes(bitbuffer, row, offset, &payload_len, 8);
 
     // Total required bits: Length byte (1) + Payload (payload_len) + CRC (2)
     unsigned total_bytes = 1 + payload_len + 2;
