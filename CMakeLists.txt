@@ -96,8 +96,10 @@ if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES 
     # set(CMAKE_C_FLAGS_RELEASE -O2)
     # CMake Debug default for GCC/Clang is "-g -DNDEBUG"
     # set(CMAKE_C_FLAGS_DEBUG -g3 -O0)
-    # make use of ASAN
-    set(CMAKE_C_FLAGS_DEBUG "-ggdb -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer")
+    set(CMAKE_C_FLAGS_DEBUG "-ggdb -fno-omit-frame-pointer")
+    # make use of ASAN only on Linux
+    add_compile_options($<$<AND:$<CONFIG:Debug>,$<PLATFORM_ID:Linux>>:-fsanitize=undefined$<SEMICOLON>-fsanitize=address>)
+    link_libraries($<$<AND:$<CONFIG:Debug>,$<PLATFORM_ID:Linux>>:-fsanitize=undefined$<SEMICOLON>-fsanitize=address>)
 endif()
 if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     # make sure we don't accidentally copy more than an int
