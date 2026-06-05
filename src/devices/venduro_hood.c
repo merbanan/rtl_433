@@ -14,10 +14,10 @@
 /**
 Venduro Extractor Hood protocol.
 
-Bidirectional FSK communication using a TI CC1101 or similar transceiver.
+Bidirectional FSK communication.
 Frequency 868.3 MHz, modulation FSK/NRZ at approx 64 kbps (bit width ~15.5 us).
 
-Packet structure (CC1101 hardware format):
+Packet structure:
 
     PPPP...PP SSSS [SSSS] LL HH MMMMMMMM DDDDDDDD QQ CCCCCCCC XXXX
 
@@ -57,7 +57,7 @@ static int venduro_hood_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
-    uint8_t b[32]; // Max CC1101 FIFO is usually 64, 32 is plenty
+    uint8_t b[32]; // The expected packet fits comfortably within this buffer
     if (total_bytes > sizeof(b)) {
         return DECODE_ABORT_LENGTH;
     }
