@@ -70,7 +70,7 @@ unsigned extract_nibbles_4b1s(uint8_t const *message, unsigned offset_bits, unsi
     return ret;
 }
 
-unsigned extract_bytes_uart(uint8_t const *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst)
+unsigned extract_bytes_uart_8n1(uint8_t const *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst)
 {
     unsigned ret = 0;
 
@@ -97,7 +97,48 @@ unsigned extract_bytes_uart(uint8_t const *message, unsigned offset_bits, unsign
     return ret;
 }
 
-unsigned extract_bytes_uart_parity(uint8_t const *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst)
+unsigned extract_bytes_uart_8n2(uint8_t const *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst)
+{
+    unsigned ret = 0;
+
+    // skip until first start bit
+    while (num_bits > 11) {
+        int startb = message[offset_bits / 8] >> (7 - (offset_bits % 8));
+        if ((startb & 1) == 0) {
+            break; // start bit found
+        }
+        offset_bits += 1;
+        num_bits -= 1;
+    }
+    // get framed bytes
+    while (num_bits >= 11) {
+        int startb = message[offset_bits / 8] >> (7 - (offset_bits % 8));
+        offset_bits += 1;
+        int datab = message[offset_bits / 8];
+        if (offset_bits % 8) {
+            datab = (message[offset_bits / 8] << 8) | message[offset_bits / 8 + 1];
+            datab >>= 8 - (offset_bits % 8);
+        }
+        offset_bits += 8;
+        int stopb1 = message[offset_bits / 8] >> (7 - (offset_bits % 8));
+        offset_bits += 1;
+        int stopb2 = message[offset_bits / 8] >> (7 - (offset_bits % 8));
+        offset_bits += 1;
+        if ((startb & 1) != 0)
+            break; // start-bit error
+        if ((stopb1 & 1) != 1)
+            break; // stop-bit error
+        if ((stopb2 & 1) != 1)
+            break; // stop-bit error
+        *dst++ = reverse8(datab & 0xff);
+        ret += 1;
+        num_bits -= 11;
+    }
+
+    return ret;
+}
+
+unsigned extract_bytes_uart_8o1(uint8_t const *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst)
 {
     unsigned ret = 0;
 
@@ -404,10 +445,9 @@ void ccitt_whitening(uint8_t *buffer, unsigned buffer_size)
 {
     uint8_t key_msb = 0x01;
     uint8_t key_lsb = 0xff;
-    uint8_t key_msb_previous;
-    uint8_t reflected_key_lsb = key_lsb;
 
     for (unsigned buffer_pos = 0; buffer_pos < buffer_size; buffer_pos++) {
+        uint8_t reflected_key_lsb;
         reflected_key_lsb = (key_lsb & 0xf0) >> 4 | (key_lsb & 0x0f) << 4;
         reflected_key_lsb = (reflected_key_lsb & 0xcc) >> 2 | (reflected_key_lsb & 0x33) << 2;
         reflected_key_lsb = (reflected_key_lsb & 0xaa) >> 1 | (reflected_key_lsb & 0x55) << 1;
@@ -415,9 +455,32 @@ void ccitt_whitening(uint8_t *buffer, unsigned buffer_size)
         buffer[buffer_pos] ^= reflected_key_lsb;
 
         for (uint8_t rol_counter = 0; rol_counter < 8; rol_counter++) {
+            uint8_t key_msb_previous;
             key_msb_previous = key_msb;
             key_msb          = (key_lsb & 0x01) ^ ((key_lsb >> 5) & 0x01);
             key_lsb          = ((key_msb_previous << 7) & 0x80) | ((key_lsb >> 1) & 0xff);
+        }
+    }
+}
+
+// The IBM data whitening process is built around a 9-bit Linear Feedback Shift Register (LFSR).
+// CCITT data whitening processes data packets byte-per-byte, whereas IBM data
+// whitening processes the data packet bit-per-bit
+// Same, the initial value of the data whitening key is set to all ones, 0x1FF.
+// s.a. https://www.nxp.com/docs/en/application-note/AN5070.pdf s.5.1
+
+void ibm_whitening(uint8_t *buffer, unsigned buffer_size)
+{
+    uint8_t key_msb = 0x01;
+    uint8_t key_lsb = 0xff;
+    uint8_t key_msb_previous = 0;
+
+    for (unsigned buffer_pos = 0; buffer_pos < buffer_size; buffer_pos++) {
+        buffer[buffer_pos] ^= key_lsb;
+        for (uint8_t rol_counter = 0; rol_counter < 8; rol_counter++) {
+            key_msb_previous = key_msb;
+            key_msb          = (key_lsb & 0x01) ^ ((key_lsb >> 5) & 0x01);
+            key_lsb          = ((key_lsb >> 1) & 0xff) | ((key_msb_previous << 7) & 0x80);
         }
     }
 }
@@ -546,25 +609,43 @@ int main(void) {
     // y0 xff y1 y0 xcc y1 y0 x80 y1 y0 x40 y1 y0 xc0 y1
     uint8_t uart123[] = {0x07, 0xfd, 0x99, 0x40, 0x48, 0x16, 0x04, 0x00};
 
-    fprintf(stderr, "util::extract_bytes_uart():\n");
-    ASSERT_EQUALS(extract_bytes_uart(uart, 0, 24, bytes), 2);
+    fprintf(stderr, "util::extract_bytes_uart_8n1():\n");
+    ASSERT_EQUALS(extract_bytes_uart_8n1(uart, 0, 24, bytes), 2);
     ASSERT_EQUALS(bytes[0], 0xff);
     ASSERT_EQUALS(bytes[1], 0x33);
 
-    ASSERT_EQUALS(extract_bytes_uart(uart123, 4, 60, bytes), 5);
+    ASSERT_EQUALS(extract_bytes_uart_8n1(uart123, 4, 60, bytes), 5);
     ASSERT_EQUALS(bytes[0], 0xff);
     ASSERT_EQUALS(bytes[1], 0x33);
     ASSERT_EQUALS(bytes[2], 0x01);
     ASSERT_EQUALS(bytes[3], 0x02);
     ASSERT_EQUALS(bytes[4], 0x03);
 
-    fprintf(stderr, "util:: test (%u/%u) passed, (%u) failed.\n", passed, passed + failed, failed);
+    // y0 xD1 y11  y0 x11 y11  y0 x4D y11  y0 xEE y11
+    uint8_t uart8n2[] = {0x45, 0xe8, 0x8d, 0x65, 0x9d, 0xf0};
+
+    fprintf(stderr, "util::extract_bytes_uart_8n2():\n");
+    ASSERT_EQUALS(extract_bytes_uart_8n2(uart8n2, 0, 44, bytes), 4);
+    ASSERT_EQUALS(bytes[0], 0xd1);
+    ASSERT_EQUALS(bytes[1], 0x11);
+    ASSERT_EQUALS(bytes[2], 0x4d);
+    ASSERT_EQUALS(bytes[3], 0xee);
 
     fprintf(stderr, "util::ccitt_whitening():\n");
-    uint8_t buf[16] = {0};
-    uint8_t chk[16] = {0xff, 0x87, 0xb8, 0x59, 0xb7, 0xa1, 0xcc, 0x24, 0x57, 0x5e, 0x4b, 0x9c, 0x0e, 0xe9, 0xea, 0x50};
-    ccitt_whitening(buf, sizeof(buf)) ;
-    ASSERT_MATCH(buf, chk, sizeof(buf));
+    uint8_t buf1[16] = {0};
+    uint8_t chk1[16] = {0xff, 0x87, 0xb8, 0x59, 0xb7, 0xa1, 0xcc, 0x24, 0x57, 0x5e, 0x4b, 0x9c, 0x0e, 0xe9, 0xea, 0x50};
+    ccitt_whitening(buf1, sizeof(buf1)) ;
+    ASSERT_MATCH(buf1, chk1, sizeof(buf1));
+
+    fprintf(stderr, "util::ibm_whitening():\n");
+    uint8_t buf2[16] = {0};
+    uint8_t chk2[16] = {0xff, 0xe1, 0x1d, 0x9a, 0xed, 0x85, 0x33, 0x24, 0xea, 0x7a, 0xd2, 0x39, 0x70, 0x97, 0x57, 0x0a};
+    ibm_whitening(buf2, sizeof(buf2)) ;
+    ASSERT_MATCH(buf2, chk2, sizeof(buf2));
+
+    // ------------- add test above this line -----------------------------------------------------
+    // Show result of the tests, this line must stay the last line before return failed;
+    fprintf(stderr, "util:: test (%u/%u) passed, (%u) failed.\n", passed, passed + failed, failed);
 
     return failed;
 }

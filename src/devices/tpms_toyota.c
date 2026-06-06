@@ -70,7 +70,7 @@ static int tpms_toyota_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
             "id",               "",             DATA_STRING,    id_str,
             "status",           "",             DATA_INT,       status,
             "pressure_PSI",     "",             DATA_DOUBLE,    pressure1*0.25-7.0,
-            "temperature_C",    "",             DATA_DOUBLE,    temp-40.0,
+            "temperature_C",    "",             DATA_FORMAT,    "%.0f C", DATA_DOUBLE, temp - 40.0,
             "mic",              "Integrity",    DATA_STRING,    "CRC",
             NULL);
     /* clang-format on */

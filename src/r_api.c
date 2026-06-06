@@ -37,6 +37,7 @@
 #include "output_trigger.h"
 #include "output_rtltcp.h"
 #include "write_sigrok.h"
+#include "sigmf.h"
 #include "mongoose.h"
 #include "compat_time.h"
 #include "logger.h"
@@ -63,37 +64,6 @@
 #else
 #include "getopt/getopt.h"
 #endif
-
-char const *version_string(void)
-{
-    return "rtl_433"
-#ifdef GIT_VERSION
-#define STR_VALUE(arg) #arg
-#define STR_EXPAND(s) STR_VALUE(s)
-            " version " STR_EXPAND(GIT_VERSION)
-#ifdef GIT_BRANCH
-            " branch " STR_EXPAND(GIT_BRANCH)
-#endif
-#ifdef GIT_TIMESTAMP
-            " at " STR_EXPAND(GIT_TIMESTAMP)
-#endif
-#undef STR_VALUE
-#undef STR_EXPAND
-#else
-            " version unknown"
-#endif
-            " inputs file rtl_tcp"
-#ifdef RTLSDR
-            " RTL-SDR"
-#endif
-#ifdef SOAPYSDR
-            " SoapySDR"
-#endif
-#ifdef OPENSSL
-            " with TLS"
-#endif
-            ;
-}
 
 /* helper */
 
@@ -338,7 +308,9 @@ void calc_rssi_snr(r_cfg_t *cfg, pulse_data_t *pulse_data)
 {
     float ook_high_estimate = pulse_data->ook_high_estimate > 0 ? pulse_data->ook_high_estimate : 1;
     float ook_low_estimate = pulse_data->ook_low_estimate > 0 ? pulse_data->ook_low_estimate : 1;
-    float asnr   = ook_high_estimate / ook_low_estimate;
+    int const OOK_MAX_HIGH_LEVEL = DB_TO_AMP(0); // Maximum estimate for high level (-0 dB)
+    float ook_max_estimate = ook_high_estimate < OOK_MAX_HIGH_LEVEL ? ook_high_estimate : OOK_MAX_HIGH_LEVEL;
+    float asnr   = ook_max_estimate / ook_low_estimate;
     float foffs1 = (float)pulse_data->fsk_f1_est / INT16_MAX * cfg->samp_rate / 2.0f;
     float foffs2 = (float)pulse_data->fsk_f2_est / INT16_MAX * cfg->samp_rate / 2.0f;
     pulse_data->freq1_hz = (foffs1 + cfg->center_frequency);
@@ -1184,6 +1156,13 @@ void close_dumpers(struct r_cfg *cfg)
 {
     for (void **iter = cfg->demod->dumper.elems; iter && *iter; ++iter) {
         file_info_t *dumper = *iter;
+
+        if (dumper->container == FILEFMT_SIGMF) {
+            sigmf_writer_close((sigmf_t *)dumper->file_aux);
+            sigmf_free_items((sigmf_t *)dumper->file_aux);
+            dumper->file = NULL;
+        }
+
         if (dumper->file && (dumper->file != stdout)) {
             fclose(dumper->file);
             dumper->file = NULL;
@@ -1221,7 +1200,43 @@ void add_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
     list_push(&cfg->demod->dumper, dumper);
 
     file_info_parse_filename(dumper, spec);
-    if (strcmp(dumper->path, "-") == 0) { /* Write samples to stdout */
+    // Open the output
+    if (dumper->container == FILEFMT_SIGMF) {
+        sigmf_t *sigmf = calloc(1, sizeof(*sigmf));
+        if (!sigmf) {
+            FATAL_CALLOC("add_dumper()");
+        }
+
+        char *datatype = strdup(file_info_to_sigmf_type(dumper));
+        if (!datatype) {
+            WARN_STRDUP("add_dumper()");
+        }
+        char *recorder = strdup("rtl_433");
+        if (!recorder) {
+            WARN_STRDUP("add_dumper()");
+        }
+        char *description = strdup("Sample written by rtl_433");
+        if (!description) {
+            WARN_STRDUP("add_dumper()");
+        }
+
+        sigmf->datatype           = datatype;
+        sigmf->sample_rate        = dumper->sample_rate;
+        sigmf->recorder           = recorder;
+        sigmf->description        = description;
+        sigmf->first_sample_start = 0;
+        sigmf->first_frequency    = dumper->center_frequency;
+        sigmf->data_len           = 0; // Unknown length
+
+        int r = sigmf_writer_open(sigmf, dumper->path, overwrite);
+        if (r) {
+            fprintf(stderr, "Failed to open %s\n", dumper->path);
+            return;
+        }
+        dumper->file = sigmf->mtar.stream;
+        dumper->file_aux = sigmf;
+    }
+    else if (strcmp(dumper->path, "-") == 0) { /* Write samples to stdout */
         dumper->file = stdout;
 #ifdef _WIN32
         _setmode(_fileno(stdin), _O_BINARY);

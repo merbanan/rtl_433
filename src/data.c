@@ -153,6 +153,7 @@ alloc_error:
 
 // the static analyzer can't prove the allocs to be correct
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wanalyzer-malloc-leak"
 

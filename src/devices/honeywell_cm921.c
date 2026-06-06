@@ -430,7 +430,7 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_hex(data, "Payload", NULL, NULL, msg.payload, msg.payload_length, tstr);
     data = data_hex(data, "Unparsed", NULL, NULL, msg.unparsed, msg.unparsed_length, tstr);
     data = data_hex(data, "CRC", NULL, NULL, &msg.crc, 1, tstr);
-    data = data_int(data, "# man errors", "", NULL, man_errors);
+    data = data_int(data, "# man errors", NULL, NULL, man_errors);
 #endif
 
     /* clang-format off */

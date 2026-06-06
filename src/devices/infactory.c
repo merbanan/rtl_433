@@ -20,7 +20,7 @@ Outdoor sensor, transmits temperature and humidity data
 - inFactory NC-3982-913/NX-5817-902, Pearl (for FWS-686 station)
 - nor-tec 73383 (weather station + sensor), Schou Company AS, Denmark
 - DAY 73365 (weather station + sensor), Schou Company AS, Denmark
-- Tchibo NC-3982-675
+- Tchibo / Infactory NC-3982-675
 
 Known brand names: inFactory, nor-tec, GreenBlue, DAY. Manufacturer in China.
 
@@ -66,7 +66,7 @@ static int infactory_crc_check(uint8_t *b)
 
 static int infactory_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    if (bitbuffer->bits_per_row[0] != 40)
+    if (bitbuffer->bits_per_row[0] != 40 && bitbuffer->bits_per_row[0] != 41)
         return DECODE_ABORT_LENGTH;
 
     uint8_t *b = bitbuffer->bb[0];

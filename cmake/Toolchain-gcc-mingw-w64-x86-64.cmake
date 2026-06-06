@@ -1,5 +1,5 @@
 # CMAKE_SYSROOT and CMAKE_STAGING_PREFIX need 3.0
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 
 # Linux, Windows, or Darwin
 SET(CMAKE_SYSTEM_NAME Windows)

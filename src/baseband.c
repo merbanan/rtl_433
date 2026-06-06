@@ -123,6 +123,10 @@ float magnitude_true_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
     return len > 0 && sum >= len ? MAG_TO_DB((float)sum / len) : MAG_TO_DB(1);
 }
 
+void baseband_low_pass_filter_reset(filter_state_t *lowpass_filter)
+{
+    *lowpass_filter = (filter_state_t){0};
+}
 
 // Fixed-point arithmetic on Q0.15
 #define F_SCALE 15
@@ -138,7 +142,7 @@ float magnitude_true_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
     - but the b coeffs are small so it won't happen
     - Q15.14>>14 = Q15.0
 */
-void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t len, filter_state_t *state)
+void baseband_low_pass_filter(filter_state_t *state, uint16_t const *x_buf, int16_t *y_buf, uint32_t len)
 {
     ///  [b,a] = butter(1, 0.01) -> 3x tau (95%) ~100 samples
     //static int const a[FILTER_ORDER + 1] = {FIX(1.00000) >> 1, FIX(0.96907) >> 1};
@@ -197,8 +201,13 @@ static int16_t atan2_int16(int32_t y, int32_t x)
     return angle;
 }
 
+void baseband_demod_FM_reset(demodfm_state_t *demod_fm)
+{
+    *demod_fm = (demodfm_state_t){0};
+}
+
 /// Fast Instantaneous frequency and Low Pass filter, CU8 samples
-void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, uint32_t samp_rate, float low_pass, demodfm_state_t *state)
+void baseband_demod_FM(demodfm_state_t *state, uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, uint32_t samp_rate, float low_pass)
 {
     // Select filter coeffs, [b,a] = butter(1, cutoff)
     // e.g [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples, 250k -> 40us, 1024k -> 10us
@@ -291,7 +300,7 @@ static int32_t atan2_int32(int32_t y, int32_t x)
 }
 
 /// Fast Instantaneous frequency and Low Pass filter, CS16 samples.
-void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long num_samples, uint32_t samp_rate, float low_pass, demodfm_state_t *state)
+void baseband_demod_FM_cs16(demodfm_state_t *state, int16_t const *x_buf, int16_t *y_buf, unsigned long num_samples, uint32_t samp_rate, float low_pass)
 {
     // Select filter coeffs, [b,a] = butter(1, cutoff)
     // e.g [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples, 250k -> 40us, 1024k -> 10us

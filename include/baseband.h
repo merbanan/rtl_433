@@ -106,6 +106,9 @@ typedef struct demodfm_state {
     int64_t blp_32[2]; ///< Current low pass filter B coeffs, 32 bit
 } demodfm_state_t;
 
+/** Reset the lowpass filter to an initial state. */
+void baseband_low_pass_filter_reset(filter_state_t *lowpass_filter);
+
 /** Lowpass filter.
 
     Function is stateful.
@@ -114,22 +117,25 @@ typedef struct demodfm_state {
     @param len number of samples to process
     @param[in,out] state State to store between chunk processing
 */
-void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t len, filter_state_t *state);
+void baseband_low_pass_filter(filter_state_t *state, uint16_t const *x_buf, int16_t *y_buf, uint32_t len);
+
+/** Reset the FM demodulator to an initial state. */
+void baseband_demod_FM_reset(demodfm_state_t *demod_fm);
 
 /** FM demodulator.
 
     Function is stateful.
+    @param[in,out] state State to store between chunk processing
     @param x_buf input samples (I/Q samples in interleaved uint8)
     @param[out] y_buf output from FM demodulator
     @param num_samples number of samples to process
     @param samp_rate sample rate of samples to process
     @param low_pass Low-pass filter frequency or ratio
-    @param[in,out] state State to store between chunk processing
 */
-void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, uint32_t samp_rate, float low_pass, demodfm_state_t *state);
+void baseband_demod_FM(demodfm_state_t *state, uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, uint32_t samp_rate, float low_pass);
 
 /// For evaluation.
-void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long num_samples, uint32_t samp_rate, float low_pass, demodfm_state_t *state);
+void baseband_demod_FM_cs16(demodfm_state_t *state, int16_t const *x_buf, int16_t *y_buf, unsigned long num_samples, uint32_t samp_rate, float low_pass);
 
 /** Initialize tables and constants.
     Should be called once at startup.

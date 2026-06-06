@@ -23,8 +23,6 @@ struct mg_mgr;
 
 /* general */
 
-char const *version_string(void);
-
 struct r_cfg *r_create_cfg(void);
 
 void r_init_cfg(struct r_cfg *cfg);

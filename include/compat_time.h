@@ -12,6 +12,7 @@
 // ensure struct timeval is known
 #ifdef _WIN32
 #include <winsock2.h>
+#define timegm _mkgmtime
 #else
 #include <sys/time.h>
 #endif

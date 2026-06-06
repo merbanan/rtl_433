@@ -1,5 +1,58 @@
 # Changelog
 
+## Release 25.12 (2025-12-12)
+
+### Breaking Changes
+
+- Changed all uv fields to uvi, BREAKING change to UV sensors (#3131)
+- Removed Python 2.7 support (#3320)
+
+### Highlights
+
+- Added support for GIF2020OCECNA to Orion-Endpoint (#3392)
+- Added support for Voltcraft Energy Count 3000 (ec3k) (#3373)
+- Added support for ORIA WA150KM freezer thermometer (#3143)
+- Added support for Fine Offset Electronics WS85 weather station (#3354)
+- Added support for UniFan-24V universal 24V fan controller (#3142)
+- Added support for BM5-v2 battery monitor  (#3126)
+- Added support for Baldr-E0666TH Thermo-Hygrometer (#3360)
+- Added support for more Interlogix-Security sensor types (#3361)
+- Added support for Fine Offset WH43 air quality sensor (#3303)
+- Added support for newer smoke alarms to Interlogix-Security (#3163)
+- Added support for Orion Endpoint Badger water meter GIF2014W-OSE (#3374)
+- Added support for TFA 30.3802.02 to LaCrosse-R3 (#3366)
+- Added support for Maverick-XR50 BBQ meat thermometer (#3293)
+- Added support for Homelead-HG9901 soil sensor (#3299)
+- Added support for Nexus-Sauna (#3327)
+- Added support for ThermoPro TX-7B Outdoor Thermometer Hygrometer (#3311)
+- Added support for Oregon Scientific THGR228N (closes #3121)
+- Added support for BMW GEN2 TPMS (#3302)
+- Added support for Apator Metra E-RM 30 water meter (#3203)
+- Added support for RainPoint HCS012ARF Rain Gauge sensor (#3240)
+- Added support for Oregon Scientific V3 models (#3234)
+- Changed dB estimate to display true RSSI (#3283)
+- Added gap+pulse period distribution to analyzer (#3263)
+- Added availability online/offline MQTT LWT option (#1547)
+
+### Changed
+
+- Change Oil-SonicAdv depth to 12 bits (#3411)
+- Added TX-Button to Oregon-THGR810 (closes #3413)
+- Updated Windows cross-build to rtlsdr-2.0.2 (closes #3349)
+- Updated AVE TPMS to battery_pct
+- Fixed Visonic-Powercode decode on bad reception (#3340)
+- Fixed overflow in rfraw test data parsing (closes #3375)
+- Added decode_mc flex option
+- Fixed unit_of_measurement for windspeed to mph in rtl_433_mqtt_hass.py (#3337)
+- Fixed Steelmate pressure formula (#3209)
+- Added demod state reset between input files (#3310)
+- Fixed battery_ok in EcoWitt-WH40 (closes #3298)
+- Added UCS vendor to LandisGyr-GS (#3280)
+- Improve Truck TPMS decoder (#3272)
+- Fixed HA script class for energy_kWh (closes #3255)
+- Added Auriol HG11911 to list of supported devices (#3244)
+- Fixed negative temperatures on RainPoint-Soil (#3212)
+
 ## Release 25.02 (2025-02-19)
 
 ### Breaking Changes

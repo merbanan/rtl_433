@@ -32,6 +32,7 @@
 #include "r_private.h"
 #include "r_device.h"
 #include "r_api.h"
+#include "r_version.h"
 #include "sdr.h"
 #include "baseband.h"
 #include "pulse_analyzer.h"
@@ -53,6 +54,7 @@
 #include "logger.h"
 #include "fatal.h"
 #include "write_sigrok.h"
+#include "sigmf.h"
 #include "mongoose.h"
 
 #ifdef _WIN32
@@ -159,7 +161,7 @@ static void usage(int exit_code)
             "  [-H <seconds>] Hop interval for polling of multiple frequencies (default: %d seconds)\n"
             "  [-p <ppm_error>] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
             "  [-s <sample rate>] Set sample rate (default: %d Hz)\n"
-            "  [-D restart | pause | quit | manual] Input device run mode options.\n"
+            "  [-D quit | restart | pause | manual] Input device run mode options (default: quit).\n"
             "\t\t= Demodulator options =\n"
             "  [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)\n"
             "       Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
@@ -260,12 +262,12 @@ static void help_device_mode(void)
 {
     term_help_fprintf(stdout,
             "\t\t= Input device run mode =\n"
-            "  [-D restart | pause | quit | manual] Input device run mode options.\n"
+            "  [-D quit | restart | pause | manual] Input device run mode options (default: quit).\n"
             "\tSupported input device run modes:\n"
+            "\t  quit: Quit on input device errors (default)\n"
             "\t  restart: Restart the input device on errors\n"
             "\t  pause: Pause the input device on errors, waits for e.g. HTTP-API control\n"
-            "\t  quit: Quit on input device errors (default)\n"
-            "\t  manual: Don't start an input device, waits for e.g. HTTP-API control\n"
+            "\t  manual: Do not start an input device, waits for e.g. HTTP-API control\n"
             "\tWithout this option the default is to start the SDR and quit on errors.\n");
     exit(0);
 }
@@ -278,7 +280,7 @@ static void help_output(void)
             "  [-F log|kv|json|csv|mqtt|influx|syslog|trigger|rtl_tcp|http|null] Produce decoded output in given format.\n"
             "\tWithout this option the default is LOG and KV output. Use \"-F null\" to remove the default.\n"
             "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
-            "  [-F mqtt[:[//]host[:port][,<options>]] (default: localhost:1883)\n"
+            "  [-F mqtt[s][:[//]host[:port][,<options>]] (default: localhost:1883)\n"
             "\tSpecify MQTT server with e.g. -F mqtt://localhost:1883\n"
             "\tDefault user and password are read from MQTT_USERNAME and MQTT_PASSWORD env vars.\n"
             "\tAdd MQTT options with e.g. -F \"mqtt://host:1883,opt=arg\"\n"
@@ -292,6 +294,7 @@ static void help_output(void)
             "\tA base topic can be set with base=<topic>, default is \"rtl_433/HOSTNAME\".\n"
             "\tAny topic string overrides the base topic and will expand keys like [/model]\n"
             "\tE.g. -F \"mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]\"\n"
+            "\tFor TLS use e.g. -F \"mqtts://host,tls_cert=<path>,tls_key=<path>,tls_ca_cert=<path>\"\n"
             "\tWith MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client-ID is computed from the driver string.\n"
             "\tIf you use multiple RTL-SDR, perhaps set a serial and select by that (helps not to get the wrong antenna).\n"
             "  [-F influx[:[//]host[:port][/<path and options>]]\n"
@@ -397,6 +400,26 @@ static void help_write(void)
     exit(0);
 }
 
+static void reset_sdr_callback(r_cfg_t *cfg)
+{
+    struct dm_state *demod = cfg->demod;
+
+    get_time_now(&demod->now);
+
+    demod->frame_start_ago   = 0;
+    demod->frame_end_ago     = 0;
+    demod->frame_event_count = 0;
+    demod->frame_quality     = 0;
+
+    demod->min_level_auto = 0.0f;
+    demod->noise_level    = 0.0f;
+
+    baseband_low_pass_filter_reset(&demod->lowpass_filter_state);
+    baseband_demod_FM_reset(&demod->demod_FM_state);
+
+    pulse_detect_reset(demod->pulse_detect);
+}
+
 static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 {
     //fprintf(stderr, "sdr_callback... %u\n", len);
@@ -493,7 +516,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     }
 
     if (process_frame) {
-        baseband_low_pass_filter(demod->buf.temp, demod->am_buf, n_samples, &demod->lowpass_filter_state);
+        baseband_low_pass_filter(&demod->lowpass_filter_state, demod->buf.temp, demod->am_buf, n_samples);
     }
 
     // FM demodulation
@@ -509,9 +532,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     if (demod->enable_FM_demod && process_frame) {
         float low_pass = demod->low_pass != 0.0f ? demod->low_pass : fpdm ? 0.2f : 0.1f;
         if (demod->sample_size == 2) { // CU8
-            baseband_demod_FM(iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass, &demod->demod_FM_state);
+            baseband_demod_FM(&demod->demod_FM_state, iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass);
         } else { // CS16
-            baseband_demod_FM_cs16((int16_t *)iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass, &demod->demod_FM_state);
+            baseband_demod_FM_cs16(&demod->demod_FM_state, (int16_t *)iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass);
         }
     }
 
@@ -574,6 +597,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                     r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
                     pulse_analyzer(&demod->pulse_data, package_type, &device);
                 }
+                if (cfg->grab_mode == 4 && p_events == 0) {
+                    r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
+                    int p_quality   = pulse_analyzer_check(&demod->pulse_data, package_type, &device);
+                    demod->frame_quality = p_quality > demod->frame_quality ? p_quality : demod->frame_quality;
+                }
 
             } else if (package_type == PULSE_DATA_FSK) {
                 calc_rssi_snr(cfg, &demod->fsk_pulse_data);
@@ -601,6 +629,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                     r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
                     pulse_analyzer(&demod->fsk_pulse_data, package_type, &device);
                 }
+                if (cfg->grab_mode == 4 && p_events == 0) {
+                    r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
+                    int p_quality   = pulse_analyzer_check(&demod->fsk_pulse_data, package_type, &device);
+                    demod->frame_quality = p_quality > demod->frame_quality ? p_quality : demod->frame_quality;
+                }
             } // if (package_type == ...
             d_events += p_events;
         } // while (package_type)...
@@ -613,7 +646,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             if (demod->samp_grab) {
                 if (cfg->grab_mode == 1
                         || (cfg->grab_mode == 2 && demod->frame_event_count == 0)
-                        || (cfg->grab_mode == 3 && demod->frame_event_count > 0)) {
+                        || (cfg->grab_mode == 3 && demod->frame_event_count > 0)
+                        || (cfg->grab_mode == 4 && demod->frame_event_count == 0 && demod->frame_quality > 0)) {
                     unsigned frame_pad = n_samples / 8; // this could also be a fixed value, e.g. 10000 samples
                     unsigned start_padded = demod->frame_start_ago + frame_pad;
                     unsigned end_padded = demod->frame_end_ago - frame_pad;
@@ -621,8 +655,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                     samp_grab_write(demod->samp_grab, len_padded, end_padded);
                 }
             }
-            demod->frame_start_ago = 0;
+            demod->frame_start_ago   = 0;
             demod->frame_event_count = 0;
+            demod->frame_quality     = 0;
         }
 
         // dump partial pulse_data for this buffer
@@ -922,7 +957,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             help_device_mode();
 
         if (strcmp(arg, "quit") == 0) {
-            cfg->dev_mode = DEVICE_MODE_RESTART;
+            cfg->dev_mode = DEVICE_MODE_QUIT;
         }
         else if (strcmp(arg, "restart") == 0) {
             cfg->dev_mode = DEVICE_MODE_RESTART;
@@ -1034,16 +1069,23 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
     case 'S':
         if (!arg)
             usage(1);
+        int grab_fileformat = 0;
+        if (!strncasecmp(arg, "sigmf", 5)) {
+            grab_fileformat = 1;
+            arg = arg_param(arg);
+        }
         if (strcasecmp(arg, "all") == 0)
             cfg->grab_mode = 1;
         else if (strcasecmp(arg, "unknown") == 0)
             cfg->grab_mode = 2;
         else if (strcasecmp(arg, "known") == 0)
             cfg->grab_mode = 3;
+        else if (strcasecmp(arg, "undecoded") == 0)
+            cfg->grab_mode = 4;
         else
             cfg->grab_mode = atobv(arg, 1);
         if (cfg->grab_mode && !cfg->demod->samp_grab)
-            cfg->demod->samp_grab = samp_grab_create(SIGNAL_GRABBER_BUFFER);
+            cfg->demod->samp_grab = samp_grab_create(SIGNAL_GRABBER_BUFFER, grab_fileformat);
         break;
     case 'm':
         fprintf(stderr, "sample mode option is deprecated.\n");
@@ -1363,8 +1405,7 @@ static void sighandler(int signum)
     if (signum == SIGPIPE) {
         // NOTE: we already ignore most network SIGPIPE's, this might be a STDOUT/STDERR problem.
         // Printing is likely not the correct way to handle this.
-        write_err("Ignoring received signal SIGPIPE, Broken pipe.\n");
-        return;
+        write_err("Signal SIGPIPE caught, broken pipe, exiting!\n");
     }
     else if (signum == SIGHUP) {
         sig_hup = 1;
@@ -1868,7 +1909,18 @@ int main(int argc, char **argv) {
             cfg->center_frequency = demod->load_info.center_frequency ? demod->load_info.center_frequency : cfg->frequency[0];
 
             FILE *in_file;
-            if (strcmp(demod->load_info.path, "-") == 0) { // read samples from stdin
+            if (demod->load_info.container == FILEFMT_SIGMF) { // unpack tar
+                sigmf_t sigmf = {0};
+                int rc = sigmf_reader_open(&sigmf, cfg->in_filename);
+                // handle errors
+                print_logf(LOG_INFO, "Input", "Opening returned \"%d\"", rc);
+                // copy meta
+                demod->load_info.format = CU8_IQ;
+                cfg->samp_rate          = sigmf.sample_rate;
+                cfg->center_frequency   = sigmf.first_frequency;
+                in_file                 = sigmf.mtar.stream;
+            }
+            else if (strcmp(demod->load_info.path, "-") == 0) { // read samples from stdin
                 in_file = stdin;
                 cfg->in_filename = "<stdin>";
             } else {
@@ -1901,7 +1953,7 @@ int main(int argc, char **argv) {
             // special case for pulse data file-inputs
             if (demod->load_info.format == PULSE_OOK) {
                 while (!cfg->exit_async) {
-                    pulse_data_load(in_file, &demod->pulse_data, cfg->samp_rate);
+                    pulse_data_load(in_file, &demod->now, &demod->pulse_data, cfg->samp_rate);
                     if (!demod->pulse_data.num_pulses)
                         break;
 
@@ -2000,6 +2052,7 @@ int main(int argc, char **argv) {
             if (cfg->verbosity >= LOG_NOTICE) {
                 print_logf(LOG_NOTICE, "Input", "Test mode file issued %d packets", n_blocks);
             }
+            reset_sdr_callback(cfg);
 
             if (in_file != stdin) {
                 fclose(in_file);
@@ -2052,7 +2105,7 @@ int main(int argc, char **argv) {
 
     time(&cfg->hop_start_time);
 
-    // add dummy socket to receive broadcasts
+    // add dummy socket to receive timer broadcasts
     struct mg_add_sock_opts opts = {.user_data = cfg};
     struct mg_connection *nc = mg_add_sock_opt(get_mgr(cfg), INVALID_SOCKET, timer_handler, opts);
     // Send us MG_EV_TIMER event after 2.5 seconds

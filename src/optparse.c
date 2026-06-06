@@ -99,6 +99,12 @@ double arg_float(char const *str, char const *error_hint)
     return val;
 }
 
+// GCC'S analyzer has a false-positive on strchr() here
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#pragma GCC diagnostic ignored "-Wanalyzer-deref-before-check"
+
 char *hostport_param(char *param, char const **host, char const **port)
 {
     if (param && *param) {
@@ -132,6 +138,8 @@ char *hostport_param(char *param, char const **host, char const **port)
     }
     return NULL;
 }
+
+#pragma GCC diagnostic pop
 
 uint32_t atouint32_metric(char const *str, char const *error_hint)
 {

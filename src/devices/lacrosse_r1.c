@@ -12,7 +12,7 @@
 #include "decoder.h"
 
 /**
-LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1/W2 Wind Sensor.
+LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1/W2 Wind Sensor and TFA View Rainfall Gauge 30.3802.02
 
 Product pages:
 https://www.lacrossetechnology.com/products/ltv-r1
@@ -52,9 +52,9 @@ Full preamble is `fff00000 aaaaaaaa d2aa2dd4`.
     {164} 380322  00  00aa1a  60  81  00...
     {162} 380322  06  00aa26  d1  04  00...
 
-## LTV-R3:
+## LTV-R3 and TFA 30.3802.02
 
-Does not have the CRC at byte 8 but a second 24 bit value and the check at byte 11.
+Does not have the CRC at byte 8 but a second 24 bit value and the check at byte 11. This can cause incorrect matching to `lacrosse_breezepro_decode`.
 Full preamble is `aaaaaaaaaaaaaa d2aa2dd4`.
 
     PRE:58h SYNC:32h ID:24h ?:4b SEQ:3d ?:1b RAIN:24h RAIN:24h CRC:8h TRAILER:56h
@@ -73,6 +73,12 @@ Full preamble is `aaaaaaaaaaaaaa d2aa2dd4`.
     {142} 70f6a2 0c 00aa0a 01541a  ac  00...
     {144} 70f6a2 04 00aa0d 00aa0d  89  00...
     {143} 70f6a2 0c 00aa0d 00aa0d  56  00...
+
+European TFA 30.3802.02 looks and behaves identically to LTV-R3, but works on 868MHz and seems to consistently shorter padding.
+
+    {105} 72b9f2 0c 01aa1a 01aa14  08  00000
+    {105} 72b9f2 06 01aa25 01aa25  06  00000 //  17 ticks =  4.25mm (Cloud API rounds to 4.3mm)
+    {105} 72b9f2 02 01aadc 01aadc  25  00000 // 183 ticks = 42.75mm
 
 ## LTV-W1 (also LTV-W2):
 
@@ -102,7 +108,7 @@ Full preamble is `aaaaaaaaaaaaaa d2aa2dd4`.
 static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // full preamble (LTV-R1) is `fff00000 aaaaaaaa d2aa2dd4`
-    // full preamble (LTV-R3, LTV-W1) is `aaaaaaaaaaaaaa d2aa2dd4`
+    // full preamble (LTV-R3, LTV-W1, TFA 30.3802.02) is `aaaaaaaaaaaaaa d2aa2dd4`
     uint8_t const preamble_pattern[] = {0xd2, 0xaa, 0x2d, 0xd4};
 
     uint8_t b[20];
@@ -112,7 +118,7 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
     }
     int msg_len = bitbuffer->bits_per_row[0];
-    if (msg_len < 200) { // allows shorter preamble for LTV-R3
+    if (msg_len < 170) { // allows shorter preamble for LTV-R3 (>200) and TFA 30.3802.02 (on 868MHz around 177)
         decoder_logf(decoder, 1, __func__, "Packet too short: %d bits", msg_len);
         return DECODE_ABORT_LENGTH;
     } else if (msg_len > 272) {
@@ -141,7 +147,7 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         rev = 9; // LTV-W1/W2
     }
     else if (chk == 0 && b[10] != 0) {
-        rev = 3; // LTV-R3
+        rev = 3; // LTV-R3 and TFA 30.3802.02
     }
     else {
         chk = crc8(b, 8, 0x31, 0x00);
