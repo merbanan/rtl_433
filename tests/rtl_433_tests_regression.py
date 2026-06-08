@@ -157,6 +157,11 @@ def main():
         return 0
 
     baseline = read_baseline(args.baseline)
+    # A baselined capture absent from the universe means the sample set did not
+    # fully materialize (partial fetch, wrong --tests path). Such a capture is
+    # never run, so it cannot show up as failing/skipped; guard against it
+    # explicitly so the gate can never pass vacuously on a truncated run.
+    missing = sorted(baseline - universe)
     regressions = sorted(baseline & (failing | skipped))
     newly_passing = sorted(passing - baseline)
 
@@ -170,9 +175,16 @@ def main():
         "| failing | %d |" % len(failing),
         "| skipped | %d |" % len(skipped),
         "| baseline | %d |" % len(baseline),
+        "| missing | %d |" % len(missing),
         "| regressions | %d |" % len(regressions),
         "| newly passing | %d |" % len(newly_passing),
     ]
+    if missing:
+        lines.append("")
+        lines.append("#### Missing (baseline captures absent from the sample set)")
+        lines.append("The sample set did not fully materialize -- check the "
+                     "--tests path and that the shallow fetch completed.")
+        lines.extend("- `%s`" % m for m in missing)
     if regressions:
         lines.append("")
         lines.append("#### Regressions (baseline captures now failing/skipped)")
@@ -185,9 +197,9 @@ def main():
         lines.extend("- `%s`" % n for n in newly_passing)
     emit_summary(lines)
 
-    if regressions:
-        print("\nFAIL: %d baseline capture(s) regressed" % len(regressions),
-              file=sys.stderr)
+    if missing or regressions:
+        print("\nFAIL: %d baseline capture(s) regressed, %d missing from the "
+              "sample set" % (len(regressions), len(missing)), file=sys.stderr)
         return 1
     return 0
 

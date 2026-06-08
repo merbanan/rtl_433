@@ -110,9 +110,10 @@ rtl_433_tests sample files against a freshly built `rtl_433` in two jobs:
 - **`sample_tests_gate_job`** (blocking) shallow-fetches the rtl_433_tests
   commit pinned in `tests/rtl_433_tests_pinned_sha.txt` and runs
   `tests/rtl_433_tests_regression.py` against the allowlist in
-  `tests/rtl_433_tests_baseline.txt`. The build fails **only** when a capture
-  in that baseline regresses (now failing or skipped). Captures not in the
-  baseline never fail the build.
+  `tests/rtl_433_tests_baseline.txt`. The build fails when a baselined capture
+  regresses (now failing or skipped) or is missing from the fetched sample set
+  (a guard against a partial fetch or wrong path). Captures not in the baseline
+  never fail the build.
 - **`sample_tests_master_job`** (informational, never blocks) shallow-clones
   the rtl_433_tests `master` branch and reports a plain pass/fail summary so
   upstream drift is visible.
