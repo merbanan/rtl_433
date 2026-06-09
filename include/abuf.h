@@ -29,7 +29,7 @@ typedef struct abuf {
     char *head;
     char *tail;
     size_t left;
-    int overflow; ///< set when a write was dropped or truncated for lack of space
+    int overflow; ///< sticky: set if any write since abuf_init() was truncated for lack of space
 } abuf_t;
 
 void abuf_init(abuf_t *buf, char *dst, size_t len);
@@ -40,7 +40,7 @@ char *abuf_push(abuf_t *buf);
 
 void abuf_pop(abuf_t *buf, char *end);
 
-void abuf_cat(abuf_t *buf, const char *str);
+int abuf_cat(abuf_t *buf, const char *str);
 
 int abuf_printf(abuf_t *buf, _Printf_format_string_ char const *restrict format, ...)
 #if defined(__GNUC__) || defined(__clang__)
