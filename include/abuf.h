@@ -29,6 +29,7 @@ typedef struct abuf {
     char *head;
     char *tail;
     size_t left;
+    int overflow; ///< set when a write was dropped or truncated for lack of space
 } abuf_t;
 
 void abuf_init(abuf_t *buf, char *dst, size_t len);

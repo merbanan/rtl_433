@@ -21,6 +21,7 @@ void abuf_init(abuf_t *buf, char *dst, size_t len)
     buf->head = dst;
     buf->tail = dst;
     buf->left = len;
+    buf->overflow = 0;
 }
 
 void abuf_setnull(abuf_t *buf)
@@ -49,6 +50,9 @@ void abuf_cat(abuf_t *buf, char const *str)
         buf->tail += len;
         buf->left -= len;
     }
+    else {
+        buf->overflow = 1;
+    }
 }
 
 int abuf_printf(abuf_t *buf, _Printf_format_string_ char const *restrict format, ...)
@@ -56,12 +60,18 @@ int abuf_printf(abuf_t *buf, _Printf_format_string_ char const *restrict format,
     va_list ap;
     va_start(ap, format);
 
+    size_t avail = buf->left;
     int n = vsnprintf(buf->tail, buf->left, format, ap);
 
     if (n > 0) {
         size_t len = (size_t)n < buf->left ? (size_t)n : buf->left;
         buf->tail += len;
         buf->left -= len;
+    }
+    // vsnprintf returns the length it *would* have written (excluding the NUL).
+    // n >= avail means the string (or its terminating NUL) did not fit.
+    if (n < 0 || (size_t)n >= avail) {
+        buf->overflow = 1;
     }
 
     va_end(ap);

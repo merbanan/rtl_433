@@ -71,6 +71,26 @@ expect_body_contains() {
     esac
 }
 
+# expect_valid_json DESC curl-args... -- body must parse as JSON. Guards against
+# the getters truncating an oversized report into invalid JSON (see get_stats /
+# get_protocols, which now grow their output buffer to fit). Skipped when
+# python3 is unavailable to validate.
+HAVE_PY=0
+command -v python3 >/dev/null 2>&1 && HAVE_PY=1
+expect_valid_json() {
+    desc=$1; shift
+    if [ "$HAVE_PY" != 1 ]; then
+        echo "  skip: $desc (python3 not found)"
+        return
+    fi
+    body=$(curl -s --max-time 10 "$@")
+    if printf '%s' "$body" | python3 -c 'import sys,json; json.load(sys.stdin)' 2>/dev/null; then
+        pass "$desc (valid JSON)"
+    else
+        fail "$desc: response is not valid JSON"; printf '    got: %.200s\n' "$body" >&2
+    fi
+}
+
 # expect_stream DESC URL -- streaming endpoints stay open; we only check the
 # response headers, tolerating the curl timeout (exit 28) that follows.
 expect_stream() {
@@ -130,6 +150,11 @@ expect_status        "GET /cmd with no cmd"        200 "$BASE/cmd"
 # --- more RPC methods, to exercise the rpc_exec getter/setter branches ---
 expect_body_contains "GET /cmd get_protocols"      "Nice" "$BASE/cmd?cmd=get_protocols"
 expect_status        "GET /cmd get_stats"          200 "$BASE/cmd?cmd=get_stats"
+# These JSON-payload getters build large reports; verify the whole document is
+# well-formed (get_protocols is ~100k, well past the buffer's initial size).
+expect_valid_json    "GET /cmd get_protocols is valid JSON" "$BASE/cmd?cmd=get_protocols"
+expect_valid_json    "GET /cmd get_stats is valid JSON"     "$BASE/cmd?cmd=get_stats"
+expect_valid_json    "GET /cmd get_meta is valid JSON"      "$BASE/cmd?cmd=get_meta"
 expect_status        "GET /cmd get_center_frequency" 200 "$BASE/cmd?cmd=get_center_frequency"
 expect_status        "GET /cmd setter center_frequency" 200 "$BASE/cmd?cmd=center_frequency&val=433920000"
 expect_body_contains "GET /cmd unknown method is rejected" "Unknown method" "$BASE/cmd?cmd=no_such_method"
