@@ -112,6 +112,24 @@ if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" AND NOT "13.2.0" VERSION_GREATER CMAK
     add_definitions(-fanalyzer)
 endif()
 
+# Optional code coverage instrumentation (gcov/llvm-cov), for use with BUILD_TESTING.
+# Configure with -DENABLE_COVERAGE=ON, run `ctest`, then generate a report with
+# gcov/gcovr/lcov (see tests/coverage.sh). Forces -O0 and disables inlining so
+# coverage maps cleanly back to source lines.
+option(ENABLE_COVERAGE "Build with code coverage instrumentation (GCC/Clang)" OFF)
+if(ENABLE_COVERAGE)
+    if("${CMAKE_C_COMPILER_ID}" MATCHES "GNU|Clang")
+        message(STATUS "Code coverage instrumentation enabled")
+        add_compile_options(--coverage -O0 -g -fno-inline)
+        # --coverage on the link line pulls in the gcov runtime; set on the flag
+        # vars rather than add_link_options() to keep cmake_minimum_required (3.10).
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --coverage")
+    else()
+        message(WARNING "ENABLE_COVERAGE is only supported on GCC/Clang, ignoring")
+    endif()
+endif()
+
 # Shut MSVC up about strdup and strtok
 if(MSVC)
     ADD_DEFINITIONS(-D_CRT_NONSTDC_NO_DEPRECATE)
