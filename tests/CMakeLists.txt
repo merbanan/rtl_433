@@ -20,7 +20,7 @@ endif()
 ########################################################################
 # target_compile_definitions was only added in CMake 2.8.11
 add_definitions(-D_TEST)
-foreach(testSrc bitbuffer.c fileformat.c optparse.c bit_util.c r_util.c)
+foreach(testSrc bitbuffer.c fileformat.c optparse.c bit_util.c r_util.c abuf.c)
     get_filename_component(testName ${testSrc} NAME_WE)
 
     # Note that r_util.c needs compat_time.c shims
