@@ -144,7 +144,7 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "ProtocolID",       "Protocol_ID",      DATA_STRING, protocol_id_str, // TODO: this should be int
             "EndpointType",     "Endpoint_Type",    DATA_STRING, endpoint_type_str, // TODO: this should be int
             "EndpointID",       "Endpoint_ID",      DATA_INT,    endpoint_id, // TODO: remove this (see "id")
-            "Consumption",      "",                 DATA_INT,    consumption_data,
+            "Consumption",      "",                 DATA_FORMAT, "%u", DATA_INT,    consumption_data,
             "Tamper",           "",                 DATA_STRING, physical_tamper_str, // TODO: should be int
             "PacketCRC",        "crc",              DATA_STRING, crc_str, // TODO: remove this
             "MeterType",        "Meter_Type",       DATA_STRING, meter_type,
