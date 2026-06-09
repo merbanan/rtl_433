@@ -106,8 +106,12 @@ jobs:
           [ ! -s analyzer.out ]
 
   sample_tests_gate_job:
-    runs-on: ubuntu-latest
-    name: Sample regression (pinned baseline)
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    name: Sample regression (pinned baseline, ${{ matrix.runner }})
     steps:
       - uses: actions/checkout@v5
       - name: Setup
@@ -139,8 +143,12 @@ jobs:
             --baseline tests/rtl_433_tests_baseline.txt
 
   sample_tests_master_job:
-    runs-on: ubuntu-latest
-    name: Sample regression (master, informational)
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    name: Sample regression (master, informational, ${{ matrix.runner }})
     # Informational only: tracks the latest samples, never blocks the build.
     continue-on-error: true
     steps:
