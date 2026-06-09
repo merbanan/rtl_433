@@ -559,25 +559,43 @@ static void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
         rpc->response(rpc, 2, NULL, cfg->conversion_mode);
     }
     else if (!strcmp(rpc->method, "get_stats")) {
-        char buf[20480]; // we expect the stats string to be around 15k bytes.
         data_t *data = create_report_data(cfg, 2/*report active devices*/);
         // flush_report_data(cfg); // snapshot, do not flush
-        data_print_jsons(data, buf, sizeof(buf));
-        rpc->response(rpc, 1, buf, 0);
+        // The stats report scales with the number of enabled decoders that have
+        // seen frames; a fixed buffer truncates it into invalid JSON, so grow to
+        // fit. See data_print_jsons_dup().
+        char *buf = data_print_jsons_dup(data);
+        if (!buf) {
+            rpc->response(rpc, -1, "Out of memory", 0);
+        }
+        else {
+            rpc->response(rpc, 1, buf, 0);
+            free(buf);
+        }
         data_free(data);
     }
     else if (!strcmp(rpc->method, "get_meta")) {
-        char buf[2048]; // we expect the meta string to be around 500 bytes.
         data_t *data = meta_data(cfg);
-        data_print_jsons(data, buf, sizeof(buf));
-        rpc->response(rpc, 1, buf, 0);
+        char *buf = data_print_jsons_dup(data);
+        if (!buf) {
+            rpc->response(rpc, -1, "Out of memory", 0);
+        }
+        else {
+            rpc->response(rpc, 1, buf, 0);
+            free(buf);
+        }
         data_free(data);
     }
     else if (!strcmp(rpc->method, "get_protocols")) {
-        char buf[102400]; // we expect the protocol string to be around 80k bytes.
         data_t *data = protocols_data(cfg);
-        data_print_jsons(data, buf, sizeof(buf));
-        rpc->response(rpc, 1, buf, 0);
+        char *buf = data_print_jsons_dup(data);
+        if (!buf) {
+            rpc->response(rpc, -1, "Out of memory", 0);
+        }
+        else {
+            rpc->response(rpc, 1, buf, 0);
+            free(buf);
+        }
         data_free(data);
     }
 
