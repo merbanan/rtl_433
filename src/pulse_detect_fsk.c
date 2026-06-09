@@ -163,15 +163,14 @@ void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *
      * otherwise the min/max trackers won't converge properly
      */
     if (!s->skip_samples) {
+        // Running min/max of the FSK deviation over the package (reset per
+        // package in pulse_detect_fsk_init()). Intentionally tracked without
+        // decay: a fixed per-sample step toward mid is not scaled to the sample
+        // rate and, at high rates, collapses the window faster than one bit
+        // lasts -- which moves mid and shatters the bit framing on weak signals.
         s->var_test_max = MAX(fm_n, s->var_test_max);
         s->var_test_min = MIN(fm_n, s->var_test_min);
         mid = (s->var_test_max + s->var_test_min) / 2;
-        if (fm_n > mid) {
-            s->var_test_max -= 10;
-        }
-        if (fm_n < mid) {
-            s->var_test_min += 10;
-        }
         // Hysteresis band around the slicing level, proportional to the tracked
         // FSK deviation, so a noisy weak signal doesn't produce spurious
         // mid-crossings that shatter the bit framing. Self-scales per device.
