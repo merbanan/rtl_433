@@ -18,10 +18,10 @@
 /** Construct data output for LOG printer.
 
     @param log_level the highest log level to process
-    @param file the optional output stream, defaults to stderr
+    @param path the optional output stream path, defaults to stderr if NULL
     @return The auxiliary data to pass along with data_log_printer to data_print.
             You must release this object with data_output_free once you're done with it.
 */
-struct data_output *data_output_log_create(int log_level, FILE *file);
+struct data_output *data_output_log_create(int log_level, char const *path);
 
 #endif /* INCLUDE_OUTPUT_LOG_H_ */
