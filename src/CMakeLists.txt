@@ -271,6 +271,7 @@ add_library(r_433 STATIC
     devices/tfa_drop_30.3233.c
     devices/tfa_marbella.c
     devices/tfa_pool_thermometer.c
+    devices/tfa_splash_30.3252.c
     devices/tfa_twin_plus_30.3049.c
     devices/thermopro_tp11.c
     devices/thermopro_tp12.c
