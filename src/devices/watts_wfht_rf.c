@@ -131,7 +131,7 @@ static int watts_wfht_rf_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         unsigned search_start = 0;
         while (search_start + 32 + 128 <= row_len) {
             unsigned bit_offset = bitbuffer_search(bitbuffer, row, search_start,
-                                                  sync_pattern, 32);
+                    sync_pattern, 32);
 
             if (bit_offset + 32 + 128 > row_len) {
                 break;
@@ -156,23 +156,23 @@ static int watts_wfht_rf_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
             if (b[0] != 0x0D) {
                 decoder_logf(decoder, 2, __func__,
-                             "length byte mismatch: got 0x%02X, expected 0x0D",
-                             b[0]);
+                        "length byte mismatch: got 0x%02X, expected 0x0D",
+                        b[0]);
                 continue;
             }
 
             if (b[1] != 0xFF || b[2] != 0xFF || b[3] != 0xFE) {
                 decoder_logf(decoder, 2, __func__,
-                             "protocol header mismatch: %02X %02X %02X",
-                             b[1], b[2], b[3]);
+                        "protocol header mismatch: %02X %02X %02X",
+                        b[1], b[2], b[3]);
                 continue;
             }
 
             uint8_t const crc8_calc = watts_wfht_rf_crc8(b, 12, b[12]);
             if (crc8_calc != b[13]) {
                 decoder_logf(decoder, 2, __func__,
-                             "CRC-8 fail: calc=0x%02X recv=0x%02X (byte20=0x%02X)",
-                             crc8_calc, b[13], b[12]);
+                        "CRC-8 fail: calc=0x%02X recv=0x%02X (byte20=0x%02X)",
+                        crc8_calc, b[13], b[12]);
                 continue;
             }
 
@@ -180,14 +180,14 @@ static int watts_wfht_rf_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             uint16_t const crc16_recv = (uint16_t)(((uint16_t)b[14] << 8) | b[15]);
             if (crc16_calc != crc16_recv) {
                 decoder_logf(decoder, 2, __func__,
-                             "CRC-16 fail: calc=0x%04X recv=0x%04X",
-                             crc16_calc, crc16_recv);
+                        "CRC-16 fail: calc=0x%04X recv=0x%04X",
+                        crc16_calc, crc16_recv);
                 continue;
             }
 
             char id_str[16];
             snprintf(id_str, sizeof(id_str), "%02X:%02X:%02X",
-                     b[5], b[6], b[7]);
+                    b[5], b[6], b[7]);
 
             /* Decoded bits within byte 12 */
             char const *const mode    = (b[4] & 0x02) ? "heat" : "cool";
@@ -200,10 +200,10 @@ static int watts_wfht_rf_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                rather than as intermediate byte values. */
             int const call_for_heat = (b[12] == 0x64) ? 100 : 0;
 
-            int16_t const temp_raw     = (int16_t)(((uint16_t)b[8]  << 8) | b[9]);
+            int16_t const temp_raw     = (int16_t)(((uint16_t)b[8] << 8) | b[9]);
             int16_t const setpoint_raw = (int16_t)(((uint16_t)b[10] << 8) | b[11]);
-            double  const temperature_C = temp_raw / 10.0;
-            double  const setpoint_C    = setpoint_raw / 10.0;
+            double const temperature_C = temp_raw / 10.0;
+            double const setpoint_C    = setpoint_raw / 10.0;
 
             /* clang-format off */
             data_t *data = data_make(
