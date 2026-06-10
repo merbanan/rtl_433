@@ -1,7 +1,7 @@
 /** @file
     Watts WFHT-RF / WFHC-MASTERH&C-RF wireless underfloor heating thermostat.
 
-    Copyright (C) 2026
+    Copyright (C) 2026 - Steven Bontius - https://github.com/StevenBontius
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -10,14 +10,10 @@
 */
 
 /**
-Watts WFHT-RF / WFHC-MASTERH&C-RF wireless underfloor heating thermostat.
-
-The Watts WFHC-MASTERH&C-RF is a 6-zone wireless underfloor heating central
-controller sold across Europe. Compatible thermostats include WFHT-BASIC-RF
-and WFHT-LCD-RF (also marketed as WFHTRF 010).
+Watts WFHT LCD RF decoder
 
 This decoder is independent of the existing watts_thermostat decoder, which
-targets a different (older) Watts hardware generation.
+targets a different Watts hardware generation.
 
 Modulation: OOK, Manchester encoded (zero-bit convention).
 Bitrate:    approximately 1085 bps (chip rate ~2170 chips/s).
@@ -29,16 +25,38 @@ Frame layout (24 bytes, 192 bits):
     Byte    Content
     ----    -------
      0-3    Preamble 2A AA AA AA
-     4-7    Sync word D3 91 D3 91 (the CC1101 doubled 0xD391)
+     4-7    Sync word D3 91 D3 91
      8      Length 0x0D (13 bytes follow)
      9-11   Protocol header FF FF FE (constant across all observed traffic)
-    12      Mode/state byte (00 or 02 observed, semantics not confirmed,
-            exposed as both mode_byte hex and mode_bits binary)
+    12      Mode/state bitfield. Two bits identified and exposed:
+              bit 0 (0x01): pairing-in-progress flag. Set to 1 while the
+                            thermostat is in its pairing handshake state.
+                            On a Basic LCD model this state is entered by
+                            holding the OK button until "RF" appears on the
+                            display, and exited via the "End" menu item; the
+                            broadcasts during this window carry bit 0 = 1
+                            so the receiver can recognize them as pairing
+                            traffic rather than normal operational data.
+                            During normal operation the bit is 0. freq 2 Hz
+              bit 1 (0x02): heat/cool selection (1 = heat, 0 = cool).
+                            Reflects the thermostat's local J1 setting.
+              bits 2-7:     unobserved as non-zero in normal operation;
+                            semantics unknown.
+            Output fields: mode ("heat" or "cool") and pairing ("true" or
+            "false").
     13-15   Device ID, 3 bytes (the on-air device identifier)
     16-17   Ambient temperature, 16-bit big-endian, scale /10 for degrees C
     18-19   Target setpoint, 16-bit big-endian, scale /10 for degrees C
-    20      Relay/state flag (00 or 64 observed, semantics not confirmed,
-            exposed as both flag_byte hex and flag_bits binary)
+    20      Call-for-heat output. The thermostat runs an on-board
+            chronoproportional P controller and writes its 0-100 duty
+            cycle into this byte; only the endpoints are ever observed at
+            the wire (0x00 = idle, 0x64 = 100 = calling) because the duty
+            is realised as an on/off time pattern across a 15-minute cycle
+            rather than as intermediate byte values. Exposed as the
+            call_for_heat field with values 0 or 100. Note that in cool
+            mode (byte 12 bit 1 = 0) the same wire-level state means
+            "call for cool"; the field name reflects the conventional
+            heating direction but the underlying bit is direction-agnostic.
     21      CRC-8 application checksum (poly 0xE6, init 0, XOR 0xBE then
             XOR byte 20). Covers bytes 8..19.
     22-23   CRC-16/CMS radio checksum (poly 0x8005, init 0xFFFF, no
@@ -57,23 +75,14 @@ rapid three-frame burst with the following structure:
     B       ~400      real value + 0.1  hash_B
     A       ~800      real value        hash_A
 
-Because the CRC-8 covers the setpoint bytes, the single low-bit perturbation
-in the middle frame produces an entirely different CRC-8, which appears to
-be an intentional anti-replay measure: a simple frame replay would lack the
-expected A-B-A signature and presumably be rejected by the central.
-
 The decoder emits all three frames faithfully. Downstream consumers that
 want a clean setpoint stream may wish to median-filter or debounce three
 consecutive frames from the same device ID within a ~1 second window.
 
 Confirmed via captures: device ID, ambient temperature, target setpoint,
-frame structure, both CRC algorithms, and the A-B-A setpoint-change burst
-behavior.
-
-Not confirmed: the semantic meaning of byte 12 (mode_byte) and byte 20
-(flag_byte). Byte 12 has been seen as 0x00 and 0x02. Byte 20 has been seen
-as 0x00 and 0x64. Both fields are exposed as raw hex strings and as MSB-
-first bit strings to aid further reverse engineering.
+frame structure, both CRC algorithms, the A-B-A setpoint-change burst
+behavior, the pairing and heat/cool bits within byte 12, and the
+call-for-heat semantics of byte 20.
 
 A 193rd bit may appear on the end of the frame as a Manchester alignment
 artifact and is harmless: this decoder reads a fixed 128 bits after the
@@ -104,15 +113,6 @@ static uint16_t watts_wfht_rf_crc16(uint8_t const *data, int len)
         }
     }
     return crc;
-}
-
-/* Format an 8-bit value as a NUL-terminated MSB-first binary string. */
-static void watts_wfht_rf_byte_to_bits(uint8_t v, char out[9])
-{
-    for (int i = 0; i < 8; i++) {
-        out[i] = (v & (uint8_t)(0x80 >> i)) ? '1' : '0';
-    }
-    out[8] = '\0';
 }
 
 static int watts_wfht_rf_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -147,7 +147,7 @@ static int watts_wfht_rf_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                  b[5..7]   = device id (original bytes 13..15)
                  b[8..9]   = ambient temperature, BE (original bytes 16..17)
                  b[10..11] = setpoint temperature, BE (original bytes 18..19)
-                 b[12]     = flag byte (original byte 20)
+                 b[12]     = call-for-heat byte (original byte 20)
                  b[13]     = CRC-8 (original byte 21)
                  b[14..15] = CRC-16 (original bytes 22..23)
             */
@@ -186,16 +186,19 @@ static int watts_wfht_rf_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             }
 
             char id_str[16];
-            char mode_str[8];
-            char flag_str[8];
-            char mode_bits[9];
-            char flag_bits[9];
-            snprintf(id_str,   sizeof(id_str),   "%02X:%02X:%02X",
+            snprintf(id_str, sizeof(id_str), "%02X:%02X:%02X",
                      b[5], b[6], b[7]);
-            snprintf(mode_str, sizeof(mode_str), "0x%02X", b[4]);
-            snprintf(flag_str, sizeof(flag_str), "0x%02X", b[12]);
-            watts_wfht_rf_byte_to_bits(b[4],  mode_bits);
-            watts_wfht_rf_byte_to_bits(b[12], flag_bits);
+
+            /* Decoded bits within byte 12 */
+            char const *const mode    = (b[4] & 0x02) ? "heat" : "cool";
+            char const *const pairing = (b[4] & 0x01) ? "true" : "false";
+
+            /* Call-for-heat as 0 / 100 percent. The wire only ever carries
+               0x00 or 0x64 (= 100), even though the internal controller
+               state is a 0-100 duty cycle: intermediate duties are realised
+               as an on/off time pattern across the 15 minute Cy window
+               rather than as intermediate byte values. */
+            int const call_for_heat = (b[12] == 0x64) ? 100 : 0;
 
             int16_t const temp_raw     = (int16_t)(((uint16_t)b[8]  << 8) | b[9]);
             int16_t const setpoint_raw = (int16_t)(((uint16_t)b[10] << 8) | b[11]);
@@ -204,16 +207,14 @@ static int watts_wfht_rf_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
             /* clang-format off */
             data_t *data = data_make(
-                    "model",         "",            DATA_STRING, "Watts-WFHT-RF",
-                    "id",            "ID",          DATA_STRING, id_str,
-                    "mode_byte",     "Mode byte",   DATA_STRING, mode_str,
-                    "mode_bits",     "Mode bits",   DATA_STRING, mode_bits,
-                    "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_C,
-                    "setpoint_C",    "Setpoint",    DATA_FORMAT, "%.1f C", DATA_DOUBLE, setpoint_C,
-                    "flag_byte",     "Flag byte",   DATA_STRING, flag_str,
-                    "flag_bits",     "Flag bits",   DATA_STRING, flag_bits,
-                    "crc8_ok",       "CRC-8 OK",    DATA_INT,    1,
-                    "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
+                    "model",         "",              DATA_STRING, "Watts-WFHT-RF",
+                    "id",            "ID",            DATA_STRING, id_str,
+                    "mode",          "Mode",          DATA_STRING, mode,
+                    "pairing",       "Pairing",       DATA_STRING, pairing,
+                    "temperature_C", "Temperature",   DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_C,
+                    "setpoint_C",    "Setpoint",      DATA_FORMAT, "%.1f C", DATA_DOUBLE, setpoint_C,
+                    "call_for_heat", "Call for heat", DATA_FORMAT, "%d %%",  DATA_INT,    call_for_heat,
+                    "mic",           "Integrity",     DATA_STRING, "CHECKSUM",
                     NULL);
             /* clang-format on */
 
@@ -228,13 +229,11 @@ static int watts_wfht_rf_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const watts_wfht_rf_output_fields[] = {
         "model",
         "id",
-        "mode_byte",
-        "mode_bits",
+        "mode",
+        "pairing",
         "temperature_C",
         "setpoint_C",
-        "flag_byte",
-        "flag_bits",
-        "crc8_ok",
+        "call_for_heat",
         "mic",
         NULL,
 };
