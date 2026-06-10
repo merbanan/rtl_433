@@ -549,6 +549,32 @@ static int rtlsdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32
 
     dev->running = 1;
 
+#ifdef __OpenBSD__
+    // OpenBSD workaround: use synchronous reads instead of async
+    print_log(LOG_DEBUG, __func__, "Using synchronous read mode for OpenBSD");
+
+    unsigned char *sync_buf = malloc(buf_len);
+    if (!sync_buf) {
+        WARN_MALLOC("rtlsdr_read_loop() sync_buf");
+        return -1;
+    }
+
+    while (dev->running) {
+        int n_read = 0;
+        r = rtlsdr_read_sync(dev->rtlsdr_dev, sync_buf, buf_len, &n_read);
+        if (r < 0 || !dev->running) {
+            print_logf(LOG_ERROR, __func__, "rtlsdr_read_sync failed: %d", r);
+            break;
+        }
+        if (n_read > 0) {
+            rtlsdr_read_cb(sync_buf, n_read, dev);
+        }
+    }
+
+    free(sync_buf);
+    print_log(LOG_DEBUG, __func__, "rtlsdr_read_sync done");
+#else
+    // Standard async read for other platforms
         r = rtlsdr_read_async(dev->rtlsdr_dev, rtlsdr_read_cb, dev, buf_num, buf_len);
         // rtlsdr_read_async() returns possible error codes from:
         //     if (!dev) return -1;
@@ -570,6 +596,7 @@ static int rtlsdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32
             dev->running = 0;
         }
     print_log(LOG_DEBUG, __func__, "rtlsdr_read_async done");
+#endif
 
     return r;
 }
