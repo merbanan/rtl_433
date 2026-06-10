@@ -214,7 +214,7 @@ static int watts_wfht_rf_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "temperature_C", "Temperature",   DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_C,
                     "setpoint_C",    "Setpoint",      DATA_FORMAT, "%.1f C", DATA_DOUBLE, setpoint_C,
                     "call_for_heat", "Call for heat", DATA_FORMAT, "%d %%",  DATA_INT,    call_for_heat,
-                    "mic",           "Integrity",     DATA_STRING, "CHECKSUM",
+                    "mic",           "Integrity",     DATA_STRING, "CRC",
                     NULL);
             /* clang-format on */
 
