@@ -2,6 +2,8 @@
     Watts WFHT-RF / WFHC-MASTERH&C-RF wireless underfloor heating thermostat.
 
     Copyright (C) 2026 - Steven Bontius - https://github.com/StevenBontius
+    
+    Reverse engineering document: https://github.com/StevenBontius/watts-wfht-ha/blob/main/docs/WATTS_WFHT_RF_PROTOCOL.md
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
