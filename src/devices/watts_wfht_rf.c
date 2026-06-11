@@ -1,5 +1,5 @@
 /** @file
-    Watts WFHT-RF / WFHC-MASTERH&C-RF wireless underfloor heating thermostat.
+    Watts WFHT-LCD-RF wireless underfloor heating thermostat.
 
     Copyright (C) 2026 - Steven Bontius - https://github.com/StevenBontius
     
