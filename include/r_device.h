@@ -68,7 +68,8 @@ typedef struct r_device {
     float sync_width;
     float tolerance;
     int (*decode_fn)(struct r_device *decoder, struct bitbuffer *bitbuffer);
-    struct r_device *(*create_fn)(char *args);
+    struct r_device *(*create_fn)(char const *args);
+    void (*destroy_fn)(struct r_device *r_dev);
     unsigned priority; ///< Run later and only if no previous events were produced
     unsigned disabled; ///< 0: default enabled, 1: default disabled, 2: disabled, 3: disabled and hidden
     char const *const *fields; ///< List of fields this decoder produces; required for CSV output. NULL-terminated.
