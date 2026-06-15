@@ -308,6 +308,7 @@
     DECL(tpms_trw_ook) \
     DECL(tpms_trw_fsk) \
     DECL(govee_h5059) \
+    DECL(govee_h5310) \
     DECL(astrostart_2000) \
     DECL(compustar_1wg3r) \
     DECL(chrysler_car_remote) \
