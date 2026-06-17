@@ -308,7 +308,6 @@
     DECL(tpms_trw_ook) \
     DECL(tpms_trw_fsk) \
     DECL(govee_h5059) \
-    DECL(govee_h5310) \
     DECL(astrostart_2000) \
     DECL(compustar_1wg3r) \
     DECL(chrysler_car_remote) \
@@ -329,6 +328,7 @@
     DECL(rfm69_lowpowerlab_moteino) \
     DECL(shenzhen_wale_wl_th6r) \
     DECL(ctt_life_power_hybrid) \
+    DECL(govee_h5310) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
