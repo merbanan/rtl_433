@@ -108,10 +108,12 @@ Top/bottom probe flags (confirmed 2026-06-14):
 
 Subtype 0x07 note:
 
-- Field observations indicate 0x07 commonly follows leak-active (0x06) frames and
-    likely represents dry/recovery state.
-- This is still marked as provisional and should be confirmed by correlating RF
-    captures with Govee gateway/app state transitions.
+- Observed following leak-active (0x06) frames, but the exact semantics are not
+    confirmed. Known triggers include the sensor recovering naturally (probe dries),
+    a manual alarm reset via the device button, and alarm suppression (which silences
+    the alert for ~1 hour while the probe may still be wet). Because of the
+    suppression case, subtype 0x07 cannot be interpreted as a "dry/recovered" signal,
+    so `detect_wet` is not emitted for this event type.
 
 Pairing mode notes (reverse-engineering observations):
 
@@ -307,6 +309,7 @@ r_device const govee_h5059 = {
         .reset_limit = 2000,
         .decode_fn   = &govee_h5059_decode,
         .fields      = output_fields,
-        .priority    = 10, // Govee-H5310 collision: if the H5310 decoder claims a
-                           // frame (temperature or periodic update) it's not H5059
+        .priority    = 10, // H5310 shares this family's framing and runs at higher
+                           // priority; H5310 claims temp/periodic/status/ping frames
+                           // first; H5059 only sees what H5310 passes.
 };

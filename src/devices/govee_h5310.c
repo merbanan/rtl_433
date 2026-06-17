@@ -72,10 +72,7 @@
 #define GOVEE_H5310_PING_MARKER        0x70
 #define GOVEE_H5310_PING_ID_OFFSET     3
 
-// Temperature formula: T_C = (raw - OFFSET) / SLOPE, raw = lo_byte | (hi_byte << 8).
-// Slope fit over a 43->27 C sweep (R^2 = 0.986); offset calibrated against live
-// decoded-vs-displayed readings (see file header); not yet confirmed below ~26 C
-// or below 0 C.
+// T_C = (raw - OFFSET) / SLOPE; raw is little-endian u16. Sign below 0 C unverified.
 #define GOVEE_H5310_TEMP_SLOPE  10.0
 #define GOVEE_H5310_TEMP_OFFSET 33168
 
@@ -344,13 +341,8 @@ static int govee_h5310_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
     }
 
-    // Assemble the full 32-bit device ID to match the rest of the Govee family
-    // (govee_h5059): id_wire is the on-wire byte order, id is the same value
-    // with its two 16-bit words swapped (the app-facing form). The low 16 bits
-    // (9c b2) are shared family material; the device-distinguishing half is
-    // f8a7 (Pool) / 71b0 (Spa). The temperature-bearing frames carry the device
-    // ID at dec[1-2] and the shared material at dec[3-4]; the ping frame carries
-    // them in the opposite order, so reassemble it to the same id_wire.
+    // Ping frame has shared material and device ID in the opposite order from the
+    // temperature-bearing frames; reassemble to the canonical id_wire layout.
     uint32_t id_wire;
     if (is_ping_frame) {
         id_wire = ((uint32_t)dec[GOVEE_H5310_PING_ID_OFFSET] << 24) | ((uint32_t)dec[GOVEE_H5310_PING_ID_OFFSET + 1] << 16) | ((uint32_t)dec[GOVEE_H5310_ID_OFFSET] << 8) | dec[GOVEE_H5310_ID_OFFSET + 1];
