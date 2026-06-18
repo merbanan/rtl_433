@@ -15,6 +15,7 @@
 WEC-2103 temperature/humidity sensor.
 
 Circuit board model numbers: TX07Y-THC V1, TX07K-THC V4
+Also supported: TCM / Tchibo Weather Station 602012 (TX07Y-THC V1.1)
 
 Similar to prologue, kedsum, esperanza_ews, s3318p
 Only available information for this device: https://fcc.report/FCC-ID/WEC-2103
