@@ -14,6 +14,7 @@ coverage-report/
 .cache
 .vs
 .idea
+.vscode
 cmake-build-debug/
 
 # Editor files
@@ -31,6 +32,9 @@ cmake-build-debug/
 # Development files
 /_*/
 /rtl_433_tests
+
+# CMake-generated at build time (see include/version.h.in)
+/include/version.h
 
 # File manager files
 .DS_Store

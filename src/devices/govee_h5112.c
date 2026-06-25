@@ -16,7 +16,6 @@
 */
 
 #include "decoder.h"
-#include <math.h>
 
 #define GOVEE_H5112_SYNC_LEN  3
 #define GOVEE_H5112_MIN_FRAME 7
@@ -37,46 +36,34 @@
 #define GOVEE_H5112_MSG_CLASS_OFFSET 0
 #define GOVEE_H5112_ID_OFFSET        1  // 4 bytes (big-endian wire order)
 #define GOVEE_H5112_BATTERY_OFFSET   5  // battery percent (0x64 = 100%)
-#define GOVEE_H5112_PROBE2_OFFSET    6  // probe 2 temperature (8-bit modular counter)
-#define GOVEE_H5112_PROBE1_FINE      7  // probe 1 temperature, low 8 bits of 14-bit ADC value
-#define GOVEE_H5112_PROBE1_COARSE    8  // probe 1 temperature, high 6 bits [5:0]; bits [7:6] = purpose unknown
-#define GOVEE_H5112_HUMID_OFFSET     9  // probe 1 humidity
+#define GOVEE_H5112_SENSOR_OFFSET    6  // 4-byte packed sensor word, dec[6..9]
 
-// Probe 1 temperature: 14-bit fixed-point ADC value at 80 counts per °C.
-// Combined value = dec[PROBE1_FINE] + (dec[PROBE1_COARSE] & 0x3F) * 256.
-// T_C = (combined - GOVEE_H5112_PROBE1_BIAS) / GOVEE_H5112_PROBE1_SCALE
-// Bias = 3200 places 0 °C at the midpoint of the 14-bit range.
-#define GOVEE_H5112_PROBE1_BIAS  3200
-#define GOVEE_H5112_PROBE1_SCALE 80.0f
-
-// Probe 2 temperature: 8-bit modular counter at 10 counts per °C, bias 144.
-// T_C = (dec[PROBE2_OFFSET] - GOVEE_H5112_PROBE2_BIAS) / GOVEE_H5112_PROBE2_SCALE
-// Wraps every 25.6 °C; absolute value requires stateful wrap-count tracking.
-#define GOVEE_H5112_PROBE2_BIAS  144
-#define GOVEE_H5112_PROBE2_SCALE 10.0f
-#define GOVEE_H5112_PROBE2_WRAP  25.6f  // modular period in °C
-#define GOVEE_H5112_MAX_DEVICES  8      // max simultaneously tracked devices
-
-// Humidity: dec[HUMID_OFFSET] * GOVEE_H5112_HUMID_SCALE = % RH.
-#define GOVEE_H5112_HUMID_SCALE 0.4f
+// dec[6..9] is one 32-bit little-endian word packing both probe temperatures
+// and humidity, written by the device's firmware sensor-packing routine.
+// Field layout (bit positions within the 32-bit word):
+//   bits [0:10]  (11 bits) = probe 2 temperature
+//   bits [11:21] (11 bits) = probe 1 temperature
+//   bits [22:31] (10 bits) = humidity
+// Both temperature fields use the same scale/bias: count = (T_C + 40) * 10,
+// i.e. 0.1 °C resolution, zero-anchored at -40 °C. Humidity: count = RH% * 10.
+// Firmware-verified bit-exact: forward-encoding real app-displayed readings
+// reproduces the real RF bytes exactly, and decoding the in-frame history
+// buffer with this layout (no app data needed) traces a smooth temperature
+// curve through real wrap-boundary crossings -- see project notes.
+#define GOVEE_H5112_FIELD_SCALE   10.0f  // counts per °C, and per % RH
+#define GOVEE_H5112_TEMP_BIAS_C   40.0f  // °C added to zero-anchor the temp fields
+#define GOVEE_H5112_PROBE2_MASK   0x7ffu
+#define GOVEE_H5112_PROBE1_SHIFT  11
+#define GOVEE_H5112_PROBE1_MASK   0x7ffu
+#define GOVEE_H5112_HUMID_SHIFT   22
+#define GOVEE_H5112_HUMID_MASK    0x3ffu
 
 // History buffer: dec[17-56], 10 × 4-byte records of [d6, d7, d8, d9],
 // sampled at ~1-minute intervals within the 10-minute reporting window,
-// oldest record first (dec[17-20] oldest, dec[53-56] most recent).
+// oldest record first (dec[17-20] oldest, dec[53-56] most recent). Each
+// record uses the same packed-word layout as the live dec[6..9] fields.
 #define GOVEE_H5112_HISTORY_OFFSET 17
 #define GOVEE_H5112_HISTORY_COUNT  10
-
-
-// Per-device state for probe-2 wrap-count tracking.
-// k is initialised to 0 on first decode; updated by detecting 25.6 °C boundary
-// crossings between consecutive frames (|Δt2_mod| > 12.8 °C).
-// T_true = T_mod + k * GOVEE_H5112_PROBE2_WRAP
-static struct {
-    uint32_t id_wire;
-    float    t2_mod; // last raw modular value before k-correction
-    int      k;
-    int      valid;
-} govee_h5112_devs[GOVEE_H5112_MAX_DEVICES];
 
 static uint8_t const govee_h5112_sync[]       = {0x2c, 0x4c, 0x4a};
 static uint8_t const govee_h5112_sync_skew1[] = {0x16, 0x26, 0x25};
@@ -118,91 +105,86 @@ Sensor uplink frame format (common to the Govee FSK device family):
 Periodic sensor report (msg_class 0x13), 57-byte decrypted payload.
 This is the device's autonomous broadcast, transmitted every ~10 minutes.
 
-    byte:   0    1  2  3  4   5     6       7   8     9    10  11   12  13    14-16   17-56
-    field:  13  <id_wire 4B>  bat  p2_temp  p1_fine  p1_coarse  hum  00  <time_s LE>  const  <history>
+    byte:   0    1  2  3  4   5    6  7  8  9   10  11   12  13    14-16   17-56
+    field:  13  <id_wire 4B>  bat  <sensor word, 4B>  flags  00  <time_s LE>  const  <history>
 
 Triggered status response (msg_class 0x71), 28-byte decrypted payload.
 Sent in response to a gateway poll (msg_class 0x70 ping). Contains the
 same sensor fields as 0x13 in the same byte positions, but omits the
-history buffer, seconds counter, and constant marker bytes. Humidity is
-present in dec[9]; the app may display the cached 0x13 value instead when
-humidity appears unchanged between triggers.
+history buffer, seconds counter, and constant marker bytes.
 
-    byte:   0    1  2  3  4   5     6       7   8     9    10   11  12  13
-    field:  71  <id_wire 4B>  bat  p2_temp  p1_fine  p1_coarse  hum  ?   00  <session_id LE>
+    byte:   0    1  2  3  4   5    6  7  8  9    10  11  12  13
+    field:  71  <id_wire 4B>  bat  <sensor word, 4B>  ?   00  <session_id LE>
 
 - dec[0]:  0x13 or 0x71, msg_class (identifies this frame type)
 - dec[1-4]: device ID in wire byte order (big-endian); lower 16 bits are a
     pairing token shared by all devices bound to the same gateway
 - dec[5]:  battery percent (0x64 = 100%)
-- dec[6]:  probe 2 temperature, 8-bit modular counter;
-    T_C = (dec[6] - 144) / 10.0  (mod 25.6 °C; wraps every 25.6 °C)
-    Absolute temperature requires stateful wrap-count tracking across frames;
-    see the k-tracking logic in govee_h5112_decode().
-- dec[7]:  probe 1 temperature, low 8 bits of 14-bit ADC value (fine)
-- dec[8]:  bits [5:0] = probe 1 temperature, high 6 bits of 14-bit ADC value (coarse)
-    T_C = (dec[7] + (dec[8] & 0x3F) * 256 - 3200) / 80.0
-    Absolute temperature, no wrapping. Range: -40 °C to > 60 °C.
-    Resolution: 0.0125 °C (reported to 0.1 °C precision).
-    bits [7:6] = purpose unknown; all four values appear across frames and
-    within the history buffer with no discernible pattern. Originally
-    hypothesised to be a rolling packet counter, but confirmed NOT cyclic
-    (0→1→2→3→0) and NOT a probe 2 temperature-range indicator.
-- dec[9]:  probe 1 humidity; humidity_pct = dec[9] * 0.4
+- dec[6-9]: one 32-bit little-endian packed sensor word (see below) holding
+    probe 2 temperature, probe 1 temperature, and humidity. This matches the
+    bit-packing of the firmware's own sensor-encoding routine, confirmed by
+    disassembling a dumped firmware image -- not just calibration-fitted from
+    RF captures.
 - dec[10]: status/flags byte. bit[7] = display unit (0=°C, 1=°F), confirmed from
     gateway unit-change command responses. bit[6] = config/state flag of
     undetermined meaning; usually differs between units (one unit sets it, another
     clears it) but it is NOT a fixed per-device constant -- one unit was observed
-    with it both set and clear. Verified NOT correlated with probe temperature or
-    the probe 2 wrap count k (checked over 86 frames spanning probe 1 +0.4..+25.9 °C
-    and probe 2 modular -11.1 °C). bits[5:0] = 0 in all captures.
-    NOT a probe-swap flag (the two probe connectors are physically different).
+    with it both set and clear. Verified NOT correlated with probe temperature
+    (checked over 86 frames spanning probe 1 +0.4..+25.9 °C). bits[5:0] = 0 in
+    all captures. NOT a probe-swap flag (the two probe connectors are physically
+    different).
 - dec[11]: 0x00 (reserved or padding; full byte unused across all captures)
 - dec[12-13]: seconds counter, little-endian 16-bit, increments at 1 Hz
 - dec[14-15]: 0x37 0x6a (constant marker bytes, observed stable across all captures;
     earlier firmware builds showed 0x36 0x6a)
 - dec[16]: history record count; normally 10 (0x0a), less on a freshly powered device
-- dec[17-56]: rolling history buffer -- 10 x 4-byte records (oldest first),
-    each record mirrors [dec[6], dec[7], dec[8], dec[9]] from that period
+- dec[17-56]: rolling history buffer -- 10 x 4-byte records (oldest first), each
+    record is a packed sensor word in the same layout as dec[6-9]
 
-Probe 1 temperature derivation:
+Sensor word derivation (dec[6..9], and each 4-byte history record):
 
-dec[7] and dec[8][5:0] together form a 14-bit fixed-point ADC value at
-80 counts per °C with a bias of 3200 (= 40 °C * 80), placing 0 °C at the
-midpoint of the counter range. The encoding is equivalent to a 14-bit
-integer split across two bytes; the high byte's top 2 bits (dec[8][7:6])
-have an unknown purpose and are masked out.
+The firmware packs both probe temperatures and humidity into one 32-bit
+little-endian word, written verbatim as 4 consecutive bytes:
 
-Formula: T_C = (dec[7] + (dec[8] & 0x3F) * 256 - 3200) / 80.0
+    packed = dec[6] | (dec[7] << 8) | (dec[8] << 16) | (dec[9] << 24)
+    probe2_field   =  packed        & 0x7ff   // bits [0:10],  11 bits
+    probe1_field   = (packed >> 11) & 0x7ff   // bits [11:21], 11 bits
+    humidity_field = (packed >> 22) & 0x3ff   // bits [22:31], 10 bits
 
-Verified against confirmed app readings:
-- dec[7]=0x98, dec[8][5:0]=14: (152 + 3584 - 3200) / 80 =  6.700 °C (app: 6.7 °C, error 0.000)
-- dec[7]=0x9a, dec[8][5:0]=20: (154 + 5120 - 3200) / 80 = 25.925 °C (app: 25.9 °C, error 0.025)
-- dec[7]=0xa2, dec[8][5:0]=20: (162 + 5120 - 3200) / 80 = 26.025 °C (app: 26.0 °C, error 0.025)
-- dec[7]=0xa9, dec[8][5:0]=5:  (169 + 1280 - 3200) / 80 = -21.888 °C (freezer, no app reading)
+    temperature_2_C = probe2_field / 10.0 - 40.0
+    temperature_C   = probe1_field / 10.0 - 40.0
+    humidity        = humidity_field / 10.0
 
-Probe 2 temperature derivation:
+Both temperature fields use the identical scale/bias (0.1 °C/count,
+zero-anchored at -40 °C) -- probe 2 is a direct absolute reading, not a
+modular counter; no per-device wrap-count state is needed or maintained.
+Equivalently, byte-by-byte without reassembling the 32-bit word:
 
-dec[6] is an 8-bit modular counter at 10 counts per °C with bias 144:
-  dec[6] = (T_probe2 * 10 + 144) mod 256
+    dec[6]        = probe2 bits [0:7]
+    dec[7] & 0x07 = probe2 bits [8:10]
+    dec[7] >> 3   = probe1 bits [0:4]
+    dec[8] & 0x3f = probe1 bits [5:10]
+    dec[8] >> 6   = humidity bits [0:1]
+    dec[9]        = humidity bits [2:9]
 
-The modular value T_mod = (dec[6] - 144) / 10.0 is exact but wraps every
-25.6 °C. Recovering absolute temperature requires tracking the wrap count k
-across consecutive frames and applying T = T_mod + k * 25.6.
+This formula is firmware-verified bit-exact, not just calibration-fitted:
+the device's firmware (FR8016HA, dumped via UART bootloader exploit and
+disassembled) contains this exact symmetric 11/11/10-bit packing function.
+Confirmed two independent ways: (1) forward-encoding real app-displayed
+temperature/humidity readings reproduces the real RF bytes exactly across
+multiple frames, multiple devices, and multiple probe-2 absolute ranges;
+(2) decoding the in-frame history buffer with this formula (no app data
+involved at all) traces a smooth, physically continuous temperature curve
+through real-world temperature excursions, including 25.6 °C wrap-boundary
+crossings that an earlier modular-plus-tracked-wrap-count model could not
+represent without an external wrap counter.
 
-This decoder maintains per-device k state and seeds it on first decode using
-T1 ≈ T2 (correct when both probes start at the same temperature, which is the
-normal case -- the Govee app requires pairing at room temperature before
-deploying the probes). If rtl_433 is restarted while probe 2 is already in a
-cold environment, the seeded k may be wrong by ±1 until the next 25.6 °C
-boundary crossing self-corrects it.
-
-Humidity derivation:
-
-dec[9] * 0.4 = % RH (probe 1 sensor only; probe 2 is temperature-only).
-Verified exact against app readings at room temperature:
-- dec[9]=0x75 (117): 117 * 0.4 = 46.8 % (app: 46.8 %, error 0.0)
-- dec[9]=0xf2 (242): 242 * 0.4 = 96.8 % (app: 97.1 %, error 0.3)
+Verified examples (real captured dec[] bytes vs. confirmed app readings):
+- dec[6-9] = 0xde 0x9a 0x56 0xd0: probe2=33.4 °C, probe1=32.3 °C, hum=83.3 %
+  (app: 33.4 / 32.3 / 83.3 -- exact)
+- dec[6-9] = 0x9c 0x18 0x0d 0xa0: probe2=-24.4 °C, probe1=1.9 °C, hum=64.0 %
+  (app: -24.4 / 1.9 / 64.0 -- exact; probe2 well below the 25.6 °C wrap period,
+  read directly with no wrap-count tracking)
 
 Device ID:
 
@@ -248,9 +230,23 @@ All gateway-originated frames share the same outer header:
   msg_class 0x11 (device → gateway): pairing response. Sent in reply to
     0x07. dec[1-4] = the proposed id_wire being accepted; dec[5] = subtype
     (0x01 in pairing context); dec[6-10] = same sensor fields as 0x71.
-    Both probes are at room temperature at pairing time by design, so the
-    initial wrap count k=0 is always correct when the device is first set up.
 */
+// Unpacks a 4-byte little-endian sensor word (dec[6..9], or a history
+// record in the same layout) into probe 1/probe 2 temperature and humidity.
+// See the "Sensor word derivation" doc comment above for the bit layout.
+static void govee_h5112_unpack_sensor(uint8_t const *b, double *temp1_c, double *temp2_c, double *humidity)
+{
+    uint32_t packed = (uint32_t)b[0] | ((uint32_t)b[1] << 8) | ((uint32_t)b[2] << 16) | ((uint32_t)b[3] << 24);
+
+    uint32_t probe2_field = packed & GOVEE_H5112_PROBE2_MASK;
+    uint32_t probe1_field = (packed >> GOVEE_H5112_PROBE1_SHIFT) & GOVEE_H5112_PROBE1_MASK;
+    uint32_t humid_field  = (packed >> GOVEE_H5112_HUMID_SHIFT) & GOVEE_H5112_HUMID_MASK;
+
+    *temp2_c  = probe2_field / (double)GOVEE_H5112_FIELD_SCALE - GOVEE_H5112_TEMP_BIAS_C;
+    *temp1_c  = probe1_field / (double)GOVEE_H5112_FIELD_SCALE - GOVEE_H5112_TEMP_BIAS_C;
+    *humidity = humid_field / (double)GOVEE_H5112_FIELD_SCALE;
+}
+
 static int govee_h5112_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t frame[GOVEE_H5112_MAX_FRAME];
@@ -331,6 +327,7 @@ static int govee_h5112_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t msg_class = dec[GOVEE_H5112_MSG_CLASS_OFFSET];
     if (msg_class != GOVEE_H5112_MSG_PERIODIC && msg_class != GOVEE_H5112_MSG_TRIGGERED) {
         decoder_logf(decoder, 1, __func__, "unknown msg_class 0x%02x", msg_class);
+        decoder_log_bitrow(decoder, 1, __func__, dec, enc_len * 8, "unknown frame dec[] bytes");
         return DECODE_ABORT_EARLY;
     }
 
@@ -343,55 +340,12 @@ static int govee_h5112_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int battery_pct = dec[GOVEE_H5112_BATTERY_OFFSET];
 
-    // Probe 1 temperature: 14-bit ADC value at 80 counts/°C, bias 3200 (= 40 °C * 80).
-    int probe1_raw = (int)dec[GOVEE_H5112_PROBE1_FINE]
-            + (int)(dec[GOVEE_H5112_PROBE1_COARSE] & 0x3F) * 256
-            - GOVEE_H5112_PROBE1_BIAS;
-    float probe1_c = probe1_raw / GOVEE_H5112_PROBE1_SCALE;
+    double probe1_c, probe2_c, humidity;
+    govee_h5112_unpack_sensor(&dec[GOVEE_H5112_SENSOR_OFFSET], &probe1_c, &probe2_c, &humidity);
 
-    // Probe 2 temperature: 8-bit modular counter at 10 counts/°C, bias 144.
-    // Wraps every 25.6 °C.  Recover absolute temperature by tracking wrap-count k
-    // per device across consecutive frames.  k starts at 0 on first decode; a jump
-    // of |Δt2_mod| > 12.8 °C between frames indicates a boundary crossing.
-    char  probe2_raw_str[5]; // "0xNN\0"
-    snprintf(probe2_raw_str, sizeof(probe2_raw_str), "0x%02x", dec[GOVEE_H5112_PROBE2_OFFSET]);
-    float probe2_mod = ((int)dec[GOVEE_H5112_PROBE2_OFFSET] - GOVEE_H5112_PROBE2_BIAS)
-            / GOVEE_H5112_PROBE2_SCALE;
-    float probe2_c = probe2_mod; // updated below with k-correction
-    int   probe2_k = 0;          // wrap count, also applied to history records
-    for (int i = 0; i < GOVEE_H5112_MAX_DEVICES; i++) {
-        if (govee_h5112_devs[i].valid && govee_h5112_devs[i].id_wire == id_wire) {
-            float delta = probe2_mod - govee_h5112_devs[i].t2_mod;
-            if (delta >= GOVEE_H5112_PROBE2_WRAP * 0.5f)
-                govee_h5112_devs[i].k--;
-            else if (delta <= -GOVEE_H5112_PROBE2_WRAP * 0.5f)
-                govee_h5112_devs[i].k++;
-            govee_h5112_devs[i].t2_mod = probe2_mod;
-            probe2_k = govee_h5112_devs[i].k;
-            probe2_c = probe2_mod + probe2_k * GOVEE_H5112_PROBE2_WRAP;
-            break;
-        }
-        if (!govee_h5112_devs[i].valid) {
-            // Seed k from probe 1 (assumes T2 ≈ T1 on first decode; wrong if
-            // probes are in different environments, but best available guess).
-            int k0 = (int)roundf((probe1_c - probe2_mod) / GOVEE_H5112_PROBE2_WRAP);
-            govee_h5112_devs[i].id_wire = id_wire;
-            govee_h5112_devs[i].t2_mod  = probe2_mod;
-            govee_h5112_devs[i].k       = k0;
-            govee_h5112_devs[i].valid   = 1;
-            probe2_k = k0;
-            probe2_c = probe2_mod + k0 * GOVEE_H5112_PROBE2_WRAP;
-            break;
-        }
-    }
-
-    // Probe 1 humidity: dec[9] * 0.4 = % RH.
-    float humidity = dec[GOVEE_H5112_HUMID_OFFSET] * GOVEE_H5112_HUMID_SCALE;
-
-    // History buffer: 10 × 4-byte records of [d6, d7, d8, d9], oldest first.
-    // Same k correction applied to T2 as the current frame (all records are
-    // from the same 10-minute window so k is stable, except during a wrap
-    // crossing, where the oldest records may be off by one period).
+    // History buffer: 10 × 4-byte records, oldest first, each a packed sensor
+    // word in the same layout as dec[6..9]. Stateless -- no wrap-count
+    // tracking needed; probe 2 is read as a direct absolute value here too.
     double hist_t1[GOVEE_H5112_HISTORY_COUNT];
     double hist_t2[GOVEE_H5112_HISTORY_COUNT];
     double hist_hum[GOVEE_H5112_HISTORY_COUNT];
@@ -400,13 +354,7 @@ static int govee_h5112_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (has_history) {
         for (int i = 0; i < GOVEE_H5112_HISTORY_COUNT; i++) {
             unsigned base = GOVEE_H5112_HISTORY_OFFSET + (unsigned)i * 4;
-            int ht1_raw = (int)dec[base + 1]
-                    + (int)(dec[base + 2] & 0x3F) * 256
-                    - GOVEE_H5112_PROBE1_BIAS;
-            hist_t1[i]  = ht1_raw / (double)GOVEE_H5112_PROBE1_SCALE;
-            hist_t2[i]  = ((int)dec[base] - GOVEE_H5112_PROBE2_BIAS) / (double)GOVEE_H5112_PROBE2_SCALE
-                    + probe2_k * GOVEE_H5112_PROBE2_WRAP;
-            hist_hum[i] = dec[base + 3] * (double)GOVEE_H5112_HUMID_SCALE;
+            govee_h5112_unpack_sensor(&dec[base], &hist_t1[i], &hist_t2[i], &hist_hum[i]);
         }
     }
 
@@ -417,10 +365,9 @@ static int govee_h5112_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "id_wire",          "",             DATA_FORMAT, "%08x", DATA_INT, id_wire,
             "battery_ok",       "Battery",      DATA_INT,    battery_pct > 0,
             "battery_pct",      "Battery",      DATA_INT,    battery_pct,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.3f C", DATA_DOUBLE, (double)probe1_c,
-            "temperature_2_C",  "Temperature2", DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)probe2_c,
-            "temperature_2_raw","Temperature2 raw byte", DATA_STRING, probe2_raw_str,
-            "humidity",         "Humidity",     DATA_FORMAT, "%.1f %%", DATA_DOUBLE, (double)humidity,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, probe1_c,
+            "temperature_2_C",  "Temperature2", DATA_FORMAT, "%.1f C", DATA_DOUBLE, probe2_c,
+            "humidity",         "Humidity",     DATA_FORMAT, "%.1f %%", DATA_DOUBLE, humidity,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -443,7 +390,6 @@ static char const *const output_fields[] = {
         "battery_pct",
         "temperature_C",
         "temperature_2_C",
-        "temperature_2_raw",
         "humidity",
         "temperature_C_history",
         "temperature_2_C_history",
