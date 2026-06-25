@@ -1,5 +1,5 @@
 /** @file
-    Schrader Motocycle TPMS sensor.
+    Schrader Motorcycle TPMS sensor.
 
     Copyright (C) 2026 Bruno OCTAU (ProfBoc75)
 
@@ -9,7 +9,7 @@
     (at your option) any later version.
 */
 /**
-Schrader Motocycle TPMS sensor.
+Schrader Motorcycle TPMS sensor.
 
 issue #3512
 
@@ -54,10 +54,10 @@ Data layout{56} 7 byte:
 
 #include "decoder.h"
 
-static int tpms_schrader_motocycle_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int tpms_schrader_motorcycle_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t b[7]  = {0};
-    // preamble on 13 bit
+    // preamble off 13 bit
     uint8_t const preamble_pattern[] = {0x7f, 0xf8};
 
     if (bitbuffer->num_rows != 1) {
@@ -73,9 +73,9 @@ static int tpms_schrader_motocycle_decode(r_device *decoder, bitbuffer_t *bitbuf
         return DECODE_ABORT_EARLY;
     }
 
-    pos +=13;
+    pos += 13;
 
-    if ( len - pos < 56) {
+    if (len - pos < 56) {
         decoder_logf(decoder, 2, __func__, "Too short");
         return DECODE_ABORT_LENGTH;
     }
@@ -91,12 +91,12 @@ static int tpms_schrader_motocycle_decode(r_device *decoder, bitbuffer_t *bitbuf
 
     uint32_t id             = ((uint32_t)(b[0] & 0x03) << 22) | (b[1] << 14) | (b[2] << 6) | (b[3] >> 2);
     uint16_t pressure_raw   = ((b[3] & 0x03) << 8) | b[4];
-    float pressure_kPa      = pressure_raw * 0.5f ;
+    float pressure_kPa      = pressure_raw * 0.5f;
     float temperature_C     = (b[5] - 50);
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",               "",                DATA_STRING, "Schrader-Motocycle",
+            "model",               "",                DATA_STRING, "Schrader-Motorcycle",
             "type",                "",                DATA_STRING, "TPMS",
             "id",                  "",                DATA_FORMAT, "%u", DATA_INT, id,
             "pressure_kPa",        "Pressure",        DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, (double)pressure_kPa,
@@ -119,12 +119,12 @@ static char const *const output_fields[] = {
         NULL,
 };
 
-r_device const tpms_schrader_motocycle = {
-        .name        = "Schrader Motocycle TPMS sensor",
+r_device const tpms_schrader_motorcycle = {
+        .name        = "Schrader Motorcycle TPMS sensor",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 122,
         .long_width  = 122,
         .reset_limit = 375,
-        .decode_fn   = &tpms_schrader_motocycle_decode,
+        .decode_fn   = &tpms_schrader_motorcycle_decode,
         .fields      = output_fields,
 };

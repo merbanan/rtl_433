@@ -328,7 +328,7 @@
     DECL(rfm69_lowpowerlab_moteino) \
     DECL(shenzhen_wale_wl_th6r) \
     DECL(ctt_life_power_hybrid) \
-    DECL(tpms_schrader_motocycle) \
+    DECL(tpms_schrader_motorcycle) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
