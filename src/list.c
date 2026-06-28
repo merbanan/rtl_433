@@ -31,8 +31,9 @@ void list_ensure_size(list_t *list, size_t min_size)
 
 void list_push(list_t *list, void *p)
 {
-    if (list->len + 1 >= list->size) // account for terminating NULL
+    if (list->len + 1 >= list->size) { // account for terminating NULL
         list_ensure_size(list, list->size < 8 ? 8 : list->size + list->size / 2);
+    }
 
     list->elems[list->len++] = p;
 
