@@ -826,16 +826,16 @@ static void handle_openmetrics(struct mg_connection *nc, struct http_message *hm
             "# HELP input_event_frames Number of SDR frames with decode events.\n"
             "input_event_frames_total %u\n"
             "# EOF\n",
-            (float)(now - cfg->running_since), // uptime_seconds_total,
-            (float)cfg->running_since,         // uptime_seconds_created,
-            (unsigned)cfg->demod->r_devs.len,  // decoder_enabled,
-            (float)(now - cfg->sdr_since),     // input_uptime_seconds_total,
-            (float)cfg->sdr_since,             // input_uptime_seconds_created,
-            cfg->total_frames_count,           // input_count_frames_total,
-            cfg->total_frames_squelch,         // input_squelch_frames_total,
-            cfg->total_frames_ook,             // input_ook_frames_total,
-            cfg->total_frames_fsk,             // input_fsk_frames_total,
-            cfg->total_frames_events);         // input_event_frames_total,
+            (float)(now - cfg->demod->running_since), // uptime_seconds_total,
+            (float)cfg->demod->running_since,         // uptime_seconds_created,
+            (unsigned)cfg->demod->r_devs.len,         // decoder_enabled,
+            (float)(now - cfg->sdr_since),            // input_uptime_seconds_total,
+            (float)cfg->sdr_since,                    // input_uptime_seconds_created,
+            cfg->demod->total_frames_count,           // input_count_frames_total,
+            cfg->demod->total_frames_squelch,         // input_squelch_frames_total,
+            cfg->demod->total_frames_ook,             // input_ook_frames_total,
+            cfg->demod->total_frames_fsk,             // input_fsk_frames_total,
+            cfg->demod->total_frames_events);         // input_event_frames_total,
 
     mg_printf(nc,
             "HTTP/1.1 200 OK\r\n"

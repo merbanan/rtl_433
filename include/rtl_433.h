@@ -85,7 +85,6 @@ typedef struct r_cfg {
     time_t stop_time;
     int after_successful_events_flag;
     uint32_t samp_rate;
-    uint64_t input_pos;
     uint32_t bytes_to_read;
     struct sdr_dev *dev;
     int grab_mode; ///< Signal grabber mode: 0=off, 1=all, 2=unknown, 3=known
@@ -116,20 +115,8 @@ typedef struct r_cfg {
     char const *sr_filename;
     int sr_execopen;
     int watchdog; ///< SDR acquire stall watchdog
-    /* global stats */
-    time_t running_since;           ///< program start time statistic
-    unsigned total_frames_count;    ///< total frames recieved statistic
-    unsigned total_frames_squelch;  ///< total frames with noise only statistic
-    unsigned total_frames_ook;      ///< total frames with ook demod statistic
-    unsigned total_frames_fsk;      ///< total frames with fsk demod statistic
-    unsigned total_frames_events;   ///< total frames with decoder events statistic
     /* sdr stats */
     time_t sdr_since; ///< time of last SDR connect statistic
-    /* per report interval stats */
-    time_t frames_since;    ///< time at start of report interval statistic
-    unsigned frames_ook;    ///< counter of ook demods for report interval statistic
-    unsigned frames_fsk;    ///< counter of fsk demods for report interval statistic
-    unsigned frames_events; ///< counter of decoder events for report interval statistic
     struct mg_mgr *mgr;
 } r_cfg_t;
 

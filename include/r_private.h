@@ -54,12 +54,27 @@ struct dm_state {
 
     pulse_data_t    pulse_data;
     pulse_data_t    fsk_pulse_data;
+    uint64_t input_pos;
     unsigned frame_event_count;
     int frame_quality;
     unsigned frame_start_ago;
     unsigned frame_end_ago;
     struct timeval now;
     float sample_file_pos;
+
+    /* global stats */
+    time_t running_since;          ///< program start time statistic
+    unsigned total_frames_count;   ///< total frames recieved statistic
+    unsigned total_frames_squelch; ///< total frames with noise only statistic
+    unsigned total_frames_ook;     ///< total frames with ook demod statistic
+    unsigned total_frames_fsk;     ///< total frames with fsk demod statistic
+    unsigned total_frames_events;  ///< total frames with decoder events statistic
+
+    /* per report interval stats */
+    time_t frames_since;    ///< time at start of report interval statistic
+    unsigned frames_ook;    ///< counter of ook demods for report interval statistic
+    unsigned frames_fsk;    ///< counter of fsk demods for report interval statistic
+    unsigned frames_events; ///< counter of decoder events for report interval statistic
 };
 
 #endif /* INCLUDE_R_PRIVATE_H_ */

@@ -140,9 +140,9 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
     int noise_only = avg_db < demod->noise_level + 3.0f; // or demod->min_level_auto?
     // always process frames if loader, dumper, or analyzers are in use, otherwise skip silent frames
     int process_frame = demod->squelch_offset <= 0 || !noise_only || demod->load_info.format || demod->analyze_pulses || demod->dumper.len || demod->samp_grab;
-    cfg->total_frames_count += 1;
+    demod->total_frames_count += 1;
     if (noise_only) {
-        cfg->total_frames_squelch += 1;
+        demod->total_frames_squelch += 1;
         demod->noise_level = (demod->noise_level * 7 + avg_db) / 8; // fast fall over 8 frames
         // If auto_level and noise level well below min_level and significant change in noise level
         if (demod->auto_level > 0 && demod->noise_level < demod->min_level - 3.0f
@@ -213,7 +213,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         }
         while (package_type && process_frame) {
             int p_events = 0; // Sensor events successfully detected per package
-            package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples, cfg->samp_rate, cfg->input_pos, &demod->pulse_data, &demod->fsk_pulse_data, fpdm);
+            package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples, cfg->samp_rate, demod->input_pos, &demod->pulse_data, &demod->fsk_pulse_data, fpdm);
             if (package_type) {
                 // new package: set a first frame start if we are not tracking one already
                 if (!demod->frame_start_ago) {
@@ -229,10 +229,10 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 }
 
                 p_events += run_ook_demods(&demod->r_devs, &demod->pulse_data);
-                cfg->total_frames_ook += 1;
-                cfg->total_frames_events += p_events > 0;
-                cfg->frames_ook +=1;
-                cfg->frames_events += p_events > 0;
+                demod->total_frames_ook += 1;
+                demod->total_frames_events += p_events > 0;
+                demod->frames_ook +=1;
+                demod->frames_events += p_events > 0;
 
                 for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
                     file_info_t const *dumper = *iter;
@@ -240,7 +240,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                         pulse_data_print_vcd(dumper->file, &demod->pulse_data, '\'');
                     }
                     if (dumper->format == U8_LOGIC) {
-                        pulse_data_dump_raw(demod->u8_buf, n_samples, cfg->input_pos, &demod->pulse_data, 0x02);
+                        pulse_data_dump_raw(demod->u8_buf, n_samples, demod->input_pos, &demod->pulse_data, 0x02);
                     }
                     if (dumper->format == PULSE_OOK) {
                         pulse_data_dump(dumper->file, &demod->pulse_data);
@@ -271,10 +271,10 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 }
 
                 p_events += run_fsk_demods(&demod->r_devs, &demod->fsk_pulse_data);
-                cfg->total_frames_fsk +=1;
-                cfg->total_frames_events += p_events > 0;
-                cfg->frames_fsk += 1;
-                cfg->frames_events += p_events > 0;
+                demod->total_frames_fsk +=1;
+                demod->total_frames_events += p_events > 0;
+                demod->frames_fsk += 1;
+                demod->frames_events += p_events > 0;
 
                 for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
                     file_info_t const *dumper = *iter;
@@ -282,7 +282,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                         pulse_data_print_vcd(dumper->file, &demod->fsk_pulse_data, '"');
                     }
                     if (dumper->format == U8_LOGIC) {
-                        pulse_data_dump_raw(demod->u8_buf, n_samples, cfg->input_pos, &demod->fsk_pulse_data, 0x04);
+                        pulse_data_dump_raw(demod->u8_buf, n_samples, demod->input_pos, &demod->fsk_pulse_data, 0x04);
                     }
                     if (dumper->format == PULSE_OOK) {
                         pulse_data_dump(dumper->file, &demod->fsk_pulse_data);
@@ -335,8 +335,8 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
             file_info_t const *dumper = *iter;
             if (dumper->format == U8_LOGIC) {
-                pulse_data_dump_raw(demod->u8_buf, n_samples, cfg->input_pos, &demod->pulse_data, 0x02);
-                pulse_data_dump_raw(demod->u8_buf, n_samples, cfg->input_pos, &demod->fsk_pulse_data, 0x04);
+                pulse_data_dump_raw(demod->u8_buf, n_samples, demod->input_pos, &demod->pulse_data, 0x02);
+                pulse_data_dump_raw(demod->u8_buf, n_samples, demod->input_pos, &demod->fsk_pulse_data, 0x04);
                 break;
             }
         }
@@ -451,7 +451,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         }
     }
 
-    cfg->input_pos += n_samples;
+    demod->input_pos += n_samples;
 
     return d_events;
 }

@@ -161,8 +161,8 @@ void r_init_cfg(r_cfg_t *cfg)
     // initialize tables
     baseband_init();
 
-    time(&cfg->running_since);
-    time(&cfg->frames_since);
+    time(&cfg->demod->running_since);
+    time(&cfg->demod->frames_since);
     get_time_now(&cfg->demod->now);
 
     list_ensure_size(&cfg->demod->r_devs, 100);
@@ -895,13 +895,13 @@ data_t *create_report_data(r_cfg_t *cfg, int level)
     }
 
     data = data_make(
-            "count",            "", DATA_INT, cfg->frames_ook,
-            "fsk",              "", DATA_INT, cfg->frames_fsk,
-            "events",           "", DATA_INT, cfg->frames_events,
+            "count",            "", DATA_INT, cfg->demod->frames_ook,
+            "fsk",              "", DATA_INT, cfg->demod->frames_fsk,
+            "events",           "", DATA_INT, cfg->demod->frames_events,
             NULL);
 
     char since_str[LOCAL_TIME_BUFLEN];
-    format_time_str(since_str, "%Y-%m-%dT%H:%M:%S", cfg->report_time_tz, cfg->frames_since);
+    format_time_str(since_str, "%Y-%m-%dT%H:%M:%S", cfg->report_time_tz, cfg->demod->frames_since);
 
     data = data_make(
             "enabled",          "", DATA_INT, r_devs->len,
@@ -918,10 +918,10 @@ void flush_report_data(r_cfg_t *cfg)
 {
     list_t *r_devs = &cfg->demod->r_devs;
 
-    time(&cfg->frames_since);
-    cfg->frames_ook = 0;
-    cfg->frames_fsk = 0;
-    cfg->frames_events = 0;
+    time(&cfg->demod->frames_since);
+    cfg->demod->frames_ook = 0;
+    cfg->demod->frames_fsk = 0;
+    cfg->demod->frames_events = 0;
 
     for (void **iter = r_devs->elems; iter && *iter; ++iter) {
         r_device *r_dev = *iter;
