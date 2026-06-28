@@ -212,7 +212,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 demod->frame_end_ago = demod->pulse_data.end_ago;
             }
             if (package_type == PULSE_DATA_OOK) {
-                calc_rssi_snr(cfg, &demod->pulse_data);
+                calc_rssi_snr(demod, &demod->pulse_data);
                 if (demod->analyze_pulses) {
                     fprintf(stderr, "Detected OOK package\t%s\n", time_pos_str(cfg, demod->pulse_data.start_ago, time_str));
                 }
@@ -254,7 +254,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 }
 
             } else if (package_type == PULSE_DATA_FSK) {
-                calc_rssi_snr(cfg, &demod->fsk_pulse_data);
+                calc_rssi_snr(demod, &demod->fsk_pulse_data);
                 if (demod->analyze_pulses) {
                     fprintf(stderr, "Detected FSK package\t%s\n", time_pos_str(cfg, demod->fsk_pulse_data.start_ago, time_str));
                 }

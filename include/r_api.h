@@ -20,6 +20,7 @@ struct data;
 struct pulse_data;
 struct list;
 struct mg_mgr;
+struct dm_state;
 
 /* general */
 
@@ -41,7 +42,7 @@ void register_all_protocols(struct r_cfg *cfg, unsigned disabled);
 
 /* output helper */
 
-void calc_rssi_snr(struct r_cfg *cfg, struct pulse_data *pulse_data);
+void calc_rssi_snr(struct dm_state *demod, struct pulse_data *pulse_data);
 
 char *time_pos_str(struct r_cfg *cfg, unsigned samples_ago, char *buf);
 
