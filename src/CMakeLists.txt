@@ -16,6 +16,7 @@ add_library(r_433 STATIC
     data.c
     data_tag.c
     decoder_util.c
+    delay_timer.c
     fileformat.c
     http_server.c
     jsmn.c

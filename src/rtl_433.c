@@ -56,6 +56,7 @@
 #include "write_sigrok.h"
 #include "sigmf.h"
 #include "mongoose.h"
+#include "delay_timer.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -90,40 +91,6 @@
 #ifndef STDERR_FILENO
 #define STDERR_FILENO 2
 #endif
-
-#ifdef _WIN32
-#include <windows.h>
-#define usleep(us) Sleep((us) / 1000)
-#endif
-
-typedef struct timeval delay_timer_t;
-
-static void delay_timer_init(delay_timer_t *delay_timer)
-{
-    // set to current wall clock
-    get_time_now(delay_timer);
-}
-
-static void delay_timer_wait(delay_timer_t *delay_timer, unsigned delay_us)
-{
-    // sync to wall clock
-    struct timeval now_tv;
-    get_time_now(&now_tv);
-
-    time_t elapsed_s  = now_tv.tv_sec - delay_timer->tv_sec;
-    time_t elapsed_us = 1000000 * elapsed_s + now_tv.tv_usec - delay_timer->tv_usec;
-
-    // set next wanted start time
-    delay_timer->tv_usec += delay_us;
-    while (delay_timer->tv_usec > 1000000) {
-        delay_timer->tv_usec -= 1000000;
-        delay_timer->tv_sec += 1;
-    }
-
-    if ((time_t)delay_us > elapsed_us) {
-        usleep(delay_us - elapsed_us);
-    }
-}
 
 r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
