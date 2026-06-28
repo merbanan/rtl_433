@@ -304,37 +304,6 @@ void register_all_protocols(r_cfg_t *cfg, unsigned disabled)
 
 /* output helper */
 
-void calc_rssi_snr(struct dm_state *demod, pulse_data_t *pulse_data)
-{
-    float ook_high_estimate = pulse_data->ook_high_estimate > 0 ? pulse_data->ook_high_estimate : 1;
-    float ook_low_estimate = pulse_data->ook_low_estimate > 0 ? pulse_data->ook_low_estimate : 1;
-    int const OOK_MAX_HIGH_LEVEL = DB_TO_AMP(0); // Maximum estimate for high level (-0 dB)
-    float ook_max_estimate = ook_high_estimate < OOK_MAX_HIGH_LEVEL ? ook_high_estimate : OOK_MAX_HIGH_LEVEL;
-    float asnr   = ook_max_estimate / ook_low_estimate;
-    float foffs1 = (float)pulse_data->fsk_f1_est / INT16_MAX * demod->samp_rate / 2.0f;
-    float foffs2 = (float)pulse_data->fsk_f2_est / INT16_MAX * demod->samp_rate / 2.0f;
-    pulse_data->freq1_hz = (foffs1 + demod->center_frequency);
-    pulse_data->freq2_hz = (foffs2 + demod->center_frequency);
-    pulse_data->centerfreq_hz = demod->center_frequency;
-    pulse_data->depth_bits    = demod->sample_size * 4;
-    // NOTE: for (CU8) amplitude is 10x (because it's squares)
-    if (demod->sample_size == 2 && !demod->use_mag_est) { // amplitude (CU8)
-        pulse_data->range_db = 42.1442f; // 10*log10f(16384.0f) == 20*log10f(128.0f)
-        pulse_data->rssi_db  = 10.0f * log10f(ook_high_estimate) - 42.1442f; // 10*log10f(16384.0f)
-        pulse_data->noise_db = 10.0f * log10f(ook_low_estimate) - 42.1442f; // 10*log10f(16384.0f)
-        pulse_data->snr_db   = 10.0f * log10f(asnr);
-    }
-    else { // magnitude (CU8, CS16)
-        pulse_data->range_db = 84.2884f; // 20*log10f(16384.0f)
-        // lowest (scaled x128) reading at  8 bit is -20*log10(128) = -42.1442 (eff. -36 dB)
-        // lowest (scaled div2) reading at 12 bit is -20*log10(1024) = -60.2060 (eff. -54 dB)
-        // lowest (scaled div2) reading at 16 bit is -20*log10(16384) = -84.2884 (eff. -78 dB)
-        pulse_data->rssi_db  = 20.0f * log10f(ook_high_estimate) - 84.2884f; // 20*log10f(16384.0f)
-        pulse_data->noise_db = 20.0f * log10f(ook_low_estimate) - 84.2884f; // 20*log10f(16384.0f)
-        pulse_data->snr_db   = 20.0f * log10f(asnr);
-    }
-}
-
 char *time_pos_str(r_cfg_t *cfg, unsigned samples_ago, char *buf)
 {
     if (cfg->report_time == REPORT_TIME_SAMPLES) {
