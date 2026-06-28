@@ -440,10 +440,9 @@ static void reset_sdr_flow(r_cfg_t *cfg)
 /**
 Push an IQ data frame to the SDR IQ data frame processing.
 */
-static void push_sdr_flow(unsigned char *iq_buf, uint32_t len, void *ctx)
+static void push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
 {
     //fprintf(stderr, "push_sdr_flow... %u\n", len);
-    r_cfg_t *cfg = ctx;
     struct dm_state *demod = cfg->demod;
     char time_str[LOCAL_TIME_BUFLEN];
     unsigned long n_samples;
@@ -1619,7 +1618,7 @@ static void sdr_handler(struct mg_connection *nc, int ev_type, void *ev_data)
         cfg->center_frequency = ev->center_frequency;
 
         // Send frame data to processing
-        push_sdr_flow((unsigned char *)ev->buf, ev->len, cfg);
+        push_sdr_flow(cfg, (unsigned char *)ev->buf, ev->len);
     }
 
     if (cfg->exit_async) {
@@ -2216,7 +2215,7 @@ int main(int argc, char **argv) {
                 }
                 demod->sample_file_pos = ((float)n_blocks * DEFAULT_BUF_LENGTH + n_read) / cfg->samp_rate / demod->sample_size;
                 n_blocks++; // this assumes n_read == DEFAULT_BUF_LENGTH
-                push_sdr_flow(test_mode_buf, n_read, cfg);
+                push_sdr_flow(cfg, test_mode_buf, n_read);
             } while (n_read != 0 && !cfg->exit_async);
 
             flush_sdr_flow(cfg); // this is just a placeholder for now
@@ -2231,7 +2230,7 @@ int main(int argc, char **argv) {
                     memset(test_mode_buf, 0, DEFAULT_BUF_LENGTH);
             }
             demod->sample_file_pos = ((float)n_blocks + 1) * DEFAULT_BUF_LENGTH / cfg->samp_rate / demod->sample_size;
-            push_sdr_flow(test_mode_buf, DEFAULT_BUF_LENGTH, cfg);
+            push_sdr_flow(cfg, test_mode_buf, DEFAULT_BUF_LENGTH);
 
             //Always classify a signal at the end of the file
             if (demod->am_analyze) {
