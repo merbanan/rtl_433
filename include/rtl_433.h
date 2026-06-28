@@ -70,8 +70,8 @@ typedef struct r_cfg {
     list_t in_files;
     char const *in_filename;
     int in_replay;
-    volatile sig_atomic_t hop_now;
-    volatile sig_atomic_t exit_async;
+    volatile sig_atomic_t hop_now; ///< flag to cause channel hopping, async written by signal handler and sdr callback
+    volatile sig_atomic_t exit_async; ///< flag to cause exiting, async written by signal handler
     volatile sig_atomic_t exit_code; ///< 0=no err, 1=params or cmd line err, 2=sdr device read error, 3=usb init error, 5=USB error (reset), other=other error
     int frequencies;
     int frequency_index;
@@ -103,7 +103,7 @@ typedef struct r_cfg {
     int report_description;
     int report_stats;
     int stats_interval;
-    volatile sig_atomic_t stats_now;
+    volatile sig_atomic_t stats_now; ///< flag to cause stats to be printed, async written by signal handler and sdr callback
     time_t stats_time;
     int no_default_devices;
     struct r_device *devices;
