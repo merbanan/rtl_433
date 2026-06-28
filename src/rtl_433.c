@@ -1059,6 +1059,85 @@ static void sighandler(int signum)
 }
 #endif
 
+/**
+Process an IQ data frame with push_sdr_flow() and run side effects.
+
+Side effects are:
+- quit on errors.
+- frequency hopping
+- bytes to read
+- run duration
+- stats printing
+- hop on events.
+- quit on events.
+*/
+static void process_sdr_frame(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
+{
+    // Clip frame length and exit if requested
+    if ((cfg->bytes_to_read > 0) && (cfg->bytes_to_read <= len)) {
+        len = cfg->bytes_to_read;
+        // exit after processing this frame
+        cfg->exit_async = 1;
+    }
+
+    // Send frame data to processing
+    int events = push_sdr_flow(cfg, iq_buf, len);
+
+    // Exit on errors
+    if (events < 0) {
+        cfg->exit_async = 1;
+    }
+
+    // Track processed bytes
+    if (cfg->bytes_to_read > 0) {
+        cfg->bytes_to_read -= len;
+    }
+
+    // Action after a successful decode event
+    if (cfg->after_successful_events_flag && (events > 0)) {
+        if (cfg->after_successful_events_flag == 1) {
+            cfg->exit_async = 1;
+        }
+        else {
+            cfg->hop_now = 1;
+        }
+    }
+
+    // Check for timer actions
+    time_t rawtime;
+    time(&rawtime);
+
+    // Check for maximum run duration
+    if (cfg->duration > 0 && rawtime >= cfg->stop_time) {
+        cfg->exit_async = 1;
+        print_log(LOG_CRITICAL, __func__, "Time expired, exiting!");
+    }
+    // Check for interval stats printing
+    if (cfg->stats_now || (cfg->report_stats && cfg->stats_interval && rawtime >= cfg->stats_time)) {
+        event_occurred_handler(cfg, create_report_data(cfg, cfg->stats_now ? 3 : cfg->report_stats));
+        flush_report_data(cfg);
+        if (rawtime >= cfg->stats_time) {
+            cfg->stats_time += cfg->stats_interval;
+        }
+        if (cfg->stats_now) {
+            cfg->stats_now--;
+        }
+    }
+    // Check for hopping timer
+    // choose hop_index as frequency_index, if there are too few hop_times use the last one
+    int hop_index = cfg->hop_times > cfg->frequency_index ? cfg->frequency_index : cfg->hop_times - 1;
+    if (cfg->hop_times > 0 && cfg->frequencies > 1 && difftime(rawtime, cfg->hop_start_time) >= cfg->hop_time[hop_index]) {
+        cfg->hop_now = 1;
+    }
+    // Apply hopping, might be set by timer, successful decode event, or signal handler
+    if (cfg->hop_now && !cfg->exit_async) {
+        cfg->hop_now = 0;
+        time(&cfg->hop_start_time);
+        cfg->frequency_index = (cfg->frequency_index + 1) % cfg->frequencies;
+        sdr_set_center_freq(cfg->dev, cfg->frequency[cfg->frequency_index], 1);
+    }
+}
+
 static void timer_handler(struct mg_connection *nc, int ev, void *ev_data);
 
 /**
@@ -1116,8 +1195,12 @@ static void sdr_handler(struct mg_connection *nc, int ev_type, void *ev_data)
         cfg->samp_rate        = ev->sample_rate;
         cfg->center_frequency = ev->center_frequency;
 
-        // Send frame data to processing
-        push_sdr_flow(cfg, (unsigned char *)ev->buf, ev->len);
+        if (ev->len > 0) {
+            cfg->watchdog++; // reset the frame acquire watchdog
+        }
+
+        // Send frame data to processing and run side effets
+        process_sdr_frame(cfg, (unsigned char *)ev->buf, ev->len);
     }
 
     if (cfg->exit_async) {
@@ -1714,7 +1797,7 @@ int main(int argc, char **argv) {
                 }
                 demod->sample_file_pos = ((float)n_blocks * DEFAULT_BUF_LENGTH + n_read) / cfg->samp_rate / demod->sample_size;
                 n_blocks++; // this assumes n_read == DEFAULT_BUF_LENGTH
-                push_sdr_flow(cfg, test_mode_buf, n_read);
+                process_sdr_frame(cfg, test_mode_buf, n_read);
             } while (n_read != 0 && !cfg->exit_async);
 
             flush_sdr_flow(cfg); // this is just a placeholder for now
@@ -1729,7 +1812,7 @@ int main(int argc, char **argv) {
                     memset(test_mode_buf, 0, DEFAULT_BUF_LENGTH);
             }
             demod->sample_file_pos = ((float)n_blocks + 1) * DEFAULT_BUF_LENGTH / cfg->samp_rate / demod->sample_size;
-            push_sdr_flow(cfg, test_mode_buf, DEFAULT_BUF_LENGTH);
+            process_sdr_frame(cfg, test_mode_buf, DEFAULT_BUF_LENGTH);
 
             //Always classify a signal at the end of the file
             if (demod->am_analyze) {

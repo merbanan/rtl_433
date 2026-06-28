@@ -20,6 +20,6 @@ void flush_sdr_flow(struct r_cfg *cfg);
 
 void reset_sdr_flow(struct r_cfg *cfg);
 
-void push_sdr_flow(struct r_cfg *cfg, unsigned char *iq_buf, uint32_t len);
+int push_sdr_flow(struct r_cfg *cfg, unsigned char *iq_buf, uint32_t len);
 
 #endif /* INCLUDE_R_FLOW_H_ */

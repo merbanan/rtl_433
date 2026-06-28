@@ -20,7 +20,6 @@
 #include "r_private.h"
 #include "r_device.h"
 #include "r_api.h"
-#include "sdr.h"
 #include "baseband.h"
 #include "pulse_analyzer.h"
 #include "pulse_detect.h"
@@ -70,8 +69,10 @@ void reset_sdr_flow(r_cfg_t *cfg)
 
 /**
 Push an IQ data frame to the SDR IQ data frame processing.
+
+@return Count of successful decoding events
 */
-void push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
+int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
 {
     //fprintf(stderr, "push_sdr_flow... %u\n", len);
     struct dm_state *demod = cfg->demod;
@@ -80,18 +81,13 @@ void push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
 
     if (!demod) {
         // might happen when the demod closed and we get a last data frame
-        return; // ignore the data
+        return 0; // ignore the data
     }
 
     // do this here and not in sdr_handler so realtime replay can use rtl_tcp output
     for (void **iter = cfg->raw_handler.elems; iter && *iter; ++iter) {
         raw_output_t *output = *iter;
         raw_output_frame(output, iq_buf, len);
-    }
-
-    if ((cfg->bytes_to_read > 0) && (cfg->bytes_to_read <= len)) {
-        len = cfg->bytes_to_read;
-        cfg->exit_async = 1;
     }
 
     // save last frame time to see if a new second started
@@ -104,7 +100,7 @@ void push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
     }
     if (!n_samples) {
         print_log(LOG_WARNING, __func__, "Sample buffer too short!");
-        return; // keep the watchdog timer running
+        return 0; // no error, keep running
     }
 
     // age the frame position if there is one
@@ -114,8 +110,6 @@ void push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
     if (demod->frame_end_ago) {
         demod->frame_end_ago += n_samples;
     }
-
-    cfg->watchdog++; // reset the frame acquire watchdog
 
     if (demod->samp_grab) {
         samp_grab_push(demod->samp_grab, iq_buf, len);
@@ -453,51 +447,11 @@ void push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
 
         if (fwrite(out_buf, 1, out_len, dumper->file) != out_len) {
             print_log(LOG_ERROR, __func__, "Short write, samples lost, exiting!");
-            cfg->exit_async = 1;
+            d_events = -1; // report error, handler should exit
         }
     }
 
     cfg->input_pos += n_samples;
-    if (cfg->bytes_to_read > 0) {
-        cfg->bytes_to_read -= len;
-    }
 
-    if (cfg->after_successful_events_flag && (d_events > 0)) {
-        if (cfg->after_successful_events_flag == 1) {
-            cfg->exit_async = 1;
-        }
-        else {
-            cfg->hop_now = 1;
-        }
-    }
-
-    time_t rawtime;
-    time(&rawtime);
-    // choose hop_index as frequency_index, if there are too few hop_times use the last one
-    int hop_index = cfg->hop_times > cfg->frequency_index ? cfg->frequency_index : cfg->hop_times - 1;
-    if (cfg->hop_times > 0 && cfg->frequencies > 1
-            && difftime(rawtime, cfg->hop_start_time) >= cfg->hop_time[hop_index]) {
-        cfg->hop_now = 1;
-    }
-    if (cfg->duration > 0 && rawtime >= cfg->stop_time) {
-        cfg->exit_async = 1;
-        print_log(LOG_CRITICAL, __func__, "Time expired, exiting!");
-    }
-    if (cfg->stats_now || (cfg->report_stats && cfg->stats_interval && rawtime >= cfg->stats_time)) {
-        event_occurred_handler(cfg, create_report_data(cfg, cfg->stats_now ? 3 : cfg->report_stats));
-        flush_report_data(cfg);
-        if (rawtime >= cfg->stats_time) {
-            cfg->stats_time += cfg->stats_interval;
-        }
-        if (cfg->stats_now) {
-            cfg->stats_now--;
-        }
-    }
-
-    if (cfg->hop_now && !cfg->exit_async) {
-        cfg->hop_now = 0;
-        time(&cfg->hop_start_time);
-        cfg->frequency_index = (cfg->frequency_index + 1) % cfg->frequencies;
-        sdr_set_center_freq(cfg->dev, cfg->frequency[cfg->frequency_index], 1);
-    }
+    return d_events;
 }
