@@ -408,7 +408,7 @@ Flush the SDR IQ data frame processing, e.g. on the end of a input file.
 Note: this should flush pulse_detect_package() but is not implemented.
 You need to mocked this by feeding empty I/Q frames.
 */
-static void flush_sdr_callback(r_cfg_t *cfg)
+static void flush_sdr_flow(r_cfg_t *cfg)
 {
     (void)cfg;
     // should flush pulse_detect_package() someday
@@ -417,7 +417,7 @@ static void flush_sdr_callback(r_cfg_t *cfg)
 /**
 Reset the SDR IQ data frame processing, e.g. on a new input file.
 */
-static void reset_sdr_callback(r_cfg_t *cfg)
+static void reset_sdr_flow(r_cfg_t *cfg)
 {
     struct dm_state *demod = cfg->demod;
 
@@ -440,9 +440,9 @@ static void reset_sdr_callback(r_cfg_t *cfg)
 /**
 Push an IQ data frame to the SDR IQ data frame processing.
 */
-static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
+static void push_sdr_flow(unsigned char *iq_buf, uint32_t len, void *ctx)
 {
-    //fprintf(stderr, "sdr_callback... %u\n", len);
+    //fprintf(stderr, "push_sdr_flow... %u\n", len);
     r_cfg_t *cfg = ctx;
     struct dm_state *demod = cfg->demod;
     char time_str[LOCAL_TIME_BUFLEN];
@@ -1568,7 +1568,7 @@ Process SDR events.
 
 Called by mg_mgr_poll() for each connection. Processed only for one fixed connection.
 
-Print event data and process frames with sdr_callback().
+Print event data and process frames with push_sdr_flow().
 
 Stop the SDR if exit_async is set.
 
@@ -1619,7 +1619,7 @@ static void sdr_handler(struct mg_connection *nc, int ev_type, void *ev_data)
         cfg->center_frequency = ev->center_frequency;
 
         // Send frame data to processing
-        sdr_callback((unsigned char *)ev->buf, ev->len, cfg);
+        push_sdr_flow((unsigned char *)ev->buf, ev->len, cfg);
     }
 
     if (cfg->exit_async) {
@@ -2212,14 +2212,14 @@ int main(int argc, char **argv) {
                     }
                 }
                 if (n_read == 0) {
-                    break;  // sdr_callback() will Segmentation Fault with len=0
+                    break;  // push_sdr_flow() will Segmentation Fault with len=0
                 }
                 demod->sample_file_pos = ((float)n_blocks * DEFAULT_BUF_LENGTH + n_read) / cfg->samp_rate / demod->sample_size;
                 n_blocks++; // this assumes n_read == DEFAULT_BUF_LENGTH
-                sdr_callback(test_mode_buf, n_read, cfg);
+                push_sdr_flow(test_mode_buf, n_read, cfg);
             } while (n_read != 0 && !cfg->exit_async);
 
-            flush_sdr_callback(cfg); // this is just a placeholder for now
+            flush_sdr_flow(cfg); // this is just a placeholder for now
             // Call a last time with cleared samples to ensure EOP detection
             if (demod->sample_size == 2) { // CU8
                 memset(test_mode_buf, 128, DEFAULT_BUF_LENGTH); // 128 is 0 in unsigned data
@@ -2231,7 +2231,7 @@ int main(int argc, char **argv) {
                     memset(test_mode_buf, 0, DEFAULT_BUF_LENGTH);
             }
             demod->sample_file_pos = ((float)n_blocks + 1) * DEFAULT_BUF_LENGTH / cfg->samp_rate / demod->sample_size;
-            sdr_callback(test_mode_buf, DEFAULT_BUF_LENGTH, cfg);
+            push_sdr_flow(test_mode_buf, DEFAULT_BUF_LENGTH, cfg);
 
             //Always classify a signal at the end of the file
             if (demod->am_analyze) {
@@ -2240,7 +2240,7 @@ int main(int argc, char **argv) {
             if (cfg->verbosity >= LOG_NOTICE) {
                 print_logf(LOG_NOTICE, "Input", "Test mode file issued %d packets", n_blocks);
             }
-            reset_sdr_callback(cfg);
+            reset_sdr_flow(cfg);
 
             if (in_file != stdin) {
                 fclose(in_file);
