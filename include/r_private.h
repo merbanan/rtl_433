@@ -41,8 +41,6 @@ struct dm_state {
     filter_state_t lowpass_filter_state;
     demodfm_state_t demod_FM_state;
     int enable_FM_demod;
-    unsigned fsk_pulse_detect_mode;
-    unsigned frequency;
     samp_grab_t *samp_grab;
     am_analyze_t *am_analyze;
     int analyze_pulses;
@@ -61,6 +59,16 @@ struct dm_state {
     unsigned frame_end_ago;
     struct timeval now;
     float sample_file_pos;
+
+    /* parameters copied in for each frame  */
+    uint32_t center_frequency;
+    uint32_t samp_rate;
+    int fsk_pulse_detect_mode;
+    int grab_mode; ///< Signal grabber mode: 0=off, 1=all, 2=unknown, 3=known
+    int raw_mode; ///< Raw pulses printing mode: 0=off, 1=all, 2=unknown, 3=known
+    int verbosity; ///< 0=normal, 1=verbose, 2=verbose decoders, 3=debug decoders, 4=trace decoding.
+    int report_noise;
+    list_t *raw_handler;
 
     /* global stats */
     time_t running_since;          ///< program start time statistic

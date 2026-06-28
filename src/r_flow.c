@@ -85,7 +85,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
     }
 
     // do this here and not in sdr_handler so realtime replay can use rtl_tcp output
-    for (void **iter = cfg->raw_handler.elems; iter && *iter; ++iter) {
+    for (void **iter = demod->raw_handler->elems; iter && *iter; ++iter) {
         raw_output_t *output = *iter;
         raw_output_frame(output, iq_buf, len);
     }
@@ -156,7 +156,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         demod->noise_level = (demod->noise_level * 31 + avg_db) / 32; // slow rise over 32 frames
     }
     // Report noise every report_noise seconds, but only for the first frame that second
-    if (cfg->report_noise && last_frame_sec != demod->now.tv_sec && demod->now.tv_sec % cfg->report_noise == 0) {
+    if (demod->report_noise && last_frame_sec != demod->now.tv_sec && demod->now.tv_sec % demod->report_noise == 0) {
         print_logf(LOG_WARNING, "Auto Level", "Current %s level %.1f dB, estimated noise %.1f dB",
                 noise_only ? "noise" : "signal", avg_db, demod->noise_level);
     }
@@ -166,23 +166,12 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
     }
 
     // FM demodulation
-    // Select the correct fsk pulse detector
-    unsigned fpdm = cfg->fsk_pulse_detect_mode;
-    if (cfg->fsk_pulse_detect_mode == FSK_PULSE_DETECT_AUTO) {
-        if (cfg->frequency[cfg->frequency_index] > FSK_PULSE_DETECTOR_LIMIT) {
-            fpdm = FSK_PULSE_DETECT_NEW;
-        }
-        else {
-            fpdm = FSK_PULSE_DETECT_OLD;
-        }
-    }
-
     if (demod->enable_FM_demod && process_frame) {
-        float low_pass = demod->low_pass != 0.0f ? demod->low_pass : fpdm ? 0.2f : 0.1f;
+        float low_pass = demod->low_pass != 0.0f ? demod->low_pass : demod->fsk_pulse_detect_mode ? 0.2f : 0.1f;
         if (demod->sample_size == 2) { // CU8
-            baseband_demod_FM(&demod->demod_FM_state, iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass);
+            baseband_demod_FM(&demod->demod_FM_state, iq_buf, demod->buf.fm, n_samples, demod->samp_rate, low_pass);
         } else { // CS16
-            baseband_demod_FM_cs16(&demod->demod_FM_state, (int16_t *)iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass);
+            baseband_demod_FM_cs16(&demod->demod_FM_state, (int16_t *)iq_buf, demod->buf.fm, n_samples, demod->samp_rate, low_pass);
         }
     }
 
@@ -213,7 +202,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         }
         while (package_type && process_frame) {
             int p_events = 0; // Sensor events successfully detected per package
-            package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples, cfg->samp_rate, demod->input_pos, &demod->pulse_data, &demod->fsk_pulse_data, fpdm);
+            package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples, demod->samp_rate, demod->input_pos, &demod->pulse_data, &demod->fsk_pulse_data, demod->fsk_pulse_detect_mode);
             if (package_type) {
                 // new package: set a first frame start if we are not tracking one already
                 if (!demod->frame_start_ago) {
@@ -247,18 +236,18 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                     }
                 }
 
-                if (cfg->verbosity >= LOG_TRACE) {
+                if (demod->verbosity >= LOG_TRACE) {
                     pulse_data_print(&demod->pulse_data);
                 }
-                if (cfg->raw_mode == 1 || (cfg->raw_mode == 2 && p_events == 0) || (cfg->raw_mode == 3 && p_events > 0)) {
+                if (demod->raw_mode == 1 || (demod->raw_mode == 2 && p_events == 0) || (demod->raw_mode == 3 && p_events > 0)) {
                     data_t *data = pulse_data_print_data(&demod->pulse_data);
                     event_occurred_handler(cfg, data);
                 }
-                if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
+                if (demod->analyze_pulses && (demod->grab_mode <= 1 || (demod->grab_mode == 2 && p_events == 0) || (demod->grab_mode == 3 && p_events > 0)) ) {
                     r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
                     pulse_analyzer(&demod->pulse_data, package_type, &device);
                 }
-                if (cfg->grab_mode == 4 && p_events == 0) {
+                if (demod->grab_mode == 4 && p_events == 0) {
                     r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
                     int p_quality   = pulse_analyzer_check(&demod->pulse_data, package_type, &device);
                     demod->frame_quality = p_quality > demod->frame_quality ? p_quality : demod->frame_quality;
@@ -289,18 +278,18 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                     }
                 }
 
-                if (cfg->verbosity >= LOG_TRACE) {
+                if (demod->verbosity >= LOG_TRACE) {
                     pulse_data_print(&demod->fsk_pulse_data);
                 }
-                if (cfg->raw_mode == 1 || (cfg->raw_mode == 2 && p_events == 0) || (cfg->raw_mode == 3 && p_events > 0)) {
+                if (demod->raw_mode == 1 || (demod->raw_mode == 2 && p_events == 0) || (demod->raw_mode == 3 && p_events > 0)) {
                     data_t *data = pulse_data_print_data(&demod->fsk_pulse_data);
                     event_occurred_handler(cfg, data);
                 }
-                if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0))) {
+                if (demod->analyze_pulses && (demod->grab_mode <= 1 || (demod->grab_mode == 2 && p_events == 0) || (demod->grab_mode == 3 && p_events > 0))) {
                     r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
                     pulse_analyzer(&demod->fsk_pulse_data, package_type, &device);
                 }
-                if (cfg->grab_mode == 4 && p_events == 0) {
+                if (demod->grab_mode == 4 && p_events == 0) {
                     r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
                     int p_quality   = pulse_analyzer_check(&demod->fsk_pulse_data, package_type, &device);
                     demod->frame_quality = p_quality > demod->frame_quality ? p_quality : demod->frame_quality;
@@ -315,10 +304,10 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         // end frame tracking if older than a whole buffer
         if (demod->frame_start_ago && demod->frame_end_ago > n_samples) {
             if (demod->samp_grab) {
-                if (cfg->grab_mode == 1
-                        || (cfg->grab_mode == 2 && demod->frame_event_count == 0)
-                        || (cfg->grab_mode == 3 && demod->frame_event_count > 0)
-                        || (cfg->grab_mode == 4 && demod->frame_event_count == 0 && demod->frame_quality > 0)) {
+                if (demod->grab_mode == 1
+                        || (demod->grab_mode == 2 && demod->frame_event_count == 0)
+                        || (demod->grab_mode == 3 && demod->frame_event_count > 0)
+                        || (demod->grab_mode == 4 && demod->frame_event_count == 0 && demod->frame_quality > 0)) {
                     unsigned frame_pad = n_samples / 8; // this could also be a fixed value, e.g. 10000 samples
                     unsigned start_padded = demod->frame_start_ago + frame_pad;
                     unsigned end_padded = demod->frame_end_ago - frame_pad;
@@ -343,7 +332,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
     }
 
     if (demod->am_analyze) {
-        am_analyze(demod->am_analyze, demod->am_buf, n_samples, cfg->verbosity >= LOG_INFO, NULL);
+        am_analyze(demod->am_analyze, demod->am_buf, n_samples, demod->verbosity >= LOG_INFO, NULL);
     }
 
     for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
