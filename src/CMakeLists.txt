@@ -38,6 +38,7 @@ add_library(r_433 STATIC
     pulse_detect_fsk.c
     pulse_slicer.c
     r_api.c
+    r_flow.c
     r_util.c
     r_version.c
     raw_output.c
