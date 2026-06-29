@@ -78,6 +78,28 @@ jobs:
         run: |
           ./tests/symbolizer.py check
 
+  coverage_check_job:
+    runs-on: ubuntu-latest
+    name: Run tests with code coverage
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y --no-install-recommends cmake gcovr curl python3
+      - name: Build with coverage and run tests
+        # Builds with -DENABLE_COVERAGE=ON, runs ctest (incl. the HTTP server
+        # integration/dataflow/ws tests), and writes an HTML report. Exits
+        # non-zero if any test fails.
+        run: ./tests/coverage.sh "$GITHUB_WORKSPACE/build-coverage"
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: build-coverage/coverage-report
+          if-no-files-found: warn
+
   analyzer_check_job:
     # https://github.com/actions/virtual-environments
     # - Ubuntu 24.04 ubuntu-24.04

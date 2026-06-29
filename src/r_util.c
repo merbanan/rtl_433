@@ -18,8 +18,9 @@
 void get_time_now(struct timeval *tv)
 {
     int ret = gettimeofday(tv, NULL);
-    if (ret)
+    if (ret) {
         perror("gettimeofday");
+    }
 }
 
 char *format_time_str(char *buf, char const *format, int with_tz, time_t time_secs)
@@ -40,14 +41,16 @@ char *format_time_str(char *buf, char const *format, int with_tz, time_t time_se
     localtime_r(&etime, &tm_info); // thread-safe
 #endif
 
-    if (!format || !*format)
+    if (!format || !*format) {
         format = "%Y-%m-%d %H:%M:%S";
+    }
 
     size_t l = strftime(buf, LOCAL_TIME_BUFLEN, format, &tm_info);
     if (with_tz) {
         strftime(buf + l, LOCAL_TIME_BUFLEN - l, "%z", &tm_info);
-        if (!strcmp(buf + l, "+0000"))
+        if (!strcmp(buf + l, "+0000")) {
             strcpy(buf + l, "Z"); // NOLINT
+        }
     }
     return buf;
 }
@@ -69,15 +72,17 @@ char *usecs_time_str(char *buf, char const *format, int with_tz, struct timeval 
     localtime_r(&t_secs, &tm_info); // thread-safe
 #endif
 
-    if (!format || !*format)
+    if (!format || !*format) {
         format = "%Y-%m-%d %H:%M:%S";
+    }
 
     size_t l = strftime(buf, LOCAL_TIME_BUFLEN, format, &tm_info);
     l += snprintf(buf + l, LOCAL_TIME_BUFLEN - l, ".%06ld", (long)tv->tv_usec);
     if (with_tz) {
         strftime(buf + l, LOCAL_TIME_BUFLEN - l, "%z", &tm_info);
-        if (!strcmp(buf + l, "+0000"))
+        if (!strcmp(buf + l, "+0000")) {
             strcpy(buf + l, "Z"); // NOLINT
+        }
     }
     return buf;
 }
@@ -107,8 +112,9 @@ const char *parse_time_str(const char *buf, struct timeval *out)
     int gmtoff = 0;
     if (*buf == '+' || *buf == '-') {
         int tz_hours = 0, tz_mins = 0, tz_sign = 1;
-        if (*buf == '-')
+        if (*buf == '-') {
             tz_sign = -1;
+        }
         buf += 1;
         if (sscanf(buf, "%2d%2d%n", &tz_hours, &tz_mins, &consumed) == 2) {
             buf += consumed;
@@ -236,13 +242,16 @@ char *str_replace(char const *orig, char const *rep, char const *with)
     int count;     // number of replacements
 
     // sanity checks and initialization
-    if (!orig || !rep)
+    if (!orig || !rep) {
         return NULL;
+    }
     len_rep = strlen(rep);
-    if (len_rep == 0)
+    if (len_rep == 0) {
         return NULL; // empty rep causes infinite loop during count
-    if (!with)
+    }
+    if (!with) {
         with = "";
+    }
     len_with = strlen(with);
 
     // count the number of replacements needed
@@ -276,17 +285,21 @@ char *str_replace(char const *orig, char const *rep, char const *with)
 // Make a more readable string for a frequency.
 char const *nice_freq (double freq)
 {
-  static char buf[30];
+    static char buf[30];
 
-  if (freq >= 1E9)
-     snprintf (buf, sizeof(buf), "%.3fGHz", freq/1E9);
-  else if (freq >= 1E6)
-     snprintf (buf, sizeof(buf), "%.3fMHz", freq/1E6);
-  else if (freq >= 1E3)
-     snprintf (buf, sizeof(buf), "%.3fkHz", freq/1E3);
-  else
-     snprintf (buf, sizeof(buf), "%f", freq);
-  return (buf);
+    if (freq >= 1E9) {
+        snprintf (buf, sizeof(buf), "%.3fGHz", freq/1E9);
+    }
+    else if (freq >= 1E6) {
+        snprintf (buf, sizeof(buf), "%.3fMHz", freq/1E6);
+    }
+    else if (freq >= 1E3) {
+        snprintf (buf, sizeof(buf), "%.3fkHz", freq/1E3);
+    }
+    else {
+        snprintf (buf, sizeof(buf), "%f", freq);
+    }
+    return (buf);
 }
 
 #ifdef _TEST

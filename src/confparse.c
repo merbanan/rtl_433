@@ -37,8 +37,9 @@
 static off_t fsize(const char *path)
 {
     struct stat st;
-    if (stat(path, &st) == 0)
+    if (stat(path, &st) == 0) {
         return st.st_size;
+    }
 
     return -1;
 }
@@ -88,43 +89,52 @@ char *readconf(char const *path)
 int getconf(char **conf, struct conf_keywords const keywords[], char **arg)
 {
     // abort if no conf or EOF
-    if (!conf || !*conf || !**conf)
+    if (!conf || !*conf || !**conf) {
         return -1;
+    }
 
     char *p = *conf;
 
     // skip whitespace and comments
-    while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n' || *p == '#')
+    while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n' || *p == '#') {
         if (*p++ == '#') {
             while (*p && *p != '\r' && *p != '\n') p++;
         }
+    }
 
     // abort if EOF
-    if (!*p)
+    if (!*p) {
         return -1;
+    }
 
     // parse keyword
     char *kw = p;
-    while (*p && *p != ' ' && *p != '\t' && *p != '\r' && *p != '\n')
+    while (*p && *p != ' ' && *p != '\t' && *p != '\r' && *p != '\n') {
         p++;
-    if (*p)
+    }
+    if (*p) {
         *p++ = '\0';
+    }
 
     // parse arg
-    while (*p == ' ' || *p == '\t')
+    while (*p == ' ' || *p == '\t') {
         p++;
+    }
     char *ka = p;
     if (*p == '{') { // quoted
         ka = ++p;
         while (*p) { // skip to end-quote
-            while (*p && *p != '}')
+            while (*p && *p != '}') {
                 p++;
+            }
             char *e = p; // possible end-quote
-            if (*p)
+            if (*p) {
                 p++;
+            }
             // skip ws
-            while (*p == ' ' || *p == '\t')
+            while (*p == ' ' || *p == '\t') {
                 p++;
+            }
             // check if proper end-quote
             if (!*p || *p == '\r' || *p == '\n' || *p == '#') {
                 *e = '\0';
@@ -134,21 +144,24 @@ int getconf(char **conf, struct conf_keywords const keywords[], char **arg)
 
     } else { // not quoted
         // find end of arg/eol
-        while (*p && *p != '\r' && *p != '\n' && *p != '#')
+        while (*p && *p != '\r' && *p != '\n' && *p != '#') {
             p++;
+        }
         // skip eol comments
         if (*p == '#') {
             *p++ = '\0';
             while (*p && *p != '\r' && *p != '\n')
                 p++;
         }
-        if (*p)
+        if (*p) {
             *p++ = '\0';
+        }
     }
 
     // set OUT vars
-    if (arg)
+    if (arg) {
         *arg = ka;
+    }
     *conf = p;
 
     // decode keyword

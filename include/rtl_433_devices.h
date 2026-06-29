@@ -329,6 +329,7 @@
     DECL(shenzhen_wale_wl_th6r) \
     DECL(ctt_life_power_hybrid) \
     DECL(venduro_hood) \
+    DECL(tpms_schrader_motorcycle) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;

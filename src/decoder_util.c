@@ -23,8 +23,9 @@ r_device *decoder_create(r_device const *dev_template, unsigned user_data_size)
         WARN_MALLOC("decoder_create()");
         return NULL; // NOTE: returns NULL on alloc failure.
     }
-    if (dev_template)
+    if (dev_template) {
         *r_dev = *dev_template; // copy
+    }
 
     if (user_data_size) {
         r_dev->decode_ctx = calloc(1, user_data_size);

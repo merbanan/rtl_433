@@ -18,8 +18,9 @@
 
 int gettimeofday(struct timeval *tv, void *tz)
 {
-    if (tz)
+    if (tz) {
         return -1; // we don't support TZ
+    }
 
     FILETIME ft;
     unsigned __int64 t64;
