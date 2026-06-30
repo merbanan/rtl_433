@@ -115,6 +115,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         return 0; // ignore the data
     }
 
+    // Feed data to all raw outputs (e.g. rtl_tcp)
     // do this here and not in sdr_handler so realtime replay can use rtl_tcp output
     for (void **iter = demod->raw_handler->elems; iter && *iter; ++iter) {
         raw_output_t *output = *iter;
@@ -142,6 +143,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         demod->frame_end_ago += n_samples;
     }
 
+    // Feed data to the sample grabber if available
     if (demod->samp_grab) {
         samp_grab_push(demod->samp_grab, iq_buf, len);
     }
@@ -161,6 +163,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         avg_db = magnitude_est_cs16((int16_t *)iq_buf, demod->buf.temp, n_samples);
     }
 
+    // Squelch silent frames
     //fprintf(stderr, "noise level: %.1f dB current: %.1f dB min level: %.1f dB\n", demod->noise_level, avg_db, demod->min_level_auto);
     if (demod->min_level_auto == 0.0f) {
         demod->min_level_auto = demod->min_level;
@@ -192,17 +195,19 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 noise_only ? "noise" : "signal", avg_db, demod->noise_level);
     }
 
+    // Run AM filters
     if (process_frame) {
         baseband_low_pass_filter(&demod->lowpass_filter_state, demod->buf.temp, demod->am_buf, n_samples);
     }
 
     // FM demodulation
     if (demod->enable_FM_demod && process_frame) {
-        float low_pass = demod->low_pass != 0.0f ? demod->low_pass : demod->fsk_pulse_detect_mode ? 0.2f : 0.1f;
+        // Use manual FM low pass value otherwise 0.2 for minmax or 0.1 for classic
+        float fm_low_pass = demod->fm_low_pass != 0.0f ? demod->fm_low_pass : demod->fsk_pulse_detect_mode ? 0.2f : 0.1f;
         if (demod->sample_size == 2) { // CU8
-            baseband_demod_FM(&demod->demod_FM_state, iq_buf, demod->buf.fm, n_samples, demod->samp_rate, low_pass);
+            baseband_demod_FM(&demod->demod_FM_state, iq_buf, demod->buf.fm, n_samples, demod->samp_rate, fm_low_pass);
         } else { // CS16
-            baseband_demod_FM_cs16(&demod->demod_FM_state, (int16_t *)iq_buf, demod->buf.fm, n_samples, demod->samp_rate, low_pass);
+            baseband_demod_FM_cs16(&demod->demod_FM_state, (int16_t *)iq_buf, demod->buf.fm, n_samples, demod->samp_rate, fm_low_pass);
         }
     }
 
@@ -220,10 +225,12 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         memcpy(demod->buf.fm, iq_buf, len);
     }
 
+    // Run a pulse discriminator and pass packages to all configured slicers
     int d_events = 0; // Sensor events successfully detected
     if (demod->r_devs.len || demod->analyze_pulses || demod->dumper.len || demod->samp_grab) {
         // Detect a package and loop through demodulators with pulse data
         int package_type = PULSE_DATA_OOK;  // Just to get us started
+        // Initialize all U8 logic buffers
         for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
             file_info_t const *dumper = *iter;
             if (dumper->format == U8_LOGIC) {
@@ -233,7 +240,8 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         }
         while (package_type && process_frame) {
             int p_events = 0; // Sensor events successfully detected per package
-            package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples, demod->samp_rate, demod->input_pos, &demod->pulse_data, &demod->fsk_pulse_data, demod->fsk_pulse_detect_mode);
+            package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples,
+                    demod->samp_rate, demod->input_pos, &demod->pulse_data, &demod->fsk_pulse_data, demod->fsk_pulse_detect_mode);
             if (package_type) {
                 // new package: set a first frame start if we are not tracking one already
                 if (!demod->frame_start_ago) {
@@ -254,6 +262,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 demod->frames_ook +=1;
                 demod->frames_events += p_events > 0;
 
+                // Dump pulse data for this complete package
                 for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
                     file_info_t const *dumper = *iter;
                     if (dumper->format == VCD_LOGIC) {
@@ -274,7 +283,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                     data_t *data = pulse_data_print_data(&demod->pulse_data);
                     event_occurred_handler(cfg, data);
                 }
-                if (demod->analyze_pulses && (demod->grab_mode <= 1 || (demod->grab_mode == 2 && p_events == 0) || (demod->grab_mode == 3 && p_events > 0)) ) {
+                if (demod->analyze_pulses && (demod->grab_mode <= 1 || (demod->grab_mode == 2 && p_events == 0) || (demod->grab_mode == 3 && p_events > 0))) {
                     r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
                     pulse_analyzer(&demod->pulse_data, package_type, &device);
                 }
@@ -284,7 +293,8 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                     demod->frame_quality = p_quality > demod->frame_quality ? p_quality : demod->frame_quality;
                 }
 
-            } else if (package_type == PULSE_DATA_FSK) {
+            }
+            else if (package_type == PULSE_DATA_FSK) {
                 calc_rssi_snr(demod, &demod->fsk_pulse_data);
                 if (demod->analyze_pulses) {
                     fprintf(stderr, "Detected FSK package\t%s\n", time_pos_str(cfg, demod->fsk_pulse_data.start_ago, time_str));
@@ -296,6 +306,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 demod->frames_fsk += 1;
                 demod->frames_events += p_events > 0;
 
+                // Dump pulse data for this complete package
                 for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
                     file_info_t const *dumper = *iter;
                     if (dumper->format == VCD_LOGIC) {
@@ -351,7 +362,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
             demod->frame_quality     = 0;
         }
 
-        // dump partial pulse_data for this buffer
+        // Dump partial pulse data, might overlap with the last complete package
         for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
             file_info_t const *dumper = *iter;
             if (dumper->format == U8_LOGIC) {
@@ -362,10 +373,12 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         }
     }
 
+    // Run the AM analyzer (deprecated)
     if (demod->am_analyze) {
         am_analyze(demod->am_analyze, demod->am_buf, n_samples, demod->verbosity >= LOG_INFO, NULL);
     }
 
+    // Save data to all dumpers (expect logic dumpers)
     for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
         file_info_t const *dumper = *iter;
         if (!dumper->file

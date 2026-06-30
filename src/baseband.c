@@ -220,7 +220,7 @@ void baseband_demod_FM(demodfm_state_t *state, uint8_t const *x_buf, int16_t *y_
         } else if (low_pass >= 1.0f) {
             low_pass = 1e6f / low_pass / samp_rate;
         }
-        print_logf(LOG_NOTICE, "Baseband", "low pass filter for %u Hz at cutoff %.0f Hz, %.1f us",
+        print_logf(LOG_NOTICE, "Baseband", "FM low pass filter for %u Hz at cutoff %.0f Hz, %.1f us",
                 samp_rate, samp_rate * low_pass, 1e6 / (samp_rate * low_pass));
         double ita  = 1.0 / tan(M_PI_2 * low_pass);
         double gain = 1.0 / (1.0 + ita) / 2; // prescaled by div 2

@@ -965,7 +965,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
                 cfg->demod->min_snr = arg_float(val, "-Y minsnr: ");
             }
             else if (kwargs_match(p, "filter", &val)) {
-                cfg->demod->low_pass = arg_float(val, "-Y filter: ");
+                cfg->demod->fm_low_pass = arg_float(val, "-Y filter: ");
             }
             else {
                 fprintf(stderr, "Unknown pulse detector setting: %s\n", p);

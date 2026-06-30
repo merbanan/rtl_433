@@ -24,7 +24,7 @@ struct dm_state {
     float min_level_auto;
     float min_level;
     float min_snr;
-    float low_pass;
+    float fm_low_pass;
     int use_mag_est;
     int detect_verbosity;
 
@@ -64,7 +64,7 @@ struct dm_state {
     uint32_t center_frequency;
     uint32_t samp_rate;
     int fsk_pulse_detect_mode;
-    int grab_mode; ///< Signal grabber mode: 0=off, 1=all, 2=unknown, 3=known
+    int grab_mode; ///< Signal grabber mode: 0=off, 1=all, 2=unknown, 3=known, 4=undecoded
     int raw_mode; ///< Raw pulses printing mode: 0=off, 1=all, 2=unknown, 3=known
     int verbosity; ///< 0=normal, 1=verbose, 2=verbose decoders, 3=debug decoders, 4=trace decoding.
     int report_noise;

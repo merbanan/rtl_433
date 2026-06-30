@@ -283,7 +283,7 @@ char *str_replace(char const *orig, char const *rep, char const *with)
 }
 
 // Make a more readable string for a frequency.
-char const *nice_freq (double freq)
+char const *nice_freq(double freq)
 {
     static char buf[30];
 

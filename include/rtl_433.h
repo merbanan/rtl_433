@@ -87,7 +87,7 @@ typedef struct r_cfg {
     uint32_t samp_rate;
     uint32_t bytes_to_read;
     struct sdr_dev *dev;
-    int grab_mode; ///< Signal grabber mode: 0=off, 1=all, 2=unknown, 3=known
+    int grab_mode; ///< Signal grabber mode: 0=off, 1=all, 2=unknown, 3=known, 4=undecoded
     int raw_mode; ///< Raw pulses printing mode: 0=off, 1=all, 2=unknown, 3=known
     int verbosity; ///< 0=normal, 1=verbose, 2=verbose decoders, 3=debug decoders, 4=trace decoding.
     int verbose_bits;
