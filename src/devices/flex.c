@@ -65,9 +65,12 @@ static unsigned long extract_number(uint8_t *data, unsigned bit_offset, unsigned
     return val;
 }
 
+#define FLEX_GET_STR_LEN 32
+#define FLEX_DEV_NAME_LEN 64
+
 struct flex_map {
     unsigned key;
-    const char *val;
+    char val[FLEX_GET_STR_LEN];
 };
 
 #define GETTER_MAP_SLOTS 16
@@ -76,15 +79,16 @@ struct flex_get {
     unsigned bit_offset;
     unsigned bit_count;
     unsigned long mask;
-    const char *name;
+    char name[FLEX_GET_STR_LEN];
     struct flex_map map[GETTER_MAP_SLOTS];
-    const char *format;
+    char format[FLEX_GET_STR_LEN];
 };
 
 #define GETTER_SLOTS 12
 
 struct flex_params {
-    char *name;
+    char name[FLEX_GET_STR_LEN];
+    char dev_name[FLEX_DEV_NAME_LEN];
     unsigned min_rows;
     unsigned max_rows;
     unsigned min_bits;
@@ -131,13 +135,13 @@ static void render_getters(data_t *data, uint8_t *bits, struct flex_params *para
         else
             val = extract_number(bits, getter->bit_offset, getter->bit_count);
         int m;
-        for (m = 0; getter->map[m].val; m++) {
+        for (m = 0; getter->map[m].val[0]; m++) {
             if (getter->map[m].key == val) {
                 data_str(data, getter->name, "", NULL, getter->map[m].val);
                 break;
             }
         }
-        if (!getter->map[m].val) {
+        if (!getter->map[m].val[0]) {
             data_int(data, getter->name, "", getter->format, val);
         }
     }
@@ -572,7 +576,6 @@ static const char *parse_map(const char *arg, struct flex_get *getter)
 
     while (*c) {
         unsigned long key;
-        char *val;
 
         while (*c == ' ') c++;
         if (*c == ']') return c + 1;
@@ -587,18 +590,15 @@ static const char *parse_map(const char *arg, struct flex_get *getter)
         // then parse a string
         const char *e = c;
         while (*e && *e != ' ' && *e != ']') e++;
-        val = malloc(e - c + 1);
-        if (!val)
-            WARN_MALLOC("parse_map()");
-        else { // NOTE: skipped on alloc failure.
-            memcpy(val, c, e - c);
-            val[e - c] = '\0';
-        }
+        size_t map_len = (size_t)(e - c);
+        strncpy(getter->map[i].val, c, FLEX_GET_STR_LEN - 1);
+        getter->map[i].val[FLEX_GET_STR_LEN - 1] = '\0';
+        if (map_len >= FLEX_GET_STR_LEN)
+            fprintf(stderr, "Warning: flex map value truncated at %d chars.\n", FLEX_GET_STR_LEN - 1);
         c = e;
 
         // store result
         getter->map[i].key = key;
-        getter->map[i].val = val;
         i++;
     }
     return c;
@@ -622,18 +622,20 @@ static void parse_getter(const char *arg, struct flex_get *getter)
             getter->mask = extract_number(bitrow, 0, getter->bit_count);
         }
         else if (*arg == '%') {
-            getter->format = strdup(arg);
-            if (!getter->format)
-                FATAL_STRDUP("parse_getter()");
+            strncpy(getter->format, arg, FLEX_GET_STR_LEN - 1);
+            getter->format[FLEX_GET_STR_LEN - 1] = '\0';
+            if (strlen(arg) >= FLEX_GET_STR_LEN)
+                fprintf(stderr, "Warning: flex format truncated at %d chars.\n", FLEX_GET_STR_LEN - 1);
         }
         else {
-            getter->name = strdup(arg);
-            if (!getter->name)
-                FATAL_STRDUP("parse_getter()");
+            strncpy(getter->name, arg, FLEX_GET_STR_LEN - 1);
+            getter->name[FLEX_GET_STR_LEN - 1] = '\0';
+            if (strlen(arg) >= FLEX_GET_STR_LEN)
+                fprintf(stderr, "Warning: flex getter name truncated at %d chars.\n", FLEX_GET_STR_LEN - 1);
         }
         arg = p;
     }
-    if (!getter->name) {
+    if (!getter->name[0]) {
         fprintf(stderr, "Bad flex spec, \"get\" missing name!\n");
         usage();
     }
@@ -689,15 +691,14 @@ static r_device *flex_create_device(char const *spec)
         if (!key || !*key)
             continue;
         else if (!strcasecmp(key, "n") || !strcasecmp(key, "name")) {
-            params->name = strdup(val);
-            if (!params->name)
-                FATAL_STRDUP("flex_create_device()");
-            int name_size = strlen(val) + 27;
-            char* flex_name = malloc(name_size);
-            if (!flex_name)
-                FATAL_MALLOC("flex_create_device()");
-            snprintf(flex_name, name_size, "General purpose decoder '%s'", val);
-            dev->name = flex_name;
+            strncpy(params->name, val, FLEX_GET_STR_LEN - 1);
+            params->name[FLEX_GET_STR_LEN - 1] = '\0';
+            if (strlen(val) >= FLEX_GET_STR_LEN)
+                fprintf(stderr, "Warning: flex name truncated at %d chars.\n", FLEX_GET_STR_LEN - 1);
+            snprintf(params->dev_name, FLEX_DEV_NAME_LEN, "General purpose decoder '%s'", val);
+            if (snprintf(NULL, 0, "General purpose decoder '%s'", val) - 1 >= FLEX_DEV_NAME_LEN)
+                fprintf(stderr, "Warning: flex device name truncated at %d chars.\n", FLEX_DEV_NAME_LEN - 1);
+            dev->name = params->dev_name;
         }
 
         else if (!strcasecmp(key, "m") || !strcasecmp(key, "modulation"))
@@ -797,7 +798,7 @@ static r_device *flex_create_device(char const *spec)
         }
         params->fields[i++] = "len";
         params->fields[i++] = "data";
-        for (int g = 0; g < GETTER_SLOTS && params->getter[g].name; ++g) {
+        for (int g = 0; g < GETTER_SLOTS && params->getter[g].name[0]; ++g) {
             params->fields[i++] = params->getter[g].name;
         }
         dev->fields = params->fields;
@@ -805,7 +806,7 @@ static r_device *flex_create_device(char const *spec)
 
     // sanity checks
 
-    if (!params->name || !*params->name) {
+    if (!params->name[0]) {
         fprintf(stderr, "Bad flex spec, missing name!\n");
         usage();
     }
