@@ -58,6 +58,7 @@
 #include "sigmf.h"
 #include "mongoose.h"
 #include "delay_timer.h"
+#include "rtl_433_devices.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -92,8 +93,6 @@
 #ifndef STDERR_FILENO
 #define STDERR_FILENO 2
 #endif
-
-r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
 static void print_version(void)
 {
@@ -481,7 +480,6 @@ static void parse_conf_args(r_cfg_t *cfg, int argc, char *argv[])
 static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
 {
     int n;
-    r_device *flex_device;
 
     if (arg && (!strcmp(arg, "help") || !strcmp(arg, "?"))) {
         arg = NULL; // remove the arg if it's a request for the usage help
@@ -832,12 +830,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         }
         break;
     case 'X':
-        if (!arg) {
-            flex_create_device(NULL);
-        }
-
-        flex_device = flex_create_device(arg);
-        register_protocol(cfg, flex_device, "");
+        register_protocol(cfg, &flex_decoder, arg);
         break;
     case 'q':
         fprintf(stderr, "quiet option (-q) is default and deprecated. See -v to increase verbosity\n");
