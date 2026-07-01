@@ -232,7 +232,7 @@ void r_free_cfg(r_cfg_t *cfg)
 
 /* device decoder protocols */
 
-void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
+void register_protocol(r_cfg_t *cfg, r_device const *r_dev, char *arg)
 {
     // use arg of 'v', 'vv', 'vvv' as device verbosity
     int dev_verbose = 0;
@@ -276,7 +276,6 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
 
 void free_protocol(r_device *r_dev)
 {
-    // free(r_dev->name);
     free(r_dev->decode_ctx);
     free(r_dev);
 }
