@@ -142,7 +142,8 @@ static void render_getters(data_t *data, uint8_t *bits, struct flex_params *para
             }
         }
         if (!getter->map[m].val[0]) {
-            data_int(data, getter->name, "", getter->format, val);
+            char const *format = getter->format[0] ? getter->format : NULL;
+            data_int(data, getter->name, "", format, val);
         }
     }
 }
@@ -590,11 +591,13 @@ static const char *parse_map(const char *arg, struct flex_get *getter)
         // then parse a string
         const char *e = c;
         while (*e && *e != ' ' && *e != ']') e++;
-        size_t map_len = (size_t)(e - c);
-        strncpy(getter->map[i].val, c, FLEX_GET_STR_LEN - 1);
-        getter->map[i].val[FLEX_GET_STR_LEN - 1] = '\0';
-        if (map_len >= FLEX_GET_STR_LEN)
-            fprintf(stderr, "Warning: flex map value truncated at %d chars.\n", FLEX_GET_STR_LEN - 1);
+        size_t map_val_buffer_len = (size_t)(e - c + 1);
+        if (map_val_buffer_len > FLEX_GET_STR_LEN) {
+            fprintf(stderr, "Warning: flex map value (%s) truncated at %d chars.\n", c, FLEX_GET_STR_LEN - 1);
+            map_val_buffer_len = FLEX_GET_STR_LEN;
+        }
+        strncpy(getter->map[i].val, c, map_val_buffer_len - 1);
+        getter->map[i].val[map_val_buffer_len - 1] = '\0';
         c = e;
 
         // store result
