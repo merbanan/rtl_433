@@ -589,6 +589,7 @@ int pulse_slicer_dmc(pulse_data_t const *pulses, r_device *device)
                 && bits.num_rows > 0) { // Only if data has been accumulated
             //END message ?
             events += account_event(device, &bits, __func__);
+            bitbuffer_clear(&bits);
         }
     }
 
