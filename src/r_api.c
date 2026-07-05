@@ -158,6 +158,7 @@ void r_init_cfg(r_cfg_t *cfg)
 
     // note: this should be optional
     cfg->demod->pulse_detect = pulse_detect_create();
+    //cfg->demod->pulse_detect_fsk = pulse_detect_fsk_create(); // FIXME: implement this
     // initialize tables
     baseband_init();
 
@@ -206,6 +207,9 @@ void r_free_cfg(r_cfg_t *cfg)
 
     pulse_detect_free(cfg->demod->pulse_detect);
     cfg->demod->pulse_detect = NULL;
+
+    //pulse_detect_fsk_free(cfg->demod->pulse_detect_fsk); // FIXME: implement this
+    //cfg->demod->pulse_detect_fsk = NULL;
 
     list_free_elems(&cfg->raw_handler, (list_elem_free_fn)raw_output_free);
 

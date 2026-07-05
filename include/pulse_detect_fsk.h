@@ -17,10 +17,22 @@
 #include "pulse_data.h"
 #include <stdint.h>
 
+/// FSK pulse detector to use.
+enum {
+    FSK_PULSE_DETECT_OLD,
+    FSK_PULSE_DETECT_NEW,
+    FSK_PULSE_DETECT_AUTO,
+    FSK_PULSE_DETECT_END,
+};
+
 /// State data for pulse_detect_fsk_ functions.
 ///
 /// This should be private/opaque but the OOK pulse_detect uses this.
 typedef struct {
+    unsigned curr_serial;   ///< The serialno currently processing
+    unsigned pulse_done;    ///< Count of processed pulses
+    unsigned partial_pulse; ///< Length of partial pulse processed, otherwise 0
+
     unsigned int fsk_pulse_length; ///< Counter for internal FSK pulse detection
     enum {
         PD_FSK_STATE_INIT  = 0, ///< Initial frequency estimation
@@ -73,5 +85,20 @@ void pulse_detect_fsk_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pulses);
 /// @param fm_n One single sample of FM data
 /// @param fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
 void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses);
+
+/// Discriminate Frequency Shift Keying (FSK) from an envelope signal and FM buffer.
+///
+/// Function is stateful and can be called with chunks of input data.
+///
+/// @param pulse_detect_fsk The pulse_detect instance
+/// @param fm_data Samples with frequency offset from center frequency
+/// @param n_samples Number of samples in input buffers
+/// @param ook_pulses A pulse_data_t structure with envelope information
+/// @param[in,out] fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
+/// @param fpdm Index of filter setting to use
+/// @return if a FSK package is detected
+/// @retval 0 no complete FSK package detected
+/// @retval 2 FSK package is detected
+int pulse_detect_fsk_package(pulse_detect_fsk_t *pulse_detect_fsk, int16_t const *fm_data, unsigned n_samples, pulse_data_t const *ook_pulses, pulse_data_t *fsk_pulses, unsigned fpdm);
 
 #endif /* INCLUDE_PULSE_DETECT_FSK_H_ */

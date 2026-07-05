@@ -37,6 +37,7 @@ void pulse_detect_fsk_classic(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t 
     int const fm_f2_delta = abs(fm_n - s->fm_f2_est); // Get delta from F2 frequency estimate
     s->fsk_pulse_length += 1;
 
+    fprintf(stderr, "STATE %d N %d, F1 %d (d %d), F2 %d (d %d)\n", s->fsk_state, fm_n, s->fm_f1_est, fm_f1_delta, s->fm_f2_est, fm_f2_delta);
     switch(s->fsk_state) {
         case PD_FSK_STATE_INIT:        // Initial frequency - High or low?
             // Initial samples?
@@ -219,3 +220,293 @@ void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *
         s->skip_samples -= 1;
     }
 }
+
+static int pulse_detect_fsk_package_internal(pulse_detect_fsk_t *pulse_detect_fsk, int16_t const *fm_data, unsigned fsk_start, unsigned fsk_end, pulse_data_t *fsk_pulses, unsigned fpdm)
+{
+    fprintf(stderr, "pulse_detect_fsk_package PROCESSING %u at %u - %u\n", pulse_detect_fsk->pulse_done, fsk_start, fsk_end);
+
+    // FSK Demodulation
+    if (fpdm == FSK_PULSE_DETECT_OLD) {
+        // FIXME: pull the loop into the fsk detectors
+        // FIXME: converging takes too long with a broken start of signal s.a. lacrosse_ltv/LTV-R3/g012_868.3M_1024k.cu8
+        for (unsigned j = fsk_start + 0; j < fsk_end; ++j) {
+            pulse_detect_fsk_classic(pulse_detect_fsk, fm_data[j], fsk_pulses);
+        }
+    }
+    else {
+        // FIXME: pull the loop into the fsk detectors
+        for (unsigned j = fsk_start; j < fsk_end; ++j) {
+            pulse_detect_fsk_minmax(pulse_detect_fsk, fm_data[j], fsk_pulses);
+        }
+    }
+
+    fprintf(stderr, "pulse_detect_fsk_package GOT %u\n", fsk_pulses->num_pulses);
+    // Determine if FSK modulation is detected
+    if (fsk_pulses->num_pulses > PD_MIN_PULSES) {
+        // Store last pulse/gap
+        if (fpdm == FSK_PULSE_DETECT_OLD) {
+            pulse_detect_fsk_wrap_up(pulse_detect_fsk, fsk_pulses);
+        }
+        // Store estimates
+        fsk_pulses->fsk_f1_est = pulse_detect_fsk->fm_f1_est;
+        fsk_pulses->fsk_f2_est = pulse_detect_fsk->fm_f2_est;
+        // fsk_pulses->ook_low_estimate  = ook_pulses->ook_low_estimate;
+        // fsk_pulses->ook_high_estimate = ook_pulses->ook_high_estimate;
+        // fsk_pulses->end_ago           = ook_pulses->start_ago - ook_pulses->pulse[0];
+
+        // pulse_detect_fsk_init(pulse_detect_fsk); // FIXME: mock to flag that we are done
+
+        fprintf(stderr, "return PULSE_DATA_FSK %u\n", fsk_pulses->num_pulses);
+        return 2; // package_type = PULSE_DATA_FSK;
+    }
+
+    return 0;
+}
+
+// detect if this is a new ook paket
+// if so flush and clear the fsk
+// run detect on all pulses and note the last processed pulse
+// Run FSK demod if needed
+// FIXME: decide if we need a FSK demod
+// return 1 while an fsk packet is found, otherwise 0 if all pulses are processed
+int pulse_detect_fsk_package(pulse_detect_fsk_t *pulse_detect_fsk, int16_t const *fm_data, unsigned n_samples, pulse_data_t const *ook_pulses, pulse_data_t *fsk_pulses, unsigned fpdm)
+{
+    // check for a partial trailing pulse
+    int has_partial_gap = 0;
+    int has_partial_pulse = 0;
+    if (ook_pulses->num_pulses < PD_MAX_PULSES) {
+        if (ook_pulses->gap[ook_pulses->num_pulses] > 0) {
+            has_partial_gap = 1;
+        }
+        else if (ook_pulses->pulse[ook_pulses->num_pulses] > 0) {
+            has_partial_pulse = 1;
+        }
+    }
+
+    if (ook_pulses->serialno != pulse_detect_fsk->curr_serial) {
+        fprintf(stderr, "--> New Serial, now %u, was %u, processing %u pulses (+%dG +%dP)\n",
+                ook_pulses->serialno, pulse_detect_fsk->curr_serial, ook_pulses->num_pulses, has_partial_gap, has_partial_pulse);
+        // run from pulse 0 to num_pulses plus partial gap pulse or partial pulse
+        pulse_detect_fsk->pulse_done = 0;
+        // clear the fsk pulses
+    }
+    else {
+        fprintf(stderr, "--> Same Serial %u, continuing at %u of now %u pulses (+%dG +%dP)\n",
+                pulse_detect_fsk->curr_serial, pulse_detect_fsk->pulse_done, ook_pulses->num_pulses, has_partial_gap, has_partial_pulse);
+        // sanity check
+        if (pulse_detect_fsk->pulse_done > ook_pulses->num_pulses) {
+            fprintf(stderr, "NOTE: we did process a partial pulse already\n");
+        }
+        if (pulse_detect_fsk->pulse_done > ook_pulses->num_pulses + 1) {
+            fprintf(stderr, "THIS IS A BUG: pulse_detect_fsk_package ERROR\n");
+            exit(-1);
+        }
+
+        // run from pulse pulse_done to num_pulses plus partial gap pulse or partial pulse
+    }
+    pulse_detect_fsk->curr_serial = ook_pulses->serialno;
+
+    // ago times should already be aged or zero if this is a fresh package.
+    /*
+    if (fsk_pulses->start_ago > 0 && fsk_pulses->start_ago <= n_samples) {
+        fprintf(stderr, "SUPERSEDED: pulse_detect_fsk_package: fsk_pulses->start_ago %u is not aged!\n", fsk_pulses->start_ago);
+    }
+    if (fsk_pulses->end_ago > 0 && fsk_pulses->end_ago <= n_samples) {
+        fprintf(stderr, "SUPERSEDED: pulse_detect_fsk_package: fsk_pulses->end_ago %u is not aged!\n", fsk_pulses->end_ago);
+    }
+    */
+
+    // Special case: continue a partial pulse, do this without resetting fsk_pulses
+
+    // If the ook_pulses are the same (serialno) and the pulse length at pulse_done increased
+    if (ook_pulses->serialno == pulse_detect_fsk->curr_serial
+            && pulse_detect_fsk->pulse_done > 0 // this is implied by partial_pulse > 0
+            && pulse_detect_fsk->partial_pulse > 0
+            && ook_pulses->num_pulses >= pulse_detect_fsk->pulse_done
+            && pulse_detect_fsk->partial_pulse < (unsigned)ook_pulses->pulse[pulse_detect_fsk->pulse_done - 1]) {
+
+        fprintf(stderr, "IMPORTANT: pulse_detect_fsk_package: continue a partial pulse %u==%u, %u done <= %u pulses now, partial %u, now %d length\n",
+                ook_pulses->serialno, pulse_detect_fsk->curr_serial, pulse_detect_fsk->pulse_done, ook_pulses->num_pulses, pulse_detect_fsk->partial_pulse, ook_pulses->pulse[pulse_detect_fsk->pulse_done - 1]);
+
+        unsigned fsk_start = 0;
+        unsigned pulse_length = (unsigned)ook_pulses->pulse[pulse_detect_fsk->pulse_done - 1];
+        unsigned fsk_end = pulse_length - pulse_detect_fsk->partial_pulse;
+        if (pulse_detect_fsk_package_internal(pulse_detect_fsk, fm_data, fsk_start, fsk_end, fsk_pulses, fpdm)) {
+            return 1;
+        }
+
+        // FIXME: run and return state
+
+        /*
+        // Find bounds of partial pulse
+        // need to calc the added length of the first pulse...
+        unsigned already_proccessed = fsk_pulses->start_ago - fsk_pulses->end_ago;
+        fsk_end   = fsk_start + ook_pulses->pulse[0] - fsk_pulses->start_ago + fsk_pulses->end_ago;
+        //fsk_end -= already_proccessed;
+        fsk_pulses->end_ago = fsk_pulses->start_ago - ook_pulses->pulse[0];
+        // -vs-
+        // fsk_pulses->end_ago = ook_pulses->start_ago - ook_pulses->pulse[0];
+        */
+    }
+
+    // Regular case: process all complete pulses
+    // and
+    // Special case: process a trailing pulse with partial gap
+
+    while (pulse_detect_fsk->pulse_done < ook_pulses->num_pulses + has_partial_gap) {
+        // Reset demod, keep meta-state
+        unsigned curr_serial = pulse_detect_fsk->curr_serial;
+        unsigned pulse_done = pulse_detect_fsk->pulse_done;
+        unsigned partial_pulse = pulse_detect_fsk->partial_pulse;
+        pulse_detect_fsk_init(pulse_detect_fsk);
+        pulse_detect_fsk->curr_serial = curr_serial;
+        pulse_detect_fsk->pulse_done = pulse_done;
+        pulse_detect_fsk->partial_pulse = partial_pulse;
+
+        // Initialize all pulses data
+        pulse_data_clear(fsk_pulses);
+        fsk_pulses->sample_rate = ook_pulses->sample_rate;
+        // fsk_pulses->offset      = demod->input_pos + n_samples - ook_pulses->start_ago;
+        fsk_pulses->offset    = ook_pulses->offset;
+        fsk_pulses->start_ago = ook_pulses->start_ago;
+        fsk_pulses->end_ago = fsk_pulses->start_ago; // nothing processed so far
+        // pulse_detect_fsk_init(pulse_detect_fsk);
+
+        fsk_pulses->ook_low_estimate  = ook_pulses->ook_low_estimate;
+        fsk_pulses->ook_high_estimate = ook_pulses->ook_high_estimate;
+        //fsk_pulses->end_ago           = ook_pulses->start_ago - ook_pulses->pulse[0];
+
+        // run demod here
+
+        // calculate offset for pulse N
+        unsigned pulse_offset = 0;
+        for (unsigned j = 0; j < pulse_detect_fsk->pulse_done; ++j) {
+            pulse_offset += (unsigned)ook_pulses->pulse[j] + (unsigned)ook_pulses->gap[j];
+        }
+        unsigned pulse_length = (unsigned)ook_pulses->pulse[pulse_detect_fsk->pulse_done];
+
+        // the first sample in this frame is n_samples old,
+        // sanity check that ook_pulses->start_ago + fsk_start is newer than is n_samples old, i.e. contained in this frame
+
+//        fprintf(stderr, "pulse %u, start_ago %u, pulse_offset %u, length %u, n_samples %u\n", pulse_detect_fsk->pulse_done, ook_pulses->start_ago, pulse_offset, pulse_length, n_samples);
+
+        // step forward
+        pulse_detect_fsk->pulse_done += 1;
+
+        if (ook_pulses->start_ago <= pulse_offset) {
+            fprintf(stderr, "THIS IS A BUG: ook_pulses->start_ago <= pulse_offset\n");
+            continue;
+        }
+        unsigned pulse_start_ago = ook_pulses->start_ago - pulse_offset;
+        if (pulse_start_ago >= n_samples) {
+            fprintf(stderr, "THIS IS A BUG: pulse_start_ago >= n_samples\n");
+            continue;
+        }
+
+        unsigned fsk_start = n_samples - pulse_start_ago;
+        unsigned fsk_end   = fsk_start + pulse_length;
+        fsk_pulses->start_ago         = pulse_start_ago;
+        fsk_pulses->end_ago           = pulse_start_ago - pulse_length;
+
+        if (pulse_detect_fsk_package_internal(pulse_detect_fsk, fm_data, fsk_start, fsk_end, fsk_pulses, fpdm)) {
+            return 1;
+        }
+
+        /*
+        if (!is_complete) {
+            // Partial OOK package starting at ook_pulses->start_ago samples before end of the current frame
+            // i.e. starting in a past frame if ook_pulses->start_ago is bigger than n_samples
+
+            // FIXME: run the FSK demod if this a first pulse
+    fprintf(stderr, "got PULSE_DATA_OOK_PARTIAL %u (%u to %u)\n", ook_pulses->num_pulses, ook_pulses->start_ago, ook_pulses->end_ago);
+        }
+        if (is_complete) {
+            // Complete OOK package starting at ook_pulses->start_ago samples before end of the current frame
+            // i.e. starting in a past frame if ook_pulses->start_ago is bigger than n_samples
+            // and ending at ook_pulses->end_ago samples before end of the current frame
+
+            // FIXME: run the FSK demod if this a first pulse
+    fprintf(stderr, "got PULSE_DATA_OOK %u (%u to %u)\n", ook_pulses->num_pulses, ook_pulses->start_ago, ook_pulses->end_ago);
+        */
+    }
+
+    /*
+    // Special case: process a trailing pulse with partial gap
+    if (has_partial_gap) {
+        fprintf(stderr, "FIXME: Skippping trailing partial gap\n");
+        pulse_detect_fsk->pulse_done += 1;
+    }
+    */
+
+    // Special case: process a trailing partial pulse
+    if (has_partial_pulse) {
+        fprintf(stderr, "FIXME: Skippping trailing partial pulse\n");
+
+        // FIXME: actually process partial pulse...
+
+/* COPIED */
+        // Reset demod, keep meta-state
+        unsigned curr_serial   = pulse_detect_fsk->curr_serial;
+        unsigned pulse_done    = pulse_detect_fsk->pulse_done;
+        unsigned partial_pulse = pulse_detect_fsk->partial_pulse;
+        pulse_detect_fsk_init(pulse_detect_fsk);
+        pulse_detect_fsk->curr_serial   = curr_serial;
+        pulse_detect_fsk->pulse_done    = pulse_done;
+        pulse_detect_fsk->partial_pulse = partial_pulse;
+
+        // Initialize all pulses data
+        pulse_data_clear(fsk_pulses);
+        fsk_pulses->sample_rate = ook_pulses->sample_rate;
+        // fsk_pulses->offset      = demod->input_pos + n_samples - ook_pulses->start_ago;
+        fsk_pulses->offset    = ook_pulses->offset;
+        fsk_pulses->start_ago = ook_pulses->start_ago;
+        fsk_pulses->end_ago   = fsk_pulses->start_ago; // nothing processed so far
+        // pulse_detect_fsk_init(pulse_detect_fsk);
+
+        fsk_pulses->ook_low_estimate  = ook_pulses->ook_low_estimate;
+        fsk_pulses->ook_high_estimate = ook_pulses->ook_high_estimate;
+        // fsk_pulses->end_ago           = ook_pulses->start_ago - ook_pulses->pulse[0];
+
+        // run demod here
+
+        // calculate offset for pulse N
+        unsigned pulse_offset = 0;
+        for (unsigned j = 0; j < pulse_detect_fsk->pulse_done; ++j) {
+            pulse_offset += (unsigned)ook_pulses->pulse[j] + (unsigned)ook_pulses->gap[j];
+        }
+        unsigned pulse_length = (unsigned)ook_pulses->pulse[pulse_detect_fsk->pulse_done];
+
+        // the first sample in this frame is n_samples old,
+        // sanity check that ook_pulses->start_ago + fsk_start is newer than is n_samples old, i.e. contained in this frame
+
+        //        fprintf(stderr, "pulse %u, start_ago %u, pulse_offset %u, length %u, n_samples %u\n", pulse_detect_fsk->pulse_done, ook_pulses->start_ago, pulse_offset, pulse_length, n_samples);
+
+        // step forward
+        pulse_detect_fsk->pulse_done += 1;
+
+        if (ook_pulses->start_ago <= pulse_offset) {
+            fprintf(stderr, "THIS IS A BUG: ook_pulses->start_ago <= pulse_offset\n");
+        }
+        unsigned pulse_start_ago = ook_pulses->start_ago - pulse_offset;
+        if (pulse_start_ago >= n_samples) {
+            fprintf(stderr, "THIS IS A BUG: pulse_start_ago >= n_samples\n");
+        }
+
+        unsigned fsk_start = n_samples - pulse_start_ago;
+        unsigned fsk_end   = fsk_start + pulse_length;
+        fsk_pulses->start_ago = pulse_start_ago;
+        fsk_pulses->end_ago   = pulse_start_ago - pulse_length;
+
+        pulse_detect_fsk_package_internal(pulse_detect_fsk, fm_data, fsk_start, fsk_end, fsk_pulses, fpdm);
+/* COPIED */
+
+        pulse_detect_fsk->partial_pulse = (unsigned)ook_pulses->pulse[pulse_detect_fsk->pulse_done];
+    }
+
+    return 0;
+}
+
+/*
+FAIL tests/alecto_ws_1200/01/g001_433.92M_250k.cu8
+FAIL rtl_433_tests/tests/fineoffset/fineoffset_wh65b/01/g001_915.05M_250k.cu8
+ */

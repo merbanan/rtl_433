@@ -10,6 +10,7 @@
 #include "list.h"
 #include "baseband.h"
 #include "pulse_detect.h"
+#include "pulse_detect_fsk.h"
 #include "fileformat.h"
 #include "samp_grab.h"
 #include "am_analyze.h"
@@ -39,6 +40,7 @@ struct dm_state {
     int sample_size; // CU8: 2, CS16: 4
     pulse_detect_t *pulse_detect;
     filter_state_t lowpass_filter_state;
+    pulse_detect_fsk_t pulse_detect_fsk;
     demodfm_state_t demod_FM_state;
     int enable_FM_demod;
     samp_grab_t *samp_grab;
@@ -55,8 +57,8 @@ struct dm_state {
     uint64_t input_pos;
     unsigned frame_event_count;
     int frame_quality;
-    unsigned frame_start_ago;
-    unsigned frame_end_ago;
+    unsigned frame_start_ago; ///< framing tracking for sample writer
+    unsigned frame_end_ago; ///< framing tracking for sample writer
     struct timeval now;
     float sample_file_pos;
 

@@ -1780,7 +1780,7 @@ int main(int argc, char **argv) {
                         }
                         if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0))) {
                             r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
-                            pulse_analyzer(&demod->pulse_data, PULSE_DATA_OOK, &device);
+                            pulse_analyzer(&demod->pulse_data, 1, &device);
                         }
                     }
                 }

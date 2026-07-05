@@ -28,6 +28,7 @@
 
 /// Data for a compact representation of generic pulse train.
 typedef struct pulse_data {
+    unsigned serialno;    ///< Pulse data paket serial number for flow processing
     uint64_t offset;      ///< Offset to first pulse in number of samples from start of stream.
     uint32_t sample_rate; ///< Sample rate the pulses are recorded with.
     unsigned depth_bits;  ///< Sample depth in bits.

@@ -32,6 +32,16 @@
 #include "logger.h"
 #include "fatal.h"
 
+/*
+TODO:
+
+- Depth-First processing
+- Only compatible steps with matching tags will run
+- Tags must strictly increase (to prevents loops)
+- types are I/Q, AM, FM, PULSE
+
+*/
+
 static void calc_rssi_snr(struct dm_state const *demod, pulse_data_t *pulse_data)
 {
     float ook_high_estimate      = pulse_data->ook_high_estimate > 0 ? pulse_data->ook_high_estimate : 1;
@@ -94,7 +104,17 @@ void reset_sdr_flow(r_cfg_t *cfg)
     baseband_demod_FM_reset(&demod->demod_FM_state);
 
     pulse_detect_reset(demod->pulse_detect);
+    pulse_detect_fsk_init(&demod->pulse_detect_fsk);
 }
+
+/*
+// print raw mode
+event_occurred_handler(cfg, data);
+
+// start analyzer -> pass on entry?
+time_pos_str(cfg, demod->pulse_data.start_ago, time_str));
+r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
+*/
 
 /**
 Push an IQ data frame to the SDR IQ data frame processing.
@@ -103,6 +123,7 @@ Push an IQ data frame to the SDR IQ data frame processing.
 */
 int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
 {
+    fprintf(stderr, "push_sdr_flow... %u\n", len);
     //fprintf(stderr, "push_sdr_flow... %u\n", len);
     struct dm_state *demod = cfg->demod;
     char time_str[LOCAL_TIME_BUFLEN];
@@ -229,7 +250,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
     int d_events = 0; // Sensor events successfully detected
     if (demod->r_devs.len || demod->analyze_pulses || demod->dumper.len || demod->samp_grab) {
         // Detect a package and loop through demodulators with pulse data
-        int package_type = PULSE_DATA_OOK;  // Just to get us started
+        int package_type = PULSE_DATA_OOK_COMPLETE;  // Just to get us started
         // Initialize all U8 logic buffers
         for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
             file_info_t const *dumper = *iter;
@@ -238,11 +259,26 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 break;
             }
         }
-        while (package_type && process_frame) {
+
+        if (demod->pulse_detect_fsk.fsk_state != PD_FSK_STATE_INIT) {
+            // age the fsk_pulse_data if this is a fresh buffer
+            demod->fsk_pulse_data.start_ago += n_samples;
+            demod->fsk_pulse_data.end_ago += n_samples;
+        }
+
+        // FIXME: should we really abort on an FSK package?
+        while (package_type == PULSE_DATA_OOK_COMPLETE && process_frame) {
             int p_events = 0; // Sensor events successfully detected per package
-            package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples,
-                    demod->samp_rate, demod->input_pos, &demod->pulse_data, &demod->fsk_pulse_data, demod->fsk_pulse_detect_mode);
-            if (package_type) {
+            package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, n_samples,
+                    demod->samp_rate, demod->input_pos, &demod->pulse_data);
+if (package_type >= PULSE_DATA_OOK_PARTIAL) {
+    demod->pulse_data.num_pulses += 1;
+    pulse_data_print(&demod->pulse_data);
+    demod->pulse_data.num_pulses -= 1;
+} else {
+    pulse_data_print(&demod->pulse_data);
+}
+            if (package_type == PULSE_DATA_OOK_COMPLETE) {
                 // new package: set a first frame start if we are not tracking one already
                 if (!demod->frame_start_ago) {
                     demod->frame_start_ago = demod->pulse_data.start_ago;
@@ -250,7 +286,9 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 // always update the last frame end
                 demod->frame_end_ago = demod->pulse_data.end_ago;
             }
-            if (package_type == PULSE_DATA_OOK) {
+
+            // Report OOK or FSK package
+            if (package_type == PULSE_DATA_OOK_COMPLETE) {
                 calc_rssi_snr(demod, &demod->pulse_data);
                 if (demod->analyze_pulses) {
                     fprintf(stderr, "Detected OOK package\t%s\n", time_pos_str(cfg, demod->pulse_data.start_ago, time_str));
@@ -281,19 +319,29 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 }
                 if (demod->raw_mode == 1 || (demod->raw_mode == 2 && p_events == 0) || (demod->raw_mode == 3 && p_events > 0)) {
                     data_t *data = pulse_data_print_data(&demod->pulse_data);
+                    // FIXME: remove cfg dep
                     event_occurred_handler(cfg, data);
                 }
                 if (demod->analyze_pulses && (demod->grab_mode <= 1 || (demod->grab_mode == 2 && p_events == 0) || (demod->grab_mode == 3 && p_events > 0))) {
+                    // FIXME: remove cfg dep
                     r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
-                    pulse_analyzer(&demod->pulse_data, package_type, &device);
+                    pulse_analyzer(&demod->pulse_data, 1, &device);
                 }
                 if (demod->grab_mode == 4 && p_events == 0) {
+                    // FIXME: remove cfg dep
                     r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
-                    int p_quality   = pulse_analyzer_check(&demod->pulse_data, package_type, &device);
+                    int p_quality   = pulse_analyzer_check(&demod->pulse_data, 1, &device);
                     demod->frame_quality = p_quality > demod->frame_quality ? p_quality : demod->frame_quality;
                 }
             }
-            else if (package_type == PULSE_DATA_FSK) {
+
+            // Run FSK demod if needed
+            // FIXME: this should likely be a while loop
+            while (pulse_detect_fsk_package(&demod->pulse_detect_fsk, demod->buf.fm, n_samples,
+                    &demod->pulse_data, &demod->fsk_pulse_data, demod->fsk_pulse_detect_mode)) {
+fprintf(stderr, "pulse_detect_fsk_package -> PULSE_DATA_FSK\n");
+//pulse_data_print(&demod->fsk_pulse_data);
+
                 calc_rssi_snr(demod, &demod->fsk_pulse_data);
                 if (demod->analyze_pulses) {
                     fprintf(stderr, "Detected FSK package\t%s\n", time_pos_str(cfg, demod->fsk_pulse_data.start_ago, time_str));
@@ -324,15 +372,18 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 }
                 if (demod->raw_mode == 1 || (demod->raw_mode == 2 && p_events == 0) || (demod->raw_mode == 3 && p_events > 0)) {
                     data_t *data = pulse_data_print_data(&demod->fsk_pulse_data);
+                    // FIXME: remove cfg dep
                     event_occurred_handler(cfg, data);
                 }
                 if (demod->analyze_pulses && (demod->grab_mode <= 1 || (demod->grab_mode == 2 && p_events == 0) || (demod->grab_mode == 3 && p_events > 0))) {
+                    // FIXME: remove cfg dep
                     r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
-                    pulse_analyzer(&demod->fsk_pulse_data, package_type, &device);
+                    pulse_analyzer(&demod->fsk_pulse_data, 2, &device);
                 }
                 if (demod->grab_mode == 4 && p_events == 0) {
+                    // FIXME: remove cfg dep
                     r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
-                    int p_quality   = pulse_analyzer_check(&demod->fsk_pulse_data, package_type, &device);
+                    int p_quality   = pulse_analyzer_check(&demod->fsk_pulse_data, 2, &device);
                     demod->frame_quality = p_quality > demod->frame_quality ? p_quality : demod->frame_quality;
                 }
             } // if (package_type == ...

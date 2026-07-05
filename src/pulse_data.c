@@ -21,7 +21,9 @@
 
 void pulse_data_clear(pulse_data_t *data)
 {
+    unsigned serialno = data->serialno;
     *data = (pulse_data_t const){0};
+    data->serialno = serialno + 1;
 }
 
 void pulse_data_shift(pulse_data_t *data)
