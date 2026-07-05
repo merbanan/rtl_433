@@ -409,6 +409,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [319]  Shenzhen Wale WL-TH6R Temperature & Humidity Sensor
     [320]  Cellular Tracking Technologies LifeTag/PowerTag/HybridTag
     [321]  Schrader Motorcycle TPMS sensor
+    [322]  Gear Hive TPMS sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
