@@ -59,6 +59,9 @@ static int account_event(r_device *device, bitbuffer_t *bits, char const *demod_
         decoder_log_bitbuffer(device, ret > 0 ? 1 : 2, demod_name, bits, device->name);
     }
 
+    // always reset the bitbuffer after accounting, so every slicer starts the next message clean
+    bitbuffer_clear(bits);
+
     return ret;
 }
 
@@ -250,7 +253,6 @@ int pulse_slicer_pcm(pulse_data_t const *pulses, r_device *device)
                 && (bits.bits_per_row[0] > 0 || bits.num_rows > 1)) { // Only if data has been accumulated
 
             events += account_event(device, &bits, __func__);
-            bitbuffer_clear(&bits);
         }
     } // for
     return events;
@@ -329,7 +331,6 @@ int pulse_slicer_ppm(pulse_data_t const *pulses, r_device *device)
                 && (bits.bits_per_row[0] > 0 || bits.num_rows > 1)) { // Only if data has been accumulated
 
             events += account_event(device, &bits, __func__);
-            bitbuffer_clear(&bits);
         }
     } // for pulses
     return events;
@@ -437,7 +438,6 @@ int pulse_slicer_pwm(pulse_data_t const *pulses, r_device *device)
                     || (pulses->gap[n] > s_reset)) // Long silence (OOK)
                 && (bits.num_rows > 0)) {                        // Only if data has been accumulated
             events += account_event(device, &bits, __func__);
-            bitbuffer_clear(&bits);
         }
         else if (s_gap > 0 && pulses->gap[n] > s_gap
                 && bits.num_rows > 0 && bits.bits_per_row[bits.num_rows - 1] > 0) {
@@ -509,7 +509,6 @@ int pulse_slicer_manchester_zerobit(pulse_data_t const *pulses, r_device *device
                     || (pulses->gap[n] > s_reset)) // Long silence (OOK)
                 && (bits.num_rows > 0)) {                        // Only if data has been accumulated
             events += account_event(device, &bits, __func__);
-            bitbuffer_clear(&bits);
             bitbuffer_add_bit(&bits, 0); // Prepare for new message with hardcoded 0
             time_since_last = 0;
         }
@@ -589,7 +588,6 @@ int pulse_slicer_dmc(pulse_data_t const *pulses, r_device *device)
                 && bits.num_rows > 0) { // Only if data has been accumulated
             //END message ?
             events += account_event(device, &bits, __func__);
-            bitbuffer_clear(&bits);
         }
     }
 
