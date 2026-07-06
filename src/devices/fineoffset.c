@@ -664,10 +664,51 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     char id[7];
     snprintf(id, sizeof(id), "%02x%02x%02x", b[1], b[2], b[3]);
     int boost           = (b[4] & 0xe0) >> 5;
-    int battery_mv      = (b[4] & 0x1f) * 100;
-    float battery_level = (battery_mv - 700) / 900.0f; // assume 1.6V (100%) to 0.7V (0%) range
+    int battery_mv_bits = b[4] & 0x1f;
+    int battery_mv      = (battery_mv_bits) * 100;
+    float battery_level;
     int ad_raw          = (((int)b[7] & 0x01) << 8) | (int)b[8];
     int moisture        = b[6];
+
+    /*
+     * We assume that an alkaline cell (1 AA) is in use, because
+     * that's the least expensive cell that is likely to work
+     * reasonably, with over 2 year life observed.  With a report of
+     * 1300 mV or higher, operation was reliable.  Within hours of
+     * reporting 1200 mV, I observed grossly incorrect moisture
+     * reports, a bad battery report of 500 mV, and periods of not
+     * reporting.  Removing the battery and waiting a few minutes, the
+     * open-circuit voltage was 1.27V and a pulse-type tester assessed
+     * it as 0%.
+     *
+     * Thus, 1600 is a brand new battery (anecdata says it remains in
+     * that state for 6 minutes), changing to 1500 quickly.  There is
+     * then a long period at 1500, 1400, 1300, with 1200 indicating
+     * imminent failure -- not long enough to change it before bad
+     * things.  For reliable operation, one has to change the battery
+     * at 1300 mV, and it's unfortunate there isn't greater precision.
+     * Mapping values into comfort level and fractional life
+     * remaining, I'd say:
+     *   1600   100%
+     *   1500   90%
+     *   1400   50%
+     *   1300   10%
+     *   1200   0%
+     *
+     * To deal with other chemistries, we map >= 1600 to 100% and <=
+     * 1200 to 0%.
+     */
+    if (battery_mv_bits >= 16) {
+      battery_level = 1.0;
+    } else if (battery_mv_bits == 15) {
+      battery_level = 0.9;
+    } else if (battery_mv_bits == 14) {
+      battery_level = 0.5;
+    } else if (battery_mv_bits == 13) {
+      battery_level = 0.1;
+    } else {
+      battery_level = 0.0;
+    }
 
     /* clang-format off */
     data = data_make(
