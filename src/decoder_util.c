@@ -60,29 +60,31 @@ void decoder_output_data(r_device *decoder, data_t *data)
 
 static char *bitrow_asprint_code(uint8_t const *bitrow, unsigned bit_len)
 {
-    char *row_code;
-    char row_bytes[BITBUF_ROWS * BITBUF_COLS * 2 + 1]; // TODO: this is a lot of stack
-
-    row_bytes[0] = '\0';
-    // print byte-wide
-    for (unsigned col = 0; col < (unsigned)(bit_len + 7) / 8; ++col) {
-        sprintf(&row_bytes[2 * col], "%02x", bitrow[col]);
-    }
-    // remove last nibble if needed
-    row_bytes[2 * (bit_len + 3) / 8] = '\0';
-
-    // print at least one '0'
-    if (bit_len == 0) {
-        snprintf(row_bytes, sizeof(row_bytes), "0");
+    if (bit_len > BITBUF_ROWS * BITBUF_COLS * 8) {
+        return NULL; // NOTE: returns NULL on invalid arguments.
     }
 
-    // a simple bitrow representation
-    row_code = malloc(8 + bit_len / 4 + 1); // "{nnnn}..\0"
+    size_t size = 8 + bit_len / 4 + 1; // "{nnnnnn}..\0"
+    char *row_code = malloc(size);
     if (!row_code) {
         WARN_MALLOC("decoder_output_bitbuffer()");
         return NULL; // NOTE: returns NULL on alloc failure.
     }
-    sprintf(row_code, "{%u}%s", bit_len, row_bytes);
+
+    // a simple bitrow representation
+    int offs = snprintf(row_code, size, "{%u}", bit_len);
+
+    // print byte-wide
+    for (unsigned col = 0; col < (unsigned)(bit_len + 7) / 8; ++col) {
+        snprintf(&row_code[offs + 2 * col], size - (offs + 2 * col), "%02x", bitrow[col]);
+    }
+    // remove last nibble if needed
+    row_code[offs + 2 * (bit_len + 3) / 8] = '\0';
+
+    // print at least one '0'
+    if (bit_len == 0) {
+        snprintf(row_code + offs, size - offs, "0");
+    }
 
     return row_code;
 }
