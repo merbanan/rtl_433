@@ -13,6 +13,7 @@
 #define INCLUDE_BITBUFFER_H_
 
 #include <stdint.h>
+#include <stddef.h>
 
 // NOTE: Wireless mbus protocol needs at least ((256+16*2+3)*12)/8 => 437 bytes
 //       which fits even if RTL_433_REDUCE_STACK_USE is defined because of row spilling
@@ -92,7 +93,7 @@ void bitrow_debug(uint8_t const *bitrow, unsigned bit_len);
 /// @param size the size of @p str
 ///
 /// @return the number of characters printed (not including the trailing `\0`).
-int bitrow_snprint(uint8_t const *bitrow, unsigned bit_len, char *str, unsigned size);
+int bitrow_snprint(uint8_t const *bitrow, unsigned bit_len, char *str, size_t size);
 
 /// Parse a string into a bitbuffer.
 ///

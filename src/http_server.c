@@ -327,7 +327,7 @@ static data_t *protocols_data(r_cfg_t *cfg)
     }
 
     data_t *data = data_make(
-            "protocols", "", DATA_ARRAY, data_array(devs.len, DATA_DATA, devs.elems),
+            "protocols", "", DATA_ARRAY, data_array((int)devs.len, DATA_DATA, devs.elems),
             NULL);
     list_free_elems(&devs, NULL);
     return data;
