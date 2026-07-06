@@ -204,7 +204,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [114]  Maverick ET73
     [115]  Honeywell ActivLink, Wireless Doorbell
     [116]  Honeywell ActivLink, Wireless Doorbell (FSK)
-    [117]* ESA1000 / ESA2000 Energy Monitor
+    [117]* ESA1000 / ESA2000 Energy Monitor, GIRA Wetterstation
     [118]* Biltema rain gauge
     [119]  Bresser Weather Center 5-in-1
     [120]  Digitech XC-0324 / AmbientWeather FT005TH temp/hum sensor
@@ -335,7 +335,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [245]* ThermoPro TX-2C Thermometer and Humidity sensor
     [246]  TFA 30.3151 Weather Station
     [247]  Bresser water leakage
-    [248]* Nissan TPMS
+    [248]  Nissan TPMS
     [249]  Bresser lightning
     [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge, TFA Dostmann 30.3252.01/47.3006.01 Rain Gauge and Thermometer, ADE WS1907
     [251]  Fine Offset / Ecowitt WH55 water leak sensor
@@ -414,7 +414,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [324]  LaCrosse Technology TX22U-IT (OOK)
     [325]  Thermor A6N 132TX temperature sensor
     [326]  Acurite/Chaney 985 Refrigerator / Freezer Thermometer
-    [327]  Honda Keyfob KR5V2X/1X
+    [327]  Honda Keyfob KR5V2X/1X (-f 433.6M -s 1024k)
 
 * Disabled by default, use -R n or a conf file to enable
 
