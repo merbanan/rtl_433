@@ -54,6 +54,8 @@ def get_help_text(option):
     help_text = re.sub(r'(?s).*Usage:', '', help_text)
     help_text = re.sub(r'(?s).*option requires an argument -- \'?.\'?', '', help_text)
     # help_text = re.sub(r'(?m)^\s*=\s+(.*)\s+=\s*$', r'### \1', help_text)
+    # normalize SoapySDR availability line (build-dependent, causes spurious diffs)
+    help_text = re.sub(r'(?m)^\tSoapySDR device driver is (not )?available\.\n?', '\tSoapySDR device driver is available.\n', help_text)
     return help_text
 
 
