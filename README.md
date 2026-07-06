@@ -413,6 +413,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [323]  LaCrosse Technology TX22U-IT
     [324]  LaCrosse Technology TX22U-IT (OOK)
     [325]  Thermor A6N 132TX temperature sensor
+    [326]  Acurite/Chaney 985 Refrigerator / Freezer Thermometer
 
 * Disabled by default, use -R n or a conf file to enable
 
