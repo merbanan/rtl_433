@@ -9,13 +9,6 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/**
-Nissan FSK 37 bit Manchester encoded checksummed TPMS data.
-
-Data format:
-
-    MODE:3d TPMS_ID:24h (PSI+THREE)*FOUR=8d UNKNOWN:2b
-*/
 
 #include "decoder.h"
 
@@ -37,6 +30,13 @@ static uint8_t tpms_nissan_checksum(uint8_t const *b)
     return ~chk & 0x03;
 }
 
+/**
+Nissan FSK 37 bit Manchester encoded checksummed TPMS data.
+
+Data format:
+
+    MODE:3d TPMS_ID:24h (PSI+THREE)*FOUR=8d UNKNOWN:2b
+*/
 static int tpms_nissan_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     bitbuffer_t packet_bits = {0};

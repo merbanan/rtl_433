@@ -29,7 +29,7 @@ Differential XOR decode (seeded from sync byte 0x94):
 
 Data layout (nibbles):
 
-    CC CS II II II PP TT CK
+    CC CS II II II PP TT KK
 
 - C: 12 bit rolling counter (p[0] + p[1] high nibble)
 - S: 4 bit sensor class (p[1] low nibble)
@@ -120,12 +120,11 @@ static int tmps_gear_hive_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const sync_pattern[] = {0x25, 0x94}; // 16 bits
 
-    unsigned bitpos = 0;
-    int ret         = 0;
-    int events      = 0;
+    int ret    = 0;
+    int events = 0;
 
     for (int row = 0; row < bitbuffer->num_rows; ++row) {
-        bitpos = 0;
+        unsigned bitpos = 0;
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos, sync_pattern, 16)) + 16 + 72
                 <= bitbuffer->bits_per_row[row]) {
             ret = tmps_gear_hive_decode(decoder, bitbuffer, row, bitpos);
