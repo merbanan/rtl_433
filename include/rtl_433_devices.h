@@ -334,6 +334,7 @@
     DECL(lacrosse_tx22uit_ook) \
     DECL(thermor_a6n_132tx) \
     DECL(acurite_985) \
+    DECL(honda_keyfob) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
