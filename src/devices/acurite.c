@@ -71,6 +71,10 @@ Devices decoded:
 #define ACURITE_MSGTYPE_5N1_WINDSPEED_WINDDIR_RAINFALL  0x31
 #define ACURITE_MSGTYPE_5N1_WINDSPEED_TEMP_HUMIDITY     0x38
 
+#define ACURITE_MSGTYPE_OPTIMUS_WIND_RAIN               0x3a
+#define ACURITE_MSGTYPE_OPTIMUS_TEMP_HUM                0x3b
+#define ACURITE_OPTIMUS_BYTELEN                         10
+
 
 
 // Acurite 5n1 Wind direction values.
@@ -1157,6 +1161,110 @@ Long rows with extra bits/bytes (from demod/bit slicing)
 will be accepted as long the bytes up to the expected length
 pass checksum and parity tests.
 */
+/**
+AcuRite Optimus 6-in-1 (06188M) weather station decoder.
+
+10-byte messages, two message types alternate:
+- Type 0x3b (inverted): wind speed, temperature, humidity
+- Type 0x3a (inverted): wind speed, wind direction, rain
+
+Byte layout (after bitbuffer_invert):
+
+| Byte 0    | Byte 1    | Byte 2    | Byte 3       | Byte 4       | Byte 5    | Byte 6    | Byte 7    | Byte 8    | Byte 9    |
+| --------- | --------- | --------- | ---------    | ---------    | --------- | --------- | --------- | --------- | --------- |
+| CCSS IIII | IIII IIII | PBMM MMMM | pW6..W0     | pWL ?? TTTT | pYYYY 0000| pRRR RRRR | 0000 0000 | p1F 01111 | KKKK KKKK |
+
+- C: Channel (2 bits)
+- S: Sequence number (2 bits)
+- I: Device ID (12 bits)
+- P: Even parity bit
+- B: Battery, 1 = OK
+- M: Message type (6 bits)
+- W: Wind speed (8 bits): W[7]..W[0] = bb[3][6:0], bb[4][6]
+- T: Temperature upper nibble (4 bits): bb[4][3:0]
+- Y: Temperature lower 3 bits: bb[5][6:4], bb[5][3:0] always 0
+- R: Rain/Unknown: bb[6][6:0]
+- K: Checksum (add_bytes of bytes 0-8)
+- 0: reserved/always 0
+
+Note: Wind direction for type 0x3a uses 5-in-1 style table lookup on bb[4] & 0x0f.
+*/
+static int acurite_optimus_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t const *bb)
+{
+    // Already inverted by acurite_txr_decode
+    (void)bitbuffer;
+
+    char const *channel_str = acurite_getChannel(bb[0]);
+    uint16_t sensor_id = ((bb[0] & 0x0f) << 8) | bb[1];
+    uint8_t sequence_num = (bb[0] & 0x30) >> 4;
+    int battery_low = (bb[2] & 0x40) == 0;
+    uint8_t message_type = bb[2] & 0x3f;
+
+    // Wind speed - Atlas-style: 8 bits in bb[3][6:0] and bb[4][6]
+    float wind_speed_mph = ((bb[3] & 0x7F) << 1) | ((bb[4] & 0x40) >> 6);
+    if (wind_speed_mph > 200) {
+        decoder_logf(decoder, 1, __func__, "Optimus 0x%04X Ch %s, invalid wind speed: %.1f MPH",
+                     sensor_id, channel_str, wind_speed_mph);
+        return DECODE_FAIL_SANITY;
+    }
+    float wind_speed_kmh = wind_speed_mph * 1.609344f;
+
+    data_t *data = data_make(
+            "model",                "",             DATA_STRING, "Acurite-Optimus",
+            "id",                   "",             DATA_INT,    sensor_id,
+            "channel",              "",             DATA_STRING, channel_str,
+            "sequence_num",         "",             DATA_INT,    sequence_num,
+            "battery_ok",           "Battery",      DATA_INT,    !battery_low,
+            "wind_avg_mi_h",        "Wind Speed",   DATA_FORMAT, "%.1f mi/h", DATA_DOUBLE, (double)wind_speed_mph,
+            "wind_avg_km_h",        "Wind Speed",   DATA_FORMAT, "%.1f km/h", DATA_DOUBLE, (double)wind_speed_kmh,
+            NULL);
+
+    if (message_type == ACURITE_MSGTYPE_OPTIMUS_TEMP_HUM) {
+        // Temperature - Atlas-style: 11 bits, bb[4][3:0] << 7 | bb[5][6:0]
+        int temp_raw = (bb[4] & 0x0F) << 7 | (bb[5] & 0x7F);
+        float tempf = (temp_raw - 400) * 0.1f;
+        if (tempf < -40.0f || tempf > 158.0f) {
+            decoder_logf(decoder, 1, __func__, "Optimus 0x%04X Ch %s, invalid temperature: %0.1f F",
+                         sensor_id, channel_str, tempf);
+            return DECODE_FAIL_SANITY;
+        }
+
+        uint8_t humidity = bb[6] & 0x7f;
+        if (humidity > 100) {
+            decoder_logf(decoder, 1, __func__, "Optimus 0x%04X Ch %s, invalid humidity: %d %%rH",
+                         sensor_id, channel_str, humidity);
+            return DECODE_FAIL_SANITY;
+        }
+
+        data = data_dbl(data, "temperature_F",  "Temperature",  "%.1f F",   (double)tempf);
+        data = data_int(data, "humidity",       "",             "%u %%",    humidity);
+
+        /* clang-format off */
+        /* clang-format on */
+    }
+    else if (message_type == ACURITE_MSGTYPE_OPTIMUS_WIND_RAIN) {
+        // Wind direction - 5-in-1 style: 4-bit index into direction table
+        float wind_dir = acurite_5n1_winddirections[bb[4] & 0x0f] * 22.5f;
+
+        // Rain counter - Atlas-style: 9 bits, (bb[5] & 0x03) << 7 | (bb[6] & 0x7F)
+        int raincounter = ((bb[5] & 0x03) << 7) | (bb[6] & 0x7F);
+        float rain_in = raincounter * 0.01f;
+
+        /* clang-format off */
+        data = data_dbl(data, "wind_dir_deg",   "",                         "%.1f",     (double)wind_dir);
+        data = data_dbl(data, "rain_in",        "Rainfall Accumulation",    "%.2f in",  (double)rain_in);
+        /* clang-format on */
+    }
+
+    char raw_str[31];
+    data = data_hex(data, "raw_msg", "Raw Message", NULL, bb, ACURITE_OPTIMUS_BYTELEN, raw_str);
+
+    decoder_output_data(decoder, data);
+
+    return 1;
+}
+
+
 static int acurite_txr_check(r_device *decoder, uint8_t const bb[], unsigned browlen, unsigned explen)
 {
 
@@ -1284,6 +1392,8 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             case ACURITE_MSGTYPE_6045M:
             case ACURITE_MSGTYPE_5N1_WINDSPEED_WINDDIR_RAINFALL:
             case ACURITE_MSGTYPE_5N1_WINDSPEED_TEMP_HUMIDITY:
+            case ACURITE_MSGTYPE_OPTIMUS_WIND_RAIN:
+            case ACURITE_MSGTYPE_OPTIMUS_TEMP_HUM:
             case ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM:
             case ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN:
             case ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX:
@@ -1362,6 +1472,19 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 error_ret = ret;
             } else {
                 if ((ret = acurite_5n1_decode(decoder, bitbuffer, bb)) > 0) {
+                    decoded += ret;
+                } else if (ret < 0) {
+                    error_ret = ret;
+                }
+            }
+        }
+
+        if (message_type == ACURITE_MSGTYPE_OPTIMUS_TEMP_HUM ||
+            message_type == ACURITE_MSGTYPE_OPTIMUS_WIND_RAIN) {
+            if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_OPTIMUS_BYTELEN)) != 0) {
+                error_ret = ret;
+            } else {
+                if ((ret = acurite_optimus_decode(decoder, bitbuffer, bb)) > 0) {
                     decoded += ret;
                 } else if (ret < 0) {
                     error_ret = ret;
