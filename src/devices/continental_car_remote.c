@@ -138,3 +138,112 @@ r_device const continental_car_remote = {
         .decode_fn   = &continental_car_remote_decode,
         .fields      = output_fields,
 };
+
+/**
+Honda Car Keyfob (313/433 MHz).
+
+Manufacturer:
+- Honda
+
+Supported Models:
+- FCC ID KR5V2X (313.55/314.15 MHz)
+- FCC ID KR5V1X (433.66/434.18 MHz)
+
+Note:
+This is an alternate decoding of the same physical remotes handled by
+continental_car_remote above (same FCC ID KR5V2X).
+
+Data layout:
+
+    MMMMMM HH DDDDDDDD EE NNNNNN RRRRRRRR CC
+
+- M: 24 bit manufacturer ID (sync/preamble)
+- H: 8 bit packet index (a button press sends the packet twice; 0x08 then 0x0a)
+- D: 32 bit device ID of the keyfob
+- E: 8 bit keyfob command (event)
+- N: 24 bit counter
+- R: 32 bit rolling code
+- C: 8 bit CRC, OpenSafety poly 0x2f init 0x00
+
+Format string:
+
+    ID: hhhhhhhh EVENT: hh COUNTER: hhhhhh CODE: hhhhhhhh CHECKSUM: hh
+
+*/
+
+static int honda_keyfob_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    if (bitbuffer->num_rows > 1) {
+        return DECODE_ABORT_EARLY;
+    }
+
+    if (bitbuffer->bits_per_row[0] < 150 || bitbuffer->bits_per_row[0] > 184) {
+        return DECODE_ABORT_LENGTH;
+    }
+
+    uint8_t const preamble[] = {0xec, 0x0f, 0x62}; // Honda keyfob manufacturer code
+    unsigned bit_offset      = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8);
+
+    if (bit_offset + 16 + 120 > bitbuffer->bits_per_row[0]) {
+        return DECODE_ABORT_EARLY;
+    }
+
+    uint8_t b[15];
+    // extract 120 bits after the sync, excluding the first two bytes of the manufacturer code
+    bitbuffer_extract_bytes(bitbuffer, 0, bit_offset + 16, b, 120);
+
+    int crc = crc8(b, 14, 0x2f, 0x00); // OpenSafety CRC-8
+    if (crc != b[14]) {
+        return DECODE_FAIL_MIC;
+    }
+
+    int device_id      = (b[2] << 24) | (b[3] << 16) | (b[4] << 8) | b[5];
+    int device_counter = (b[7] << 16) | (b[8] << 8) | b[9];
+    int rolling_code   = (b[10] << 24) | (b[11] << 16) | (b[12] << 8) | b[13];
+
+    char const *event_str;
+    /* clang-format off */
+    switch (b[6]) {
+        case 0x21: event_str = "Lock"; break;
+        case 0x22: event_str = "Unlock"; break;
+        case 0x24: event_str = "Trunk"; break;
+        case 0x27: event_str = "Emergency"; break;
+        case 0x2d: event_str = "RemoteStart"; break;
+        default:   event_str = "?"; break;
+    }
+    /* clang-format on */
+
+    /* clang-format off */
+    data_t *data = data_make(
+            "model",       "model",     DATA_STRING, "Honda-KR5V2X1X",
+            "id",          "Device ID", DATA_FORMAT, "%08x", DATA_INT, device_id,
+            "event",       "Event",     DATA_STRING, event_str,
+            "counter",     "Counter",   DATA_FORMAT, "%06x", DATA_INT, device_counter,
+            "code",        "Code",      DATA_FORMAT, "%08x", DATA_INT, rolling_code,
+            "mic",         "Integrity", DATA_STRING, "CRC",
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
+static char const *const honda_keyfob_output_fields[] = {
+        "model",
+        "id",
+        "event",
+        "counter",
+        "code",
+        "mic",
+        NULL,
+};
+
+r_device const honda_keyfob = {
+        .name        = "Honda Keyfob KR5V2X/1X (-f 433.6M -s 1024k)",
+        .modulation  = FSK_PULSE_MANCHESTER_ZEROBIT,
+        .short_width = 60,
+        .long_width  = 120,
+        .reset_limit = 1500,
+        .decode_fn   = &honda_keyfob_decode,
+        .fields      = honda_keyfob_output_fields,
+};

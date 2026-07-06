@@ -414,6 +414,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [324]  LaCrosse Technology TX22U-IT (OOK)
     [325]  Thermor A6N 132TX temperature sensor
     [326]  Acurite/Chaney 985 Refrigerator / Freezer Thermometer
+    [327]  Honda Keyfob KR5V2X/1X
 
 * Disabled by default, use -R n or a conf file to enable
 
