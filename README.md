@@ -412,6 +412,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [322]  Gear Hive TPMS sensor
     [323]  LaCrosse Technology TX22U-IT
     [324]  LaCrosse Technology TX22U-IT (OOK)
+    [325]  Thermor A6N 132TX temperature sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
