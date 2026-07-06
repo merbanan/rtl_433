@@ -94,7 +94,7 @@ static int tmps_gear_hive_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
     int temp_bits = (p[7] >> 6) | ((p[6] & 0x03) << 2);
     float temp_c = (float)temp_bits + 21.0f;
 
-    int unknown = p[8];
+    // int unknown = p[8];
 
     char id_str[7];
     snprintf(id_str, sizeof(id_str), "%06x", id);
@@ -107,6 +107,7 @@ static int tmps_gear_hive_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
             "counter",       "Counter",       DATA_INT,    counter,
             "pressure_kPa",  "Pressure",      DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure_kpa,
             "temperature_C", "Temperature",   DATA_FORMAT, "%.0f C",   DATA_DOUBLE, (double)temp_c,
+            // "checksum",      "Checksum",      DATA_FORMAT, "%02x",     DATA_INT, unknown,
             "mic",           "Integrity",     DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
