@@ -94,9 +94,10 @@ void pulse_data_print_vcd_header(FILE *file, uint32_t sample_rate)
     chk_ret(fprintf(file, "$var wire 1 / FRAME $end\n"));
     chk_ret(fprintf(file, "$var wire 1 ' AM $end\n"));
     chk_ret(fprintf(file, "$var wire 1 \" FM $end\n"));
+    chk_ret(fprintf(file, "$var wire 1 # FM2 $end\n"));
     chk_ret(fprintf(file, "$upscope $end\n"));
     chk_ret(fprintf(file, "$enddefinitions $end\n"));
-    chk_ret(fprintf(file, "#0 0/ 0' 0\"\n"));
+    chk_ret(fprintf(file, "#0 0/ 0' 0\" 0#\n"));
 }
 
 void pulse_data_print_vcd(FILE *file, pulse_data_t const *data, int ch_id)

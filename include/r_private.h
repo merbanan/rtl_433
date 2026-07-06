@@ -52,6 +52,8 @@ struct dm_state {
 
     pulse_data_t    pulse_data;
     pulse_data_t    fsk_pulse_data;
+    pulse_data_t    fsk_pulse_data_alt; ///< FSK pulse data from the other (not fsk_pulse_detect_mode) detector, for VCD/.sr dumping only
+    int fsk_pulse_detect_both; ///< Run both FSK detectors in parallel and dump both, set when a VCD or logic (.sr) dumper is attached
     uint64_t input_pos;
     unsigned frame_event_count;
     int frame_quality;

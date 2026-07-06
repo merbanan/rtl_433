@@ -51,6 +51,7 @@ struct pulse_detect {
     int verbosity; ///< Debug output verbosity, 0=None, 1=Levels, 2=Histograms
 
     pulse_detect_fsk_t pulse_detect_fsk;
+    pulse_detect_fsk_t pulse_detect_fsk_alt; ///< State for the other (not fpdm) FSK detector, run in parallel for comparison/dumping
 };
 
 pulse_detect_t *pulse_detect_create(void)
@@ -81,6 +82,7 @@ void pulse_detect_reset(pulse_detect_t *pulse_detect)
     pulse_detect->ook_low_estimate  = 0;
     pulse_detect->ook_high_estimate = 0;
     pulse_detect_fsk_init(&pulse_detect->pulse_detect_fsk);
+    pulse_detect_fsk_init(&pulse_detect->pulse_detect_fsk_alt);
 }
 
 void pulse_detect_set_levels(pulse_detect_t *pulse_detect, int use_mag_est, float fixed_high_level, float min_high_level, float high_low_ratio, int verbosity)
@@ -196,7 +198,7 @@ static void print_att_hist(char const *s, int att_hist[])
 }
 
 /// Demodulate On/Off Keying (OOK) and Frequency Shift Keying (FSK) from an envelope signal
-int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses, unsigned fpdm)
+int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses, unsigned fpdm, pulse_data_t *fsk_pulses_alt)
 {
     int att_hist[37] = {0};
     int const samples_per_ms = samp_rate / 1000;
@@ -207,6 +209,9 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
         // age the pulse_data if this is a fresh buffer
         pulses->start_ago += len;
         fsk_pulses->start_ago += len;
+        if (fsk_pulses_alt) {
+            fsk_pulses_alt->start_ago += len;
+        }
     }
 
     int eop_on_spurious = 0;
@@ -238,9 +243,16 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     fsk_pulses->offset = sample_offset + s->data_counter;
                     pulses->start_ago = len - s->data_counter;
                     fsk_pulses->start_ago = len - s->data_counter;
+                    if (fsk_pulses_alt) {
+                        pulse_data_clear(fsk_pulses_alt);
+                        fsk_pulses_alt->sample_rate = samp_rate;
+                        fsk_pulses_alt->offset = sample_offset + s->data_counter;
+                        fsk_pulses_alt->start_ago = len - s->data_counter;
+                    }
                     s->pulse_length = 0;
                     s->max_pulse = 0;
                     pulse_detect_fsk_init(&s->pulse_detect_fsk);
+                    pulse_detect_fsk_init(&s->pulse_detect_fsk_alt);
                     s->ook_state = PD_OOK_STATE_PULSE;
                 }
                 else {    // We are still idle..
@@ -292,6 +304,14 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     } else {
                         pulse_detect_fsk_minmax(&s->pulse_detect_fsk, fm_data[s->data_counter], fsk_pulses);
                     }
+                    if (fsk_pulses_alt) {
+                        // Run the other FSK detector in parallel, purely for comparison/dumping
+                        if (fpdm == FSK_PULSE_DETECT_OLD) {
+                            pulse_detect_fsk_minmax(&s->pulse_detect_fsk_alt, fm_data[s->data_counter], fsk_pulses_alt);
+                        } else {
+                            pulse_detect_fsk_classic(&s->pulse_detect_fsk_alt, fm_data[s->data_counter], fsk_pulses_alt);
+                        }
+                    }
                 }
                 break;
             case PD_OOK_STATE_GAP_START:    // Beginning of gap - it might be a spurious gap
@@ -317,6 +337,18 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                         fsk_pulses->ook_high_estimate = s->ook_high_estimate;
                         pulses->end_ago = len - s->data_counter;
                         fsk_pulses->end_ago = len - s->data_counter;
+                        if (fsk_pulses_alt) {
+                            // Store last pulse/gap for the other FSK detector
+                            if (fpdm != FSK_PULSE_DETECT_OLD) {
+                                pulse_detect_fsk_wrap_up(&s->pulse_detect_fsk_alt, fsk_pulses_alt);
+                            }
+                            // Store estimates
+                            fsk_pulses_alt->fsk_f1_est = s->pulse_detect_fsk_alt.fm_f1_est;
+                            fsk_pulses_alt->fsk_f2_est = s->pulse_detect_fsk_alt.fm_f2_est;
+                            fsk_pulses_alt->ook_low_estimate = s->ook_low_estimate;
+                            fsk_pulses_alt->ook_high_estimate = s->ook_high_estimate;
+                            fsk_pulses_alt->end_ago = len - s->data_counter;
+                        }
                         s->ook_state = PD_OOK_STATE_IDLE;    // Ensure everything is reset
                         if (pulse_detect->verbosity >= LOG_INFO) {
                             print_att_hist("PULSE_DATA_FSK", att_hist);
@@ -337,6 +369,14 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                         pulse_detect_fsk_classic(&s->pulse_detect_fsk, fm_data[s->data_counter], fsk_pulses);
                     } else {
                         pulse_detect_fsk_minmax(&s->pulse_detect_fsk, fm_data[s->data_counter], fsk_pulses);
+                    }
+                    if (fsk_pulses_alt) {
+                        // Run the other FSK detector in parallel, purely for comparison/dumping
+                        if (fpdm == FSK_PULSE_DETECT_OLD) {
+                            pulse_detect_fsk_minmax(&s->pulse_detect_fsk_alt, fm_data[s->data_counter], fsk_pulses_alt);
+                        } else {
+                            pulse_detect_fsk_classic(&s->pulse_detect_fsk_alt, fm_data[s->data_counter], fsk_pulses_alt);
+                        }
                     }
                 }
                 break;

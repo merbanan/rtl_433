@@ -64,10 +64,11 @@ void pulse_detect_set_levels(pulse_detect_t *pulse_detect, int use_mag_est, floa
 /// @param[in,out] pulses Will return a pulse_data_t structure
 /// @param[in,out] fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
 /// @param fpdm Index of filter setting to use
+/// @param[in,out] fsk_pulses_alt Optional, if not NULL will return a pulse_data_t structure for the other (not fpdm) FSK detector, for comparison/dumping
 /// @return if a package is detected
 /// @retval 0 all input sample data is processed
 /// @retval 1 OOK package is detected (but all sample data is still not completely processed)
 /// @retval 2 FSK package is detected (but all sample data is still not completely processed)
-int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses, unsigned fpdm);
+int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses, unsigned fpdm, pulse_data_t *fsk_pulses_alt);
 
 #endif /* INCLUDE_PULSE_DETECT_H_ */

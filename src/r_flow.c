@@ -241,7 +241,8 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         while (package_type && process_frame) {
             int p_events = 0; // Sensor events successfully detected per package
             package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples,
-                    demod->samp_rate, demod->input_pos, &demod->pulse_data, &demod->fsk_pulse_data, demod->fsk_pulse_detect_mode);
+                    demod->samp_rate, demod->input_pos, &demod->pulse_data, &demod->fsk_pulse_data, demod->fsk_pulse_detect_mode,
+                    demod->fsk_pulse_detect_both ? &demod->fsk_pulse_data_alt : NULL);
             if (package_type) {
                 // new package: set a first frame start if we are not tracking one already
                 if (!demod->frame_start_ago) {
@@ -311,9 +312,15 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                     file_info_t const *dumper = *iter;
                     if (dumper->format == VCD_LOGIC) {
                         pulse_data_print_vcd(dumper->file, &demod->fsk_pulse_data, '"');
+                        if (demod->fsk_pulse_detect_both) {
+                            pulse_data_print_vcd(dumper->file, &demod->fsk_pulse_data_alt, '#');
+                        }
                     }
                     if (dumper->format == U8_LOGIC) {
                         pulse_data_dump_raw(demod->u8_buf, n_samples, demod->input_pos, &demod->fsk_pulse_data, 0x04);
+                        if (demod->fsk_pulse_detect_both) {
+                            pulse_data_dump_raw(demod->u8_buf, n_samples, demod->input_pos, &demod->fsk_pulse_data_alt, 0x08);
+                        }
                     }
                     if (dumper->format == PULSE_OOK) {
                         pulse_data_dump(dumper->file, &demod->fsk_pulse_data);
@@ -368,6 +375,9 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
             if (dumper->format == U8_LOGIC) {
                 pulse_data_dump_raw(demod->u8_buf, n_samples, demod->input_pos, &demod->pulse_data, 0x02);
                 pulse_data_dump_raw(demod->u8_buf, n_samples, demod->input_pos, &demod->fsk_pulse_data, 0x04);
+                if (demod->fsk_pulse_detect_both) {
+                    pulse_data_dump_raw(demod->u8_buf, n_samples, demod->input_pos, &demod->fsk_pulse_data_alt, 0x08);
+                }
                 break;
             }
         }

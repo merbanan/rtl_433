@@ -1070,11 +1070,12 @@ void add_rtltcp_output(r_cfg_t *cfg, char *param)
 void add_sr_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
 {
     // create channels
+    // probe4 (FSK2, the other FSK detector) is packed into the same logic-1-1 file
     add_dumper(cfg, "U8:LOGIC:logic-1-1", overwrite);
-    add_dumper(cfg, "F32:I:analog-1-4-1", overwrite);
-    add_dumper(cfg, "F32:Q:analog-1-5-1", overwrite);
-    add_dumper(cfg, "F32:AM:analog-1-6-1", overwrite);
-    add_dumper(cfg, "F32:FM:analog-1-7-1", overwrite);
+    add_dumper(cfg, "F32:I:analog-1-5-1", overwrite);
+    add_dumper(cfg, "F32:Q:analog-1-6-1", overwrite);
+    add_dumper(cfg, "F32:AM:analog-1-7-1", overwrite);
+    add_dumper(cfg, "F32:FM:analog-1-8-1", overwrite);
     cfg->sr_filename = spec;
     cfg->sr_execopen = overwrite;
 }
@@ -1141,13 +1142,14 @@ void close_dumpers(struct r_cfg *cfg)
             "FRAME", // probe1
             "ASK", // probe2
             "FSK", // probe3
-            "I", // analog4
-            "Q", // analog5
-            "AM", // analog6
-            "FM", // analog7
+            "FSK2", // probe4, the other (not fsk_pulse_detect_mode) FSK detector
+            "I", // analog5
+            "Q", // analog6
+            "AM", // analog7
+            "FM", // analog8
     };
     if (cfg->sr_filename) {
-        write_sigrok(cfg->sr_filename, cfg->samp_rate, 3, 4, labels);
+        write_sigrok(cfg->sr_filename, cfg->samp_rate, 4, 4, labels);
     }
     if (cfg->sr_execopen) {
         open_pulseview(cfg->sr_filename);
@@ -1168,6 +1170,10 @@ void add_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
     list_push(&cfg->demod->dumper, dumper);
 
     file_info_parse_filename(dumper, spec);
+    if (dumper->format == VCD_LOGIC || dumper->format == U8_LOGIC) {
+        // Also run the FSK detector not selected by fsk_pulse_detect_mode, so both can be dumped for comparison
+        cfg->demod->fsk_pulse_detect_both = 1;
+    }
     // Open the output
     if (dumper->container == FILEFMT_SIGMF) {
         sigmf_t *sigmf = calloc(1, sizeof(*sigmf));
