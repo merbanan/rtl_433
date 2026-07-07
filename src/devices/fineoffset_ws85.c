@@ -66,7 +66,7 @@ static int fineoffset_ws85_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Validate package, WS85 nominal size is 345 bit periods
     if (bitbuffer->bits_per_row[0] < 168 || bitbuffer->bits_per_row[0] > 500) {
-        decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "abort length" );
+        decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "abort length");
         return DECODE_ABORT_LENGTH;
     }
 

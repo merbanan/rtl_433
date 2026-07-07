@@ -143,12 +143,15 @@ void decoder_log(r_device *decoder, int level, char const *func, char const *msg
 void decoder_logf(r_device *decoder, int level, char const *func, _Printf_format_string_ const char *format, ...)
 {
     if (decoder->verbose >= level) {
-        char msg[60]; // fixed length limit
+        char msg[80]; // fixed length limit
         va_list ap;
         va_start(ap, format);
-        vsnprintf(msg, sizeof(msg), format, ap);
+        int len = vsnprintf(msg, sizeof(msg), format, ap);
         va_end(ap);
 
+        if (len >= (int)sizeof(msg)) {
+            decoder_log(decoder, 0, __func__, "Truncating log message");
+        }
         decoder_log(decoder, level, func, msg);
     }
 }
@@ -198,12 +201,15 @@ void decoder_logf_bitbuffer(r_device *decoder, int level, char const *func, cons
 {
     // TODO: pass to interested outputs
     if (decoder->verbose >= level) {
-        char msg[60]; // fixed length limit
+        char msg[80]; // fixed length limit
         va_list ap;
         va_start(ap, format);
-        vsnprintf(msg, sizeof(msg), format, ap);
+        int len = vsnprintf(msg, sizeof(msg), format, ap);
         va_end(ap);
 
+        if (len >= (int)sizeof(msg)) {
+            decoder_log(decoder, 0, __func__, "Truncating log message");
+        }
         decoder_log_bitbuffer(decoder, level, func, bitbuffer, msg);
     }
 }
@@ -243,12 +249,15 @@ void decoder_log_bitrow(r_device *decoder, int level, char const *func, uint8_t 
 void decoder_logf_bitrow(r_device *decoder, int level, char const *func, uint8_t const *bitrow, unsigned bit_len, _Printf_format_string_ const char *format, ...)
 {
     if (decoder->verbose >= level) {
-        char msg[60]; // fixed length limit
+        char msg[80]; // fixed length limit
         va_list ap;
         va_start(ap, format);
-        vsnprintf(msg, sizeof(msg), format, ap);
+        int len = vsnprintf(msg, sizeof(msg), format, ap);
         va_end(ap);
 
+        if (len >= (int)sizeof(msg)) {
+            decoder_log(decoder, 0, __func__, "Truncating log message");
+        }
         decoder_log_bitrow(decoder, level, func, bitrow, bit_len, msg);
     }
 }
