@@ -164,6 +164,7 @@ add_library(r_433 STATIC
     devices/gt_wt_03.c
     devices/hcs200.c
     devices/hcs361.c
+    devices/hcs362.c
     devices/hideki.c
     devices/holman_ws5029.c
     devices/homelead_hg9901.c

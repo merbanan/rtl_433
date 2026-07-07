@@ -336,6 +336,8 @@
     DECL(acurite_985) \
     DECL(honda_keyfob) \
     DECL(schrader_MRXBC5A4) \
+    DECL(hcs362_pwm) \
+    DECL(hcs362_mc) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;

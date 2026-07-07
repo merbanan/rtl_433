@@ -416,6 +416,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [326]  Acurite/Chaney 985 Refrigerator / Freezer Thermometer
     [327]  Honda Keyfob KR5V2X/1X (-f 433.6M -s 1024k)
     [328]  Schrader TPMS MRXBC5A4 (BMW)
+    [329]  Microchip HCS362 KeeLoq PWM
+    [330]  Microchip HCS362 KeeLoq MC
 
 * Disabled by default, use -R n or a conf file to enable
 
