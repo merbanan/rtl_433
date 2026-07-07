@@ -350,6 +350,7 @@
     DECL(holman_ws5029pwm_ook) \
     DECL(esun_en2053) \
     DECL(vivint) \
+    DECL(tpms_smartire) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
