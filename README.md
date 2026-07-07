@@ -204,7 +204,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [114]  Maverick ET73
     [115]  Honeywell ActivLink, Wireless Doorbell
     [116]  Honeywell ActivLink, Wireless Doorbell (FSK)
-    [117]* ESA1000 / ESA2000 Energy Monitor
+    [117]* ESA1000 / ESA2000 Energy Monitor, GIRA Wetterstation
     [118]* Biltema rain gauge
     [119]  Bresser Weather Center 5-in-1
     [120]  Digitech XC-0324 / AmbientWeather FT005TH temp/hum sensor
@@ -335,7 +335,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [245]* ThermoPro TX-2C Thermometer and Humidity sensor
     [246]  TFA 30.3151 Weather Station
     [247]  Bresser water leakage
-    [248]* Nissan TPMS
+    [248]  Nissan TPMS
     [249]  Bresser lightning
     [250]  Schou 72543 Day Rain Gauge, Motonet MTX Rain, MarQuant Rain Gauge, TFA Dostmann 30.3252.01/47.3006.01 Rain Gauge and Thermometer, ADE WS1907
     [251]  Fine Offset / Ecowitt WH55 water leak sensor
@@ -408,7 +408,19 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [318]  RFM69 LowPowerLab Moteino board (-s 1000k)
     [319]  Shenzhen Wale WL-TH6R Temperature & Humidity Sensor
     [320]  Cellular Tracking Technologies LifeTag/PowerTag/HybridTag
-    [321]  Opel Mokka Car Key
+    [321]  Schrader Motorcycle TPMS sensor
+    [322]  Gear Hive TPMS sensor
+    [323]  LaCrosse Technology TX22U-IT
+    [324]  LaCrosse Technology TX22U-IT (OOK)
+    [325]  Thermor A6N 132TX temperature sensor
+    [326]  Acurite/Chaney 985 Refrigerator / Freezer Thermometer
+    [327]  Honda Keyfob KR5V2X/1X (-f 433.6M -s 1024k)
+    [328]  Schrader TPMS MRXBC5A4 (BMW)
+    [329]  Microchip HCS362 KeeLoq PWM
+    [330]  Microchip HCS362 KeeLoq MC
+    [331]  RF-T0912 Grill Thermometer
+    [332]  TR-502MSV remote smart socket controller
+    [323]  Opel Mokka Car Key
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -520,6 +532,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	Specify InfluxDB 2.0 server with e.g. -F "influx://localhost:9999/api/v2/write?org=<org>&bucket=<bucket>,token=<authtoken>"
 	Specify InfluxDB 1.x server with e.g. -F "influx://localhost:8086/write?db=<db>&p=<password>&u=<user>"
 	  Additional parameter -M time:unix:usec:utc for correct timestamps in InfluxDB recommended
+	  Additional parameter `metric` supports expanding keys (see the MQTT section just above for details).
   [-F syslog[:[//]host[:port] (default: localhost:514)
 	Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
   [-F trigger:/path/to/file]

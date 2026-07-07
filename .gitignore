@@ -1,6 +1,12 @@
 # CMake out-of-tree builds
 build*/
 
+# Code coverage artifacts (see tests/coverage.sh)
+*.gcda
+*.gcno
+*.gcov
+coverage-report/
+
 # IDE files
 .cproject
 .settings
@@ -29,3 +35,9 @@ cmake-build-debug/
 # File manager files
 .DS_Store
 .history
+
+# Precompiled headers
+*.h.pch
+
+# Dynamically generated files
+include/version.h

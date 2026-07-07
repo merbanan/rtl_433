@@ -831,7 +831,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
 
         // Sanity check values
         if (gustWindspeed < 0 || gustWindspeed > 56 || avgWindspeed < 0 || avgWindspeed > 56) {
-            decoder_logf(decoder, 1, __func__, "WGR800 failed value sanity check: wind_max_m_s %.1f wind_avg_m_s %.1f wind_dir_deg %.1f.", gustWindspeed, avgWindspeed, quadrant);
+            decoder_logf(decoder, 1, __func__, "WGR800 failed value sanity check: wind_max_m_s %.1f wind_avg_m_s %.1f.", gustWindspeed, avgWindspeed);
             return DECODE_FAIL_SANITY;
         }
 

@@ -16,6 +16,7 @@ add_library(r_433 STATIC
     data.c
     data_tag.c
     decoder_util.c
+    delay_timer.c
     fileformat.c
     http_server.c
     jsmn.c
@@ -37,6 +38,7 @@ add_library(r_433 STATIC
     pulse_detect_fsk.c
     pulse_slicer.c
     r_api.c
+    r_flow.c
     r_util.c
     r_version.c
     raw_output.c
@@ -44,6 +46,7 @@ add_library(r_433 STATIC
     samp_grab.c
     sdr.c
     sigmf.c
+    string_expand.c
     term_ctl.c
     write_sigrok.c
     devices/abmt.c
@@ -157,11 +160,13 @@ add_library(r_433 STATIC
     devices/govee.c
     devices/govee_h5059.c
     devices/gridstream.c
+    devices/grill_thermometer.c
     devices/gt_tmbbq05.c
     devices/gt_wt_02.c
     devices/gt_wt_03.c
     devices/hcs200.c
     devices/hcs361.c
+    devices/hcs362.c
     devices/hideki.c
     devices/holman_ws5029.c
     devices/homelead_hg9901.c
@@ -187,6 +192,7 @@ add_library(r_433 STATIC
     devices/lacrosse_r1.c
     devices/lacrosse_th3.c
     devices/lacrosse_tx141x.c
+    devices/lacrosse_tx22uit.c
     devices/lacrosse_tx31u.c
     devices/lacrosse_tx34.c
     devices/lacrosse_tx35.c
@@ -283,6 +289,7 @@ add_library(r_433 STATIC
     devices/thermopro_tx2c.c
     devices/thermopro_tx7b.c
     devices/thermor.c
+    devices/thermor_a6n_132tx.c
     devices/tpms_abarth124.c
     devices/tpms_airpuxem.c
     devices/tpms_ave.c
@@ -292,6 +299,7 @@ add_library(r_433 STATIC
     devices/tpms_eezrv.c
     devices/tpms_elantra2012.c
     devices/tpms_ford.c
+    devices/tpms_gear_hive.c
     devices/tpms_gm.c
     devices/tpms_hyundai_vdo.c
     devices/tpms_jansite.c
@@ -302,10 +310,12 @@ add_library(r_433 STATIC
     devices/tpms_porsche.c
     devices/tpms_renault.c
     devices/tpms_renault_0435r.c
+    devices/tpms_schrader_motorcycle.c
     devices/tpms_toyota.c
     devices/tpms_truck.c
     devices/tpms_trw.c
     devices/tpms_tyreguard400.c
+    devices/tr_502msv.c
     devices/ts_ft002.c
     devices/ttx201.c
     devices/universalfanctrl.c

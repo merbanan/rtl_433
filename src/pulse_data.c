@@ -158,12 +158,16 @@ void pulse_data_load(FILE *file, struct timeval *now, pulse_data_t *data, uint32
             continue;
         }
         // parse two ints.
-        char *p = s;
+        char const *p = s;
         char *endptr;
         long mark  = strtol(p, &endptr, 10);
         p          = endptr + 1;
         long space = strtol(p, &endptr, 10);
         // fprintf(stderr, "read: mark %ld space %ld\n", mark, space);
+        if (mark < 0 || space < 0) {
+            print_logf(LOG_WARNING, __func__, "skipping invalid mark %ld space %ld line", mark, space);
+            continue;
+        }
         data->pulse[i] = (int)(to_sample * mark);
         data->gap[i++] = (int)(to_sample * space);
     }

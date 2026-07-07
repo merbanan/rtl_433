@@ -28,12 +28,12 @@ Data comes in two bursts/packets.
 
 Layout:
 
-    bits = `AA BB IIII OOOO X*30`
+    bits = `AA BB OOOO IIII X*30`
 
 - AA = payload type  (2 bits 00 or 01)
 - BB = FrameID (2 bits always 00)
-- IIII = inversion indicator (4 bits)
-- OOOO = Order indicator (4 bits).
+- OOOO = Order indicator (4 bits)
+- IIII = inversion indicator (4 bits).
 - XXXX....  = data (30 bits)
 
 ---

@@ -70,8 +70,8 @@ typedef struct r_cfg {
     list_t in_files;
     char const *in_filename;
     int in_replay;
-    volatile sig_atomic_t hop_now;
-    volatile sig_atomic_t exit_async;
+    volatile sig_atomic_t hop_now; ///< flag to cause channel hopping, async written by signal handler and push_sdr_flow()
+    volatile sig_atomic_t exit_async; ///< flag to cause exiting, async written by signal handler
     volatile sig_atomic_t exit_code; ///< 0=no err, 1=params or cmd line err, 2=sdr device read error, 3=usb init error, 5=USB error (reset), other=other error
     int frequencies;
     int frequency_index;
@@ -85,10 +85,9 @@ typedef struct r_cfg {
     time_t stop_time;
     int after_successful_events_flag;
     uint32_t samp_rate;
-    uint64_t input_pos;
     uint32_t bytes_to_read;
     struct sdr_dev *dev;
-    int grab_mode; ///< Signal grabber mode: 0=off, 1=all, 2=unknown, 3=known
+    int grab_mode; ///< Signal grabber mode: 0=off, 1=all, 2=unknown, 3=known, 4=undecoded
     int raw_mode; ///< Raw pulses printing mode: 0=off, 1=all, 2=unknown, 3=known
     int verbosity; ///< 0=normal, 1=verbose, 2=verbose decoders, 3=debug decoders, 4=trace decoding.
     int verbose_bits;
@@ -103,7 +102,7 @@ typedef struct r_cfg {
     int report_description;
     int report_stats;
     int stats_interval;
-    volatile sig_atomic_t stats_now;
+    volatile sig_atomic_t stats_now; ///< flag to cause stats to be printed, async written by signal handler and push_sdr_flow()
     time_t stats_time;
     int no_default_devices;
     struct r_device *devices;
@@ -116,20 +115,8 @@ typedef struct r_cfg {
     char const *sr_filename;
     int sr_execopen;
     int watchdog; ///< SDR acquire stall watchdog
-    /* global stats */
-    time_t running_since;           ///< program start time statistic
-    unsigned total_frames_count;    ///< total frames recieved statistic
-    unsigned total_frames_squelch;  ///< total frames with noise only statistic
-    unsigned total_frames_ook;      ///< total frames with ook demod statistic
-    unsigned total_frames_fsk;      ///< total frames with fsk demod statistic
-    unsigned total_frames_events;   ///< total frames with decoder events statistic
     /* sdr stats */
     time_t sdr_since; ///< time of last SDR connect statistic
-    /* per report interval stats */
-    time_t frames_since;    ///< time at start of report interval statistic
-    unsigned frames_ook;    ///< counter of ook demods for report interval statistic
-    unsigned frames_fsk;    ///< counter of fsk demods for report interval statistic
-    unsigned frames_events; ///< counter of decoder events for report interval statistic
     struct mg_mgr *mgr;
 } r_cfg_t;
 

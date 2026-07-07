@@ -81,7 +81,7 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* validate what we received */
     if ((b[0] ^ b[1]) != 0x0f || (b[2] ^ b[3]) != 0xff) {
-        decoder_logf(decoder, 1, __func__, "DECODE_FAIL_SANITY, b0=%02x b1=%02x b2=%02x b3=%02x", b[0], b[1], b[2], b[3]);
+        decoder_logf(decoder, 1, __func__, "DECODE_FAIL_SANITY, %02x %02x %02x %02x", b[0], b[1], b[2], b[3]);
         return DECODE_FAIL_SANITY;
     }
 
@@ -91,7 +91,7 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     parity = (parity >> 2) ^ (parity & 0x3);                   // fold to 2 bits
     parity = (parity >> 1) ^ (parity & 0x1);                   // fold to 1 bit
     if (parity) {                                              // even parity - parity should be zero
-        decoder_logf(decoder, 1, __func__, "DECODE_FAIL_MIC CRC Fail, b0=%02x b1=%02x b2=%02x b3=%02x b4=%02x b5-CRC-bit=%02x", b[0], b[1], b[2], b[3], b[4], (b[5] & 0x80));
+        decoder_logf(decoder, 1, __func__, "DECODE_FAIL_MIC CRC Fail, %02x %02x %02x %02x %02x %02x", b[0], b[1], b[2], b[3], b[4], (b[5] & 0x80));
         return DECODE_FAIL_MIC;
     }
 

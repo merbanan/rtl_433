@@ -19,9 +19,70 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "data.h"
 #include "output_file.h"
+
+// Regression test for the get_stats JSON truncation bug: a report whose size
+// scales with configuration (here, a large array of device sub-objects, as the
+// HTTP server's get_stats builds for many enabled decoders) must serialize to
+// complete, valid JSON. The old fixed-buffer path silently corrupted the output
+// once it overflowed; data_print_jsons_dup() grows the buffer to fit.
+static int test_jsons_large_report(void)
+{
+    int failed = 0;
+    int n      = 230; // more than enough to exceed any reasonable fixed buffer
+
+    data_t **objs = calloc(n, sizeof(*objs));
+    for (int i = 0; i < n; ++i) {
+        objs[i] = data_make(
+                "device",       "", DATA_INT,    i,
+                "name",         "", DATA_STRING, "Some Reasonably Long Decoder Name For A Protocol",
+                "events",       "", DATA_INT,    8256,
+                "abort_length", "", DATA_INT,    8256,
+                NULL);
+    }
+    data_t *data = data_make(
+            "enabled", "", DATA_INT,   n,
+            "stats",   "", DATA_ARRAY, data_array(n, DATA_DATA, objs),
+            NULL);
+
+    // The grown buffer must hold the whole document: starts with '{', ends with
+    // '}', and is far larger than the smallest fixed buffer we test below.
+    char *full = data_print_jsons_dup(data);
+    if (!full) {
+        fprintf(stderr, "FAIL: data_print_jsons_dup returned NULL\n");
+        failed++;
+    }
+    else {
+        size_t full_len = strlen(full);
+        if (full[0] != '{' || full[full_len - 1] != '}') {
+            fprintf(stderr, "FAIL: grown JSON is not a complete object: ...%.20s\n",
+                    full + (full_len > 20 ? full_len - 20 : 0));
+            failed++;
+        }
+        if (full_len <= 20480) {
+            fprintf(stderr, "FAIL: test report (%zu bytes) too small to exercise growth\n", full_len);
+            failed++;
+        }
+
+        // Confirm the failure mode the fix addresses: a fixed buffer that is too
+        // small yields a truncated document that does NOT end with '}'.
+        char small[1024];
+        size_t w = data_print_jsons(data, small, sizeof(small));
+        if (w > 0 && w <= sizeof(small) && small[w - 1] == '}') {
+            fprintf(stderr, "FAIL: undersized buffer unexpectedly produced a complete object\n");
+            failed++;
+        }
+    }
+
+    free(full);
+    free(objs);
+    data_free(data);
+    return failed;
+}
 
 int main(void)
 {
@@ -54,4 +115,6 @@ int main(void)
     data_output_free(csv_output);
 
     data_free(data);
+
+    return test_jsons_large_report();
 }

@@ -170,6 +170,6 @@ char *str_replace(char const *orig, char const *rep, char const *with);
 
     @param freq the frequency to convert to a string.
 */
-char const *nice_freq (double freq);
+char const *nice_freq(double freq);
 
 #endif /* INCLUDE_R_UTIL_H_ */

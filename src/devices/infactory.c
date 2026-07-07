@@ -48,6 +48,9 @@ Payload looks like this:
 
     [00] {40} 0f 30 5c e7 61 : 00001111 00110000 01011100 11100111 01100001
 
+Some NC-3982-675 variants are sliced as 42-bit rows with two trailing bits
+after the 40-bit payload, e.g. {42} 74 10 68 f4 21 0.
+
 (See below for more information about the signal timing.)
 */
 
@@ -66,24 +69,30 @@ static int infactory_crc_check(uint8_t *b)
 
 static int infactory_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    if (bitbuffer->bits_per_row[0] != 40 && bitbuffer->bits_per_row[0] != 41)
+    if (bitbuffer->bits_per_row[0] != 40 && bitbuffer->bits_per_row[0] != 41 && bitbuffer->bits_per_row[0] != 42) {
         return DECODE_ABORT_LENGTH;
+    }
 
     uint8_t *b = bitbuffer->bb[0];
 
-    // Check that the last 4 bits of message are not 0 (channel number 1 - 3)
-    if (!(b[4] & 0x0F))
+    int channel = b[4] & 0x03;
+    if (!channel) {
         return DECODE_ABORT_EARLY;
+    }
 
-    if (!infactory_crc_check(b))
+    if (!infactory_crc_check(b)) {
         return DECODE_FAIL_MIC;
+    }
 
     int id          = b[0];
     int button      = (b[1] >> 3) & 1;
     int battery_low = (b[1] >> 2) & 1;
     int temp_raw    = (b[2] << 4) | (b[3] >> 4);
     int humidity    = (b[3] & 0x0F) * 10 + (b[4] >> 4); // BCD, 'A0'=100%rH
-    int channel     = b[4] & 0x03;
+
+    if (humidity > 100) {
+        return DECODE_FAIL_SANITY;
+    }
 
     float temp_f    = (temp_raw - 900) * 0.1f;
 

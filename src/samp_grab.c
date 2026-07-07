@@ -54,8 +54,9 @@ samp_grab_t *samp_grab_create(unsigned size, int fileformat)
 
 void samp_grab_free(samp_grab_t *g)
 {
-    if (g->sg_buf)
+    if (g->sg_buf) {
         free(g->sg_buf);
+    }
     free(g);
 }
 
@@ -64,22 +65,25 @@ void samp_grab_push(samp_grab_t *g, unsigned char *iq_buf, uint32_t len)
     //fprintf(stderr, "sg_index %d + len %d (size %d ", g->sg_index, len, g->sg_len);
 
     g->sg_len += len;
-    if (g->sg_len > g->sg_size)
+    if (g->sg_len > g->sg_size) {
         g->sg_len = g->sg_size;
+    }
 
     //fprintf(stderr, "-> %d)\n", g->sg_len);
 
     while (len) {
         unsigned chunk_len = len;
-        if (g->sg_index + chunk_len > g->sg_size)
+        if (g->sg_index + chunk_len > g->sg_size) {
             chunk_len = g->sg_size - g->sg_index;
+        }
 
         memcpy(&g->sg_buf[g->sg_index], iq_buf, chunk_len);
         iq_buf += chunk_len;
         len -= chunk_len;
         g->sg_index += chunk_len;
-        if (g->sg_index >= g->sg_size)
+        if (g->sg_index >= g->sg_size) {
             g->sg_index = 0;
+        }
     }
 }
 
@@ -93,8 +97,9 @@ void samp_grab_reset(samp_grab_t *g)
 
 void samp_grab_write(samp_grab_t *g, unsigned grab_len, unsigned grab_end)
 {
-    if (!g->sg_buf)
+    if (!g->sg_buf) {
         return;
+    }
 
     double freq_mhz = *g->frequency / 1000000.0;
     double rate_khz = *g->samp_rate / 1000.0;
@@ -109,17 +114,21 @@ void samp_grab_write(samp_grab_t *g, unsigned grab_len, unsigned grab_end)
 
     // relative end in bytes from current sg_index down
     unsigned end_pos = *g->sample_size * grab_end;
-    if (g->sg_index >= end_pos)
+    if (g->sg_index >= end_pos) {
         end_pos = g->sg_index - end_pos;
-    else
+    }
+    else {
         end_pos = g->sg_size - end_pos + g->sg_index;
+    }
     // end_pos is now absolute in sg_buf
 
     unsigned start_pos;
-    if (end_pos >= signal_bsize)
+    if (end_pos >= signal_bsize) {
         start_pos = end_pos - signal_bsize;
-    else
+    }
+    else {
         start_pos = g->sg_size - signal_bsize + end_pos;
+    }
 
     //fprintf(stderr, "signal_bsize = %d  -      sg_index = %d\n", signal_bsize, g->sg_index);
     //fprintf(stderr, "start_pos    = %d  -   buffer_size = %d\n", start_pos, g->sg_size);

@@ -328,10 +328,23 @@
     DECL(rfm69_lowpowerlab_moteino) \
     DECL(shenzhen_wale_wl_th6r) \
     DECL(ctt_life_power_hybrid) \
+    DECL(tpms_schrader_motorcycle) \
+    DECL(tmps_gear_hive) \
+    DECL(lacrosse_tx22uit) \
+    DECL(lacrosse_tx22uit_ook) \
+    DECL(thermor_a6n_132tx) \
+    DECL(acurite_985) \
+    DECL(honda_keyfob) \
+    DECL(schrader_MRXBC5A4) \
+    DECL(hcs362_pwm) \
+    DECL(hcs362_mc) \
+    DECL(grill_thermometer) \
+    DECL(tr_502msv) \
     DECL(opel_mokka) \
     /* Add new decoders here. */
 
-#define DECL(name) extern r_device name;
+#define DECL(name) extern r_device const name;
+DECL(flex_decoder)
 DEVICES
 #undef DECL
 

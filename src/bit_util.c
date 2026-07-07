@@ -59,8 +59,9 @@ unsigned extract_nibbles_4b1s(uint8_t const *message, unsigned offset_bits, unsi
     while (num_bits >= 5) {
         uint16_t bits = (message[offset_bits / 8] << 8) | message[(offset_bits / 8) + 1];
         bits >>= 11 - (offset_bits % 8); // align 5 bits to LSB
-        if ((bits & 1) != 1)
+        if ((bits & 1) != 1) {
             break; // stuff-bit error
+        }
         *dst++ = (bits >> 1) & 0xf;
         ret += 1;
         offset_bits += 5;
@@ -85,10 +86,12 @@ unsigned extract_bytes_uart_8n1(uint8_t const *message, unsigned offset_bits, un
         offset_bits += 8;
         int stopb = message[offset_bits / 8] >> (7 - (offset_bits % 8));
         offset_bits += 1;
-        if ((startb & 1) != 0)
+        if ((startb & 1) != 0) {
             break; // start-bit error
-        if ((stopb & 1) != 1)
+        }
+        if ((stopb & 1) != 1) {
             break; // stop-bit error
+        }
         *dst++ = reverse8(datab & 0xff);
         ret += 1;
         num_bits -= 10;
@@ -124,12 +127,15 @@ unsigned extract_bytes_uart_8n2(uint8_t const *message, unsigned offset_bits, un
         offset_bits += 1;
         int stopb2 = message[offset_bits / 8] >> (7 - (offset_bits % 8));
         offset_bits += 1;
-        if ((startb & 1) != 0)
+        if ((startb & 1) != 0) {
             break; // start-bit error
-        if ((stopb1 & 1) != 1)
+        }
+        if ((stopb1 & 1) != 1) {
             break; // stop-bit error
-        if ((stopb2 & 1) != 1)
+        }
+        if ((stopb2 & 1) != 1) {
             break; // stop-bit error
+        }
         *dst++ = reverse8(datab & 0xff);
         ret += 1;
         num_bits -= 11;
@@ -156,12 +162,15 @@ unsigned extract_bytes_uart_8o1(uint8_t const *message, unsigned offset_bits, un
         int stopb = message[offset_bits / 8] >> (7 - (offset_bits % 8));
         offset_bits += 1;
         int data_parity = parity8(datab);
-        if ((startb & 1) != 1)
+        if ((startb & 1) != 1) {
             break; // start-bit error
-        if ((parityb & 1) != data_parity)
+        }
+        if ((parityb & 1) != data_parity) {
             break; // parity-bit error
-        if ((stopb & 1) != 0)
+        }
+        if ((stopb & 1) != 0) {
             break; // stop-bit error
+        }
         *dst++ = (datab & 0xff);
         ret += 1;
         num_bits -= 11;
@@ -351,15 +360,18 @@ uint8_t lfsr_digest8(uint8_t const message[], unsigned bytes, uint8_t gen, uint8
         for (int i = 7; i >= 0; --i) {
             // fprintf(stderr, "key at %d.%d : %02x\n", k, i, key);
             // XOR key into sum if data bit is set
-            if ((data >> i) & 1)
+            if ((data >> i) & 1) {
                 sum ^= key;
+            }
 
             // roll the key right (actually the lsb is dropped here)
             // and apply the gen (needs to include the dropped lsb as msb)
-            if (key & 1)
+            if (key & 1) {
                 key = (key >> 1) ^ gen;
-            else
+            }
+            else {
                 key = (key >> 1);
+            }
         }
     }
     return sum;
@@ -381,10 +393,12 @@ uint8_t lfsr_digest8_reverse(uint8_t const *message, int bytes, uint8_t gen, uin
 
             // roll the key right (actually the lsb is dropped here)
             // and apply the gen (needs to include the dropped lsb as msb)
-            if (key & 1)
+            if (key & 1) {
                 key = (key >> 1) ^ gen;
-            else
+            }
+            else {
                 key = (key >> 1);
+            }
         }
     }
     return sum;
@@ -406,10 +420,12 @@ uint8_t lfsr_digest8_reflect(uint8_t const message[], int bytes, uint8_t gen, ui
 
             // roll the key left (actually the msb is dropped here)
             // and apply the gen (needs to include the dropped msb as lsb)
-            if (key & 0x80)
+            if (key & 0x80) {
                 key = (key << 1) ^ gen;
-            else
+            }
+            else {
                 key = (key << 1);
+            }
         }
     }
     return sum;
@@ -423,15 +439,18 @@ uint16_t lfsr_digest16(uint8_t const message[], unsigned bytes, uint16_t gen, ui
         for (int i = 7; i >= 0; --i) {
             // fprintf(stderr, "key at bit %d : %04x\n", i, key);
             // if data bit is set then xor with key
-            if ((data >> i) & 1)
+            if ((data >> i) & 1) {
                 sum ^= key;
+            }
 
             // roll the key right (actually the lsb is dropped here)
             // and apply the gen (needs to include the dropped lsb as msb)
-            if (key & 1)
+            if (key & 1) {
                 key = (key >> 1) ^ gen;
-            else
+            }
+            else {
                 key = (key >> 1);
+            }
         }
     }
     return sum;
@@ -493,10 +512,12 @@ void lfsr_keys_fwd16(int rounds, uint16_t gen, uint16_t key)
 
         // roll the key right (actually the lsb is dropped here)
         // and apply the gen (needs to include the dropped lsb as msb)
-        if (key & 1)
+        if (key & 1) {
             key = (key >> 1) ^ gen;
-        else
+        }
+        else {
             key = (key >> 1);
+        }
     }
 }
 
@@ -507,10 +528,12 @@ void lfsr_keys_rwd16(int rounds, uint16_t gen, uint16_t key)
 
         // roll the key left (actually the msb is dropped here)
         // and apply the gen (needs to include the dropped msb as lsb)
-        if (key & (1 << 15))
+        if (key & (1 << 15)) {
             key = (key << 1) ^ gen;
-        else
+        }
+        else {
             key = (key << 1);
+        }
     }
 }
 */

@@ -148,10 +148,16 @@ static int header_to_raw(mtar_raw_header_t *rh, const mtar_header_t *h) {
   snprintf(rh->size, sizeof(rh->size), "%011o", h->size);
   snprintf(rh->mtime, sizeof(rh->mtime), "%011o", h->mtime);
   rh->type = h->type ? h->type : MTAR_TREG;
+  /* TAR does not need fields to be zero terminated */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
   strncpy(rh->name, h->name, sizeof(rh->name));
   strncpy(rh->linkname, h->linkname, sizeof(rh->linkname));
   strncpy(rh->uname, h->uname, sizeof(rh->uname));
   strncpy(rh->gname, h->gname, sizeof(rh->gname));
+#pragma GCC diagnostic pop
 
   memcpy(rh->magic, TMAGIC, TMAGLEN);
   memcpy(rh->version, TVERSION, TVERSLEN);
