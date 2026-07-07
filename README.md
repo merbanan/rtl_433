@@ -287,7 +287,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [197]  Acurite Grill/Meat Thermometer 01185M
     [198]* EnOcean ERP1
     [199]  Linear Megacode Garage/Gate Remotes
-    [200]* Auriol 4-LD5661/4-LD5972/4-LD6313 temperature/rain sensors
+    [200]* Auriol 4-LD5661/4-LD5972/4-LD6313, Sempre 4-AH0423-4 temperature/rain sensors
     [201]  Unbranded SolarTPMS for trucks
     [202]  Funkbus / Instafunk (Berker, Gira, Jung)
     [203]  Porsche Boxster/Cayman TPMS
@@ -420,7 +420,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [330]  Microchip HCS362 KeeLoq MC
     [331]  RF-T0912 Grill Thermometer
     [332]  TR-502MSV remote smart socket controller
-    [323]  Opel Mokka Car Key
+    [333]  Opel Mokka Car Key
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -532,7 +532,6 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	Specify InfluxDB 2.0 server with e.g. -F "influx://localhost:9999/api/v2/write?org=<org>&bucket=<bucket>,token=<authtoken>"
 	Specify InfluxDB 1.x server with e.g. -F "influx://localhost:8086/write?db=<db>&p=<password>&u=<user>"
 	  Additional parameter -M time:unix:usec:utc for correct timestamps in InfluxDB recommended
-	  Additional parameter `metric` supports expanding keys (see the MQTT section just above for details).
   [-F syslog[:[//]host[:port] (default: localhost:514)
 	Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
   [-F trigger:/path/to/file]
