@@ -245,6 +245,7 @@ add_library(r_433 STATIC
     devices/revolt_zx7717.c
     devices/rfm69_lowpowerlab_moteino.c
     devices/rftech.c
+    devices/rfxmeter.c
     devices/risco_agility.c
     devices/rojaflex.c
     devices/rosstech_dcu706.c
