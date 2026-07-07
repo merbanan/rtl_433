@@ -422,6 +422,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [332]  TR-502MSV remote smart socket controller
     [333]  Opel Mokka Car Key
     [334]  RfxMeter, RFXPwr
+    [335]  SmarTire TPMS sensor, Aston Martin/Vantage DB9 protocol
 
 * Disabled by default, use -R n or a conf file to enable
 

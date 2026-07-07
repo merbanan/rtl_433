@@ -342,6 +342,7 @@
     DECL(tr_502msv) \
     DECL(opel_mokka) \
     DECL(rfxmeter) \
+    DECL(tpms_smartire) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
