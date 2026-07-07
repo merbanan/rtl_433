@@ -340,6 +340,7 @@
     DECL(hcs362_mc) \
     DECL(grill_thermometer) \
     DECL(tr_502msv) \
+    DECL(opel_mokka) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;

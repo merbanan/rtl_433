@@ -420,6 +420,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [330]  Microchip HCS362 KeeLoq MC
     [331]  RF-T0912 Grill Thermometer
     [332]  TR-502MSV remote smart socket controller
+    [323]  Opel Mokka Car Key
 
 * Disabled by default, use -R n or a conf file to enable
 
