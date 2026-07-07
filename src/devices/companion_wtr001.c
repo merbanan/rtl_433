@@ -67,13 +67,13 @@ static int companion_wtr001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Make sure bit 5 is not set
     if ((b[0] & 0x04) == 0x04) {
-        decoder_log(decoder, 2, __func__, "companion_wtr001: Fixed Bit set (and it shouldn't be)");
+        decoder_log(decoder, 2, __func__, "Fixed Bit set (and it shouldn't be)");
         return DECODE_FAIL_SANITY;
     }
 
     /* Parity check (must be ODD) */
     if (!parity_bytes(b, 2)) {
-        decoder_log(decoder, 2, __func__, "companion_wtr001: parity check failed (should be ODD)");
+        decoder_log(decoder, 2, __func__, "parity check failed (should be ODD)");
         return DECODE_FAIL_MIC;
     }
 
@@ -83,13 +83,13 @@ static int companion_wtr001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (temp_tenth_raw < 0x0a) {
         // Value is too low
-        decoder_logf(decoder, 2, __func__, "companion_wtr001: Temperature Degree Tenth too low (%d - 10 is less than 0", temp_tenth_raw);
+        decoder_logf(decoder, 2, __func__, "Temperature Degree Tenth too low (%d - 10 is less than 0)", temp_tenth_raw);
         return DECODE_FAIL_SANITY;
     }
 
     if (temp_tenth_raw > 0x13) {
         // Value is too high
-        decoder_logf(decoder, 2, __func__, "companion_wtr001: Temperature Degree Tenth too high (%d - 10 is greater than 9", temp_tenth_raw);
+        decoder_logf(decoder, 2, __func__, "Temperature Degree Tenth too high (%d - 10 is greater than 9)", temp_tenth_raw);
         return DECODE_FAIL_SANITY;
     }
 
@@ -101,13 +101,13 @@ static int companion_wtr001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (temp_whole_raw < 11) {
         // Value is too low (outside published specs)
-        decoder_logf(decoder, 2, __func__, "companion_wtr001: Whole part of Temperature is too low (%d - 41 is less than -30)", temp_whole_raw);
+        decoder_logf(decoder, 2, __func__, "Whole part of Temperature is too low (%d - 41 is less than -30)", temp_whole_raw);
         return DECODE_FAIL_SANITY;
     }
 
     if (temp_whole_raw > 111) {
         // Value is too high (outside published specs)
-        decoder_logf(decoder, 2, __func__, "companion_wtr001: Whole part of Temperature is too high (%d - 41 is greater than 70)", temp_whole_raw);
+        decoder_logf(decoder, 2, __func__, "Whole part of Temperature is too high (%d - 41 is greater than 70)", temp_whole_raw);
         return DECODE_FAIL_SANITY;
     }
 
