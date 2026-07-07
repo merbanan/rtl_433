@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Collectd monitoring probe (i.e. no plugin) for rtl_433."""
 

@@ -78,7 +78,8 @@ static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             watt2 = (b[6] & 0x7F) << 8 | b[7];
         /* clang-format off */
         data = data_make(
-                "model",        "",              DATA_STRING, is_envir ? "CurrentCost-EnviR" : "CurrentCost-TX", //TODO: it may have different CC Model ? any ref ?
+                "model",        "",              DATA_COND, is_envir, DATA_STRING, "CurrentCost-EnviR", //TODO: it may have different CC Model ? any ref ?
+                "model",        "",              DATA_COND, !is_envir, DATA_STRING, "CurrentCost-TX", //TODO: it may have different CC Model ? any ref ?
                 //"rc",           "Rolling Code",  DATA_INT, rc, //TODO: add rolling code b[1] ? test needed
                 "id",           "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
                 "power0_W",     "Power 0",       DATA_FORMAT, "%d W", DATA_INT, watt0,
@@ -99,7 +100,8 @@ static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         uint32_t c_impulse   = (unsigned)b[4] << 24 | b[5] << 16 | b[6] << 8 | b[7];
         /* clang-format off */
         data = data_make(
-               "model",         "",              DATA_STRING, is_envir ? "CurrentCost-EnviRCounter" : "CurrentCost-Counter", //TODO: it may have different CC Model ? any ref ?
+               "model",         "",              DATA_COND, is_envir, DATA_STRING, "CurrentCost-EnviRCounter", //TODO: it may have different CC Model ? any ref ?
+               "model",         "",              DATA_COND, !is_envir, DATA_STRING, "CurrentCost-Counter", //TODO: it may have different CC Model ? any ref ?
                "subtype",       "Sensor Id",     DATA_FORMAT, "%d", DATA_INT, sensor_type, //Could "friendly name" this?
                "id",            "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
                //"counter",       "Counter",       DATA_FORMAT, "%d", DATA_INT, c_impulse,

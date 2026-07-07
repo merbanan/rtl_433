@@ -174,7 +174,7 @@ static int rtltcp_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
     for (res = res0; res; res = res->ai_next) {
         sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
         if (sock >= 0) {
-            ret = connect(sock, res->ai_addr, res->ai_addrlen);
+            ret = connect(sock, res->ai_addr, (int)res->ai_addrlen);
             if (ret == -1) {
                 perror("connect");
                 closesocket(sock);
@@ -958,6 +958,7 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, char const *dev_query, int verbos
 
 // the buffer sizes can't be proven to be correct
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wanalyzer-allocation-size"
 

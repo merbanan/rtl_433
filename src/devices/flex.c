@@ -12,7 +12,14 @@
 #include "decoder.h"
 #include "optparse.h"
 #include "fatal.h"
+#include "rtl_433_devices.h"
 #include <stdlib.h>
+
+enum uart_mode {
+    UART_MODE_8N1 = 1,
+    UART_MODE_8N2,
+    UART_MODE_8O1,
+};
 
 static inline int bit(const uint8_t *bytes, unsigned b)
 {
@@ -58,9 +65,12 @@ static unsigned long extract_number(uint8_t *data, unsigned bit_offset, unsigned
     return val;
 }
 
+#define FLEX_GET_STR_LEN 32
+#define FLEX_DEV_NAME_LEN 64
+
 struct flex_map {
     unsigned key;
-    const char *val;
+    char val[FLEX_GET_STR_LEN];
 };
 
 #define GETTER_MAP_SLOTS 16
@@ -69,15 +79,16 @@ struct flex_get {
     unsigned bit_offset;
     unsigned bit_count;
     unsigned long mask;
-    const char *name;
+    char name[FLEX_GET_STR_LEN];
     struct flex_map map[GETTER_MAP_SLOTS];
-    const char *format;
+    char format[FLEX_GET_STR_LEN];
 };
 
 #define GETTER_SLOTS 12
 
 struct flex_params {
-    char *name;
+    char name[FLEX_GET_STR_LEN];
+    char dev_name[FLEX_DEV_NAME_LEN];
     unsigned min_rows;
     unsigned max_rows;
     unsigned min_bits;
@@ -98,6 +109,7 @@ struct flex_params {
     struct flex_get getter[GETTER_SLOTS];
     unsigned decode_uart;
     unsigned decode_dm;
+    unsigned decode_mc;
     char const *fields[7 + GETTER_SLOTS + 1]; // NOTE: needs to match output_fields
 };
 
@@ -123,14 +135,15 @@ static void render_getters(data_t *data, uint8_t *bits, struct flex_params *para
         else
             val = extract_number(bits, getter->bit_offset, getter->bit_count);
         int m;
-        for (m = 0; getter->map[m].val; m++) {
+        for (m = 0; getter->map[m].val[0]; m++) {
             if (getter->map[m].key == val) {
                 data_str(data, getter->name, "", NULL, getter->map[m].val);
                 break;
             }
         }
-        if (!getter->map[m].val) {
-            data_int(data, getter->name, "", getter->format, val);
+        if (!getter->map[m].val[0]) {
+            char const *format = getter->format[0] ? getter->format : NULL;
+            data_int(data, getter->name, "", format, val);
         }
     }
 }
@@ -239,7 +252,13 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             // TODO: refactor to bitbuffer_decode_uart_row()
             unsigned len = bitbuffer->bits_per_row[i];
             bitbuffer_t tmp = {0};
-            len = extract_bytes_uart(bitbuffer->bb[i], 0, len, tmp.bb[0]);
+            if (params->decode_uart == UART_MODE_8N1) {
+                len = extract_bytes_uart_8n1(bitbuffer->bb[i], 0, len, tmp.bb[0]);
+            } else if (params->decode_uart == UART_MODE_8N2) {
+                len = extract_bytes_uart_8n2(bitbuffer->bb[i], 0, len, tmp.bb[0]);
+            } else if (params->decode_uart == UART_MODE_8O1) {
+                len = extract_bytes_uart_8o1(bitbuffer->bb[i], 0, len, tmp.bb[0]);
+            }
             memcpy(bitbuffer->bb[i], tmp.bb[0], len); // safe to write over: can only be shorter
             bitbuffer->bits_per_row[i] = len * 8;
         }
@@ -251,6 +270,19 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             unsigned len = bitbuffer->bits_per_row[i];
             bitbuffer_t tmp = {0};
             bitbuffer_differential_manchester_decode(bitbuffer, i, 0, &tmp, len);
+            len = tmp.bits_per_row[0];
+            memcpy(bitbuffer->bb[i], tmp.bb[0], (len + 7) / 8); // safe to write over: can only be shorter
+            bitbuffer->bits_per_row[i] = len;
+        }
+    }
+
+    // IEEE 802.3 MC, may need G.E.Thomas option (bitbuffer_invert_row())
+    if (params->decode_mc) {
+        for (i = 0; i < bitbuffer->num_rows; i++) {
+            // TODO: refactor to bitbuffer_decode_mc_row()
+            unsigned len = bitbuffer->bits_per_row[i];
+            bitbuffer_t tmp = {0};
+            bitbuffer_manchester_decode(bitbuffer, i, 0, &tmp, len);
             len = tmp.bits_per_row[0];
             memcpy(bitbuffer->bb[i], tmp.bb[0], (len + 7) / 8); // safe to write over: can only be shorter
             bitbuffer->bits_per_row[i] = len;
@@ -404,8 +436,9 @@ static void help(void)
             "\t\tuse opt>=n to match at least <n> and opt<=n to match at most <n>\n"
             "\tinvert : invert all bits\n"
             "\treflect : reflect each byte (MSB first to MSB last)\n"
-            "\tdecode_uart : UART 8n1 (10-to-8) decode\n"
+            "\tdecode_uart=<8n1|8n2|8o1> : UART 8n1 (10-to-8), 8n2, 8o1 (11-to-8) decode\n"
             "\tdecode_dm : Differential Manchester decode\n"
+            "\tdecode_mc : Manchester decode\n"
             "\tmatch=<bits> : only match if the <bits> are found\n"
             "\tpreamble=<bits> : match and align at the <bits> preamble\n"
             "\t\t<bits> is a row spec of {<bit count>}<bits as hex number>\n"
@@ -544,7 +577,6 @@ static const char *parse_map(const char *arg, struct flex_get *getter)
 
     while (*c) {
         unsigned long key;
-        char *val;
 
         while (*c == ' ') c++;
         if (*c == ']') return c + 1;
@@ -559,18 +591,17 @@ static const char *parse_map(const char *arg, struct flex_get *getter)
         // then parse a string
         const char *e = c;
         while (*e && *e != ' ' && *e != ']') e++;
-        val = malloc(e - c + 1);
-        if (!val)
-            WARN_MALLOC("parse_map()");
-        else { // NOTE: skipped on alloc failure.
-            memcpy(val, c, e - c);
-            val[e - c] = '\0';
+        size_t map_val_buffer_len = (size_t)(e - c + 1);
+        if (map_val_buffer_len > FLEX_GET_STR_LEN) {
+            fprintf(stderr, "Warning: flex map value (%s) truncated at %d chars.\n", c, FLEX_GET_STR_LEN - 1);
+            map_val_buffer_len = FLEX_GET_STR_LEN;
         }
+        strncpy(getter->map[i].val, c, map_val_buffer_len - 1);
+        getter->map[i].val[map_val_buffer_len - 1] = '\0';
         c = e;
 
         // store result
         getter->map[i].key = key;
-        getter->map[i].val = val;
         i++;
     }
     return c;
@@ -594,18 +625,20 @@ static void parse_getter(const char *arg, struct flex_get *getter)
             getter->mask = extract_number(bitrow, 0, getter->bit_count);
         }
         else if (*arg == '%') {
-            getter->format = strdup(arg);
-            if (!getter->format)
-                FATAL_STRDUP("parse_getter()");
+            strncpy(getter->format, arg, FLEX_GET_STR_LEN - 1);
+            getter->format[FLEX_GET_STR_LEN - 1] = '\0';
+            if (strlen(arg) >= FLEX_GET_STR_LEN)
+                fprintf(stderr, "Warning: flex format truncated at %d chars.\n", FLEX_GET_STR_LEN - 1);
         }
         else {
-            getter->name = strdup(arg);
-            if (!getter->name)
-                FATAL_STRDUP("parse_getter()");
+            strncpy(getter->name, arg, FLEX_GET_STR_LEN - 1);
+            getter->name[FLEX_GET_STR_LEN - 1] = '\0';
+            if (strlen(arg) >= FLEX_GET_STR_LEN)
+                fprintf(stderr, "Warning: flex getter name truncated at %d chars.\n", FLEX_GET_STR_LEN - 1);
         }
         arg = p;
     }
-    if (!getter->name) {
+    if (!getter->name[0]) {
         fprintf(stderr, "Bad flex spec, \"get\" missing name!\n");
         usage();
     }
@@ -615,10 +648,22 @@ static void parse_getter(const char *arg, struct flex_get *getter)
     */
 }
 
-// NOTE: this is declared in rtl_433.c also.
-r_device *flex_create_device(char *spec);
+static unsigned parse_uart_mode(char const *str)
+{
+    if (!strcasecmp(str, "8n1"))
+        return UART_MODE_8N1;
+    else if (!strcasecmp(str, "8n2"))
+        return UART_MODE_8N2;
+    else if (!strcasecmp(str, "8o1"))
+        return UART_MODE_8O1;
+    else {
+        fprintf(stderr, "Bad flex spec, unknown uart mode!\n");
+        usage();
+    }
+    return 0;
+}
 
-r_device *flex_create_device(char *spec)
+static r_device *flex_create_device(char const *spec)
 {
     if (!spec || !*spec || *spec == '?' || !strncasecmp(spec, "help", strlen(spec))) {
         help();
@@ -631,30 +676,32 @@ r_device *flex_create_device(char *spec)
     struct flex_params *params = decoder_user_data(dev);
     int get_count = 0;
 
-    spec = strdup(spec);
-    if (!spec)
+    char * mutable_spec = strdup(spec); // spec will be mutated by getkwargs()
+    if (!mutable_spec)
         FATAL_STRDUP("flex_create_device()");
+    spec = mutable_spec;
 
+    // Copy const fields from static global struct
+    dev->create_fn = flex_create_device;
     dev->decode_fn = flex_callback;
     dev->fields = output_fields;
 
     char *key, *val;
-    while (getkwargs(&spec, &key, &val)) {
+    while (getkwargs(&mutable_spec, &key, &val)) {
         key = remove_ws(key);
         val = trim_ws(val);
 
         if (!key || !*key)
             continue;
         else if (!strcasecmp(key, "n") || !strcasecmp(key, "name")) {
-            params->name = strdup(val);
-            if (!params->name)
-                FATAL_STRDUP("flex_create_device()");
-            int name_size = strlen(val) + 27;
-            char* flex_name = malloc(name_size);
-            if (!flex_name)
-                FATAL_MALLOC("flex_create_device()");
-            snprintf(flex_name, name_size, "General purpose decoder '%s'", val);
-            dev->name = flex_name;
+            strncpy(params->name, val, FLEX_GET_STR_LEN - 1);
+            params->name[FLEX_GET_STR_LEN - 1] = '\0';
+            if (strlen(val) >= FLEX_GET_STR_LEN)
+                fprintf(stderr, "Warning: flex name truncated at %d chars.\n", FLEX_GET_STR_LEN - 1);
+            snprintf(params->dev_name, FLEX_DEV_NAME_LEN, "General purpose decoder '%s'", val);
+            if (snprintf(NULL, 0, "General purpose decoder '%s'", val) - 1 >= FLEX_DEV_NAME_LEN)
+                fprintf(stderr, "Warning: flex device name truncated at %d chars.\n", FLEX_DEV_NAME_LEN - 1);
+            dev->name = params->dev_name;
         }
 
         else if (!strcasecmp(key, "m") || !strcasecmp(key, "modulation"))
@@ -713,9 +760,11 @@ r_device *flex_create_device(char *spec)
             params->unique = parse_atoiv(val, 1, "unique: ");
 
         else if (!strcasecmp(key, "decode_uart"))
-            params->decode_uart = parse_atoiv(val, 1, "decode_uart: ");
+            params->decode_uart = parse_uart_mode(val);
         else if (!strcasecmp(key, "decode_dm"))
             params->decode_dm = parse_atoiv(val, 1, "decode_dm: ");
+        else if (!strcasecmp(key, "decode_mc"))
+            params->decode_mc = parse_atoiv(val, 1, "decode_mc: ");
 
         else if (!strcasecmp(key, "symbol_zero"))
             params->symbol_zero = parse_symbol(val);
@@ -752,7 +801,7 @@ r_device *flex_create_device(char *spec)
         }
         params->fields[i++] = "len";
         params->fields[i++] = "data";
-        for (int g = 0; g < GETTER_SLOTS && params->getter[g].name; ++g) {
+        for (int g = 0; g < GETTER_SLOTS && params->getter[g].name[0]; ++g) {
             params->fields[i++] = params->getter[g].name;
         }
         dev->fields = params->fields;
@@ -760,7 +809,7 @@ r_device *flex_create_device(char *spec)
 
     // sanity checks
 
-    if (!params->name || !*params->name) {
+    if (!params->name[0]) {
         fprintf(stderr, "Bad flex spec, missing name!\n");
         usage();
     }
@@ -814,6 +863,13 @@ r_device *flex_create_device(char *spec)
                 params->min_rows, params->min_bits, params->min_repeats, params->invert, params->reflect, params->match_len, params->preamble_len);
     */
 
-    free(spec);
+    free((void*)spec);
     return dev;
 }
+
+r_device const flex_decoder = {
+        .name        = "General purpose decoder",
+        .create_fn   = &flex_create_device,
+        .decode_fn   = &flex_callback,
+        .fields      = output_fields,
+};

@@ -69,7 +69,9 @@ static void histogram_sum(histogram_t *hist, int const *data, unsigned len, floa
 static void histogram_delete_bin(histogram_t *hist, unsigned index)
 {
     hist_bin_t const zerobin = {0};
-    if (hist->bins_count < 1) return;    // Avoid out of bounds
+    if (hist->bins_count < 1) {
+        return;    // Avoid out of bounds
+    }
     // Move all bins afterwards one forward
     for (unsigned n = index; n < hist->bins_count-1; ++n) {
         hist->bins[n] = hist->bins[n+1];
@@ -82,9 +84,8 @@ static void histogram_delete_bin(histogram_t *hist, unsigned index)
 /// Swap two bins in histogram
 static void histogram_swap_bins(histogram_t *hist, unsigned index1, unsigned index2)
 {
-    hist_bin_t    tempbin;
     if ((index1 < hist->bins_count) && (index2 < hist->bins_count)) {        // Avoid out of bounds
-        tempbin = hist->bins[index1];
+        hist_bin_t tempbin = hist->bins[index1];
         hist->bins[index1] = hist->bins[index2];
         hist->bins[index2] = tempbin;
     }
@@ -94,7 +95,9 @@ static void histogram_swap_bins(histogram_t *hist, unsigned index1, unsigned ind
 /// Sort histogram with mean value (order lowest to highest)
 static void histogram_sort_mean(histogram_t *hist)
 {
-    if (hist->bins_count < 2) return;        // Avoid underflow
+    if (hist->bins_count < 2) {
+        return;        // Avoid underflow
+    }
     // Compare all bins (bubble sort)
     for (unsigned n = 0; n < hist->bins_count-1; ++n) {
         for (unsigned m = n+1; m < hist->bins_count; ++m) {
@@ -109,7 +112,9 @@ static void histogram_sort_mean(histogram_t *hist)
 /// Sort histogram with count value (order lowest to highest)
 static void histogram_sort_count(histogram_t *hist)
 {
-    if (hist->bins_count < 2) return;        // Avoid underflow
+    if (hist->bins_count < 2) {
+        return;        // Avoid underflow
+    }
     // Compare all bins (bubble sort)
     for (unsigned n = 0; n < hist->bins_count-1; ++n) {
         for (unsigned m = n+1; m < hist->bins_count; ++m) {
@@ -124,7 +129,9 @@ static void histogram_sort_count(histogram_t *hist)
 /// Fuse histogram bins with means within tolerance
 static void histogram_fuse_bins(histogram_t *hist, float tolerance)
 {
-    if (hist->bins_count < 2) return;        // Avoid underflow
+    if (hist->bins_count < 2) {
+        return;        // Avoid underflow
+    }
     // Compare all bins
     for (unsigned n = 0; n < hist->bins_count-1; ++n) {
         for (unsigned m = n+1; m < hist->bins_count; ++m) {
@@ -181,8 +188,9 @@ typedef struct hexstr {
 
 static void hexstr_push_byte(hexstr_t *h, uint8_t v)
 {
-    if (h->idx < HEXSTR_BUILDER_SIZE)
+    if (h->idx < HEXSTR_BUILDER_SIZE) {
         h->p[h->idx++] = v;
+    }
 }
 
 static void hexstr_push_word(hexstr_t *h, uint16_t v)
@@ -195,11 +203,77 @@ static void hexstr_push_word(hexstr_t *h, uint16_t v)
 
 static void hexstr_print(hexstr_t *h, FILE *out)
 {
-    for (unsigned i = 0; i < h->idx; ++i)
+    for (unsigned i = 0; i < h->idx; ++i) {
         fprintf(out, "%02X", h->p[i]);
+    }
 }
 
 #define TOLERANCE (0.2f) // 20% tolerance should still discern between the pulse widths: 0.33, 0.66, 1.0
+
+/// Check the statistics of a pulse data structure and return a summary.
+int pulse_analyzer_check(pulse_data_t *data, int package_type, r_device *device)
+{
+    (void)package_type;
+    (void)device; // TODO: use device for logging
+
+    if (data->num_pulses == 0) {
+        fprintf(stderr, "Skipping frame without pulses\n");
+        return 0;
+    }
+
+    // Generate pulse period data (pulse + gap, trailing gap)
+    pulse_data_t pulse_periods_pg = {0};
+    pulse_periods_pg.num_pulses   = data->num_pulses;
+    for (unsigned n = 0; n < pulse_periods_pg.num_pulses; ++n) {
+        pulse_periods_pg.pulse[n] = data->pulse[n] + data->gap[n];
+    }
+    // Generate pulse period data (gap + pulse, leading gap)
+    pulse_data_t pulse_periods_gp = {0};
+    pulse_periods_gp.num_pulses   = data->num_pulses;
+    pulse_periods_gp.pulse[0]     = data->pulse[0];
+    for (unsigned n = 1; n < pulse_periods_gp.num_pulses; ++n) {
+        pulse_periods_gp.pulse[n] = data->pulse[n] + data->gap[n - 1];
+    }
+
+    histogram_t hist_pulses     = {0};
+    histogram_t hist_gaps       = {0};
+    histogram_t hist_periods_pg = {0}; // Pulse+Gap periods
+    histogram_t hist_periods_gp = {0}; // Gap+Pulse periods
+    histogram_t hist_timings    = {0};
+
+    // Generate statistics
+    histogram_sum(&hist_pulses, data->pulse, data->num_pulses, TOLERANCE);
+    histogram_sum(&hist_gaps, data->gap, data->num_pulses - 1, TOLERANCE);                               // Leave out last gap (end)
+    histogram_sum(&hist_periods_pg, pulse_periods_pg.pulse, pulse_periods_pg.num_pulses - 1, TOLERANCE); // Leave out last gap (end)
+    histogram_sum(&hist_periods_gp, pulse_periods_gp.pulse, pulse_periods_gp.num_pulses, TOLERANCE);
+    histogram_sum(&hist_timings, data->pulse, data->num_pulses, TOLERANCE);
+    histogram_sum(&hist_timings, data->gap, data->num_pulses, TOLERANCE);
+
+    // Fuse overlapping bins
+    histogram_fuse_bins(&hist_pulses, TOLERANCE);
+    histogram_fuse_bins(&hist_gaps, TOLERANCE);
+    histogram_fuse_bins(&hist_periods_pg, TOLERANCE);
+    histogram_fuse_bins(&hist_timings, TOLERANCE);
+
+    histogram_sort_mean(&hist_pulses); // Easier to work with sorted data
+    histogram_sort_mean(&hist_gaps);
+    if (hist_pulses.bins[0].mean == 0) {
+        histogram_delete_bin(&hist_pulses, 0);
+    } // Remove FSK initial zero-bin
+
+    // Attempt to find a matching modulation
+    if (data->num_pulses == 1) {
+        fprintf(stderr, "Skipping frame with single pulse\n");
+        return 0;
+    }
+    else if (hist_pulses.bins_count == 1 && hist_gaps.bins_count == 1) {
+        fprintf(stderr, "Skipping frame with no data\n");
+        return 0;
+    }
+
+    fprintf(stderr, "Frame with %u bins found\n", hist_pulses.bins_count + hist_gaps.bins_count);
+    return 1;
+}
 
 /// Analyze the statistics of a pulse data structure and print result
 void pulse_analyzer(pulse_data_t *data, int package_type, r_device* device)
@@ -267,8 +341,8 @@ void pulse_analyzer(pulse_data_t *data, int package_type, r_device* device)
             data->rssi_db, data->snr_db, data->noise_db);
     fprintf(stderr, "Frequency offsets [F1, F2]:  %6i, %6i\t(%+.1f kHz, %+.1f kHz)\n",
             data->fsk_f1_est, data->fsk_f2_est,
-            (float)data->fsk_f1_est / INT16_MAX * data->sample_rate / 2.0 / 1000.0,
-            (float)data->fsk_f2_est / INT16_MAX * data->sample_rate / 2.0 / 1000.0);
+            ((float)data->fsk_f1_est / INT16_MAX) * (data->sample_rate / 2.0 / 1000.0),
+            ((float)data->fsk_f2_est / INT16_MAX) * (data->sample_rate / 2.0 / 1000.0));
 
     fprintf(stderr, "Guessing modulation: ");
     device->name    = "Analyzer Device",
@@ -276,8 +350,9 @@ void pulse_analyzer(pulse_data_t *data, int package_type, r_device* device)
     histogram_sort_mean(&hist_pulses); // Easier to work with sorted data
     histogram_sort_mean(&hist_gaps);
     if (hist_pulses.bins[0].mean == 0) {
+        // Remove FSK initial zero-bin
         histogram_delete_bin(&hist_pulses, 0);
-    } // Remove FSK initial zero-bin
+    }
 
     // Attempt to find a matching modulation
     if (data->num_pulses == 1) {
@@ -363,7 +438,7 @@ void pulse_analyzer(pulse_data_t *data, int package_type, r_device* device)
             hexstr_push_byte(&hexstr, 0xb1);
             hexstr_push_byte(&hexstr, hist_timings.bins_count);
             for (unsigned b = 0; b < hist_timings.bins_count; ++b) {
-                double w = hist_timings.bins[b].mean * to_us;
+                double w = MAX(0, hist_timings.bins[b].mean * to_us); // clamp negative values
                 hexstr_push_word(&hexstr, w < USHRT_MAX ? w : USHRT_MAX);
             }
             for (unsigned i = 0; i < data->num_pulses; ++i) {
@@ -396,7 +471,7 @@ void pulse_analyzer(pulse_data_t *data, int package_type, r_device* device)
                 hexstr_push_byte(hexstr, hist_timings.bins_count);
                 hexstr_push_byte(hexstr, 1); // repeats
                 for (unsigned b = 0; b < hist_timings.bins_count; ++b) {
-                    double w =hist_timings.bins[b].mean * to_us;
+                    double w = MAX(0, hist_timings.bins[b].mean * to_us); // clamp negative values
                     hexstr_push_word(hexstr, w < USHRT_MAX ? w : USHRT_MAX);
                 }
                 for (; i < data->num_pulses; ++i) {
@@ -418,15 +493,17 @@ void pulse_analyzer(pulse_data_t *data, int package_type, r_device* device)
                         && !memcmp(&hexstrs[hexstr_cnt - 1].p[5], &hexstr->p[5], hexstr->idx - 5)) {
                     hexstr->idx = 0; // clear
                     hexstrs[hexstr_cnt - 1].p[4] += 1; // repeats
-                } else {
+                }
+                else {
                     hexstr_cnt++;
                 }
             }
 
             fprintf(stderr, "view at https://triq.org/pdv/#");
             for (unsigned j = 0; j < hexstr_cnt; ++j) {
-                if (j > 0)
+                if (j > 0) {
                     fprintf(stderr, "+");
+                }
                 hexstr_print(&hexstrs[j], stderr);
             }
             fprintf(stderr, "\n");

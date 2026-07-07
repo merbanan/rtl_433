@@ -86,7 +86,7 @@ static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
             "rapid_change",     "",             DATA_INT,       rapid_change,
             "failed",           "",             DATA_STRING,    failed ? "FAIL" : "OK",
             "pressure_kPa",     "",             DATA_DOUBLE,    pressure_kpa,
-            "temperature_C",    "",             DATA_DOUBLE,    temperature_c,
+            "temperature_C",    "",             DATA_FORMAT,    "%.1f C", DATA_DOUBLE, temperature_c,
             "mic",              "Integrity",    DATA_STRING,    "CRC",
             NULL);
     /* clang-format on */

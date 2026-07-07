@@ -212,4 +212,9 @@ R_API void print_array_value(data_output_t *output, data_array_t *array, char co
 
 R_API size_t data_print_jsons(data_t *data, char *dst, size_t len);
 
+/// Serialize `data` as JSON into a freshly allocated, NUL-terminated buffer that
+/// is grown until the whole document fits (never truncated). Caller frees the
+/// returned string. Returns NULL on allocation failure.
+R_API char *data_print_jsons_dup(data_t *data);
+
 #endif // INCLUDE_DATA_H_

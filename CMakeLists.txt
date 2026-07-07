@@ -35,9 +35,6 @@ if(GIT_COMMIT) # is a git repo
     git_timestamp(GIT_TIMESTAMP)
     message(STATUS "Found Git version: ${GIT_REFSPEC} commit ${GIT_COMMIT} from ${GIT_TIMESTAMP_ISO}")
     message(STATUS "Using Git version tag: ${GIT_VERSION} on ${GIT_BRANCH} at ${GIT_TIMESTAMP}")
-    ADD_DEFINITIONS(-DGIT_VERSION=${GIT_VERSION})
-    ADD_DEFINITIONS(-DGIT_BRANCH=${GIT_BRANCH})
-    ADD_DEFINITIONS(-DGIT_TIMESTAMP=${GIT_TIMESTAMP})
 endif()
 
 ########################################################################
@@ -56,9 +53,16 @@ if(NOT GIT_COMMIT AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CHANGELOG.md")
     if(RELEASE_VERSIONS)
         list(GET RELEASE_VERSIONS 0 RELEASE_VERSION)
         message(STATUS "Found Release version: ${RELEASE_VERSION}")
-        ADD_DEFINITIONS(-DGIT_VERSION=${RELEASE_VERSION})
+        set(GIT_VERSION ${RELEASE_VERSION})
     endif()
 endif()
+
+########################################################################
+# Write version info to header file
+########################################################################
+configure_file(${CMAKE_CURRENT_LIST_DIR}/include/version.h.in
+    ${CMAKE_CURRENT_LIST_DIR}/include/version.h
+)
 
 ########################################################################
 # Compiler specific setup
@@ -92,8 +96,10 @@ if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES 
     # set(CMAKE_C_FLAGS_RELEASE -O2)
     # CMake Debug default for GCC/Clang is "-g -DNDEBUG"
     # set(CMAKE_C_FLAGS_DEBUG -g3 -O0)
-    # make use of ASAN
-    set(CMAKE_C_FLAGS_DEBUG "-ggdb -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer")
+    set(CMAKE_C_FLAGS_DEBUG "-ggdb -fno-omit-frame-pointer")
+    # make use of ASAN only on Linux
+    add_compile_options($<$<AND:$<CONFIG:Debug>,$<PLATFORM_ID:Linux>>:-fsanitize=undefined$<SEMICOLON>-fsanitize=address>)
+    link_libraries($<$<AND:$<CONFIG:Debug>,$<PLATFORM_ID:Linux>>:-fsanitize=undefined$<SEMICOLON>-fsanitize=address>)
 endif()
 if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     # make sure we don't accidentally copy more than an int
@@ -104,6 +110,24 @@ endif()
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" AND NOT "13.2.0" VERSION_GREATER CMAKE_C_COMPILER_VERSION)
     message(STATUS "Using GCC Static analysis")
     add_definitions(-fanalyzer)
+endif()
+
+# Optional code coverage instrumentation (gcov/llvm-cov), for use with BUILD_TESTING.
+# Configure with -DENABLE_COVERAGE=ON, run `ctest`, then generate a report with
+# gcov/gcovr/lcov (see tests/coverage.sh). Forces -O0 and disables inlining so
+# coverage maps cleanly back to source lines.
+option(ENABLE_COVERAGE "Build with code coverage instrumentation (GCC/Clang)" OFF)
+if(ENABLE_COVERAGE)
+    if("${CMAKE_C_COMPILER_ID}" MATCHES "GNU|Clang")
+        message(STATUS "Code coverage instrumentation enabled")
+        add_compile_options(--coverage -O0 -g -fno-inline)
+        # --coverage on the link line pulls in the gcov runtime; set on the flag
+        # vars rather than add_link_options() to keep cmake_minimum_required (3.10).
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --coverage")
+    else()
+        message(WARNING "ENABLE_COVERAGE is only supported on GCC/Clang, ignoring")
+    endif()
 endif()
 
 # Shut MSVC up about strdup and strtok

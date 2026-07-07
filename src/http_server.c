@@ -164,8 +164,9 @@ static ring_list_t *ring_list_new(unsigned size)
 static void ring_list_free(ring_list_t *ring)
 {
     if (ring) {
-        if (ring->data)
+        if (ring->data) {
             free(ring->data);
+        }
         free(ring);
     }
 }
@@ -173,16 +174,19 @@ static void ring_list_free(ring_list_t *ring)
 // free the data returned
 static void *ring_list_shift(ring_list_t *ring)
 {
-    if (!ring->head)
+    if (!ring->head) {
         return NULL;
+    }
 
     void *ret = *ring->head;
 
     ++ring->head;
-    if (ring->head >= ring->data + ring->size)
+    if (ring->head >= ring->data + ring->size) {
         ring->head -= ring->size;
-    if (ring->head == ring->tail)
+    }
+    if (ring->head == ring->tail) {
         ring->head = NULL;
+    }
 
     return ret;
 }
@@ -192,15 +196,18 @@ static void *ring_list_push(ring_list_t *ring, void *data)
 {
     *ring->tail = data;
 
-    if (!ring->head)
+    if (!ring->head) {
         ring->head = ring->tail;
+    }
 
     ++ring->tail;
-    if (ring->tail >= ring->data + ring->size)
+    if (ring->tail >= ring->data + ring->size) {
         ring->tail -= ring->size;
+    }
 
-    if (ring->tail == ring->head)
+    if (ring->tail == ring->head) {
         return ring_list_shift(ring);
+    }
 
     return NULL;
 }
@@ -212,14 +219,17 @@ static void **ring_list_iter(ring_list_t *ring)
 
 static void **ring_list_next(ring_list_t *ring, void **iter)
 {
-    if (!iter)
+    if (!iter) {
         return NULL;
+    }
 
     ++iter;
-    if (iter >= ring->data + ring->size)
+    if (iter >= ring->data + ring->size) {
         iter -= ring->size;
-    if (iter == ring->tail)
+    }
+    if (iter == ring->tail) {
         iter = NULL;
+    }
 
     return iter;
 }
@@ -317,7 +327,7 @@ static data_t *protocols_data(r_cfg_t *cfg)
     }
 
     data_t *data = data_make(
-            "protocols", "", DATA_ARRAY, data_array(devs.len, DATA_DATA, devs.elems),
+            "protocols", "", DATA_ARRAY, data_array((int)devs.len, DATA_DATA, devs.elems),
             NULL);
     list_free_elems(&devs, NULL);
     return data;
@@ -559,25 +569,43 @@ static void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
         rpc->response(rpc, 2, NULL, cfg->conversion_mode);
     }
     else if (!strcmp(rpc->method, "get_stats")) {
-        char buf[20480]; // we expect the stats string to be around 15k bytes.
         data_t *data = create_report_data(cfg, 2/*report active devices*/);
         // flush_report_data(cfg); // snapshot, do not flush
-        data_print_jsons(data, buf, sizeof(buf));
-        rpc->response(rpc, 1, buf, 0);
+        // The stats report scales with the number of enabled decoders that have
+        // seen frames; a fixed buffer truncates it into invalid JSON, so grow to
+        // fit. See data_print_jsons_dup().
+        char *buf = data_print_jsons_dup(data);
+        if (!buf) {
+            rpc->response(rpc, -1, "Out of memory", 0);
+        }
+        else {
+            rpc->response(rpc, 1, buf, 0);
+            free(buf);
+        }
         data_free(data);
     }
     else if (!strcmp(rpc->method, "get_meta")) {
-        char buf[2048]; // we expect the meta string to be around 500 bytes.
         data_t *data = meta_data(cfg);
-        data_print_jsons(data, buf, sizeof(buf));
-        rpc->response(rpc, 1, buf, 0);
+        char *buf = data_print_jsons_dup(data);
+        if (!buf) {
+            rpc->response(rpc, -1, "Out of memory", 0);
+        }
+        else {
+            rpc->response(rpc, 1, buf, 0);
+            free(buf);
+        }
         data_free(data);
     }
     else if (!strcmp(rpc->method, "get_protocols")) {
-        char buf[102400]; // we expect the protocol string to be around 80k bytes.
         data_t *data = protocols_data(cfg);
-        data_print_jsons(data, buf, sizeof(buf));
-        rpc->response(rpc, 1, buf, 0);
+        char *buf = data_print_jsons_dup(data);
+        if (!buf) {
+            rpc->response(rpc, -1, "Out of memory", 0);
+        }
+        else {
+            rpc->response(rpc, 1, buf, 0);
+            free(buf);
+        }
         data_free(data);
     }
 
@@ -587,28 +615,39 @@ static void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
         rpc->response(rpc, 0, "Ok", 0);
     }
     else if (!strcmp(rpc->method, "report_meta")) {
-        if (!rpc->arg)
+        if (!rpc->arg) {
             rpc->response(rpc, -1, "Missing arg", 0);
-        else if (!strcasecmp(rpc->arg, "time"))
+        }
+        else if (!strcasecmp(rpc->arg, "time")) {
             cfg->report_time = REPORT_TIME_DATE;
-        else if (!strcasecmp(rpc->arg, "reltime"))
+        }
+        else if (!strcasecmp(rpc->arg, "reltime")) {
             cfg->report_time = REPORT_TIME_SAMPLES;
-        else if (!strcasecmp(rpc->arg, "notime"))
+        }
+        else if (!strcasecmp(rpc->arg, "notime")) {
             cfg->report_time = REPORT_TIME_OFF;
-        else if (!strcasecmp(rpc->arg, "hires"))
+        }
+        else if (!strcasecmp(rpc->arg, "hires")) {
             cfg->report_time_hires = rpc->val;
-        else if (!strcasecmp(rpc->arg, "utc"))
+        }
+        else if (!strcasecmp(rpc->arg, "utc")) {
             cfg->report_time_utc = rpc->val;
-        else if (!strcasecmp(rpc->arg, "protocol"))
+        }
+        else if (!strcasecmp(rpc->arg, "protocol")) {
             cfg->report_protocol = rpc->val;
-        else if (!strcasecmp(rpc->arg, "level"))
+        }
+        else if (!strcasecmp(rpc->arg, "level")) {
             cfg->report_meta = rpc->val;
-        else if (!strcasecmp(rpc->arg, "bits"))
+        }
+        else if (!strcasecmp(rpc->arg, "bits")) {
             cfg->verbose_bits = rpc->val;
-        else if (!strcasecmp(rpc->arg, "description"))
+        }
+        else if (!strcasecmp(rpc->arg, "description")) {
             cfg->report_description = rpc->val;
-        else
+        }
+        else {
             cfg->report_meta = rpc->val;
+        }
         rpc->response(rpc, 0, "Ok", 0);
     }
     else if (!strcmp(rpc->method, "convert")) {
@@ -634,11 +673,13 @@ static void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
 
     // Apply
     else if (!strcmp(rpc->method, "device")) {
-        if (!rpc->arg)
+        if (!rpc->arg) {
             rpc->response(rpc, -1, "Missing arg", 0);
+        }
         /*
-        if (cfg->set_dev_query)
+        if (cfg->set_dev_query) {
             rpc->response(rpc, -1, "Try again later", 0);
+        }
         cfg->set_dev_query = strdup(rpc->arg);
         if (!cfg->set_dev_query) {
             WARN_STRDUP("rpc_exec()");
@@ -647,8 +688,9 @@ static void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
         rpc->response(rpc, -1, "Not implemented", 0);
     }
     else if (!strcmp(rpc->method, "gain")) {
-        if (!rpc->arg)
+        if (!rpc->arg) {
             rpc->response(rpc, -1, "Missing arg", 0);
+        }
         set_gain_str(cfg, rpc->arg);
         rpc->response(rpc, 0, "Ok", 0);
     }
@@ -784,16 +826,16 @@ static void handle_openmetrics(struct mg_connection *nc, struct http_message *hm
             "# HELP input_event_frames Number of SDR frames with decode events.\n"
             "input_event_frames_total %u\n"
             "# EOF\n",
-            (float)(now - cfg->running_since), // uptime_seconds_total,
-            (float)cfg->running_since,         // uptime_seconds_created,
-            (unsigned)cfg->demod->r_devs.len,  // decoder_enabled,
-            (float)(now - cfg->sdr_since),     // input_uptime_seconds_total,
-            (float)cfg->sdr_since,             // input_uptime_seconds_created,
-            cfg->total_frames_count,           // input_count_frames_total,
-            cfg->total_frames_squelch,         // input_squelch_frames_total,
-            cfg->total_frames_ook,             // input_ook_frames_total,
-            cfg->total_frames_fsk,             // input_fsk_frames_total,
-            cfg->total_frames_events);         // input_event_frames_total,
+            (float)(now - cfg->demod->running_since), // uptime_seconds_total,
+            (float)cfg->demod->running_since,         // uptime_seconds_created,
+            (unsigned)cfg->demod->r_devs.len,         // decoder_enabled,
+            (float)(now - cfg->sdr_since),            // input_uptime_seconds_total,
+            (float)cfg->sdr_since,                    // input_uptime_seconds_created,
+            cfg->demod->total_frames_count,           // input_count_frames_total,
+            cfg->demod->total_frames_squelch,         // input_squelch_frames_total,
+            cfg->demod->total_frames_ook,             // input_ook_frames_total,
+            cfg->demod->total_frames_fsk,             // input_fsk_frames_total,
+            cfg->demod->total_frames_events);         // input_event_frames_total,
 
     mg_printf(nc,
             "HTTP/1.1 200 OK\r\n"
@@ -1050,12 +1092,14 @@ static void ev_handler(struct mg_connection *nc, int ev, void *ev_data);
 
 static void send_keep_alive(struct mg_connection *nc)
 {
-    if (nc->handler != ev_handler)
+    if (nc->handler != ev_handler) {
         return; // this should not happen
+    }
 
     struct nc_context *ctx = nc->user_data;
-    if (!ctx)
+    if (!ctx) {
         return; // this should not happen
+    }
 
     if (ctx->is_chunked) {
         mg_send_http_chunk(nc, "\r\n", 2);
@@ -1096,8 +1140,7 @@ static void ev_handler(struct mg_connection *nc, int ev, void *ev_data)
             handle_options(nc, hm);
         }
         else if (mg_vcmp(&hm->uri, "/") == 0) {
-            handle_get(nc, hm, INDEX_HTML, sizeof(INDEX_HTML));
-            handle_redirect(nc, hm);
+            handle_get(nc, hm, INDEX_HTML, sizeof(INDEX_HTML) - 1);
         }
         else if (mg_vcmp(&hm->uri, "/ui") == 0) {
             handle_redirect(nc, hm);
@@ -1156,8 +1199,9 @@ static void http_broadcast_send(struct http_server_context *ctx, char const *msg
     }
 
     for (nc = mg_next(mgr, NULL); nc != NULL; nc = mg_next(mgr, nc)) {
-        if (nc->handler != ev_handler)
+        if (nc->handler != ev_handler) {
             continue;
+        }
 
         struct nc_context *cctx = nc->user_data; // might not be valid
         if (is_websocket(nc)) {
@@ -1194,10 +1238,12 @@ static struct http_server_context *http_server_start(struct mg_mgr *mgr, char co
 
     char address[253 + 6 + 1]; // dns max + port
     // if the host is an IPv6 address it needs quoting
-    if (strchr(host, ':'))
+    if (strchr(host, ':')) {
         snprintf(address, sizeof(address), "[%s]:%s", host, port);
-    else
+    }
+    else {
         snprintf(address, sizeof(address), "%s:%s", host, port);
+    }
 
     /* Set HTTP server options */
     memset(&bind_opts, 0, sizeof(bind_opts));
@@ -1227,8 +1273,9 @@ static struct http_server_context *http_server_start(struct mg_mgr *mgr, char co
 
 static int http_server_stop(struct http_server_context *ctx)
 {
-    if (!ctx)
+    if (!ctx) {
         return 0;
+    }
 
     // close the server
     ctx->conn->user_data = NULL;
@@ -1237,8 +1284,9 @@ static int http_server_stop(struct http_server_context *ctx)
     // close connections with a goodbye
     struct mg_mgr *mgr = ctx->conn->mgr;
     for (struct mg_connection *nc = mg_next(mgr, NULL); nc != NULL; nc = mg_next(mgr, nc)) {
-        if (nc->handler != ev_handler)
+        if (nc->handler != ev_handler) {
             continue;
+        }
 
         struct nc_context *cctx = nc->user_data; // might not be valid
         if (is_websocket(nc)) {
@@ -1279,8 +1327,9 @@ static void R_API_CALLCONV print_http_data(data_output_t *output, data_t *data, 
     // collect well-known top level keys
     data_t *data_model = NULL;
     for (data_t *d = data; d; d = d->next) {
-        if (!strcmp(d->key, "model"))
+        if (!strcmp(d->key, "model")) {
             data_model = d;
+        }
     }
 
     if (data_model) {
@@ -1307,8 +1356,9 @@ static void R_API_CALLCONV data_output_http_free(data_output_t *output)
 {
     data_output_http_t *http = (data_output_http_t *)output;
 
-    if (!http)
+    if (!http) {
         return;
+    }
 
     http_server_stop(http->server);
 

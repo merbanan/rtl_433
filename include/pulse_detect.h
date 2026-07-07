@@ -38,6 +38,9 @@ pulse_detect_t *pulse_detect_create(void);
 
 void pulse_detect_free(pulse_detect_t *pulse_detect);
 
+/// Reset pulse detector to initial values.
+void pulse_detect_reset(pulse_detect_t *pulse_detect);
+
 /// Set pulse detector level values.
 ///
 /// @param pulse_detect The pulse_detect instance

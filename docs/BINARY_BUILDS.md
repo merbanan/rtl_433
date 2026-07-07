@@ -63,7 +63,7 @@ xattr -c rtl_433
 ```
 Note that `com.apple.quarantine` attributes are a useful safety feature and you should only perform this with genuine downloads from trusted sources.
 
-::: warning
+:::warning
 Note that [Homebrew](https://formulae.brew.sh/formula/librtlsdr) uses librtlsdr version 2.0 (with rtl-sdr blog v4 support)
 while [MacPorts](https://ports.macports.org/port/rtl-sdr/details/) uses version 0.6
 but those are compatible.

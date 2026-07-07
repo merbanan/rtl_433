@@ -373,14 +373,14 @@ A center frequency is detected from the filename as (fractional) number suffixed
 
 A sample rate is detected from the filename as (fractional) number suffixed with `k`, `sps`, `ksps`, `Msps`, or `Gsps`.
 
-Parameters must be separated by non-alphanumeric chars and are case-insensitive.
+Parameters must be separated by non-alphanumeric characters and are case-insensitive.
 
-File content and format are detected by th extension, possible options are:
+File content and format are detected by the extension, possible options are:
 
 - `cu8` (`IQ` implied)
 - `cs16` (`IQ` implied)
 - `cf32` (`IQ` implied)
-- `am.s16'`
+- `am.s16`
 - `am.f32`
 - `fm.s16`
 - `fm.f32`
@@ -391,9 +391,9 @@ File content and format are detected by th extension, possible options are:
 - `vcd`
 
 Overrides can be prefixed to the actual filename, separated by colon (`:`).
-E.g. default detection by extension: path/filename.am.s16 and forced overrides: am:s16:path/filename.ext
+E.g. default detection by extension: `path/filename.am.s16` and forced overrides: `am:s16:path/filename.ext`
 
-::: warning
+:::warning
 Note that not all file types are supported/applicable by loaders or dumpers.
 :::
 
@@ -420,7 +420,7 @@ A colorful, column based output intended for screen display.
 
 Append output to file with `:<filename>` (e.g. `-F kv:log.txt`), defaults to stdout.
 
-::: warning
+:::warning
 Note: the `kv` output is not a machine-readable key-value format, use the JSON output for that.
 :::
 
@@ -438,7 +438,7 @@ Use `-F csv` to add an output in CSV format.
 
 Append output to file with `:<filename>` (e.g. `-F csv:log.csv`), defaults to stdout.
 
-::: warning
+:::warning
 Note: the `csv` output is not recommended for post-processing, use the JSON output for a machine-readable format.
 :::
 

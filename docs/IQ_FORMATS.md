@@ -10,7 +10,7 @@ A sample consists of an I and Q value, each commonly of 8, 12, or 16-bit. This i
 
 The data can be processed similar to a two-channel audio signal, although at a much higher sample rate.
 
-::: tip
+:::tip
 Common sample rates with RTL-SDR receivers are 250 kHz and 1024 kHz, also 1 MHz (1000 kHz).
 :::
 
@@ -68,7 +68,7 @@ e.g. `.am.s16`, `.fm.s16` similar to the above formats but with only one "channe
 
 The SigRok `.sr` format is a Zip and combines multiple files for easy viewing with SigRok Pulseview.
 
-::: tip
+:::tip
 Install SigRok Pulseview and write a SigRok file. The overwrite option (uppercase `-W`) will automatically open Pulseview.
 :::
 
@@ -87,7 +87,7 @@ In addition to the file extension meta data about the center frequency and sampl
 Each part of the filename must be separated by an underscore.
 Even with low frequencies or high sample rates the suffix is fixed,
 
-::: warning
+:::warning
 `433920k` is not a valid frequency specification and `1M` is not a valid sample rate specification in filenames.
 :::
 

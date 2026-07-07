@@ -69,7 +69,7 @@ static int rosstech_dcu706_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, 0, start_pos, msg, sizeof(msg) * 8);
 
     uint8_t b[5] = {0};
-    unsigned r   = extract_bytes_uart_parity(msg, 0, 55, b);
+    unsigned r   = extract_bytes_uart_8o1(msg, 0, 55, b);
     if (r != 5) {
         decoder_logf(decoder, 2, __func__, "UART decoding failed. Got %d of 5 bytes", r);
         return DECODE_ABORT_LENGTH;

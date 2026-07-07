@@ -54,8 +54,9 @@ static void gpsd_client_event(struct mg_connection *nc, int ev, void *ev_data)
     // note that while shutting down the ctx is NULL
     gpsd_client_t *ctx = (gpsd_client_t *)nc->user_data;
 
-    //if (ev != MG_EV_POLL)
+    //if (ev != MG_EV_POLL) {
     //    fprintf(stderr, "GPSd user handler got event %d\n", ev);
+    //}
 
     switch (ev) {
     case MG_EV_CONNECT: {
@@ -69,11 +70,13 @@ static void gpsd_client_event(struct mg_connection *nc, int ev, void *ev_data)
         }
         else {
             // Error, print only once
-            if (ctx && ctx->prev_status != connect_status)
+            if (ctx && ctx->prev_status != connect_status) {
                 fprintf(stderr, "GPSd connect error: %s\n", strerror(connect_status));
+            }
         }
-        if (ctx)
+        if (ctx) {
             ctx->prev_status = connect_status;
+        }
         break;
     }
     case MG_EV_RECV: {
@@ -94,10 +97,12 @@ static void gpsd_client_event(struct mg_connection *nc, int ev, void *ev_data)
         break;
     }
     case MG_EV_CLOSE:
-        if (!ctx)
+        if (!ctx) {
             break; // shutting down
-        if (ctx->prev_status == 0)
+        }
+        if (ctx->prev_status == 0) {
             fprintf(stderr, "GPSd Connection failed...\n");
+        }
         // reconnect
         gpsd_client_connect(ctx, nc->mgr);
         break;
@@ -127,10 +132,12 @@ static gpsd_client_t *gpsd_client_init(char const *host, char const *port, char 
     }
 
     // if the host is an IPv6 address it needs quoting
-    if (strchr(host, ':'))
+    if (strchr(host, ':')) {
         snprintf(ctx->address, sizeof(ctx->address), "[%s]:%s", host, port);
-    else
+    }
+    else {
         snprintf(ctx->address, sizeof(ctx->address), "%s:%s", host, port);
+    }
 
     ctx->init_str = init_str;
     ctx->filter_str = filter_str;
@@ -187,8 +194,9 @@ data_tag_t *data_tag_create(char *param, struct mg_mgr *mgr)
         while (getkwargs(&opts, &key, &val)) {
             key = remove_ws(key);
             val = trim_ws(val);
-            if (!key || !*key)
+            if (!key || !*key) {
                 continue;
+            }
             else if (!strcasecmp(key, "nmea")) {
                 mode       = "GPSd NMEA";
                 init_str   = watch_nmea;
@@ -210,8 +218,9 @@ data_tag_t *data_tag_create(char *param, struct mg_mgr *mgr)
         }
 
         tag->includes = (char const **)includes.elems;
-        if (!tag->key && !tag->includes)
+        if (!tag->key && !tag->includes) {
             tag->key = gpsd_mode ? "gps" : "tag";
+        }
 
         if (!host || !port) {
             fprintf(stderr, "Host or port for tag client missing!\n");
@@ -223,8 +232,9 @@ data_tag_t *data_tag_create(char *param, struct mg_mgr *mgr)
         tag->gpsd_client = gpsd_client_init(host, port, init_str, filter_str, mgr);
     }
     else {
-        if (!tag->key)
+        if (!tag->key) {
             tag->key = "tag";
+        }
     }
 
     return tag; // NOTE: returns NULL on alloc failure.

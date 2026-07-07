@@ -23,8 +23,6 @@ struct mg_mgr;
 
 /* general */
 
-char const *version_string(void);
-
 struct r_cfg *r_create_cfg(void);
 
 void r_init_cfg(struct r_cfg *cfg);
@@ -33,7 +31,7 @@ void r_free_cfg(struct r_cfg *cfg);
 
 /* device decoder protocols */
 
-void register_protocol(struct r_cfg *cfg, struct r_device *r_dev, char *arg);
+void register_protocol(struct r_cfg *cfg, struct r_device const *r_dev, char *arg);
 
 void free_protocol(struct r_device *r_dev);
 
@@ -42,8 +40,6 @@ void unregister_protocol(struct r_cfg *cfg, struct r_device *r_dev);
 void register_all_protocols(struct r_cfg *cfg, unsigned disabled);
 
 /* output helper */
-
-void calc_rssi_snr(struct r_cfg *cfg, struct pulse_data *pulse_data);
 
 char *time_pos_str(struct r_cfg *cfg, unsigned samples_ago, char *buf);
 

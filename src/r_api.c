@@ -37,6 +37,7 @@
 #include "output_trigger.h"
 #include "output_rtltcp.h"
 #include "write_sigrok.h"
+#include "sigmf.h"
 #include "mongoose.h"
 #include "compat_time.h"
 #include "logger.h"
@@ -63,37 +64,6 @@
 #else
 #include "getopt/getopt.h"
 #endif
-
-char const *version_string(void)
-{
-    return "rtl_433"
-#ifdef GIT_VERSION
-#define STR_VALUE(arg) #arg
-#define STR_EXPAND(s) STR_VALUE(s)
-            " version " STR_EXPAND(GIT_VERSION)
-#ifdef GIT_BRANCH
-            " branch " STR_EXPAND(GIT_BRANCH)
-#endif
-#ifdef GIT_TIMESTAMP
-            " at " STR_EXPAND(GIT_TIMESTAMP)
-#endif
-#undef STR_VALUE
-#undef STR_EXPAND
-#else
-            " version unknown"
-#endif
-            " inputs file rtl_tcp"
-#ifdef RTLSDR
-            " RTL-SDR"
-#endif
-#ifdef SOAPYSDR
-            " SoapySDR"
-#endif
-#ifdef OPENSSL
-            " with TLS"
-#endif
-            ;
-}
 
 /* helper */
 
@@ -191,8 +161,8 @@ void r_init_cfg(r_cfg_t *cfg)
     // initialize tables
     baseband_init();
 
-    time(&cfg->running_since);
-    time(&cfg->frames_since);
+    time(&cfg->demod->running_since);
+    time(&cfg->demod->frames_since);
     get_time_now(&cfg->demod->now);
 
     list_ensure_size(&cfg->demod->r_devs, 100);
@@ -262,7 +232,7 @@ void r_free_cfg(r_cfg_t *cfg)
 
 /* device decoder protocols */
 
-void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
+void register_protocol(r_cfg_t *cfg, r_device const *r_dev, char *arg)
 {
     // use arg of 'v', 'vv', 'vvv' as device verbosity
     int dev_verbose = 0;
@@ -306,7 +276,6 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
 
 void free_protocol(r_device *r_dev)
 {
-    // free(r_dev->name);
     free(r_dev->decode_ctx);
     free(r_dev);
 }
@@ -333,35 +302,6 @@ void register_all_protocols(r_cfg_t *cfg, unsigned disabled)
 }
 
 /* output helper */
-
-void calc_rssi_snr(r_cfg_t *cfg, pulse_data_t *pulse_data)
-{
-    float ook_high_estimate = pulse_data->ook_high_estimate > 0 ? pulse_data->ook_high_estimate : 1;
-    float ook_low_estimate = pulse_data->ook_low_estimate > 0 ? pulse_data->ook_low_estimate : 1;
-    float asnr   = ook_high_estimate / ook_low_estimate;
-    float foffs1 = (float)pulse_data->fsk_f1_est / INT16_MAX * cfg->samp_rate / 2.0f;
-    float foffs2 = (float)pulse_data->fsk_f2_est / INT16_MAX * cfg->samp_rate / 2.0f;
-    pulse_data->freq1_hz = (foffs1 + cfg->center_frequency);
-    pulse_data->freq2_hz = (foffs2 + cfg->center_frequency);
-    pulse_data->centerfreq_hz = cfg->center_frequency;
-    pulse_data->depth_bits    = cfg->demod->sample_size * 4;
-    // NOTE: for (CU8) amplitude is 10x (because it's squares)
-    if (cfg->demod->sample_size == 2 && !cfg->demod->use_mag_est) { // amplitude (CU8)
-        pulse_data->range_db = 42.1442f; // 10*log10f(16384.0f) == 20*log10f(128.0f)
-        pulse_data->rssi_db  = 10.0f * log10f(ook_high_estimate) - 42.1442f; // 10*log10f(16384.0f)
-        pulse_data->noise_db = 10.0f * log10f(ook_low_estimate) - 42.1442f; // 10*log10f(16384.0f)
-        pulse_data->snr_db   = 10.0f * log10f(asnr);
-    }
-    else { // magnitude (CU8, CS16)
-        pulse_data->range_db = 84.2884f; // 20*log10f(16384.0f)
-        // lowest (scaled x128) reading at  8 bit is -20*log10(128) = -42.1442 (eff. -36 dB)
-        // lowest (scaled div2) reading at 12 bit is -20*log10(1024) = -60.2060 (eff. -54 dB)
-        // lowest (scaled div2) reading at 16 bit is -20*log10(16384) = -84.2884 (eff. -78 dB)
-        pulse_data->rssi_db  = 20.0f * log10f(ook_high_estimate) - 84.2884f; // 20*log10f(16384.0f)
-        pulse_data->noise_db = 20.0f * log10f(ook_low_estimate) - 84.2884f; // 20*log10f(16384.0f)
-        pulse_data->snr_db   = 20.0f * log10f(asnr);
-    }
-}
 
 char *time_pos_str(r_cfg_t *cfg, unsigned samples_ago, char *buf)
 {
@@ -489,7 +429,7 @@ char const **determine_csv_fields(r_cfg_t *cfg, char const *const *well_known, i
     convert_csv_fields(cfg, (char const **)field_list.elems);
 
     if (num_fields)
-        *num_fields = field_list.len;
+        *num_fields = (int)field_list.len;
     return (char const **)field_list.elems;
 }
 
@@ -923,19 +863,19 @@ data_t *create_report_data(r_cfg_t *cfg, int level)
     }
 
     data = data_make(
-            "count",            "", DATA_INT, cfg->frames_ook,
-            "fsk",              "", DATA_INT, cfg->frames_fsk,
-            "events",           "", DATA_INT, cfg->frames_events,
+            "count",            "", DATA_INT, cfg->demod->frames_ook,
+            "fsk",              "", DATA_INT, cfg->demod->frames_fsk,
+            "events",           "", DATA_INT, cfg->demod->frames_events,
             NULL);
 
     char since_str[LOCAL_TIME_BUFLEN];
-    format_time_str(since_str, "%Y-%m-%dT%H:%M:%S", cfg->report_time_tz, cfg->frames_since);
+    format_time_str(since_str, "%Y-%m-%dT%H:%M:%S", cfg->report_time_tz, cfg->demod->frames_since);
 
     data = data_make(
             "enabled",          "", DATA_INT, r_devs->len,
             "since",            "", DATA_STRING, since_str,
             "frames",           "", DATA_DATA, data,
-            "stats",            "", DATA_ARRAY, data_array(dev_data_list.len, DATA_DATA, dev_data_list.elems),
+            "stats",            "", DATA_ARRAY, data_array((int)dev_data_list.len, DATA_DATA, dev_data_list.elems),
             NULL);
 
     list_free_elems(&dev_data_list, NULL);
@@ -946,10 +886,10 @@ void flush_report_data(r_cfg_t *cfg)
 {
     list_t *r_devs = &cfg->demod->r_devs;
 
-    time(&cfg->frames_since);
-    cfg->frames_ook = 0;
-    cfg->frames_fsk = 0;
-    cfg->frames_events = 0;
+    time(&cfg->demod->frames_since);
+    cfg->demod->frames_ook = 0;
+    cfg->demod->frames_fsk = 0;
+    cfg->demod->frames_events = 0;
 
     for (void **iter = r_devs->elems; iter && *iter; ++iter) {
         r_device *r_dev = *iter;
@@ -1184,6 +1124,13 @@ void close_dumpers(struct r_cfg *cfg)
 {
     for (void **iter = cfg->demod->dumper.elems; iter && *iter; ++iter) {
         file_info_t *dumper = *iter;
+
+        if (dumper->container == FILEFMT_SIGMF) {
+            sigmf_writer_close((sigmf_t *)dumper->file_aux);
+            sigmf_free_items((sigmf_t *)dumper->file_aux);
+            dumper->file = NULL;
+        }
+
         if (dumper->file && (dumper->file != stdout)) {
             fclose(dumper->file);
             dumper->file = NULL;
@@ -1221,7 +1168,43 @@ void add_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
     list_push(&cfg->demod->dumper, dumper);
 
     file_info_parse_filename(dumper, spec);
-    if (strcmp(dumper->path, "-") == 0) { /* Write samples to stdout */
+    // Open the output
+    if (dumper->container == FILEFMT_SIGMF) {
+        sigmf_t *sigmf = calloc(1, sizeof(*sigmf));
+        if (!sigmf) {
+            FATAL_CALLOC("add_dumper()");
+        }
+
+        char *datatype = strdup(file_info_to_sigmf_type(dumper));
+        if (!datatype) {
+            WARN_STRDUP("add_dumper()");
+        }
+        char *recorder = strdup("rtl_433");
+        if (!recorder) {
+            WARN_STRDUP("add_dumper()");
+        }
+        char *description = strdup("Sample written by rtl_433");
+        if (!description) {
+            WARN_STRDUP("add_dumper()");
+        }
+
+        sigmf->datatype           = datatype;
+        sigmf->sample_rate        = dumper->sample_rate;
+        sigmf->recorder           = recorder;
+        sigmf->description        = description;
+        sigmf->first_sample_start = 0;
+        sigmf->first_frequency    = dumper->center_frequency;
+        sigmf->data_len           = 0; // Unknown length
+
+        int r = sigmf_writer_open(sigmf, dumper->path, overwrite);
+        if (r) {
+            fprintf(stderr, "Failed to open %s\n", dumper->path);
+            return;
+        }
+        dumper->file = sigmf->mtar.stream;
+        dumper->file_aux = sigmf;
+    }
+    else if (strcmp(dumper->path, "-") == 0) { /* Write samples to stdout */
         dumper->file = stdout;
 #ifdef _WIN32
         _setmode(_fileno(stdin), _O_BINARY);

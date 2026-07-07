@@ -86,7 +86,7 @@ static int oil_watchman_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id",                   "", DATA_FORMAT, "%06x", DATA_INT, unit_id,
                 "flags",                "", DATA_FORMAT, "%02x", DATA_INT, flags,
                 "maybetemp",            "", DATA_INT,    maybetemp,
-                "temperature_C",        "", DATA_DOUBLE, temperature,
+                "temperature_C",        "", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
                 "binding_countdown",    "", DATA_INT,    binding_countdown,
                 "depth_cm",             "", DATA_INT,    depth,
                 NULL);

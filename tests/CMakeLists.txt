@@ -20,10 +20,11 @@ endif()
 ########################################################################
 # target_compile_definitions was only added in CMake 2.8.11
 add_definitions(-D_TEST)
-foreach(testSrc bitbuffer.c fileformat.c optparse.c bit_util.c)
+foreach(testSrc bitbuffer.c fileformat.c optparse.c bit_util.c r_util.c abuf.c)
     get_filename_component(testName ${testSrc} NAME_WE)
 
-    add_executable(test_${testName} ../src/${testSrc})
+    # Note that r_util.c needs compat_time.c shims
+    add_executable(test_${testName} ../src/${testSrc} ../src/compat_time.c)
 
     add_test(${testName}_test test_${testName})
 endforeach(testSrc)
@@ -32,6 +33,54 @@ endforeach(testSrc)
 # Define integration tests
 ########################################################################
 add_test(rtl_433_help ../src/rtl_433 -h)
+add_test(flex_decoder_help ../src/rtl_433 -X)
+add_test(flex_decoder bash -c
+    "touch empty_file.cu8 && \
+    ../src/rtl_433 \
+        -X n=name,m=FSK_PCM,s=10,l=10,r=10240 \
+        -r empty_file.cu8")
+# Borrowed from: https://github.com/merbanan/rtl_433/pull/786#issuecomment-410513334
+add_test(flex_decoder_w_getter bash -c
+    "touch empty_file.cu8 && \
+    ../src/rtl_433 \
+        -X 'n=name,m=FSK_PCM,s=10,l=10,r=10240,get=@20:{12}0x7f:status:[10:pir 14:open 7:close 11:tamper 0xf:battery_low]' \
+        -r empty_file.cu8")
+# Borrowed from: https://github.com/merbanan/rtl_433/pull/1532#issue-728103584
+add_test(flex_decoder_w_getter_and_format_specifier bash -c
+    "touch empty_file.cu8 && \
+    ../src/rtl_433 \
+        -X 'n=name,m=FSK_PCM,s=10,l=10,r=10240,get=@2:{32}:code:%x' \
+        -r empty_file.cu8")
+
+# Black-box test of the HTTP/WS API server. Starts rtl_433 in manual device
+# mode (no SDR), exercises each endpoint, and shuts it down cleanly. Skipped
+# on Windows (POSIX shell script) and when python3/curl are unavailable.
+if(UNIX)
+    find_program(BASH_PROGRAM sh)
+    find_program(CURL_PROGRAM curl)
+    find_program(PYTHON3_PROGRAM python3)
+    if(BASH_PROGRAM AND CURL_PROGRAM)
+        add_test(
+            NAME http_server_integration
+            COMMAND ${BASH_PROGRAM}
+                ${CMAKE_CURRENT_SOURCE_DIR}/http-integration-test.sh
+                $<TARGET_FILE:rtl_433>)
+        # Feeds a synthetic OOK signal over a fake rtl_tcp server so rtl_433 runs
+        # its live poll loop, then reads the decode back over the WS API. Needs
+        # python3 for the rtl_tcp server and ws probe.
+        if(PYTHON3_PROGRAM)
+            add_test(
+                NAME http_server_rtltcp
+                COMMAND ${BASH_PROGRAM}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/http-rtltcp-test.sh
+                    $<TARGET_FILE:rtl_433>)
+        else()
+            message(STATUS "Skipping http_server_rtltcp test (need python3)")
+        endif()
+    else()
+        message(STATUS "Skipping http_server_integration test (need sh and curl)")
+    endif()
+endif()
 
 ########################################################################
 # Define style checks

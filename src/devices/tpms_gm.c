@@ -110,7 +110,7 @@ static int tpms_gm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         "learn_mode",      "",            DATA_INT,     learn_mode,
         "battery_ok",      "",            DATA_INT,     battery_ok,
         "pressure_kPa",    "",            DATA_DOUBLE,  pressure_kpa,
-        "temperature_C",   "",            DATA_DOUBLE,  temperature_c,
+        "temperature_C",   "",            DATA_FORMAT, "%.0f C", DATA_DOUBLE,  temperature_c,
         "mic",             "Integrity",   DATA_STRING,  "CHECKSUM",
         NULL);
 

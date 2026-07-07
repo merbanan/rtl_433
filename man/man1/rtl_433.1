@@ -74,8 +74,8 @@ Correct rtl\-sdr tuner frequency offset error (default: 0)
 [ \fB\-s\fI <sample rate>\fP ]
 Set sample rate (default: 250000 Hz)
 .TP
-[ \fB\-D\fI restart | pause | quit | manual\fP ]
-Input device run mode options.
+[ \fB\-D\fI quit | restart | pause | manual\fP ]
+Input device run mode options (default: quit).
 .SS "Demodulator options"
 .TP
 [ \fB\-R\fI <device> | help\fP ]
@@ -301,10 +301,13 @@ invert : invert all bits
 reflect : reflect each byte (MSB first to MSB last)
 .RE
 .RS
-decode_uart : UART 8n1 (10\-to\-8) decode
+decode_uart=<8n1|8n2|8o1> : UART 8n1 (10\-to\-8), 8n2, 8o1 (11\-to\-8) decode
 .RE
 .RS
 decode_dm : Differential Manchester decode
+.RE
+.RS
+decode_mc : Manchester decode
 .RE
 .RS
 match=<bits> : only match if the <bits> are found
@@ -335,7 +338,7 @@ Without this option the default is LOG and KV output. Use "\-F null" to remove t
 Append output to file with :<filename> (e.g. \-F csv:log.csv), defaults to stdout.
 .RE
 .TP
-[ \fB\-F\fI mqtt[:[//]host[:port][,<options>]\fP ]
+[ \fB\-F\fI mqtt[s][:[//]host[:port][,<options>]\fP ]
 (default: localhost:1883)
 .RS
 Specify MQTT server with e.g. \-F mqtt://localhost:1883
@@ -351,6 +354,9 @@ MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
 .RE
 .RS
 Supported MQTT formats: (default is all)
+.RE
+.RS
+  availability: posts availability (online/offline)
 .RE
 .RS
   events: posts JSON event data, default "<base>/events"
@@ -372,6 +378,9 @@ Any topic string overrides the base topic and will expand keys like [/model]
 .RE
 .RS
 E.g. \-F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
+.RE
+.RS
+For TLS use e.g. \-F "mqtts://host,tls_cert=<path>,tls_key=<path>,tls_ca_cert=<path>"
 .RE
 .RS
 With MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client\-ID is computed from the driver string.
