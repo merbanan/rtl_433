@@ -159,6 +159,7 @@ add_library(r_433 STATIC
     devices/govee.c
     devices/govee_h5059.c
     devices/gridstream.c
+    devices/grill_thermometer.c
     devices/gt_tmbbq05.c
     devices/gt_wt_02.c
     devices/gt_wt_03.c

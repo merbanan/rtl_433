@@ -418,6 +418,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [328]  Schrader TPMS MRXBC5A4 (BMW)
     [329]  Microchip HCS362 KeeLoq PWM
     [330]  Microchip HCS362 KeeLoq MC
+    [331]  RF-T0912 Grill Thermometer
 
 * Disabled by default, use -R n or a conf file to enable
 
