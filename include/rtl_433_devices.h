@@ -339,7 +339,7 @@
     DECL(hcs362_pwm) \
     DECL(hcs362_mc) \
     DECL(grill_thermometer) \
-
+    DECL(tr_502msv) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
