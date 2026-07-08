@@ -154,10 +154,12 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t b[32] = {0};
         bitbuffer_extract_bytes(bitbuffer, 0, pos, b, sizeof(b) * 8);
 
-        // verify checksum, 2 formulas, depends on the subtype model
+        int kind    = ((b[1] & 0xf0) >> 4);
         int subtype = b[3] & 0x03;
+
+        // verify checksum, 2 formulas, depends on the subtype model
         int checksum = add_bytes(b, 31);
-        if (subtype == 0x3) { // same formula but 0x9A offset for Altronics-X7064A model only
+        if (kind != 0 && subtype == 0x3) { // same formula but 0x9A offset for Altronics-X7064A model only
             checksum -= 0x9A;
         }
         if ((checksum & 0xff) != b[31]) {
@@ -167,7 +169,6 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         int channel     = (b[1] & 0x0f);
-        int kind        = ((b[1] & 0xf0) >> 4);
         int id          = (b[2] << 4) | (b[3] >> 4);
         int battery_low = (b[3] & 0x08);
         int pairing     = (b[3] & 0x04);
