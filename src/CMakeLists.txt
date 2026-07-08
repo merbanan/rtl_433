@@ -330,6 +330,7 @@ add_library(r_433 STATIC
     devices/vauno_en8822c.c
     devices/vevor_7in1.c
     devices/visonic_powercode.c
+    devices/vivint.c
     devices/wallarge_cltx001.c
     devices/watts_thermostat.c
     devices/waveman.c
