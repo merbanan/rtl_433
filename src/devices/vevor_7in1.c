@@ -19,10 +19,17 @@ Vevor Wireless Weather Station 7-in-1.
 Manufacturer : Fujian Youtong Industries Co., Ltd. rebrand under Vevor name.
 Reference:
 
-- YT60231, Vevor Weather Station 7-in-1
+- YT60231, Vevor Weather Station 7-in-1, 868 MHz (EU)
+- YT60234, Vevor Weather Station 7-in-1, 915 MHz (US)
 - R53 / R56 Fujian Youtong Industries , FCC ID : https://fccid.io/2AQBD-R53, https://fccid.io/2AQBD-R56
 
-S.a. issue #3020
+S.a. issue #3020 and issue #3591
+
+Radio parameters, US 915 MHz YT60234 (measured, issue #3591):
+
+- 2-FSK, +-37 kHz deviation, ~11.26 kbaud, one ~85 ms burst every 20.000 s, all sensors in every frame.
+- Measured center 915.031 MHz on one unit (nominal 915.000 MHz), so allow for a small frequency offset.
+- Same protocol and checksum as the 868 MHz EU YT60231; decoded by this decoder unchanged.
 
 Data Layout:
 
