@@ -18,6 +18,7 @@ Arexx Multilogger.
 - Arexx IP-HA90 (MCP9808 sensor) s.a. #2388
 - Arexx IP-TH78EXT
 - Arexx TSN-70E (Sensirion SHT-10 sensor) s.a. #2482
+- Arexx TSN-70E with an extended (24-bit) ID s.a. #3488
 
 The IP-HA90 has a Microchip RFPIC12f675f at 433.92M and a Microchip MCP9808 temperature sensor.
 The TSN-70E has a Sensirion SHT-10 temperature and humidity and temperature sensor.
@@ -62,6 +63,17 @@ Message layout:
 - X : 8 bit: CRC, poly 0x31, init 0xc0
 - Y : 8 bit: inverted CRC check, only IP-HA90
 
+Some TSN-70E units transmit an extended, 24-bit ID instead of the usual
+16-bit one. These messages have a length of 7 instead of 5:
+
+    LL III P SSSS XX
+
+- L : 8 bit: message length, 7
+- I : 24 bit: ID, little-endian, even number = Temperature (s.a. #3488)
+- P : 8 bit: unknown, unused, observed constant per device
+- S : 16 bit: raw sensor value
+- X : 8 bit: CRC, poly 0x31, init 0xc0
+
 */
 
 static int arexx_ml_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -71,8 +83,8 @@ static int arexx_ml_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->num_rows != 1) {
         return DECODE_ABORT_EARLY; // we expect a single row
     }
-    if (bitbuffer->bits_per_row[0] < 64 || bitbuffer->bits_per_row[1] > 130) {
-        return DECODE_ABORT_EARLY; // we expect around 88 to 104 bits
+    if (bitbuffer->bits_per_row[0] < 64 || bitbuffer->bits_per_row[0] > 140) {
+        return DECODE_ABORT_EARLY; // we expect around 88 to 138 bits
     }
     bitbuffer_invert(bitbuffer);
 
@@ -141,11 +153,27 @@ static int arexx_ml_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int temp_raw = (int16_t)(sens_val << 3); // uses sign-extend
         temp_c = temp_raw / 128;
     }
+    else if (msg_len == 7) {
+        // TSN-70E variant with an extended, 24-bit ID, s.a. #3488
+        id       = (b[3] << 16) | (b[2] << 8) | (b[1]); // little-endian
+        sens_val = (b[5] << 8) | (b[6]); // b[4] is unused/unknown
+        if (id & 1) {
+            is_humi = 1;
+            sens_val = (int16_t)sens_val;
+            // SHT10 Humidity
+            humidity = -2.0468 + 0.0367 * sens_val - 1.5955E-6 * sens_val * sens_val;
+        }
+        else {
+            is_temp = 1;
+            // SHT10 Temperature
+            temp_c = sens_val * 0.01f - 40.0f; // offset actually varies by Vdd
+        }
+    }
 
     /* clang-format off */
     data_t *data = data_make(
             "model",            "",                 DATA_STRING, "Arexx-ML",
-            "id",               "ID",               DATA_FORMAT, "%04x",    DATA_INT, id,
+            "id",               "ID",               DATA_FORMAT, "%06x",    DATA_INT, id,
             "temperature_C",    "Temperature",      DATA_COND, is_temp,     DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
             "temperature_alert","Alert",            DATA_COND, is_alert,    DATA_FORMAT, "%x", DATA_INT, temp_alert,
             "humidity",         "Humidity",         DATA_COND, is_humi,     DATA_FORMAT, "%.1f %%", DATA_DOUBLE, humidity,
