@@ -423,6 +423,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [333]  Opel Mokka Car Key
     [334]  RfxMeter, RFXPwr
     [335]  Martec MPLCD Ceiling Fan Remote
+    [336]  NetAtmo temp/hum and wind sensors
 
 * Disabled by default, use -R n or a conf file to enable
 

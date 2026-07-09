@@ -343,6 +343,7 @@
     DECL(opel_mokka) \
     DECL(rfxmeter) \
     DECL(martec_mplcd) \
+    DECL(netatmo_thw) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
