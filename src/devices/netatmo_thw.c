@@ -18,102 +18,100 @@ NetAtmo outdoor temperature/humidity sensor and ultrasonic anemometer.
 
 There are several different message types with different message lengths.
 All signals are transmitted with a preamble (multiple) 0xa, followed by the syncword 0xe712,
- followed by the data length byte and the data segment, and finished by a two byte CRC.
- CRC16 calculation over all bytes after syncword should result in 0, if there were no bit errors
+followed by the data length byte and the data segment, and finished by a two byte CRC.
+CRC16 calculation over all bytes after syncword should result in 0, if there were no bit errors
 
- Data rate: 97.600 kbit/s
- Sync word: 0xe712, e.g. using match=aae712 to eliminate false syncs
+- Data rate: 97.600 kbit/s
+- Sync word: 0xe712, e.g. using match=aae712 to eliminate false syncs
 
- Message Formats (after sync word):
+## Message Formats (after sync word):
 
- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
- Outdoor temp/hum sensor data message:
- every 50 seconds
- example:
- 0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 // byte number
- 19 01 5a 91 02 7d ad 57 0d 00 00 00 00 00 00 00 00 35 00 00 00 00 76 00 01 58 69 3c // data
- |                                                                           |
-  ----------------------------------------------------------------------------- CRC16 range
+### Outdoor temp/hum sensor data message:
 
- Byte  0            length of message in bytes, 0x19 = 25 bytes
- Byte  1 - 4        TBD, ID or address, never changing
- Byte  5            TBD, status information
- Byte  6            RF signal strength from base (db), signed byte, 0xad = -83 dB, 0x88 = no signal
- Byte  8 + 7        Battery voltage (0.5 mV), signed short, 0x0d57 = 3415 => 6830 mV
- Byte  9 - 16       TBD
- Byte 17            firmware version, 0x35 = 53
- Byte 18 - 21       TBD
- Byte 23 + 22       Temperature (0.1 deg C ), signed short, 0x0076 = 118 => 11.8 deg C
- Byte 24            TBD
- Byte 25            Relative Humidity in %, unsigned byte, 0x58 = 88 => 88 %
- Byte 26 + 27       CRC16 with poly=0x8005 and init=0xffff over all data bytes after sync, 26 bytes
+Every 50 seconds, example:
 
- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
- Outdoor temp/hum sensor status message:
- every 6 seconds
- example:
- 0  1  2  3  4  5  6  7  8   // byte number
- 06 01 5a 91 02 7d ad e5 2a // data
- |                  |
-  -------------------- CRC16 range
+    0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 // byte number
+    19 01 5a 91 02 7d ad 57 0d 00 00 00 00 00 00 00 00 35 00 00 00 00 76 00 01 58 69 3c // data
+    |                                                                           |
+    ----------------------------------------------------------------------------- CRC16 range
 
- Byte  0            length of message in bytes, 0x06 = 6 bytes
- Byte  1 - 4        TBD, ID or address, never changing
- Byte  5            TBD, status information
- Byte  6            RF signal strength from base (in dB), signed byte, 0xad = -83 dB, 0x88 = no signal
- Byte  7 + 8        CRC16 with poly=0x8005 and init=0xffff over all data bytes after sync, 7 bytes
+- Byte  0            length of message in bytes, 0x19 = 25 bytes
+- Byte  1 - 4        TBD, ID or address, never changing
+- Byte  5            TBD, status information
+- Byte  6            RF signal strength from base (db), signed byte, 0xad = -83 dB, 0x88 = no signal
+- Byte  8 + 7        Battery voltage (0.5 mV), signed short, 0x0d57 = 3415 => 6830 mV
+- Byte  9 - 16       TBD
+- Byte 17            firmware version, 0x35 = 53
+- Byte 18 - 21       TBD
+- Byte 23 + 22       Temperature (0.1 deg C ), signed short, 0x0076 = 118 => 11.8 deg C
+- Byte 24            TBD
+- Byte 25            Relative Humidity in %, unsigned byte, 0x58 = 88 => 88 %
+- Byte 26 + 27       CRC16 with poly=0x8005 and init=0xffff over all data bytes after sync, 26 bytes
 
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
- Outdoor wind sensor data message:
- every 6 seconds
- example:
- 0                   1                   2                   3                   4                   5
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1  // byte number
- 31015a910300bf161800000000000000001b000000000000022900e4ffd2fff0ff118e1f2a008e1f2a0067ae2900c4af2900a152 // data
- |                                                                                                  |
-  ---------------------------------------------------------------------------------------------------- CRC16 range
+### Outdoor temp/hum sensor status message
 
- Byte  0            length of message in bytes, 0x31 = 49 bytes
- Byte  1 - 4        TBD, ID or address, never changing
- Byte  5            TBD, status information
- Byte  6            RF signal strength from base (db), signed byte, 0xbf = -65 dB, 0x88 = no signal
- Byte  8 + 7        Battery voltage (1 mV), signed short, 0x1816 = 6166 => 6166 mV
- Byte  9 - 16       TBD
- Byte  17           firmware version
- Byte  18 - 24      TBD
- Byte 25 + 26       raw 315° windcomponent measurement in 0.1 km/h, short integer little endian
- Byte 27 + 28       raw 315° windcomponent measurement in 0.1 km/h, short integer little endian
- Byte 29 + 30       raw 45° windcomponent measurement in 0.1 km/h, short integer little endian
- Byte 31 + 32       raw 45° windcomponent measurement in 0.1 km/h, short integer little endian
- Byte 32 - 49       TBD
- Byte 50 + 51       CRC16 with poly=0x8005 and init=0xffff over all data bytes after sync, 50 bytes
+Every 6 seconds, example:
 
- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
- base station request message:
- every 6 seconds
- example:
- 0  1  2  3  4  5  6  7  8  9  10  // byte number
- 08 00 5A 90 7E 02 B0 03 B1 80 03  // data
- |                        |
-  -------------------------- CRC16 range
+    0  1  2  3  4  5  6  7  8   // byte number
+    06 01 5a 91 02 7d ad e5 2a // data
+    |                  |
+    -------------------- CRC16 range
 
- Byte  0            length of message in bytes, 0x08 = 8 bytes
- Byte  1 - 4        TBD, ID or address, never changing
- Byte  5            requested module id (02 = TH module)
- Byte  6            RF signal strength of requested module (db), signed byte, 0xb0 = -80 dB, 0x88 = no signal
- Byte  7            requested module id (03 = anemometer)
- Byte  8            RF signal strength of requested module (db), signed byte, 0xb1 = -79 dB, 0x88 = no signal
- Byte  9 + 10       CRC16 with poly=0x8005 and init=0xffff over all data bytes after sync, 9 bytes
+- Byte  0            length of message in bytes, 0x06 = 6 bytes
+- Byte  1 - 4        TBD, ID or address, never changing
+- Byte  5            TBD, status information
+- Byte  6            RF signal strength from base (in dB), signed byte, 0xad = -83 dB, 0x88 = no signal
+- Byte  7 + 8        CRC16 with poly=0x8005 and init=0xffff over all data bytes after sync, 7 bytes
 
- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+### Outdoor wind sensor data message:
+
+Every 6 seconds, example:
+
+    0                   1                   2                   3                   4                   5
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1  // byte number
+    31015a910300bf161800000000000000001b000000000000022900e4ffd2fff0ff118e1f2a008e1f2a0067ae2900c4af2900a152 // data
+    |                                                                                                  |
+    ---------------------------------------------------------------------------------------------------- CRC16 range
+
+- Byte  0            length of message in bytes, 0x31 = 49 bytes
+- Byte  1 - 4        TBD, ID or address, never changing
+- Byte  5            TBD, status information
+- Byte  6            RF signal strength from base (db), signed byte, 0xbf = -65 dB, 0x88 = no signal
+- Byte  8 + 7        Battery voltage (1 mV), signed short, 0x1816 = 6166 => 6166 mV
+- Byte  9 - 16       TBD
+- Byte  17           firmware version
+- Byte  18 - 24      TBD
+- Byte 25 + 26       raw 315° windcomponent measurement in 0.1 km/h, short integer little endian
+- Byte 27 + 28       raw 315° windcomponent measurement in 0.1 km/h, short integer little endian
+- Byte 29 + 30       raw 45° windcomponent measurement in 0.1 km/h, short integer little endian
+- Byte 31 + 32       raw 45° windcomponent measurement in 0.1 km/h, short integer little endian
+- Byte 32 - 49       TBD
+- Byte 50 + 51       CRC16 with poly=0x8005 and init=0xffff over all data bytes after sync, 50 bytes
+
+### Base station request message
+
+Every 6 seconds, example:
+
+    0  1  2  3  4  5  6  7  8  9  10  // byte number
+    08 00 5A 90 7E 02 B0 03 B1 80 03  // data
+    |                        |
+    -------------------------- CRC16 range
+
+- Byte  0            length of message in bytes, 0x08 = 8 bytes
+- Byte  1 - 4        TBD, ID or address, never changing
+- Byte  5            requested module id (02 = TH module)
+- Byte  6            RF signal strength of requested module (db), signed byte, 0xb0 = -80 dB, 0x88 = no signal
+- Byte  7            requested module id (03 = anemometer)
+- Byte  8            RF signal strength of requested module (db), signed byte, 0xb1 = -79 dB, 0x88 = no signal
+- Byte  9 + 10       CRC16 with poly=0x8005 and init=0xffff over all data bytes after sync, 9 bytes
 
 To get all raw messages from all NetAtmo sensors:
-rtl_433 -f 868.95M -s 300k  -R - -X 'n=netatmoTHW,m=FSK_PCM,s=8.5,l=8.5,r=800,preamble=aaaae712,match=e712' -M level
 
-  e.g. use "match=e71219" to get only the TH data message
+    rtl_433 -f 868.95M -s 300k  -R - -X 'n=netatmoTHW,m=FSK_PCM,s=8.5,l=8.5,r=800,preamble=aaaae712,match=e712' -M level
+
+e.g. use "match=e71219" to get only the TH data message
 
 */
-
 
 static int netatmo_thw_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -121,9 +119,6 @@ static int netatmo_thw_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             0xaa, 0xaa,             // preamble
             0xe7, 0x12,             // sync word
     };
-    int id, battery_mV, signal, temp_raw, humidity, raw_a_315, raw_b_315, raw_c_045, raw_d_045, ws315, ws45, wind_dir;
-    float temp_c, wind_speed;
-    data_t *data;
 
     if (bitbuffer->num_rows != 1) {
         return DECODE_ABORT_EARLY;
@@ -159,24 +154,28 @@ static int netatmo_thw_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     uint8_t *b = frame;
 
-    id     = b[1] << 24 | b[2] << 16 | b[3] << 8 | b[4];
-    signal = (int8_t)b[6];
+    int msg_len = b[0];
+    int id      = b[1] << 24 | b[2] << 16 | b[3] << 8 | b[4];
+    int signal  = (int8_t)b[6];
 
-    /* clang-format off */
-    switch (b[0]) {
-    case 6:
+    data_t *data;
+    if (msg_len == 6) {
+        /* clang-format off */
         data = data_make(
                 "model",        "",             DATA_STRING,    "NetAtmo-TH",
                 "id",           "ID Code",      DATA_FORMAT,    "%08x",        DATA_INT,    id,
                 "signal_dB",    "Signal",       DATA_FORMAT,    "%d dB",       DATA_INT,    signal,
                 "mic",          "Integrity",    DATA_STRING,    "CRC",
                 NULL);
-        break;
-    case 0x19:
-        battery_mV = (b[8] * 256 + b[7]) * 2;
-        temp_raw   = (int16_t)((b[23] << 8) | b[22]); // sign-extend
-        temp_c     = temp_raw * 0.1f;
-        humidity   = b[25];
+        /* clang-format on */
+    }
+    else if (msg_len == 0x19) {
+        int battery_mV = (b[8] * 256 + b[7]) * 2;
+        int temp_raw   = (int16_t)((b[23] << 8) | b[22]); // sign-extend
+        float temp_c     = temp_raw * 0.1f;
+        int humidity   = b[25];
+
+        /* clang-format off */
         data = data_make(
                 "model",         "",            DATA_STRING,    "NetAtmo-TH",
                 "id",            "House Code",  DATA_FORMAT,    "%08x",        DATA_INT,    id,
@@ -186,18 +185,20 @@ static int netatmo_thw_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "humidity",      "Humidity",    DATA_FORMAT,    "%u %%",       DATA_INT,    humidity,
                 "mic",           "Integrity",   DATA_STRING,    "CRC",
                 NULL);
-        break;
-    case 0x31:
-        battery_mV = b[8] * 256 + b[7];
-        raw_a_315  = (int16_t)((b[26] << 8) | b[25]); // sign-extend
-        raw_b_315  = (int16_t)((b[28] << 8) | b[27]); // sign-extend
-        raw_c_045  = (int16_t)((b[30] << 8) | b[29]); // sign-extend
-        raw_d_045  = (int16_t)((b[32] << 8) | b[31]); // sign-extend
-        ws315      = raw_a_315 + raw_b_315;
-        ws45       = raw_c_045 + raw_d_045;
-        wind_speed = sqrtf((float)(ws45 * ws45 + ws315 * ws315)) * 0.05f;
-        wind_dir   = (int)(atan2f((float)ws45, (float)ws315) / (float)M_PI * 180 + 315) % 360;
+        /* clang-format on */
+    }
+    else if (msg_len == 0x31) {
+        int battery_mV = b[8] * 256 + b[7];
+        int raw_a_315  = (int16_t)((b[26] << 8) | b[25]); // sign-extend
+        int raw_b_315  = (int16_t)((b[28] << 8) | b[27]); // sign-extend
+        int raw_c_045  = (int16_t)((b[30] << 8) | b[29]); // sign-extend
+        int raw_d_045  = (int16_t)((b[32] << 8) | b[31]); // sign-extend
+        int ws315      = raw_a_315 + raw_b_315;
+        int ws45       = raw_c_045 + raw_d_045;
+        float wind_speed = sqrtf((float)(ws45 * ws45 + ws315 * ws315)) * 0.05f;
+        int wind_dir   = (int)(atan2f((float)ws45, (float)ws315) / (float)M_PI * 180 + 315) % 360;
 
+        /* clang-format off */
         data = data_make(
                 "model",         "",            DATA_STRING,  "NetAtmo-Wind",
                 "id",            "ID Code",     DATA_FORMAT,  "%08x",         DATA_INT,    id,
@@ -211,17 +212,18 @@ static int netatmo_thw_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "wind_dir_deg",  "Wind Dir",    DATA_FORMAT,  "%u °",        DATA_INT,    wind_dir,
                 "mic",           "Integrity",   DATA_STRING,  "CRC",
                 NULL);
-        break;
-    default:
+        /* clang-format on */
+    }
+    else {
+        /* clang-format off */
         data = data_make(
                 "model",         "",            DATA_STRING,  "NetAtmo-THW",
                 "id",            "ID Code",     DATA_FORMAT,  "%08x",        DATA_INT,   id,
                 "signal_dB",     "Signal",      DATA_FORMAT,  "%d dB",       DATA_INT,   signal,
                 "mic",           "Integrity",   DATA_STRING,  "CRC",
                 NULL);
-        break;
+        /* clang-format on */
     }
-    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
@@ -253,4 +255,3 @@ r_device const netatmo_thw = {
         .decode_fn   = &netatmo_thw_decode,
         .fields      = output_fields,
 };
-
