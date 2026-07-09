@@ -345,6 +345,7 @@
     DECL(martec_mplcd) \
     DECL(netatmo_thw) \
     DECL(omni) \
+    DECL(elster_power_meter) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
