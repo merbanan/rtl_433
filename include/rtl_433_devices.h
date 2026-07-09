@@ -344,6 +344,7 @@
     DECL(rfxmeter) \
     DECL(martec_mplcd) \
     DECL(netatmo_thw) \
+    DECL(omni) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;

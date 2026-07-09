@@ -424,6 +424,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [334]  RfxMeter, RFXPwr
     [335]  Martec MPLCD Ceiling Fan Remote
     [336]  NetAtmo temp/hum and wind sensors
+    [337]  Omni Multisensor
 
 * Disabled by default, use -R n or a conf file to enable
 
