@@ -428,6 +428,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [338]* Elster/Honeywell R2S/REXU power meter
     [339]  Florabest FB-TH-1 BBQ Thermometer
     [340]  Holman Industries iWeather WS5029 weather station (older PWM, OOK), BIOWIN 270208
+    [341]  Esun EN2053 two-channel BBQ thermometer
 
 * Disabled by default, use -R n or a conf file to enable
 
