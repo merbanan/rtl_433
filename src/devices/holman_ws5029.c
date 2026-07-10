@@ -327,3 +327,23 @@ r_device const holman_ws5029pwm = {
         .decode_fn   = &holman_ws5029pwm_decode,
         .fields      = output_fields,
 };
+
+/**
+OOK variant of the PWM protocol above, sold as BIOWIN / 2measure / Bioterm
+No. 270208 weather station, see issue #1476.
+
+Identical frame layout and checksum, but OOK modulated instead of FSK.
+To get the raw data:
+
+    rtl_433 -f 433.92M -X "n=Holman-WS5029-OOK,m=OOK_PWM,s=488,l=976,g=2000,r=6000,invert"
+*/
+r_device const holman_ws5029pwm_ook = {
+        .name        = "Holman Industries iWeather WS5029 weather station (older PWM, OOK), BIOWIN 270208",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 488,
+        .long_width  = 976,
+        .reset_limit = 6000,
+        .gap_limit   = 2000,
+        .decode_fn   = &holman_ws5029pwm_decode,
+        .fields      = output_fields,
+};
