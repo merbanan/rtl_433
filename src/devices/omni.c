@@ -8,13 +8,6 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-
-#include "decoder.h"
-
-#define OMNI_MSGFMT_00 0x00
-#define OMNI_MSGFMT_01 0x01
-
-
 /**
 The 'sensor' is actually a programmed microcontroller, such as
 Raspberry Pi Pico 2 or similar, with multiple possible data-sensor
@@ -93,7 +86,7 @@ A format=1 message format is provided as a more complete example.
 It uses the Bosch BME688 environmental sensor as a data source.
 It is an indoor-outdoor temperature/humidity/pressure sensor, and the
 message packet has the following fields:
-    indoor temp, outdoor temp, indoor humidity, light level,
+    indoor temp, outdoor temp, indoor humidity, outdoor humidity,
     barometric pressure, sensor power VCC.
 The data fields are binary values, 2's complement for temperatures.
 For format=1 messages, the message nibbles are to be read as:
@@ -104,14 +97,19 @@ For format=1 messages, the message nibbles are to be read as:
      i: id of device, 0-15
      1: sensor 1 temp reading (e.g, indoor),  °C *10, 12-bit, 2's complement integer
      2: sensor 2 temp reading (e.g, outdoor), °C *10, 12-bit, 2's complement integer
-     h: sensor 1 humidity reading (e.g., indoor), %RH as 8-bit integer
-     g: light level reading, % as 8-bit integer
+     h: sensor 1 humidity reading (e.g., indoor),  %RH as 8-bit integer
+     g: sensor 2 humidity reading (e.g., outdoor), %RH as 8-bit integer
      p: barometric pressure * 10, in hPa, as 16-bit integer, 0..6553.5 hPa
      v: (VCC-3.00)*100, as 8-bit integer, in volts: 3V00..5V55 volts
      c: CRC8 checksum of bytes 1..9, initial remainder 0xaa,
             divisor polynomial 0x97, no reflections or inversions
 */
 
+#include "decoder.h"
+
+#define initCRC 0xaa
+#define OMNI_MSGFMT_00 0x00
+#define OMNI_MSGFMT_01 0x01
 
 static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -121,13 +119,13 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (r < 0 || bitbuffer->bits_per_row[r] > 82) {
         decoder_log(decoder, 1, __func__, "omni: Invalid message");
         return DECODE_ABORT_LENGTH;
-    }
+    };
 
     // OK, that's our message buffer for decoding
     uint8_t *b = bitbuffer->bb[r];
 
     // Validate the packet against the CRC8 checksum
-    if (crc8(b, 9, 0x97, 0xAA) != b[9]) {
+    if (crc8(b, 9, 0x97, initCRC) != b[9]) {
         decoder_log(decoder, 1, __func__, "omni: CRC8 checksum error");
         return DECODE_FAIL_MIC;
     }
@@ -146,11 +144,10 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     case OMNI_MSGFMT_00:
         ptr = &hexstring[0];
         // print just the 8 data bytes as payload data
-        for (int ij = 1; ij < 9; ij++) {
+        for (int ij = 1; ij < 9; ij++)
             ptr += sprintf(ptr, "%02x", b[ij]);
-        }
-        float itemp_c = (float)(((int16_t)( b[1]<<8  | b[2] )) >> 4) * 0.10f;
-        float volts   = ((float)(b[8])) * 0.01f + 3.00f;
+        double itemp_c = (double)(((int16_t)( b[1]<<8  | b[2] )) >> 4) * 0.10;
+        double volts   = ((double)(b[8])) * 0.01 + 3.00;
         // Make the data descriptor
         /* clang-format off */
         data = data_make(
@@ -166,12 +163,12 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         break;
 
     case OMNI_MSGFMT_01:
-        itemp_c = (float)(((int16_t)( b[1]<<8  | b[2] )) >> 4) * 0.10f;
-        float otemp_c = (float) (((int16_t)(b[2]<<12 | b[3]<<4 )) >> 4) * 0.10f;
-        float ihum    = (float)b[4];
-        float light   = (float)b[5];
-        float press   = (float)(((uint16_t)(b[6] << 8)) | b[7]) * 0.10f;
-        volts         = ((float)(b[8])) * 0.01f + 3.00f;
+        itemp_c = (double)(((int16_t)( b[1]<<8  | b[2] )) >> 4) * 0.10;
+        double otemp_c = (double) (((int16_t)(b[2]<<12 | b[3]<<4 )) >> 4) * 0.10;
+        double ihum    = (double)b[4];
+        double light   = (double)b[5];
+        double press   = (double)(((uint16_t)(b[6] << 8)) | b[7]) * 0.10;
+        volts          = ((double)(b[8])) * 0.01 + 3.00;
         // Make the data descriptor
         /* clang-format off */
         data = data_make(
@@ -193,9 +190,8 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // Print the whole 10 bytes in hex, with id and fmt explicit
         ptr = &hexstring[0];
         // print just the 8 data bytes as payload data
-        for (int ij = 1; ij < 9; ij++) {
+        for (int ij = 1; ij < 9; ij++)
             ptr += sprintf(ptr, "%02x", b[ij]);
-        }
         // Make the data descriptor
         data = data_make(
             "model",   "",          DATA_STRING, "Omni-Multisensor",
@@ -205,7 +201,11 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "mic",     "Integrity", DATA_STRING,  "CRC",
             NULL);
         break;
-    }
+
+        /* New decoders follow here */
+        break;
+
+    };
 
     // And output the field values
     decoder_output_data(decoder, data);
@@ -215,8 +215,8 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 // List the output fields for various message types
 static char const *const output_fields[] = {
         "model",
+        "fmt",
         "id",
-        "channel",
         "temperature_C",
         "temperature_2_C",
         "humidity",
