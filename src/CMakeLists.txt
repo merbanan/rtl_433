@@ -144,6 +144,7 @@ add_library(r_433 STATIC
     devices/fineoffset_ws85.c
     devices/fineoffset_ws90.c
     devices/flex.c
+    devices/florabest.c
     devices/flowis.c
     devices/fordremote.c
     devices/fs20.c

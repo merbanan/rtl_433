@@ -426,6 +426,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [336]  NetAtmo temp/hum and wind sensors
     [337]  Omni Multisensor
     [338]* Elster/Honeywell R2S/REXU power meter
+    [339]  Florabest FB-TH-1 BBQ Thermometer
 
 * Disabled by default, use -R n or a conf file to enable
 
