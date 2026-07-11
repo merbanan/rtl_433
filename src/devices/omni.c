@@ -147,7 +147,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // print just the 8 data bytes as payload data
         for (int ij = 1; ij < 9; ij++) {
             ptr += sprintf(ptr, "%02x", b[ij]);
-	}
+        }
         double itemp_c = (double)(((int16_t)( b[1]<<8  | b[2] )) >> 4) * 0.10;
         double volts   = ((double)(b[8])) * 0.01 + 3.00;
         // Make the data descriptor
@@ -194,7 +194,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // print just the 8 data bytes as payload data
         for (int ij = 1; ij < 9; ij++) {
             ptr += sprintf(ptr, "%02x", b[ij]);
-	}
+        }
         // Make the data descriptor
         data = data_make(
             "model",   "",          DATA_STRING, "Omni-Multisensor",
