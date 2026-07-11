@@ -8,6 +8,13 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
+
+#include "decoder.h"
+
+#define INITCRC        0xaa
+#define OMNI_MSGFMT_00 0x00
+#define OMNI_MSGFMT_01 0x01
+
 /**
 The 'sensor' is actually a programmed microcontroller, such as
 Raspberry Pi Pico 2 or similar, with multiple possible data-sensor
@@ -105,12 +112,6 @@ For format=1 messages, the message nibbles are to be read as:
             divisor polynomial 0x97, no reflections or inversions
 */
 
-#include "decoder.h"
-
-#define initCRC 0xaa
-#define OMNI_MSGFMT_00 0x00
-#define OMNI_MSGFMT_01 0x01
-
 static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // Find a row that's a candidate for decoding
@@ -119,13 +120,13 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (r < 0 || bitbuffer->bits_per_row[r] > 82) {
         decoder_log(decoder, 1, __func__, "omni: Invalid message");
         return DECODE_ABORT_LENGTH;
-    };
+    }
 
     // OK, that's our message buffer for decoding
     uint8_t *b = bitbuffer->bb[r];
 
     // Validate the packet against the CRC8 checksum
-    if (crc8(b, 9, 0x97, initCRC) != b[9]) {
+    if (crc8(b, 9, 0x97, INITCRC) != b[9]) {
         decoder_log(decoder, 1, __func__, "omni: CRC8 checksum error");
         return DECODE_FAIL_MIC;
     }
@@ -144,8 +145,9 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     case OMNI_MSGFMT_00:
         ptr = &hexstring[0];
         // print just the 8 data bytes as payload data
-        for (int ij = 1; ij < 9; ij++)
+        for (int ij = 1; ij < 9; ij++) {
             ptr += sprintf(ptr, "%02x", b[ij]);
+	}
         double itemp_c = (double)(((int16_t)( b[1]<<8  | b[2] )) >> 4) * 0.10;
         double volts   = ((double)(b[8])) * 0.01 + 3.00;
         // Make the data descriptor
@@ -163,8 +165,8 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         break;
 
     case OMNI_MSGFMT_01:
-        itemp_c = (double)(((int16_t)( b[1]<<8  | b[2] )) >> 4) * 0.10;
-        double otemp_c = (double) (((int16_t)(b[2]<<12 | b[3]<<4 )) >> 4) * 0.10;
+        itemp_c        = (double)(((int16_t)( b[1]<<8 | b[2] )) >> 4) * 0.10;
+        double otemp_c = (double) (((int16_t)( b[2]<<12 | b[3]<<4 )) >> 4) * 0.10;
         double ihum    = (double)b[4];
         double light   = (double)b[5];
         double press   = (double)(((uint16_t)(b[6] << 8)) | b[7]) * 0.10;
@@ -190,8 +192,9 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // Print the whole 10 bytes in hex, with id and fmt explicit
         ptr = &hexstring[0];
         // print just the 8 data bytes as payload data
-        for (int ij = 1; ij < 9; ij++)
+        for (int ij = 1; ij < 9; ij++) {
             ptr += sprintf(ptr, "%02x", b[ij]);
+	}
         // Make the data descriptor
         data = data_make(
             "model",   "",          DATA_STRING, "Omni-Multisensor",
