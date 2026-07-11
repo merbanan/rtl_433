@@ -351,6 +351,7 @@
     DECL(esun_en2053) \
     DECL(vivint) \
     DECL(tpms_smartire) \
+    DECL(dickert_pwm) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
