@@ -762,7 +762,13 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
 
     // process standard payload
 
-    uint8_t off = block1->block2.pl_offset;
+    // NOTE: off must not be a uint8_t. m_bus_decode_records() can return a
+    // "consumed" value up to 192 (LVAR variable-length field), and adding
+    // that to off several times can exceed 255. A uint8_t accumulator would
+    // wrap around, and the wrapped (small) value can still satisfy
+    // "off < block1->L", making the parser jump backward and re-process
+    // already consumed bytes instead of terminating.
+    unsigned off = block1->block2.pl_offset;
     const uint8_t *b = out->data;
 
     // Data Record Header DRH, contains Data Information Block DIB and Value Information Block VIB
@@ -782,7 +788,7 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
 //[02 65] b408 [42 65] a008 [8201 65] 6408 [22 65] 9608 [12 65] ac08 [62 65] 2808 [52 65] 920802fb1a470142fb1a4a018201fb1a550122fb1a4a0112fb1a4a0162fb1a3c0152fb1a6c01066dbb3197902100
 
     /* Payload must start with a DIF */
-    while (off < block1->L) {
+    while (off < block1->L && off < out->length) {
         uint8_t dif;
         uint8_t dife_array[10] = {0};
         uint8_t dife_cnt;

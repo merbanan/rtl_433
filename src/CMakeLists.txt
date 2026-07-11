@@ -130,6 +130,7 @@ add_library(r_433 STATIC
     devices/esa.c
     devices/esic_emt7110.c
     devices/esperanza_ews.c
+    devices/esun_en2053.c
     devices/eurochron.c
     devices/fineoffset.c
     devices/fineoffset_wh1050.c

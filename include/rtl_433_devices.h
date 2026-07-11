@@ -347,6 +347,8 @@
     DECL(omni) \
     DECL(elster_power_meter) \
     DECL(florabest) \
+    DECL(holman_ws5029pwm_ook) \
+    DECL(esun_en2053) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
