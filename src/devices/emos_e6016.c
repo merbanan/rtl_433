@@ -1,5 +1,5 @@
 /** @file
-    EMOS E6016 weatherstation with DCF77.
+    EMOS E6016 weatherstation with DCF77, EMOS E6018 temperature/humidity sensor.
 
     Copyright (C) 2022 Dirk Utke-Woehlke <kardinal26@mail.de>
 
@@ -12,20 +12,28 @@
 #include "decoder.h"
 
 /**
-EMOS E6016 weatherstation with DCF77.
+EMOS E6016 weatherstation with DCF77, EMOS E6018 temperature/humidity sensor.
 
 - Manufacturer: EMOS
 - Transmit Interval: every ~61 s
 - Frequency: 433.92 MHz
 - Modulation: OOK PWM, INVERTED
 
+Same frame for both devices, see https://github.com/merbanan/rtl_433/issues/1692.
+The E6018 is a simpler variant without a wind sensor or DCF77 radio clock
+receiver: its wind fields are always 0 and its "clock" is a free-running
+counter seeded at a fixed 2015-01-01 (time of day still advances, but the
+date never changes and does not track reality). It is distinguished by the
+2-bit V field always being 0, vs. 2 for the E6016 (only these two values
+have been observed).
+
 Data Layout:
 
-    PP PP PP II ?K KK KK KK CT TT HH SS DF XX RR
+    PP PP PP II VK KK KK KK CT TT HH SS DF XX RR
 
 - P: (24 bit) preamble
 - I: (8 bit) ID
-- ?: (2 bit) unknown
+- V: (2 bit) variant: 0 = E6018 (no wind, fixed/fake clock), 2 = E6016
 - K: (32 bit) datetime, fields are 6d-4d-5d 5d:6d:6d
 - C: (2 bit) channel
 - T: (12 bit) temperature, signed, scale 10
@@ -47,11 +55,11 @@ Raw data:
 
 Format string:
 
-    MODEL?:8h8h8h ID?:8d ?2b DT:6d-4d-5dT5d:6d:6d CH:2d TEMP:12d HUM?8d WSPEED:8d WINDIR:4d BAT:4b CHK:8h REPEAT:8h
+    MODEL?:8h8h8h ID?:8d V:2d DT:6d-4d-5dT5d:6d:6d CH:2d TEMP:12d HUM?8d WSPEED:8d WINDIR:4d BAT:4b CHK:8h REPEAT:8h
 
 Decoded example:
 
-    MODEL?:aaa583 ID?:255 ?10 DT:21-05-21T07:49:35 CH:0 TEMP:0201 HUM?037 WSPEED:000 WINDIR:10 BAT:1101 CHK:c7 REPEAT:00
+    MODEL?:aaa583 ID?:255 V:10 DT:21-05-21T07:49:35 CH:0 TEMP:0201 HUM?037 WSPEED:000 WINDIR:10 BAT:1101 CHK:c7 REPEAT:00
 
 */
 
@@ -86,6 +94,8 @@ static int emos_e6016_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     int id         = b[3];
+    int variant    = (b[4] >> 6) & 0x3; // 0: E6018 (no wind, fake clock), 2: E6016
+    int is_e6018   = (variant != 2);
     int battery    = ((b[12] >> 2) & 0x1);
     unsigned dcf77 = ((b[4] & 0x3f) << 26) | (b[5] << 18) | (b[6] << 10) | (b[7] << 2) | (b[8] >> 6);
     int dcf77_sec  = ((dcf77 >> 0) & 0x3f);
@@ -107,15 +117,16 @@ static int emos_e6016_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "",                 DATA_STRING, "EMOS-E6016",
+            "model",            "",                 DATA_COND, !is_e6018, DATA_STRING, "EMOS-E6016",
+            "model",            "",                 DATA_COND, is_e6018,  DATA_STRING, "EMOS-E6018",
             "id",               "House Code",       DATA_INT,    id,
             "channel",          "Channel",          DATA_INT,    channel,
             "battery_ok",       "Battery_OK",       DATA_INT,    battery,
             "temperature_C",    "Temperature_C",    DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",         DATA_FORMAT, "%u", DATA_INT, humidity,
-            "wind_avg_m_s",     "WindSpeed m_s",    DATA_FORMAT, "%.1f m/s",  DATA_DOUBLE, speed_ms,
-            "wind_dir_deg",     "Wind direction",   DATA_FORMAT, "%.1f",  DATA_DOUBLE, dir_deg,
-            "radio_clock",      "Radio Clock",      DATA_STRING, dcf77_str,
+            "wind_avg_m_s",     "WindSpeed m_s",    DATA_COND, !is_e6018, DATA_FORMAT, "%.1f m/s",  DATA_DOUBLE, speed_ms,
+            "wind_dir_deg",     "Wind direction",   DATA_COND, !is_e6018, DATA_FORMAT, "%.1f",  DATA_DOUBLE, dir_deg,
+            "radio_clock",      "Radio Clock",      DATA_COND, !is_e6018, DATA_STRING, dcf77_str,
             "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
@@ -139,7 +150,7 @@ static char const *const output_fields[] = {
 };
 // n=EMOS-E6016,m=OOK_PWM,s=280,l=796,r=804,g=0,t=0,y=1836,rows>=3,bits=120
 r_device const emos_e6016 = {
-        .name        = "EMOS E6016 weatherstation with DCF77",
+        .name        = "EMOS E6016 weatherstation with DCF77, EMOS E6018 temperature/humidity sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 280,
         .long_width  = 796,

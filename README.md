@@ -301,7 +301,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [211]  Regency Ceiling Fan Remote (-f 303.75M to 303.96M)
     [212]  Renault 0435R TPMS
     [213]  Fine Offset Electronics WS80 weather station
-    [214]  EMOS E6016 weatherstation with DCF77
+    [214]  EMOS E6016 weatherstation with DCF77, EMOS E6018 temperature/humidity sensor
     [215]  Emax W6, rebrand Altronics x7063/4/x7064A, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025, Protmex PT3390A, Jula Marquant 014331/32, TechniSat IMETEO X6 76-4924-00, Weather Station or temperature/humidity sensor
     [216]* ANT and ANT+ devices
     [217]  EMOS E6016 rain gauge
