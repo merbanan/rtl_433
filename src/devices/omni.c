@@ -11,7 +11,7 @@
 
 #include "decoder.h"
 
-#define INITCRC        0xaa
+#define INITCRC        0xaa  // change this to match your device for security
 #define OMNI_MSGFMT_00 0x00
 #define OMNI_MSGFMT_01 0x01
 
@@ -148,8 +148,8 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         for (int ij = 1; ij < 9; ij++) {
             ptr += sprintf(ptr, "%02x", b[ij]);
         }
-        double itemp_c = (double)(((int16_t)( b[1]<<8  | b[2] )) >> 4) * 0.10;
-        double volts   = ((double)(b[8])) * 0.01 + 3.00;
+        float itemp_c = (float)(((int16_t)( b[1]<<8 | b[2] )) >> 4) * 0.10;
+        float volts   = ((float)(b[8])) * 0.01 + 3.00;
         // Make the data descriptor
         /* clang-format off */
         data = data_make(
@@ -165,12 +165,12 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         break;
 
     case OMNI_MSGFMT_01:
-        itemp_c        = (double)(((int16_t)( b[1]<<8 | b[2] )) >> 4) * 0.10;
-        double otemp_c = (double) (((int16_t)( b[2]<<12 | b[3]<<4 )) >> 4) * 0.10;
-        double ihum    = (double)b[4];
-        double light   = (double)b[5];
-        double press   = (double)(((uint16_t)(b[6] << 8)) | b[7]) * 0.10;
-        volts          = ((double)(b[8])) * 0.01 + 3.00;
+        itemp_c       = (float)(((int16_t)( b[1]<<8 | b[2] )) >> 4) * 0.10;
+        float otemp_c = (float) (((int16_t)( b[2]<<12 | b[3]<<4 )) >> 4) * 0.10;
+        float ihum    = (float)b[4];
+        float light   = (float)b[5];
+        float press   = (float)(((uint16_t)(b[6] << 8)) | b[7]) * 0.10;
+        volts         = ((float)(b[8])) * 0.01 + 3.00;
         // Make the data descriptor
         /* clang-format off */
         data = data_make(
