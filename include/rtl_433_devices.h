@@ -359,6 +359,7 @@
     DECL(govee_h5310) \
     DECL(govee_h5112) \
     DECL(ecoeye) \
+    DECL(fineoffset_wh52) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
