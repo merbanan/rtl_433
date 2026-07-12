@@ -182,16 +182,22 @@ Used with:
 Data layout:
 
     ^^^^_^_^_^_^_^_^_^_^_^_^_^_^_^_^^^^_FFFFFFIIIIIIIIIIIII
-    IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIPPPPPPPPPPPPPPPPCCCC
+    IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIPPPPPPPPPPPPPPPPXXXX
 
-- PREAMBLE: 36-bits 0xF5555555E
-- F: FLAGS, 3 Manchester encoded bits
+- PREAMBLE: 36-bits 0xF5555555E (or ...5557 with the 0b10 as the first MC bit)
+- F: FLAGS, 3 Manchester encoded bits (4 bits with the fixed 1-bit from preamble)
 - I: ID, 24 Manchester encoded bits
 - P: PRESSURE, 8 Manchester encoded bits (PSI * 5)
-- C: CHECK, 2 Manchester encoded bits some kind of Parity
+- X: CHECK, 2 Manchester encoded bits, 2-bit addition checksum
+
+Flags:
+
+- 0 = learning mode (when using a 125kHz coil to wake up the TPMS and have the car learn; sends 9 packets)
+- 3 = sudden pressure change (increase/decrease) sends 7 or 8 packets
+- 5 = wake up mode, sends 8 packets
+- 7 = driving mode, sends 8 packets
 
 NOTE: there is NO temperature data transmitted
-TODO: the checksum is unknown
 
 We use OOK_PULSE_PCM to get the bitstream above.
 Then we use bitbuffer_manchester_decode() which will alert us to any
@@ -201,6 +207,20 @@ corruption since there is no CRC.
 
 The Manchester bits are encoded as 01 => 0 and 10 => 1, which is
 the reverse of bitbuffer_manchester_decode(), so we invert the result.
+
+Checksum: pad the 36 data bits with the fixed 1-bit tail of the preamble to
+get an even 38 bits, split into 2-bit groups, and add them together (not
+XOR) modulo 4. The result is always 1. Found by RonNiles, see
+https://github.com/merbanan/rtl_433/issues/1734
+
+NOTE: this decoder cannot tell an SMD3MA4 (PSI * 5) apart from a
+Schrader/Nissan/Infiniti MRXNIS315G3 sensor (also sold as the aftermarket
+Redi-Sensor SE10001HP/SE10001HPR), which uses the same wire format and
+preamble but only has 8 significant pressure bits at PSI * 4. Both
+interpretations are output (pressure_PSI for SMD3MA4, pressure_NIS_PSI for
+MRXNIS315G3); pick whichever matches your vehicle/sensor.
+See https://github.com/merbanan/rtl_433/issues/1734 for the (still open)
+discussion on how to best disambiguate the two.
 
 Example payloads:
 
@@ -215,57 +235,66 @@ Example payloads:
 
 */
 #define NUM_BITS_PREAMBLE (36)
-#define NUM_BITS_FLAGS (3)
-#define NUM_BITS_ID (24)
-#define NUM_BITS_PRESSURE (10)
-#define NUM_BITS_DATA (NUM_BITS_FLAGS + NUM_BITS_ID + NUM_BITS_PRESSURE)
-#define NUM_BITS_TOTAL (NUM_BITS_PREAMBLE + 2 * NUM_BITS_DATA)
+#define NUM_BITS_DATA (38) // 1 fixed bit + 3 flags + 24 id + 8 pressure + 2 checksum
+#define NUM_BITS_TOTAL_MIN (NUM_BITS_PREAMBLE / 2 + 2 * NUM_BITS_DATA)
+#define NUM_BITS_TOTAL_MAX (NUM_BITS_PREAMBLE + 2 * NUM_BITS_DATA + 8)
 
 static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    // Reject wrong length, with margin of error for extra bits at the end
-    if (bitbuffer->bits_per_row[0] < NUM_BITS_TOTAL
-            || bitbuffer->bits_per_row[0] >= NUM_BITS_TOTAL + 8) {
+    // full preamble is 0xF5555555E, this is its last 16 bits
+    uint8_t const preamble_pattern[2] = {0x55, 0x5e};
+
+    // Reject wrong length, with margin of error for a short preamble or extra bits at the end
+    if (bitbuffer->bits_per_row[0] < NUM_BITS_TOTAL_MIN
+            || bitbuffer->bits_per_row[0] >= NUM_BITS_TOTAL_MAX) {
         return DECODE_ABORT_LENGTH;
     }
 
-    // Check preamble
-    uint8_t *b = bitbuffer->bb[0];
-    if (b[0] != 0xf5 || b[1] != 0x55 || b[2] != 0x55 || b[3] != 0x55
-            || (b[4] >> 4) != 0xe) {
-        return DECODE_FAIL_SANITY;
+    // Find the preamble tail, keeping its last two (fixed) bits as the start of the data
+    unsigned bitpos = bitbuffer_search(bitbuffer, 0, 0, preamble_pattern, 16);
+    bitpos += 14;
+    if (bitpos + NUM_BITS_DATA * 2 > bitbuffer->bits_per_row[0]) {
+        return DECODE_ABORT_EARLY;
     }
 
     // Check and decode the Manchester bits
     bitbuffer_t decoded = {0};
-    int ret = bitbuffer_manchester_decode(bitbuffer, 0, NUM_BITS_PREAMBLE,
+    unsigned ret = bitbuffer_manchester_decode(bitbuffer, 0, bitpos,
             &decoded, NUM_BITS_DATA);
-    if (ret != NUM_BITS_TOTAL) {
+    if (ret != bitpos + NUM_BITS_DATA * 2) {
         decoder_log(decoder, 2, __func__, "invalid Manchester data");
         return DECODE_FAIL_MIC;
     }
     bitbuffer_invert(&decoded);
-    b = decoded.bb[0];
-
-    // Compute parity
-    int parity = xor_bytes(b, 4) ^ (b[4] & 0xe0);
-    parity     = (parity >> 4) ^ (parity & 0x0f);
-    parity     = (parity >> 2) ^ (parity & 0x03);
-
-    // Get the decoded data fields
-    // FFFSSSSS SSSSSSSS SSSSSSSS SSSPPPPP PPPCCxxx
-    int flags     = b[0] >> 5;
-    int serial_id = ((b[0] & 0x1f) << 19) | (b[1] << 11) | (b[2] << 3) | (b[3] >> 5);
-    int pressure  = ((b[3] & 0x1f) <<  3) | (b[4] >> 5);
-    int check     = ((b[4] & 0x18) >> 3);
-
-    decoder_logf_bitbuffer(decoder, 3, __func__, &decoded, "Parity: %d%d Check: %d%d", parity >> 1, parity & 1, check >> 1, check & 1);
+    uint8_t *b = decoded.bb[0];
 
     // reject all-zero data
-    if (!flags && !serial_id && !pressure) {
+    if (!b[0] && !b[1] && !b[2] && !b[3]) {
         decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00");
         return DECODE_FAIL_SANITY;
     }
+
+    // Checksum: add all 2-bit groups (including the fixed leading 1-bit) modulo 4, expect 1
+    int sum = 0;
+    for (int i = 0; i < 5; ++i) {
+        sum += ((b[i] >> 0) & 0x3) + ((b[i] >> 2) & 0x3)
+                + ((b[i] >> 4) & 0x3) + ((b[i] >> 6) & 0x3);
+    }
+    if ((sum & 0x3) != 1) {
+        decoder_log(decoder, 2, __func__, "checksum failed");
+        return DECODE_FAIL_MIC;
+    }
+
+    // Get the decoded data fields
+    // 1FFFSSSS SSSSSSSS SSSSSSSS SSSSPPPP PPPPXX..
+    int flags     = (b[0] & 0x70) >> 4;
+    int serial_id = ((b[0] & 0x0f) << 20) | (b[1] << 12) | (b[2] << 4) | (b[3] >> 4);
+    int pressure  = ((b[3] & 0x0f) <<  4) | (b[4] >> 4);
+
+    // normal driving is flags == 0x7
+    int flag_learn  = flags == 0x0;
+    int flag_alarm  = flags == 0x3;
+    int flag_wakeup = flags == 0x5;
 
     char id_str[9];
     snprintf(id_str, sizeof(id_str), "%06X", serial_id);
@@ -274,9 +303,14 @@ static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data = data_make(
             "model",            "",             DATA_STRING, "Schrader-SMD3MA4",
             "type",             "",             DATA_STRING, "TPMS",
-            "flags",            "",             DATA_INT,    flags,
             "id",               "ID",           DATA_STRING, id_str,
+            "flags",            "Flags",        DATA_INT,    flags,
+            "learn",            "Learn",        DATA_COND,   flag_learn, DATA_INT, 1,
+            "alarm",            "Alarm",        DATA_COND,   flag_alarm, DATA_INT, 1,
+            "wakeup",           "Wakeup",       DATA_COND,   flag_wakeup, DATA_INT, 1,
             "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.1f PSI", DATA_DOUBLE, pressure * 0.2f,
+            "pressure_NIS_PSI", "Pressure (Nissan/Infiniti scaling)", DATA_FORMAT, "%.1f PSI", DATA_DOUBLE, pressure * 0.25f,
+            "mic",              "Integrity",    DATA_STRING, "PARITY",
             NULL);
     /* clang-format on */
 
@@ -430,7 +464,12 @@ static char const *const output_fields_SMD3MA4[] = {
         "type",
         "id",
         "flags",
+        "learn",
+        "alarm",
+        "wakeup",
         "pressure_PSI",
+        "pressure_NIS_PSI",
+        "mic",
         NULL,
 };
 
