@@ -29,15 +29,17 @@ Data layout, after the aa2dd4 sync word:
 
     PPPPPPPPPPPPPPPP UUUUUUUUUUUUUUUU CCCCCCCC
 
-- P: 16 bit PV/solar generation current
-- U: 16 bit grid current used
+- P: 16 bit PV/solar generation current, centi-amps (0.01 A/count)
+- U: 16 bit grid current used, centi-amps (0.01 A/count)
 - C: 8 bit checksum
 
 Both readings match the transmitter's own serial console output digit for
-digit (e.g. serial "0129,0031" decodes to used=129, pv=31), but no one in
-the issue thread confirmed the underlying engineering unit/scale (likely
-amps or deci-amps from a current clamp), so both are reported as bare
-integers rather than guessing a unit suffix.
+digit (e.g. serial "0129,0031" decodes to used=1.29 A, pv=0.31 A). No one
+in the issue thread confirmed the engineering unit; centi-amps is assumed
+since it is the only scale that keeps a later reading of used=2348
+(reported when the reporter deliberately turned on more appliances) within
+the range of a typical CT clamp (23.48 A), while deci-amps or whole amps
+would put it far beyond what the clamp/circuit could plausibly read.
 
 Checksum is a simple byte-add: b0+b1+b2+b3 == b4 (mod 256).
 
@@ -86,8 +88,8 @@ static int ecoeye_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data_t *data = data_make(
             "model",            "",             DATA_STRING, "EcoEye",
-            "current_used",     "Used",         DATA_INT,    used,
-            "current_pv",       "PV",           DATA_INT,    pv,
+            "current_used_A",   "Used",         DATA_FORMAT, "%.2f A", DATA_DOUBLE, used * 0.01f,
+            "current_pv_A",     "PV",           DATA_FORMAT, "%.2f A", DATA_DOUBLE, pv * 0.01f,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
@@ -98,8 +100,8 @@ static int ecoeye_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char const *const output_fields[] = {
         "model",
-        "current_used",
-        "current_pv",
+        "current_used_A",
+        "current_pv_A",
         "mic",
         NULL,
 };
