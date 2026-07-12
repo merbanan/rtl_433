@@ -433,6 +433,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [343]  SmarTire TPMS sensor, Aston Martin/Vantage DB9 protocol
     [344]* Dickert MAHS433-01 garage door remote control
     [345]  FSL Cricket Scoreboard Controller
+    [346]  EN2058 four probe temperature sensor
 
 * Disabled by default, use -R n or a conf file to enable
 

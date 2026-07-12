@@ -353,6 +353,7 @@
     DECL(tpms_smartire) \
     DECL(dickert_pwm) \
     DECL(fsl_scoreboard) \
+    DECL(en2058) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
