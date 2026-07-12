@@ -354,6 +354,7 @@
     DECL(dickert_pwm) \
     DECL(fsl_scoreboard) \
     DECL(en2058) \
+    DECL(tfa_30_390x) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;

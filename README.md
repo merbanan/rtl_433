@@ -434,6 +434,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [344]* Dickert MAHS433-01 garage door remote control
     [345]  FSL Cricket Scoreboard Controller
     [346]  EN2058 four probe temperature sensor
+    [347]  TFA Dostmann 30.390X T/H sensors series
 
 * Disabled by default, use -R n or a conf file to enable
 
