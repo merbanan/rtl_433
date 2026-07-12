@@ -170,13 +170,16 @@ resolves that cross-model mislabeling.
 
 Status-reply frames from the H5112 dual-probe thermometer share this same
 outer length (LL=0x1f) and marker (0x71). H5310 status frames always carry
-the constant pair 0xcc 0xff at dec[8-9]; H5112's own dec[9] is instead part
-of its packed sensor word and only rarely happens to equal 0xff. This decoder
-rejects the frame (falling through to H5112) whenever dec[9] != 0xff -- a
-reliable but not perfect disambiguator (roughly 1/256 of genuine H5112 status
-frames could still be misclaimed here). There is no equivalent fix for a
-similar ambiguity on ping frames (see below); the fixed length/marker alone
-isn't enough there.
+the constant pair 0xcc 0xff at dec[8-9]; H5112's own dec[8-9] are instead
+part of its packed sensor word (probe temperature and humidity bits), which
+never decode to cc ff for physically possible readings -- dec[9] == 0xff
+alone would already require an impossible humidity above 102% RH. This
+decoder rejects the frame (falling through to H5112) unless both constants
+match, and the H5112 decoder symmetrically rejects frames whose humidity
+decodes above 100% RH, so the two accept-sets are disjoint for genuine
+frames without relying on decoder priority ordering. There is no equivalent
+fix for a similar ambiguity on ping frames (see below); the fixed
+length/marker alone isn't enough there.
 
 Ping/connectivity frame, LL == 0x1c (28), 25-byte decrypted payload, marker
 0x70. Observed correlating with app-side actions (Network Test, unit-display
@@ -338,10 +341,12 @@ static int govee_h5310_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         event       = "Periodic Update";
     }
     else {
-        // dec[9] is 0xff in genuine H5310 status frames (the "cc ff" constant
-        // pair); H5112 status responses share this outer_len/marker but carry
-        // sensor data at dec[9] instead, only rarely equal to 0xff.
-        if (dec[9] != 0xff) {
+        // dec[8-9] is the constant pair 0xcc 0xff in genuine H5310 status
+        // frames; H5112 status responses share this outer_len/marker but
+        // carry sensor data in these bytes instead (probe temperature and
+        // humidity bits, which never decode to cc ff for physically possible
+        // readings).
+        if (dec[8] != 0xcc || dec[9] != 0xff) {
             return DECODE_ABORT_EARLY;
         }
         battery_pct = dec[GOVEE_H5310_STATUS_BATTERY_OFFSET];
