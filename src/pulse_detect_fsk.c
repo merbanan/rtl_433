@@ -22,6 +22,14 @@
 #define FSK_DEFAULT_FM_DELTA 6000       // Default estimate for frequency delta
 #define FSK_EST_SLOW        64          // Constant for slowness of FSK estimators
 #define FSK_EST_FAST        16          // Constant for slowness of FSK estimators
+#define FSK_EST_ALT         128         // Constant for alternate FSK estimator modification scaling
+/*
+8 -> 19
+16 -> 11
+32 -> 5  tests/bresser_7in1/02/g005_868.3M_1000k.cu8 tests/lacrosse_ltv/BreezePro_LTV-WSDTH01/g001_914.938M_2400k.cu8 tests/lacrosse_ltv/LTV-TH2/g002_915M_1000k.cu8
+64 -> 1  tests/bresser_7in1/02/g005_868.3M_1000k.cu8
+128 -> 0
+*/
 
 void pulse_detect_fsk_init(pulse_detect_fsk_t *s)
 {
@@ -37,7 +45,9 @@ void pulse_detect_fsk_classic(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t 
     int const fm_f2_delta = abs(fm_n - s->fm_f2_est); // Get delta from F2 frequency estimate
     s->fsk_pulse_length += 1;
 
-    fprintf(stderr, "STATE %d N %d, F1 %d (d %d), F2 %d (d %d)\n", s->fsk_state, fm_n, s->fm_f1_est, fm_f1_delta, s->fm_f2_est, fm_f2_delta);
+//    static unsigned counter = 0;
+//    fprintf(stderr, "STATE[%06u] %d N %d, F1 %d (d %d), F2 %d (d %d)\n", ++counter, s->fsk_state, fm_n, s->fm_f1_est, fm_f1_delta, s->fm_f2_est, fm_f2_delta);
+
     switch(s->fsk_state) {
         case PD_FSK_STATE_INIT:        // Initial frequency - High or low?
             // Initial samples?
@@ -96,6 +106,13 @@ void pulse_detect_fsk_classic(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t 
                 } else {
                     s->fm_f1_est += fm_n/FSK_EST_SLOW - s->fm_f1_est/FSK_EST_SLOW;    // Slow estimator
                 }
+                // also pull other estimator very slowly
+                if (fm_n < s->fm_f2_est) {
+                    s->fm_f2_est += fm_n / (FSK_EST_FAST * FSK_EST_ALT) - s->fm_f2_est / (FSK_EST_FAST * FSK_EST_ALT); // Fast estimator
+                }
+                else {
+                    s->fm_f2_est += fm_n / (FSK_EST_SLOW * FSK_EST_ALT) - s->fm_f2_est / (FSK_EST_SLOW * FSK_EST_ALT); // Slow estimator
+                }
             }
             break;
         case PD_FSK_STATE_FL:        // Pulse gap at F2 frequency
@@ -130,6 +147,14 @@ void pulse_detect_fsk_classic(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t 
                     s->fm_f2_est += fm_n/FSK_EST_FAST - s->fm_f2_est/FSK_EST_FAST;    // Fast estimator
                 } else {
                     s->fm_f2_est += fm_n/FSK_EST_SLOW - s->fm_f2_est/FSK_EST_SLOW;    // Slow estimator
+                }
+
+                // also pull other estimator very slowly
+                if (fm_n > s->fm_f1_est) {
+                    s->fm_f1_est += fm_n / (FSK_EST_FAST * FSK_EST_ALT) - s->fm_f1_est / (FSK_EST_FAST * FSK_EST_ALT); // Fast estimator
+                }
+                else {
+                    s->fm_f1_est += fm_n / (FSK_EST_SLOW * FSK_EST_ALT) - s->fm_f1_est / (FSK_EST_SLOW * FSK_EST_ALT); // Slow estimator
                 }
             }
             break;
@@ -221,6 +246,17 @@ void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *
     }
 }
 
+/*
+Gaussian mixture model with 2 components
+https://scikit-learn.org/stable/modules/mixture.html
+
+Optimal dichotomization of bimodal Gaussian mixtures
+
+https://github.com/Ransaka/GMM-from-scratch
+
+https://towardsdatascience.com/gaussian-mixture-models-gmms-from-theory-to-implementation-4406c7fe9847/
+*/
+
 static int pulse_detect_fsk_package_internal(pulse_detect_fsk_t *pulse_detect_fsk, int16_t const *fm_data, unsigned fsk_start, unsigned fsk_end, pulse_data_t *fsk_pulses, unsigned fpdm)
 {
     fprintf(stderr, "pulse_detect_fsk_package PROCESSING %u at %u - %u\n", pulse_detect_fsk->pulse_done, fsk_start, fsk_end);
@@ -229,7 +265,20 @@ static int pulse_detect_fsk_package_internal(pulse_detect_fsk_t *pulse_detect_fs
     if (fpdm == FSK_PULSE_DETECT_OLD) {
         // FIXME: pull the loop into the fsk detectors
         // FIXME: converging takes too long with a broken start of signal s.a. lacrosse_ltv/LTV-R3/g012_868.3M_1024k.cu8
-        for (unsigned j = fsk_start + 0; j < fsk_end; ++j) {
+/*
+        // Skip a few initial samples, run for a limited number of samples to settle, then reset an run complete
+        unsigned fsk_start_test = MIN(fsk_start + 100, fsk_end);
+        unsigned fsk_end_test   = MIN(fsk_start + 1000, fsk_end);
+        for (unsigned j = fsk_start_test; j < fsk_end_test; ++j) {
+            pulse_detect_fsk_classic(pulse_detect_fsk, fm_data[j], fsk_pulses);
+        }
+        //pulse_data_clear(fsk_pulses); // too harsh
+        fsk_pulses->num_pulses = 0;
+        pulse_detect_fsk->fsk_state = 0;
+        fprintf(stderr, "pulse_detect_fsk_package PROCESSING2 %u at %u - %u\n", pulse_detect_fsk->pulse_done, fsk_start, fsk_end);
+*/
+
+        for (unsigned j = fsk_start; j < fsk_end; ++j) {
             pulse_detect_fsk_classic(pulse_detect_fsk, fm_data[j], fsk_pulses);
         }
     }

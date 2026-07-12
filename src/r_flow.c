@@ -271,13 +271,13 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
             int p_events = 0; // Sensor events successfully detected per package
             package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, n_samples,
                     demod->samp_rate, demod->input_pos, &demod->pulse_data);
-if (package_type >= PULSE_DATA_OOK_PARTIAL) {
-    demod->pulse_data.num_pulses += 1;
-    pulse_data_print(&demod->pulse_data);
-    demod->pulse_data.num_pulses -= 1;
-} else {
-    pulse_data_print(&demod->pulse_data);
-}
+//if (package_type >= PULSE_DATA_OOK_PARTIAL) {
+//    demod->pulse_data.num_pulses += 1;
+//    pulse_data_print(&demod->pulse_data);
+//    demod->pulse_data.num_pulses -= 1;
+//} else {
+//    pulse_data_print(&demod->pulse_data);
+//}
             if (package_type == PULSE_DATA_OOK_COMPLETE) {
                 // new package: set a first frame start if we are not tracking one already
                 if (!demod->frame_start_ago) {
