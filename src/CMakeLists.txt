@@ -338,6 +338,7 @@ add_library(r_433 STATIC
     devices/vivint.c
     devices/wallarge_cltx001.c
     devices/watts_thermostat.c
+    devices/watts_wfht_rf.c
     devices/waveman.c
     devices/wec2103.c
     devices/wg_pb12v1.c

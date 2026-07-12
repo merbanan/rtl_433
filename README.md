@@ -435,6 +435,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [345]  FSL Cricket Scoreboard Controller
     [346]  EN2058 four probe temperature sensor
     [347]  TFA Dostmann 30.390X T/H sensors series
+    [348]  Watts WFHT-RF / WFHC-MASTERH&C-RF underfloor heating thermostat
 
 * Disabled by default, use -R n or a conf file to enable
 

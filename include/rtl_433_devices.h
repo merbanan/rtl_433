@@ -355,6 +355,7 @@
     DECL(fsl_scoreboard) \
     DECL(en2058) \
     DECL(tfa_30_390x) \
+    DECL(watts_wfht_rf) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
