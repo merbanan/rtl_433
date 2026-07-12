@@ -14,7 +14,6 @@
 #define INITCRC        0xaa  // change this to match your device for security
 #define OMNI_MSGFMT_00 0x00
 #define OMNI_MSGFMT_01 0x01
-
 /**
 The 'sensor' is actually a programmed microcontroller, such as
 Raspberry Pi Pico 2 or similar, with multiple possible data-sensor
@@ -111,7 +110,6 @@ For format=1 messages, the message nibbles are to be read as:
      c: CRC8 checksum of bytes 1..9, initial remainder 0xaa,
             divisor polynomial 0x97, no reflections or inversions
 */
-
 static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // Find a row that's a candidate for decoding
