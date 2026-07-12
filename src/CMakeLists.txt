@@ -114,6 +114,7 @@ add_library(r_433 STATIC
     devices/dsc.c
     devices/ec3k.c
     devices/ecodhome.c
+    devices/ecoeye.c
     devices/ecowitt.c
     devices/efergy_e2_classic.c
     devices/efergy_optical.c

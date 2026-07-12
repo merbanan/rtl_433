@@ -358,6 +358,7 @@
     DECL(watts_wfht_rf) \
     DECL(govee_h5310) \
     DECL(govee_h5112) \
+    DECL(ecoeye) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
