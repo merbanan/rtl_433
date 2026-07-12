@@ -349,6 +349,15 @@
     DECL(florabest) \
     DECL(holman_ws5029pwm_ook) \
     DECL(esun_en2053) \
+    DECL(vivint) \
+    DECL(tpms_smartire) \
+    DECL(dickert_pwm) \
+    DECL(fsl_scoreboard) \
+    DECL(en2058) \
+    DECL(tfa_30_390x) \
+    DECL(watts_wfht_rf) \
+    DECL(govee_h5310) \
+    DECL(govee_h5112) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;

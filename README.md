@@ -165,7 +165,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
     [76]  LaCrosse TX29IT, TFA Dostmann 30.3159.IT Temperature sensor
     [77]  Vaillant calorMatic VRT340f Central Heating Control
-    [78]  Fine Offset Electronics, WH25, WH32, WH32B, WN32B, WH24, WH65B, HP1000, Misol WS2320 Temperature/Humidity/Pressure Sensor
+    [78]  Fine Offset Electronics, WH25, WH32, WH32B, WN32B, WH24, WH65, WS69, HP1000, Misol WS2320 Temperature/Humidity/Pressure Sensor
     [79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
     [80]  IBIS beacon
     [81]  Oil Ultrasonic STANDARD FSK
@@ -200,7 +200,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [110]  PMV-107J (Toyota) TPMS
     [111]  Emos TTX201 Temperature Sensor
     [112]  Ambient Weather TX-8300 Temperature/Humidity Sensor
-    [113]  Ambient Weather WH31E Thermo-Hygrometer Sensor, EcoWitt WH40 rain gauge, WS68 weather station
+    [113]  Ambient Weather WH31E Thermo-Hygrometer Sensor, EcoWitt WH40/WN20 rain gauge, WS68 weather station
     [114]  Maverick ET73
     [115]  Honeywell ActivLink, Wireless Doorbell
     [116]  Honeywell ActivLink, Wireless Doorbell (FSK)
@@ -301,14 +301,14 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [211]  Regency Ceiling Fan Remote (-f 303.75M to 303.96M)
     [212]  Renault 0435R TPMS
     [213]  Fine Offset Electronics WS80 weather station
-    [214]  EMOS E6016 weatherstation with DCF77
+    [214]  EMOS E6016 weatherstation with DCF77, EMOS E6018 temperature/humidity sensor
     [215]  Emax W6, rebrand Altronics x7063/4/x7064A, Optex 990040/50/51, Orium 13093/13123, Infactory FWS-1200, Newentor Q9, Otio 810025, Protmex PT3390A, Jula Marquant 014331/32, TechniSat IMETEO X6 76-4924-00, Weather Station or temperature/humidity sensor
     [216]* ANT and ANT+ devices
     [217]  EMOS E6016 rain gauge
     [218]  Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes (FSK)
     [219]  Fine Offset Electronics WH45 air quality sensor
     [220]  Maverick XR-30 BBQ Sensor
-    [221]  Fine Offset Electronics WN34S/L/D and Froggit DP150/D35 temperature sensor
+    [221]  Fine Offset Electronics WN34S/L/D, WN38 and Froggit DP150/D35 temperature sensor
     [222]  Rubicson Pool Thermometer 48942
     [223]  Badger ORION water meter, 100kbps (-f 916.45M -s 1200k)
     [224]  GEO minim+ energy monitor
@@ -347,7 +347,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [257]  BMW Gen2 and Gen3 TPMS
     [258]  Chamberlain CWPIRC PIR Sensor
     [259]  ThermoPro Meat Thermometers, TP829B 4 probes with temp only
-    [260]* Arad/Master Meter Dialog3G water utility meter
+    [260]  Arad/Master Meter Dialog3G water utility meter
     [261]  Geevon TX16-3 outdoor sensor
     [262]  Fine Offset Electronics WH46 air quality sensor
     [263]  Vevor Wireless Weather Station 7-in-1
@@ -429,6 +429,15 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [339]  Florabest FB-TH-1 BBQ Thermometer
     [340]  Holman Industries iWeather WS5029 weather station (older PWM, OOK), BIOWIN 270208
     [341]  Esun EN2053 two-channel BBQ thermometer
+    [342]  Vivint Door/Window Sensor, V-DW21R-345
+    [343]  SmarTire TPMS sensor, Aston Martin/Vantage DB9 protocol
+    [344]* Dickert MAHS433-01 garage door remote control
+    [345]  FSL Cricket Scoreboard Controller
+    [346]  EN2058 four probe temperature sensor
+    [347]  TFA Dostmann 30.390X T/H sensors series
+    [348]  Watts WFHT-RF / WFHC-MASTERH&C-RF underfloor heating thermostat
+    [349]  Govee Pool/Spa Thermometer H5310
+    [350]  Govee H5112 Dual-Probe Thermometer
 
 * Disabled by default, use -R n or a conf file to enable
 
@@ -612,7 +621,6 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 
 ```
 
-
 Some examples:
 
 | Command | Description
@@ -642,7 +650,6 @@ Network inputs and outputs are for use in a trusted local network, will contain 
 
 Join the Google group, rtl_433, for more information about rtl_433:
 https://groups.google.com/forum/#!forum/rtl_433
-
 
 ## Troubleshooting
 

@@ -24,8 +24,9 @@
 #define GOVEE_H5059_MSG_CLASS_OFFSET    0
 #define GOVEE_H5059_ID_OFFSET           1
 #define GOVEE_H5059_SUBTYPE_OFFSET      13
-#define GOVEE_H5059_LEAK_FLAG1_OFFSET   15
-#define GOVEE_H5059_LEAK_FLAG2_OFFSET   17
+#define GOVEE_H5059_LEAK_TOP_OFFSET     14
+#define GOVEE_H5059_LEAK_BOTTOM_OFFSET  15
+#define GOVEE_H5059_LEAK_ALARM_OFFSET   17
 
 #define GOVEE_H5059_LEAK_FLAG_ACTIVE    0x01
 
@@ -77,26 +78,42 @@ Decrypted payload (19+ bytes):
 - dec[1-4]: 32-bit device ID in wire byte order
 - dec[5-12]: unknown/reserved bytes
 - dec[13]: subtype (0x05 = button, 0x06 = leak, 0x07 = post-alarm)
-- dec[14]: unknown
-- dec[15]: state flag (checked with dec[17] for leak)
+- dec[14]: top probe wet flag (0x01 = top probe pair detects water)
+- dec[15]: bottom probe wet flag (0x01 = bottom probe pair detects water)
 - dec[16]: unknown
-- dec[17]: state flag (checked with dec[15] for leak)
+- dec[17]: alarm-active flag (non-zero while either probe pair is wet; seen as
+    0x01 on the initial leak frame and 0x02 on a follow-up frame ~1s later)
 - dec[18+]: unknown/variable payload
 
 Event mapping:
 
 - msg_class 0x11 + subtype 0x05: Button Press
-- msg_class 0x11 + subtype 0x06 + dec[15] == 0x01 + dec[17] == 0x01: Water Leak
+- msg_class 0x11 + subtype 0x06 + dec[17] != 0 + (dec[14] == 0x01 or dec[15] == 0x01): Water Leak
 - msg_class 0x11 + subtype 0x07: Post Alarm
 - msg_class 0x01: Pairing
 - msg_class 0x02: Class 0x02
 
+Top/bottom probe flags (confirmed 2026-06-14):
+
+- A bottom-probe-only leak produced dec[14]=0x00, dec[15]=0x01, dec[17]=0x01.
+- A top-probe-only leak produced dec[14]=0x01, dec[15]=0x00, dec[17]=0x01.
+- A simultaneous top+bottom leak's first frame matched the top-only pattern
+    (dec[14]=0x01, dec[15]=0x00); a follow-up subtype-0x08 frame ~1s later showed
+    both dec[14]=0x01 and dec[15]=0x01.
+- The original logic required dec[15] == 0x01 AND dec[17] == 0x01, which only
+    matched the bottom-probe case -- a top-probe-only leak fell through to the
+    generic "Telemetry" event and was never reported as "Water Leak". This is
+    fixed by checking dec[17] != 0 and either probe flag, and the specific probe
+    (top/bottom) is now reported via the leak_top/leak_bottom fields.
+
 Subtype 0x07 note:
 
-- Field observations indicate 0x07 commonly follows leak-active (0x06) frames and
-    likely represents dry/recovery state.
-- This is still marked as provisional and should be confirmed by correlating RF
-    captures with Govee gateway/app state transitions.
+- Observed following leak-active (0x06) frames, but the exact semantics are not
+    confirmed. Known triggers include the sensor recovering naturally (probe dries),
+    a manual alarm reset via the device button, and alarm suppression (which silences
+    the alert for ~1 hour while the probe may still be wet). Because of the
+    suppression case, subtype 0x07 cannot be interpreted as a "dry/recovered" signal,
+    so `detect_wet` is not emitted for this event type.
 
 Pairing mode notes (reverse-engineering observations):
 
@@ -215,15 +232,16 @@ static int govee_h5059_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint8_t msg_class = dec[GOVEE_H5059_MSG_CLASS_OFFSET];
     uint32_t id_wire  = ((uint32_t)dec[GOVEE_H5059_ID_OFFSET] << 24) |
-                       ((uint32_t)dec[GOVEE_H5059_ID_OFFSET + 1] << 16) |
-                       ((uint32_t)dec[GOVEE_H5059_ID_OFFSET + 2] << 8) |
-                       dec[GOVEE_H5059_ID_OFFSET + 3];
+                        ((uint32_t)dec[GOVEE_H5059_ID_OFFSET + 1] << 16) |
+                        ((uint32_t)dec[GOVEE_H5059_ID_OFFSET + 2] << 8) |
+                        dec[GOVEE_H5059_ID_OFFSET + 3];
     // The app-facing/canonical ID uses swapped 16-bit words relative to wire order.
     uint32_t id = ((id_wire & 0xffff) << 16) | ((id_wire >> 16) & 0xffff);
 
     int subtype     = enc_len > GOVEE_H5059_SUBTYPE_OFFSET ? dec[GOVEE_H5059_SUBTYPE_OFFSET] : -1;
-    int leak_flag_1 = enc_len > GOVEE_H5059_LEAK_FLAG1_OFFSET ? dec[GOVEE_H5059_LEAK_FLAG1_OFFSET] : -1;
-    int leak_flag_2 = enc_len > GOVEE_H5059_LEAK_FLAG2_OFFSET ? dec[GOVEE_H5059_LEAK_FLAG2_OFFSET] : -1;
+    int leak_top    = enc_len > GOVEE_H5059_LEAK_TOP_OFFSET ? dec[GOVEE_H5059_LEAK_TOP_OFFSET] : -1;
+    int leak_bottom = enc_len > GOVEE_H5059_LEAK_BOTTOM_OFFSET ? dec[GOVEE_H5059_LEAK_BOTTOM_OFFSET] : -1;
+    int leak_alarm  = enc_len > GOVEE_H5059_LEAK_ALARM_OFFSET ? dec[GOVEE_H5059_LEAK_ALARM_OFFSET] : -1;
     int leak_status = GOVEE_H5059_LEAK_UNKNOWN;
 
     char const *event = "Unknown";
@@ -233,7 +251,7 @@ static int govee_h5059_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             event       = "Button Press";
             leak_status = GOVEE_H5059_LEAK_DRY;
         }
-        else if (subtype == GOVEE_H5059_SUBTYPE_LEAK && leak_flag_1 == GOVEE_H5059_LEAK_FLAG_ACTIVE && leak_flag_2 == GOVEE_H5059_LEAK_FLAG_ACTIVE) {
+        else if (subtype == GOVEE_H5059_SUBTYPE_LEAK && leak_alarm != 0 && (leak_top == GOVEE_H5059_LEAK_FLAG_ACTIVE || leak_bottom == GOVEE_H5059_LEAK_FLAG_ACTIVE)) {
             event       = "Water Leak";
             leak_status = GOVEE_H5059_LEAK_WET;
         }
@@ -247,6 +265,9 @@ static int govee_h5059_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     else if (msg_class == GOVEE_H5059_MSG_CLASS_OTHER) {
         event = "Class 0x02";
     }
+    else {
+        return DECODE_ABORT_EARLY;
+    }
 
     /* clang-format off */
     data_t *data = data_make(
@@ -257,6 +278,8 @@ static int govee_h5059_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "msg_class",    "",                 DATA_FORMAT, "0x%02x", DATA_INT, msg_class,
             "subtype",      "",                 DATA_COND,   subtype >= 0, DATA_FORMAT, "0x%02x", DATA_INT, subtype,
             "detect_wet",   "",                 DATA_COND,   leak_status >= 0, DATA_INT, leak_status,
+            "leak_top",     "",                 DATA_COND,   leak_status == GOVEE_H5059_LEAK_WET, DATA_INT, leak_top == GOVEE_H5059_LEAK_FLAG_ACTIVE,
+            "leak_bottom",  "",                 DATA_COND,   leak_status == GOVEE_H5059_LEAK_WET, DATA_INT, leak_bottom == GOVEE_H5059_LEAK_FLAG_ACTIVE,
             "mic",          "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -274,6 +297,8 @@ static char const *const output_fields[] = {
         "msg_class",
         "subtype",
         "detect_wet",
+        "leak_top",
+        "leak_bottom",
         "mic",
         NULL,
 };
@@ -287,4 +312,7 @@ r_device const govee_h5059 = {
         .reset_limit = 2000,
         .decode_fn   = &govee_h5059_decode,
         .fields      = output_fields,
+        .priority    = 10, // H5310 shares this family's framing and runs at higher
+                           // priority; H5310 claims temp/periodic/status/ping frames
+                           // first; H5059 only sees what H5310 passes.
 };

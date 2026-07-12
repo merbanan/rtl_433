@@ -28,6 +28,7 @@ Rebrand and devices decoded :
 - Jula Marquant 014331 weather station /014332 temp hum sensor
 - TechniSat IMETEO X6 76-4924-00 weather station without UV/LUX/Gust  #2753
 - Auriol Weather Station With Multisensor HG11911
+- LaCrosse Technology WS6262 weather station, sensor WSTX62TY (temperature in C not F)  #3199
 
 S.a. issue #2000 #2299 #2326 #2375 PR #2300 #2346 #2374 #3463
 
@@ -83,8 +84,16 @@ Weather Rain/Wind station : humidity not at same byte position as temp/hum senso
     AA KC II IF 0T TT HH 0W WW 0D DD RR RR D9 01 01 04 05 06 07 08 09 10 11 12 13 14 15 16 17 xx SS yy
 - Without UV / Lux , with Wind Gust
     AA KC II IF 0T TT HH 0W WW 0D DD RR RR ?0 01 01 GG 04 05 06 07 08 09 10 11 12 13 14 15 16 xx SS yy
+- With UV / Lux and Wind Gust (LaCrosse WS6262 WSTX62TY sensor, temperature in C not F)
+    AA KC II IF 0T TT HH 0W WW 0D DD RR RR UU LL LL GG 05 06 07 08 09 10 11 12 13 14 15 16 17 xx SS yy
 
 default empty/null = 0x01 => value = 0
+
+The last two layouts both end their filler sequence at byte 29 == 0x16
+and are only told apart by bytes 14-15: EM3551H always has the fixed
+0x01 0x01 placeholder there (no UV/Lux data in this layout), while the
+LaCrosse WS6262 has real UV/Lux data in those bytes. See
+merbanan/rtl_433#3199.
 
 - K: (4 bit) Kind of device, = A if Temp/Hum Sensor or = 0 if Weather Rain/Wind station
 - C: (4 bit) channel ( = 4 for Weather Rain/wind station)
@@ -154,10 +163,12 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t b[32] = {0};
         bitbuffer_extract_bytes(bitbuffer, 0, pos, b, sizeof(b) * 8);
 
-        // verify checksum, 2 formulas, depends on the subtype model
+        int kind    = ((b[1] & 0xf0) >> 4);
         int subtype = b[3] & 0x03;
+
+        // verify checksum, 2 formulas, depends on the subtype model
         int checksum = add_bytes(b, 31);
-        if (subtype == 0x3) { // same formula but 0x9A offset for Altronics-X7064A model only
+        if (kind != 0 && subtype == 0x3) { // same formula but 0x9A offset for Altronics-X7064A model only
             checksum -= 0x9A;
         }
         if ((checksum & 0xff) != b[31]) {
@@ -167,7 +178,6 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         int channel     = (b[1] & 0x0f);
-        int kind        = ((b[1] & 0xf0) >> 4);
         int id          = (b[2] << 4) | (b[3] >> 4);
         int battery_low = (b[3] & 0x08);
         int pairing     = (b[3] & 0x04);
@@ -248,7 +258,7 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 decoder_output_data(decoder, data);
                 return 1;
             }
-            if (b[29] == 0x16) {                               //without UV/Lux with Wind Gust
+            if (b[29] == 0x16 && b[14] == 0x01 && b[15] == 0x01) { //without UV/Lux with Wind Gust
                 float gust_kmh = b[16] / 1.5f;
                 /* clang-format off */
                 data_t *data = data_make(
@@ -262,6 +272,39 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         "wind_max_km_h",    "Wind max speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, gust_kmh,
                         "wind_dir_deg",     "Wind Direction",   DATA_INT,    direction_deg,
                         "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",  DATA_DOUBLE, rain_mm,
+                        "pairing",          "Pairing?",         DATA_COND,   pairing,    DATA_INT,    !!pairing,
+                        "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
+                        NULL);
+                /* clang-format on */
+
+                decoder_output_data(decoder, data);
+                return 1;
+            }
+            if (b[29] == 0x16) {                               // with UV/Lux and Wind Gust (LaCrosse WS6262)
+                temp_c         = (temp_raw - 500) * 0.1f;
+                float gust_kmh = b[16] / 1.5f;
+                int uv_index   = (b[13] - 1) & 0x1f;
+                int lux_14     = (b[14] - 1) & 0xff;
+                int lux_15     = (b[15] - 1) & 0xff;
+                int lux_multi  = ((lux_14 & 0x80) >> 7);
+                int light_lux  = ((lux_14 & 0x7f) << 8) | (lux_15);
+                if (lux_multi == 1) {
+                    light_lux = light_lux * 10;
+                }
+                /* clang-format off */
+                data_t *data = data_make(
+                        "model",            "",                 DATA_STRING, "Lacrosse_WS6262",
+                        "id",               "",                 DATA_FORMAT, "%03x", DATA_INT,    id,
+                        "channel",          "Channel",          DATA_INT,    channel,
+                        "battery_ok",       "Battery_OK",       DATA_INT,    !battery_low,
+                        "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+                        "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
+                        "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
+                        "wind_max_km_h",    "Wind max speed",   DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, gust_kmh,
+                        "wind_dir_deg",     "Wind Direction",   DATA_INT,    direction_deg,
+                        "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm",  DATA_DOUBLE, rain_mm,
+                        "uvi",              "UV Index",         DATA_FORMAT, "%.0f", DATA_DOUBLE, (double)uv_index,
+                        "light_lux",        "Lux",              DATA_FORMAT, "%u", DATA_INT, light_lux,
                         "pairing",          "Pairing?",         DATA_COND,   pairing,    DATA_INT,    !!pairing,
                         "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
                         NULL);

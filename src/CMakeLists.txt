@@ -107,6 +107,7 @@ add_library(r_433 STATIC
     devices/current_cost.c
     devices/danfoss.c
     devices/deltadore_x3d.c
+    devices/dickert_mahs.c
     devices/digitech_xc0324.c
     devices/directv.c
     devices/dish_remote_6_3.c
@@ -124,6 +125,7 @@ add_library(r_433 STATIC
     devices/emontx.c
     devices/emos_e6016.c
     devices/emos_e6016_rain.c
+    devices/en2058.c
     devices/enocean_erp1.c
     devices/ert_idm.c
     devices/ert_scm.c
@@ -149,6 +151,7 @@ add_library(r_433 STATIC
     devices/flowis.c
     devices/fordremote.c
     devices/fs20.c
+    devices/fsl_scoreboard.c
     devices/ft004b.c
     devices/funkbus.c
     devices/gasmate_ba1008.c
@@ -162,6 +165,8 @@ add_library(r_433 STATIC
     devices/gm_car_remote.c
     devices/govee.c
     devices/govee_h5059.c
+    devices/govee_h5112.c
+    devices/govee_h5310.c
     devices/gridstream.c
     devices/grill_thermometer.c
     devices/gt_tmbbq05.c
@@ -282,6 +287,7 @@ add_library(r_433 STATIC
     devices/tfa_14_1504_v2.c
     devices/tfa_30_3196.c
     devices/tfa_30_3221.c
+    devices/tfa_30_390x.c
     devices/tfa_drop_30.3233.c
     devices/tfa_marbella.c
     devices/tfa_pool_thermometer.c
@@ -318,6 +324,7 @@ add_library(r_433 STATIC
     devices/tpms_renault.c
     devices/tpms_renault_0435r.c
     devices/tpms_schrader_motorcycle.c
+    devices/tpms_smartire.c
     devices/tpms_toyota.c
     devices/tpms_truck.c
     devices/tpms_trw.c
@@ -330,8 +337,10 @@ add_library(r_433 STATIC
     devices/vauno_en8822c.c
     devices/vevor_7in1.c
     devices/visonic_powercode.c
+    devices/vivint.c
     devices/wallarge_cltx001.c
     devices/watts_thermostat.c
+    devices/watts_wfht_rf.c
     devices/waveman.c
     devices/wec2103.c
     devices/wg_pb12v1.c
