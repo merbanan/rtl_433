@@ -438,6 +438,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [348]  Watts WFHT-RF / WFHC-MASTERH&C-RF underfloor heating thermostat
     [349]  Govee Pool/Spa Thermometer H5310
     [350]  Govee H5112 Dual-Probe Thermometer
+    [351]  Eco-Eye solar PV/grid current monitor
 
 * Disabled by default, use -R n or a conf file to enable
 
