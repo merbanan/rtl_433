@@ -53,16 +53,6 @@
 #define GOVEE_H5310_STATUS_LO_OFFSET      6
 #define GOVEE_H5310_STATUS_HI_OFFSET      7
 
-// Ping/connectivity frame: outer length LL = 0x1c, decrypts to a 25-byte payload.
-// Carries no battery or temperature data; observed as a connectivity check-in
-// (e.g. "Network Test", unit-display change, "long battery life" toggle).
-// Unlike the temperature-bearing frames, the device ID and shared material
-// are swapped: shared material is at dec[1-2], device ID at dec[3-4].
-#define GOVEE_H5310_PING_OUTER_LEN     0x1c
-#define GOVEE_H5310_PING_DECRYPTED_LEN 25
-#define GOVEE_H5310_PING_MARKER        0x70
-#define GOVEE_H5310_PING_ID_OFFSET     3
-
 // T_C = (raw - OFFSET) / SLOPE; raw is little-endian u16. Sign below 0 C unverified.
 #define GOVEE_H5310_TEMP_SLOPE  10.0
 #define GOVEE_H5310_TEMP_OFFSET 33168
@@ -115,11 +105,10 @@ Sensor uplink frame format:
 - ciphertext: encrypted payload bytes
 - CC CC: CRC-16/AUG-CCITT, poly=0x1021, init=0x1d0f
 
-This decoder handles four frame types. Three of them -- temperature-update,
-periodic-update, and status-reply -- share the same leading payload layout
-(device ID, shared ID material, battery, temperature), shifted by one byte
-between temperature-update and the other two; the ping frame shares only the
-device ID / shared material fields:
+This decoder handles three frame types -- temperature-update, periodic-update,
+and status-reply -- all sharing the same leading payload layout (device ID,
+shared ID material, battery, temperature), shifted by one byte between
+temperature-update and the other two:
 
 Temperature-update frame, LL == 0x10 (16), 13-byte decrypted payload. This
 frame appears to be triggered by a unit-change/forced-report action rather
@@ -179,31 +168,25 @@ by the H5059 decoder (same shared framing/key/CRC) but reported as model
 (this frame type has only been observed from H5310-family devices) and
 resolves that cross-model mislabeling.
 
-Ping/connectivity frame, LL == 0x1c (28), 25-byte decrypted payload. Carries
-no battery or temperature data. Observed correlating with app-side actions
-(Network Test, unit-display change, "long battery life" toggle on/off) for
-the Pool sensor, and also sent by the Spa; never observed from the H5059 leak
-detector, which only sends msg_class 0x11 telemetry:
+Status-reply frames from the H5112 dual-probe thermometer share this same
+outer length (LL=0x1f) and marker (0x71). H5310 status frames always carry
+the constant pair 0xcc 0xff at dec[8-9]; H5112's own dec[9] is instead part
+of its packed sensor word and only rarely happens to equal 0xff. This decoder
+rejects the frame (falling through to H5112) whenever dec[9] != 0xff -- a
+reliable but not perfect disambiguator (roughly 1/256 of genuine H5112 status
+frames could still be misclaimed here). There is no equivalent fix for a
+similar ambiguity on ping frames (see below); the fixed length/marker alone
+isn't enough there.
 
-    byte:  0   1  2   3  4   5    6    7   8   9   10  11..24
-    val :  70  9c b2  <id-2>  6a   2e  <varies, counter/nonce + flag>  00-padded
-
-- dec[0]: frame marker, constant 0x70
-- dec[1-2]: constant 9c b2 (shared device-ID material) -- note this is in the
-  opposite order from the temperature-bearing frames, where the shared
-  material follows the device ID
-- dec[3-4]: device ID (e.g. 71 b0 = Spa, f8 a7 = Pool)
-- dec[5]: constant 0x6a
-- dec[6]: constant 0x2e
-- dec[7-10]: varies between frames -- likely a counter/nonce plus a status
-  flag, not yet decoded
-- dec[11-24]: zero padding
-
-Before this frame type was added, LL=0x1c frames were decrypted successfully
-by the H5059 decoder (same shared framing/key/CRC) but reported as model
-"Govee-H5059" with event "Unknown" -- claiming them here is both more accurate
-(this frame type has only been observed from H5310-family devices) and
-resolves that cross-model mislabeling.
+Ping/connectivity frame, LL == 0x1c (28), 25-byte decrypted payload, marker
+0x70. Observed correlating with app-side actions (Network Test, unit-display
+change, "long battery life" toggle) on both physical units. Not decoded:
+unlike the status-reply collision above, ping frames carry no battery or
+temperature data to cross-check, and the 0x70 marker / LL=0x1c combination is
+shared with other Govee gateway devices (confirmed on the H5112 dual-probe
+thermometer), making device attribution by frame structure alone impossible.
+These frames are silently ignored (DECODE_ABORT_EARLY) rather than risk
+misattributing another device's ping to this one.
 
 Device ID: the emitted `id_wire` is the full 32-bit on-wire ID (e.g.
 f8 a7 9c b2 -> 0xf8a79cb2) and `id` is the same value with its two 16-bit
@@ -245,10 +228,9 @@ since there's no in-band low-battery state to detect.
 
 Other frames in this family (e.g. LL == 0x0c short poll/status, and the H5059
 leak-detector's own msg_class 0x01/0x02/0x11 telemetry) are not recognized by
-this decoder and are ignored; the H5059 decoder may report some of these as
-event "Unknown". The H5310 decoder runs at the default priority (before
-H5059's reduced priority, see govee_h5059.c) so it gets first access to
-frames in this family.
+this decoder and are ignored. The H5310 decoder runs at the default priority
+(before H5059's reduced priority, see govee_h5059.c) so it gets first access
+to frames in this family.
 */
 static int govee_h5310_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -305,11 +287,10 @@ static int govee_h5310_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int is_temp_frame     = (outer_len == GOVEE_H5310_TEMP_OUTER_LEN);
     int is_periodic_frame = (outer_len == GOVEE_H5310_PERIODIC_OUTER_LEN);
     int is_status_frame   = (outer_len == GOVEE_H5310_STATUS_OUTER_LEN);
-    int is_ping_frame     = (outer_len == GOVEE_H5310_PING_OUTER_LEN);
-    // Only the temperature-update, periodic-update, status-reply, and ping
-    // frames have a fixed outer length we recognize; ignore all other frame
-    // types in the family (short poll, leak telemetry) without erroring.
-    if (!is_temp_frame && !is_periodic_frame && !is_status_frame && !is_ping_frame) {
+    // Only the temperature-update, periodic-update, and status-reply frames
+    // have a fixed outer length we recognize; ignore all other frame types
+    // in the family (short poll, ping, leak telemetry) without erroring.
+    if (!is_temp_frame && !is_periodic_frame && !is_status_frame) {
         return DECODE_ABORT_EARLY;
     }
 
@@ -335,21 +316,12 @@ static int govee_h5310_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // guard against any other message subtype that happens to share this length.
     uint8_t expected_marker = is_temp_frame       ? GOVEE_H5310_TEMP_MARKER
                               : is_periodic_frame ? GOVEE_H5310_PERIODIC_MARKER
-                              : is_status_frame   ? GOVEE_H5310_STATUS_MARKER
-                                                  : GOVEE_H5310_PING_MARKER;
+                                                  : GOVEE_H5310_STATUS_MARKER;
     if (dec[GOVEE_H5310_MARKER_OFFSET] != expected_marker) {
         return DECODE_ABORT_EARLY;
     }
 
-    // Ping frame has shared material and device ID in the opposite order from the
-    // temperature-bearing frames; reassemble to the canonical id_wire layout.
-    uint32_t id_wire;
-    if (is_ping_frame) {
-        id_wire = ((uint32_t)dec[GOVEE_H5310_PING_ID_OFFSET] << 24) | ((uint32_t)dec[GOVEE_H5310_PING_ID_OFFSET + 1] << 16) | ((uint32_t)dec[GOVEE_H5310_ID_OFFSET] << 8) | dec[GOVEE_H5310_ID_OFFSET + 1];
-    }
-    else {
-        id_wire = ((uint32_t)dec[GOVEE_H5310_ID_OFFSET] << 24) | ((uint32_t)dec[GOVEE_H5310_ID_OFFSET + 1] << 16) | ((uint32_t)dec[GOVEE_H5310_ID_OFFSET + 2] << 8) | dec[GOVEE_H5310_ID_OFFSET + 3];
-    }
+    uint32_t id_wire = ((uint32_t)dec[GOVEE_H5310_ID_OFFSET] << 24) | ((uint32_t)dec[GOVEE_H5310_ID_OFFSET + 1] << 16) | ((uint32_t)dec[GOVEE_H5310_ID_OFFSET + 2] << 8) | dec[GOVEE_H5310_ID_OFFSET + 3];
     uint32_t id = ((id_wire & 0xffff) << 16) | ((id_wire >> 16) & 0xffff);
 
     int battery_pct = 0;
@@ -365,18 +337,21 @@ static int govee_h5310_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         raw         = dec[GOVEE_H5310_PERIODIC_LO_OFFSET] | ((uint16_t)dec[GOVEE_H5310_PERIODIC_HI_OFFSET] << 8);
         event       = "Periodic Update";
     }
-    else if (is_status_frame) {
+    else {
+        // dec[9] is 0xff in genuine H5310 status frames (the "cc ff" constant
+        // pair); H5112 status responses share this outer_len/marker but carry
+        // sensor data at dec[9] instead, only rarely equal to 0xff.
+        if (dec[9] != 0xff) {
+            return DECODE_ABORT_EARLY;
+        }
         battery_pct = dec[GOVEE_H5310_STATUS_BATTERY_OFFSET];
         raw         = dec[GOVEE_H5310_STATUS_LO_OFFSET] | ((uint16_t)dec[GOVEE_H5310_STATUS_HI_OFFSET] << 8);
         event       = "Status";
     }
-    else {
-        event = "Ping";
-    }
 
     float temperature_c = ((float)raw - GOVEE_H5310_TEMP_OFFSET) / GOVEE_H5310_TEMP_SLOPE;
 
-    if (!is_ping_frame && (temperature_c < GOVEE_H5310_TEMP_MIN_C || temperature_c > GOVEE_H5310_TEMP_MAX_C)) {
+    if (temperature_c < GOVEE_H5310_TEMP_MIN_C || temperature_c > GOVEE_H5310_TEMP_MAX_C) {
         return DECODE_FAIL_SANITY;
     }
 
@@ -386,9 +361,9 @@ static int govee_h5310_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "",             DATA_FORMAT, "%08x", DATA_INT, id,
             "id_wire",          "",             DATA_FORMAT, "%08x", DATA_INT, id_wire,
             "event",            "",             DATA_STRING, event,
-            "battery_ok",       "Battery",      DATA_COND, !is_ping_frame, DATA_INT,    battery_pct > 0,
-            "battery_pct",      "Battery",      DATA_COND, !is_ping_frame, DATA_INT,    battery_pct,
-            "temperature_C",    "Temperature",  DATA_COND, !is_ping_frame, DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temperature_c,
+            "battery_ok",       "Battery",      DATA_INT,    battery_pct > 0,
+            "battery_pct",      "Battery",      DATA_INT,    battery_pct,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temperature_c,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
