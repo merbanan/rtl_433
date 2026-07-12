@@ -44,8 +44,8 @@ The data is grouped in 6 bytes / 12 nibbles.
 
     [pre] [pre] [type] [id] [id] [temp] [temp] [temp] [humi] [humi] [crc] [crc]
 
-There is an extra checksum byte (after the CRC) in WH2A messages.
-TODO: maybe add the checksum for WH2A, e.g. b[5] == b[0]+b[1]+b[2]+b[3]+b[4]
+There is an extra checksum byte (after the CRC) in WH2A messages:
+b[5] == b[0]+b[1]+b[2]+b[3]+b[4] (mod 256).
 
 - pre is always 0xFF
 - type is always 0x4 (may be different for different sensor type?)
@@ -55,12 +55,25 @@ TODO: maybe add the checksum for WH2A, e.g. b[5] == b[0]+b[1]+b[2]+b[3]+b[4]
 
 Based on reverse engineering with gnu-radio and the nice article here:
 http://lucsmall.com/2012/04/29/weather-station-hacking-part-2/
+
+Also TFA Dostmann 30.3225.10 (the outdoor temperature sensor of the
+"Rainman" rain gauge kit, 30.3004), which shares the exact same 55-bit
+0xFE-preamble wire format as WH2A but is temperature-only. It sets the
+humidity byte to a fixed 0xFF (no humidity) and uses a different, WH5-
+style temperature encoding (unsigned, offset by 40, scaled by 10) rather
+than WH2A's signed magnitude; the top bit of the 12-bit temperature field
+is repurposed as a low-battery indicator instead of a sign bit. Confirmed
+against 100 real messages and the checksum above in
+https://github.com/merbanan/rtl_433/issues/1759 -- the humidity==0xFF
+byte is a reliable discriminator since real WH2A units always report a
+plausible 0-100% humidity there.
 */
 #define MODEL_WH2 2
 #define MODEL_WH2A 3
 #define MODEL_WH5 5
 #define MODEL_RB 6
 #define MODEL_TP 7
+#define MODEL_TFA303225 8
 static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     void *user_data = decoder_user_data(decoder);
@@ -74,6 +87,7 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int16_t temp;
     float temperature;
     uint8_t humidity;
+    int low_battery = 0;
 
     if (bitbuffer->bits_per_row[0] == 48 &&
             bb[0][0] == 0xFF) { // WH2
@@ -81,9 +95,11 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         model_num = MODEL_WH2;
 
     } else if (bitbuffer->bits_per_row[0] == 55 &&
-            bb[0][0] == 0xFE) { // WH2A
+            bb[0][0] == 0xFE) { // WH2A, TFA-303225
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 48);
-        model_num = MODEL_WH2A;
+        // TFA-303225 is temperature-only and always sets the humidity byte
+        // to 0xFF; a real WH2A always reports a plausible 0-100% humidity.
+        model_num = b[3] == 0xff ? MODEL_TFA303225 : MODEL_WH2A;
 
     } else if (bitbuffer->bits_per_row[0] == 47 &&
             bb[0][0] == 0xFE) { // WH5
@@ -104,6 +120,10 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (b[4] != crc8(&b[0], 4, 0x31, 0)) // x8 + x5 + x4 + 1 (x8 is implicit)
         return DECODE_FAIL_MIC;
 
+    if (model_num == MODEL_TFA303225 && (add_bytes(b, 5) & 0xff) != b[5]) {
+        return DECODE_FAIL_MIC;
+    }
+
     // Nibble 2 contains type, must be 0x04 -- or is this a (battery) flag maybe? please report.
     type = b[0] >> 4;
     if (type != 4) {
@@ -116,7 +136,13 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Nibble 5,6,7 contains 12 bits of temperature
     temp = ((b[1] & 0x0F) << 8) | b[2];
-    if (bitbuffer->bits_per_row[0] != 47 || user_data) { // WH2, Telldus, WH2A
+    if (model_num == MODEL_TFA303225) {
+        // The top bit is a low-battery indicator, not part of the magnitude.
+        low_battery = (temp & 0x800) != 0;
+        temp &= 0x7FF;
+        // The temperature is unsigned offset by 40 C and scaled by 10
+        temp -= 400;
+    } else if (bitbuffer->bits_per_row[0] != 47 || user_data) { // WH2, Telldus, WH2A
         // The temperature is signed magnitude and scaled by 10
         if (temp & 0x800) {
             temp &= 0x7FF; // remove sign bit
@@ -133,12 +159,14 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_COND, model_num == MODEL_WH2,  DATA_STRING, "Fineoffset-WH2",
-            "model",            "",             DATA_COND, model_num == MODEL_WH2A, DATA_STRING, "Fineoffset-WH2A",
-            "model",            "",             DATA_COND, model_num == MODEL_WH5,  DATA_STRING, "Fineoffset-WH5",
-            "model",            "",             DATA_COND, model_num == MODEL_RB,   DATA_STRING, "Rosenborg-66796",
-            "model",            "",             DATA_COND, model_num == MODEL_TP,   DATA_STRING, "Fineoffset-TelldusProove",
+            "model",            "",             DATA_COND, model_num == MODEL_WH2,        DATA_STRING, "Fineoffset-WH2",
+            "model",            "",             DATA_COND, model_num == MODEL_WH2A,       DATA_STRING, "Fineoffset-WH2A",
+            "model",            "",             DATA_COND, model_num == MODEL_WH5,        DATA_STRING, "Fineoffset-WH5",
+            "model",            "",             DATA_COND, model_num == MODEL_RB,         DATA_STRING, "Rosenborg-66796",
+            "model",            "",             DATA_COND, model_num == MODEL_TP,         DATA_STRING, "Fineoffset-TelldusProove",
+            "model",            "",             DATA_COND, model_num == MODEL_TFA303225,  DATA_STRING, "TFA-303225",
             "id",               "ID",           DATA_INT, id,
+            "battery_ok",       "Battery",      DATA_COND, model_num == MODEL_TFA303225, DATA_INT, !low_battery,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",     DATA_COND, humidity != 0xff, DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",              "Integrity",    DATA_STRING, "CRC",
@@ -1057,6 +1085,7 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
+        "battery_ok",
         "temperature_C",
         "humidity",
         "mic",
