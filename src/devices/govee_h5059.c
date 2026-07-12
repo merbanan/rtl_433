@@ -265,6 +265,9 @@ static int govee_h5059_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     else if (msg_class == GOVEE_H5059_MSG_CLASS_OTHER) {
         event = "Class 0x02";
     }
+    else {
+        return DECODE_ABORT_EARLY;
+    }
 
     /* clang-format off */
     data_t *data = data_make(
