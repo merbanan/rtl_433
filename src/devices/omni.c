@@ -217,7 +217,7 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "fmt",
-	"channel",
+        "channel",
         "id",
         "temperature_C",
         "temperature_2_C",
