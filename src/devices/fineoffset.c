@@ -13,25 +13,6 @@
 
 #include "decoder.h"
 
-r_device const fineoffset_WH2;
-
-static r_device *fineoffset_WH2_create(char const *arg)
-{
-    if (arg && !strcmp(arg, "no-wh5")) {
-        r_device *r_dev = decoder_create(&fineoffset_WH2, sizeof(int));
-        if (!r_dev) {
-            return NULL; // NOTE: returns NULL on alloc failure.
-        }
-
-        int *quirk = decoder_user_data(r_dev);
-        *quirk = 1;
-        return r_dev;
-    }
-    else {
-        return decoder_create(&fineoffset_WH2, 0); // NOTE: returns NULL on alloc failure.
-    }
-}
-
 /**
 Fine Offset Electronics WH2 Temperature/Humidity sensor protocol,
 also Agimex Rosenborg 66796 (sold in Denmark), collides with WH5,
@@ -71,102 +52,165 @@ plausible 0-100% humidity there.
 #define MODEL_WH2 2
 #define MODEL_WH2A 3
 #define MODEL_WH5 5
-#define MODEL_RB 6
 #define MODEL_TP 7
 #define MODEL_TFA303225 8
-static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int fineoffset_WH2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    void *user_data = decoder_user_data(decoder);
     bitrow_t *bb = bitbuffer->bb;
     uint8_t b[6] = {0};
-    data_t *data;
 
     int model_num;
-    int type;
-    uint8_t id;
-    int16_t temp;
-    float temperature;
-    uint8_t humidity;
-    int low_battery = 0;
-
     if (bitbuffer->bits_per_row[0] == 48 &&
             bb[0][0] == 0xFF) { // WH2
         bitbuffer_extract_bytes(bitbuffer, 0, 8, b, 40);
         model_num = MODEL_WH2;
 
-    } else if (bitbuffer->bits_per_row[0] == 55 &&
+    }
+    else if (bitbuffer->bits_per_row[0] == 55 &&
             bb[0][0] == 0xFE) { // WH2A, TFA-303225
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 48);
         // TFA-303225 is temperature-only and always sets the humidity byte
         // to 0xFF; a real WH2A always reports a plausible 0-100% humidity.
         model_num = b[3] == 0xff ? MODEL_TFA303225 : MODEL_WH2A;
 
-    } else if (bitbuffer->bits_per_row[0] == 47 &&
+    }
+    else if (bitbuffer->bits_per_row[0] == 47 &&
             bb[0][0] == 0xFE) { // WH5
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 40);
         model_num = MODEL_WH5;
-        if (user_data) // don't care for the actual value
-            model_num = MODEL_RB;
-
-    } else if (bitbuffer->bits_per_row[0] == 49 &&
-            bb[0][0] == 0xFF && (bb[0][1]&0x80) == 0x80) { // Telldus
+        // Note: this could also be a Rosenborg-66796
+    }
+    else if (bitbuffer->bits_per_row[0] == 49 &&
+            bb[0][0] == 0xFF && (bb[0][1] & 0x80) == 0x80) { // Telldus
         bitbuffer_extract_bytes(bitbuffer, 0, 9, b, 40);
         model_num = MODEL_TP;
 
-    } else
+    }
+    else {
         return DECODE_ABORT_LENGTH;
+    }
 
     // Validate package
-    if (b[4] != crc8(&b[0], 4, 0x31, 0)) // x8 + x5 + x4 + 1 (x8 is implicit)
+    if (b[4] != crc8(&b[0], 4, 0x31, 0)) { // x8 + x5 + x4 + 1 (x8 is implicit)
         return DECODE_FAIL_MIC;
+    }
 
     if (model_num == MODEL_TFA303225 && (add_bytes(b, 5) & 0xff) != b[5]) {
         return DECODE_FAIL_MIC;
     }
 
     // Nibble 2 contains type, must be 0x04 -- or is this a (battery) flag maybe? please report.
-    type = b[0] >> 4;
+    int type = b[0] >> 4;
     if (type != 4) {
         decoder_logf(decoder, 1, __func__, "Unknown type: (%d) %d", model_num, type);
         return DECODE_FAIL_SANITY;
     }
 
     // Nibble 3,4 contains id
-    id = ((b[0]&0x0F) << 4) | ((b[1]&0xF0) >> 4);
+    int id = ((b[0]&0x0F) << 4) | ((b[1]&0xF0) >> 4);
 
     // Nibble 5,6,7 contains 12 bits of temperature
-    temp = ((b[1] & 0x0F) << 8) | b[2];
+    int temp = ((b[1] & 0x0F) << 8) | b[2];
+    int low_battery = 0;
     if (model_num == MODEL_TFA303225) {
         // The top bit is a low-battery indicator, not part of the magnitude.
         low_battery = (temp & 0x800) != 0;
         temp &= 0x7FF;
         // The temperature is unsigned offset by 40 C and scaled by 10
         temp -= 400;
-    } else if (bitbuffer->bits_per_row[0] != 47 || user_data) { // WH2, Telldus, WH2A
+    }
+    else if (model_num == MODEL_WH5) {
+        // The temperature is unsigned offset by 40 C and scaled by 10
+        temp -= 400;
+    }
+    else { // WH2, Telldus, WH2A
         // The temperature is signed magnitude and scaled by 10
         if (temp & 0x800) {
             temp &= 0x7FF; // remove sign bit
             temp = -temp; // reverse magnitude
         }
-    } else { // WH5
-        // The temperature is unsigned offset by 40 C and scaled by 10
-        temp -= 400;
     }
-    temperature = temp * 0.1f;
+    float temperature = temp * 0.1f;
 
     // Nibble 8,9 contains humidity
-    humidity = b[3];
+    int humidity = b[3];
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_COND, model_num == MODEL_WH2,        DATA_STRING, "Fineoffset-WH2",
             "model",            "",             DATA_COND, model_num == MODEL_WH2A,       DATA_STRING, "Fineoffset-WH2A",
             "model",            "",             DATA_COND, model_num == MODEL_WH5,        DATA_STRING, "Fineoffset-WH5",
-            "model",            "",             DATA_COND, model_num == MODEL_RB,         DATA_STRING, "Rosenborg-66796",
             "model",            "",             DATA_COND, model_num == MODEL_TP,         DATA_STRING, "Fineoffset-TelldusProove",
             "model",            "",             DATA_COND, model_num == MODEL_TFA303225,  DATA_STRING, "TFA-303225",
             "id",               "ID",           DATA_INT, id,
             "battery_ok",       "Battery",      DATA_COND, model_num == MODEL_TFA303225, DATA_INT, !low_battery,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
+            "humidity",         "Humidity",     DATA_COND, humidity != 0xff, DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "mic",              "Integrity",    DATA_STRING, "CRC",
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
+/**
+Agimex Rosenborg 66796 (sold in Denmark), collides with WH5 (WH2 variant).
+
+The sensor sends two identical packages of 47 bits each ~48s. The bits are PWM modulated with On Off Keying.
+
+The data is grouped in 6 bytes / 12 nibbles.
+
+    [pre] [pre] [type] [id] [id] [temp] [temp] [temp] [humi] [humi] [crc] [crc]
+
+- pre is always 0xFE (7 bits)
+- type is always 0x4 (may be different for different sensor type?)
+- id is a random id that is generated when the sensor starts
+- temp is 12 bit signed magnitude scaled by 10 celsius
+- humi is 8 bit relative humidity percentage
+*/
+static int fineoffset_WH5RB_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    bitrow_t *bb = bitbuffer->bb;
+
+    if (bitbuffer->bits_per_row[0] != 47 || bb[0][0] != 0xFE) {
+        return DECODE_ABORT_EARLY;
+    }
+
+    uint8_t b[6] = {0};
+    bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 40);
+
+    // Validate package
+    if (b[4] != crc8(&b[0], 4, 0x31, 0)) { // x8 + x5 + x4 + 1 (x8 is implicit)
+        return DECODE_FAIL_MIC;
+    }
+
+    // Nibble 2 contains type, must be 0x04 -- or is this a (battery) flag maybe? please report.
+    int type = b[0] >> 4;
+    if (type != 4) {
+        decoder_logf(decoder, 1, __func__, "Unknown type: (%d)", type);
+        return DECODE_FAIL_SANITY;
+    }
+
+    // Nibble 3,4 contains id
+    int id = ((b[0] & 0x0F) << 4) | ((b[1] & 0xF0) >> 4);
+
+    // Nibble 5,6,7 contains 12 bits of temperature
+    int temp_raw = ((b[1] & 0x0F) << 8) | b[2];
+    // The temperature is signed magnitude and scaled by 10
+    if (temp_raw & 0x800) {
+        temp_raw &= 0x7FF; // remove sign bit
+        temp_raw = -temp_raw;  // reverse magnitude
+    }
+    float temperature = temp_raw * 0.1f;
+
+    // Nibble 8,9 contains humidity
+    int humidity = b[3];
+
+    /* clang-format off */
+    data_t *data = data_make(
+            "model",            "",             DATA_STRING, "Rosenborg-66796",
+            "id",               "ID",           DATA_INT, id,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",     DATA_COND, humidity != 0xff, DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",              "Integrity",    DATA_STRING, "CRC",
@@ -1144,8 +1188,19 @@ r_device const fineoffset_WH2 = {
         .long_width  = 1500, // Maximum pulse period (long pulse + fixed gap)
         .reset_limit = 1200, // We just want 1 package
         .tolerance   = 160,  // us
-        .decode_fn   = &fineoffset_WH2_callback,
-        .create_fn   = &fineoffset_WH2_create,
+        .decode_fn   = &fineoffset_WH2_decode,
+        .fields      = output_fields,
+};
+
+r_device const fineoffset_wh5rb = {
+        .name        = "Agimex Rosenborg 66796 (collides with Fine Offset Electronics WH5) Temperature/Humidity Sensor",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 500,  // Short pulse 544us, long pulse 1524us, fixed gap 1036us
+        .long_width  = 1500, // Maximum pulse period (long pulse + fixed gap)
+        .reset_limit = 1200, // We just want 1 package
+        .tolerance   = 160,
+        .decode_fn   = &fineoffset_WH5RB_decode,
+        .disabled    = 1, // Collides with WH5 (WH2 protocol)
         .fields      = output_fields,
 };
 
