@@ -66,13 +66,11 @@ static void calc_rssi_snr(struct dm_state const *demod, pulse_data_t *pulse_data
 /**
 Flush the SDR IQ data frame processing, e.g. on the end of a input file.
 
-Note: this should flush pulse_detect_package() but is not implemented.
-You need to mocked this by feeding empty I/Q frames.
+@return Count of successful decoding events
 */
-void flush_sdr_flow(r_cfg_t *cfg)
+int flush_sdr_flow(r_cfg_t *cfg)
 {
-    (void)cfg;
-    // should flush pulse_detect_package() someday
+    return push_sdr_flow(cfg, NULL, 0);
 }
 
 /**
@@ -108,12 +106,21 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
     //fprintf(stderr, "push_sdr_flow... %u\n", len);
     struct dm_state *demod = cfg->demod;
     char time_str[LOCAL_TIME_BUFLEN];
-    unsigned long n_samples;
 
     if (!demod) {
         // might happen when the demod closed and we get a last data frame
         return 0; // ignore the data
     }
+
+    unsigned long n_samples = len / demod->sample_size;
+    if (n_samples * demod->sample_size != len) {
+        print_log(LOG_WARNING, __func__, "Sample buffer length not aligned to sample size!");
+    }
+
+    int process_frame = 1;
+
+    // Process new frame data if available
+    if (len) {
 
     // Feed data to all raw outputs (e.g. rtl_tcp)
     // do this here and not in sdr_handler so realtime replay can use rtl_tcp output
@@ -125,15 +132,6 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
     // save last frame time to see if a new second started
     time_t last_frame_sec = demod->now.tv_sec;
     get_time_now(&demod->now);
-
-    n_samples = len / demod->sample_size;
-    if (n_samples * demod->sample_size != len) {
-        print_log(LOG_WARNING, __func__, "Sample buffer length not aligned to sample size!");
-    }
-    if (!n_samples) {
-        print_log(LOG_WARNING, __func__, "Sample buffer too short!");
-        return 0; // no error, keep running
-    }
 
     // age the frame position if there is one
     if (demod->frame_start_ago) {
@@ -173,7 +171,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
     }
     int noise_only = avg_db < demod->noise_level + 3.0f; // or demod->min_level_auto?
     // always process frames if loader, dumper, or analyzers are in use, otherwise skip silent frames
-    int process_frame = demod->squelch_offset <= 0 || !noise_only || demod->load_info.format || demod->analyze_pulses || demod->dumper.len || demod->samp_grab;
+    process_frame = demod->squelch_offset <= 0 || !noise_only || demod->load_info.format || demod->analyze_pulses || demod->dumper.len || demod->samp_grab;
     demod->total_frames_count += 1;
     if (noise_only) {
         demod->total_frames_squelch += 1;
@@ -225,6 +223,8 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         memcpy(demod->buf.fm, iq_buf, len);
     }
 
+    }
+
     // Run a pulse discriminator and pass packages to all configured slicers
     int d_events = 0; // Sensor events successfully detected
     if (demod->r_devs.len || demod->analyze_pulses || demod->dumper.len || demod->samp_grab) {
@@ -259,7 +259,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 p_events += run_ook_demods(&demod->r_devs, &demod->pulse_data);
                 demod->total_frames_ook += 1;
                 demod->total_frames_events += p_events > 0;
-                demod->frames_ook +=1;
+                demod->frames_ook += 1;
                 demod->frames_events += p_events > 0;
 
                 // Dump pulse data for this complete package
@@ -292,7 +292,6 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                     int p_quality   = pulse_analyzer_check(&demod->pulse_data, package_type, &device);
                     demod->frame_quality = p_quality > demod->frame_quality ? p_quality : demod->frame_quality;
                 }
-
             }
             else if (package_type == PULSE_DATA_FSK) {
                 calc_rssi_snr(demod, &demod->fsk_pulse_data);
@@ -301,7 +300,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 }
 
                 p_events += run_fsk_demods(&demod->r_devs, &demod->fsk_pulse_data);
-                demod->total_frames_fsk +=1;
+                demod->total_frames_fsk += 1;
                 demod->total_frames_events += p_events > 0;
                 demod->frames_fsk += 1;
                 demod->frames_events += p_events > 0;
@@ -371,6 +370,11 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 break;
             }
         }
+    }
+
+    // End processing if no new frame data
+    if (!len) {
+        return d_events;
     }
 
     // Run the AM analyzer (deprecated)

@@ -198,9 +198,88 @@ static void print_att_hist(char const *s, int att_hist[])
 /// Demodulate On/Off Keying (OOK) and Frequency Shift Keying (FSK) from an envelope signal
 int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses, unsigned fpdm)
 {
+    pulse_detect_t *s = pulse_detect;
+
+    // Special case: flush any partial package
+    if (len == 0) {
+
+        switch (s->ook_state) {
+        case PD_OOK_STATE_IDLE:
+            break;
+        case PD_OOK_STATE_PULSE:
+            // Check for spurious short pulses
+            if (s->pulse_length < PD_MIN_PULSE_SAMPLES) {
+                if (pulses->num_pulses <= 1) {
+                    // if this was the first pulse go back to idle
+                    s->ook_state = PD_OOK_STATE_IDLE;
+                    break;
+                }
+                else {
+                    // otherwise emit a package, which then goes back to idle
+                    s->ook_state = PD_OOK_STATE_GAP;
+                }
+            }
+            else {
+                // Continue with OOK decoding
+                pulses->pulse[pulses->num_pulses] = s->pulse_length;                    // Store pulse width
+                s->max_pulse                      = MAX(s->pulse_length, s->max_pulse); // Find largest pulse
+                s->pulse_length                   = 0;
+                s->ook_state                      = PD_OOK_STATE_GAP_START;
+            }
+            // intentional fallthrough
+#if defined __has_attribute
+#if __has_attribute(fallthrough)
+            __attribute__((fallthrough));
+#endif
+#endif
+
+        case PD_OOK_STATE_GAP_START:
+            s->ook_state = PD_OOK_STATE_GAP;
+            // Determine if FSK modulation is detected
+            if (fsk_pulses->num_pulses > PD_MIN_PULSES) {
+                // Store last pulse/gap
+                if (fpdm == FSK_PULSE_DETECT_OLD) {
+                    pulse_detect_fsk_wrap_up(&s->pulse_detect_fsk, fsk_pulses);
+                }
+                // Store estimates
+                fsk_pulses->fsk_f1_est        = s->pulse_detect_fsk.fm_f1_est;
+                fsk_pulses->fsk_f2_est        = s->pulse_detect_fsk.fm_f2_est;
+                fsk_pulses->ook_low_estimate  = s->ook_low_estimate;
+                fsk_pulses->ook_high_estimate = s->ook_high_estimate;
+                pulses->end_ago               = len - s->data_counter;
+                fsk_pulses->end_ago           = len - s->data_counter;
+                s->ook_state                  = PD_OOK_STATE_IDLE; // Ensure everything is reset
+
+                return PULSE_DATA_FSK;
+            }
+
+            // intentional fallthrough
+#if defined __has_attribute
+#if __has_attribute(fallthrough)
+            __attribute__((fallthrough));
+#endif
+#endif
+
+        case PD_OOK_STATE_GAP:
+            pulses->gap[pulses->num_pulses] = s->pulse_length; // Store gap width
+            pulses->num_pulses += 1;                           // Store last pulse
+            s->ook_state = PD_OOK_STATE_IDLE;
+            // Store estimates
+            pulses->ook_low_estimate  = s->ook_low_estimate;
+            pulses->ook_high_estimate = s->ook_high_estimate;
+            pulses->end_ago           = len - s->data_counter;
+
+            return PULSE_DATA_OOK;
+
+        default:
+            fprintf(stderr, "demod_OOK(): Unknown state!!\n");
+            s->ook_state = PD_OOK_STATE_IDLE;
+        }
+    }
+
     int att_hist[37] = {0};
     int const samples_per_ms = samp_rate / 1000;
-    pulse_detect_t *s = pulse_detect;
+
     s->ook_high_estimate = MAX(s->ook_high_estimate, pulse_detect->ook_min_high_level);    // Be sure to set initial minimum level
 
     if (s->data_counter == 0) {
