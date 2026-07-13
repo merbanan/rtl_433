@@ -362,6 +362,7 @@
     DECL(schrader_NIS315G3) \
     DECL(fineoffset_wh52) \
     DECL(tpms_imars_t240) \
+    DECL(tpms_jansite_ty468) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;

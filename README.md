@@ -442,6 +442,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [352]  Schrader TPMS MRXNIS315G3, 3039 (Infiniti, Nissan, Renault), aka Redi-Sensor SE10001HP/SE10001HPR
     [353]  Fine Offset Electronics / Ecowitt WH52 Soil Moisture/Temperature/EC Sensor
     [354]  iMars T240 TPMS
+    [355]  Jansite TPMS TY-468-eu2 / KKMOON TPMS
 
 * Disabled by default, use -R n or a conf file to enable
 
