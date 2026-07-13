@@ -443,6 +443,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [353]  Fine Offset Electronics / Ecowitt WH52 Soil Moisture/Temperature/EC Sensor
     [354]  iMars T240 TPMS
     [355]  Jansite TPMS TY-468-eu2 / KKMOON TPMS
+    [356]* Agimex Rosenborg 66796 (collides with Fine Offset Electronics WH5) Temperature/Humidity Sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
