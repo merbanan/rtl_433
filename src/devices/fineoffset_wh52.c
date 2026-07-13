@@ -30,35 +30,27 @@ manufacturer's gateway/app readouts, and by controlled calibration:
 
 Data layout:
 
-    Preamble: aa aa aa 2d d4
+Preamble: aa aa aa 2d d4
 
-    24-byte payload (indices after the preamble):
+24-byte payload (indices after the preamble):
 
-        Byte   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
-               A2 II II II Bt tt MM rr Ec cc rr Rr RR RR RR RR RR RR RR RR RR RR YY SS
+    Byte   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
+           A2 II II II Bt tt MM rr Ec cc rr Rr RR RR RR RR RR RR RR RR RR RR YY SS
 
-    - Byte 0     : family / type = 0xA2 (WH52 signature)
-    - Byte 1..3  : device ID (24-bit, hex)
-    - Byte 4     : bits 7..5 = transmission boost/retry counter;
-                   bits 4..0 = temperature high 5 bits
-    - Byte 5     : temperature low 8 bits.
-                   temperature_C = (((b4 & 0x1F) << 8) | b5) * 0.1 - 40.0
-    - Byte 6     : soil moisture (%), 0x00..0x64
-    - Byte 7     : moisture raw / gain (not fully characterised)
-    - Byte 8     : bits 7..4 = moisture-raw high nibble (not characterised);
-                   bits 3..0 = EC high nibble (bits 16..19 of the 20-bit EC value)
-    - Byte 9     : EC bits 15..8
-    - Byte 10    : EC bits 7..0
-                   ec_raw = ((b8 & 0x0F) << 16) | (b9 << 8) | b10   (20-bit)
-                   conductivity_uS = ec_raw / 25.6   (empirical; 25.6 = 256/10)
-    - Byte 11    : coarse EC / range indicator (redundant, low nibble fixed 0x6)
-    - Byte 15    : battery voltage. volts ~= b15 * 0.02 - 0.06 (empirical, fit
-                   from 4 field units reading 1.56/1.58/1.58/1.62 V vs bytes
-                   0x51/0x52/0x52/0x54; scale approximate pending a wider range)
-    - Bytes 12-14, 16-21: per-unit fixed data (factory serial / calibration),
-                   constant per unit, differ between units. Not decoded.
-    - Byte 22    : CRC-8, poly 0x31, init 0x00, over bytes 0..21
-    - Byte 23    : checksum = sum(bytes 0..22) & 0xFF
+- Byte 0: family / type = 0xA2 (WH52 signature)
+- Byte 1..3: device ID (24-bit, hex)
+- Byte 4: bits 7..5 = transmission boost/retry counter; bits 4..0 = temperature high 5 bits
+- Byte 5: temperature low 8 bits; temperature_C = (((b4 & 0x1F) << 8) | b5) * 0.1 - 40.0
+- Byte 6: soil moisture (%), 0x00..0x64
+- Byte 7: moisture raw / gain (not fully characterised)
+- Byte 8: bits 7..4 = moisture-raw high nibble (not characterised); bits 3..0 = EC high nibble (bits 16..19 of the 20-bit EC value)
+- Byte 9: EC bits 15..8
+- Byte 10: EC bits 7..0; ec_raw = ((b8 & 0x0F) << 16) | (b9 << 8) | b10 (20-bit); conductivity_uS = ec_raw / 25.6 (empirical; 25.6 = 256/10)
+- Byte 11: coarse EC / range indicator (redundant, low nibble fixed 0x6)
+- Byte 15: battery voltage; volts ~= b15 * 0.02 - 0.06 (empirical, fit from 4 field units reading 1.56/1.58/1.58/1.62 V vs bytes 0x51/0x52/0x52/0x54; scale approximate pending a wider range)
+- Bytes 12-14, 16-21: per-unit fixed data (factory serial / calibration), constant per unit, differ between units. Not decoded.
+- Byte 22: CRC-8, poly 0x31, init 0x00, over bytes 0..21
+- Byte 23: checksum = sum(bytes 0..22) & 0xFF
 
 Format string: FF II II II Bt tt MM rr Ec cc rr Rr RR RR RR RR RR RR RR RR RR RR CC SS
 
