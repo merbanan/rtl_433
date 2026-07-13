@@ -444,6 +444,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [354]  iMars T240 TPMS
     [355]  Jansite TPMS TY-468-eu2 / KKMOON TPMS
     [356]* Agimex Rosenborg 66796 (collides with Fine Offset Electronics WH5) Temperature/Humidity Sensor
+    [357]  Auriol HG04641A temperature station
 
 * Disabled by default, use -R n or a conf file to enable
 
