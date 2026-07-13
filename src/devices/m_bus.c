@@ -887,6 +887,14 @@ static int parse_block2(const m_bus_data_t *in, m_bus_block1_t *block1)
             b2->CW = b[4]<<8 | b[3];
             b2->pl_offset = BLOCK1A_SIZE-2 + 5;
         }
+        /* Long transport layer: short header fields plus an 8-byte
+           secondary address (ID, Manufacturer, Version, Medium) first. */
+        else if (b2->CI == 0x72) {
+            b2->AC = b[9];
+            b2->ST = b[10];
+            b2->CW = b[12]<<8 | b[11];
+            b2->pl_offset = BLOCK1A_SIZE-2 + 13;
+        }
 
         // QDS walk_by
         // 000: CI:0x78   (no data header, not used by OMS)
