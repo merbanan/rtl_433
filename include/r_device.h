@@ -61,12 +61,12 @@ typedef struct r_device {
     /* information provided by each decoder */
     char const *name;
     unsigned modulation;
-    float short_width;
-    float long_width;
-    float reset_limit;
-    float gap_limit;
-    float sync_width;
-    float tolerance;
+    float short_width;  ///< short symbol nominal width in microseconds (us)
+    float long_width;   ///< long symbol nominal width in microseconds (us)
+    float reset_limit;  ///< maximum gap length to end a transmission (bitbuffer) in microseconds (us)
+    float gap_limit;    ///< maximum gap length to end a paket (bit row) in microseconds (us)
+    float sync_width;   ///< sync symbol nominal width in microseconds (us)
+    float tolerance;    ///< maximum allowed deviation from nominal symbol widths in microseconds (us)
     int (*decode_fn)(struct r_device *decoder, struct bitbuffer *bitbuffer);
     struct r_device *(*create_fn)(char const *args);
     unsigned priority; ///< Run later and only if no previous events were produced

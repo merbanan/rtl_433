@@ -212,7 +212,7 @@ r_device const ss_sensor = {
         .short_width = 500,  // half-bit width 500 us
         .long_width  = 1000, // bit width 1000 us
         .reset_limit = 2200,
-        .tolerance   = 100, // us
+        .tolerance   = 100,
         .decode_fn   = &ss_sensor_callback,
         .fields      = sensor_output_fields,
 };

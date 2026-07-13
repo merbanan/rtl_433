@@ -203,7 +203,7 @@ r_device const hcs362_pwm = {
         .long_width  = 400, // 2x TE
         .gap_limit   = 550,
         .reset_limit = 900,
-        .tolerance   = 50, // us
+        .tolerance   = 50,
         .decode_fn   = &hcs362_decode,
         .fields      = output_fields,
 };
@@ -215,7 +215,7 @@ r_device const hcs362_mc = {
         .long_width  = 214,
         .gap_limit   = 600,
         .reset_limit = 900,
-        .tolerance   = 50, // us
+        .tolerance   = 50,
         .decode_fn   = &hcs362_decode,
         .fields      = output_fields,
 };

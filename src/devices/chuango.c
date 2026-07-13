@@ -101,11 +101,11 @@ static char const *const output_fields[] = {
 r_device const chuango = {
         .name        = "Chuango Security Technology",
         .modulation  = OOK_PULSE_PWM,
-        .short_width = 568,  // Pulse: Short 568µs, Long 1704µs
-        .long_width  = 1704, // Gaps:  Short 568µs, Long 1696µs
-        .reset_limit = 1800, // Intermessage Gap 17200µs (individually for now)
+        .short_width = 568,  // Pulse: Short 568 us, Long 1704 us
+        .long_width  = 1704, // Gaps:  Short 568 us, Long 1696 us
+        .reset_limit = 1800, // Intermessage Gap 17200 us (individually for now)
         .sync_width  = 0,    // No sync bit used
-        .tolerance   = 160,  // us
+        .tolerance   = 160,
         .decode_fn   = &chuango_callback,
         .fields      = output_fields,
 };

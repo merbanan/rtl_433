@@ -96,7 +96,7 @@ r_device const waveman = {
         .gap_limit   = 1400,
         .reset_limit = 12000,
         .sync_width  = 0,   // No sync bit used
-        .tolerance   = 200, // us
+        .tolerance   = 200,
         .decode_fn   = &waveman_callback,
         .fields      = output_fields,
 };

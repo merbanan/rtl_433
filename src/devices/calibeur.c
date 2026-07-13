@@ -128,10 +128,10 @@ static char const *const output_fields[] = {
 r_device const calibeur_RF104 = {
         .name        = "Calibeur RF-104 Sensor",
         .modulation  = OOK_PULSE_PWM,
-        .short_width = 760,  // Short pulse 760µs
-        .long_width  = 2240, // Long pulse 2240µs
-        .reset_limit = 3200, // Longest gap (2960-760µs)
-        .sync_width  = 1560, // Startbit 1560µs
+        .short_width = 760,  // Short pulse 760 us
+        .long_width  = 2240, // Long pulse 2240 us
+        .reset_limit = 3200, // Longest gap (2960-760 us)
+        .sync_width  = 1560, // Startbit 1560 us
         .decode_fn   = &calibeur_rf104_decode,
         .fields      = output_fields,
 };

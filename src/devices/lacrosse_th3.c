@@ -87,8 +87,8 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int raw_temp, humidity, batt_low, retrans;
     float temp_c;
 
-    // bit length is specified as 104us for the TH3 (~256 bits per packet)
-    // but the TH2 bit length is actually 107us leading the bitbuffer to
+    // bit length is specified as 104 us for the TH3 (~256 bits per packet)
+    // but the TH2 bit length is actually 107 us leading the bitbuffer to
     // report the packet length as ~286 bits long.  We'll use this fact
     // to identify which of the two models actually sent the data.
     if (bitbuffer->bits_per_row[0] < 156) {

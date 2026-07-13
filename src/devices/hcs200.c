@@ -104,7 +104,7 @@ r_device const hcs200 = {
         .long_width  = 772,
         .gap_limit   = 1500,
         .reset_limit = 9000,
-        .tolerance   = 152, // us
+        .tolerance   = 152,
         .decode_fn   = &hcs200_callback,
         .fields      = output_fields,
 };
@@ -116,7 +116,7 @@ r_device const hcs200_fsk = {
         .long_width  = 772,
         .gap_limit   = 1500,
         .reset_limit = 9000,
-        .tolerance   = 152, // us
+        .tolerance   = 152,
         .decode_fn   = &hcs200_callback,
         .fields      = output_fields,
 };

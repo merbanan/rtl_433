@@ -178,7 +178,7 @@ r_device const funkbus_remote = {
         .reset_limit = 2000,
         .gap_limit   = 1500,
         .sync_width  = 4000,
-        .tolerance   = 300, // us
+        .tolerance   = 300,
         .decode_fn   = &funkbus_decode,
         .fields      = output_fields,
 };

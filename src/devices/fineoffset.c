@@ -1184,10 +1184,10 @@ static char const *const output_fields_WH0530[] = {
 r_device const fineoffset_WH2 = {
         .name        = "Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor",
         .modulation  = OOK_PULSE_PWM,
-        .short_width = 500,  // Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
+        .short_width = 500,  // Short pulse 544 us, long pulse 1524 us, fixed gap 1036 us
         .long_width  = 1500, // Maximum pulse period (long pulse + fixed gap)
         .reset_limit = 1200, // We just want 1 package
-        .tolerance   = 160,  // us
+        .tolerance   = 160,
         .decode_fn   = &fineoffset_WH2_decode,
         .fields      = output_fields,
 };
@@ -1195,7 +1195,7 @@ r_device const fineoffset_WH2 = {
 r_device const fineoffset_wh5rb = {
         .name        = "Agimex Rosenborg 66796 (collides with Fine Offset Electronics WH5) Temperature/Humidity Sensor",
         .modulation  = OOK_PULSE_PWM,
-        .short_width = 500,  // Short pulse 544us, long pulse 1524us, fixed gap 1036us
+        .short_width = 500,  // Short pulse 544 us, long pulse 1524 us, fixed gap 1036 us
         .long_width  = 1500, // Maximum pulse period (long pulse + fixed gap)
         .reset_limit = 1200, // We just want 1 package
         .tolerance   = 160,
@@ -1207,7 +1207,7 @@ r_device const fineoffset_wh5rb = {
 r_device const fineoffset_WH25 = {
         .name        = "Fine Offset Electronics, WH25, WH32, WH32B, WN32B, WH24, WH65, WS69, HP1000, Misol WS2320 Temperature/Humidity/Pressure Sensor",
         .modulation  = FSK_PULSE_PCM,
-        .short_width = 58,    // Bit width = 58µs (measured across 580 samples / 40 bits / 250 kHz)
+        .short_width = 58,    // Bit width = 58 us (measured across 580 samples / 40 bits / 250 kHz)
         .long_width  = 58,    // NRZ encoding (bit width = pulse width)
         .reset_limit = 20000, // Package starts with a huge gap of ~18900 us
         .decode_fn   = &fineoffset_WH25_callback,
@@ -1217,7 +1217,7 @@ r_device const fineoffset_WH25 = {
 r_device const fineoffset_WH51 = {
         .name        = "Fine Offset Electronics/Ecowitt WH51, WN31, SwitchDoc Labs SM23 Soil Moisture Sensor",
         .modulation  = FSK_PULSE_PCM,
-        .short_width = 58, // Bit width = 58µs (measured across 580 samples / 40 bits / 250 kHz)
+        .short_width = 58, // Bit width = 58 us (measured across 580 samples / 40 bits / 250 kHz)
         .long_width  = 58, // NRZ encoding (bit width = pulse width)
         .reset_limit = 5000,
         .decode_fn   = &fineoffset_WH51_callback,
@@ -1227,11 +1227,11 @@ r_device const fineoffset_WH51 = {
 r_device const fineoffset_WH0530 = {
         .name        = "Fine Offset Electronics, WH0530 Temperature/Rain Sensor",
         .modulation  = OOK_PULSE_PWM,
-        .short_width = 504,  // Short pulse 504µs
-        .long_width  = 1480, // Long pulse 1480µs
-        .reset_limit = 1200, // Fixed gap 960µs (We just want 1 package)
+        .short_width = 504,  // Short pulse 504 us
+        .long_width  = 1480, // Long pulse 1480 us
+        .reset_limit = 1200, // Fixed gap 960 us (We just want 1 package)
         .sync_width  = 0,    // No sync bit used
-        .tolerance   = 160,  // us
+        .tolerance   = 160,
         .decode_fn   = &fineoffset_WH0530_callback,
         .fields      = output_fields_WH0530,
 };

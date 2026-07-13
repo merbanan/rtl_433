@@ -18,7 +18,7 @@
 source from:
 http://ala-paavola.fi/jaakko/doku.php?id=wt450h
 
-- The signal is FM encoded with clock cycle around 2000 µs
+- The signal is FM encoded with clock cycle around 2000 us
 - No level shift within the clock cycle translates to a logic 0
 - One level shift within the clock cycle translates to a logic 1
 - Each clock cycle begins with a level shift
@@ -132,7 +132,7 @@ r_device const wt450 = {
         .short_width = 976,  // half-bit width 976 us
         .long_width  = 1952, // bit width 1952 us
         .reset_limit = 18000,
-        .tolerance   = 100, // us
+        .tolerance   = 100,
         .decode_fn   = &wt450_callback,
         .fields      = output_fields,
 };
