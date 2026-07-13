@@ -241,11 +241,12 @@ Example payloads:
 #define NUM_BITS_DATA (38) // 1 fixed bit + 3 flags + 24 id + 8 pressure + 2 checksum
 #define NUM_BITS_TOTAL_MIN (NUM_BITS_PREAMBLE / 2 + 2 * NUM_BITS_DATA)
 #define NUM_BITS_TOTAL_MAX (NUM_BITS_PREAMBLE + 2 * NUM_BITS_DATA + 8)
+#define SCHRADER_SMD3MA4 1
+#define SCHRADER_NIS315G3 2
 
 // Shared by schrader_SMD3MA4 and schrader_NIS315G3, which are otherwise
 // wire-format identical and differ only in the pressure scale and model name.
-static int schrader_SMD3MA4_family_decode(r_device *decoder, bitbuffer_t *bitbuffer,
-        char const *model, float pressure_scale)
+static int schrader_SMD3MA4_family_decode(r_device *decoder, bitbuffer_t *bitbuffer, int model)
 {
     // full preamble is 0xF5555555E, this is its last 16 bits
     uint8_t const preamble_pattern[2] = {0x55, 0x5e};
@@ -305,9 +306,15 @@ static int schrader_SMD3MA4_family_decode(r_device *decoder, bitbuffer_t *bitbuf
     char id_str[9];
     snprintf(id_str, sizeof(id_str), "%06X", serial_id);
 
+    float pressure_scale = 0.2f; // SCHRADER_SMD3MA4
+    if (model != SCHRADER_SMD3MA4) {
+        pressure_scale = 0.25f; // SCHRADER_NIS315G3
+    }
+
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "",             DATA_STRING, model,
+            "model",            "",             DATA_COND, model == SCHRADER_SMD3MA4, DATA_STRING, "Schrader-SMD3MA4",
+            "model",            "",             DATA_COND, model == SCHRADER_NIS315G3, DATA_STRING, "Schrader-NIS315G3",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "ID",           DATA_STRING, id_str,
             "flags",            "Flags",        DATA_INT,    flags,
@@ -323,14 +330,16 @@ static int schrader_SMD3MA4_family_decode(r_device *decoder, bitbuffer_t *bitbuf
     return 1;
 }
 
+/** @sa schrader_SMD3MA4_family_decode() */
 static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    return schrader_SMD3MA4_family_decode(decoder, bitbuffer, "Schrader-SMD3MA4", 0.2f);
+    return schrader_SMD3MA4_family_decode(decoder, bitbuffer, SCHRADER_SMD3MA4);
 }
 
+/** @sa schrader_SMD3MA4_family_decode() */
 static int schrader_NIS315G3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    return schrader_SMD3MA4_family_decode(decoder, bitbuffer, "Schrader-NIS315G3", 0.25f);
+    return schrader_SMD3MA4_family_decode(decoder, bitbuffer, SCHRADER_NIS315G3);
 }
 
 /**
