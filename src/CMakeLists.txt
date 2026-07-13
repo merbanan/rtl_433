@@ -317,6 +317,7 @@ add_library(r_433 STATIC
     devices/tpms_gear_hive.c
     devices/tpms_gm.c
     devices/tpms_hyundai_vdo.c
+    devices/tpms_imars_t240.c
     devices/tpms_jansite.c
     devices/tpms_jansite_solar.c
     devices/tpms_kia.c
