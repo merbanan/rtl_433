@@ -24,8 +24,8 @@ packet being sent.  The protocol, and this decoder, support up to
 -  Flexible 64-bit data payload field structure
 -  Two initial formats, extensible to a total of 16 possible formats.
 
-NOTE: the rtl_433 decoder, omni.c, uses the "fmt" or "Format" field
-here, as transmitted by omni.c, to decode the incoming message.
+NOTE: the rtl_433 decoder, omni.c, uses the "Format" field
+here, as transmitted by omni.ino, to decode the incoming message.
 But, through omni.c, rtl_433 reports the packet format-field value
 as "channel" in its published reporting (JSON, for example),
 in keeping with the standard nomenclature and order of field-name
@@ -216,7 +216,6 @@ static int omni_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 // List the output fields for various message types
 static char const *const output_fields[] = {
         "model",
-        "fmt",
         "channel",
         "id",
         "temperature_C",
