@@ -256,10 +256,88 @@ https://github.com/Ransaka/GMM-from-scratch
 
 https://towardsdatascience.com/gaussian-mixture-models-gmms-from-theory-to-implementation-4406c7fe9847/
 */
+static void pulse_detect_fsk_avg(pulse_detect_fsk_t *s, int16_t const *fm_data, unsigned fsk_start, unsigned fsk_end)
+{
+    (void)s;
+
+    if (fsk_start >= fsk_end) {
+        return;
+    }
+
+    // Pass 1: Calculate common average
+    int32_t com_avg = 0; // Note: can sum up t0 2^16 samples
+    int32_t com_cnt = fsk_end - fsk_start;
+    for (unsigned j = fsk_start; j < fsk_end; ++j) {
+        int16_t fm_n = fm_data[j];
+        com_avg += fm_n;
+        // fprintf(stderr, "STATE %d N -> %d\n", fm_n, com_avg);
+    }
+    com_avg = com_avg / com_cnt;
+
+    // fprintf(stderr, "pulse_detect_fsk_avg com_avg: %d\n", com_avg);
+
+    // Pass 2: Split at common average and calculate low and high average
+    int32_t lo_avg = 0; // Note: can sum up t0 2^16 samples
+    int32_t hi_avg = 0; // Note: can sum up t0 2^16 samples
+    int32_t lo_cnt = 0;
+    int32_t hi_cnt = 0;
+    uint32_t lo_err = 0;
+    uint32_t hi_err = 0;
+    for (unsigned j = fsk_start; j < fsk_end; ++j) {
+        int16_t fm_n = fm_data[j];
+        if (fm_n > com_avg) {
+            hi_avg += fm_n;
+            hi_cnt += 1;
+            hi_err += (fm_n - com_avg) * (fm_n - com_avg);
+        }
+        else {
+            lo_avg += fm_n;
+            lo_cnt += 1;
+            lo_err += (fm_n - com_avg) * (fm_n - com_avg);
+        }
+    }
+    lo_avg = lo_avg / lo_cnt;
+    hi_avg = hi_avg / hi_cnt;
+    lo_err = lo_err / lo_cnt;
+    hi_err = hi_err / hi_cnt;
+
+    fprintf(stderr, "pulse_detect_fsk_avg com_avg: %d (%d) lo_avg: %d %d (%d) hi_avg: %d %d (%d)\n", com_avg, com_cnt, lo_avg, lo_err, lo_cnt, hi_avg, hi_err, hi_cnt);
+
+    // Pass 3: Split at exact mid point and recalculate low and high average
+    int32_t mid = lo_avg / 2 + hi_avg / 2;
+    lo_avg = 0; // Note: can sum up t0 2^16 samples
+    hi_avg = 0; // Note: can sum up t0 2^16 samples
+    lo_cnt = 0;
+    hi_cnt = 0;
+    lo_err = 0;
+    hi_err = 0;
+    for (unsigned j = fsk_start; j < fsk_end; ++j) {
+        int16_t fm_n = fm_data[j];
+        if (fm_n > mid) {
+            hi_avg += fm_n;
+            hi_cnt += 1;
+            hi_err += (fm_n - com_avg) * (fm_n - com_avg);
+        }
+        else {
+            lo_avg += fm_n;
+            lo_cnt += 1;
+            lo_err += (fm_n - com_avg) * (fm_n - com_avg);
+        }
+    }
+    lo_avg = lo_avg / lo_cnt;
+    hi_avg = hi_avg / hi_cnt;
+    lo_err = lo_err / lo_cnt;
+    hi_err = hi_err / hi_cnt;
+
+    fprintf(stderr, "pulse_detect_fsk_avg com_avg: %d (%d) lo_avg: %d %d (%d) hi_avg: %d %d (%d)  mid %d\n", com_avg, com_cnt, lo_avg, lo_err, lo_cnt, hi_avg, hi_err, hi_cnt, mid);
+}
 
 static int pulse_detect_fsk_package_internal(pulse_detect_fsk_t *pulse_detect_fsk, int16_t const *fm_data, unsigned fsk_start, unsigned fsk_end, pulse_data_t *fsk_pulses, unsigned fpdm)
 {
     fprintf(stderr, "pulse_detect_fsk_package PROCESSING %u at %u - %u\n", pulse_detect_fsk->pulse_done, fsk_start, fsk_end);
+
+    // TESTS
+    pulse_detect_fsk_avg(pulse_detect_fsk, fm_data, fsk_start, fsk_end);
 
     // FSK Demodulation
     if (fpdm == FSK_PULSE_DETECT_OLD) {
