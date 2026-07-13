@@ -216,11 +216,14 @@ https://github.com/merbanan/rtl_433/issues/1734
 NOTE: this decoder cannot tell an SMD3MA4 (PSI * 5) apart from a
 Schrader/Nissan/Infiniti MRXNIS315G3 sensor (also sold as the aftermarket
 Redi-Sensor SE10001HP/SE10001HPR), which uses the same wire format and
-preamble but only has 8 significant pressure bits at PSI * 4. Both
-interpretations are output (pressure_PSI for SMD3MA4, pressure_NIS_PSI for
-MRXNIS315G3); pick whichever matches your vehicle/sensor.
-See https://github.com/merbanan/rtl_433/issues/1734 for the (still open)
-discussion on how to best disambiguate the two.
+preamble but only has 8 significant pressure bits at PSI * 4. These are
+two separate decoders (schrader_SMD3MA4 and schrader_NIS315G3) rather than
+one decoder emitting both interpretations, per
+https://github.com/merbanan/rtl_433/issues/1734#issuecomment-4957207247 --
+the model key should denote one protocol interpretation, not several. Both
+are enabled by default, so a single physical transmission produces two
+output records with two different pressure readings; use -R to select
+just one if that duplication is undesirable.
 
 Example payloads:
 
@@ -238,8 +241,12 @@ Example payloads:
 #define NUM_BITS_DATA (38) // 1 fixed bit + 3 flags + 24 id + 8 pressure + 2 checksum
 #define NUM_BITS_TOTAL_MIN (NUM_BITS_PREAMBLE / 2 + 2 * NUM_BITS_DATA)
 #define NUM_BITS_TOTAL_MAX (NUM_BITS_PREAMBLE + 2 * NUM_BITS_DATA + 8)
+#define SCHRADER_SMD3MA4 1
+#define SCHRADER_NIS315G3 2
 
-static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+// Shared by schrader_SMD3MA4 and schrader_NIS315G3, which are otherwise
+// wire-format identical and differ only in the pressure scale and model name.
+static int schrader_SMD3MA4_family_decode(r_device *decoder, bitbuffer_t *bitbuffer, int model)
 {
     // full preamble is 0xF5555555E, this is its last 16 bits
     uint8_t const preamble_pattern[2] = {0x55, 0x5e};
@@ -299,23 +306,40 @@ static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char id_str[9];
     snprintf(id_str, sizeof(id_str), "%06X", serial_id);
 
+    float pressure_scale = 0.2f; // SCHRADER_SMD3MA4
+    if (model != SCHRADER_SMD3MA4) {
+        pressure_scale = 0.25f; // SCHRADER_NIS315G3
+    }
+
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Schrader-SMD3MA4",
+            "model",            "",             DATA_COND, model == SCHRADER_SMD3MA4, DATA_STRING, "Schrader-SMD3MA4",
+            "model",            "",             DATA_COND, model == SCHRADER_NIS315G3, DATA_STRING, "Schrader-NIS315G3",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "ID",           DATA_STRING, id_str,
             "flags",            "Flags",        DATA_INT,    flags,
             "learn",            "Learn",        DATA_COND,   flag_learn, DATA_INT, 1,
             "alarm",            "Alarm",        DATA_COND,   flag_alarm, DATA_INT, 1,
             "wakeup",           "Wakeup",       DATA_COND,   flag_wakeup, DATA_INT, 1,
-            "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.1f PSI", DATA_DOUBLE, pressure * 0.2f,
-            "pressure_NIS_PSI", "Pressure (Nissan/Infiniti scaling)", DATA_FORMAT, "%.1f PSI", DATA_DOUBLE, pressure * 0.25f,
+            "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.1f PSI", DATA_DOUBLE, pressure * pressure_scale,
             "mic",              "Integrity",    DATA_STRING, "PARITY",
             NULL);
     /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
+}
+
+/** @sa schrader_SMD3MA4_family_decode() */
+static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    return schrader_SMD3MA4_family_decode(decoder, bitbuffer, SCHRADER_SMD3MA4);
+}
+
+/** @sa schrader_SMD3MA4_family_decode() */
+static int schrader_NIS315G3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    return schrader_SMD3MA4_family_decode(decoder, bitbuffer, SCHRADER_NIS315G3);
 }
 
 /**
@@ -468,7 +492,6 @@ static char const *const output_fields_SMD3MA4[] = {
         "alarm",
         "wakeup",
         "pressure_PSI",
-        "pressure_NIS_PSI",
         "mic",
         NULL,
 };
@@ -506,12 +529,22 @@ r_device const schrader_EG53MA4 = {
 };
 
 r_device const schrader_SMD3MA4 = {
-        .name        = "Schrader TPMS SMD3MA4 (Subaru) 3039 (Infiniti, Nissan, Renault)",
+        .name        = "Schrader TPMS SMD3MA4 (Subaru)",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 120,
         .long_width  = 120,
         .reset_limit = 480,
         .decode_fn   = &schrader_SMD3MA4_decode,
+        .fields      = output_fields_SMD3MA4,
+};
+
+r_device const schrader_NIS315G3 = {
+        .name        = "Schrader TPMS MRXNIS315G3, 3039 (Infiniti, Nissan, Renault), aka Redi-Sensor SE10001HP/SE10001HPR",
+        .modulation  = OOK_PULSE_PCM,
+        .short_width = 120,
+        .long_width  = 120,
+        .reset_limit = 480,
+        .decode_fn   = &schrader_NIS315G3_decode,
         .fields      = output_fields_SMD3MA4,
 };
 
