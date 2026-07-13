@@ -255,7 +255,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [165]  TFA Dostmann 30.3221.02 T/H Outdoor Sensor (also 30.3249.02)
     [166]  LaCrosse Technology View LTV-WSDTH01 Breeze Pro Wind Sensor
     [167]  Somfy RTS
-    [168]  Schrader TPMS SMD3MA4 (Subaru) 3039 (Infiniti, Nissan, Renault)
+    [168]  Schrader TPMS SMD3MA4 (Subaru)
     [169]* Nice Flor-s remote control for gates
     [170]  LaCrosse Technology View LTV-WR1 Multi Sensor
     [171]  LaCrosse Technology View LTV-TH Thermo/Hygro Sensor
@@ -439,6 +439,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [349]  Govee Pool/Spa Thermometer H5310
     [350]  Govee H5112 Dual-Probe Thermometer
     [351]  Eco-Eye solar PV/grid current monitor
+    [352]  Schrader TPMS MRXNIS315G3, 3039 (Infiniti, Nissan, Renault), aka Redi-Sensor SE10001HP/SE10001HPR
 
 * Disabled by default, use -R n or a conf file to enable
 
