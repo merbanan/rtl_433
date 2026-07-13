@@ -18,7 +18,7 @@ https://github.com/merbanan/rtl_433/issues/2025
 
 Same SP372-chip-family encoding as tpms_imars_t240.c (see
 https://github.com/merbanan/rtl_433/issues/1820, confirmed the same by
-@zuckschwerdt in #2025) -- OOK, Manchester encoded, ~50 us half-bit.
+\@zuckschwerdt in #2025) -- OOK, Manchester encoded, ~50 us half-bit.
 
 Packet structure: 32-bit raw alternating preamble (0xaaaaaaaa), then
 128 raw bits Manchester decoding to 8 bytes (B0..B7).
