@@ -113,6 +113,7 @@ add_library(r_433 STATIC
     devices/directv.c
     devices/dish_remote_6_3.c
     devices/dsc.c
+    devices/eberle_instat868r1.c
     devices/ec3k.c
     devices/ecodhome.c
     devices/ecoeye.c

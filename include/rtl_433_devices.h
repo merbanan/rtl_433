@@ -365,6 +365,7 @@
     DECL(tpms_jansite_ty468) \
     DECL(fineoffset_wh5rb) \
     DECL(auriol_hg04641a) \
+    DECL(eberle_instat868r1) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
