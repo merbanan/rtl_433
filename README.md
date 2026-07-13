@@ -440,6 +440,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [350]  Govee H5112 Dual-Probe Thermometer
     [351]  Eco-Eye solar PV/grid current monitor
     [352]  Schrader TPMS MRXNIS315G3, 3039 (Infiniti, Nissan, Renault), aka Redi-Sensor SE10001HP/SE10001HPR
+    [353]  Fine Offset Electronics / Ecowitt WH52 Soil Moisture/Temperature/EC Sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
