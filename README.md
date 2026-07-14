@@ -447,6 +447,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [357]  Auriol HG04641A temperature station
     [358]  Eberle Instat 868r1 floor heating thermostat remote
     [359]  Kingspan/Watchman Plus (Niveau) oil tank monitor
+    [360]  Baldr HCS528ARF Pool Thermometer sensor
 
 * Disabled by default, use -R n or a conf file to enable
 

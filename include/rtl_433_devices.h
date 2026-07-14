@@ -367,6 +367,7 @@
     DECL(auriol_hg04641a) \
     DECL(eberle_instat868r1) \
     DECL(watchman_plus) \
+    DECL(baldr_hcs528arf) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;

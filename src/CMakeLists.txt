@@ -75,6 +75,7 @@ add_library(r_433 STATIC
     devices/auriol_hg04641a.c
     devices/badger_orion_endpoint.c
     devices/badger_water.c
+    devices/baldr_hcs528arf.c
     devices/baldr_rain.c
     devices/baldr_therm.c
     devices/blueline.c
