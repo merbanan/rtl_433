@@ -366,6 +366,7 @@
     DECL(fineoffset_wh5rb) \
     DECL(auriol_hg04641a) \
     DECL(eberle_instat868r1) \
+    DECL(watchman_plus) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;

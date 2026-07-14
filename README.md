@@ -446,6 +446,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [356]* Agimex Rosenborg 66796 (collides with Fine Offset Electronics WH5) Temperature/Humidity Sensor
     [357]  Auriol HG04641A temperature station
     [358]  Eberle Instat 868r1 floor heating thermostat remote
+    [359]  Kingspan/Watchman Plus (Niveau) oil tank monitor
 
 * Disabled by default, use -R n or a conf file to enable
 

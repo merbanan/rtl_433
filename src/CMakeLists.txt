@@ -345,6 +345,7 @@ add_library(r_433 STATIC
     devices/visonic_powercode.c
     devices/vivint.c
     devices/wallarge_cltx001.c
+    devices/watchman_plus.c
     devices/watts_thermostat.c
     devices/watts_wfht_rf.c
     devices/waveman.c
