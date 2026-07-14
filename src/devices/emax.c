@@ -293,7 +293,7 @@ static int emax_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 }
                 /* clang-format off */
                 data_t *data = data_make(
-                        "model",            "",                 DATA_STRING, "Lacrosse_WS6262",
+                        "model",            "",                 DATA_STRING, "Lacrosse-WS6262",
                         "id",               "",                 DATA_FORMAT, "%03x", DATA_INT,    id,
                         "channel",          "Channel",          DATA_INT,    channel,
                         "battery_ok",       "Battery_OK",       DATA_INT,    !battery_low,
