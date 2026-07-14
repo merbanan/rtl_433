@@ -102,7 +102,7 @@ static int thermor_a6n_132tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",          "",            DATA_STRING, "Thermor-A6N-132TX",
+            "model",          "",            DATA_STRING, "Thermor-A6N132TX",
             "id",             "ID",          DATA_INT,    id,
             "channel",        "Channel",     DATA_INT,    channel,
             "temperature_C",  "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_c,
