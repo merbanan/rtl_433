@@ -174,6 +174,14 @@ You can enable only selected decoders with any number of `-R <number>` options.
 Note that this will override the default and not select any decoder by default.
 E.g. use `rtl_433 -R 8 19` to enable only the LaCrosse and Nexus decoders.
 
+To enable a default-disabled protocol while keeping all the other defaults enabled,
+exclude then include the same protocol number: `rtl_433 -R -N -R N`.
+The first option, `-R -N`, initializes the default set (a negative number as the
+first `-R` option loads the defaults before excluding `N`, instead of overriding
+them); the second option, `-R N`, then adds protocol `N` back on top of that set.
+E.g. use `rtl_433 -R -216 -R 216` to enable all default decoders plus the
+ANT and ANT+ decoder (216), which is disabled by default.
+
 An output line of `Registered <n> out of <N> device decoding protocols` will tersely show the enabled decoders.
 
 Lastly the `-X` option can be used to add a custom flex decoder.

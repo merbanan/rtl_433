@@ -639,6 +639,7 @@ Some examples:
 | `rtl_433 -f 868M -s 1024k` | Listen at 868 MHz and 1024k sample rate.
 | `rtl_433 -M hires -M level` | Report microsecond accurate timestamps and add reception levels (depending on gain).
 | `rtl_433 -R 1 -R 8 -R 43` | Enable only specific decoders for desired devices.
+| `rtl_433 -R -216 -R 216` | Enable all default decoders plus a decoder disabled by default (216).
 | `rtl_433 -A` | Enable pulse analyzer. Summarizes the timings of pulses, gaps, and periods. Can be used with `-R 0` to disable decoders.
 | `rtl_433 -S all -T 120` | Save all detected signals (`g###_###M_###k.cu8`). Run for 2 minutes.
 | `rtl_433 -K FILE -r file_name` | Read a saved data file instead of receiving live data. Tag output with filenames.
