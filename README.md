@@ -449,6 +449,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [359]  Kingspan/Watchman Plus (Niveau) oil tank monitor
     [360]  Baldr HCS528ARF Pool Thermometer sensor
     [361]* Kidde RF-SM-DC wireless-interconnect smoke alarm
+    [362]  Jansite TPMS TY588-EU2
 
 * Disabled by default, use -R n or a conf file to enable
 

@@ -369,6 +369,7 @@
     DECL(watchman_plus) \
     DECL(baldr_hcs528arf) \
     DECL(kidde_smoke) \
+    DECL(tpms_jansite_ty588) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
