@@ -114,6 +114,19 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // try again for TX141W/TX145wsdth, require at least 2 out of 3-7 repeats.
         r = bitbuffer_find_repeated_row(bitbuffer, 2, 64); // 65
     }
+
+    bitbuffer_invert(bitbuffer);
+
+    // TX141TH has its own CRC, so a single passing row is enough, no repeats required.
+    if (r < 0 && bitbuffer->num_rows <= 4) {
+        for (int row = 0; row < bitbuffer->num_rows; row++) {
+            if ((bitbuffer->bits_per_row[row] == 40 || bitbuffer->bits_per_row[row] == 41)
+                    && lfsr_digest8_reflect(bitbuffer->bb[row], 4, 0x31, 0xf4) == bitbuffer->bb[row][4]) {
+                r = row;
+                break;
+            }
+        }
+    }
     if (r < 0) {
         return DECODE_ABORT_LENGTH;
     }
@@ -142,7 +155,6 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         device = LACROSSE_TX141BV3;
     }
 
-    bitbuffer_invert(bitbuffer);
     b = bitbuffer->bb[r];
 
     if (device == LACROSSE_TX141W) {
