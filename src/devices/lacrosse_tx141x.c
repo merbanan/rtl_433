@@ -101,21 +101,16 @@ Addition of TX141W and TX145wsdth:
 
 static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
-    int r;
-    int device;
-    uint8_t *b;
+    bitbuffer_invert(bitbuffer);
 
     // Find the most frequent data packet
     // reduce false positives, require at least 5 out of 12 or 3 of 4 repeats.
     // allows 4-repeats transmission to contain a bogus extra row.
-    r = bitbuffer_find_repeated_row(bitbuffer, bitbuffer->num_rows > 5 ? 5 : 3, 32); // 32
+    int r = bitbuffer_find_repeated_row(bitbuffer, bitbuffer->num_rows > 5 ? 5 : 3, 32); // 32
     if (r < 0) {
         // try again for TX141W/TX145wsdth, require at least 2 out of 3-7 repeats.
         r = bitbuffer_find_repeated_row(bitbuffer, 2, 64); // 65
     }
-
-    bitbuffer_invert(bitbuffer);
 
     // TX141TH has its own CRC, so a single passing row is enough, no repeats required.
     if (r < 0 && bitbuffer->num_rows <= 4) {
@@ -131,6 +126,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
+    int device;
     if (bitbuffer->bits_per_row[r] >= 64) {
         device = LACROSSE_TX141W;
     }
@@ -155,7 +151,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         device = LACROSSE_TX141BV3;
     }
 
-    b = bitbuffer->bb[r];
+    uint8_t *b = bitbuffer->bb[r];
 
     if (device == LACROSSE_TX141W) {
         int pre = (b[0] >> 3);
@@ -176,6 +172,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int temp_raw    = (b[4] << 4) | (b[5] >> 4);
         int humidity    = ((b[5] & 0x0f) << 8) | b[6];
 
+        data_t *data;
         if (type == 1) {
             // Temp/Hum
             float temp_c = (temp_raw - 500) * 0.1f;
@@ -243,6 +240,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
     }
 
+    data_t *data;
     if (device == LACROSSE_TX141B) {
         /* clang-format off */
         data = data_make(
