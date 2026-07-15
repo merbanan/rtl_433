@@ -451,6 +451,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [361]* Kidde RF-SM-DC wireless-interconnect smoke alarm
     [362]  Jansite TPMS TY588-EU2
     [363]  Oregon Scientific WMR500 weather station
+    [364]  Elsner Solexa 230V
 
 * Disabled by default, use -R n or a conf file to enable
 
