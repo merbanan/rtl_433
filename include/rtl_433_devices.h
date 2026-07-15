@@ -371,6 +371,7 @@
     DECL(kidde_smoke) \
     DECL(tpms_jansite_ty588) \
     DECL(oregon_scientific_wmr500) \
+    DECL(tfa_30_3307) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
