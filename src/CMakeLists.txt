@@ -199,6 +199,7 @@ add_library(r_433 STATIC
     devices/jasco.c
     devices/kedsum.c
     devices/kerui.c
+    devices/kidde_smoke.c
     devices/klimalogg.c
     devices/lacrosse.c
     devices/lacrosse_breezepro.c

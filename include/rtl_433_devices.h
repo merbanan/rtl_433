@@ -368,6 +368,7 @@
     DECL(eberle_instat868r1) \
     DECL(watchman_plus) \
     DECL(baldr_hcs528arf) \
+    DECL(kidde_smoke) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
