@@ -147,6 +147,26 @@ int pulse_slicer_nrzs(pulse_data_t const *pulses, r_device *device);
 
 int pulse_slicer_osv1(pulse_data_t const *pulses, r_device *device);
 
+/// Demodulate a Return-to-Zero unary run-length coded signal.
+///
+/// The signal is high almost all the time, with brief low dips. Each dip
+/// marks a 0-bit. The high duration between two dips (or from the start
+/// of the message to the first dip) is a whole multiple of long_width and
+/// counts that many consecutive 1-bits: `long_width` alone is one 1-bit,
+/// `2 * long_width` is two, etc. (the first high run, before any dip has
+/// occurred, has no preceding dip's tail to subtract and is counted the
+/// same way). This is an unusual, inefficient coding: an OOK_PULSE_PWM or
+/// OOK_PULSE_PPM signal with the same bit rate would need far less
+/// bandwidth, but some devices use it anyway.
+///
+/// @param pulses The pulse sequence to demodulate
+/// @param device Modulation parameters of
+/// - short_width: Width of the dip that marks a 0-bit [us]
+/// - long_width:  Width of one 1-bit period [us]
+/// - reset_limit: Maximum gap size before End Of Message [us].
+/// @return number of events processed
+int pulse_slicer_rz_count(pulse_data_t const *pulses, r_device *device);
+
 /// Simulate demodulation using a given signal code string.
 ///
 /// The (optionally "0x" prefixed) hex code is processed into a bitbuffer_t.

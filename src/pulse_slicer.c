@@ -863,6 +863,60 @@ int pulse_slicer_osv1(pulse_data_t const *pulses, r_device *device)
     return events;
 }
 
+int pulse_slicer_rz_count(pulse_data_t const *pulses, r_device *device)
+{
+    float samples_per_us = pulses->sample_rate / 1.0e6f;
+
+    int s_short = device->short_width * samples_per_us;
+    int s_long  = device->long_width * samples_per_us;
+    int s_reset = device->reset_limit * samples_per_us;
+    int s_base  = s_long - s_short; // tail-high of a 0-bit's own period
+
+    // check for rounding to zero
+    if ((device->short_width > 0 && s_short <= 0)
+            || (device->long_width > 0 && s_long <= 0)
+            || (device->reset_limit > 0 && s_reset <= 0)) {
+        print_logf(LOG_WARNING, __func__, "sample rate too low for protocol %u \"%s\"", device->protocol_num, device->name);
+        return 0;
+    }
+
+    bitbuffer_t bits = {0};
+    int events = 0;
+    int at_start = 1; // true for the first pulse, and the first pulse after a reset
+
+    for (unsigned n = 0; n < pulses->num_pulses; ++n) {
+        // The high run since the last dip (or since the start of the
+        // message, at_start) counts consecutive 1-bits.
+        int high = pulses->pulse[n];
+        int ones = at_start
+                ? (high + s_long / 2) / s_long
+                : (high - s_base + s_long / 2) / s_long;
+        at_start = 0;
+        if (ones < 0) {
+            ones = 0;
+        }
+        for (int k = 0; k < ones; ++k) {
+            bitbuffer_add_bit(&bits, 1);
+        }
+
+        if (pulses->gap[n] > s_reset || n == pulses->num_pulses - 1) {
+            // End of message.
+            if (bits.bits_per_row[0] > 0) {
+                events += account_event(device, &bits, __func__);
+            }
+            bits = (bitbuffer_t){0};
+            at_start = 1;
+            continue;
+        }
+
+        // Any gap short of the reset limit is this coding's only kind of
+        // gap: the dip marking a 0-bit.
+        bitbuffer_add_bit(&bits, 0);
+    }
+
+    return events;
+}
+
 int pulse_slicer_string(const char *code, r_device *device)
 {
     int events = 0;
