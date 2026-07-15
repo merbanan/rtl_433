@@ -16,14 +16,31 @@ TFA 30.3307.02 wind sensor, part of TFA's "WeatherHub" product line.
 
 https://github.com/merbanan/rtl_433/issues/2453
 
-An unusual "Return-to-Zero unary run-length" OOK coding (see
-pulse_slicer_rz_count()): the signal is high almost all the time, with
-brief ~30 us low dips. Each dip marks a 0-bit; the high duration between
-two dips (or from the start of the message to the first dip) is a whole
-multiple of ~167 us and counts that many consecutive 1-bits.
+An unusual "Return-to-Zero unary run-length" OOK coding: the signal is
+high almost all the time, with brief ~30 us low dips. Each dip marks a
+0-bit; the high duration between two dips (or from the start of the
+message to the first dip) is a whole multiple of ~167 us and counts that
+many consecutive 1-bits.
 
-This turns out to be the exact same raw bit-recovery approach (fill in N
-"1" bits since the last detected low) used by the independent GPLv2
+Rather than a dedicated pulse-slicer operating on exact analog pulse
+widths, this decoder gets its raw chips from the plain, generic
+OOK_PULSE_PCM slicer at a fixed 40 us chip width and regroups those chips
+into data bits itself: a run of consecutive 1-chips since the last 0-chip
+(or since the start) counts that many consecutive 1-bits (see
+tfa_30_3307_chips_to_bits()); each single 0-chip is one 0-bit. The chip
+width is deliberately *not* close to a divisor of the ~167 us bit period
+(e.g. not 28 us, despite 167/28 being close to 6): OOK_PULSE_PCM
+auto-tunes its idea of the chip width whenever it finds pulses or gaps
+within tolerance of 1 or 2 chip widths anywhere in the capture, and the
+~26-30 us 0-bit dips alias with a ~28 us chip choice, silently retuning
+the slicer to measured-dip-width chips instead of the fixed width this
+decoder assumes -- corrupting the payload deep into longer messages once
+the two disagree. 40 us has no such alias with either the dips or the
+much longer 1-bit high runs, so the slicer's chip width always matches
+what tfa_30_3307_chips_to_bits() assumes.
+
+This chip-recovery approach (fill in N "1" bits since the last detected
+low) turns out to be the exact same one used by the independent GPLv2
 "tfrec" project (https://github.com/baycom/tfrec, in whb.cpp) for TFA
 WeatherHub sensors -- that project targets their FSK/PSK receiver chip,
 but its bit-recovery algorithm is receiver-agnostic and produces the same
@@ -73,6 +90,44 @@ test transmission (matching the reporter's own description of pressing
 the sensor's button indoors, wind vane not exposed to real wind).
 */
 
+// Regroup 40 us raw PCM chips into data bits: a run of 1-chips since the
+// last 0-chip (or the start) counts that many consecutive 1-bits. Each
+// 0-chip run's own bit period starts with a ~137 us ("base") high lead-in
+// before its dip, folded by the PCM slicer into the *following* run of
+// 1-chips -- so every run except the very first (which has no preceding
+// dip in this message) must have that base subtracted before counting
+// whole bit periods. See the file header and pulse_slicer_rz_count().
+static void tfa_30_3307_chips_to_bits(bitbuffer_t *out, uint8_t const *raw, unsigned raw_len)
+{
+    double const chips_per_bit = 167.0 / 40.0;
+    double const chips_base    = (167.0 - 30.0) / 40.0;
+    unsigned ones_run          = 0;
+    int at_start               = 1;
+
+    for (unsigned i = 0; i <= raw_len; i++) {
+        int bit = i < raw_len ? bitrow_get_bit(raw, i) : 0; // sentinel flushes a final run
+        if (bit) {
+            ones_run++;
+            continue;
+        }
+        if (ones_run > 0) {
+            double adj = at_start ? ones_run : ones_run - chips_base;
+            int ones   = (int)(adj / chips_per_bit + 0.5);
+            if (ones < 0) {
+                ones = 0;
+            }
+            for (int k = 0; k < ones; k++) {
+                bitbuffer_add_bit(out, 1);
+            }
+            ones_run  = 0;
+            at_start  = 0;
+        }
+        if (i < raw_len) {
+            bitbuffer_add_bit(out, 0);
+        }
+    }
+}
+
 static int tfa_30_3307_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int row = 0; // we expect a single row only
@@ -80,11 +135,14 @@ static int tfa_30_3307_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
     }
 
-    unsigned len     = bitbuffer->bits_per_row[row];
-    uint8_t const *b = bitbuffer->bb[row];
+    bitbuffer_t data_bits = {0};
+    tfa_30_3307_chips_to_bits(&data_bits, bitbuffer->bb[row], bitbuffer->bits_per_row[row]);
 
-    // De-PSK, de-NRZS, then G3RUH descramble the raw run-length-decoded
-    // bits (see file header), looking for the frame sync word.
+    unsigned len     = data_bits.bits_per_row[0];
+    uint8_t const *b = data_bits.bb[0];
+
+    // De-PSK, de-NRZS, then G3RUH descramble the recovered data bits (see
+    // file header), looking for the frame sync word.
     int last_bit = 0, psk = 0, last_psk = 0, nrzs = 0;
     uint32_t lfsr = 0;
     uint32_t sr   = 0;
@@ -206,9 +264,9 @@ static char const *const output_fields[] = {
 
 r_device const tfa_30_3307 = {
         .name        = "TFA 30.3307.02 Wind sensor",
-        .modulation  = OOK_PULSE_RZ_COUNT,
-        .short_width = 30,  // dip marking a 0-bit
-        .long_width  = 167, // one 1-bit period
+        .modulation  = OOK_PULSE_PCM,
+        .short_width = 40, // raw chip width; see tfa_30_3307_chips_to_bits()
+        .long_width  = 40,
         .reset_limit = 500,
         .decode_fn   = &tfa_30_3307_decode,
         .fields      = output_fields,
