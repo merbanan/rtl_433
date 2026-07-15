@@ -246,6 +246,7 @@ add_library(r_433 STATIC
     devices/oregon_scientific.c
     devices/oregon_scientific_sl109h.c
     devices/oregon_scientific_v1.c
+    devices/oregon_scientific_wmr500.c
     devices/oria_wa150km.c
     devices/philips_aj3650.c
     devices/philips_aj7010.c
