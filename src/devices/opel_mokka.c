@@ -73,10 +73,10 @@ static int opel_mokka_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data_t *data = data_make(
-                "model", "model", DATA_STRING, "Opel-Mokka",
-                "id",    "id",    DATA_INT,    key_id,
-                "type",  "type",  DATA_INT,    event_type,
-                "code",  "data",  DATA_STRING, code_str,
+                "model",    "",     DATA_STRING,    "Opel-Mokka",
+                "id",       "",     DATA_INT,       key_id,
+                "event",    "",     DATA_INT,       event_type,
+                "code",     "",     DATA_STRING,    code_str,
                 NULL);
         /* clang-format on */
 
@@ -90,7 +90,7 @@ static int opel_mokka_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
-        "type",
+        "event",
         "code",
         NULL,
 };
