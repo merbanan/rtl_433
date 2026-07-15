@@ -256,15 +256,18 @@ def process_source(path, name):
                 # skip comment
                 pass
             elif fName and re.match(r'.*\b(?:data_int|data_dbl|data_str|data_ary|data_dat|data_hex)\(.*', line):
-                m = re.match(r'.*\bdata_(int|dbl|str|ary|dat|hex)\(.*?,\s*"(.*?)"\s*,\s*"(.*?)"\s*,\s*(?:NULL|"(.*?)")\s*,\s*(?:"(.*?)")?.*\);.*', line)
+                m = re.match(r'.*\bdata_(int|dbl|str|ary|dat|hex)\([^,]*,\s*([^,]*)\s*,\s*"([^"]*)"\s*,\s*(?:NULL|"([^"]*)")\s*,\s*(?:"([^"]*)")?.*\);.*', line)
                 if m:
                     # type, subtype, and model should be fixed string values
                     d_type = m.group(1)
-                    d_key = m.group(2)
+                    d_qkey = m.group(2)
+                    d_key = d_qkey.strip('\"')
                     d_pretty = m.group(3)
                     d_cond = None
                     d_format = m.group(4)
                     d_value = m.group(5)
+                    if d_key == d_qkey:
+                        d_key = '$' + d_qkey
                     if d_key == 'type' or d_key == 'model':
                         if d_type != 'str' or d_value is None:
                             log(f"::notice file={name},line={i + 1}::DATA line bad format")

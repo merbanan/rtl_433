@@ -1040,7 +1040,7 @@ static int m_bus_output_data(r_device *decoder, bitbuffer_t *bitbuffer, const m_
                 "M",        "Manufacturer", DATA_STRING,    block1->M_str,
                 "id",       "ID",           DATA_INT,       block1->A_ID,
                 "version",  "Version",      DATA_INT,       block1->A_Version,
-                "type",     "Device Type",  DATA_FORMAT,    "0x%02X",   DATA_INT, block1->A_DevType,
+                "type",     "Device Type",  DATA_FORMAT,    "0x%02X",   DATA_INT, block1->A_DevType, // FIXME: this key is reserved and needs to be changed
                 "type_string",  "Device Type String",   DATA_STRING,        m_bus_device_type_str(block1->A_DevType),
                 "C",        "Control",      DATA_FORMAT,    "0x%02X",   DATA_INT, block1->C,
 //                "L",        "Length",       DATA_INT,       block1->L,
