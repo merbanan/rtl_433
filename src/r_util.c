@@ -233,18 +233,11 @@ bool str_endswith(char const *restrict str, char const *restrict suffix)
 // You must free the result if result is non-NULL.
 char *str_replace(char const *orig, char const *rep, char const *with)
 {
-    char *result;  // the return string
-    char const *ins; // the next insert point
-    char *tmp;     // varies
-    size_t len_rep;  // length of rep (the string to remove)
-    size_t len_with; // length of with (the string to replace rep with)
-    int len_front; // distance between rep and end of last rep
-    int count;     // number of replacements
-
     // sanity checks and initialization
     if (!orig || !rep) {
         return NULL;
     }
+    size_t len_rep;  // length of rep (the string to remove)
     len_rep = strlen(rep);
     if (len_rep == 0) {
         return NULL; // empty rep causes infinite loop during count
@@ -252,14 +245,19 @@ char *str_replace(char const *orig, char const *rep, char const *with)
     if (!with) {
         with = "";
     }
+    size_t len_with; // length of with (the string to replace rep with)
     len_with = strlen(with);
 
     // count the number of replacements needed
-    ins = orig;
-    for (count = 0; (tmp = strstr(ins, rep)); ++count) {
-        ins = tmp + len_rep;
+    char const *ins = orig; // the next insert point
+    char const *ctmp;
+    int count;     // number of replacements
+    for (count = 0; (ctmp = strstr(ins, rep)); ++count) {
+        ins = ctmp + len_rep;
     }
 
+    char *tmp;
+    char *result;  // the return string
     tmp = result = malloc(strlen(orig) + (len_with - len_rep) * (size_t)count + 1);
     if (!result) {
         WARN_MALLOC("str_replace()");
@@ -271,6 +269,7 @@ char *str_replace(char const *orig, char const *rep, char const *with)
     //    tmp points to the end of the result string
     //    ins points to the next occurrence of rep in orig
     //    orig points to the remainder of orig after "end of rep"
+    int len_front; // distance between rep and end of last rep
     while (count--) {
         ins = strstr(orig, rep);
         len_front = ins - orig;

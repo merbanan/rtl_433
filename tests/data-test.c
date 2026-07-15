@@ -36,6 +36,10 @@ static int test_jsons_large_report(void)
     int n      = 230; // more than enough to exceed any reasonable fixed buffer
 
     data_t **objs = calloc(n, sizeof(*objs));
+    if (!objs) {
+        fprintf(stderr, "FAIL: calloc returned NULL\n");
+        exit(1);
+    }
     for (int i = 0; i < n; ++i) {
         objs[i] = data_make(
                 "device",       "", DATA_INT,    i,

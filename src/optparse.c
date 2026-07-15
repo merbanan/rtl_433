@@ -76,8 +76,8 @@ char *arg_param(char const *arg)
     if (!arg) {
         return NULL;
     }
-    char *p = strchr(arg, ':');
-    char *c = strchr(arg, ',');
+    char *p = (char *)strchr(arg, ':');
+    char *c = (char *)strchr(arg, ',');
     if (p && (!c || p < c)) {
         return ++p;
     }

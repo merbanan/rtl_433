@@ -242,7 +242,7 @@ static int term_get_bg(void)
     if (!colorfgbg) {
         return 0; // default dark theme
     }
-    char *p = strrchr(colorfgbg, ';');
+    char const *p = strrchr(colorfgbg, ';');
     if (!p) {
         return 0; // default dark theme
     }

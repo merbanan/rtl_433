@@ -607,12 +607,12 @@ static const char *parse_map(const char *arg, struct flex_get *getter)
     return c;
 }
 
-static void parse_getter(const char *arg, struct flex_get *getter)
+static void parse_getter(char *arg, struct flex_get *getter)
 {
     uint8_t bitrow[128];
     while (arg && *arg) {
         if (*arg == '[') {
-            arg = parse_map(arg, getter);
+            arg = (char *)parse_map(arg, getter);
             continue;
         }
         char *p = strchr(arg, ':');
