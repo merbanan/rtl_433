@@ -10,6 +10,18 @@
     (at your option) any later version.
 */
 
+#include "decoder.h"
+
+static int decode_3bcd(uint8_t *p)
+{
+    return ((*p & 0x0f) * 100) + ((*(p + 1) >> 4) * 10) + (*(p + 1) & 0x0f);
+}
+
+static int decode_3nybble(uint8_t *p)
+{
+    return ((*p & 0x0f) << 8) | *(p + 1);
+}
+
 /**
 LaCrosse Technology TX22U-IT temperature, humidity, wind speed/direction
 and rain sensor.
@@ -85,22 +97,7 @@ An OOK variant of this protocol also exists (inverted polarity, 120 us bit width
 This is decoded by lacrosse_tx22uit_ook which uses OOK_PULSE_PCM + bit inversion.
 */
 
-#include "decoder.h"
-
-#define LACROSSE_TX22UIT_FSK 0
-#define LACROSSE_TX22UIT_OOK 1
-
-static int decode_3bcd(uint8_t *p)
-{
-    return ((*p & 0x0f) * 100) + ((*(p + 1) >> 4) * 10) + (*(p + 1) & 0x0f);
-}
-
-static int decode_3nybble(uint8_t *p)
-{
-    return ((*p & 0x0f) << 8) | *(p + 1);
-}
-
-static int lacrosse_tx22uit_decode(r_device *decoder, bitbuffer_t *bitbuffer, int variant)
+static int lacrosse_tx22uit_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble_pattern[] = { 0xaa, 0x2d, 0xd4 };
 
@@ -175,7 +172,7 @@ static int lacrosse_tx22uit_decode(r_device *decoder, bitbuffer_t *bitbuffer, in
 
     /* clang-format off */
     data = data_make(
-        "model",            "",               DATA_STRING, variant == LACROSSE_TX22UIT_OOK ? "LaCrosse-TX22UITOOK" : "LaCrosse-TX22UIT",
+        "model",            "",               DATA_STRING, "LaCrosse-TX22UIT",
         "id",               "Sensor ID",      DATA_FORMAT, "%02x", DATA_INT, id,
         "flags",            "Flags",          DATA_FORMAT, "%02x", DATA_INT, flags,
         "temperature_C",    "Temperature",    DATA_COND, -40.0 < temp_c && temp_c <= 70.0, DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
@@ -196,7 +193,7 @@ static int lacrosse_tx22uit_decode(r_device *decoder, bitbuffer_t *bitbuffer, in
 */
 static int lacrosse_tx22uit_fsk_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    return lacrosse_tx22uit_decode(decoder, bitbuffer, LACROSSE_TX22UIT_FSK);
+    return lacrosse_tx22uit_decode(decoder, bitbuffer);
 }
 
 /**
@@ -205,7 +202,7 @@ static int lacrosse_tx22uit_fsk_decode(r_device *decoder, bitbuffer_t *bitbuffer
 static int lacrosse_tx22uit_ook_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     bitbuffer_invert(bitbuffer);
-    return lacrosse_tx22uit_decode(decoder, bitbuffer, LACROSSE_TX22UIT_OOK);
+    return lacrosse_tx22uit_decode(decoder, bitbuffer);
 }
 
 static char const *const output_fields[] = {
