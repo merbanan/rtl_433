@@ -403,6 +403,8 @@ static char const **convert_csv_fields(r_cfg_t *cfg, char const **fields)
             else if (!strcmp(*p, "rain_rate_mm_h")) *p = "rain_rate_in_h";
             else if (!strcmp(*p, "wind_avg_km_h")) *p = "wind_avg_mi_h";
             else if (!strcmp(*p, "wind_max_km_h")) *p = "wind_max_mi_h";
+            else if (!strcmp(*p, "wind_avg_m_s")) *p = "wind_avg_mi_h";
+            else if (!strcmp(*p, "wind_max_m_s")) *p = "wind_max_mi_h";
         }
     }
     return fields;
@@ -728,6 +730,16 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 free(d->key);
                 d->key = new_label;
                 char *new_format_label = str_replace(d->format, "km/h", "mi/h");
+                free(d->format);
+                d->format = new_format_label;
+            }
+            // Convert double type fields ending in _m_s to _mi_h
+            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_m_s")) {
+                d->value.v_dbl = mps2mph(d->value.v_dbl);
+                char *new_label = str_replace(d->key, "_m_s", "_mi_h");
+                free(d->key);
+                d->key = new_label;
+                char *new_format_label = str_replace(d->format, "m/s", "mi/h");
                 free(d->format);
                 d->format = new_format_label;
             }

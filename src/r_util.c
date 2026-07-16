@@ -178,6 +178,11 @@ float mph2kmph(float mph)
     return mph * 1.609344f;
 }
 
+float mps2mph(float mps)
+{
+    return mps * 2.236936f;
+}
+
 
 float mm2inch(float mm)
 {

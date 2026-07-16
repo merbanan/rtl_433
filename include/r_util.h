@@ -105,6 +105,13 @@ float kmph2mph(float kph);
 */
 float mph2kmph(float mph);
 
+/** Convert Meters per second (m/s) to Miles per hour (mph).
+
+    @param mps speed in meters per second
+    @return speed in miles per hour
+*/
+float mps2mph(float mps);
+
 /** Convert millimeters (mm) to inches (inch).
 
     @param mm measurement in millimeters
