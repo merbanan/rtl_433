@@ -25,9 +25,9 @@
 ///     $ echo oneshot | sudo tee /sys/class/leds/led0/trigger
 ///     $ rtl_433 ... -F trigger:/sys/class/leds/led0/shot
 ///
-/// @param file a trigger output stream
+/// @param path a trigger output stream path
 /// @return The initialized data output.
 ///         You must release this object with data_output_free once you're done with it.
-struct data_output *data_output_trigger_create(FILE *file);
+struct data_output *data_output_trigger_create(char const *path);
 
 #endif /* INCLUDE_OUTPUT_TRIGGER_H_ */
