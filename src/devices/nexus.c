@@ -69,6 +69,24 @@ static int nexus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if ((b[1] & 0x30) == 0x30) {
         return DECODE_ABORT_EARLY; // channel not 1-3
     }
+
+    // This decoder has no real checksum (only a 4-bit constant-nibble check)
+    // and shares an all but identical field layout with the Rubicson/
+    // Solight-TE44/EMOS E0107T family, whose last byte is actually an 8-bit
+    // CRC (poly 0x31, init 0x6c), not humidity. A real Nexus "humidity" byte
+    // satisfying that unrelated CRC by chance is a ~1-in-256 coincidence, so
+    // treat a match as a sign this is actually one of theirs and reject it.
+    uint8_t crc_in[5];
+    crc_in[0] = b[0];
+    crc_in[1] = b[1];
+    crc_in[2] = b[2];
+    crc_in[3] = b[3] & 0xf0;
+    crc_in[4] = (b[3] & 0x0f) << 4 | (b[4] & 0xf0) >> 4;
+    if (crc8(crc_in, 5, 0x31, 0x6c) == 0) {
+        decoder_log(decoder, 2, __func__, "matches Solight-TE44/Rubicson CRC, rejecting");
+        return DECODE_FAIL_SANITY;
+    }
+
     int id       = b[0];
     int battery  = b[1] & 0x80;
     int testmode = b[1] & 0x40;

@@ -108,6 +108,12 @@ r_device const solight_te44 = {
         .gap_limit   = 3000, // packet gap = 3880 us
         .reset_limit = 6000,
         .decode_fn   = &solight_te44_decode,
-        .priority    = 10, // Eliminate false positives by letting Rubicson-Temperature go earlier
+        // Lower than nexus's priority (10): a lower value runs in an earlier
+        // round (see run_ook_demods()/run_fsk_demods() in r_api.c), so a
+        // successful Solight-TE44 decode (verified CRC) stops the loop
+        // before nexus's shared-layout decoder gets a chance to also fire
+        // on the same transmission. Still higher than Rubicson-Temperature's
+        // default 0, so Rubicson-Temperature keeps first refusal as before.
+        .priority    = 5,
         .fields      = output_fields,
 };
