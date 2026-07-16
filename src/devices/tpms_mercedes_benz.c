@@ -18,18 +18,17 @@ issue #3539:
 
 Data Layout:
 
-    Byte          0  1  2  3  4  5  6  7  8  9 10
-    Sample 00 02 83 24 7e 80 b6 a3 42 5a 6b bb 2
-           ff f2 83 24 7e 80 b6 a1 42 5b 6b 17 2
-           pp pp[II II II II II PP TT CC FF]XX t
+    Preamble    Byte  0  1  2  3  4  5  6  7  8  9
+    002 or ff2        ST II II II II PP TT CC FF XX
 
-- pp: {12} Preamble/Sync word 0x002 or 0xff2
-- II: {40} ID / Serial number
+- ST:  {8} Family/state byte, observed as 0x83 while stationary and 0xa3 while
+           moving. These capture-derived values are not known to be exhaustive.
+- II: {32} ID / Serial number
 - PP:  {8} Pressure, PSI, scale 2.75
 - TT:  {8} Temperature, C, offset 51
 - CC:  {8} Counter, increase by 1 each message
-- FF:  {8} Fixe value 0x6b = 107
-- XX:  {8} CRC-8, of [previous 9 byte], poly 0x2f, init 0xaa, final XOR 0x00
+- FF:  {8} Status, observed as 0x6b, 0xe9, or 0xea
+- XX:  {8} CRC-8 of the previous 9 bytes, poly 0x2f, init 0xaa, final XOR 0x00
 
 */
 
@@ -66,8 +65,13 @@ static int tpms_mercedes_benz_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC; // crc mismatch
     }
 
-    char id_str[5 * 2 + 1];
-    bitrow_snprint(b,5 * 8, id_str, sizeof(id_str));
+    if (b[0] != 0x83 && b[0] != 0xa3) {
+        decoder_logf(decoder, 1, __func__, "unexpected family/state byte %02x", b[0]);
+        return DECODE_FAIL_SANITY;
+    }
+
+    char id_str[4 * 2 + 1];
+    snprintf(id_str, sizeof(id_str), "%02x%02x%02x%02x", b[1], b[2], b[3], b[4]);
     float pressure_PSI = b[5] / 2.75f;
     int temperature_C  = b[6] - 51;
     int counter        = b[7] & 0x1f;
