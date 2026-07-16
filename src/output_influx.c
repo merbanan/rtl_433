@@ -364,7 +364,7 @@ static void R_API_CALLCONV print_influx_data(data_output_t *output, data_t *data
     }
 
     // write tags
-    while (data) {
+    for (; data; data = data->next) {
         if ((!strcmp(data->key, "model") && strstr(influx->metric_format, "[model"))
             || (!strcmp(data->key, "type") && strstr(influx->metric_format, "[type"))
             || (!strcmp(data->key, "subtype") && strstr(influx->metric_format, "[subtype"))
@@ -391,7 +391,6 @@ static void R_API_CALLCONV print_influx_data(data_output_t *output, data_t *data
             print_value(output, data->type, data->value, data->format);
             influx_sanitize_tag(str, NULL);
         }
-        data = data->next;
     }
 
     mbuf_snprintf(buf, " ");
@@ -402,7 +401,7 @@ static void R_API_CALLCONV print_influx_data(data_output_t *output, data_t *data
 
     // write fields
     data = data_org;
-    while (data) {
+    for (; data; data = data->next) {
         if (!strcmp(data->key, "model")
                 || !strcmp(data->key, "time")) {
             // skip
@@ -423,7 +422,6 @@ static void R_API_CALLCONV print_influx_data(data_output_t *output, data_t *data
             print_value(output, data->type, data->value, data->format);
             comma = true;
         }
-        data = data->next;
     }
 
     // restore original output functions

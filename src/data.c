@@ -496,14 +496,13 @@ static void R_API_CALLCONV format_jsons_object(data_output_t *output, data_t *da
 
     bool separator = false;
     abuf_cat(&jsons->msg, "{");
-    while (data) {
+    for (; data; data = data->next) {
         if (separator)
             abuf_cat(&jsons->msg, ",");
         output->print_string(output, data->key, NULL);
         abuf_cat(&jsons->msg, ":");
         print_value(output, data->type, data->value, data->format);
         separator = true;
-        data      = data->next;
     }
     abuf_cat(&jsons->msg, "}");
 }

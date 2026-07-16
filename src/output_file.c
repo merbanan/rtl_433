@@ -50,14 +50,13 @@ static void R_API_CALLCONV print_json_data(data_output_t *output, data_t *data, 
 
     bool separator = false;
     fputc('{', json->file);
-    while (data) {
+    for (; data; data = data->next) {
         if (separator)
             fprintf(json->file, ", ");
         output->print_string(output, data->key, NULL);
         fprintf(json->file, " : ");
         print_value(output, data->type, data->value, data->format);
         separator = true;
-        data = data->next;
     }
     fputc('}', json->file);
 }
@@ -657,9 +656,10 @@ static void R_API_CALLCONV data_output_csv_print(data_output_t *output, data_t *
         data_t *found   = NULL;
         if (i)
             fprintf(csv->file, "%s", csv->separator);
-        for (data_t *iter = data; !found && iter; iter = iter->next)
+        for (data_t *iter = data; !found && iter; iter = iter->next) {
             if (strcmp(iter->key, key) == 0)
                 found = iter;
+        }
 
         if (found)
             print_value(output, found->type, found->value, found->format);

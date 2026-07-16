@@ -538,7 +538,7 @@ static void R_API_CALLCONV print_mqtt_data(data_output_t *output, data_t *data, 
         end = expand_topic_string(mqtt->topic, mqtt->devices, data, mqtt->hostname, mqtt_sanitize_topic);
     }
 
-    while (data) {
+    for (; data; data = data->next) {
         if (!strcmp(data->key, "type")
                 || !strcmp(data->key, "model")
                 || !strcmp(data->key, "subtype")) {
@@ -551,7 +551,6 @@ static void R_API_CALLCONV print_mqtt_data(data_output_t *output, data_t *data, 
             print_value(output, data->type, data->value, data->format);
             *end = '\0'; // pop topic
         }
-        data = data->next;
     }
     *orig = '\0'; // restore topic
 }
