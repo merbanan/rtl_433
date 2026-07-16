@@ -109,6 +109,19 @@ static int bm5_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                                             // decimal places in "data_make" below.
     float starting_volt = volt2 * 0.000625f;
 
+    // soh/soc are documented (see file header) to be 0-100 percent, but their
+    // 7-bit fields can represent up to 127; and this is a 12 V lead-acid
+    // battery monitor, so a decoded voltage far outside that range is
+    // implausible. Reject as an additional filter for what the 8-bit
+    // checksum lets through.
+    if (soh > 100 || soc > 100 || battery_volt < 0.0f || battery_volt > 20.0f
+            || starting_volt < 0.0f || starting_volt > 20.0f) {
+        decoder_logf(decoder, 2, __func__,
+                "implausible values: soh=%d soc=%d battery_V=%.2f starting_V=%.2f",
+                soh, soc, (double)battery_volt, (double)starting_volt);
+        return DECODE_FAIL_SANITY;
+    }
+
     /* clang-format off */
     data = data_make(
             "model",            "",                       DATA_STRING,   "BM5-v2",
