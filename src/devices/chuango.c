@@ -107,5 +107,6 @@ r_device const chuango = {
         .sync_width  = 0,    // No sync bit used
         .tolerance   = 160,
         .decode_fn   = &chuango_callback,
+        .disabled    = 1, // fixed code with no checksum, see issue #3611
         .fields      = output_fields,
 };
