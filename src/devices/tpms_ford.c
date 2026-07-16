@@ -127,6 +127,15 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     // so that leaves 0x80 and 0x10, which are expected to be 0.
     unknown |= (b[6] & 0x90);
 
+    // All real captures (tests/Ford_TPMS) have unknown == 0; this syndrome
+    // was previously only logged for manual study, never enforced, letting
+    // any state/flag combination through the 8-bit checksum unfiltered.
+    // Reject the combinations the decoder itself doesn't recognize.
+    if (unknown != 0) {
+        decoder_logf(decoder, 2, __func__, "unexpected flag bits: %02x", unknown);
+        return 0;
+    }
+
     /* Low-order 2 bits are variously 01, 10. */
     int unknown_3 = b[6] & 0x3;
 
