@@ -27,8 +27,10 @@ with extended commands
     preamble  hc1    parity  hc2    parity  address  parity  cmd    parity  ext    parity  chksum  parity  eot
     13 bit    8 bit  1 bit   8 bit  1 bit   8 bit    1 bit   8 bit  1 bit   8 bit  1 bit   8 bit   1 bit   1 bit
 
-checksum and parity are not checked by this decoder.
-Command extensions are also not decoded. feel free to improve!
+Per-byte parity and the trailing checksum byte (a Type+Hopcount residual,
+restricted to the two documented Type values 6/FS20 and 0xC/FHT with a
+small hopcount margin) are both checked, and command extensions are
+decoded into the `ext` field.
 */
 
 static int fs20_find_preamble(bitbuffer_t *bitbuffer, int bitpos)
@@ -232,7 +234,13 @@ static int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     sum -= cmd;
     sum -= ext;
 
-    if ((sum < 6) || (sum > 0xC + 2)) {
+    // Accept only the two documented Type+Hopcount bands (a small hopcount
+    // margin around each fixed Type value); the gap between them (9-11)
+    // matches neither protocol and was previously accepted as one
+    // contiguous [6,14] range, weakening this check.
+    int is_fs20 = sum >= 6 && sum <= 6 + 2;
+    int is_fht  = sum >= 0xC && sum <= 0xC + 2;
+    if (!is_fs20 && !is_fht) {
         return DECODE_FAIL_SANITY;
     }
 
@@ -250,12 +258,12 @@ static int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",        "", DATA_COND,  (sum < 0xc),    DATA_STRING,    "FS20",
-            "model",        "", DATA_COND, !(sum < 0xc),    DATA_STRING,    "FHT",
+            "model",        "", DATA_COND,  is_fs20,    DATA_STRING,    "FS20",
+            "model",        "", DATA_COND,  is_fht,     DATA_STRING,    "FHT",
             "housecode",    "", DATA_FORMAT, "%x", DATA_INT, hc_b4,
             "address",      "", DATA_FORMAT, "%x", DATA_INT, ad_b4,
-            "command",      "", DATA_STRING, (sum < 0xc) ? cmd_tab[cmd & 0x1f] : fht_cmd_tab[cmd & 0xf],
-            "flags",        "", DATA_STRING, (sum < 0xc) ? flags_tab[cmd >> 5] : fht_flags_tab[cmd >> 5],
+            "command",      "", DATA_STRING, is_fs20 ? cmd_tab[cmd & 0x1f] : fht_cmd_tab[cmd & 0xf],
+            "flags",        "", DATA_STRING, is_fs20 ? flags_tab[cmd >> 5] : fht_flags_tab[cmd >> 5],
             "ext",          "", DATA_FORMAT, "%x", DATA_INT, ext,
             "mic",          "Integrity",    DATA_STRING, "PARITY",
             NULL);
