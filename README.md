@@ -118,7 +118,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [24]* Brennenstuhl RCS 2044
     [25]  Globaltronics GT-WT-02 Sensor
     [26]  Danfoss CFR Thermostat
-    [29]  Chuango Security Technology
+    [29]* Chuango Security Technology
     [30]  Generic Remote SC226x EV1527
     [31]  TFA-Twin-Plus-30.3049, Conrad KW9010, Ea2 BL999
     [32]  Fine Offset Electronics WH1080/WH3080 Weather Station
@@ -286,7 +286,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [196]  Atech-WS308 temperature sensor
     [197]  Acurite Grill/Meat Thermometer 01185M
     [198]* EnOcean ERP1
-    [199]  Linear Megacode Garage/Gate Remotes
+    [199]* Linear Megacode Garage/Gate Remotes
     [200]* Auriol 4-LD5661/4-LD5972/4-LD6313, Sempre 4-AH0423-4 temperature/rain sensors
     [201]  Unbranded SolarTPMS for trucks
     [202]  Funkbus / Instafunk (Berker, Gira, Jung)
@@ -453,6 +453,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [363]  Oregon Scientific WMR500 weather station
     [364]  Elsner Solexa 230V
     [365]  Mercedes Benz Sprinter 4500 TPMS sensor
+    [366]  Watts Vision thermostat (-f 868.3M)
 
 * Disabled by default, use -R n or a conf file to enable
 
