@@ -244,6 +244,15 @@ static int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
     }
 
+    // A real FS20 housecode is a user-set DIP-switch code, effectively
+    // uniform over the whole address space; an all-zero housecode and
+    // address is a degenerate pattern that mainly shows up when foreign
+    // data (that happens to satisfy the parity and checksum-band checks
+    // above) gets misinterpreted as FS20 - reject it as implausible.
+    if (hc == 0 && address == 0) {
+        return DECODE_FAIL_SANITY;
+    }
+
     // convert address to fs20 format (base4+1)
     for (uint8_t i = 0; i < 4; i++) {
         ad_b4 += (address % 4 + 1) << i * 4;
