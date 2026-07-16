@@ -72,6 +72,12 @@ static int hcs361_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[0] == 6 && bitbuffer->bb[0][0] != 0xfc) {
         return DECODE_FAIL_SANITY;
     }
+    // no sync, short header (real captures observed at this length always
+    // have row 0 == 0xfe, a truncated all-1s header; see also the 6 and
+    // 12-bit cases above/below)
+    if (bitbuffer->bits_per_row[0] == 7 && bitbuffer->bb[0][0] != 0xfe) {
+        return DECODE_FAIL_SANITY;
+    }
     // no sync
     if (bitbuffer->bits_per_row[0] == 12) {
         uint16_t preamble = (bitbuffer->bb[0][0]) << 8 | bitbuffer->bb[0][1];
