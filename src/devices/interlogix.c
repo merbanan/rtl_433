@@ -176,6 +176,16 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     default: device_type = "unknown"; break;
     }
 
+    // The 2-bit parity check above is inherently weak (~1/4 of random/corrupt
+    // payloads pass); the device type is a fixed enum documented in the patent
+    // (see file header), so a value outside that enum is implausible and is
+    // rejected here as an additional, independent filter for the noise that
+    // parity lets through.
+    if (!strcmp(device_type, "unknown")) {
+        decoder_logf(decoder, 2, __func__, "implausible device type: %s", device_type_id);
+        return DECODE_FAIL_SANITY;
+    }
+
     char device_serial[7];
     snprintf(device_serial, sizeof(device_serial), "%02x%02x%02x", reverse8(message[2]), reverse8(message[1]), reverse8(message[0]));
 
