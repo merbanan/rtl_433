@@ -99,7 +99,12 @@ This is decoded by lacrosse_tx22uit_ook which uses OOK_PULSE_PCM + bit inversion
 
 static int lacrosse_tx22uit_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const preamble_pattern[] = { 0xaa, 0x2d, 0xd4 };
+    // A leading 0xaa (part of the training sequence shown in this file's own
+    // test messages, e.g. "aa aa 2d d4") distinguishes this from the LaCrosse
+    // LTV-R1/R3/W1 family (lacrosse_r1.c), which shares the same "aa 2d d4"
+    // tail but always precedes it with 0xd2 instead - otherwise this shorter
+    // pattern also matches inside their sync word.
+    uint8_t const preamble_pattern[] = { 0xaa, 0xaa, 0x2d, 0xd4 };
 
     data_t *data;
     uint8_t b[64], *p;
@@ -125,8 +130,14 @@ static int lacrosse_tx22uit_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Message: ID(1), FLAGS(1), N*quartets(2*N), CRC(1), END(1)
     // CRC is over ID+FLAGS+N*quartets (2+2*N bytes)
+    // Per the doc above, a genuine packet is either a full 5-quartet
+    // acquisition-phase packet or a 1-3 quartet post-acquisition packet;
+    // 4 quartets is not a documented format, so don't try it as a candidate
+    // length - it only widens the surface for a coincidental CRC match.
     int quartets = 0;
     for (int n = 5; n >= 1; n--) {
+        if (n == 4)
+            continue;
         int data_len = 2 + 2 * n;
         if (data_len + 2 <= size && crc8(b, data_len, 0x31, 0x00) == b[data_len]) {
             quartets = n;
@@ -144,27 +155,42 @@ static int lacrosse_tx22uit_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     p = b;
     id = *p++;
     flags = *p++;
+    int recognized_quartets = 0;
     for (; p < &b[size] - 2; p += 2) {
         switch (*p >> 4) {
         case 0:
             raw_temp = decode_3bcd(p);
+            recognized_quartets++;
             break;
         case 1:
             humidity = decode_3bcd(p);
+            recognized_quartets++;
             break;
         case 2:
             rain_mm = 0.5180 * decode_3nybble(p);
+            recognized_quartets++;
             break;
         case 3:
             direction = (*p & 0x0f) * 22.5;
             raw_speed = *(p + 1);
+            recognized_quartets++;
             break;
         case 4:
             wind_gust_kmh = decode_3nybble(p) * 0.1;
+            recognized_quartets++;
             break;
         default:
             break;
         }
+    }
+
+    // Every genuine quartet type indicator is one of only 5 out of 16
+    // possible nibble values; a decode where none of them are recognized
+    // (despite passing the CRC) is a strong sign of a coincidental CRC match
+    // on foreign data rather than a real transmission.
+    if (recognized_quartets == 0) {
+        decoder_log(decoder, 2, __func__, "no recognized quartet types");
+        return DECODE_FAIL_SANITY;
     }
 
     temp_c = (raw_temp - 400) * 0.1f;
