@@ -69,6 +69,15 @@ static int martec_mplcd_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
+    // The 4-bit checksum is inherently weak (~1/16 false-accept) and trivially
+    // satisfied by an all-zero payload (0 + 0 == 0), which is also a
+    // degenerate, meaningless state no real remote button press produces.
+    // Real captures (tests/martec/mplcd-fan-remote) never have bytes[0] == 0.
+    if (bytes[0] == 0 && bytes[1] == 0) {
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY all-zero payload");
+        return DECODE_FAIL_SANITY;
+    }
+
     int channel = (~bytes[0] >> 1) & 0x0f;
     channel = reflect4(channel);
     int dimmer = (bytes[0] & 0x01) << 6;
