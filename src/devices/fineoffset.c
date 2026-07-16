@@ -132,6 +132,17 @@ static int fineoffset_WH2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     float temperature = temp * 0.1f;
 
+    // WH5 shares its exact wire format (47 bits, 0xFE preamble, same CRC-8)
+    // with the disabled-by-default Rosenborg-66796 decoder, differing only
+    // in temperature encoding (unsigned+offset vs signed-magnitude); a real
+    // Rosenborg capture (tests/fineoffset/fineoffset_wh2/02) decodes here as
+    // a wildly implausible 173.3 C. Reject implausible temperatures for WH5
+    // as an independent filter for that overlap.
+    if (model_num == MODEL_WH5 && (temperature < -40.0f || temperature > 60.0f)) {
+        decoder_logf(decoder, 2, __func__, "implausible temperature: %.1f C", (double)temperature);
+        return DECODE_FAIL_SANITY;
+    }
+
     // Nibble 8,9 contains humidity
     int humidity = b[3];
 
