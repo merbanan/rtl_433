@@ -452,6 +452,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [362]  Jansite TPMS TY588-EU2
     [363]  Oregon Scientific WMR500 weather station
     [364]  Elsner Solexa 230V
+    [365]  Mercedes Benz Sprinter 4500 TPMS sensor
 
 * Disabled by default, use -R n or a conf file to enable
 

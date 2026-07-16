@@ -372,6 +372,7 @@
     DECL(tpms_jansite_ty588) \
     DECL(oregon_scientific_wmr500) \
     DECL(elsner_solexa) \
+    DECL(tpms_mercedes_benz) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;

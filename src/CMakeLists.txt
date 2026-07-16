@@ -329,6 +329,7 @@ add_library(r_433 STATIC
     devices/tpms_jansite_ty468.c
     devices/tpms_jansite_ty588.c
     devices/tpms_kia.c
+    devices/tpms_mercedes_benz.c
     devices/tpms_nissan.c
     devices/tpms_pmv107j.c
     devices/tpms_porsche.c
