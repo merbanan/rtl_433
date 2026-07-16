@@ -156,5 +156,13 @@ r_device const marlec_solar = {
         .long_width  = 20,
         .reset_limit = 300,
         .decode_fn   = &marlec_solar_decode,
+        // Lower than watts_vision's default priority (0): a lower value runs
+        // in an earlier round (see run_ook_demods()/run_fsk_demods() in
+        // r_api.c), so a successful Watts-Vision decode stops the loop
+        // before this decoder gets a chance to also run on the same
+        // transmission - both use a real CRC-16 with the same poly/init
+        // over overlapping bytes of the same data (see issue #2846), so
+        // this is a genuine structural collision, not a validation gap.
+        .priority    = 10,
         .fields      = output_fields,
 };
