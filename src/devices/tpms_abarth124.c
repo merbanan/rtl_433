@@ -109,6 +109,20 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
     sprintf(flags, "%02x", b[4]);
     sprintf(id_str, "%02x%02x%02x%02x", b[0], b[1], b[2], b[3]);
 
+    // The 8-bit xor checksum is inherently weak (~1/256 false-accept) and
+    // this decoder structurally overlaps with other automotive TPMS
+    // decoders on the same preamble/modulation (e.g. Renault). Add a
+    // plausibility bound on temperature using this file's own documented
+    // working ranges (TG1C: -50 to 125 C; Q85: -20 to 80 C) as a second,
+    // independent filter for the noise the checksum lets through.
+    float temp_c_check = type == MODEL_TG1C ? (float)temp_raw - 50.0f : (float)temp_raw - 55.0f;
+    float temp_min = type == MODEL_TG1C ? -50.0f : -20.0f;
+    float temp_max = type == MODEL_TG1C ? 125.0f : 80.0f;
+    if (temp_c_check < temp_min || temp_c_check > temp_max) {
+        decoder_logf(decoder, 2, __func__, "implausible temperature: %.0f C", (double)temp_c_check);
+        return 0; //DECODE_FAIL_SANITY;
+    }
+
     if (type == MODEL_Q85) {
         // check CRC for 0 to 9 byte only if type Q85, CRC 16 CCITT-FALSE little-endian
         crc_little_endian = (b[11] << 8 ) | b[10];
