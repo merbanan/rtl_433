@@ -33,13 +33,13 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
         if (bitbuffer->bits_per_row[row] != OSV1_BITS)
             continue; // DECODE_ABORT_LENGTH
 
-        int cs = 0;
+        int raw_cs = 0;
         for (int i = 0; i < OSV1_BITS / 8; i++) {
             uint8_t byte = reverse8(bitbuffer->bb[row][i]);
             nibble[i * 2    ] = byte & 0x0f;
             nibble[i * 2 + 1] = byte >> 4;
             if (i < ((OSV1_BITS / 8) - 1))
-                cs += nibble[i * 2] + 16 * nibble[i * 2 + 1];
+                raw_cs += nibble[i * 2] + 16 * nibble[i * 2 + 1];
         }
 
 
@@ -50,10 +50,18 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
             continue; //  DECODE_FAIL_SANITY
         }
 
-        cs = (cs & 0xFF) + (cs >> 8);
         int checksum = nibble[6] + (nibble[7] << 4);
+        // Standard end-around-carry fold; matches the documented OSv1 algorithm
+        // ("any overflow is summed back into the total sum") and its worked
+        // examples, e.g. sum 0x1b9 -> checksum 0xba.
+        int cs_fold = (raw_cs & 0xFF) + (raw_cs >> 8);
+        // Alternate fold from https://github.com/merbanan/rtl_433/issues/1886:
+        // observed to match some emitters where cs_fold does not, but only
+        // verified against a single weak-signal (Yagi, distant sensor)
+        // capture, so it's unconfirmed as a general rule. Accept either.
+        int cs_alt = (raw_cs > 0x180 ? raw_cs + 1 : raw_cs) & 0xFF;
         /* reject 0x00 checksums to reduce false positives */
-        if (!checksum || (checksum != cs))
+        if (!checksum || (checksum != cs_fold && checksum != cs_alt))
             continue; // DECODE_FAIL_MIC
 
         int sid      = nibble[0];

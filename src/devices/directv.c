@@ -375,9 +375,9 @@ r_device const directv = {
         .modulation  = FSK_PULSE_PCM,
         .short_width = 600,  // 150 samples @250k
         .long_width  = 600,  // 150 samples @250k
-        .gap_limit   = 30000, // gap is typically around 27,600µs, so long that rtl_433 resets
+        .gap_limit   = 30000, // gap is typically around 27,600 us, so long that rtl_433 resets
                               // signal decoder before recognizing row repeats in signal
-        .reset_limit = 50000, // maximum gap size before End Of Row [µs]
+        .reset_limit = 50000, // maximum gap size before End Of Row [us]
         .decode_fn   = &directv_decode,
         .fields      = output_fields,
 };

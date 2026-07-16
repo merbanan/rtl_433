@@ -6,10 +6,12 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/**
+/** @fn int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 IKEA Sparsnäs Energy Meter Monitor.
 
-@warning This decoder is not stateless.
+@attention stateful
+This decoder has an internal state that may change between invocations and influence the output.
+The sensor ID is discovered via brute-force decryption on the first packet and cached in a static variable for subsequent invocations.
 
 The IKEA Sparsnäs consists of a display unit, and a sender unit. The display unit
 displays and stores the values sent by the sender unit. It is not needed for this
@@ -172,7 +174,7 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_log(decoder, 2, __func__, "No sensor ID configured. Brute forcing encryption.");
         ikea_sparsnas_sensor_id = ikea_sparsnas_brute_force_encryption(buffer);
         if (ikea_sparsnas_sensor_id) {
-            decoder_logf(decoder, 2, __func__, "Found valid sensor ID %06u. If reported values does not make sense, this might be incorrect.", ikea_sparsnas_sensor_id);
+            decoder_logf(decoder, 2, __func__, "Found valid sensor ID %06u. Might be invalid if values are incorrect.", ikea_sparsnas_sensor_id);
         } else {
             decoder_log(decoder, 2, __func__, "No valid sensor ID found.");
         }
@@ -205,7 +207,7 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_logf(decoder, 2, __func__, "Received sensor id: %06u", rcv_sensor_id);
 
     if (rcv_sensor_id != ikea_sparsnas_sensor_id) {
-        decoder_logf(decoder, 2, __func__, "Malformed package, or wrong sensor id. Received sensor id (%06u) not the same as sender (%d)", rcv_sensor_id, ikea_sparsnas_sensor_id);
+        decoder_logf(decoder, 2, __func__, "Malformed package or wrong sensor id. Sensor id (%06u) but sender (%d).", rcv_sensor_id, ikea_sparsnas_sensor_id);
     }
 
     if ((!ikea_sparsnas_sensor_id) || (rcv_sensor_id != ikea_sparsnas_sensor_id)) {

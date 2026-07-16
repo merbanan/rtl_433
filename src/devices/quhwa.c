@@ -64,12 +64,12 @@ static char const *const output_fields[] = {
 r_device const quhwa = {
         .name        = "Quhwa",
         .modulation  = OOK_PULSE_PWM,
-        .short_width = 360,  // Pulse: Short 360µs, Long 1070µs
-        .long_width  = 1070, // Gaps: Short 360µs, Long 1070µs
-        .reset_limit = 6600, // Intermessage Gap 6500µs
-        .gap_limit   = 1200, // Long Gap 1120µs
+        .short_width = 360,  // Pulse: Short 360 us, Long 1070 us
+        .long_width  = 1070, // Gaps: Short 360 us, Long 1070 us
+        .reset_limit = 6600, // Intermessage Gap 6500 us
+        .gap_limit   = 1200, // Long Gap 1120 us
         .sync_width  = 0,    // No sync bit used
-        .tolerance   = 80,   // us
+        .tolerance   = 80,
         .decode_fn   = &quhwa_callback,
         .fields      = output_fields,
 };

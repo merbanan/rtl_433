@@ -153,7 +153,7 @@ r_device const vaillant_vrt340f = {
         .short_width = 836,  // half-bit width 836 us
         .long_width  = 1648, // bit width 1648 us
         .reset_limit = 4000,
-        .tolerance   = 120, // us
+        .tolerance   = 120,
         .decode_fn   = &vaillant_vrt340_callback,
         .fields      = output_fields,
 };

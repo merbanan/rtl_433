@@ -182,16 +182,22 @@ Used with:
 Data layout:
 
     ^^^^_^_^_^_^_^_^_^_^_^_^_^_^_^_^^^^_FFFFFFIIIIIIIIIIIII
-    IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIPPPPPPPPPPPPPPPPCCCC
+    IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIPPPPPPPPPPPPPPPPXXXX
 
-- PREAMBLE: 36-bits 0xF5555555E
-- F: FLAGS, 3 Manchester encoded bits
+- PREAMBLE: 36-bits 0xF5555555E (or ...5557 with the 0b10 as the first MC bit)
+- F: FLAGS, 3 Manchester encoded bits (4 bits with the fixed 1-bit from preamble)
 - I: ID, 24 Manchester encoded bits
 - P: PRESSURE, 8 Manchester encoded bits (PSI * 5)
-- C: CHECK, 2 Manchester encoded bits some kind of Parity
+- X: CHECK, 2 Manchester encoded bits, 2-bit addition checksum
+
+Flags:
+
+- 0 = learning mode (when using a 125kHz coil to wake up the TPMS and have the car learn; sends 9 packets)
+- 3 = sudden pressure change (increase/decrease) sends 7 or 8 packets
+- 5 = wake up mode, sends 8 packets
+- 7 = driving mode, sends 8 packets
 
 NOTE: there is NO temperature data transmitted
-TODO: the checksum is unknown
 
 We use OOK_PULSE_PCM to get the bitstream above.
 Then we use bitbuffer_manchester_decode() which will alert us to any
@@ -201,6 +207,23 @@ corruption since there is no CRC.
 
 The Manchester bits are encoded as 01 => 0 and 10 => 1, which is
 the reverse of bitbuffer_manchester_decode(), so we invert the result.
+
+Checksum: pad the 36 data bits with the fixed 1-bit tail of the preamble to
+get an even 38 bits, split into 2-bit groups, and add them together (not
+XOR) modulo 4. The result is always 1. Found by RonNiles, see
+https://github.com/merbanan/rtl_433/issues/1734
+
+NOTE: this decoder cannot tell an SMD3MA4 (PSI * 5) apart from a
+Schrader/Nissan/Infiniti MRXNIS315G3 sensor (also sold as the aftermarket
+Redi-Sensor SE10001HP/SE10001HPR), which uses the same wire format and
+preamble but only has 8 significant pressure bits at PSI * 4. These are
+two separate decoders (schrader_SMD3MA4 and schrader_NIS315G3) rather than
+one decoder emitting both interpretations, per
+https://github.com/merbanan/rtl_433/issues/1734#issuecomment-4957207247 --
+the model key should denote one protocol interpretation, not several. Both
+are enabled by default, so a single physical transmission produces two
+output records with two different pressure readings; use -R to select
+just one if that duplication is undesirable.
 
 Example payloads:
 
@@ -215,68 +238,232 @@ Example payloads:
 
 */
 #define NUM_BITS_PREAMBLE (36)
-#define NUM_BITS_FLAGS (3)
-#define NUM_BITS_ID (24)
-#define NUM_BITS_PRESSURE (10)
-#define NUM_BITS_DATA (NUM_BITS_FLAGS + NUM_BITS_ID + NUM_BITS_PRESSURE)
-#define NUM_BITS_TOTAL (NUM_BITS_PREAMBLE + 2 * NUM_BITS_DATA)
+#define NUM_BITS_DATA (38) // 1 fixed bit + 3 flags + 24 id + 8 pressure + 2 checksum
+#define NUM_BITS_TOTAL_MIN (NUM_BITS_PREAMBLE / 2 + 2 * NUM_BITS_DATA)
+#define NUM_BITS_TOTAL_MAX (NUM_BITS_PREAMBLE + 2 * NUM_BITS_DATA + 8)
+#define SCHRADER_SMD3MA4 1
+#define SCHRADER_NIS315G3 2
 
-static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+// Shared by schrader_SMD3MA4 and schrader_NIS315G3, which are otherwise
+// wire-format identical and differ only in the pressure scale and model name.
+static int schrader_SMD3MA4_family_decode(r_device *decoder, bitbuffer_t *bitbuffer, int model)
 {
-    // Reject wrong length, with margin of error for extra bits at the end
-    if (bitbuffer->bits_per_row[0] < NUM_BITS_TOTAL
-            || bitbuffer->bits_per_row[0] >= NUM_BITS_TOTAL + 8) {
+    // full preamble is 0xF5555555E, this is its last 16 bits
+    uint8_t const preamble_pattern[2] = {0x55, 0x5e};
+
+    // Reject wrong length, with margin of error for a short preamble or extra bits at the end
+    if (bitbuffer->bits_per_row[0] < NUM_BITS_TOTAL_MIN
+            || bitbuffer->bits_per_row[0] >= NUM_BITS_TOTAL_MAX) {
         return DECODE_ABORT_LENGTH;
     }
 
-    // Check preamble
-    uint8_t *b = bitbuffer->bb[0];
-    if (b[0] != 0xf5 || b[1] != 0x55 || b[2] != 0x55 || b[3] != 0x55
-            || (b[4] >> 4) != 0xe) {
-        return DECODE_FAIL_SANITY;
+    // Find the preamble tail, keeping its last two (fixed) bits as the start of the data
+    unsigned bitpos = bitbuffer_search(bitbuffer, 0, 0, preamble_pattern, 16);
+    bitpos += 14;
+    if (bitpos + NUM_BITS_DATA * 2 > bitbuffer->bits_per_row[0]) {
+        return DECODE_ABORT_EARLY;
     }
 
     // Check and decode the Manchester bits
     bitbuffer_t decoded = {0};
-    int ret = bitbuffer_manchester_decode(bitbuffer, 0, NUM_BITS_PREAMBLE,
+    unsigned ret = bitbuffer_manchester_decode(bitbuffer, 0, bitpos,
             &decoded, NUM_BITS_DATA);
-    if (ret != NUM_BITS_TOTAL) {
+    if (ret != bitpos + NUM_BITS_DATA * 2) {
         decoder_log(decoder, 2, __func__, "invalid Manchester data");
         return DECODE_FAIL_MIC;
     }
     bitbuffer_invert(&decoded);
-    b = decoded.bb[0];
-
-    // Compute parity
-    int parity = xor_bytes(b, 4) ^ (b[4] & 0xe0);
-    parity     = (parity >> 4) ^ (parity & 0x0f);
-    parity     = (parity >> 2) ^ (parity & 0x03);
-
-    // Get the decoded data fields
-    // FFFSSSSS SSSSSSSS SSSSSSSS SSSPPPPP PPPCCxxx
-    int flags     = b[0] >> 5;
-    int serial_id = ((b[0] & 0x1f) << 19) | (b[1] << 11) | (b[2] << 3) | (b[3] >> 5);
-    int pressure  = ((b[3] & 0x1f) <<  3) | (b[4] >> 5);
-    int check     = ((b[4] & 0x18) >> 3);
-
-    decoder_logf_bitbuffer(decoder, 3, __func__, &decoded, "Parity: %d%d Check: %d%d", parity >> 1, parity & 1, check >> 1, check & 1);
+    uint8_t *b = decoded.bb[0];
 
     // reject all-zero data
-    if (!flags && !serial_id && !pressure) {
+    if (!b[0] && !b[1] && !b[2] && !b[3]) {
         decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00");
         return DECODE_FAIL_SANITY;
     }
 
+    // Checksum: add all 2-bit groups (including the fixed leading 1-bit) modulo 4, expect 1
+    int sum = 0;
+    for (int i = 0; i < 5; ++i) {
+        sum += ((b[i] >> 0) & 0x3) + ((b[i] >> 2) & 0x3)
+                + ((b[i] >> 4) & 0x3) + ((b[i] >> 6) & 0x3);
+    }
+    if ((sum & 0x3) != 1) {
+        decoder_log(decoder, 2, __func__, "checksum failed");
+        return DECODE_FAIL_MIC;
+    }
+
+    // Get the decoded data fields
+    // 1FFFSSSS SSSSSSSS SSSSSSSS SSSSPPPP PPPPXX..
+    int flags     = (b[0] & 0x70) >> 4;
+    int serial_id = ((b[0] & 0x0f) << 20) | (b[1] << 12) | (b[2] << 4) | (b[3] >> 4);
+    int pressure  = ((b[3] & 0x0f) <<  4) | (b[4] >> 4);
+
+    // normal driving is flags == 0x7
+    int flag_learn  = flags == 0x0;
+    int flag_alarm  = flags == 0x3;
+    int flag_wakeup = flags == 0x5;
+
     char id_str[9];
     snprintf(id_str, sizeof(id_str), "%06X", serial_id);
 
+    float pressure_scale = 0.2f; // SCHRADER_SMD3MA4
+    if (model != SCHRADER_SMD3MA4) {
+        pressure_scale = 0.25f; // SCHRADER_NIS315G3
+    }
+
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "",             DATA_STRING, "Schrader-SMD3MA4",
+            "model",            "",             DATA_COND, model == SCHRADER_SMD3MA4, DATA_STRING, "Schrader-SMD3MA4",
+            "model",            "",             DATA_COND, model == SCHRADER_NIS315G3, DATA_STRING, "Schrader-NIS315G3",
             "type",             "",             DATA_STRING, "TPMS",
-            "flags",            "",             DATA_INT,    flags,
             "id",               "ID",           DATA_STRING, id_str,
-            "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.1f PSI", DATA_DOUBLE, pressure * 0.2f,
+            "flags",            "Flags",        DATA_INT,    flags,
+            "learn",            "Learn",        DATA_COND,   flag_learn, DATA_INT, 1,
+            "alarm",            "Alarm",        DATA_COND,   flag_alarm, DATA_INT, 1,
+            "wakeup",           "Wakeup",       DATA_COND,   flag_wakeup, DATA_INT, 1,
+            "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.1f PSI", DATA_DOUBLE, pressure * pressure_scale,
+            "mic",              "Integrity",    DATA_STRING, "PARITY",
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
+/** @sa schrader_SMD3MA4_family_decode() */
+static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    return schrader_SMD3MA4_family_decode(decoder, bitbuffer, SCHRADER_SMD3MA4);
+}
+
+/** @sa schrader_SMD3MA4_family_decode() */
+static int schrader_NIS315G3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    return schrader_SMD3MA4_family_decode(decoder, bitbuffer, SCHRADER_NIS315G3);
+}
+
+/**
+TPMS Model: Schrader Electronics MRXBC5A4 / MRXBMW433TX1 (BMW)
+Contributed by: Ilias Daradimos.
+
+Packet structure (61 bits):
+
+    W SSSSSSSSSSSSS s FFF IIIIIIIIIIIIIIIIIIIIIIII PPPPPPPPP CC TTTTTTTT
+
+- W: 1 bit wake
+- S: 13 sync bits
+- s: 1 start bit
+- F: 3 bits, may contain status and battery flags. Value 010 = sleep ACK.
+- I: id (24 bits)
+- P: pressure 9 bits, 1 kPa/bit
+- C: 2 bits integrity check (C1, C2)
+- T: 8 bits temperature offset by 50, range -50 to 205 degrees C
+
+Integrity check (C1C2):
+The 2-bit integrity value is computed over the 35-bit payload (III+PPP+CC),
+i.e. id, pressure, and the check bits themselves, but not the flags:
+    C1C2 = (even_ones + 2*n - 1) mod 4
+where:
+    even_ones = count of 1-bits at even positions (0, 2, 4, ...) in the 35-bit payload
+    n = total number of 1-bits in the 35-bit payload
+
+Sample data (35-bit payload + C1C2), validated with an RDC test tool:
+
+    00000100010010000000001010000000001 11
+    11100100010001101010010011001101010 10
+    11100100010001101010010011000000000 01
+    00000100010001101010010011000000000 01
+    00100100010001101010010011000000000 00
+    01000100010001101010010011000000000 11
+    01100100010001101010010011000000000 10
+    10000100010001101010010011000000000 00
+    10100100010001101010010011000000000 11
+    11000100010001101010010011000000000 10
+*/
+static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    data_t *data;
+    uint8_t b[6];
+    int serial_id;
+    char id_str[9];
+    int flags;
+    char flags_str[3];
+    unsigned int pressure;    // kPa
+    int temperature; // degree C
+
+    /* Check for incorrect number of bits received */
+    if (bitbuffer->bits_per_row[0] != 61)
+        return DECODE_ABORT_LENGTH;
+
+    /* Discard the first 15 bits (1 wake + 13 sync + 1 start) */
+    bitbuffer_extract_bytes(bitbuffer, 0, 16, b, 46);
+
+    /* Get data fields:
+       b[0]: FFFIIIII (3 flags + 5 ID bits)
+       b[1]: IIIIIIII (8 ID bits)
+       b[2]: IIIIIIII (8 ID bits)
+       b[3]: IIIPPPPP (3 ID + 5 pressure bits)
+       b[4]: PPPPCC TT (4 pressure + 2 integrity + 2 temp)
+       b[5]: TTTTTTxx (6 temp + 2 unused)
+    */
+    serial_id   = ((b[0] & 0x1f) << 19) | (b[1] << 11) | (b[2] << 3) | (b[3] >> 5);
+
+    /* Check serial value not zero or all ones */
+    if (serial_id == 0 || serial_id == 0xFFFFFF) {
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0x00");
+        return DECODE_FAIL_SANITY;
+    }
+
+    /* Verify 2-bit integrity check (C1C2) over 35-bit payload (III+PPP+CC).
+       C1C2 = (even_ones + 2*n - 1) mod 4
+       where even_ones = count of 1-bits at even positions (0,2,4,...)
+       and n = total number of 1-bits in the 35-bit payload.
+       The 35-bit payload spans bits 3-37 of the extracted 46-bit data.
+    */
+    int even_ones = 0;
+    int n = 0;
+    for (int i = 3; i < 38; ++i) {
+        int bit = (b[i / 8] >> (7 - (i % 8))) & 1;
+        if (bit) {
+            n++;
+            if ((i - 3) % 2 == 0)
+                even_ones++;
+        }
+    }
+    int c1c2 = (even_ones + 2 * n - 1) & 0x3;
+    int c1 = (b[4] >> 3) & 1;
+    int c2 = (b[4] >> 2) & 1;
+    if (c1c2 != ((c1 << 1) | c2)) {
+        return DECODE_FAIL_MIC;
+    }
+
+    flags       = (b[0] >> 5) & 0x7;
+    pressure    = ((b[3] & 0x1f) << 4) | (b[4] >> 4);
+    temperature = ((b[4] & 0x03) << 5) | (b[5] >> 3);
+
+    /* The 2-bit integrity check above only rejects 3 out of 4 random/corrupt
+       payloads. Add a plausibility bound on pressure and temperature (a
+       generous margin around real TPMS operating ranges) as a second,
+       independent filter for the noise the parity check lets through. */
+    if (pressure > 450 || temperature - 50 < -40 || temperature - 50 > 125) {
+        decoder_logf(decoder, 2, __func__,
+                "implausible pressure/temperature: %u kPa, %d C", pressure, temperature - 50);
+        return DECODE_FAIL_SANITY;
+    }
+
+    snprintf(id_str, sizeof(id_str), "%06X", serial_id);
+    snprintf(flags_str, sizeof(flags_str), "%01x", flags);
+
+    /* clang-format off */
+    data = data_make(
+            "model",            "",             DATA_STRING, "Schrader-MRXBC5A4",
+            "type",             "",             DATA_STRING, "TPMS",
+            "flags",            "",             DATA_STRING, flags_str,
+            "id",               "ID",           DATA_STRING, id_str,
+            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, pressure * 1.0f,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temperature - 50,
+            "sleep",            "Sleep",        DATA_STRING, (flags == 2 ? "True" : "False"),
+            "mic",              "Integrity",    DATA_STRING, "PARITY",
             NULL);
     /* clang-format on */
 
@@ -311,7 +498,23 @@ static char const *const output_fields_SMD3MA4[] = {
         "type",
         "id",
         "flags",
+        "learn",
+        "alarm",
+        "wakeup",
         "pressure_PSI",
+        "mic",
+        NULL,
+};
+
+static char const *const output_fields_MRXBC5A4[] = {
+        "model",
+        "type",
+        "id",
+        "flags",
+        "sleep",
+        "pressure_kPa",
+        "temperature_C",
+        "mic",
         NULL,
 };
 
@@ -336,11 +539,31 @@ r_device const schrader_EG53MA4 = {
 };
 
 r_device const schrader_SMD3MA4 = {
-        .name        = "Schrader TPMS SMD3MA4 (Subaru) 3039 (Infiniti, Nissan, Renault)",
+        .name        = "Schrader TPMS SMD3MA4 (Subaru)",
         .modulation  = OOK_PULSE_PCM,
         .short_width = 120,
         .long_width  = 120,
         .reset_limit = 480,
         .decode_fn   = &schrader_SMD3MA4_decode,
         .fields      = output_fields_SMD3MA4,
+};
+
+r_device const schrader_NIS315G3 = {
+        .name        = "Schrader TPMS MRXNIS315G3, 3039 (Infiniti, Nissan, Renault), aka Redi-Sensor SE10001HP/SE10001HPR",
+        .modulation  = OOK_PULSE_PCM,
+        .short_width = 120,
+        .long_width  = 120,
+        .reset_limit = 480,
+        .decode_fn   = &schrader_NIS315G3_decode,
+        .fields      = output_fields_SMD3MA4,
+};
+
+r_device const schrader_MRXBC5A4 = {
+        .name        = "Schrader TPMS MRXBC5A4 (BMW)",
+        .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
+        .short_width = 123,
+        .long_width  = 0,
+        .reset_limit = 800,
+        .decode_fn   = &schrader_MRXBC5A4_decode,
+        .fields      = output_fields_MRXBC5A4,
 };

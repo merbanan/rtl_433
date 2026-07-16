@@ -281,9 +281,9 @@ static char const *const elv_ws2000_output_fields[] = {
 r_device const elv_ws2000 = {
         .name        = "ELV WS 2000",
         .modulation  = OOK_PULSE_PWM,
-        .short_width = 366,  // 0 => 854us, 1 => 366us according to link in top
+        .short_width = 366,  // 0 => 854 us, 1 => 366 us according to link in top
         .long_width  = 854,  // no repetitions
-        .reset_limit = 1000, // Longest pause is 854us according to link
+        .reset_limit = 1000, // Longest pause is 854 us according to link
         .decode_fn   = &ws2000_callback,
         .disabled    = 1,
         .fields      = elv_ws2000_output_fields,

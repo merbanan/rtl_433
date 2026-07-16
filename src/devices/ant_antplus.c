@@ -84,7 +84,7 @@ static int ant_antplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned bit_offset;
     int antplus_flag = 0;
 
-    // validate buffer: ANT messages are shorter than 150us, i.e. ~140 bits at 1Mbps
+    // validate buffer: ANT messages are shorter than 150 us, i.e. ~140 bits at 1Mbps
     if (bitbuffer->bits_per_row[0] < 120 || bitbuffer->bits_per_row[0] > 200) {
         return DECODE_ABORT_LENGTH;
     }

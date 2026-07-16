@@ -29,12 +29,12 @@ Data layout after preamble:
     Byte Position   0  1  2  3  4  5  6  7
     Sample          01 1e d6 03 6c aa 14 ff
     Sample          01 1e d6 02 fa aa c4 1e
-                    II II II fT TT aa CC CC
+                    II II II BT TT aa CC CC
 
 - III: {24} Sensor ID
-- f:   {4}  Flags or unused, always 0
+- B:    {4} Battery flag, Battery OK = 0x0, LOW battery = 0x8
 - TTT: {12} Temperature, raw value, °C = (raw - 500) / 10
-- aa:  {8}  Fixed value 0xAA
+- aa:   {8} Fixed value 0xAA
 - CC:  {16} Checksum, XOR bit with a specific WORD to get the 16 bit values, and final XOR with 0x411B, see table below.
 - Followed by trailing d2 d2 d2 d2 d2 00 00 (not used).
 
@@ -172,11 +172,13 @@ static int thermopro_tp211b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int id       = (b[0] << 16) | (b[1] << 8) | b[2];
     int temp_raw = ((b[3] & 0x0f) << 8) | b[4];
     float temp_c = (temp_raw - 500) * 0.1f;
+    int low_bat  = (b[3] & 0x80) >> 7;
 
     /* clang-format off */
     data_t *data = data_make(
             "model",         "",            DATA_STRING, "ThermoPro-TP211B",
             "id",            "Id",          DATA_FORMAT, "%06x",   DATA_INT,    id,
+            "battery_ok",    "Battery",     DATA_INT,    !low_bat,
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temp_c,
             "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
             NULL);
@@ -189,6 +191,7 @@ static int thermopro_tp211b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
+        "battery_ok",
         "temperature_C",
         "mic",
         NULL,

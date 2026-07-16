@@ -98,5 +98,6 @@ r_device const megacode = {
         .gap_limit   = 9000,
         .reset_limit = 20000,
         .decode_fn   = &megacode_callback,
+        .disabled    = 1, // fixed code with no checksum, see issue #3611
         .fields      = output_fields,
 };

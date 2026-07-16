@@ -21,6 +21,7 @@ Devices decoded:
   (Note: Some newer sensors share the 592TXR coding for compatibility.
 - Acurite 609TXC "TH" temperature and humidity sensor (609A1TX)
 - Acurite 986 Refrigerator / Freezer Thermometer
+- Acurite/Chaney 985 Refrigerator / Freezer Thermometer
 - Acurite 515 Refrigerator / Freezer Thermometer
 - Acurite 606TX / Technoline TX960 temperature sensor, optional with channels and [TX]Button
 - Acurite 6045M Lightning Detector
@@ -69,6 +70,10 @@ Devices decoded:
 #define ACURITE_MSGTYPE_899_RAINFALL                    0x30
 #define ACURITE_MSGTYPE_5N1_WINDSPEED_WINDDIR_RAINFALL  0x31
 #define ACURITE_MSGTYPE_5N1_WINDSPEED_TEMP_HUMIDITY     0x38
+
+#define ACURITE_MSGTYPE_OPTIMUS_WIND_RAIN               0x3a
+#define ACURITE_MSGTYPE_OPTIMUS_TEMP_HUM                0x3b
+#define ACURITE_OPTIMUS_BYTELEN                         10
 
 
 
@@ -1156,6 +1161,110 @@ Long rows with extra bits/bytes (from demod/bit slicing)
 will be accepted as long the bytes up to the expected length
 pass checksum and parity tests.
 */
+/**
+AcuRite Optimus 6-in-1 (06188M) weather station decoder.
+
+10-byte messages, two message types alternate:
+- Type 0x3b (inverted): wind speed, temperature, humidity
+- Type 0x3a (inverted): wind speed, wind direction, rain
+
+Byte layout (after bitbuffer_invert):
+
+| Byte 0    | Byte 1    | Byte 2    | Byte 3       | Byte 4       | Byte 5    | Byte 6    | Byte 7    | Byte 8    | Byte 9    |
+| --------- | --------- | --------- | ---------    | ---------    | --------- | --------- | --------- | --------- | --------- |
+| CCSS IIII | IIII IIII | PBMM MMMM | pW6..W0     | pWL ?? TTTT | pYYYY 0000| pRRR RRRR | 0000 0000 | p1F 01111 | KKKK KKKK |
+
+- C: Channel (2 bits)
+- S: Sequence number (2 bits)
+- I: Device ID (12 bits)
+- P: Even parity bit
+- B: Battery, 1 = OK
+- M: Message type (6 bits)
+- W: Wind speed (8 bits): W[7]..W[0] = bb[3][6:0], bb[4][6]
+- T: Temperature upper nibble (4 bits): bb[4][3:0]
+- Y: Temperature lower 3 bits: bb[5][6:4], bb[5][3:0] always 0
+- R: Rain/Unknown: bb[6][6:0]
+- K: Checksum (add_bytes of bytes 0-8)
+- 0: reserved/always 0
+
+Note: Wind direction for type 0x3a uses 5-in-1 style table lookup on bb[4] & 0x0f.
+*/
+static int acurite_optimus_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t const *bb)
+{
+    // Already inverted by acurite_txr_decode
+    (void)bitbuffer;
+
+    char const *channel_str = acurite_getChannel(bb[0]);
+    uint16_t sensor_id = ((bb[0] & 0x0f) << 8) | bb[1];
+    uint8_t sequence_num = (bb[0] & 0x30) >> 4;
+    int battery_low = (bb[2] & 0x40) == 0;
+    uint8_t message_type = bb[2] & 0x3f;
+
+    // Wind speed - Atlas-style: 8 bits in bb[3][6:0] and bb[4][6]
+    float wind_speed_mph = ((bb[3] & 0x7F) << 1) | ((bb[4] & 0x40) >> 6);
+    if (wind_speed_mph > 200) {
+        decoder_logf(decoder, 1, __func__, "Optimus 0x%04X Ch %s, invalid wind speed: %.1f MPH",
+                     sensor_id, channel_str, wind_speed_mph);
+        return DECODE_FAIL_SANITY;
+    }
+    float wind_speed_kmh = wind_speed_mph * 1.609344f;
+
+    data_t *data = data_make(
+            "model",                "",             DATA_STRING, "Acurite-Optimus",
+            "id",                   "",             DATA_INT,    sensor_id,
+            "channel",              "",             DATA_STRING, channel_str,
+            "sequence_num",         "",             DATA_INT,    sequence_num,
+            "battery_ok",           "Battery",      DATA_INT,    !battery_low,
+            "wind_avg_mi_h",        "Wind Speed",   DATA_FORMAT, "%.1f mi/h", DATA_DOUBLE, (double)wind_speed_mph,
+            "wind_avg_km_h",        "Wind Speed",   DATA_FORMAT, "%.1f km/h", DATA_DOUBLE, (double)wind_speed_kmh,
+            NULL);
+
+    if (message_type == ACURITE_MSGTYPE_OPTIMUS_TEMP_HUM) {
+        // Temperature - Atlas-style: 11 bits, bb[4][3:0] << 7 | bb[5][6:0]
+        int temp_raw = (bb[4] & 0x0F) << 7 | (bb[5] & 0x7F);
+        float tempf = (temp_raw - 400) * 0.1f;
+        if (tempf < -40.0f || tempf > 158.0f) {
+            decoder_logf(decoder, 1, __func__, "Optimus 0x%04X Ch %s, invalid temperature: %0.1f F",
+                         sensor_id, channel_str, tempf);
+            return DECODE_FAIL_SANITY;
+        }
+
+        uint8_t humidity = bb[6] & 0x7f;
+        if (humidity > 100) {
+            decoder_logf(decoder, 1, __func__, "Optimus 0x%04X Ch %s, invalid humidity: %d %%rH",
+                         sensor_id, channel_str, humidity);
+            return DECODE_FAIL_SANITY;
+        }
+
+        data = data_dbl(data, "temperature_F",  "Temperature",  "%.1f F",   (double)tempf);
+        data = data_int(data, "humidity",       "",             "%u %%",    humidity);
+
+        /* clang-format off */
+        /* clang-format on */
+    }
+    else if (message_type == ACURITE_MSGTYPE_OPTIMUS_WIND_RAIN) {
+        // Wind direction - 5-in-1 style: 4-bit index into direction table
+        float wind_dir = acurite_5n1_winddirections[bb[4] & 0x0f] * 22.5f;
+
+        // Rain counter - Atlas-style: 9 bits, (bb[5] & 0x03) << 7 | (bb[6] & 0x7F)
+        int raincounter = ((bb[5] & 0x03) << 7) | (bb[6] & 0x7F);
+        float rain_in = raincounter * 0.01f;
+
+        /* clang-format off */
+        data = data_dbl(data, "wind_dir_deg",   "",                         "%.1f",     (double)wind_dir);
+        data = data_dbl(data, "rain_in",        "Rainfall Accumulation",    "%.2f in",  (double)rain_in);
+        /* clang-format on */
+    }
+
+    char raw_str[31];
+    data = data_hex(data, "raw_msg", "Raw Message", NULL, bb, ACURITE_OPTIMUS_BYTELEN, raw_str);
+
+    decoder_output_data(decoder, data);
+
+    return 1;
+}
+
+
 static int acurite_txr_check(r_device *decoder, uint8_t const bb[], unsigned browlen, unsigned explen)
 {
 
@@ -1283,6 +1392,8 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             case ACURITE_MSGTYPE_6045M:
             case ACURITE_MSGTYPE_5N1_WINDSPEED_WINDDIR_RAINFALL:
             case ACURITE_MSGTYPE_5N1_WINDSPEED_TEMP_HUMIDITY:
+            case ACURITE_MSGTYPE_OPTIMUS_WIND_RAIN:
+            case ACURITE_MSGTYPE_OPTIMUS_TEMP_HUM:
             case ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM:
             case ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN:
             case ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX:
@@ -1361,6 +1472,19 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 error_ret = ret;
             } else {
                 if ((ret = acurite_5n1_decode(decoder, bitbuffer, bb)) > 0) {
+                    decoded += ret;
+                } else if (ret < 0) {
+                    error_ret = ret;
+                }
+            }
+        }
+
+        if (message_type == ACURITE_MSGTYPE_OPTIMUS_TEMP_HUM ||
+            message_type == ACURITE_MSGTYPE_OPTIMUS_WIND_RAIN) {
+            if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_OPTIMUS_BYTELEN)) != 0) {
+                error_ret = ret;
+            } else {
+                if ((ret = acurite_optimus_decode(decoder, bitbuffer, bb)) > 0) {
                     decoded += ret;
                 } else if (ret < 0) {
                     error_ret = ret;
@@ -1572,6 +1696,166 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format off */
         data_t *data = data_make(
                 "model",            "",             DATA_STRING, "Acurite-986",
+                "id",               "",             DATA_INT,    sensor_id,
+                "channel",          "",             DATA_STRING, channel_str,
+                "battery_ok",       "Battery",      DATA_INT,    !battery_low,
+                "temperature_F",    "temperature",  DATA_FORMAT, "%f F", DATA_DOUBLE,    (float)tempf,
+                "status",           "Status",       DATA_INT,    status,
+                "mic",              "Integrity",    DATA_STRING, "CRC",
+                NULL);
+        /* clang-format on */
+
+        decoder_output_data(decoder, data);
+
+        valid_cnt++;
+    }
+
+    if (valid_cnt)
+        return 1;
+
+    return result;
+}
+
+/**
+Acurite/Chaney 00985 Refrigerator / Freezer Thermometer.
+
+Includes two sensors and a display, labeled 1 and 2,
+by default 1 - Refrigerator, 2 - Freezer.
+
+This is very similar to the Acurite 00986. The 985 is likely the version
+they sold before they rebranded as Acurite. Chaney Instrument Co. is a
+subsidiary of the Primex Family of Companies and Acurite is a brand.
+
+FCC ID: RNE00985TX
+
+Temperature range: -40F to 104F (-40C to 40C)
+Accuracy +- 2F
+Base frequency is 433MHz
+
+Data Format - 7 bytes, sent LSB first, bit-reversed per byte:
+
+    XX XX TT II II SS CC
+
+- X - Unknown (likely sync pulse / preamble)
+- T - Temperature in Fahrenheit, integer, MSB = sign (sign and magnitude)
+      More than maximum is 0x7f
+      Less than minimum is 0xff
+- I - 16 bit sensor ID, changes at each power up
+- S - status/sensor type
+      bit 0: 0 for channel 1 (Refrigerator), 1 for channel 2 (Freezer)
+      bit 1: low battery indicator for channel 1
+      bit 2: low battery indicator for channel 2
+             low battery: 0=normal, 1=low (under 2.5V)
+      All other bits are undefined
+- C - CRC (CRC-8 poly 0x07, little-endian)
+
+The devices transmit three groups which are transmitted within 1 second.
+
+The transmitting interval is initially 64 seconds upon power on.
+After 20 minutes, the interval of sensor1 is 7.5 minutes, and
+the interval of sensor2 is 6 minutes.
+
+*/
+static int acurite_985_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    uint8_t *bb, sensor_num, status, crc, crcc;
+    uint8_t br[7];
+    int bits;
+    int8_t tempf;
+    uint16_t sensor_id, valid_cnt = 0;
+    char sensor_type;
+    char const *channel_str;
+    int battery_low;
+    int result = 0;
+
+    for (uint16_t brow = 0; brow < bitbuffer->num_rows; ++brow) {
+        bb = bitbuffer->bb[brow];
+        bits = bitbuffer->bits_per_row[brow];
+
+        decoder_logf(decoder, 2, __func__, "row %u bits %u", brow, bits);
+
+        if (bits < 55 || bits > 59) {
+            if (bits > 16)
+                decoder_log(decoder, 2, __func__, "skipping wrong len");
+            result = DECODE_ABORT_LENGTH;
+            continue;
+        }
+
+        // Reduce false positives. All zero bytes will pass the CRC check.
+        if (bb[2] == 0x00 && bb[3] == 0x00 && bb[4] == 0x00 &&
+            bb[5] == 0x00 && bb[6] == 0x00) {
+            decoder_log(decoder, 2, __func__, "skipping all zeros");
+            result = DECODE_ABORT_EARLY;
+            continue;
+        }
+
+        // Reverse the bits, msg sent LSB first
+        for (int i = 0; i < 7; i++)
+            br[i] = reverse8(bb[i]);
+
+        decoder_log_bitrow(decoder, 1, __func__, br, 56, "reversed");
+
+        // First 2 bytes appear to be sync/preamble
+        tempf = br[2];
+        sensor_id = (br[3] << 8) | br[4];
+        status = br[5];
+        sensor_num = (status & 0x01) + 1;
+
+        // The two sensors use a different bit to denote low battery
+        if (sensor_num == 2)
+            battery_low = (status & 0x04) ? 1 : 0;
+        else
+            battery_low = (status & 0x02) ? 1 : 0;
+
+        // By default Sensor 1 is Refrigerator, 2 is Freezer
+        sensor_type = sensor_num == 2 ? 'F' : 'R';
+        channel_str = sensor_num == 2 ? "2F" : "1R";
+
+        crc = br[6];
+        crcc = crc8le(br + 2, 4, 0x07, 0);
+
+        decoder_logf(decoder, 1, __func__, "rawtemp=0x%02x id=%u sensor_num=%d batt=%s",
+                tempf, sensor_id, sensor_num, battery_low ? "low" : "ok");
+        decoder_logf(decoder, 2, __func__, "crc=0x%02x crcc=0x%02x", crc, crcc);
+
+        if (crcc != crc) {
+            decoder_logf_bitrow(decoder, 2, __func__, br, 56, "bad CRC: %02x -", crcc);
+            // HACK: the message is often missing the last 1 bit either due to a
+            // problem with the device or demodulator
+            // Add 1 (0x80 because message is LSB) and retry CRC.
+            if (crcc == (crc | 0x80)) {
+                decoder_logf(decoder, 2, __func__, "CRC fix %02x - %02x", crc, crcc);
+            }
+            else {
+                result = DECODE_FAIL_MIC;
+                continue;
+            }
+        }
+
+        // Convert from sign-and-magnitude
+        if (tempf & 0x80) {
+            tempf = (tempf & 0x7f) * -1;
+        }
+
+        // Validate temperature
+        if (tempf >= -40 && tempf <= 104) {
+            decoder_logf(decoder, 1, __func__, "valid temperature: %d", tempf);
+        }
+        else if (tempf == -127 || tempf == 127) {
+            decoder_logf(decoder, 1, __func__, "temperature %s operational range",
+                    tempf == 127 ? "above" : "below");
+        }
+        else {
+            decoder_logf(decoder, 1, __func__, "skipping bad temperature: %d", tempf);
+            result = DECODE_FAIL_SANITY;
+            continue;
+        }
+
+        decoder_logf(decoder, 1, __func__, "sensor 0x%04x - %d%c: %d F", sensor_id, sensor_num, sensor_type, tempf);
+
+        /* clang-format off */
+        data_t *data = data_make(
+                "model",            "",             DATA_STRING, "Acurite-985",
                 "id",               "",             DATA_INT,    sensor_id,
                 "channel",          "",             DATA_STRING, channel_str,
                 "battery_ok",       "Battery",      DATA_INT,    !battery_low,
@@ -1952,6 +2236,34 @@ r_device const acurite_986 = {
         .reset_limit = 4000,
         .decode_fn   = &acurite_986_decode,
         .fields      = acurite_986_output_fields,
+};
+
+/*
+ * Acurite/Chaney 00985 Refrigerator / Freezer Thermometer
+ *
+ * Temperature only
+ */
+static char const *const acurite_985_output_fields[] = {
+        "model",
+        "id",
+        "channel",
+        "battery_ok",
+        "temperature_F",
+        "status",
+        "mic",
+        NULL,
+};
+
+r_device const acurite_985 = {
+        .name        = "Acurite/Chaney 985 Refrigerator / Freezer Thermometer",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 556,
+        .long_width  = 1104,
+        .gap_limit   = 4000,
+        .reset_limit = 7636,
+        .sync_width  = 2996,
+        .decode_fn   = &acurite_985_decode,
+        .fields      = acurite_985_output_fields,
 };
 
 /*

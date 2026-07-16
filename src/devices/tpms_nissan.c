@@ -9,6 +9,27 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
+
+#include "decoder.h"
+
+// sum2N checksum, expects a 0x03 result for a valid message
+// See https://github.com/merbanan/rtl_433/issues/1024#issuecomment-2592665745
+static uint8_t tpms_nissan_checksum(uint8_t const *b)
+{
+    uint8_t chk = 0;
+    for (int i = 0; i < 4; i++) {
+        chk += b[i] >> 7;
+        chk += b[i] >> 5;
+        chk += b[i] >> 3;
+        chk += b[i] >> 1;
+        chk += (uint8_t)(b[i] << 1);
+    }
+    chk += b[4] >> 7;
+    chk += b[4] >> 5;
+    chk += b[4] >> 3;
+    return ~chk & 0x03;
+}
+
 /**
 Nissan FSK 37 bit Manchester encoded checksummed TPMS data.
 
@@ -16,29 +37,23 @@ Data format:
 
     MODE:3d TPMS_ID:24h (PSI+THREE)*FOUR=8d UNKNOWN:2b
 */
-
-#include "decoder.h"
-
 static int tpms_nissan_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     bitbuffer_t packet_bits = {0};
 
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 113);
-    bitbuffer_invert(&packet_bits); // Manchester (G.E. Thomas) Decoded
 
-    // FIXME Debug stuff
-    // fprintf(stderr, "packet_bits:\n");
-    // bitbuffer_print(&packet_bits);
-
-    // fprintf(stderr, "%s : bits %d\n", __func__, packet_bits.bits_per_row[0]);
     if (packet_bits.bits_per_row[0] < 37) {
-        return DECODE_FAIL_SANITY; // sanity check failed
+        return DECODE_FAIL_SANITY;
     }
+
+    bitbuffer_invert(&packet_bits); // Manchester (G.E. Thomas) Decoded
 
     uint8_t *b = packet_bits.bb[0];
 
-    // TODO Is there any parity or other checks we can perform to return
-    // DECODE_ABORT_EARLY or DECODE_FAIL_MIC
+    if (tpms_nissan_checksum(b) != 0) {
+        return DECODE_FAIL_MIC;
+    }
 
     // MODE:3d
     int mode = b[0] >> 5;
@@ -48,7 +63,7 @@ static int tpms_nissan_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
 
     // (PSI+THREE)*FOUR=8d
     int pressure_raw   = ((b[3] & 0x1F) << 3) | (b[4] >> 5);
-    float pressure_psi = (float)pressure_raw / 4.0f;
+    float pressure_psi = (float)(pressure_raw / 4.0f - 3.0f);
 
     // UNKNOWN:2b
     int unknown = (b[4] & 0x1F) >> 3;
@@ -64,6 +79,7 @@ static int tpms_nissan_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
             "mode",             "",             DATA_INT,    mode,
             "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.1f PSI", DATA_DOUBLE, pressure_psi,
             "unknown",          "",             DATA_INT,    unknown,
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
@@ -100,6 +116,7 @@ static char const *const output_fields[] = {
         "mode",
         "pressure_PSI",
         "unknown",
+        "mic",
         NULL,
 };
 
@@ -110,6 +127,6 @@ r_device const tpms_nissan = {
         .long_width  = 120, // FSK
         .reset_limit = 250, // Maximum gap size before End Of Message [us]. TODO What should this be?
         .decode_fn   = &tpms_nissan_callback,
-        .disabled    = 1, // no MIC, disabled by default
+        .disabled    = 0,
         .fields      = output_fields,
 };

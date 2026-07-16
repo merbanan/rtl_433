@@ -644,6 +644,8 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     // CM180 preamble is 00 00 00 46, with 0x46 already data
     uint8_t const cm180_pattern[] = {0x00, 0x46};
     uint8_t const cm180i_pattern[] = {0x00, 0x4A};
+    // CM130 preamble is 00 00 00 60, with 0x60 already data
+    uint8_t const cm130_pattern[] = {0x00, 0x60};
     // workaround for a broken manchester demod
     // CM160 preamble might look like 7f ff ff aa, i.e. ff ff f5
     uint8_t const alt_pattern[] = {0xff, 0xf5};
@@ -651,6 +653,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     int os_pos     = bitbuffer_search(bitbuffer, 0, 0, os_pattern, 16) + 16;
     int cm180_pos  = bitbuffer_search(bitbuffer, 0, 0, cm180_pattern, 16) + 8;  // keep the 0x46
     int cm180i_pos = bitbuffer_search(bitbuffer, 0, 0, cm180i_pattern, 16) + 8; // keep the 0x46
+    int cm130_pos  = bitbuffer_search(bitbuffer, 0, 0, cm130_pattern, 16) + 8;  // keep the 0x60
     int alt_pos    = bitbuffer_search(bitbuffer, 0, 0, alt_pattern, 16) + 16;
 
     if (bitbuffer->bits_per_row[0] - os_pos >= 7 * 8) {
@@ -668,6 +671,11 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     else if (bitbuffer->bits_per_row[0] - cm180i_pos >= 84) {
         msg_pos = cm180i_pos;
         msg_len = bitbuffer->bits_per_row[0] - cm180i_pos;
+    }
+
+    else if (bitbuffer->bits_per_row[0] - cm130_pos >= 96) {
+        msg_pos = cm130_pos;
+        msg_len = bitbuffer->bits_per_row[0] - cm130_pos;
     }
 
     else if (bitbuffer->bits_per_row[0] - alt_pos >= 7 * 8) {
@@ -831,7 +839,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
 
         // Sanity check values
         if (gustWindspeed < 0 || gustWindspeed > 56 || avgWindspeed < 0 || avgWindspeed > 56) {
-            decoder_logf(decoder, 1, __func__, "WGR800 failed value sanity check: wind_max_m_s %.1f wind_avg_m_s %.1f wind_dir_deg %.1f.", gustWindspeed, avgWindspeed, quadrant);
+            decoder_logf(decoder, 1, __func__, "WGR800 failed value sanity check: wind_max_m_s %.1f wind_avg_m_s %.1f.", gustWindspeed, avgWindspeed);
             return DECODE_FAIL_SANITY;
         }
 
@@ -952,6 +960,40 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         decoder_output_data(decoder, data);
         return 1;
     }
+    else if (msg[0] == 0x60) { // Owl CM130 readings
+        // 12-byte message (after reflect_nibbles): 60 II II PP 00 P. EE EE EE EE XX
+        // checksum: CRC-8 (poly 0x07) over bytes 1..10, swapped-nibble in byte 11
+        if (crc8(&msg[1], 10, 0x07, 0x00) != swap_nibbles(msg[11])) {
+            decoder_log_bitrow(decoder, 1, __func__, msg, 96, "CM130 checksum fail");
+            return DECODE_FAIL_MIC;
+        }
+
+        for (int k = 0; k < 12; k++) { // Reverse nibbles
+            msg[k] = swap_nibbles(msg[k]);
+        }
+
+        int id           = msg[2];
+        int power_w      = (((msg[4] << 8) | msg[3]) * 16); // 16-bit LE count, 16 W per count
+        // 32-bit LE cumulative energy counter. Scale is 1/8192 kWh per count
+        // (8192 = 2^13 = 16 * 512, matching the power scale of 16); fit
+        // against the console (see #1493). This is the meter's absolute
+        // lifetime total; the console display shows a relative value with a
+        // device-specific offset, so this reads higher than the console.
+        uint32_t energy_cnt = (uint32_t)msg[6] | ((uint32_t)msg[7] << 8) | ((uint32_t)msg[8] << 16) | ((uint32_t)msg[9] << 24);
+        float energy_kwh    = energy_cnt / 8192.0f;
+
+        /* clang-format off */
+        data_t *data = data_make(
+                "model",            "",                 DATA_STRING, "Oregon-CM130",
+                "id",               "House Code",       DATA_INT,    id,
+                "power_W",          "Power",            DATA_FORMAT, "%d W", DATA_INT, power_w,
+                "energy_kWh",       "Energy",           DATA_FORMAT, "%.2f kWh", DATA_DOUBLE, (double)energy_kwh,
+                "mic",              "Integrity",        DATA_STRING, "CRC",
+                NULL);
+        /* clang-format on */
+        decoder_output_data(decoder, data);
+        return 1;
+    }
     else if ((msg[0] != 0) && (msg[1] != 0)) { // sync nibble was found and some data is present...
         decoder_log(decoder, 1, __func__, "Message received from unrecognized Oregon Scientific v3 sensor.");
         decoder_log_bitrow(decoder, 1, __func__, msg, msg_len, "Message");
@@ -998,13 +1040,14 @@ static char const *const output_fields[] = {
         "energy_kWh",
         "radio_clock",
         "sequence",
+        "mic",
         NULL,
 };
 
 r_device const oregon_scientific = {
         .name        = "Oregon Scientific Weather Sensor",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
-        .short_width = 440, // Nominal 1024Hz (488us), but pulses are shorter than pauses
+        .short_width = 440, // Nominal 1024 Hz (488 us), but pulses are shorter than pauses
         .long_width  = 0,   // not used
         .reset_limit = 2400,
         .decode_fn   = &oregon_scientific_decode,

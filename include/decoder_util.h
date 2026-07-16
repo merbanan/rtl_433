@@ -44,7 +44,7 @@ void decoder_output_data(r_device *decoder, data_t *data);
 /// Output log.
 void decoder_output_log(r_device *decoder, int level, data_t *data);
 
-// be terse, a maximum msg length of 60 characters is supported on the decoder_log_ functions
+// be terse, a maximum msg length of 80 characters is supported on the decoder_log_ functions
 // e.g. "FoobarCorp-XY3000: unexpected type code %02x"
 
 /// Get the current verbosity level for the decoder.
@@ -56,6 +56,8 @@ int decoder_verbose(r_device *decoder);
 void decoder_log(r_device *decoder, int level, char const *func, char const *msg);
 
 /// Output a formatted log message.
+///
+/// Be terse, a maximum msg length of 80 characters is supported.
 void decoder_logf(r_device *decoder, int level, char const *func, _Printf_format_string_ const char *format, ...)
 #if defined(__GNUC__) || defined(__clang__)
         __attribute__((format(printf, 4, 5)))
@@ -66,6 +68,8 @@ void decoder_logf(r_device *decoder, int level, char const *func, _Printf_format
 void decoder_log_bitbuffer(r_device *decoder, int level, char const *func, const bitbuffer_t *bitbuffer, char const *msg);
 
 /// Output a formatted log message with the content of the bitbuffer.
+///
+/// Be terse, a maximum msg length of 80 characters is supported.
 void decoder_logf_bitbuffer(r_device *decoder, int level, char const *func, const bitbuffer_t *bitbuffer, _Printf_format_string_ const char *format, ...)
 #if defined(__GNUC__) || defined(__clang__)
         __attribute__((format(printf, 5, 6)))
@@ -76,6 +80,8 @@ void decoder_logf_bitbuffer(r_device *decoder, int level, char const *func, cons
 void decoder_log_bitrow(r_device *decoder, int level, char const *func, uint8_t const *bitrow, unsigned bit_len, char const *msg);
 
 /// Output a formatted log message with the content of a bit row (byte buffer).
+///
+/// Be terse, a maximum msg length of 80 characters is supported.
 void decoder_logf_bitrow(r_device *decoder, int level, char const *func, uint8_t const *bitrow, unsigned bit_len, _Printf_format_string_ const char *format, ...)
 #if defined(__GNUC__) || defined(__clang__)
         __attribute__((format(printf, 6, 7)))

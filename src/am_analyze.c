@@ -26,8 +26,9 @@ am_analyze_t *am_analyze_create(void)
 {
     am_analyze_t *a;
     a = calloc(1, sizeof(am_analyze_t));
-    if (!a)
+    if (!a) {
         WARN_CALLOC("am_analyze_create()");
+    }
     return a; // NOTE: returns NULL on alloc failure.
 }
 
@@ -49,8 +50,9 @@ void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_
 
     for (i = 0; i < n_samples; i++) {
         if (am_buf[i] > threshold) {
-            if (!a->signal_start)
+            if (!a->signal_start) {
                 a->signal_start = a->counter;
+            }
             if (a->print) {
                 a->pulses_found++;
                 a->pulse_start = a->counter;
@@ -116,18 +118,21 @@ void am_analyze_classify(am_analyze_t *aa)
     bitbuffer_t bits = {0};
     unsigned int signal_type;
 
-    if (!aa->signal_pulse_data[0][0])
+    if (!aa->signal_pulse_data[0][0]) {
         return;
+    }
 
     for (i = 0; i < aa->signal_pulse_counter; i++) {
         if (aa->signal_pulse_data[i][0] > 0) {
             //fprintf(stderr, "[%03d] s: %d\t  e:\t %d\t l:%d\n",
             //i, aa->signal_pulse_data[i][0], aa->signal_pulse_data[i][1],
             //aa->signal_pulse_data[i][2]);
-            if (aa->signal_pulse_data[i][2] > max)
+            if (aa->signal_pulse_data[i][2] > max) {
                 max = aa->signal_pulse_data[i][2];
-            if (aa->signal_pulse_data[i][2] <= min)
+            }
+            if (aa->signal_pulse_data[i][2] <= min) {
                 min = aa->signal_pulse_data[i][2];
+            }
         }
     }
     t = (max + min) / 2;
@@ -192,10 +197,12 @@ void am_analyze_classify(am_analyze_t *aa)
             //               i, aa->signal_pulse_data[i][0], aa->signal_pulse_data[i][1],
             //               aa->signal_pulse_data[i][2], aa->signal_pulse_data[i][0]-aa->signal_pulse_data[i-1][1]);
             signal_distance_data[i - 1] = aa->signal_pulse_data[i][0] - aa->signal_pulse_data[i - 1][1];
-            if (signal_distance_data[i - 1] > a[2])
+            if (signal_distance_data[i - 1] > a[2]) {
                 a[2] = signal_distance_data[i - 1];
-            if (signal_distance_data[i - 1] <= a[0])
+            }
+            if (signal_distance_data[i - 1] <= a[0]) {
                 a[0] = signal_distance_data[i - 1];
+            }
         }
     }
     min = a[0];
@@ -235,8 +242,9 @@ void am_analyze_classify(am_analyze_t *aa)
         //         fprintf(stderr, "Iteration %d.", k);
         delta = 0;
         for (i = 0; i < 3; i++) {
-            if (a_cnt[i])
+            if (a_cnt[i]) {
                 a_new[i] /= a_cnt[i];
+            }
             delta += (a[i] - a_new[i])*(a[i] - a_new[i]);
             //             fprintf(stderr, "\ta[%d]: %d (%d)", i, a_new[i], a[i]);
             a[i] = a_new[i];

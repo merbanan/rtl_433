@@ -24,7 +24,7 @@ struct dm_state {
     float min_level_auto;
     float min_level;
     float min_snr;
-    float low_pass;
+    float fm_low_pass;
     int use_mag_est;
     int detect_verbosity;
 
@@ -41,8 +41,6 @@ struct dm_state {
     filter_state_t lowpass_filter_state;
     demodfm_state_t demod_FM_state;
     int enable_FM_demod;
-    unsigned fsk_pulse_detect_mode;
-    unsigned frequency;
     samp_grab_t *samp_grab;
     am_analyze_t *am_analyze;
     int analyze_pulses;
@@ -54,12 +52,37 @@ struct dm_state {
 
     pulse_data_t    pulse_data;
     pulse_data_t    fsk_pulse_data;
+    uint64_t input_pos;
     unsigned frame_event_count;
     int frame_quality;
     unsigned frame_start_ago;
     unsigned frame_end_ago;
     struct timeval now;
     float sample_file_pos;
+
+    /* parameters copied in for each frame  */
+    uint32_t center_frequency;
+    uint32_t samp_rate;
+    int fsk_pulse_detect_mode;
+    int grab_mode; ///< Signal grabber mode: 0=off, 1=all, 2=unknown, 3=known, 4=undecoded
+    int raw_mode; ///< Raw pulses printing mode: 0=off, 1=all, 2=unknown, 3=known
+    int verbosity; ///< 0=normal, 1=verbose, 2=verbose decoders, 3=debug decoders, 4=trace decoding.
+    int report_noise;
+    list_t *raw_handler;
+
+    /* global stats */
+    time_t running_since;          ///< program start time statistic
+    unsigned total_frames_count;   ///< total frames recieved statistic
+    unsigned total_frames_squelch; ///< total frames with noise only statistic
+    unsigned total_frames_ook;     ///< total frames with ook demod statistic
+    unsigned total_frames_fsk;     ///< total frames with fsk demod statistic
+    unsigned total_frames_events;  ///< total frames with decoder events statistic
+
+    /* per report interval stats */
+    time_t frames_since;    ///< time at start of report interval statistic
+    unsigned frames_ook;    ///< counter of ook demods for report interval statistic
+    unsigned frames_fsk;    ///< counter of fsk demods for report interval statistic
+    unsigned frames_events; ///< counter of decoder events for report interval statistic
 };
 
 #endif /* INCLUDE_R_PRIVATE_H_ */

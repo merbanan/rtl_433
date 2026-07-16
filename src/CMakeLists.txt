@@ -16,6 +16,7 @@ add_library(r_433 STATIC
     data.c
     data_tag.c
     decoder_util.c
+    delay_timer.c
     fileformat.c
     http_server.c
     jsmn.c
@@ -37,6 +38,7 @@ add_library(r_433 STATIC
     pulse_detect_fsk.c
     pulse_slicer.c
     r_api.c
+    r_flow.c
     r_util.c
     r_version.c
     raw_output.c
@@ -44,6 +46,7 @@ add_library(r_433 STATIC
     samp_grab.c
     sdr.c
     sigmf.c
+    string_expand.c
     term_ctl.c
     write_sigrok.c
     devices/abmt.c
@@ -69,8 +72,10 @@ add_library(r_433 STATIC
     devices/auriol_afw2a1.c
     devices/auriol_ahfl.c
     devices/auriol_hg02832.c
+    devices/auriol_hg04641a.c
     devices/badger_orion_endpoint.c
     devices/badger_water.c
+    devices/baldr_hcs528arf.c
     devices/baldr_rain.c
     devices/baldr_therm.c
     devices/blueline.c
@@ -104,28 +109,35 @@ add_library(r_433 STATIC
     devices/current_cost.c
     devices/danfoss.c
     devices/deltadore_x3d.c
+    devices/dickert_mahs.c
     devices/digitech_xc0324.c
     devices/directv.c
     devices/dish_remote_6_3.c
     devices/dsc.c
+    devices/eberle_instat868r1.c
     devices/ec3k.c
     devices/ecodhome.c
+    devices/ecoeye.c
     devices/ecowitt.c
     devices/efergy_e2_classic.c
     devices/efergy_optical.c
     devices/efth800.c
     devices/elro_db286a.c
+    devices/elsner_solexa.c
+    devices/elster_power_meter.c
     devices/elv.c
     devices/emax.c
     devices/emontx.c
     devices/emos_e6016.c
     devices/emos_e6016_rain.c
+    devices/en2058.c
     devices/enocean_erp1.c
     devices/ert_idm.c
     devices/ert_scm.c
     devices/esa.c
     devices/esic_emt7110.c
     devices/esperanza_ews.c
+    devices/esun_en2053.c
     devices/eurochron.c
     devices/fineoffset.c
     devices/fineoffset_wh1050.c
@@ -134,15 +146,18 @@ add_library(r_433 STATIC
     devices/fineoffset_wh43.c
     devices/fineoffset_wh45.c
     devices/fineoffset_wh46.c
+    devices/fineoffset_wh52.c
     devices/fineoffset_wh55.c
     devices/fineoffset_wn34.c
     devices/fineoffset_ws80.c
     devices/fineoffset_ws85.c
     devices/fineoffset_ws90.c
     devices/flex.c
+    devices/florabest.c
     devices/flowis.c
     devices/fordremote.c
     devices/fs20.c
+    devices/fsl_scoreboard.c
     devices/ft004b.c
     devices/funkbus.c
     devices/gasmate_ba1008.c
@@ -156,12 +171,16 @@ add_library(r_433 STATIC
     devices/gm_car_remote.c
     devices/govee.c
     devices/govee_h5059.c
+    devices/govee_h5112.c
+    devices/govee_h5310.c
     devices/gridstream.c
+    devices/grill_thermometer.c
     devices/gt_tmbbq05.c
     devices/gt_wt_02.c
     devices/gt_wt_03.c
     devices/hcs200.c
     devices/hcs361.c
+    devices/hcs362.c
     devices/hideki.c
     devices/holman_ws5029.c
     devices/homelead_hg9901.c
@@ -181,12 +200,14 @@ add_library(r_433 STATIC
     devices/jasco.c
     devices/kedsum.c
     devices/kerui.c
+    devices/kidde_smoke.c
     devices/klimalogg.c
     devices/lacrosse.c
     devices/lacrosse_breezepro.c
     devices/lacrosse_r1.c
     devices/lacrosse_th3.c
     devices/lacrosse_tx141x.c
+    devices/lacrosse_tx22uit.c
     devices/lacrosse_tx31u.c
     devices/lacrosse_tx34.c
     devices/lacrosse_tx35.c
@@ -197,6 +218,7 @@ add_library(r_433 STATIC
     devices/m_bus.c
     devices/markisol.c
     devices/marlec_solar.c
+    devices/martec_mplcd.c
     devices/maverick_et73.c
     devices/maverick_et73x.c
     devices/maverick_xr30.c
@@ -207,6 +229,7 @@ add_library(r_433 STATIC
     devices/missil_ml0757.c
     devices/mueller_hotrod.c
     devices/neptune_r900.c
+    devices/netatmo_thw.c
     devices/new_template.c
     devices/newkaku.c
     devices/nexa.c
@@ -218,10 +241,13 @@ add_library(r_433 STATIC
     devices/oil_standard.c
     devices/oil_watchman.c
     devices/oil_watchman_advanced.c
+    devices/omni.c
+    devices/opel_mokka.c
     devices/opus_xt300.c
     devices/oregon_scientific.c
     devices/oregon_scientific_sl109h.c
     devices/oregon_scientific_v1.c
+    devices/oregon_scientific_wmr500.c
     devices/oria_wa150km.c
     devices/philips_aj3650.c
     devices/philips_aj7010.c
@@ -238,6 +264,7 @@ add_library(r_433 STATIC
     devices/revolt_zx7717.c
     devices/rfm69_lowpowerlab_moteino.c
     devices/rftech.c
+    devices/rfxmeter.c
     devices/risco_agility.c
     devices/rojaflex.c
     devices/rosstech_dcu706.c
@@ -268,6 +295,7 @@ add_library(r_433 STATIC
     devices/tfa_14_1504_v2.c
     devices/tfa_30_3196.c
     devices/tfa_30_3221.c
+    devices/tfa_30_390x.c
     devices/tfa_drop_30.3233.c
     devices/tfa_marbella.c
     devices/tfa_pool_thermometer.c
@@ -282,6 +310,7 @@ add_library(r_433 STATIC
     devices/thermopro_tx2c.c
     devices/thermopro_tx7b.c
     devices/thermor.c
+    devices/thermor_a6n_132tx.c
     devices/tpms_abarth124.c
     devices/tpms_airpuxem.c
     devices/tpms_ave.c
@@ -291,10 +320,14 @@ add_library(r_433 STATIC
     devices/tpms_eezrv.c
     devices/tpms_elantra2012.c
     devices/tpms_ford.c
+    devices/tpms_gear_hive.c
     devices/tpms_gm.c
     devices/tpms_hyundai_vdo.c
+    devices/tpms_imars_t240.c
     devices/tpms_jansite.c
     devices/tpms_jansite_solar.c
+    devices/tpms_jansite_ty468.c
+    devices/tpms_jansite_ty588.c
     devices/tpms_kia.c
     devices/tpms_mercedes_benz.c
     devices/tpms_nissan.c
@@ -302,10 +335,13 @@ add_library(r_433 STATIC
     devices/tpms_porsche.c
     devices/tpms_renault.c
     devices/tpms_renault_0435r.c
+    devices/tpms_schrader_motorcycle.c
+    devices/tpms_smartire.c
     devices/tpms_toyota.c
     devices/tpms_truck.c
     devices/tpms_trw.c
     devices/tpms_tyreguard400.c
+    devices/tr_502msv.c
     devices/ts_ft002.c
     devices/ttx201.c
     devices/universalfanctrl.c
@@ -313,8 +349,11 @@ add_library(r_433 STATIC
     devices/vauno_en8822c.c
     devices/vevor_7in1.c
     devices/visonic_powercode.c
+    devices/vivint.c
     devices/wallarge_cltx001.c
+    devices/watchman_plus.c
     devices/watts_thermostat.c
+    devices/watts_wfht_rf.c
     devices/waveman.c
     devices/wec2103.c
     devices/wg_pb12v1.c

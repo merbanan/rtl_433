@@ -333,7 +333,7 @@ jobs:
           - os: windows-2022
             generator: Visual Studio 17 2022
           - os: windows-2025
-            generator: Visual Studio 17 2022
+            generator: Visual Studio 18 2026
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.generator }} ${{ matrix.platform }} CMake (MSBuild) on ${{ matrix.os }}
     steps:

@@ -73,6 +73,14 @@ static int compustar_1wg3r_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             continue;
         }
 
+        // The message is 36 bits (I:16, x:3, b:8, i:8, z:1); reject short
+        // rows before reading b[0..4], instead of relying only on the
+        // checksum below to reject noise that happens to be zero-padded
+        // into those unread bits.
+        if (bitbuffer->bits_per_row[current_row] < 35) {
+            continue; // DECODE_ABORT_LENGTH;
+        }
+
         if ((b[2] & 0xe0) != 0xe0 || (b[4] & 1) != 0x0) {
             continue; // DECODE_ABORT_EARLY;
         }

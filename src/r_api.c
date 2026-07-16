@@ -161,8 +161,8 @@ void r_init_cfg(r_cfg_t *cfg)
     // initialize tables
     baseband_init();
 
-    time(&cfg->running_since);
-    time(&cfg->frames_since);
+    time(&cfg->demod->running_since);
+    time(&cfg->demod->frames_since);
     get_time_now(&cfg->demod->now);
 
     list_ensure_size(&cfg->demod->r_devs, 100);
@@ -232,7 +232,7 @@ void r_free_cfg(r_cfg_t *cfg)
 
 /* device decoder protocols */
 
-void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
+void register_protocol(r_cfg_t *cfg, r_device const *r_dev, char *arg)
 {
     // use arg of 'v', 'vv', 'vvv' as device verbosity
     int dev_verbose = 0;
@@ -276,7 +276,6 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
 
 void free_protocol(r_device *r_dev)
 {
-    // free(r_dev->name);
     free(r_dev->decode_ctx);
     free(r_dev);
 }
@@ -303,37 +302,6 @@ void register_all_protocols(r_cfg_t *cfg, unsigned disabled)
 }
 
 /* output helper */
-
-void calc_rssi_snr(r_cfg_t *cfg, pulse_data_t *pulse_data)
-{
-    float ook_high_estimate = pulse_data->ook_high_estimate > 0 ? pulse_data->ook_high_estimate : 1;
-    float ook_low_estimate = pulse_data->ook_low_estimate > 0 ? pulse_data->ook_low_estimate : 1;
-    int const OOK_MAX_HIGH_LEVEL = DB_TO_AMP(0); // Maximum estimate for high level (-0 dB)
-    float ook_max_estimate = ook_high_estimate < OOK_MAX_HIGH_LEVEL ? ook_high_estimate : OOK_MAX_HIGH_LEVEL;
-    float asnr   = ook_max_estimate / ook_low_estimate;
-    float foffs1 = (float)pulse_data->fsk_f1_est / INT16_MAX * cfg->samp_rate / 2.0f;
-    float foffs2 = (float)pulse_data->fsk_f2_est / INT16_MAX * cfg->samp_rate / 2.0f;
-    pulse_data->freq1_hz = (foffs1 + cfg->center_frequency);
-    pulse_data->freq2_hz = (foffs2 + cfg->center_frequency);
-    pulse_data->centerfreq_hz = cfg->center_frequency;
-    pulse_data->depth_bits    = cfg->demod->sample_size * 4;
-    // NOTE: for (CU8) amplitude is 10x (because it's squares)
-    if (cfg->demod->sample_size == 2 && !cfg->demod->use_mag_est) { // amplitude (CU8)
-        pulse_data->range_db = 42.1442f; // 10*log10f(16384.0f) == 20*log10f(128.0f)
-        pulse_data->rssi_db  = 10.0f * log10f(ook_high_estimate) - 42.1442f; // 10*log10f(16384.0f)
-        pulse_data->noise_db = 10.0f * log10f(ook_low_estimate) - 42.1442f; // 10*log10f(16384.0f)
-        pulse_data->snr_db   = 10.0f * log10f(asnr);
-    }
-    else { // magnitude (CU8, CS16)
-        pulse_data->range_db = 84.2884f; // 20*log10f(16384.0f)
-        // lowest (scaled x128) reading at  8 bit is -20*log10(128) = -42.1442 (eff. -36 dB)
-        // lowest (scaled div2) reading at 12 bit is -20*log10(1024) = -60.2060 (eff. -54 dB)
-        // lowest (scaled div2) reading at 16 bit is -20*log10(16384) = -84.2884 (eff. -78 dB)
-        pulse_data->rssi_db  = 20.0f * log10f(ook_high_estimate) - 84.2884f; // 20*log10f(16384.0f)
-        pulse_data->noise_db = 20.0f * log10f(ook_low_estimate) - 84.2884f; // 20*log10f(16384.0f)
-        pulse_data->snr_db   = 20.0f * log10f(asnr);
-    }
-}
 
 char *time_pos_str(r_cfg_t *cfg, unsigned samples_ago, char *buf)
 {
@@ -461,7 +429,7 @@ char const **determine_csv_fields(r_cfg_t *cfg, char const *const *well_known, i
     convert_csv_fields(cfg, (char const **)field_list.elems);
 
     if (num_fields)
-        *num_fields = field_list.len;
+        *num_fields = (int)field_list.len;
     return (char const **)field_list.elems;
 }
 
@@ -895,19 +863,19 @@ data_t *create_report_data(r_cfg_t *cfg, int level)
     }
 
     data = data_make(
-            "count",            "", DATA_INT, cfg->frames_ook,
-            "fsk",              "", DATA_INT, cfg->frames_fsk,
-            "events",           "", DATA_INT, cfg->frames_events,
+            "count",            "", DATA_INT, cfg->demod->frames_ook,
+            "fsk",              "", DATA_INT, cfg->demod->frames_fsk,
+            "events",           "", DATA_INT, cfg->demod->frames_events,
             NULL);
 
     char since_str[LOCAL_TIME_BUFLEN];
-    format_time_str(since_str, "%Y-%m-%dT%H:%M:%S", cfg->report_time_tz, cfg->frames_since);
+    format_time_str(since_str, "%Y-%m-%dT%H:%M:%S", cfg->report_time_tz, cfg->demod->frames_since);
 
     data = data_make(
             "enabled",          "", DATA_INT, r_devs->len,
             "since",            "", DATA_STRING, since_str,
             "frames",           "", DATA_DATA, data,
-            "stats",            "", DATA_ARRAY, data_array(dev_data_list.len, DATA_DATA, dev_data_list.elems),
+            "stats",            "", DATA_ARRAY, data_array((int)dev_data_list.len, DATA_DATA, dev_data_list.elems),
             NULL);
 
     list_free_elems(&dev_data_list, NULL);
@@ -918,10 +886,10 @@ void flush_report_data(r_cfg_t *cfg)
 {
     list_t *r_devs = &cfg->demod->r_devs;
 
-    time(&cfg->frames_since);
-    cfg->frames_ook = 0;
-    cfg->frames_fsk = 0;
-    cfg->frames_events = 0;
+    time(&cfg->demod->frames_since);
+    cfg->demod->frames_ook = 0;
+    cfg->demod->frames_fsk = 0;
+    cfg->demod->frames_events = 0;
 
     for (void **iter = r_devs->elems; iter && *iter; ++iter) {
         r_device *r_dev = *iter;
@@ -976,11 +944,11 @@ static int lvlarg_param(char **param, int default_verb)
     return val;
 }
 
-/// Opens the path @p param (or STDOUT if empty or `-`) for append writing, removes leading `,` and `:` from path name.
-static FILE *fopen_output(char const *param)
+/// Returns the path @p param by removing leading `,` and `:` from path name.
+static char const *param_output_path(char const *param)
 {
     if (!param || !*param) {
-        return stdout; // No path given
+        return NULL; // No path given
     }
     while (*param == ',') {
         param++; // Skip all leading `,`
@@ -989,26 +957,21 @@ static FILE *fopen_output(char const *param)
         param++; // Skip one leading `:`
     }
     if (*param == '-' && param[1] == '\0') {
-        return stdout; // STDOUT requested
+        return NULL; // STDOUT requested
     }
-    FILE *file = fopen(param, "a");
-    if (!file) {
-        fprintf(stderr, "rtl_433: failed to open output file\n");
-        exit(1);
-    }
-    return file;
+    return param;
 }
 
 void add_json_output(r_cfg_t *cfg, char *param)
 {
     int log_level = lvlarg_param(&param, 0);
-    list_push(&cfg->output_handler, data_output_json_create(log_level, fopen_output(param)));
+    list_push(&cfg->output_handler, data_output_json_create(log_level, param_output_path(param)));
 }
 
 void add_csv_output(r_cfg_t *cfg, char *param)
 {
     int log_level = lvlarg_param(&param, 0);
-    list_push(&cfg->output_handler, data_output_csv_create(log_level, fopen_output(param)));
+    list_push(&cfg->output_handler, data_output_csv_create(log_level, param_output_path(param)));
 }
 
 void start_outputs(r_cfg_t *cfg, char const *const *well_known)
@@ -1027,13 +990,13 @@ void start_outputs(r_cfg_t *cfg, char const *const *well_known)
 void add_log_output(r_cfg_t *cfg, char *param)
 {
     int log_level = lvlarg_param(&param, LOG_TRACE);
-    list_push(&cfg->output_handler, data_output_log_create(log_level, fopen_output(param)));
+    list_push(&cfg->output_handler, data_output_log_create(log_level, param_output_path(param)));
 }
 
 void add_kv_output(r_cfg_t *cfg, char *param)
 {
     int log_level = lvlarg_param(&param, LOG_TRACE);
-    list_push(&cfg->output_handler, data_output_kv_create(log_level, fopen_output(param)));
+    list_push(&cfg->output_handler, data_output_kv_create(log_level, param_output_path(param)));
 }
 
 void add_mqtt_output(r_cfg_t *cfg, char *param)
@@ -1077,7 +1040,7 @@ void add_http_output(r_cfg_t *cfg, char *param)
 void add_trigger_output(r_cfg_t *cfg, char *param)
 {
     // Note: no log_level, we never trigger on logs.
-    list_push(&cfg->output_handler, data_output_trigger_create(fopen_output(param)));
+    list_push(&cfg->output_handler, data_output_trigger_create(param_output_path(param)));
 }
 
 void add_null_output(r_cfg_t *cfg, char *param)
@@ -1097,6 +1060,14 @@ void add_rtltcp_output(r_cfg_t *cfg, char *param)
     print_logf(LOG_CRITICAL, "rtl_tcp server", "Starting rtl_tcp server at %s port %s", host, port);
 
     list_push(&cfg->raw_handler, raw_output_rtltcp_create(host, port, extra, cfg));
+}
+
+void reopen_outputs(struct r_cfg *cfg)
+{
+    for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
+        data_output_t *output = cfg->output_handler.elems[i];
+        data_output_reopen(output);
+    }
 }
 
 void add_sr_dumper(r_cfg_t *cfg, char const *spec, int overwrite)

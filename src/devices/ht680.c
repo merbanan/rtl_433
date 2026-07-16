@@ -31,9 +31,12 @@ static int ht680_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // remove the 5 sync bits
         bitbuffer_extract_bytes(bitbuffer, row, 5, b, 36);
 
-        if ((b[1] & 0xf0) != 0xa0 && // A4, A5 always "open" on HT680
-            (b[2] & 0x0c) != 0x08 && // AD10 always "open" on HT680
-            (b[3] & 0x30) != 0x20 && // AD13 always "open" on HT680
+        // These four fixed-bit checks were previously joined with &&, so a row
+        // was only rejected if ALL FOUR happened to fail at once; any single
+        // one matching by chance let noise through. Reject if ANY fails.
+        if ((b[1] & 0xf0) != 0xa0 || // A4, A5 always "open" on HT680
+            (b[2] & 0x0c) != 0x08 || // AD10 always "open" on HT680
+            (b[3] & 0x30) != 0x20 || // AD13 always "open" on HT680
             (b[4] & 0xf0) != 0xa0) // AD16, AD17 always "open" on HT680
         continue; // DECODE_ABORT_EARLY
 

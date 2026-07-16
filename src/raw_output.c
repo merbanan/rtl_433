@@ -17,14 +17,16 @@
 
 void raw_output_frame(struct raw_output *output, uint8_t const *data, uint32_t len)
 {
-    if (!output)
+    if (!output) {
         return;
+    }
     output->output_frame(output, data, len);
 }
 
 void raw_output_free(struct raw_output *output)
 {
-    if (!output)
+    if (!output) {
         return;
+    }
     output->output_free(output);
 }

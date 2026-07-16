@@ -87,7 +87,7 @@ static int hcs361_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b = bitbuffer->bb[1];
 
     // No need to decode/extract values for simple test
-    if (b[1] == 0xff && b[2] == 0xff && b[3] == 0xff && b[4] == 0xff && b[5] == 0xff && b[6] == 0xff && b[7] == 0xff) {
+    if (b[0] == 0xff && b[1] == 0xff && b[2] == 0xff && b[3] == 0xff && b[4] == 0xff && b[5] == 0xff && b[6] == 0xff && b[7] == 0xff) {
         decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0xff");
         return DECODE_FAIL_SANITY;
     }
@@ -119,6 +119,15 @@ static int hcs361_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int btn            = (b[7] & 0x0f);
     int btn_num        = (btn & 0x08) | ((btn & 0x01) << 2) | (btn & 0x02) | ((btn & 0x04) >> 2); // S3, S0, S1, S2
     int battery_ok     = (b[8] & 0x80) == 0x80;
+
+    // The 2-bit CRC above is inherently weak (and doubly so since either of
+    // two candidate values is accepted, see the datasheet-recommended
+    // battery-low check); reject an all-zero serial as an additional,
+    // independent filter for the noise that lets through.
+    if (serial == 0) {
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY serial all 0x00");
+        return DECODE_FAIL_SANITY;
+    }
 
     char encrypted_str[9];
     snprintf(encrypted_str, sizeof(encrypted_str), "%08X", encrypted);

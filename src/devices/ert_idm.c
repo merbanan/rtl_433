@@ -282,7 +282,7 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             // "AsynchronousCounters",             "",     DATA_INT,    AsynchronousCounters,
 
             "PowerOutageFlags",                 "",     DATA_STRING,       PowerOutageFlags_str ,
-            "LastConsumptionCount",             "",     DATA_INT,       LastConsumptionCount,
+            "LastConsumptionCount",             "",     DATA_FORMAT, "%u", DATA_INT,       LastConsumptionCount,
             "DifferentialConsumptionIntervals", "",     DATA_ARRAY, data_array(47, DATA_INT, DifferentialConsumptionIntervals),
             "TransmitTimeOffset",               "",     DATA_INT,       TransmitTimeOffset,
             "MeterIdCRC",                       "",     DATA_FORMAT, "0x%04X", DATA_INT, MeterIdCRC,
@@ -567,13 +567,13 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "TamperCounters",                   "",     DATA_STRING,       TamperCounters_str,
             // "AsynchronousCounters",             "",     DATA_FORMAT, "0x%02X", DATA_INT, AsynchronousCounters,
             "Unknown_field_1",                  "",     DATA_STRING,    Unknown_field_1_str,
-            "LastGenerationCount",              "",     DATA_INT,       LastGenerationCount,
+            "LastGenerationCount",              "",     DATA_FORMAT, "%u", DATA_INT,       LastGenerationCount,
             "Unknown_field_2",                  "",     DATA_STRING,    Unknown_field_2_str,
 
             // "AsynchronousCounters",             "",     DATA_STRING,    AsynchronousCounters_str,
 
             // "PowerOutageFlags",                 "",     DATA_STRING,       PowerOutageFlags_str ,
-            "LastConsumptionCount",             "",     DATA_INT,       LastConsumptionCount,
+            "LastConsumptionCount",             "",     DATA_FORMAT, "%u", DATA_INT,       LastConsumptionCount,
             "DifferentialConsumptionIntervals", "",     DATA_ARRAY, data_array(27, DATA_INT, DifferentialConsumptionIntervals),
             "TransmitTimeOffset",               "",     DATA_INT,       TransmitTimeOffset,
             "MeterIdCRC",                       "",     DATA_FORMAT, "0x%04X", DATA_INT, MeterIdCRC,

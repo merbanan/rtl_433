@@ -13,8 +13,13 @@
 /** @fn int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 Security+ 1.0 rolling code
 
-@warning This decoder is not stateless.
-@warning This decoder is dependent on elapsed time.
+@attention stateful
+This decoder has an internal state that may change between invocations and influence the output.
+The Security+ 1.0 protocol transmits two packets per button press; the first half is cached until the second arrives.
+
+@attention time-based
+This decoder depends on wall clock time and exact timing might influence the output.
+The cache expires after 800ms to avoid combining unrelated transmissions.
 
 Freq 310, 315 and 390 MHz.
 
@@ -359,7 +364,6 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     char fixed_str[16]; // should be 10 chars max
     snprintf(fixed_str, sizeof(fixed_str), "%u", fixed);
 
-    // decoder_logf(decoder, 0, __func__,  "# Security+:  rolling=2320615320  fixed=1846948897  (id1=2 id0=0 switch=1 remote_id=68405514 button=left)");
     /* clang-format off */
     data_t *data = data_make(
             "model",        "",             DATA_STRING, "Secplus-v1",

@@ -153,6 +153,7 @@ alloc_error:
 
 // the static analyzer can't prove the allocs to be correct
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wanalyzer-malloc-leak"
 
@@ -411,6 +412,13 @@ R_API void data_output_start(struct data_output *output, char const *const *fiel
     output->output_start(output, fields, num_fields);
 }
 
+R_API void data_output_reopen(struct data_output *output)
+{
+    if (!output || !output->output_reopen)
+        return;
+    output->output_reopen(output);
+}
+
 R_API void data_output_free(data_output_t *output)
 {
     if (!output)
@@ -488,14 +496,13 @@ static void R_API_CALLCONV format_jsons_object(data_output_t *output, data_t *da
 
     bool separator = false;
     abuf_cat(&jsons->msg, "{");
-    while (data) {
+    for (; data; data = data->next) {
         if (separator)
             abuf_cat(&jsons->msg, ",");
         output->print_string(output, data->key, NULL);
         abuf_cat(&jsons->msg, ":");
         print_value(output, data->type, data->value, data->format);
         separator = true;
-        data      = data->next;
     }
     abuf_cat(&jsons->msg, "}");
 }
@@ -510,6 +517,7 @@ static void R_API_CALLCONV format_jsons_string(data_output_t *output, const char
 
     size_t str_len = strlen(str);
     if (size < str_len + 3) {
+        jsons->msg.overflow = 1;
         return;
     }
 
@@ -550,9 +558,16 @@ static void R_API_CALLCONV format_jsons_string(data_output_t *output, const char
         *buf++ = *str;
         size--;
     }
+    // ran out of room before consuming the whole (escaped) string
+    if (*str) {
+        jsons->msg.overflow = 1;
+    }
     if (size >= 2) {
         *buf++ = '"';
         size--;
+    }
+    else {
+        jsons->msg.overflow = 1;
     }
     *buf = '\0';
 
@@ -586,7 +601,10 @@ static void R_API_CALLCONV format_jsons_int(data_output_t *output, int data, cha
     abuf_printf(&jsons->msg, "%d", data);
 }
 
-R_API size_t data_print_jsons(data_t *data, char *dst, size_t len)
+// Serialize into dst/len; reports via *overflow whether the buffer was too
+// small (the output is then truncated and not valid JSON). Returns the number
+// of bytes written (excluding the terminating NUL).
+static size_t data_print_jsons_buf(data_t *data, char *dst, size_t len, int *overflow)
 {
     data_print_jsons_t jsons = {
             .output = {
@@ -602,5 +620,40 @@ R_API size_t data_print_jsons(data_t *data, char *dst, size_t len)
 
     format_jsons_object(&jsons.output, data, NULL);
 
+    if (overflow) {
+        *overflow = jsons.msg.overflow;
+    }
     return len - jsons.msg.left;
+}
+
+R_API size_t data_print_jsons(data_t *data, char *dst, size_t len)
+{
+    return data_print_jsons_buf(data, dst, len, NULL);
+}
+
+R_API char *data_print_jsons_dup(data_t *data)
+{
+    // Grow the buffer until the whole document fits, so reports that scale with
+    // configuration (e.g. get_stats with many enabled decoders) are never
+    // truncated into invalid JSON. A fixed buffer silently corrupts the output
+    // once it overflows: abuf drops the oversized chunk but keeps appending the
+    // smaller ones that follow.
+    size_t len = 8192;
+    for (;;) {
+        char *buf = malloc(len);
+        if (!buf) {
+            WARN_MALLOC("data_print_jsons_dup()");
+            return NULL;
+        }
+        int overflow = 0;
+        data_print_jsons_buf(data, buf, len, &overflow);
+        if (!overflow) {
+            return buf; // complete and NUL-terminated
+        }
+        free(buf);
+        if (len > ((size_t)1 << 26)) { // 64 MiB sanity cap; no report is this big
+            return NULL;
+        }
+        len *= 2;
+    }
 }

@@ -404,9 +404,14 @@ int sigmf_reader_open(sigmf_t *sigmf, char const *path)
         return -1;
     }
 
-    // Mangle stream name
+    // Mangle stream name, replace ".sigmf-meta" extension with ".data" extension
     size_t name_len = strlen(stream_name);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
     strncpy(stream_name + name_len - 4, "data", 4);
+#pragma GCC diagnostic pop
 
     // Load and print contents of file "foo.sigmf-data"
     // NOTE: finds the first instance but should theoretically use the last one

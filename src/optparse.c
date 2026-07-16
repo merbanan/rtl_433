@@ -17,59 +17,76 @@
 
 int tls_param(tls_opts_t *tls_opts, char const *key, char const *val)
 {
-    if (!tls_opts || !key || !*key)
+    if (!tls_opts || !key || !*key) {
         return 1;
-    else if (!strcasecmp(key, "tls_cert"))
+    }
+    else if (!strcasecmp(key, "tls_cert")) {
         tls_opts->tls_cert = val;
-    else if (!strcasecmp(key, "tls_key"))
+    }
+    else if (!strcasecmp(key, "tls_key")) {
         tls_opts->tls_key = val;
-    else if (!strcasecmp(key, "tls_ca_cert"))
+    }
+    else if (!strcasecmp(key, "tls_ca_cert")) {
         tls_opts->tls_ca_cert = val;
-    else if (!strcasecmp(key, "tls_cipher_suites"))
+    }
+    else if (!strcasecmp(key, "tls_cipher_suites")) {
         tls_opts->tls_cipher_suites = val;
-    else if (!strcasecmp(key, "tls_server_name"))
+    }
+    else if (!strcasecmp(key, "tls_server_name")) {
         tls_opts->tls_server_name = val;
-    else if (!strcasecmp(key, "tls_psk_identity"))
+    }
+    else if (!strcasecmp(key, "tls_psk_identity")) {
         tls_opts->tls_psk_identity = val;
-    else if (!strcasecmp(key, "tls_psk_key"))
+    }
+    else if (!strcasecmp(key, "tls_psk_key")) {
         tls_opts->tls_psk_key = val;
-    else
+    }
+    else {
         return 1;
+    }
     return 0;
 }
 
 int atobv(char const *arg, int def)
 {
-    if (!arg)
+    if (!arg) {
         return def;
-    if (!strcasecmp(arg, "true") || !strcasecmp(arg, "yes") || !strcasecmp(arg, "on") || !strcasecmp(arg, "enable"))
+    }
+    if (!strcasecmp(arg, "true") || !strcasecmp(arg, "yes") || !strcasecmp(arg, "on") || !strcasecmp(arg, "enable")) {
         return 1;
+    }
     return atoi(arg);
 }
 
 int atoiv(char const *arg, int def)
 {
-    if (!arg)
+    if (!arg) {
         return def;
+    }
     char *endptr;
     int val = strtol(arg, &endptr, 10);
-    if (arg == endptr)
+    if (arg == endptr) {
         return def;
+    }
     return val;
 }
 
 char *arg_param(char const *arg)
 {
-    if (!arg)
+    if (!arg) {
         return NULL;
-    char *p = strchr(arg, ':');
-    char *c = strchr(arg, ',');
-    if (p && (!c || p < c))
+    }
+    char *p = (char *)strchr(arg, ':');
+    char *c = (char *)strchr(arg, ',');
+    if (p && (!c || p < c)) {
         return ++p;
-    else if (c)
+    }
+    else if (c) {
         return c;
-    else
+    }
+    else {
         return p;
+    }
 }
 
 double arg_float(char const *str, char const *error_hint)
@@ -98,6 +115,12 @@ double arg_float(char const *str, char const *error_hint)
 
     return val;
 }
+
+// GCC'S analyzer has a false-positive on strchr() here
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#pragma GCC diagnostic ignored "-Wanalyzer-deref-before-check"
 
 char *hostport_param(char *param, char const **host, char const **port)
 {
@@ -132,6 +155,8 @@ char *hostport_param(char *param, char const **host, char const **port)
     }
     return NULL;
 }
+
+#pragma GCC diagnostic pop
 
 uint32_t atouint32_metric(char const *str, char const *error_hint)
 {
@@ -238,18 +263,22 @@ int atoi_time(char const *str, char const *error_hint)
 #endif
         case ':':
             ++colons;
-            if (colons == 1)
+            if (colons == 1) {
                 val += num * 60 * 60;
-            else if (colons == 2)
+            }
+            else if (colons == 2) {
                 val += num * 60;
-            else if (colons == 3)
+            }
+            else if (colons == 3) {
                 val += num;
+            }
             else {
                 fprintf(stderr, "%stoo many colons (use HH:MM[:SS]))\n", error_hint);
                 exit(1);
             }
-            if (*endptr)
+            if (*endptr) {
                 ++endptr;
+            }
             break;
         case 's':
         case 'S':
@@ -303,9 +332,13 @@ int atoi_time(char const *str, char const *error_hint)
 
 char *asepc(char **stringp, char delim)
 {
-    if (!stringp || !*stringp) return NULL;
+    if (!stringp || !*stringp) {
+        return NULL;
+    }
     char *s = strchr(*stringp, delim);
-    if (s) *s++ = '\0';
+    if (s) {
+        *s++ = '\0';
+    }
     char *p = *stringp;
     *stringp = s;
     return p;
@@ -313,16 +346,23 @@ char *asepc(char **stringp, char delim)
 
 static char *achrb(char *s, int c, int b)
 {
-    for (; s && *s && *s != b; ++s)
-        if (*s == c) return (char *)s;
+    for (; s && *s && *s != b; ++s) {
+        if (*s == c) {
+            return (char *)s;
+        }
+    }
     return NULL;
 }
 
 char *asepcb(char **stringp, char delim, char stop)
 {
-    if (!stringp || !*stringp) return NULL;
+    if (!stringp || !*stringp) {
+        return NULL;
+    }
     char *s = achrb(*stringp, delim, stop);
-    if (s) *s++ = '\0';
+    if (s) {
+        *s++ = '\0';
+    }
     char *p = *stringp;
     *stringp = s;
     return p;
@@ -343,13 +383,15 @@ int kwargs_match(char const *s, char const *key, char const **val)
     while (*s == ' ' || *s == '\t')
         ++s;
     if (*s == '\0' || * s == ',') {
-        if (val)
+        if (val) {
             *val = NULL;
+        }
         return 1; // match with no arg
     }
     if (*s == '=') {
-        if (val)
+        if (val) {
             *val = s + 1;
+        }
         return 1; // match with arg
     }
     return 0; // no exact match
@@ -370,24 +412,32 @@ char *getkwargs(char **s, char **key, char **val)
 {
     char *v = asepc(s, ',');
     char *k = asepc(&v, '=');
-    if (key) *key = k;
-    if (val) *val = v;
+    if (key) {
+        *key = k;
+    }
+    if (val) {
+        *val = v;
+    }
     return k;
 }
 
 char *trim_ws(char *str)
 {
-    if (!str || !*str)
+    if (!str || !*str) {
         return str;
-    while (*str == ' ' || *str == '\t' || *str == '\r' || *str == '\n')
+    }
+    while (*str == ' ' || *str == '\t' || *str == '\r' || *str == '\n') {
         ++str;
+    }
     char *e = str; // end pointer (last non ws)
     char *p = str; // scanning pointer
     while (*p) {
-        while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n')
+        while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') {
             ++p;
-        if (*p)
+        }
+        if (*p) {
             e = p++;
+        }
     }
     *++e = '\0';
     return str;
@@ -395,15 +445,18 @@ char *trim_ws(char *str)
 
 char *remove_ws(char *str)
 {
-    if (!str)
+    if (!str) {
         return str;
+    }
     char *d = str; // dst pointer
     char *s = str; // src pointer
     while (*s) {
-        while (*s == ' ' || *s == '\t' || *s == '\r' || *s == '\n')
+        while (*s == ' ' || *s == '\t' || *s == '\r' || *s == '\n') {
             ++s;
-        if (*s)
+        }
+        if (*s) {
             *d++ = *s++;
+        }
     }
     *d++ = '\0';
     return str;

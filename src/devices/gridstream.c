@@ -22,21 +22,25 @@ Landis & Gyr Gridstream Power Meters.
 - Syncword v5: 0b0000000001 0b11111111111
 
 This decoder is based on the information from: https://wiki.recessim.com/view/Landis%2BGyr_GridStream_Protocol
+The CI (Control Information) byte and the 0xD2/CI=0x52 encrypted frame handling
+below are validated against a full Puget Sound Energy deployment capture corpus:
+https://github.com/swannman/gridstream-protocol
 Datastream is variable length and bitrate depending on type fields
 Preamble
 Bytes after preamble are encoded with standard uart settings with start bit, 8 data bits and stop bit.
 Data layouts:
     Subtype 55:
-        AAAAAA SSSS TT YY LLLL KK BBBBBBBBBB WWWWWWWWWW II MMMMMMMM KKKK EEEEEEEE KKKK KKKKKK CCCC KKKK XXXX KK
+        AAAAAA SSSS TT YY LLLL NN BBBBBBBBBB WWWWWWWWWW II MMMMMMMM KKKK EEEEEEEE KKKK KKKKKK CCCC KKKK XXXX KK
     Subtype D2:
-        AAAAAA SSSS TT YY LL K----------K XXXX
+        AAAAAA SSSS TT YY LL NN K--------K XXXX
     Subtype D5:
-        AAAAAA SSSS TT YY LLLL KK DDDDDDDD EEEEEEEE II K----------K CCCC KKKK XXXX
+        AAAAAA SSSS TT YY LLLL NN DDDDDDDD EEEEEEEE II K----------K CCCC KKKK XXXX
 - A - Preamble
 - S - Syncword
 - T - Type
 - Y - Subtype
 - L - Length
+- N - CI (Control Information; first byte covered by the CRC; identifies the frame class. CI 0x52 on a 0xD2 frame marks an AES-encrypted payload.)
 - B - Broadcast
 - D - Dest Address
 - E - Source Address
@@ -167,6 +171,28 @@ static int gridstream_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             stream_len = (b[2] << 8) | b[3];
         }
 
+        /* The CI (Control Information) byte is the first byte the CRC covers:
+           the byte immediately after the length field. It identifies the frame
+           class and is the field a parser should key on. */
+        int ci = b[4 + subtype_mod];
+
+        /* A 0xD2 frame with CI 0x52 carries an AES-encrypted payload ending in a
+           2-byte authentication tag, not a CRC, so it cannot pass the CRC check
+           below. Surface it flagged as encrypted rather than dropping it. */
+        if (subtype == 0xD2 && ci == 0x52) {
+            /* clang-format off */
+            data = data_make(
+                    "model",        "",             DATA_STRING,    "LandisGyr-GS",
+                    "subtype",      "",             DATA_INT,       subtype,
+                    "protoversion", "",             DATA_INT,       protocol_version,
+                    "ci",           "CI",           DATA_INT,       ci,
+                    "encrypted",    "Encrypted",    DATA_INT,       1,
+                    NULL);
+            /* clang-format on */
+            decoder_output_data(decoder, data);
+            return 1;
+        }
+
         int crcidx = gridstream_checksum(decoded_len, stream_len, b, subtype_mod);
         if (crcidx < 0) {
             decoder_log(decoder, 1, __func__, "Bad CRC or unknown init value. ");
@@ -213,6 +239,7 @@ static int gridstream_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "provider",     "Provider",             DATA_STRING,    known_crc_init[crcidx].provider,
                 "subtype",      "",                     DATA_INT,       subtype,
                 "protoversion", "",                     DATA_INT,       protocol_version,
+                "ci",           "CI",                   DATA_INT,       ci,
                 "mic",          "Integrity",            DATA_STRING,    "CRC",
                 "id",           "Source Meter ID",      DATA_COND,      subtype != 0xD2, DATA_STRING, srcaddress_str,
                 "wanaddress",   "Source Meter WAN ID",  DATA_COND,      srcwanaddress == 1, DATA_STRING, srcwanaddress_str,
@@ -240,6 +267,8 @@ static char const *const output_fields[] = {
         "provider",
         "id",
         "subtype",
+        "ci",
+        "encrypted",
         "wanaddress",
         "destaddress",
         "uptime",

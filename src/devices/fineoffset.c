@@ -13,25 +13,6 @@
 
 #include "decoder.h"
 
-r_device const fineoffset_WH2;
-
-static r_device *fineoffset_WH2_create(char *arg)
-{
-    if (arg && !strcmp(arg, "no-wh5")) {
-        r_device *r_dev = decoder_create(&fineoffset_WH2, sizeof(int));
-        if (!r_dev) {
-            return NULL; // NOTE: returns NULL on alloc failure.
-        }
-
-        int *quirk = decoder_user_data(r_dev);
-        *quirk = 1;
-        return r_dev;
-    }
-    else {
-        return decoder_create(&fineoffset_WH2, 0); // NOTE: returns NULL on alloc failure.
-    }
-}
-
 /**
 Fine Offset Electronics WH2 Temperature/Humidity sensor protocol,
 also Agimex Rosenborg 66796 (sold in Denmark), collides with WH5,
@@ -44,8 +25,8 @@ The data is grouped in 6 bytes / 12 nibbles.
 
     [pre] [pre] [type] [id] [id] [temp] [temp] [temp] [humi] [humi] [crc] [crc]
 
-There is an extra checksum byte (after the CRC) in WH2A messages.
-TODO: maybe add the checksum for WH2A, e.g. b[5] == b[0]+b[1]+b[2]+b[3]+b[4]
+There is an extra checksum byte (after the CRC) in WH2A messages:
+b[5] == b[0]+b[1]+b[2]+b[3]+b[4] (mod 256).
 
 - pre is always 0xFF
 - type is always 0x4 (may be different for different sensor type?)
@@ -55,89 +36,180 @@ TODO: maybe add the checksum for WH2A, e.g. b[5] == b[0]+b[1]+b[2]+b[3]+b[4]
 
 Based on reverse engineering with gnu-radio and the nice article here:
 http://lucsmall.com/2012/04/29/weather-station-hacking-part-2/
+
+Also TFA Dostmann 30.3225.10 (the outdoor temperature sensor of the
+"Rainman" rain gauge kit, 30.3004), which shares the exact same 55-bit
+0xFE-preamble wire format as WH2A but is temperature-only. It sets the
+humidity byte to a fixed 0xFF (no humidity) and uses a different, WH5-
+style temperature encoding (unsigned, offset by 40, scaled by 10) rather
+than WH2A's signed magnitude; the top bit of the 12-bit temperature field
+is repurposed as a low-battery indicator instead of a sign bit. Confirmed
+against 100 real messages and the checksum above in
+https://github.com/merbanan/rtl_433/issues/1759 -- the humidity==0xFF
+byte is a reliable discriminator since real WH2A units always report a
+plausible 0-100% humidity there.
 */
 #define MODEL_WH2 2
 #define MODEL_WH2A 3
 #define MODEL_WH5 5
-#define MODEL_RB 6
 #define MODEL_TP 7
-static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+#define MODEL_TFA303225 8
+static int fineoffset_WH2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    void *user_data = decoder_user_data(decoder);
     bitrow_t *bb = bitbuffer->bb;
     uint8_t b[6] = {0};
-    data_t *data;
 
     int model_num;
-    int type;
-    uint8_t id;
-    int16_t temp;
-    float temperature;
-    uint8_t humidity;
-
     if (bitbuffer->bits_per_row[0] == 48 &&
             bb[0][0] == 0xFF) { // WH2
         bitbuffer_extract_bytes(bitbuffer, 0, 8, b, 40);
         model_num = MODEL_WH2;
 
-    } else if (bitbuffer->bits_per_row[0] == 55 &&
-            bb[0][0] == 0xFE) { // WH2A
+    }
+    else if (bitbuffer->bits_per_row[0] == 55 &&
+            bb[0][0] == 0xFE) { // WH2A, TFA-303225
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 48);
-        model_num = MODEL_WH2A;
+        // TFA-303225 is temperature-only and always sets the humidity byte
+        // to 0xFF; a real WH2A always reports a plausible 0-100% humidity.
+        model_num = b[3] == 0xff ? MODEL_TFA303225 : MODEL_WH2A;
 
-    } else if (bitbuffer->bits_per_row[0] == 47 &&
+    }
+    else if (bitbuffer->bits_per_row[0] == 47 &&
             bb[0][0] == 0xFE) { // WH5
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 40);
         model_num = MODEL_WH5;
-        if (user_data) // don't care for the actual value
-            model_num = MODEL_RB;
-
-    } else if (bitbuffer->bits_per_row[0] == 49 &&
-            bb[0][0] == 0xFF && (bb[0][1]&0x80) == 0x80) { // Telldus
+        // Note: this could also be a Rosenborg-66796
+    }
+    else if (bitbuffer->bits_per_row[0] == 49 &&
+            bb[0][0] == 0xFF && (bb[0][1] & 0x80) == 0x80) { // Telldus
         bitbuffer_extract_bytes(bitbuffer, 0, 9, b, 40);
         model_num = MODEL_TP;
 
-    } else
+    }
+    else {
         return DECODE_ABORT_LENGTH;
+    }
 
     // Validate package
-    if (b[4] != crc8(&b[0], 4, 0x31, 0)) // x8 + x5 + x4 + 1 (x8 is implicit)
+    if (b[4] != crc8(&b[0], 4, 0x31, 0)) { // x8 + x5 + x4 + 1 (x8 is implicit)
         return DECODE_FAIL_MIC;
+    }
+
+    if (model_num == MODEL_TFA303225 && (add_bytes(b, 5) & 0xff) != b[5]) {
+        return DECODE_FAIL_MIC;
+    }
 
     // Nibble 2 contains type, must be 0x04 -- or is this a (battery) flag maybe? please report.
-    type = b[0] >> 4;
+    int type = b[0] >> 4;
     if (type != 4) {
         decoder_logf(decoder, 1, __func__, "Unknown type: (%d) %d", model_num, type);
         return DECODE_FAIL_SANITY;
     }
 
     // Nibble 3,4 contains id
-    id = ((b[0]&0x0F) << 4) | ((b[1]&0xF0) >> 4);
+    int id = ((b[0]&0x0F) << 4) | ((b[1]&0xF0) >> 4);
 
     // Nibble 5,6,7 contains 12 bits of temperature
-    temp = ((b[1] & 0x0F) << 8) | b[2];
-    if (bitbuffer->bits_per_row[0] != 47 || user_data) { // WH2, Telldus, WH2A
+    int temp = ((b[1] & 0x0F) << 8) | b[2];
+    int low_battery = 0;
+    if (model_num == MODEL_TFA303225) {
+        // The top bit is a low-battery indicator, not part of the magnitude.
+        low_battery = (temp & 0x800) != 0;
+        temp &= 0x7FF;
+        // The temperature is unsigned offset by 40 C and scaled by 10
+        temp -= 400;
+    }
+    else if (model_num == MODEL_WH5) {
+        // The temperature is unsigned offset by 40 C and scaled by 10
+        temp -= 400;
+    }
+    else { // WH2, Telldus, WH2A
         // The temperature is signed magnitude and scaled by 10
         if (temp & 0x800) {
             temp &= 0x7FF; // remove sign bit
             temp = -temp; // reverse magnitude
         }
-    } else { // WH5
-        // The temperature is unsigned offset by 40 C and scaled by 10
-        temp -= 400;
     }
-    temperature = temp * 0.1f;
+    float temperature = temp * 0.1f;
 
     // Nibble 8,9 contains humidity
-    humidity = b[3];
+    int humidity = b[3];
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",             DATA_COND, model_num == MODEL_WH2,  DATA_STRING, "Fineoffset-WH2",
-            "model",            "",             DATA_COND, model_num == MODEL_WH2A, DATA_STRING, "Fineoffset-WH2A",
-            "model",            "",             DATA_COND, model_num == MODEL_WH5,  DATA_STRING, "Fineoffset-WH5",
-            "model",            "",             DATA_COND, model_num == MODEL_RB,   DATA_STRING, "Rosenborg-66796",
-            "model",            "",             DATA_COND, model_num == MODEL_TP,   DATA_STRING, "Fineoffset-TelldusProove",
+    data_t *data = data_make(
+            "model",            "",             DATA_COND, model_num == MODEL_WH2,        DATA_STRING, "Fineoffset-WH2",
+            "model",            "",             DATA_COND, model_num == MODEL_WH2A,       DATA_STRING, "Fineoffset-WH2A",
+            "model",            "",             DATA_COND, model_num == MODEL_WH5,        DATA_STRING, "Fineoffset-WH5",
+            "model",            "",             DATA_COND, model_num == MODEL_TP,         DATA_STRING, "Fineoffset-TelldusProove",
+            "model",            "",             DATA_COND, model_num == MODEL_TFA303225,  DATA_STRING, "TFA-303225",
+            "id",               "ID",           DATA_INT, id,
+            "battery_ok",       "Battery",      DATA_COND, model_num == MODEL_TFA303225, DATA_INT, !low_battery,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
+            "humidity",         "Humidity",     DATA_COND, humidity != 0xff, DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "mic",              "Integrity",    DATA_STRING, "CRC",
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
+/**
+Agimex Rosenborg 66796 (sold in Denmark), collides with WH5 (WH2 variant).
+
+The sensor sends two identical packages of 47 bits each ~48s. The bits are PWM modulated with On Off Keying.
+
+The data is grouped in 6 bytes / 12 nibbles.
+
+    [pre] [pre] [type] [id] [id] [temp] [temp] [temp] [humi] [humi] [crc] [crc]
+
+- pre is always 0xFE (7 bits)
+- type is always 0x4 (may be different for different sensor type?)
+- id is a random id that is generated when the sensor starts
+- temp is 12 bit signed magnitude scaled by 10 celsius
+- humi is 8 bit relative humidity percentage
+*/
+static int fineoffset_WH5RB_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    bitrow_t *bb = bitbuffer->bb;
+
+    if (bitbuffer->bits_per_row[0] != 47 || bb[0][0] != 0xFE) {
+        return DECODE_ABORT_EARLY;
+    }
+
+    uint8_t b[6] = {0};
+    bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 40);
+
+    // Validate package
+    if (b[4] != crc8(&b[0], 4, 0x31, 0)) { // x8 + x5 + x4 + 1 (x8 is implicit)
+        return DECODE_FAIL_MIC;
+    }
+
+    // Nibble 2 contains type, must be 0x04 -- or is this a (battery) flag maybe? please report.
+    int type = b[0] >> 4;
+    if (type != 4) {
+        decoder_logf(decoder, 1, __func__, "Unknown type: (%d)", type);
+        return DECODE_FAIL_SANITY;
+    }
+
+    // Nibble 3,4 contains id
+    int id = ((b[0] & 0x0F) << 4) | ((b[1] & 0xF0) >> 4);
+
+    // Nibble 5,6,7 contains 12 bits of temperature
+    int temp_raw = ((b[1] & 0x0F) << 8) | b[2];
+    // The temperature is signed magnitude and scaled by 10
+    if (temp_raw & 0x800) {
+        temp_raw &= 0x7FF; // remove sign bit
+        temp_raw = -temp_raw;  // reverse magnitude
+    }
+    float temperature = temp_raw * 0.1f;
+
+    // Nibble 8,9 contains humidity
+    int humidity = b[3];
+
+    /* clang-format off */
+    data_t *data = data_make(
+            "model",            "",             DATA_STRING, "Rosenborg-66796",
             "id",               "ID",           DATA_INT, id,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",     DATA_COND, humidity != 0xff, DATA_FORMAT, "%u %%", DATA_INT, humidity,
@@ -150,9 +222,13 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
-Fine Offset Electronics WH24, WH65B, HP1000 and derivatives Temperature/Humidity/Pressure sensor protocol.
+Fine Offset Electronics WH24, WH65, HP1000 and derivatives Temperature/Humidity/Pressure sensor protocol.
 
-Also: Misol WS2320 (rebranded WH65B, 433MHz)
+Also: Misol WS2320 (rebranded WH65, 433MHz)
+
+Note the WH65 and WS69 come in three variants: A, B, C, where the characters A, B and C stand for the transmission frequency,
+A: 868 MHz, B: 915 MHz and C (or nothing): 433 MHz.
+The first WH65 analyzed was 915 MHz that way it's named WH65B in some places here.
 
 The sensor sends a package each ~16 s with a width of ~11 ms. The bits are PCM modulated with Frequency Shift Keying.
 
@@ -163,7 +239,7 @@ Example:
     Payload:                              FF II DD VT TT HH WW GG RR RR UU UU LL LL LL CC BB
     Reading: id: 191, temp: 11.8 C, humidity: 78 %, wind_dir 266 deg, wind_speed: 1.12 m/s, gust_speed 2.24 m/s, rainfall: 22.2 mm
 
-The WH65B sends the same data with a slightly longer preamble and postamble:
+The WH65 sends the same data with a slightly longer preamble and postamble:
 
             {209} 55 55 55 55 55 51 6e a1 22 83 3f 14 3a 08 00 00 00 08 00 10 00 00 04 60 a1 00 8
     aligned  {208} a aa aa aa aa aa 2d d4 24 50 67 e2 87 41 00 00 00 01 00 02 00 00 00 8c 14 20 1
@@ -188,6 +264,12 @@ The WH65B sends the same data with a slightly longer preamble and postamble:
 - C: 8 bit CRC checksum of the 15 data bytes
 - B: 8 bit Bitsum (sum without carry, XOR) of the 16 data bytes
 
+There are two hardware editions of the WS69 -- older ones with a 4 bit sensor ID, newer ones with a 8 bit sensor ID.
+The 8 bit sensor ID is needed for the console to process a potential additional pressure sensor (the default sensor
+is T&H whereas a T&HP sensor is also possible now).
+
+Note factory reset or hardware reset (i.e. rain counter reset) needs a cold start from depleted battery and super-capacitor.
+
 The WS69 sends the same data with additional 8 bytes (6 bytes plus CRC and SUM):
 
     {263}aaaaaaaaaaa 2dd4 241c8801ca63000000330000000000 acd5 01ff ffff 002f 835a 0
@@ -197,6 +279,13 @@ The WS69 sends the same data with additional 8 bytes (6 bytes plus CRC and SUM):
     {263}aaaaaaaaaaa 2dd4 241c5981b06302000033000000001e 2aaa 01ff ffff 002f 5fe0 0
     {263}aaaaaaaaaaa 2dd4 241c5981b063000000330000000014 aa1e 01ff ffff 002f b41a 0
 
+Pressure data:
+Found by \@Gyvate108
+Bytes 17-19 with 17 bits (0-16); Byte 19, Byte 18 and 1st bit (0) of Byte 17.
+Byte 20 is the pressure data checksum. There are two checksums: 1st is Byte 16 (Bytes 0-15) and 2nd is Byte 24 (Bytes 0-23)
+Full payload length: 25 Bytes
+When the pressure module is not present, the value provided will be 0x1FFFF, correct local pressure (ABS) is value/100 in hPa.
+
 The WS69 also seems to sends another type of packet, 100 us FSK PCM, that has not been analyzed:
 
     5555 5555 d395 d395 d90a ba0b 5cb7 1d
@@ -204,17 +293,17 @@ The WS69 also seems to sends another type of packet, 100 us FSK PCM, that has no
     rtl_433 -f 868.2M -s 1000k -Y minmax -R 0 -X 'n=name,m=FSK_PCM,s=100,l=100,r=3000,preamble=d395d395'
  */
 #define MODEL_WH24 24 /* internal identifier for model WH24, family code is always 0x24 */
-#define MODEL_WH65B 65 /* internal identifier for model WH65B, family code is always 0x24 */
+#define MODEL_WH65 65 /* internal identifier for model WH65, family code is always 0x24 */
 #define MODEL_WS69 69 /* internal identifier for model WS69, family code is always 0x24 */
 static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t const preamble[] = {0xAA, 0x2D, 0xD4}; // part of preamble and sync word
-    uint8_t b[17]; // aligned packet data, would need 25 bytes for WS69
+    uint8_t b[17 + 8]; // aligned packet data, 17 bytes general, 25 bytes for WS69
     unsigned bit_offset;
     int type;
 
-    // Validate package, WH24 nominal size is 196 bit periods, WH65b is 209 bit periods, WS69 is 260 bits.
+    // Validate package, WH24 nominal size is 196 bit periods, WH65 is 209 bit periods, WS69 is 260 bits.
     if (bitbuffer->bits_per_row[0] < 190 || bitbuffer->bits_per_row[0] > 268) {
         decoder_logf(decoder, 1, __func__, "wrong package size %u", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH;
@@ -222,31 +311,31 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Find a data package and extract data buffer
     bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
-    if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) { // Did not find a big enough package
+    if (bit_offset + 17 * 8 > bitbuffer->bits_per_row[0]) { // Did not find a big enough package
         decoder_logf_bitbuffer(decoder, 1, __func__, bitbuffer, "short package. Header index: %u", bit_offset);
         return DECODE_ABORT_LENGTH;
     }
 
     // Classification heuristics
-    if (bitbuffer->bits_per_row[0] - bit_offset - sizeof(b) * 8 < 8) {
+    if (bitbuffer->bits_per_row[0] - bit_offset - 17 * 8 < 8) {
         if (bit_offset < 61) {
             type = MODEL_WH24; // nominal 3 bits postamble
         }
         else {
-            type = MODEL_WH65B;
+            type = MODEL_WH65;
         }
     }
     else {
-        type = MODEL_WH65B; // nominal 12 bits postamble
+        type = MODEL_WH65; // nominal 12 bits postamble
     }
     if (bitbuffer->bits_per_row[0] > 215) { // minimum 27*8=216
         // we could also check the extra 6 bytes plus crc and sum.
         type = MODEL_WS69; // nominal 260 bits
     }
 
-    bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
+    bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, 25 * 8);
 
-    decoder_logf_bitrow(decoder, 1, __func__, b, sizeof(b) * 8, "Raw @ bit_offset [%u]", bit_offset);
+    decoder_logf_bitrow(decoder, 1, __func__, b, 25 * 8, "Raw @ bit_offset [%u]", bit_offset);
 
     if (b[0] != 0x24) { // Check for family code 0x24
         decoder_logf(decoder, 1, __func__, "unknown family code: 0x%02x", b[0]);
@@ -254,14 +343,24 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Verify checksum, same as other FO Stations: Reverse 1Wire CRC (poly 0x131)
-    uint8_t crc = crc8(b, 15, 0x31, 0x00);
-    uint8_t checksum = 0;
-    for (unsigned n = 0; n < 16; ++n) {
-        checksum += b[n];
-    }
-    if (crc != b[15] || checksum != b[16]) {
-        decoder_logf(decoder, 1, __func__, "Checksum error: %02x %02x", crc, checksum);
+    uint8_t crc = crc8(b, 16, 0x31, 0x00);
+    uint8_t sum = add_bytes(b, 16);
+    if (crc != 0 || sum != b[16]) {
+        decoder_logf(decoder, 1, __func__, "Checksum error: %02x %02x", crc, sum);
         return DECODE_FAIL_MIC;
+    }
+
+    float pressure_hpa = -1.0f;
+    if (type == MODEL_WS69) {
+        int pressure_raw = b[17] << 16 | b[18] << 8 | b[19]; // 0x01ffff if invalid
+
+        uint8_t p_crc = crc8(b, 24, 0x31, 0x00);
+        uint8_t p_sum = add_bytes(b, 24);
+        if (p_crc != 0 || p_sum != b[24]) {
+            decoder_logf(decoder, 1, __func__, "Checksum error in pressure: %02x %02x", p_crc, p_sum);
+        } else if (pressure_raw < 0x01ffff) {
+            pressure_hpa = pressure_raw * 0.01f;
+        }
     }
 
     // Decode data
@@ -273,16 +372,16 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int humidity        = b[5];                      // 0xff if invalid
     int wind_speed_raw  = b[6] | (b[3] & 0x10) << 4; // 0x1ff if invalid
     float wind_speed_factor, rain_cup_count;
-    // Wind speed factor is 1.12 m/s (1.19 per specs?) for WH24, 0.51 m/s for WH65B
-    // Rain cup each count is 0.3mm for WH24, 0.01inch (0.254mm) for WH65B
+    // Wind speed factor is 1.12 m/s (1.19 per specs?) for WH24, 0.51 m/s for WH65
+    // Rain cup each count is 0.3mm for WH24, 0.01inch (0.254mm) for WH65
     if (type == MODEL_WH24) { // WH24
         wind_speed_factor = 1.12f;
         rain_cup_count = 0.3f;
-    } else { // WH65B
+    } else { // WH65
         wind_speed_factor = 0.51f;
         rain_cup_count = 0.254f;
     }
-    // Wind speed is scaled by 8, wind speed = raw / 8 * 1.12 m/s (0.51 for WH65B)
+    // Wind speed is scaled by 8, wind speed = raw / 8 * 1.12 m/s (0.51 for WH65)
     float wind_speed_ms = wind_speed_raw * 0.125f * wind_speed_factor;
     int gust_speed_raw  = b[7];             // 0xff if invalid
     // Wind gust is unscaled, multiply by wind speed factor 1.12 m/s
@@ -316,12 +415,13 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",            "",                 DATA_COND, type == MODEL_WH24,  DATA_STRING, "Fineoffset-WH24",
-            "model",            "",                 DATA_COND, type == MODEL_WH65B, DATA_STRING, "Fineoffset-WH65B",
+            "model",            "",                 DATA_COND, type == MODEL_WH65, DATA_STRING, "Fineoffset-WH65B",
             "model",            "",                 DATA_COND, type == MODEL_WS69,  DATA_STRING, "Fineoffset-WS69",
             "id",               "ID",               DATA_INT,  id,
             "battery_ok",       "Battery",          DATA_INT,  !low_battery,
             "temperature_C",    "Temperature",      DATA_COND, temp_raw != 0x7ff, DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",         DATA_COND, humidity != 0xff, DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "pressure_hPa",     "Pressure",         DATA_COND, pressure_hpa >= 0, DATA_FORMAT, "%.2f hPa", DATA_DOUBLE, pressure_hpa,
             "wind_dir_deg",     "Wind direction",   DATA_COND, wind_dir != 0x1ff, DATA_INT, wind_dir,
             "wind_avg_m_s",     "Wind speed",       DATA_COND, wind_speed_raw != 0x1ff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_speed_ms,
             "wind_max_m_s",     "Gust speed",       DATA_COND, gust_speed_raw != 0xff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust_speed_ms,
@@ -508,7 +608,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         type = 32; // new WN32B
     }
     else if (bitbuffer->bits_per_row[0] < 440) {             // Nominal size is 488 bit periods
-        return fineoffset_WH24_callback(decoder, bitbuffer); // abort and try WH24, WH65B, HP1000
+        return fineoffset_WH24_callback(decoder, bitbuffer); // abort and try WH24, WH65, HP1000
     }
 
     if (bitbuffer->bits_per_row[0] > 510) { // WH32B has nominal size of 971 bit periods
@@ -664,10 +764,51 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     char id[7];
     snprintf(id, sizeof(id), "%02x%02x%02x", b[1], b[2], b[3]);
     int boost           = (b[4] & 0xe0) >> 5;
-    int battery_mv      = (b[4] & 0x1f) * 100;
-    float battery_level = (battery_mv - 700) / 900.0f; // assume 1.6V (100%) to 0.7V (0%) range
+    int battery_mv_bits = b[4] & 0x1f;
+    int battery_mv      = (battery_mv_bits) * 100;
+    float battery_level;
     int ad_raw          = (((int)b[7] & 0x01) << 8) | (int)b[8];
     int moisture        = b[6];
+
+    /*
+     * We assume that an alkaline cell (1 AA) is in use, because
+     * that's the least expensive cell that is likely to work
+     * reasonably, with over 2 year life observed.  With a report of
+     * 1300 mV or higher, operation was reliable.  Within hours of
+     * reporting 1200 mV, I observed grossly incorrect moisture
+     * reports, a bad battery report of 500 mV, and periods of not
+     * reporting.  Removing the battery and waiting a few minutes, the
+     * open-circuit voltage was 1.27V and a pulse-type tester assessed
+     * it as 0%.
+     *
+     * Thus, 1600 is a brand new battery (anecdata says it remains in
+     * that state for 6 minutes), changing to 1500 quickly.  There is
+     * then a long period at 1500, 1400, 1300, with 1200 indicating
+     * imminent failure -- not long enough to change it before bad
+     * things.  For reliable operation, one has to change the battery
+     * at 1300 mV, and it's unfortunate there isn't greater precision.
+     * Mapping values into comfort level and fractional life
+     * remaining, I'd say:
+     *   1600   100%
+     *   1500   90%
+     *   1400   50%
+     *   1300   10%
+     *   1200   0%
+     *
+     * To deal with other chemistries, we map >= 1600 to 100% and <=
+     * 1200 to 0%.
+     */
+    if (battery_mv_bits >= 16) {
+      battery_level = 1.0;
+    } else if (battery_mv_bits == 15) {
+      battery_level = 0.9;
+    } else if (battery_mv_bits == 14) {
+      battery_level = 0.5;
+    } else if (battery_mv_bits == 13) {
+      battery_level = 0.1;
+    } else {
+      battery_level = 0.0;
+    }
 
     /* clang-format off */
     data = data_make(
@@ -988,6 +1129,7 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
+        "battery_ok",
         "temperature_C",
         "humidity",
         "mic",
@@ -1042,19 +1184,30 @@ static char const *const output_fields_WH0530[] = {
 r_device const fineoffset_WH2 = {
         .name        = "Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor",
         .modulation  = OOK_PULSE_PWM,
-        .short_width = 500,  // Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
+        .short_width = 500,  // Short pulse 544 us, long pulse 1524 us, fixed gap 1036 us
         .long_width  = 1500, // Maximum pulse period (long pulse + fixed gap)
         .reset_limit = 1200, // We just want 1 package
-        .tolerance   = 160,  // us
-        .decode_fn   = &fineoffset_WH2_callback,
-        .create_fn   = &fineoffset_WH2_create,
+        .tolerance   = 160,
+        .decode_fn   = &fineoffset_WH2_decode,
+        .fields      = output_fields,
+};
+
+r_device const fineoffset_wh5rb = {
+        .name        = "Agimex Rosenborg 66796 (collides with Fine Offset Electronics WH5) Temperature/Humidity Sensor",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 500,  // Short pulse 544 us, long pulse 1524 us, fixed gap 1036 us
+        .long_width  = 1500, // Maximum pulse period (long pulse + fixed gap)
+        .reset_limit = 1200, // We just want 1 package
+        .tolerance   = 160,
+        .decode_fn   = &fineoffset_WH5RB_decode,
+        .disabled    = 1, // Collides with WH5 (WH2 protocol)
         .fields      = output_fields,
 };
 
 r_device const fineoffset_WH25 = {
-        .name        = "Fine Offset Electronics, WH25, WH32, WH32B, WN32B, WH24, WH65B, HP1000, Misol WS2320 Temperature/Humidity/Pressure Sensor",
+        .name        = "Fine Offset Electronics, WH25, WH32, WH32B, WN32B, WH24, WH65, WS69, HP1000, Misol WS2320 Temperature/Humidity/Pressure Sensor",
         .modulation  = FSK_PULSE_PCM,
-        .short_width = 58,    // Bit width = 58µs (measured across 580 samples / 40 bits / 250 kHz)
+        .short_width = 58,    // Bit width = 58 us (measured across 580 samples / 40 bits / 250 kHz)
         .long_width  = 58,    // NRZ encoding (bit width = pulse width)
         .reset_limit = 20000, // Package starts with a huge gap of ~18900 us
         .decode_fn   = &fineoffset_WH25_callback,
@@ -1064,7 +1217,7 @@ r_device const fineoffset_WH25 = {
 r_device const fineoffset_WH51 = {
         .name        = "Fine Offset Electronics/Ecowitt WH51, WN31, SwitchDoc Labs SM23 Soil Moisture Sensor",
         .modulation  = FSK_PULSE_PCM,
-        .short_width = 58, // Bit width = 58µs (measured across 580 samples / 40 bits / 250 kHz)
+        .short_width = 58, // Bit width = 58 us (measured across 580 samples / 40 bits / 250 kHz)
         .long_width  = 58, // NRZ encoding (bit width = pulse width)
         .reset_limit = 5000,
         .decode_fn   = &fineoffset_WH51_callback,
@@ -1074,11 +1227,11 @@ r_device const fineoffset_WH51 = {
 r_device const fineoffset_WH0530 = {
         .name        = "Fine Offset Electronics, WH0530 Temperature/Rain Sensor",
         .modulation  = OOK_PULSE_PWM,
-        .short_width = 504,  // Short pulse 504µs
-        .long_width  = 1480, // Long pulse 1480µs
-        .reset_limit = 1200, // Fixed gap 960µs (We just want 1 package)
+        .short_width = 504,  // Short pulse 504 us
+        .long_width  = 1480, // Long pulse 1480 us
+        .reset_limit = 1200, // Fixed gap 960 us (We just want 1 package)
         .sync_width  = 0,    // No sync bit used
-        .tolerance   = 160,  // us
+        .tolerance   = 160,
         .decode_fn   = &fineoffset_WH0530_callback,
         .fields      = output_fields_WH0530,
 };

@@ -78,6 +78,15 @@ static int oil_standard_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     else {
         // A depth reading of zero indicates no reading.
         depth = ((b[2] & 0x02) << 7) | b[3];
+        // This protocol has no checksum; the depth field is documented
+        // (see file header) to top out around 305, but is 9 bits wide and
+        // could otherwise represent up to 511. Reject implausible values
+        // above that as an additional filter for noise the preamble match
+        // alone lets through.
+        if (depth > 305) {
+            decoder_logf(decoder, 2, __func__, "implausible depth: %u cm", depth);
+            return 0; // TODO: fix calling code to handle negative return values
+        }
     }
 
     /* clang-format off */

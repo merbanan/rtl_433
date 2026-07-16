@@ -17,6 +17,7 @@ Fine Offset Electronics WN34 Temperature Sensor.
 - also Ecowitt WN34S (soil), WN34L (water), range is -40~60 °C (-40~140 °F)
 - also Ecowitt WN34D (water), range is -55~125 °C (-67~257 °F)
 - also Froggit DP150 (soil), DP35 (water)
+- also Ecowitt WN38 Black Globe Thermometer (family code 0x38)
 
 Preamble is aaaa aaaa, sync word is 2dd4.
 
@@ -25,11 +26,12 @@ Packet layout:
      0  1  2  3  4  5  6  7  8  9 10
     YY II II II ST TT BB XX AA ZZ ZZ
     34 00 29 65 02 85 44 66 f3 20 10
+    38 00 28 85 40 f5 41 4c a7
 
-- Y:{8}  fixed sensor type 0x34
+- Y:{8}  fixed sensor type, 0x34 = WN34, 0x38 = WN38
 - I:{24} device ID
-- S:{4}  sub type, 0 = WN34L, 0x4 = WN34D
-- T:{12} temperature, offset 40 (except WN34D), scale 10
+- S:{4}  sub type, 0 = WN34L, 0x4 = WN34D and WN38
+- T:{12} temperature, offset 40 (except sub type 4), scale 10
 - B:{7}  battery level (unit of 20 mV)
 - X:{8}  bit CRC
 - A:{8}  bit checksum
@@ -56,7 +58,7 @@ static int fineoffset_wn34_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_log_bitrow(decoder, 1, __func__, b, sizeof (b) * 8, "");
 
     // Verify family code
-    if (b[0] != 0x34) {
+    if (b[0] != 0x34 && b[0] != 0x38) {
         decoder_logf(decoder, 2, __func__, "Msg family unknown: %02x", b[0]);
         decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "Row length(bits_per_row[0]): %u", bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_EARLY;
@@ -108,8 +110,9 @@ static int fineoffset_wn34_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",         "",                DATA_COND, sub_type != 4, DATA_STRING, "Fineoffset-WN34",
-            "model",         "",                DATA_COND, sub_type == 4, DATA_STRING, "Fineoffset-WN34D",
+            "model",         "",                DATA_COND, b[0] == 0x38, DATA_STRING, "Fineoffset-WN38",
+            "model",         "",                DATA_COND, b[0] == 0x34 && sub_type != 4, DATA_STRING, "Fineoffset-WN34",
+            "model",         "",                DATA_COND, b[0] == 0x34 && sub_type == 4, DATA_STRING, "Fineoffset-WN34D",
             "id",            "ID",              DATA_FORMAT, "%x",     DATA_INT,    id,
             "battery_ok",    "Battery level",   DATA_FORMAT, "%.1f",   DATA_DOUBLE, battery_ok,
             "battery_mV",    "Battery Voltage", DATA_FORMAT, "%d mV",  DATA_INT,    battery_mv,
@@ -133,7 +136,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const fineoffset_wn34 = {
-        .name        = "Fine Offset Electronics WN34S/L/D and Froggit DP150/D35 temperature sensor",
+        .name        = "Fine Offset Electronics WN34S/L/D, WN38 and Froggit DP150/D35 temperature sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 58,
         .long_width  = 58,

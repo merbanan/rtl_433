@@ -104,10 +104,10 @@ static char const *const output_fields[] = {
 r_device const rubicson = {
         .name        = "Rubicson, TFA 30.3197 or InFactory PT-310 Temperature Sensor",
         .modulation  = OOK_PULSE_PPM,
-        .short_width = 1000, // Gaps:  Short 976us, Long 1940us, Sync 4000us
-        .long_width  = 2000, // Pulse: 500us (Initial pulse in each package is 388us)
+        .short_width = 1000, // Gaps:  Short 976 us, Long 1940 us, Sync 4000 us
+        .long_width  = 2000, // Pulse: 500 us (Initial pulse in each package is 388 us)
         .gap_limit   = 3000,
-        .reset_limit = 4800, // Two initial pulses and a gap of 9120us is filtered out
+        .reset_limit = 4800, // Two initial pulses and a gap of 9120 us is filtered out
         .decode_fn   = &rubicson_callback,
         .fields      = output_fields,
 };
