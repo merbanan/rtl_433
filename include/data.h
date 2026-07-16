@@ -62,9 +62,9 @@ typedef struct data_array {
 // Note: Do not unwrap a packed array to data_value_t,
 // on 32-bit the union has different size/alignment than a pointer.
 typedef union data_value {
-    int         v_int;  /**< A data value of type int, 4 bytes size/alignment */
     double      v_dbl;  /**< A data value of type double, 8 bytes size/alignment */
     void        *v_ptr; /**< A data value pointer, 4/8 bytes size/alignment */
+    int         v_int;  /**< A data value of type int, 4 bytes size/alignment */
 } data_value_t;
 
 typedef struct data {
