@@ -55,8 +55,10 @@ Various data fields, which are common across devices of different types.
 * **battery_ok** (double) (Optional)
   * Battery status indication as a level between 0 (empty) and 1 (full). If the sensor can only report a binary status the value shall be 1 for "OK" and 0 for "LOW".
 
-* **battery_V** (**battery_mV**) (double) (Optional)
+* **battery_V** (double) (Optional)
   * Battery level in Volts. Should be supplemented by *battery_ok* status indication if possible.
+  * `battery_mV` is deprecated; new decoders should report `battery_V`. See discussion in
+    https://github.com/merbanan/rtl_433/issues/2653.
 
 ## Sensor Data
 Due to the large variance in sensor types this list of common values is non-exhaustive. Additional data value fields should follow the form: `<Type>_<Unit>`, where *Unit* should be in sensors native units insofar possible with no conversion.
