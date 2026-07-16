@@ -441,6 +441,16 @@ static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     pressure    = ((b[3] & 0x1f) << 4) | (b[4] >> 4);
     temperature = ((b[4] & 0x03) << 5) | (b[5] >> 3);
 
+    /* The 2-bit integrity check above only rejects 3 out of 4 random/corrupt
+       payloads. Add a plausibility bound on pressure and temperature (a
+       generous margin around real TPMS operating ranges) as a second,
+       independent filter for the noise the parity check lets through. */
+    if (pressure > 450 || temperature - 50 < -40 || temperature - 50 > 125) {
+        decoder_logf(decoder, 2, __func__,
+                "implausible pressure/temperature: %u kPa, %d C", pressure, temperature - 50);
+        return DECODE_FAIL_SANITY;
+    }
+
     snprintf(id_str, sizeof(id_str), "%06X", serial_id);
     snprintf(flags_str, sizeof(flags_str), "%01x", flags);
 
