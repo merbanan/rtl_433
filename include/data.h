@@ -43,6 +43,7 @@
 #include <stdint.h>
 
 typedef enum {
+    DATA_EMPTY,  /**< no data is stored, skip while printing */
     DATA_DATA,   /**< pointer to data is stored */
     DATA_INT,    /**< pointer to integer is stored */
     DATA_DOUBLE, /**< pointer to a double is stored */
@@ -115,6 +116,12 @@ R_API data_t *data_make(const char *key, const char *pretty_key, ...);
     @see data_make()
 */
 R_API data_t *data_prepend(data_t *tail, data_t *head);
+
+/** Creates a new structured data object list by creating an empty head object.
+
+    Type-safe alternative to `data_make()` and `data_append()`.
+*/
+R_API data_t *data_new(void);
 
 /** Adds to a structured data object, by appending `int` data.
 

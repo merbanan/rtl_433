@@ -44,6 +44,9 @@ char *expand_topic_string(char *topic, char const *format, data_t *data, char co
     data_t *data_id      = NULL;
     data_t *data_protocol = NULL;
     for (data_t *d = data; d; d = d->next) {
+        if (!d->key) {
+            continue;
+        }
         if (!strcmp(d->key, "type"))
             data_type = d;
         else if (!strcmp(d->key, "model"))

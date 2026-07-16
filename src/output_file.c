@@ -51,6 +51,9 @@ static void R_API_CALLCONV print_json_data(data_output_t *output, data_t *data, 
     bool separator = false;
     fputc('{', json->file);
     for (; data; data = data->next) {
+        if (!data->key) {
+            continue;
+        }
         if (separator)
             fprintf(json->file, ", ");
         output->print_string(output, data->key, NULL);
@@ -245,6 +248,9 @@ static void R_API_CALLCONV print_kv_data(data_output_t *output, data_t *data, ch
         data_t *data_lvl  = NULL;
         data_t *data_msg  = NULL;
         for (data_t *d = data; d; d = d->next) {
+            if (!d->key) {
+                continue;
+            }
             if (!strcmp(d->key, "src"))
                 data_src = d;
             else if (!strcmp(d->key, "lvl"))
@@ -327,6 +333,9 @@ static void R_API_CALLCONV print_kv_data(data_output_t *output, data_t *data, ch
 
     ++kv->data_recursion;
     for (; data; data = data->next) {
+        if (!data->key) {
+            continue;
+        }
         // skip logging keys
         if (is_log && (!strcmp(data->key, "time") || !strcmp(data->key, "src") || !strcmp(data->key, "lvl")
                 || !strcmp(data->key, "msg") || !strcmp(data->key, "num_rows"))) {
@@ -500,6 +509,9 @@ static void R_API_CALLCONV print_csv_data(data_output_t *output, data_t *data, c
 
     fputc('{', csv->file);
     for (bool separator = false; data; data = data->next) {
+        if (!data->key) {
+            continue;
+        }
         if (separator)
             fprintf(csv->file, "; "); // NOTE: distinct from csv->separator
         output->print_string(output, data->key, NULL);
@@ -643,6 +655,9 @@ static void R_API_CALLCONV data_output_csv_print(data_output_t *output, data_t *
 
     int regular = 0; // skip "states" output
     for (data_t *d = data; d; d = d->next) {
+        if (!d->key) {
+            continue;
+        }
         if (!strcmp(d->key, "msg") || !strcmp(d->key, "codes") || !strcmp(d->key, "model")) {
             regular = 1;
             break;
@@ -657,6 +672,9 @@ static void R_API_CALLCONV data_output_csv_print(data_output_t *output, data_t *
         if (i)
             fprintf(csv->file, "%s", csv->separator);
         for (data_t *iter = data; !found && iter; iter = iter->next) {
+            if (!iter->key) {
+                continue;
+            }
             if (strcmp(iter->key, key) == 0)
                 found = iter;
         }
