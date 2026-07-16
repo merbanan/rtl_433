@@ -77,6 +77,17 @@ static int nexus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_c = (temp_raw >> 4) * 0.1f;
     int humidity = (((b[3] & 0x0F) << 4) | (b[4] >> 4));
 
+    // This decoder has no real checksum, only a 4-bit constant-nibble check,
+    // and shares an all but identical field layout with the Rubicson/
+    // Solight-TE44/EMOS E0107T family (whose last byte is actually a CRC,
+    // not humidity) - so it can misdecode their transmissions whenever
+    // Rubicson is disabled. Reject an out-of-range humidity (100% max) as
+    // an additional, independent filter for that overlap.
+    if (humidity != 0x00 && humidity > 100) {
+        decoder_logf(decoder, 2, __func__, "implausible humidity: %u %%", humidity);
+        return DECODE_FAIL_SANITY;
+    }
+
     data_t *data;
     if (humidity == 0x00) { // Thermo
         /* clang-format off */
