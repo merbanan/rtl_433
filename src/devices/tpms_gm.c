@@ -72,11 +72,18 @@ static int tpms_gm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Checksum skips preamble
     uint8_t computed_checksum = 0;
+    int all_zero = 1;
     for (int i = 6; i < 15; i++) {
         computed_checksum += b[i];
+        all_zero &= (b[i] == 0);
     }
     if ((computed_checksum & 0xFF) != b[15]) {
         return DECODE_FAIL_MIC;
+    }
+    // An all-zero payload trivially passes the checksum; reject it rather
+    // than reporting a bogus id-0/learn-mode/-60 C reading.
+    if (all_zero && b[15] == 0) {
+        return DECODE_FAIL_SANITY;
     }
 
     // Convert ID to an integer
