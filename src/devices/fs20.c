@@ -289,6 +289,7 @@ static char const *const output_fields[] = {
         "command",
         "flags",
         "ext",
+        "mic",
         NULL,
 };
 
