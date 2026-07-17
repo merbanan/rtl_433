@@ -140,3 +140,98 @@ r_device const cavius = {
         .decode_fn   = &cavius_decode,
         .fields      = output_fields,
 };
+
+/**
+Cavius door/window sensor.
+
+A different, simpler protocol than the alarms above (issue #2562): raw
+FSK_PCM (not Manchester), ~868.65-868.70 MHz, 415 us/bit.
+
+Packet after preamble 0xaaaaaad31527:
+
+    UU  II II II II II II  SS  CC
+
+- U: counter, varies per transmission, purpose unconfirmed.
+- I: 6 byte device ID.
+- S: state, 0x25 open / 0x24 closed; other values rejected.
+- C: CRC-8 (poly 0x07, init 0x00) over U, I, S.
+
+Weak signal in all submitted captures needs a lower manual detection
+level (e.g. `-Y level=-14`) to decode; see the issue for details.
+*/
+
+static int cavius_door_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    uint8_t const preamble[] = {0xaa, 0xaa, 0xaa, 0xd3, 0x15, 0x27};
+
+    if (bitbuffer->num_rows != 1) {
+        return DECODE_ABORT_EARLY;
+    }
+
+    int row          = 0;
+    unsigned row_len = bitbuffer->bits_per_row[row];
+
+    unsigned bit_offset = bitbuffer_search(bitbuffer, row, 0, preamble, sizeof(preamble) * 8);
+    if (bit_offset >= row_len) {
+        return DECODE_ABORT_EARLY;
+    }
+    bit_offset += sizeof(preamble) * 8;
+
+    // 9 bytes follow: 1 counter, 6 device ID, 1 state, 1 CRC-8.
+    if (bit_offset + 9 * 8 > row_len) {
+        return DECODE_ABORT_LENGTH;
+    }
+
+    uint8_t b[9];
+    bitbuffer_extract_bytes(bitbuffer, row, bit_offset, b, 9 * 8);
+
+    if (crc8(b, 8, 0x07, 0x00) != b[8]) {
+        return DECODE_FAIL_MIC;
+    }
+
+    char const *state;
+    if (b[7] == 0x25) {
+        state = "open";
+    }
+    else if (b[7] == 0x24) {
+        state = "closed";
+    }
+    else {
+        return DECODE_FAIL_SANITY;
+    }
+
+    char id_str[13];
+    snprintf(id_str, sizeof(id_str), "%02x%02x%02x%02x%02x%02x", b[1], b[2], b[3], b[4], b[5], b[6]);
+
+    /* clang-format off */
+    data_t *data = data_make(
+            "model",    "",             DATA_STRING, "Cavius-Door",
+            "id",       "",             DATA_STRING, id_str,
+            "state",    "",             DATA_STRING, state,
+            "counter",  "",             DATA_INT,    b[0],
+            "mic",      "",             DATA_STRING, "CRC",
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
+static char const *const cavius_door_output_fields[] = {
+        "model",
+        "id",
+        "state",
+        "counter",
+        "mic",
+        NULL,
+};
+
+r_device const cavius_door = {
+        .name        = "Cavius Door/Window sensor (-f 868.7M)",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 415,
+        .long_width  = 415,
+        .reset_limit = 3000,
+        .decode_fn   = &cavius_door_decode,
+        .fields      = cavius_door_output_fields,
+};

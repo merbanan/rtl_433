@@ -455,6 +455,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [365]  Mercedes Benz Sprinter 4500 TPMS sensor
     [366]  Watts Vision thermostat (-f 868.3M)
     [367]  TFA 30.3307.02 Wind sensor
+    [368]  Cavius Door/Window sensor (-f 868.7M)
 
 * Disabled by default, use -R n or a conf file to enable
 
