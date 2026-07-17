@@ -32,10 +32,13 @@ with a repeating 0x55 (i.e. every decoded byte is XORed with 0x55):
   between meters/collectors rather than a plain meter->collector report
   (that whole sub-protocol, and the separate dst==0 flood-broadcast
   format, are not decoded here, only the common meter-report case)
-- DST: destination (collector/base station) address, may be 0
-- DATA: mostly unknown; a sub-command with a length byte of 0x33 (51) at
-  a fixed offset carries hourly usage data (command id 0xce, "every 6
-  hours" per the reference), see below
+- DST: destination (collector) address, may be 0. Matches the meter's
+  printed "LAN ID", decimal (issue #1196, \@greyltc) -- id/dst are
+  reported as decimal strings for this reason and to avoid a negative
+  JSON int for addresses with the high bit set
+- DATA: mostly unknown; a sub-command (length byte 0x33) at a fixed
+  offset carries hourly usage data (command id 0xce), see below. Also
+  reported in full as data_raw
 - CHK: CRC-16/X-25 (poly 0x8408, init 0xffff, byte-reflected, complemented),
   transmitted low byte first, covering LEN through the last DATA byte
 
@@ -54,10 +57,24 @@ a fixed sync offset: it Manchester-decodes the whole row (already done by
 rtl_433's demod) and then brute-force searches every bit position for one
 where the (whitened) first byte, taken as LEN, yields a valid CRC-16/X-25 --
 false positive risk is negligible given the 16-bit check.
+
+Findings from issue #1196 (\@ther3zz), live across ~15 meters:
+
+- Type-1 splits into "beacon" (LEN=40, FLAG=0x08, DST=0, detected below
+  as frame_type) and "unicast" (LEN=28, FLAG=0x00, nonzero DST, not
+  distinguished here).
+- A second message type ("type-2"), selected by a payload byte, is not
+  handled: 0x56 = AES-ECB encrypted, 0x57 = cleartext (e.g. a LEN=189
+  mesh neighbour table). LEN=189/171 frames were being silently rejected
+  by the old ELSTER_MAX_LEN=64 bound; raised to 200.
+- Preamble measured at ~67 ms (~2400 chips), not ~21.8 ms as assumed;
+  not applied to short_width/long_width, which already produce confirmed
+  real decodes and may be for a different meter variant.
 */
 
-#define ELSTER_MIN_LEN 9  // at least LEN FLAG SRC(4) DST(4)
-#define ELSTER_MAX_LEN 64 // sanity bound, longest known frame is well under this
+#define ELSTER_MIN_LEN 9   // at least LEN FLAG SRC(4) DST(4)
+#define ELSTER_MAX_LEN 200 // sanity bound; longest confirmed real frame is a
+                           // 189-byte mesh neighbour table (issue #1196)
 
 static int elster_power_meter_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -106,6 +123,24 @@ static int elster_power_meter_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint32_t src = ((uint32_t)buf[2] << 24) | (buf[3] << 16) | (buf[4] << 8) | buf[5];
     uint32_t dst = ((uint32_t)buf[6] << 24) | (buf[7] << 16) | (buf[8] << 8) | buf[9];
 
+    // Decimal strings: matches the meter's printed LAN ID and avoids a
+    // negative JSON int for addresses with the high bit set.
+    char src_str[11];
+    char dst_str[11];
+    snprintf(src_str, sizeof(src_str), "%u", src);
+    snprintf(dst_str, sizeof(dst_str), "%u", dst);
+
+    // "Beacon" template, see file doc comment.
+    int is_beacon = (len == 40 && flags == 0x08 && dst == 0);
+
+    // Raw DATA region (after LEN/FLAG/SRC/DST, before the CRC).
+    char data_raw[2 * (ELSTER_MAX_LEN - 10) + 1];
+    data_raw[0]  = '\0';
+    int data_len = len - 10;
+    for (int i = 0; i < data_len; ++i) {
+        snprintf(&data_raw[i * 2], 3, "%02x", buf[10 + i]);
+    }
+
     int has_reading = 0;
     float meter_kwh = 0.0f;
     int has_hourly  = 0;
@@ -151,14 +186,16 @@ static int elster_power_meter_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data_t *data = data_make(
             "model",        "",             DATA_STRING, "Elster-PowerMeter",
-            "id",           "Meter ID",     DATA_FORMAT, "%08x", DATA_INT, (int)src,
-            "dst",          "Collector ID", DATA_FORMAT, "%08x", DATA_INT, (int)dst,
+            "id",           "Meter ID",     DATA_STRING, src_str,
+            "dst",          "Collector ID (LAN ID)", DATA_STRING, dst_str,
             "flags",        "Flags",        DATA_FORMAT, "%02x", DATA_INT, flags,
+            "frame_type",   "Frame Type",   DATA_COND, is_beacon,   DATA_STRING, "beacon",
             "ctr",          "Counter",      DATA_COND, has_hourly,  DATA_INT, ctr,
             "cur_hour",     "Current Hour", DATA_COND, has_hourly,  DATA_INT, cur_hour,
             "last_hour",    "Last Hour",    DATA_COND, has_hourly,  DATA_INT, last_hour,
             "hourly_kWh",   "Hourly",       DATA_COND, has_hourly,  DATA_STRING, hourly_str,
             "reading_kWh",  "Reading",      DATA_COND, has_reading, DATA_FORMAT, "%.0f kWh", DATA_DOUBLE, (double)meter_kwh,
+            "data_raw",     "Undecoded data", DATA_STRING, data_raw,
             "mic",          "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -172,11 +209,13 @@ static char const *const output_fields[] = {
         "id",
         "dst",
         "flags",
+        "frame_type",
         "ctr",
         "cur_hour",
         "last_hour",
         "hourly_kWh",
         "reading_kWh",
+        "data_raw",
         "mic",
         NULL,
 };
