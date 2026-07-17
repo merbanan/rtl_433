@@ -39,27 +39,19 @@ static int sharp_spc775_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     data_t *data;
     uint8_t b[6];
-    int length_match   = 0;
-    int preamble_match = 0;
 
     // Invert data for processing
     bitbuffer_invert(bitbuffer);
 
-    for (int row = 0; row < bitbuffer->num_rows; row++) {
-        if (bitbuffer->bits_per_row[row] >= 48) {
-            length_match++;
-            unsigned pos = bitbuffer_search(bitbuffer, row, 0, preamble, sizeof(preamble) * 8);
-            if (pos + 6 * 8 <= bitbuffer->bits_per_row[row]) {
-                preamble_match++;
-                bitbuffer_extract_bytes(bitbuffer, row, pos, b, 6 * 8);
-            }
-        }
-    }
+    // transmission repeats 3x, require at least 2 identical rows
+    int r = bitbuffer_find_repeated_row(bitbuffer, 2, 48);
+    if (r < 0)
+        return DECODE_ABORT_EARLY;
 
-    if (!length_match)
-        return DECODE_ABORT_LENGTH;
-    if (!preamble_match)
+    unsigned pos = bitbuffer_search(bitbuffer, r, 0, preamble, sizeof(preamble) * 8);
+    if (pos + 6 * 8 > bitbuffer->bits_per_row[r])
         return DECODE_FAIL_SANITY;
+    bitbuffer_extract_bytes(bitbuffer, r, pos, b, 6 * 8);
 
     int id          = b[1];                                           // changes on each power cycle
     int battery_low = (b[2] & 0x80);                                  // High bit is low battery indicator
@@ -73,6 +65,8 @@ static int sharp_spc775_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (chk_expected != chk_digest)
         return DECODE_FAIL_MIC;
+    if (humidity > 100)
+        return DECODE_FAIL_SANITY;
 
     /* clang-format off */
     data = data_make(
