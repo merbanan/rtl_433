@@ -116,7 +116,7 @@ Seems to be the same as Fine Offset WH5360 or Ecowitt WH5360B.
 
 Data layout:
 
-    YY 0I III FV RRRR XX AA 00 02 ?? 00 00
+    YY 0I IIII FV RRRR XX AA 00 02 ?? 00 00
 
 - Y is a fixed Type Code of 0x40
 - I is a 20 bit device ID (low nibble of the 2nd byte, plus the 3rd and 4th bytes);
