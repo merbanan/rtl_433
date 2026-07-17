@@ -64,6 +64,15 @@ static int opel_mokka_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             continue;
         }
 
+        // An all-zero frame trivially passes the redundant-id check above
+        // (0 == 0) and would otherwise be reported as a bogus id-0 key.
+        // The key id is fixed per physical fob and never actually 0; the
+        // documented all-zero "proximity" packet still carries a real id
+        // and just has a zero-filled code/event, so this doesn't reject it.
+        if (key_id == 0) {
+            continue;
+        }
+
         int event_type = ((b[12] & 0x07) << 2) | (b[13] & 0xc0) >> 6;
 
         uint8_t code[8];
