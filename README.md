@@ -458,6 +458,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [368]  Cavius Door/Window sensor (-f 868.7M)
     [369]* Cotech FT0203/18-3676 anemometer
     [370]* 2GIG-KEY2E-345 encrypted keyfob
+    [371]* Hanwell ML/RL4000-series Radiologger temperature/humidity sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
