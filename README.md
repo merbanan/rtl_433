@@ -457,6 +457,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [367]  TFA 30.3307.02 Wind sensor
     [368]  Cavius Door/Window sensor (-f 868.7M)
     [369]* Cotech FT0203/18-3676 anemometer
+    [370]* 2GIG-KEY2E-345 encrypted keyfob
 
 * Disabled by default, use -R n or a conf file to enable
 
