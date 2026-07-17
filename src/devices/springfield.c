@@ -42,7 +42,7 @@ static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             continue; // DECODE_ABORT_LENGTH
         uint8_t *b = bitbuffer->bb[row];
         tmpData = ((unsigned)b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
-        if (tmpData == 0xffffffff)
+        if (tmpData == 0xffffffff || tmpData == 0)
             continue; // DECODE_ABORT_EARLY
         if (tmpData == savData)
             continue;
@@ -65,6 +65,10 @@ static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // reduce false positives by checking specified sensor range, this isn't great...
         if (temp_c < -30 || temp_c > 70) {
             decoder_logf(decoder, 2, __func__, "temperature sanity check failed: %.1f C", temp_c);
+            return DECODE_FAIL_SANITY;
+        }
+        if (moisture > 100) {
+            decoder_logf(decoder, 2, __func__, "moisture sanity check failed: %d %%", moisture);
             return DECODE_FAIL_SANITY;
         }
 
