@@ -175,7 +175,8 @@ static int nexus_sauna_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY; // const not 1111
     }
     // Reduce false positives.
-    if ((b[0] == 0) || ((b[4] & 0x10) != 0x10)) {
+    if ((b[0] == 0) || ((b[4] & 0x10) != 0x10)
+            || (b[0] == 0xff && b[2] == 0xff && b[3] == 0xff)) {
         return DECODE_ABORT_EARLY;
     }
     if ((b[1] & 0x30) != 0x30) {
