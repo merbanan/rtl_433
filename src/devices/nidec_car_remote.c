@@ -73,11 +73,22 @@ static int nidec_car_remote_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int button    = bytes[5] & 0xf;
     uint16_t code = (uint16_t)bytes[6] << 8 | bytes[7];
 
+    // upper nibble of byte 5 is constant 0x5 across every real remote/button seen so far
+    if ((bytes[5] & 0xf0) != 0x50) {
+        return DECODE_FAIL_SANITY;
+    }
+
     if (id == 0 ||
-            button == 0 ||
             sequence == 0 ||
             id == 0xffffff ||
-            sequence == 0xffff) {
+            sequence == 0xffff ||
+            code == 0 ||
+            code == 0xffff) {
+        return DECODE_FAIL_SANITY;
+    }
+
+    // only these 5 button codes have ever been observed on real remotes
+    if (button != 0x3 && button != 0x4 && button != 0x5 && button != 0x6 && button != 0xf) {
         return DECODE_FAIL_SANITY;
     }
 
