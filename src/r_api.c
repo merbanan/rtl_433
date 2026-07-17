@@ -482,6 +482,9 @@ int run_ook_demods(list_t *r_devs, pulse_data_t *pulse_data)
             case OOK_PULSE_NRZS:
                 p_events += pulse_slicer_nrzs(pulse_data, r_dev);
                 break;
+            case OOK_PULSE_RZI:
+                p_events += pulse_slicer_rzi(pulse_data, r_dev);
+                break;
             // FSK decoders
             case FSK_PULSE_PCM:
             case FSK_PULSE_PWM:
@@ -526,6 +529,7 @@ int run_fsk_demods(list_t *r_devs, pulse_data_t *fsk_pulse_data)
             case OOK_PULSE_DMC:
             case OOK_PULSE_PWM_OSV1:
             case OOK_PULSE_NRZS:
+            case OOK_PULSE_RZI:
                 break;
             case FSK_PULSE_PCM:
                 p_events += pulse_slicer_pcm(fsk_pulse_data, r_dev);

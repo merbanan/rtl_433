@@ -32,6 +32,7 @@ enum modulation_types {
     OOK_PULSE_DMC                = 9,  ///< OOK Modulation, Differential Manchester, Level shift within the clock cycle.
     OOK_PULSE_PWM_OSV1           = 10, ///< OOK Modulation, Pulse Width Coding. Oregon Scientific v1.
     OOK_PULSE_NRZS               = 12, ///< OOK Modulation, NRZS Coding
+    OOK_PULSE_RZI                = 13, ///< OOK Modulation, Return-to-Zero inverted coding, Pulse = 1, No pulse = 0.
     FSK_DEMOD_MIN_VAL            = 16, ///< Dummy. FSK demodulation must start at this value.
     FSK_PULSE_PCM                = 16, ///< FSK Modulation, Non-Return-to-Zero coding, Pulse = 1, No pulse = 0.
     FSK_PULSE_PWM                = 17, ///< FSK Modulation, Pulse Width Coding. Short pulses = 1, Long = 0.
