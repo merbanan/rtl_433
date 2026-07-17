@@ -374,6 +374,7 @@
     DECL(elsner_solexa) \
     DECL(tpms_mercedes_benz) \
     DECL(watts_vision) \
+    DECL(tfa_30_3307) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;

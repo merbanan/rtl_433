@@ -454,6 +454,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [364]  Elsner Solexa 230V
     [365]  Mercedes Benz Sprinter 4500 TPMS sensor
     [366]  Watts Vision thermostat (-f 868.3M)
+    [367]  TFA 30.3307.02 Wind sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
