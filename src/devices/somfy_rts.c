@@ -55,6 +55,10 @@ There is a quirk with TEL-FIX wall-mounted remote control for RadioLoop Motor:
 It looks like the seed isn't random but actually the button code: 0x88 DOWN, 0x85 STOP, 0x86 UP.
 The command is fixed to 0xf, which we use as indication that an actual command is in the seed.
 
+The same quirk (command is 0xf, actual button in the seed's low nibble) was seen on a roller
+shade remote in #3038, with a different seed high nibble (0x9. instead of 0x8.) but the same
+low nibble meanings, plus one more: 0xc PROG, sent repeatedly while the pairing button is held.
+
 */
 
 #include "decoder.h"
@@ -93,7 +97,7 @@ static int somfy_rts_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "? (9)",
             "? (10)",
             "? (11)",
-            "? (12)",
+            "Prog (12)",
             "? (13)",
             "? (14)",
             "? (15)",
