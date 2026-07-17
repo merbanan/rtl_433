@@ -456,6 +456,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [366]  Watts Vision thermostat (-f 868.3M)
     [367]  TFA 30.3307.02 Wind sensor
     [368]  Cavius Door/Window sensor (-f 868.7M)
+    [369]* Cotech FT0203/18-3676 anemometer
 
 * Disabled by default, use -R n or a conf file to enable
 

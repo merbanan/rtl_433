@@ -376,6 +376,7 @@
     DECL(watts_vision) \
     DECL(tfa_30_3307) \
     DECL(cavius_door) \
+    DECL(cotech_ft0203) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;

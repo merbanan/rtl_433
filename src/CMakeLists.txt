@@ -105,6 +105,7 @@ add_library(r_433 STATIC
     devices/compustar_1wg3r.c
     devices/continental_car_remote.c
     devices/cotech_36_7959.c
+    devices/cotech_ft0203.c
     devices/ctt_life_power_hybrid.c
     devices/current_cost.c
     devices/danfoss.c
