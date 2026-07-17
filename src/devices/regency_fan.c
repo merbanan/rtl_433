@@ -19,8 +19,8 @@ The packet starts with 576 uS start pulse.
 - 0 is defined as a 375 uS gap followed by a 970 uS pulse.
 - 1 is defined as a 880 uS gap followed by a 450 uS pulse.
 
-Transmissions consist of the start bit followed by bursts of 20 bits.
-These packets ar repeated up to 11 times.
+Transmissions consist of the start bit followed by bursts of 20 bits,
+repeated up to 11 times; 4 identical repeats are required to decode.
 
 As written, the PPM code always interprets a narrow gap as a 1 and a
 long gap as a 0, however the actual data over the air is inverted,
@@ -87,77 +87,93 @@ static int regency_fan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             /* 15 */ "invalid",
     };
 
-    int return_code = 0;
-
     bitbuffer_invert(bitbuffer);
 
-    for (int row = 0; row < bitbuffer->num_rows; row++) {
-        int num_bits = bitbuffer->bits_per_row[row];
-
-        if (num_bits != 21) { // Max number of bits is 21
-            decoder_logf(decoder, 2, __func__, "Expected %d bits, got %d.", 21, num_bits);
-            continue;
-        }
-
-        uint8_t bytes[3]; // Max number of bytes is 3
-        bitbuffer_extract_bytes(bitbuffer, row, 1, bytes, 21); // Valid byte offset is 1, Max number of bits is 21
-        reflect_bytes(bytes, 3); // Max number of bytes is 3
-
-        // Calculate nibble sum and compare
-        int checksum = add_nibbles(bytes, 2) & 0x0f;
-        if (checksum != bytes[2]) { // Sum is in byte 2
-            decoder_logf(decoder, 2, __func__, "Checksum failure: expected %x, got %x", bytes[2], checksum);
-            continue;
-        }
-
-        // Now that message "envelope" has been validated, start parsing data.
-        int command = bytes[0] >> 4;    // Command and Channel are in byte 0
-        int channel = ~bytes[0] & 0x0f; // Command and Channel are in byte 0
-        int value   = bytes[1];         // Value is in byte 1
-
-        char value_string[64] = {0};
-
-        switch (command) {
-        case 1: // 1 is the command to STOP
-            snprintf(value_string, sizeof(value_string), "stop");
-            break;
-
-        case 2: // 2 is the command to change fan speed
-            snprintf(value_string, sizeof(value_string), "speed %d", value);
-            break;
-
-        case 4: // 4 is the command to change the light intensity
-            snprintf(value_string, sizeof(value_string), "%d %%", value);
-            break;
-
-        case 5: // 5 is the command to set the light delay
-            snprintf(value_string, sizeof(value_string), "%s", value == 0 ? "off" : "on");
-            break;
-
-        case 6: // 6 is the command to change fan direction
-            snprintf(value_string, sizeof(value_string), "%s", value == 0x07 ? "clockwise" : "counter-clockwise");
-            break;
-
-        default:
-            decoder_logf(decoder, 2, __func__, "Unknown command: %d", command);
-            continue;
-        }
-
-        /* clang-format off */
-        data_t *data = data_make(
-                "model",            "",     DATA_STRING,    "Regency-Remote",
-                "channel",          "",     DATA_INT,       channel,
-                "command",          "",     DATA_STRING,    command_names[command],
-                "value",            "",     DATA_STRING,    value_string,
-                "mic",              "",     DATA_STRING,    "CHECKSUM",
-                NULL);
-        /* clang-format on */
-
-        decoder_output_data(decoder, data);
-        return_code++;
+    // Require 4 identical repeats instead of decoding every row, to
+    // reject coincidental collisions with unrelated devices.
+    int row = bitbuffer_find_repeated_row(bitbuffer, 4, 21);
+    if (row < 0) {
+        return DECODE_ABORT_EARLY;
+    }
+    if (bitbuffer->bits_per_row[row] != 21) {
+        decoder_logf(decoder, 2, __func__, "Expected 21 bits, got %d.", bitbuffer->bits_per_row[row]);
+        return DECODE_ABORT_LENGTH;
     }
 
-    return return_code;
+    // Row is 1 start bit + 20 data bits; bitbuffer_extract_bytes' own
+    // end-of-length masking zero-pads the last 4 bits for reflect_bytes().
+    uint8_t bytes[3];
+    bitbuffer_extract_bytes(bitbuffer, row, 1, bytes, 20);
+    reflect_bytes(bytes, 3);
+
+    // Calculate nibble sum and compare
+    int checksum = add_nibbles(bytes, 2) & 0x0f;
+    if (checksum != bytes[2]) { // Sum is in byte 2
+        decoder_logf(decoder, 2, __func__, "Checksum failure: expected %x, got %x", bytes[2], checksum);
+        return DECODE_FAIL_MIC;
+    }
+
+    // Now that message "envelope" has been validated, start parsing data.
+    int command = bytes[0] >> 4;    // Command and Channel are in byte 0
+    int channel = ~bytes[0] & 0x0f; // Command and Channel are in byte 0
+    int value   = bytes[1];         // Value is in byte 1
+
+    char value_string[64] = {0};
+
+    switch (command) {
+    case 1: // 1 is the command to STOP
+        snprintf(value_string, sizeof(value_string), "stop");
+        break;
+
+    case 2: // fan speed, documented range 0x01-0x07
+        if (value < 0x01 || value > 0x07) {
+            decoder_logf(decoder, 2, __func__, "Implausible fan speed value: %d", value);
+            return DECODE_FAIL_SANITY;
+        }
+        snprintf(value_string, sizeof(value_string), "speed %d", value);
+        break;
+
+    case 4: // light intensity, documented range 0x00-0xc3 (99% full)
+        if (value > 0xc3) {
+            decoder_logf(decoder, 2, __func__, "Implausible light intensity value: %d", value);
+            return DECODE_FAIL_SANITY;
+        }
+        snprintf(value_string, sizeof(value_string), "%d %%", value);
+        break;
+
+    case 5: // light delay, only 0x00 (off) and 0x01 (on) are documented
+        if (value != 0x00 && value != 0x01) {
+            decoder_logf(decoder, 2, __func__, "Implausible light delay value: %d", value);
+            return DECODE_FAIL_SANITY;
+        }
+        snprintf(value_string, sizeof(value_string), "%s", value == 0 ? "off" : "on");
+        break;
+
+    case 6: // fan direction, only 0x07 and 0x83 are documented
+        if (value != 0x07 && value != 0x83) {
+            decoder_logf(decoder, 2, __func__, "Implausible fan direction value: %d", value);
+            return DECODE_FAIL_SANITY;
+        }
+        snprintf(value_string, sizeof(value_string), "%s", value == 0x07 ? "clockwise" : "counter-clockwise");
+        break;
+
+    default:
+        decoder_logf(decoder, 2, __func__, "Unknown command: %d", command);
+        return DECODE_FAIL_SANITY;
+    }
+
+    /* clang-format off */
+    data_t *data = data_make(
+            "model",            "",     DATA_STRING,    "Regency-Remote",
+            "channel",          "",     DATA_INT,       channel,
+            "command",          "",     DATA_STRING,    command_names[command],
+            "value",            "",     DATA_STRING,    value_string,
+            "mic",              "",     DATA_STRING,    "CHECKSUM",
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
 }
 
 static char const *const output_fields[] = {
