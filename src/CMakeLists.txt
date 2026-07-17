@@ -353,6 +353,7 @@ add_library(r_433 STATIC
     devices/wallarge_cltx001.c
     devices/watchman_plus.c
     devices/watts_thermostat.c
+    devices/watts_vision.c
     devices/watts_wfht_rf.c
     devices/waveman.c
     devices/wec2103.c
