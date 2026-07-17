@@ -35,7 +35,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
 
     uint8_t sum, chk;
     int channel;
-    uint8_t humidity;
+    int humidity;
     int temp_raw;
     float temp_c;
     int status;
@@ -75,7 +75,14 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
         channel = b[0] >> 4;
         channel = (channel % 3) ? channel : 3;
 
-        humidity = 10 * (b[0] & 0x0f) + (b[1] >> 4);
+        // BCD humidity: reject invalid digits instead of reporting e.g. 150%.
+        int hum_tens = b[0] & 0x0f;
+        int hum_ones = b[1] >> 4;
+        if (hum_tens > 9 || hum_ones > 9) {
+            decoder_logf(decoder, 2, __func__, "invalid BCD humidity nibble: %x %x", hum_tens, hum_ones);
+            continue; // DECODE_FAIL_SANITY
+        }
+        humidity = 10 * hum_tens + hum_ones;
 
         temp_raw = (int16_t)((b[1] & 0x0f) << 12) | (b[2] << 4); // uses sign-extend
         temp_c   = (temp_raw >> 4) * 0.1f;
@@ -83,7 +90,8 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
         // reduce false positives by checking specified sensor range, this isn't great...
         if (temp_c < -20 || temp_c > 60) {
             decoder_logf(decoder, 2, __func__, "temperature sanity check failed: %.1f C", temp_c);
-            return DECODE_FAIL_SANITY;
+            continue; // DECODE_FAIL_SANITY -- was a bug: used to `return`, aborting
+                      // the whole scan instead of trying the next row
         }
 
         // there may be more specific information here; not currently certain what information is encoded here
