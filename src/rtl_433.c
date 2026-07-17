@@ -170,20 +170,31 @@ static void usage(int exit_code)
 _Noreturn
 static void help_protocols(r_device *devices, unsigned num_devices, int exit_code)
 {
-    unsigned i;
-    char disabledc;
-
     if (devices) {
         FILE *fp = exit_code ? stderr : stdout;
         term_help_fprintf(fp,
                 "\t\t= Supported device protocols =\n");
-        for (i = 0; i < num_devices; i++) {
-            disabledc = devices[i].disabled ? '*' : ' ';
+        for (unsigned i = 0; i < num_devices; i++) {
+            char disabledc = devices[i].disabled ? '*' : ' ';
             if (devices[i].disabled <= 2) { // if not hidden
                 fprintf(fp, "    [%02u]%c %s\n", i + 1, disabledc, devices[i].name);
             }
         }
         fprintf(fp, "\n* Disabled by default, use -R n or a conf file to enable\n");
+    }
+    exit(exit_code);
+}
+
+_Noreturn static void help_protocols_json(r_device *devices, unsigned num_devices, int exit_code)
+{
+    if (devices) {
+        FILE *fp = exit_code ? stderr : stdout;
+        fprintf(fp, "[");
+        for (unsigned i = 0; i < num_devices; i++) {
+            if (devices[i].disabled <= 2) { // if not hidden
+                fprintf(fp, "{\"num\":%u,\"dis\":%u,\"desc\":\"%s\"}%s\n", i + 1, devices[i].disabled, devices[i].name, i + 1 < num_devices ? "," : "]");
+            }
+        }
     }
     exit(exit_code);
 }
@@ -791,6 +802,11 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
     case 'R':
         if (!arg) {
             help_protocols(cfg->devices, cfg->num_r_devices, 0);
+        }
+
+        // use arg of 'json' for machine-readable info
+        if (!strcasecmp(arg, "json")) {
+            help_protocols_json(cfg->devices, cfg->num_r_devices, 0);
         }
 
         // use arg of 'v', 'vv', 'vvv' as global device verbosity
