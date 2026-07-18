@@ -141,6 +141,7 @@ static void usage(int exit_code)
             "  [-Y autolevel] Set minlevel automatically based on average estimated noise.\n"
             "  [-Y squelch] Skip frames below estimated noise level to reduce cpu load.\n"
             "  [-Y ampest | magest] Choose amplitude or magnitude level estimator.\n"
+            "  [-Y filter=<value>] Manual FM low-pass filter cutoff to separate simultaneous transmissions: us (1-9999, e.g. 20), Hz (10000+), or ratio of sample rate (0.0-1.0).\n"
             "\t\t= Analyze/Debug options =\n"
             "  [-A] Pulse Analyzer. Enable pulse analysis and decode attempt.\n"
             "       Disable all decoders with -R 0 if you want analyzer output only.\n"

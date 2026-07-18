@@ -68,6 +68,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-Y autolevel] Set minlevel automatically based on average estimated noise.
   [-Y squelch] Skip frames below estimated noise level to reduce cpu load.
   [-Y ampest | magest] Choose amplitude or magnitude level estimator.
+  [-Y filter=<value>] Manual FM low-pass filter cutoff to separate simultaneous transmissions: us (1-9999, e.g. 20), Hz (10000+), or ratio of sample rate (0.0-1.0).
 		= Analyze/Debug options =
   [-A] Pulse Analyzer. Enable pulse analysis and decode attempt.
        Disable all decoders with -R 0 if you want analyzer output only.
