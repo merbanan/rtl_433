@@ -59,6 +59,14 @@ The same quirk (command is 0xf, actual button in the seed's low nibble) was seen
 shade remote in #3038, with a different seed high nibble (0x9. instead of 0x8.) but the same
 low nibble meanings, plus one more: 0xc PROG, sent repeatedly while the pairing button is held.
 
+A third device, the SCE-R1 "gunmetal" tubular motor remote (sold as a Somfy-RTS clone/rebrand
+under the "Tube" name, see #3149 and #2261), hits the same quirk again: a real capture posted
+in #2261 (id 2A8265, seed 0x95) decodes here as "Stop (5)", confirming control==0xf and the
+seed-low-nibble meanings above (0x95 Stop, 0x96 Up, 0x98 Down, 0x9c Prog) rather than needing
+any protocol change. A fifth seed value, 0x9a, was also claimed for this remote (an "Up+Down"
+button) in #3149's linked comment thread, but only as a value pulled from reverse-engineered
+clone firmware, never confirmed against a real over-the-air capture -- not added here.
+
 */
 
 #include "decoder.h"
