@@ -462,6 +462,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [371]* Hanwell ML/RL4000-series Radiologger temperature/humidity sensor
     [372]  Elero bidirectional blinds/awning remote (Silent Gliss and others)
     [373]  Elster/Honeywell R2S/REXU power meter, type-2 frames
+    [374]  LaCrosse WS6868 TX232TH-LCD temperature/humidity sensor
+    [375]  LaCrosse WS6868 TX231RW wind/rain sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
