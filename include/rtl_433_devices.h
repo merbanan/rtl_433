@@ -384,6 +384,7 @@
     DECL(lacrosse_ws6868_tx232th) \
     DECL(lacrosse_ws6868_tx231rw) \
     DECL(mcpower_kinetic) \
+    DECL(typhur_sync_gold) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;

@@ -465,6 +465,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [374]  LaCrosse WS6868 TX232TH-LCD temperature/humidity sensor
     [375]  LaCrosse WS6868 TX231RW wind/rain sensor
     [376]  McPower Kinetic battery-less wall switch
+    [377]  Typhur Sync Gold meat thermometer probe
 
 * Disabled by default, use -R n or a conf file to enable
 

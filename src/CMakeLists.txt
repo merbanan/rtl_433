@@ -351,6 +351,7 @@ add_library(r_433 STATIC
     devices/ts_ft002.c
     devices/ttx201.c
     devices/twogig_key2e.c
+    devices/typhur_sync_gold.c
     devices/universalfanctrl.c
     devices/vaillant_vrt340f.c
     devices/vauno_en8822c.c
