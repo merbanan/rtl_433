@@ -518,11 +518,6 @@ where:
 	FSK_PCM :         FSK Pulse Code Modulation
 	FSK_PWM :         FSK Pulse Width Modulation
 	FSK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit
-	FSK_PPM :         FSK Pulse Position Modulation
-	FSK_DMC :         FSK Differential Manchester Code
-	FSK_PIWM_RAW :    FSK Raw Pulse Interval and Width Modulation
-	FSK_PIWM_DC :     FSK Differential Pulse Interval and Width Modulation
-	FSK_MC_OSV1 :     FSK Manchester Code for OSv1 devices
 <short>, <long>, <sync> are nominal modulation timings in us,
 <reset>, <gap>, <tolerance> are maximum modulation timings in us:
 PCM/RZ  short: Nominal width of pulse [us]
