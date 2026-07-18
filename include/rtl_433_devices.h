@@ -383,6 +383,7 @@
     DECL(elster_power_meter2) \
     DECL(lacrosse_ws6868_tx232th) \
     DECL(lacrosse_ws6868_tx231rw) \
+    DECL(mcpower_kinetic) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;

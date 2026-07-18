@@ -227,6 +227,7 @@ add_library(r_433 STATIC
     devices/maverick_et73x.c
     devices/maverick_xr30.c
     devices/maverick_xr50.c
+    devices/mcpower_kinetic.c
     devices/mebus.c
     devices/megacode.c
     devices/mic6sc2_car_remote.c

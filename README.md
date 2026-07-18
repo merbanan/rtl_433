@@ -464,6 +464,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [373]  Elster/Honeywell R2S/REXU power meter, type-2 frames
     [374]  LaCrosse WS6868 TX232TH-LCD temperature/humidity sensor
     [375]  LaCrosse WS6868 TX231RW wind/rain sensor
+    [376]  McPower Kinetic battery-less wall switch
 
 * Disabled by default, use -R n or a conf file to enable
 
