@@ -365,7 +365,7 @@ static int elster_power_meter2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",    "",                      DATA_STRING, "Elster-PowerMeter",
+            "model",    "",                      DATA_STRING, "Elster-PowerMeter2",
             "id",       "Meter ID",              DATA_STRING, src_str,
             "dst",      "Collector ID (LAN ID)", DATA_STRING, dst_str,
             "mesh",     "Mesh Frame",            DATA_INT,    is_mesh,
