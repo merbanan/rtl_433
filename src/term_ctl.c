@@ -559,7 +559,7 @@ int term_help_fprintf(FILE *fp, _Printf_format_string_ char const *format, ...)
 {
     int len;
     va_list args;
-    char buf[4000];
+    char buf[8000];
 
     va_start(args, format);
 
