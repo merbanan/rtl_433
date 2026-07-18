@@ -380,6 +380,7 @@
     DECL(twogig_key2e) \
     DECL(hanwell_ml4000) \
     DECL(elero) \
+    DECL(elster_power_meter2) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;

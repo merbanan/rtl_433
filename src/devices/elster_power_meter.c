@@ -63,13 +63,48 @@ Findings from issue #1196 (\@ther3zz), live across ~15 meters:
 - Type-1 splits into "beacon" (LEN=40, FLAG=0x08, DST=0, detected below
   as frame_type) and "unicast" (LEN=28, FLAG=0x00, nonzero DST, not
   distinguished here).
-- A second message type ("type-2"), selected by a payload byte, is not
-  handled: 0x56 = AES-ECB encrypted, 0x57 = cleartext (e.g. a LEN=189
-  mesh neighbour table). LEN=189/171 frames were being silently rejected
-  by the old ELSTER_MAX_LEN=64 bound; raised to 200.
+- A second message type ("type-2") exists, see elster_power_meter2 below.
+  LEN=189/171 frames were being silently rejected by the old
+  ELSTER_MAX_LEN=64 bound; raised to 200.
 - Preamble measured at ~67 ms (~2400 chips), not ~21.8 ms as assumed;
   not applied to short_width/long_width, which already produce confirmed
   real decodes and may be for a different meter variant.
+
+## Type-2 frames (elster_power_meter2, issue #3618, \@ther3zz)
+
+Type-2 is a completely different physical framing from type-1 above: not
+Manchester coded, whitened with a repeating 0xaa (not 0x55), a 16 bit
+length field (not 8 bit), and a data rate 4x faster than type-1's ~28us
+chips -- confirmed against real captures at 7 us/bit. Both types otherwise
+share the same CRC-16/X-25 algorithm and a similar address layout:
+
+    LEN:16h ?:8h SRC:32h DST:32h ?:8h DATA:8h* CHK:16h
+
+- LEN: number of bytes from this field's own first byte through the last
+  DATA byte, i.e. total on-wire bytes = LEN + 2 (the trailing CHK is not
+  counted, unlike type-1's self-inclusive LEN)
+- SRC, DST: same meaning and top-bit mesh convention as type-1
+- DATA byte 4 (i.e. absolute offset 16) selects a message class in plain
+  meter reports (SRC top bit clear): 0x56 = AES-ECB encrypted body (a
+  per-meter key, not recoverable here -- reported as data_raw), 0x57 =
+  cleartext. Mesh/collector frames (SRC top bit set) don't use this byte
+  the same way and are not further decoded, same as type-1
+- Cleartext (0x57) neighbour-table frames (seen at LEN=189) carry, at a
+  fixed offset, a record count N followed by N 20-byte neighbour records;
+  only the first 4 bytes of each record (the neighbour's own address) are
+  confidently decoded here as nbr_ids, the remaining 16 bytes per record
+  are of unconfirmed meaning and folded into data_raw instead of guessed at
+- Other cleartext frames (e.g. a LEN=38 status/heartbeat report) are
+  reported via data_raw only -- little of their content varies between
+  real captures beyond the sending meter's own address, and what does vary
+  isn't confidently attributable
+- CHK: same CRC-16/X-25 as type-1, but covering LEN through the last DATA
+  byte using the *16 bit* LEN value (i.e. bytes[0:LEN], not LEN+2)
+
+No cmd 0x23/0xce usage (kWh reading) frame has ever been observed on this
+type-2 path across ~900 captures/~30 meters/4 days -- on this deployment
+all usage traffic appears to go out AES-encrypted, so there is no cleartext
+type-2 counterpart to type-1's speculative reading_kWh field.
 */
 
 #define ELSTER_MIN_LEN 9   // at least LEN FLAG SRC(4) DST(4)
@@ -228,5 +263,140 @@ r_device const elster_power_meter = {
         .reset_limit = 3000,
         .decode_fn   = &elster_power_meter_decode,
         .fields      = output_fields,
+        .disabled    = 1, // needs field-testing against real captures, protocol only partially reverse-engineered
+};
+
+#define ELSTER2_MIN_LEN 12  // at least LEN(2) ?(1) SRC(4) DST(4) ?(1)
+#define ELSTER2_MAX_LEN 200 // sanity bound; longest confirmed real frame is a
+                            // 189-byte neighbour table (issue #3618)
+#define ELSTER2_NBR_MAX 8   // sanity bound on the neighbour-table record count
+
+static int elster_power_meter2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    if (bitbuffer->num_rows != 1) {
+        return DECODE_ABORT_EARLY;
+    }
+
+    int row_bits = bitbuffer->bits_per_row[0];
+    if (row_bits < (ELSTER2_MIN_LEN + 2) * 8) {
+        return DECODE_ABORT_LENGTH;
+    }
+
+    uint8_t const *row = bitbuffer->bb[0];
+    uint8_t buf[ELSTER2_MAX_LEN + 2];
+    int found_pos = -1;
+    int len       = 0;
+
+    for (int pos = 0; pos + (ELSTER2_MIN_LEN + 2) * 8 <= row_bits; ++pos) {
+        int len_hi = bitrow_get_byte(row, pos) ^ 0xaa;
+        int len_lo = bitrow_get_byte(row, pos + 8) ^ 0xaa;
+        int cand_len = (len_hi << 8) | len_lo;
+        if (cand_len < ELSTER2_MIN_LEN || cand_len > ELSTER2_MAX_LEN) {
+            continue;
+        }
+        if (pos + (cand_len + 2) * 8 > row_bits) {
+            continue;
+        }
+
+        for (int i = 0; i < cand_len + 2; ++i) {
+            buf[i] = bitrow_get_byte(row, pos + i * 8) ^ 0xaa;
+        }
+
+        // CRC covers the 16 bit LEN value itself (bytes[0:len]), not len+2
+        uint16_t chk      = crc16lsb(buf, cand_len, 0x8408, 0xffff) ^ 0xffff;
+        uint16_t chk_recv = buf[cand_len] | (buf[cand_len + 1] << 8);
+        if (chk == chk_recv) {
+            found_pos = pos;
+            len       = cand_len;
+            break;
+        }
+    }
+
+    if (found_pos < 0) {
+        decoder_log(decoder, 2, __func__, "CRC fail");
+        return DECODE_FAIL_MIC;
+    }
+
+    // buf[0:2]=LEN, buf[2]=const, buf[3:7]=SRC, buf[7:11]=DST, buf[11]=const
+    uint32_t src = ((uint32_t)buf[3] << 24) | (buf[4] << 16) | (buf[5] << 8) | buf[6];
+    uint32_t dst = ((uint32_t)buf[7] << 24) | (buf[8] << 16) | (buf[9] << 8) | buf[10];
+
+    char src_str[11];
+    char dst_str[11];
+    snprintf(src_str, sizeof(src_str), "%u", src);
+    snprintf(dst_str, sizeof(dst_str), "%u", dst);
+
+    int is_mesh = (src & 0x80000000) != 0;
+    int msg     = -1;
+    if (!is_mesh && len > 16) {
+        msg = buf[16];
+    }
+
+    // Neighbour table: msg 0x57, a record count at a fixed offset followed
+    // by that many 20 byte records, only the leading 4-byte neighbour
+    // address of each is confidently decoded (see file doc comment).
+    char nbr_ids[ELSTER2_NBR_MAX * 9] = "";
+    if (msg == 0x57 && len > 30) {
+        int n = buf[28];
+        if (n > 0 && n <= ELSTER2_NBR_MAX && 30 + n * 20 <= len) {
+            char *p = nbr_ids;
+            for (int i = 0; i < n; ++i) {
+                uint8_t const *nbr = &buf[30 + i * 20];
+                p += sprintf(p, "%s%02x%02x%02x%02x", i ? "," : "",
+                        nbr[0], nbr[1], nbr[2], nbr[3]);
+            }
+        }
+    }
+
+    // Raw DATA region (after LEN/?/SRC/DST/?, before the CRC).
+    char data_raw[2 * (ELSTER2_MAX_LEN - 12) + 1];
+    data_raw[0]  = '\0';
+    int data_len = len - 12;
+    for (int i = 0; i < data_len; ++i) {
+        snprintf(&data_raw[i * 2], 3, "%02x", buf[12 + i]);
+    }
+
+    char msg_str[3] = "";
+    if (msg >= 0) {
+        snprintf(msg_str, sizeof(msg_str), "%02x", msg);
+    }
+
+    /* clang-format off */
+    data_t *data = data_make(
+            "model",    "",                      DATA_STRING, "Elster-PowerMeter",
+            "id",       "Meter ID",              DATA_STRING, src_str,
+            "dst",      "Collector ID (LAN ID)", DATA_STRING, dst_str,
+            "mesh",     "Mesh Frame",            DATA_INT,    is_mesh,
+            "msg",      "Message Class",         DATA_COND, msg >= 0, DATA_STRING, msg_str,
+            "nbr_ids",  "Neighbour IDs",         DATA_COND, nbr_ids[0] != '\0', DATA_STRING, nbr_ids,
+            "data_raw", "Undecoded data",        DATA_STRING, data_raw,
+            "mic",      "Integrity",             DATA_STRING, "CRC",
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
+static char const *const output_fields2[] = {
+        "model",
+        "id",
+        "dst",
+        "mesh",
+        "msg",
+        "nbr_ids",
+        "data_raw",
+        "mic",
+        NULL,
+};
+
+r_device const elster_power_meter2 = {
+        .name        = "Elster/Honeywell R2S/REXU power meter, type-2 frames",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 7,
+        .long_width  = 7,
+        .reset_limit = 4000,
+        .decode_fn   = &elster_power_meter2_decode,
+        .fields      = output_fields2,
         .disabled    = 1, // needs field-testing against real captures, protocol only partially reverse-engineered
 };
