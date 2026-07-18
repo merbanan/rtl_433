@@ -859,16 +859,59 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
     }
 }
 
+// CI=0x72: long data header, CI=0x7a: short data header, CI=0x78: no data header.
+// A short header contains: Access number (1 byte), Status (1 byte), Configuration (2 bytes)
+// A long data header contains the secondary address of the meter in addition to all the fields of the short header.
+// Long header for CI-fields 0x5B, 0x60, 0x64, 0x6C, 0x6D, 0x72, 0x7C, 0x7E, 0x80 and 0x8B.
+// Short header for CI-fields 0x5A, 0x61, 0x65, 0x7A, 0x7D, 0x7F and 0x8A.
+//
+// `b` must point at the CI byte. `pl_base` is added to the resulting
+// pl_offset so callers can express it relative to their own buffer origin
+// (a wireless M-Bus block1, or any other transport wrapping a plain CI
+// frame, e.g. a wired M-Bus telegram embedded in RADIAN's payload).
+static void m_bus_parse_ci(const uint8_t *b, unsigned pl_base, m_bus_block2_t *b2)
+{
+    b2->CI = b[0];
+    /* Short transport layer */
+    if (b2->CI == 0x7A) {
+        b2->AC = b[1];
+        b2->ST = b[2];
+        b2->CW = b[4]<<8 | b[3];
+        b2->pl_offset = pl_base + 5;
+    }
+    /* Long transport layer: short header fields plus an 8-byte
+       secondary address (ID, Manufacturer, Version, Medium) first. */
+    else if (b2->CI == 0x72) {
+        b2->AC = b[9];
+        b2->ST = b[10];
+        b2->CW = b[12]<<8 | b[11];
+        b2->pl_offset = pl_base + 13;
+    }
+
+    // QDS walk_by
+    // 000: CI:0x78   (no data header, not used by OMS)
+    // 001: DIF:0x0D  (variable length Instantaneous value)
+    // 002: VIF:0xFF  (Manufacturer specific)
+    // 003: VIFE:0x5F (Manufacturer specific VIFE)
+    // 004: LVAR:0x35 (53 bytes Length of walk_by field
+    // 005: 0x00 ST:0 Status 0= No Error
+    // 006: 0x82 unknown (maybe ST MSB),  0x8210 -> "Battery Voltage Low"
+    // 007: AC AccessNumber, inc by 1 each message
+    // 008: 0x0000 CW:0 no encryption
+    if (b2->CI == 0x78 && b[1] == 0x0d && b[2] == 0xff && b[3] == 0x5f && b[4] == 0x35) {
+        b2->AC          = b[7];
+        b2->ST          = b[5];
+        b2->CW          = (b[9] << 8) | (b[8]);
+        b2->pl_offset   = pl_base + 1;
+        b2->qds_walk_by = 1;
+    }
+//    fprintf(stderr, "Instantaneous Value: %02x%02x : %f\n",b[9],b[10],((b[10]<<8)|b[9])*0.01);
+}
+
 static int parse_block2(const m_bus_data_t *in, m_bus_block1_t *block1)
 {
     m_bus_block2_t *b2 = &block1->block2;
     const uint8_t *b = in->data+BLOCK1A_SIZE;
-
-    // CI=0x72: long data header, CI=0x7a: short data header, CI=0x78: no data header.
-    // A short header contains: Access number (1 byte), Status (1 byte), Configuration (2 bytes)
-    // A long data header contains the secondary address of the meter in addition to all the fields of the short header.
-    // Long header for CI-fields 0x5B, 0x60, 0x64, 0x6C, 0x6D, 0x72, 0x7C, 0x7E, 0x80 and 0x8B.
-    // Short header for CI-fields 0x5A, 0x61, 0x65, 0x7A, 0x7D, 0x7F and 0x8A.
 
     if (block1->knx_mode) {
         b2->knx_ctrl = b[0];
@@ -879,41 +922,7 @@ static int parse_block2(const m_bus_data_t *in, m_bus_block1_t *block1)
         b2->apci = b[7];
         /* data */
     } else {
-        b2->CI = b[0];
-        /* Short transport layer */
-        if (b2->CI == 0x7A) {
-            b2->AC = b[1];
-            b2->ST = b[2];
-            b2->CW = b[4]<<8 | b[3];
-            b2->pl_offset = BLOCK1A_SIZE-2 + 5;
-        }
-        /* Long transport layer: short header fields plus an 8-byte
-           secondary address (ID, Manufacturer, Version, Medium) first. */
-        else if (b2->CI == 0x72) {
-            b2->AC = b[9];
-            b2->ST = b[10];
-            b2->CW = b[12]<<8 | b[11];
-            b2->pl_offset = BLOCK1A_SIZE-2 + 13;
-        }
-
-        // QDS walk_by
-        // 000: CI:0x78   (no data header, not used by OMS)
-        // 001: DIF:0x0D  (variable length Instantaneous value)
-        // 002: VIF:0xFF  (Manufacturer specific)
-        // 003: VIFE:0x5F (Manufacturer specific VIFE)
-        // 004: LVAR:0x35 (53 bytes Length of walk_by field
-        // 005: 0x00 ST:0 Status 0= No Error
-        // 006: 0x82 unknown (maybe ST MSB),  0x8210 -> "Battery Voltage Low"
-        // 007: AC AccessNumber, inc by 1 each message
-        // 008: 0x0000 CW:0 no encryption
-        if (b2->CI == 0x78 && b[1] == 0x0d && b[2] == 0xff && b[3] == 0x5f && b[4] == 0x35) {
-            b2->AC          = b[7];
-            b2->ST          = b[5];
-            b2->CW          = (b[9] << 8) | (b[8]);
-            b2->pl_offset   = BLOCK1A_SIZE - 2 + 1;
-            b2->qds_walk_by = 1;
-        }
-    //    fprintf(stderr, "Instantaneous Value: %02x%02x : %f\n",b[9],b[10],((b[10]<<8)|b[9])*0.01);
+        m_bus_parse_ci(b, BLOCK1A_SIZE-2, b2);
     }
     return 0;
 }
