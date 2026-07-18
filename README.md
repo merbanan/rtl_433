@@ -466,6 +466,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [375]  LaCrosse WS6868 TX231RW wind/rain sensor
     [376]  McPower Kinetic battery-less wall switch
     [377]  Typhur Sync Gold meat thermometer probe
+    [378]  Sefis M3 / Careud / Sykik SRTP300 TPMS
 
 * Disabled by default, use -R n or a conf file to enable
 
