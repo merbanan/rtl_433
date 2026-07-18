@@ -20,7 +20,7 @@ The data is bit-reflected.
 Data layout after decoding:
 
     0  1  2  3  4  5  6  7  8  9  10 11 12 13
-    FF FF FF MM ?? CC DD TT II SS ?? ?? ?? BB
+    FF FF FF MM ?? CC DD TT II SS ?? CH ?? BB
 
 - FF = Preamble: 3 bytes of 0xff
 - MM = Message type (unused)
@@ -29,6 +29,7 @@ Data layout after decoding:
 - TT = Temperature decimal (upper nibble)
 - II = Temperature integer (BCD)
 - SS = Sign bit (bit 4, 1 = negative)
+- CH = Checksum (see below)
 - BB = Fixed value 0x65
 
 Observations currently not affecting implemetation:
@@ -38,9 +39,33 @@ Observations currently not affecting implemetation:
 - The devices transmit a "battery low" signal encoded in the byte after the temperature
 - Negative temperatures have another single bit set
 
+Checksum (issue #3136, reported against the shipped decoder's lack of
+one): an Oregon Scientific v3 style nibble checksum, computed on the
+Manchester-decoded bytes *before* reflect_bytes(). Reading nibbles
+7..23 of that pre-reflected buffer (nibble 0 = byte 0's high nibble),
+each individually 4-bit-reflected: the sum of the first 15 (mod 256)
+must equal the last two combined as a byte (nibble 15 as the low
+nibble, nibble 16 as the high nibble) -- byte 11 in the layout above.
+Verified against 39 independently-decoded real frames from two
+attachments in the issue thread (26 distinct readings, see
+rtl_433_tests/tests/oria_wa150km/): matches on all 39, and every
+single-bit corruption within the checked nibble range (but not outside
+it) breaks the match.
 */
 
 #define ORIA_WA150KM_BITLEN  227
+
+// 4 bit nibble at nibble-index k (0 = byte 0's high nibble) of a byte array.
+static uint8_t oria_nibble(uint8_t const *m, int k)
+{
+    uint8_t byte = m[k / 2];
+    return (k % 2 == 0) ? (byte >> 4) & 0x0f : byte & 0x0f;
+}
+
+static uint8_t oria_reflect4(uint8_t n)
+{
+    return ((n & 0x1) << 3) | ((n & 0x2) << 1) | ((n & 0x4) >> 1) | ((n & 0x8) >> 3);
+}
 
 static int oria_wa150km_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -76,6 +101,20 @@ static int oria_wa150km_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_t manchester_buffer = {0};
     bitbuffer_manchester_decode(bitbuffer, r, 0, &manchester_buffer, ORIA_WA150KM_BITLEN);
 
+    // Checksum: Oregon Scientific v3 style nibble checksum, computed
+    // before reflect_bytes() (see file doc comment).
+    uint8_t *m = manchester_buffer.bb[0];
+    int sum = 0;
+    for (int i = 0; i < 15; i++) {
+        sum += oria_reflect4(oria_nibble(m, 7 + i));
+    }
+    uint8_t chk_calc = sum & 0xff;
+    uint8_t chk_recv = oria_reflect4(oria_nibble(m, 22)) | (oria_reflect4(oria_nibble(m, 23)) << 4);
+    if (chk_calc != chk_recv) {
+        decoder_logf(decoder, 1, __func__, "Checksum invalid %02x != %02x", chk_calc, chk_recv);
+        return DECODE_FAIL_MIC;
+    }
+
     // Reflect bits in each byte
     reflect_bytes(manchester_buffer.bb[0], (manchester_buffer.bits_per_row[0] + 7) / 8);
 
@@ -101,6 +140,7 @@ static int oria_wa150km_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",           "", DATA_INT,    device_id,
             "channel",      "", DATA_INT,    channel,
             "temperature",  "", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
+            "mic",          "", DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
     decoder_output_data(decoder, data);
@@ -113,6 +153,7 @@ static char const *const output_fields[] = {
         "id",
         "channel",
         "temperature",
+        "mic",
         NULL,
 };
 
