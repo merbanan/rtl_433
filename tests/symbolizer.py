@@ -338,9 +338,11 @@ def process_source(path, name):
                     err(f"::error file={name},line={i + 1}::No func")
                 for model in models:
                     if not re.match(r'^[A-Za-z][0-9A-Za-z]+(-[0-9A-Za-z]+)?$', model):
-                        log(f"::error file={name},line={i + 1}::Bad model name \"{model}\"")
+                        log(f"::error file={name},line={i + 1}::Bad model \"{model}\"")
                     if model in links and links[model]["func"] != fName:
-                        log(f"::notice file={name},line={i + 1}::Reused model")
+                        log(f"::notice file={name},line={i + 1}::Reused model \"{model}\"")
+                        # print(links[model], file=sys.stderr)
+                        # print({"src": name, "line": i + 1, "type": "model", "func": fName}, file=sys.stderr)
                     elif model in links:
                         log(f"::notice file={name},line={i + 1}::Duplicate model")
                     links[model] = {"src": name, "line": i + 1, "type": "model", "func": fName}
