@@ -16,7 +16,7 @@
 
 struct r_cfg;
 
-void flush_sdr_flow(struct r_cfg *cfg);
+int flush_sdr_flow(struct r_cfg *cfg);
 
 void reset_sdr_flow(struct r_cfg *cfg);
 

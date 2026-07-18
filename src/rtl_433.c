@@ -1105,15 +1105,23 @@ static void process_sdr_frame(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
     // Setup variable demod parameters
     cfg->demod->raw_handler           = &cfg->raw_handler;
     cfg->demod->fsk_pulse_detect_mode = fpdm; // cfg->fsk_pulse_detect_mode;
-    cfg->demod->center_frequency      = cfg->center_frequency;
-    cfg->demod->samp_rate             = cfg->samp_rate;
     cfg->demod->report_noise          = cfg->report_noise;
     cfg->demod->verbosity             = cfg->verbosity;
     cfg->demod->raw_mode              = cfg->raw_mode;
     cfg->demod->grab_mode             = cfg->grab_mode;
 
+    int events = 0;
+
+    if (cfg->demod->center_frequency != cfg->center_frequency || cfg->demod->samp_rate != cfg->samp_rate) {
+        // Flush if stream parameters changed
+        events += flush_sdr_flow(cfg);
+    }
+
+    cfg->demod->center_frequency = cfg->center_frequency;
+    cfg->demod->samp_rate        = cfg->samp_rate;
+
     // Send frame data to processing
-    int events = push_sdr_flow(cfg, iq_buf, len);
+    events += push_sdr_flow(cfg, iq_buf, len);
 
     // Exit on errors
     if (events < 0) {
@@ -1826,26 +1834,15 @@ int main(int argc, char **argv) {
                     }
                 }
                 if (n_read == 0) {
-                    break;  // push_sdr_flow() will Segmentation Fault with len=0
+                    break;  // push_sdr_flow() must not be called with len=0
                 }
                 demod->sample_file_pos = ((float)n_blocks * DEFAULT_BUF_LENGTH + n_read) / cfg->samp_rate / demod->sample_size;
                 n_blocks++; // this assumes n_read == DEFAULT_BUF_LENGTH
                 process_sdr_frame(cfg, test_mode_buf, n_read);
             } while (n_read != 0 && !cfg->exit_async);
 
-            flush_sdr_flow(cfg); // this is just a placeholder for now
-            // Call a last time with cleared samples to ensure EOP detection
-            if (demod->sample_size == 2) { // CU8
-                memset(test_mode_buf, 128, DEFAULT_BUF_LENGTH); // 128 is 0 in unsigned data
-                // or is 127.5 a better 0 in cu8 data?
-                //for (unsigned long n = 0; n < DEFAULT_BUF_LENGTH/2; n++)
-                //    ((uint16_t *)test_mode_buf)[n] = 0x807f;
-            }
-            else { // CF32, CS16
-                    memset(test_mode_buf, 0, DEFAULT_BUF_LENGTH);
-            }
-            demod->sample_file_pos = ((float)n_blocks + 1) * DEFAULT_BUF_LENGTH / cfg->samp_rate / demod->sample_size;
-            process_sdr_frame(cfg, test_mode_buf, DEFAULT_BUF_LENGTH);
+            // Flush to ensure EOP detection
+            flush_sdr_flow(cfg);
 
             //Always classify a signal at the end of the file
             if (demod->am_analyze) {
