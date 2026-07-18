@@ -489,6 +489,13 @@ int run_ook_demods(list_t *r_devs, pulse_data_t *pulse_data)
             case FSK_PULSE_PCM:
             case FSK_PULSE_PWM:
             case FSK_PULSE_MANCHESTER_ZEROBIT:
+            case FSK_PULSE_PPM:
+            case FSK_PULSE_PIWM_RAW:
+            case FSK_PULSE_PIWM_DC:
+            case FSK_PULSE_DMC:
+            case FSK_PULSE_PWM_OSV1:
+            case FSK_PULSE_NRZS:
+            case FSK_PULSE_RZI:
                 break;
             default:
                 fprintf(stderr, "Unknown modulation %u in protocol!\n", r_dev->modulation);
@@ -539,6 +546,27 @@ int run_fsk_demods(list_t *r_devs, pulse_data_t *fsk_pulse_data)
                 break;
             case FSK_PULSE_MANCHESTER_ZEROBIT:
                 p_events += pulse_slicer_manchester_zerobit(fsk_pulse_data, r_dev);
+                break;
+            case FSK_PULSE_PPM:
+                p_events += pulse_slicer_ppm(fsk_pulse_data, r_dev);
+                break;
+            case FSK_PULSE_PIWM_RAW:
+                p_events += pulse_slicer_piwm_raw(fsk_pulse_data, r_dev);
+                break;
+            case FSK_PULSE_PIWM_DC:
+                p_events += pulse_slicer_piwm_dc(fsk_pulse_data, r_dev);
+                break;
+            case FSK_PULSE_DMC:
+                p_events += pulse_slicer_dmc(fsk_pulse_data, r_dev);
+                break;
+            case FSK_PULSE_PWM_OSV1:
+                p_events += pulse_slicer_osv1(fsk_pulse_data, r_dev);
+                break;
+            case FSK_PULSE_NRZS:
+                p_events += pulse_slicer_nrzs(fsk_pulse_data, r_dev);
+                break;
+            case FSK_PULSE_RZI:
+                p_events += pulse_slicer_rzi(fsk_pulse_data, r_dev);
                 break;
             default:
                 fprintf(stderr, "Unknown modulation %u in protocol!\n", r_dev->modulation);

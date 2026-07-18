@@ -37,6 +37,13 @@ enum modulation_types {
     FSK_PULSE_PCM                = 16, ///< FSK Modulation, Non-Return-to-Zero coding, Pulse = 1, No pulse = 0.
     FSK_PULSE_PWM                = 17, ///< FSK Modulation, Pulse Width Coding. Short pulses = 1, Long = 0.
     FSK_PULSE_MANCHESTER_ZEROBIT = 18, ///< FSK Modulation, Manchester coding.
+    FSK_PULSE_PPM                = 19, ///< FSK Modulation, Pulse Position Coding. Short gap = 0, Long = 1.
+    FSK_PULSE_PIWM_RAW           = 20, ///< FSK Modulation, Level shift for each bit. Short interval = 1, Long = 0.
+    FSK_PULSE_PIWM_DC            = 21, ///< FSK Modulation, Level shift for each bit. Short interval = 1, Long = 0.
+    FSK_PULSE_DMC                = 22, ///< FSK Modulation, Differential Manchester, Level shift within the clock cycle.
+    FSK_PULSE_PWM_OSV1           = 23, ///< FSK Modulation, Pulse Width Coding. Oregon Scientific v1.
+    FSK_PULSE_NRZS               = 24, ///< FSK Modulation, NRZS Coding
+    FSK_PULSE_RZI                = 25, ///< FSK Modulation, Return-to-Zero inverted coding, Pulse = 1, No pulse = 0.
 };
 
 /** Decoders should return n>0 for n packets successfully decoded,

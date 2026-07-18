@@ -417,6 +417,11 @@ static void help(void)
             "\tFSK_PCM :         FSK Pulse Code Modulation\n"
             "\tFSK_PWM :         FSK Pulse Width Modulation\n"
             "\tFSK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit\n"
+            "\tFSK_PPM :         FSK Pulse Position Modulation\n"
+            "\tFSK_DMC :         FSK Differential Manchester Code\n"
+            "\tFSK_PIWM_RAW :    FSK Raw Pulse Interval and Width Modulation\n"
+            "\tFSK_PIWM_DC :     FSK Differential Pulse Interval and Width Modulation\n"
+            "\tFSK_MC_OSV1 :     FSK Manchester Code for OSv1 devices\n"
             "<short>, <long>, <sync> are nominal modulation timings in us,\n"
             "<reset>, <gap>, <tolerance> are maximum modulation timings in us:\n"
             "PCM/RZ  short: Nominal width of pulse [us]\n"
@@ -524,6 +529,16 @@ static unsigned parse_modulation(char const *str)
         return FSK_PULSE_PWM;
     else if (!strcasecmp(str, "FSK_MC_ZEROBIT"))
         return FSK_PULSE_MANCHESTER_ZEROBIT;
+    else if (!strcasecmp(str, "FSK_PPM"))
+        return FSK_PULSE_PPM;
+    else if (!strcasecmp(str, "FSK_DMC"))
+        return FSK_PULSE_DMC;
+    else if (!strcasecmp(str, "FSK_PIWM_RAW"))
+        return FSK_PULSE_PIWM_RAW;
+    else if (!strcasecmp(str, "FSK_PIWM_DC"))
+        return FSK_PULSE_PIWM_DC;
+    else if (!strcasecmp(str, "FSK_MC_OSV1"))
+        return FSK_PULSE_PWM_OSV1;
     else {
         fprintf(stderr, "Bad flex spec, unknown modulation!\n");
         usage();
@@ -839,7 +854,10 @@ static r_device *flex_create_device(char const *spec)
 
     if (dev->modulation == OOK_PULSE_DMC
             || dev->modulation == OOK_PULSE_PIWM_RAW
-            || dev->modulation == OOK_PULSE_PIWM_DC) {
+            || dev->modulation == OOK_PULSE_PIWM_DC
+            || dev->modulation == FSK_PULSE_DMC
+            || dev->modulation == FSK_PULSE_PIWM_RAW
+            || dev->modulation == FSK_PULSE_PIWM_DC) {
         if (!dev->tolerance) {
             fprintf(stderr, "Bad flex spec, missing tolerance limit!\n");
             usage();
