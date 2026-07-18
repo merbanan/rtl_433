@@ -499,6 +499,9 @@ static void R_API_CALLCONV print_mqtt_data(data_output_t *output, data_t *data, 
         // collect well-known top level keys
         data_t *data_model = NULL;
         for (data_t *d = data; d; d = d->next) {
+            if (!d->key) {
+                continue;
+            }
             if (!strcmp(d->key, "model"))
                 data_model = d;
         }
@@ -539,6 +542,9 @@ static void R_API_CALLCONV print_mqtt_data(data_output_t *output, data_t *data, 
     }
 
     for (; data; data = data->next) {
+        if (!data->key) {
+            continue;
+        }
         if (!strcmp(data->key, "type")
                 || !strcmp(data->key, "model")
                 || !strcmp(data->key, "subtype")) {

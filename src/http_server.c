@@ -1327,6 +1327,9 @@ static void R_API_CALLCONV print_http_data(data_output_t *output, data_t *data, 
     // collect well-known top level keys
     data_t *data_model = NULL;
     for (data_t *d = data; d; d = d->next) {
+        if (!d->key) {
+            continue;
+        }
         if (!strcmp(d->key, "model")) {
             data_model = d;
         }

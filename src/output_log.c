@@ -91,6 +91,9 @@ static void R_API_CALLCONV data_output_log_print(data_output_t *output, data_t *
     data_t *data_lvl = NULL;
     data_t *data_msg = NULL;
     for (data_t *d = data; d; d = d->next) {
+        if (!d->key) {
+            continue;
+        }
         if (!strcmp(d->key, "src"))
             data_src = d;
         else if (!strcmp(d->key, "lvl"))
@@ -117,6 +120,9 @@ static void R_API_CALLCONV data_output_log_print(data_output_t *output, data_t *
 
     for (; data; data = data->next) {
         // skip logging keys
+        if (!data->key) {
+            continue;
+        }
         if (!strcmp(data->key, "time")
                 || !strcmp(data->key, "src")
                 || !strcmp(data->key, "lvl")

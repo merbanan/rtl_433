@@ -55,6 +55,13 @@ typedef struct {
 } data_meta_type_t;
 
 static data_meta_type_t dmt[DATA_COUNT] = {
+    //  DATA_EMPTY
+    { .array_element_size       = 0,
+      .array_is_boxed           = false,
+      .array_elementwise_import = NULL,
+      .array_element_release    = NULL,
+      .value_release            = NULL },
+
     //  DATA_DATA
     { .array_element_size       = sizeof(data_t*),
       .array_is_boxed           = true,
@@ -312,6 +319,16 @@ R_API data_t *data_prepend(data_t *tail, data_t *head)
     return head;
 }
 
+R_API data_t *data_new(void)
+{
+    data_t *empty = calloc(1, sizeof(*empty));
+    if (!empty) {
+        FATAL_CALLOC("data_new()"); // we must always return a list head
+    }
+    empty->type = DATA_EMPTY;
+    return empty;
+}
+
 // Wrappers for now, should be refactored.
 R_API data_t *data_int(data_t *first, char const *key, char const *pretty_key, char const *format, int val)
 {
@@ -431,6 +448,9 @@ R_API void data_output_free(data_output_t *output)
 R_API void print_value(data_output_t *output, data_type_t type, data_value_t value, char const *format)
 {
     switch (type) {
+    case DATA_EMPTY:
+        // skip empty elements
+        break;
     case DATA_FORMAT:
     case DATA_COUNT:
     case DATA_COND:
@@ -497,6 +517,9 @@ static void R_API_CALLCONV format_jsons_object(data_output_t *output, data_t *da
     bool separator = false;
     abuf_cat(&jsons->msg, "{");
     for (; data; data = data->next) {
+        if (!data->key) {
+            continue;
+        }
         if (separator)
             abuf_cat(&jsons->msg, ",");
         output->print_string(output, data->key, NULL);
