@@ -426,7 +426,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [335]  Martec MPLCD Ceiling Fan Remote
     [336]  NetAtmo temp/hum and wind sensors
     [337]  Omni Multisensor
-    [338]* Elster/Honeywell R2S/REXU power meter
+    [338]  Elster/Honeywell R2S/REXU power meter
     [339]  Florabest FB-TH-1 BBQ Thermometer
     [340]  Holman Industries iWeather WS5029 weather station (older PWM, OOK), BIOWIN 270208
     [341]  Esun EN2053 two-channel BBQ thermometer
@@ -461,7 +461,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [370]* 2GIG-KEY2E-345 encrypted keyfob
     [371]* Hanwell ML/RL4000-series Radiologger temperature/humidity sensor
     [372]  Elero bidirectional blinds/awning remote (Silent Gliss and others)
-    [373]* Elster/Honeywell R2S/REXU power meter, type-2 frames
+    [373]  Elster/Honeywell R2S/REXU power meter, type-2 frames
 
 * Disabled by default, use -R n or a conf file to enable
 

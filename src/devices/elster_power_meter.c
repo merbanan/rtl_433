@@ -263,7 +263,6 @@ r_device const elster_power_meter = {
         .reset_limit = 3000,
         .decode_fn   = &elster_power_meter_decode,
         .fields      = output_fields,
-        .disabled    = 1, // needs field-testing against real captures, protocol only partially reverse-engineered
 };
 
 #define ELSTER2_MIN_LEN 12  // at least LEN(2) ?(1) SRC(4) DST(4) ?(1)
@@ -271,6 +270,9 @@ r_device const elster_power_meter = {
                             // 189-byte neighbour table (issue #3618)
 #define ELSTER2_NBR_MAX 8   // sanity bound on the neighbour-table record count
 
+/** @fn static int elster_power_meter2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+Elster/Honeywell R2S/REXU power meter, type-2 frames, see issue #3618.
+*/
 static int elster_power_meter2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     if (bitbuffer->num_rows != 1) {
@@ -317,7 +319,7 @@ static int elster_power_meter2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    // buf[0:2]=LEN, buf[2]=const, buf[3:7]=SRC, buf[7:11]=DST, buf[11]=const
+    // buf[0:2]=LEN, buf[2]=const, buf[3:7]=SRC, buf[7:11]=DST, buf[11]=const (0x09)
     uint32_t src = ((uint32_t)buf[3] << 24) | (buf[4] << 16) | (buf[5] << 8) | buf[6];
     uint32_t dst = ((uint32_t)buf[7] << 24) | (buf[8] << 16) | (buf[9] << 8) | buf[10];
 
@@ -398,5 +400,4 @@ r_device const elster_power_meter2 = {
         .reset_limit = 4000,
         .decode_fn   = &elster_power_meter2_decode,
         .fields      = output_fields2,
-        .disabled    = 1, // needs field-testing against real captures, protocol only partially reverse-engineered
 };
