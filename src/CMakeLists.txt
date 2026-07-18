@@ -123,6 +123,7 @@ add_library(r_433 STATIC
     devices/efergy_e2_classic.c
     devices/efergy_optical.c
     devices/efth800.c
+    devices/elero.c
     devices/elro_db286a.c
     devices/elsner_solexa.c
     devices/elster_power_meter.c

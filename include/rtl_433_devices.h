@@ -379,6 +379,7 @@
     DECL(cotech_ft0203) \
     DECL(twogig_key2e) \
     DECL(hanwell_ml4000) \
+    DECL(elero) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;

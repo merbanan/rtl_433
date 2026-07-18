@@ -460,6 +460,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [369]* Cotech FT0203/18-3676 anemometer
     [370]* 2GIG-KEY2E-345 encrypted keyfob
     [371]* Hanwell ML/RL4000-series Radiologger temperature/humidity sensor
+    [372]  Elero bidirectional blinds/awning remote (Silent Gliss and others)
 
 * Disabled by default, use -R n or a conf file to enable
 
