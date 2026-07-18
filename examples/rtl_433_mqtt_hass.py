@@ -296,6 +296,18 @@ mappings = {
         }
     },
 
+    "leaking": {
+        "device_type": "binary_sensor",
+        "object_suffix": "leak",
+        "config": {
+            "name": "Leak",
+            "device_class": "moisture",
+            "force_update": "true",
+            "payload_on": "1",
+            "payload_off": "0"
+        }
+    },
+
     "pressure_hPa": {
         "device_type": "sensor",
         "object_suffix": "P",
@@ -743,6 +755,26 @@ mappings = {
         "object_suffix": "consumption",
         "config": {
             "name": "SCMplus Consumption Value",
+            "value_template": "{{ value|int }}",
+            "state_class": "total_increasing",
+        }
+    },
+
+    "reading": {
+        "device_type": "sensor",
+        "object_suffix": "reading",
+        "config": {
+            "name": "Reading",
+            "value_template": "{{ value|int }}",
+            "state_class": "total_increasing",
+        }
+    },
+
+    "daily_reading": {
+        "device_type": "sensor",
+        "object_suffix": "daily_reading",
+        "config": {
+            "name": "Daily Reading",
             "value_template": "{{ value|int }}",
             "state_class": "total_increasing",
         }
