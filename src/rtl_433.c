@@ -1093,8 +1093,7 @@ static void process_sdr_frame(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
     // Select needed discriminator based on current frequency or manual setting
     unsigned fpdm = cfg->fsk_pulse_detect_mode;
     if (cfg->fsk_pulse_detect_mode == FSK_PULSE_DETECT_AUTO) {
-        // FIXME: this is wrong to be compatible with tests and won't work for file inputs
-        if (cfg->frequency[cfg->frequency_index] > FSK_PULSE_DETECTOR_LIMIT) {
+        if (cfg->center_frequency > FSK_PULSE_DETECTOR_LIMIT) {
             fpdm = FSK_PULSE_DETECT_NEW;
         }
         else {

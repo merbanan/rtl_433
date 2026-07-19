@@ -73,10 +73,10 @@ typedef struct r_cfg {
     volatile sig_atomic_t hop_now; ///< flag to cause channel hopping, async written by signal handler and push_sdr_flow()
     volatile sig_atomic_t exit_async; ///< flag to cause exiting, async written by signal handler
     volatile sig_atomic_t exit_code; ///< 0=no err, 1=params or cmd line err, 2=sdr device read error, 3=usb init error, 5=USB error (reset), other=other error
-    int frequencies;
-    int frequency_index;
-    uint32_t frequency[MAX_FREQS];
-    uint32_t center_frequency;
+    int frequencies;                 ///< The number of entries in the frequency hopping list.
+    int frequency_index;             ///< The current position in the frequency hopping list.
+    uint32_t frequency[MAX_FREQS];   ///< A list of hopping frequencies.
+    uint32_t center_frequency;       ///< The current center frequency of the live or file input.
     int fsk_pulse_detect_mode;
     int hop_times;
     int hop_time[MAX_FREQS];
