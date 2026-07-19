@@ -12,6 +12,18 @@
 
 #include "decoder.h"
 
+enum {
+    FS20_PREAMBLE_BITS    = 12, // The searched tail of the 13-bit preamble.
+    FS20_PARITY_BYTE_BITS = 9,
+    FS20_BASE_BYTES       = 5,
+    FS20_EXT_BYTES        = 6,
+    FS20_BASE_FRAME_BITS  = FS20_BASE_BYTES * FS20_PARITY_BYTE_BITS,
+    FS20_EXT_FRAME_BITS   = FS20_EXT_BYTES * FS20_PARITY_BYTE_BITS,
+    FS20_EXT_FLAG         = 0x20,
+    FHT_CMD_MASK          = 0x0f,
+    FHT_CMD_END_OF_SYNC   = 0x00,
+};
+
 /** @fn int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 Simple FS20 remote decoder.
 
@@ -38,11 +50,11 @@ static int fs20_find_preamble(bitbuffer_t *bitbuffer, int bitpos)
     // Preamble is 12 x '0' | '1', but we ignore the first preamble bit
     // Last bit ('1') is at position (pattern[1] >> 4 & 1)
     uint8_t const preamble_pattern[2] = {0x00, 0x10};
-    uint8_t const min_packet_length   = 4 * (8 + 1);
+    int const row_bits = bitbuffer->bits_per_row[0];
 
     // fast scan for 8 consecutive '0' bits
     uint8_t *bits = bitbuffer->bb[0];
-    while ((bitpos + 12 + min_packet_length < bitbuffer->bits_per_row[0])
+    while ((bitpos + FS20_PREAMBLE_BITS + FS20_BASE_FRAME_BITS <= row_bits)
         && ((bits[(bitpos / 8) + 1] == 0) || (bits[(bitpos / 8)] != 0))) {
         bitpos += 8;
     }
@@ -51,16 +63,22 @@ static int fs20_find_preamble(bitbuffer_t *bitbuffer, int bitpos)
         bitpos &= ~0x3;
     }
 
-    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 12)) < bitbuffer->bits_per_row[0]) {
-        if (bitpos + min_packet_length >= bitbuffer->bits_per_row[0]) {
+    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, FS20_PREAMBLE_BITS)) < row_bits) {
+        int data_pos = bitpos + FS20_PREAMBLE_BITS;
+        if (data_pos + FS20_BASE_FRAME_BITS > row_bits) {
             return DECODE_ABORT_LENGTH;
         }
 
-        return bitpos + 12;
+        return data_pos;
     }
 
     // preamble not found
     return DECODE_FAIL_SANITY;
+}
+
+static int fs20_frame_fits(bitbuffer_t *bitbuffer, int bitpos, int frame_bits)
+{
+    return bitpos + frame_bits <= bitbuffer->bits_per_row[0];
 }
 
 struct parity_byte {
@@ -176,6 +194,12 @@ static int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_logf(decoder, 2, __func__, "Found preamble at %d", bitpos);
 
         struct parity_byte res;
+        ext = 0;
+
+        if (!fs20_frame_fits(bitbuffer, bitpos, FS20_BASE_FRAME_BITS)) {
+            rc = DECODE_ABORT_LENGTH;
+            break;
+        }
 
         res = get_byte(bits, bitpos);
         if (res.err)
@@ -201,10 +225,12 @@ static int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (res.err)
             continue;
 
-        if (cmd & 0x20) {
+        if (cmd & FS20_EXT_FLAG) {
             ext = res.data;
-            if (bitpos + 45 + 9 > bitbuffer->bits_per_row[0])
+            if (!fs20_frame_fits(bitbuffer, bitpos, FS20_EXT_FRAME_BITS)) {
+                rc = DECODE_ABORT_LENGTH;
                 break;
+            }
 
             res = get_byte(bits, bitpos + 45);
             if (res.err)
@@ -241,6 +267,13 @@ static int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int is_fs20 = sum >= 6 && sum <= 6 + 2;
     int is_fht  = sum >= 0xC && sum <= 0xC + 2;
     if (!is_fs20 && !is_fht) {
+        return DECODE_FAIL_SANITY;
+    }
+
+    // FHT command 0 ends the sync sequence by sending the final valve value in
+    // the extension byte. A no-extension command 0 is therefore malformed but
+    // otherwise easy for foreign bitstreams to satisfy with parity alone.
+    if (is_fht && (cmd & FHT_CMD_MASK) == FHT_CMD_END_OF_SYNC && !(cmd & FS20_EXT_FLAG)) {
         return DECODE_FAIL_SANITY;
     }
 
