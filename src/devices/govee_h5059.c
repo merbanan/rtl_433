@@ -237,6 +237,10 @@ static int govee_h5059_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         dec[GOVEE_H5059_ID_OFFSET + 3];
     // The app-facing/canonical ID uses swapped 16-bit words relative to wire order.
     uint32_t id = ((id_wire & 0xffff) << 16) | ((id_wire >> 16) & 0xffff);
+    char id_str[9];
+    char id_wire_str[9];
+    snprintf(id_str, sizeof(id_str), "%08x", (unsigned)id);
+    snprintf(id_wire_str, sizeof(id_wire_str), "%08x", (unsigned)id_wire);
 
     int subtype     = enc_len > GOVEE_H5059_SUBTYPE_OFFSET ? dec[GOVEE_H5059_SUBTYPE_OFFSET] : -1;
     int leak_top    = enc_len > GOVEE_H5059_LEAK_TOP_OFFSET ? dec[GOVEE_H5059_LEAK_TOP_OFFSET] : -1;
@@ -272,8 +276,8 @@ static int govee_h5059_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data_t *data = data_make(
             "model",        "",                 DATA_STRING, "Govee-H5059",
-            "id",           "",                 DATA_FORMAT, "%08x", DATA_INT, id,
-            "id_wire",      "",                 DATA_FORMAT, "%08x", DATA_INT, id_wire,
+            "id",           "",                 DATA_STRING, id_str,
+            "id_wire",      "",                 DATA_STRING, id_wire_str,
             "event",        "",                 DATA_STRING, event,
             "msg_class",    "",                 DATA_FORMAT, "0x%02x", DATA_INT, msg_class,
             "subtype",      "",                 DATA_COND,   subtype >= 0, DATA_FORMAT, "0x%02x", DATA_INT, subtype,

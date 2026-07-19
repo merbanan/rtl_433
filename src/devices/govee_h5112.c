@@ -343,6 +343,10 @@ static int govee_h5112_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             | dec[GOVEE_H5112_ID_OFFSET + 3];
     // Canonical ID: two 16-bit half-words swapped, matching govee_h5059/h5310.
     uint32_t id = ((id_wire & 0xffff) << 16) | ((id_wire >> 16) & 0xffff);
+    char id_str[9];
+    char id_wire_str[9];
+    snprintf(id_str, sizeof(id_str), "%08x", (unsigned)id);
+    snprintf(id_wire_str, sizeof(id_wire_str), "%08x", (unsigned)id_wire);
 
     int battery_pct = dec[GOVEE_H5112_BATTERY_OFFSET];
 
@@ -396,8 +400,8 @@ static int govee_h5112_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data_t *data = data_make(
             "model",            "",             DATA_STRING, "Govee-H5112",
-            "id",               "",             DATA_FORMAT, "%08x", DATA_INT, id,
-            "id_wire",          "",             DATA_FORMAT, "%08x", DATA_INT, id_wire,
+            "id",               "",             DATA_STRING, id_str,
+            "id_wire",          "",             DATA_STRING, id_wire_str,
             "battery_ok",       "Battery",      DATA_INT,    battery_pct > 0,
             "battery_pct",      "Battery",      DATA_INT,    battery_pct,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, probe1_c,

@@ -326,6 +326,10 @@ static int govee_h5310_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint32_t id_wire = ((uint32_t)dec[GOVEE_H5310_ID_OFFSET] << 24) | ((uint32_t)dec[GOVEE_H5310_ID_OFFSET + 1] << 16) | ((uint32_t)dec[GOVEE_H5310_ID_OFFSET + 2] << 8) | dec[GOVEE_H5310_ID_OFFSET + 3];
     uint32_t id = ((id_wire & 0xffff) << 16) | ((id_wire >> 16) & 0xffff);
+    char id_str[9];
+    char id_wire_str[9];
+    snprintf(id_str, sizeof(id_str), "%08x", (unsigned)id);
+    snprintf(id_wire_str, sizeof(id_wire_str), "%08x", (unsigned)id_wire);
 
     int battery_pct = 0;
     uint16_t raw    = 0;
@@ -363,8 +367,8 @@ static int govee_h5310_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data_t *data = data_make(
             "model",            "",             DATA_STRING, "Govee-H5310",
-            "id",               "",             DATA_FORMAT, "%08x", DATA_INT, id,
-            "id_wire",          "",             DATA_FORMAT, "%08x", DATA_INT, id_wire,
+            "id",               "",             DATA_STRING, id_str,
+            "id_wire",          "",             DATA_STRING, id_wire_str,
             "event",            "",             DATA_STRING, event,
             "battery_ok",       "Battery",      DATA_INT,    battery_pct > 0,
             "battery_pct",      "Battery",      DATA_INT,    battery_pct,
