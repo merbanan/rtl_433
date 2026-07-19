@@ -359,6 +359,11 @@ Packet structure (61 bits):
 - C: 2 bits integrity check (C1, C2)
 - T: 8 bits temperature offset by 50, range -50 to 205 degrees C
 
+The leading wake+sync+start (W SSSSSSSSSSSSS s) is a fixed 16-bit
+`0111111111111111` in every real capture seen so far (issue #3611: the
+2-bit integrity check alone lets through ~1 in 4 noise bursts, verifying
+this fixed prefix rejects far more of them).
+
 Integrity check (C1C2):
 The 2-bit integrity value is computed over the 35-bit payload (III+PPP+CC),
 i.e. id, pressure, and the check bits themselves, but not the flags:
@@ -391,11 +396,21 @@ static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned int pressure;    // kPa
     int temperature; // degree C
 
+    if (bitbuffer->num_rows != 1)
+        return DECODE_ABORT_EARLY;
+
     /* Check for incorrect number of bits received */
     if (bitbuffer->bits_per_row[0] != 61)
         return DECODE_ABORT_LENGTH;
 
-    /* Discard the first 15 bits (1 wake + 13 sync + 1 start) */
+    /* Verify the fixed 16-bit wake+sync+start prefix instead of assuming it */
+    uint8_t const sync_pattern[] = {0x7f, 0xff};
+    if (bitbuffer_search(bitbuffer, 0, 0, sync_pattern, 16) != 0) {
+        decoder_log(decoder, 2, __func__, "sync pattern not found");
+        return DECODE_ABORT_EARLY;
+    }
+
+    /* Discard the first 16 bits (wake + sync + start) */
     bitbuffer_extract_bytes(bitbuffer, 0, 16, b, 46);
 
     /* Get data fields:
@@ -442,10 +457,13 @@ static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     temperature = ((b[4] & 0x03) << 5) | (b[5] >> 3);
 
     /* The 2-bit integrity check above only rejects 3 out of 4 random/corrupt
-       payloads. Add a plausibility bound on pressure and temperature (a
-       generous margin around real TPMS operating ranges) as a second,
-       independent filter for the noise the parity check lets through. */
-    if (pressure > 450 || temperature - 50 < -40 || temperature - 50 > 125) {
+       payloads. Add a plausibility bound on pressure and temperature as a
+       second, independent filter for the noise the parity check lets
+       through. Temperature is bounded to a real tire's operating range
+       (well under the sensor chip's own -40/+125 C survival rating -- a
+       tire never actually reaches that in normal use) rather than the
+       full field range. */
+    if (pressure > 450 || temperature - 50 < -40 || temperature - 50 > 85) {
         decoder_logf(decoder, 2, __func__,
                 "implausible pressure/temperature: %u kPa, %d C", pressure, temperature - 50);
         return DECODE_FAIL_SANITY;
