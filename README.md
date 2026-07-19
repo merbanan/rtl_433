@@ -468,6 +468,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [377]  Typhur Sync Gold meat thermometer probe
     [378]  Sefis M3 / Careud / Sykik SRTP300 TPMS
     [379]  RADIAN/RADIAN0 meter
+    [380]* Jeep TPMS
 
 * Disabled by default, use -R n or a conf file to enable
 
