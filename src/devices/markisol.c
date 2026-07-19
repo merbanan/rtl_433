@@ -131,5 +131,6 @@ r_device const markisol = {
         .gap_limit   = 2000,
         .reset_limit = 2000,
         .decode_fn   = &markisol_decode,
+        .disabled    = 1, // excessive false positives, see issue #3611
         .fields      = output_fields,
 };
