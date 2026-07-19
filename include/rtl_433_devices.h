@@ -388,6 +388,7 @@
     DECL(tpms_sefis_m3) \
     DECL(radian) \
     DECL(tpms_jeep) \
+    DECL(tpms_honda) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;

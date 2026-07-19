@@ -469,6 +469,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [378]  Sefis M3 / Careud / Sykik SRTP300 TPMS
     [379]  RADIAN/RADIAN0 meter
     [380]* Jeep TPMS
+    [381]  Honda (TRW PPA-GF33) TPMS
 
 * Disabled by default, use -R n or a conf file to enable
 
