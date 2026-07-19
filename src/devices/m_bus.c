@@ -1592,7 +1592,6 @@ static int radian_decode_row(r_device *decoder, bitbuffer_t *bitbuffer, unsigned
             "body_len",       "Body length",     DATA_INT,    body_len,
             "body",           "Body",            DATA_STRING, body,
             "crc",            "CRC",             DATA_FORMAT, "0x%04x", DATA_INT, crc_rx,
-            "mic",            "Integrity",       DATA_STRING, "CRC",
             "data",           "Data",            DATA_STRING, frame_hex,
             NULL);
     /* clang-format on */
@@ -1613,6 +1612,7 @@ static int radian_decode_row(r_device *decoder, bitbuffer_t *bitbuffer, unsigned
         }
     }
 
+    data = data_str(data, "mic", "Integrity", NULL, "CRC");
     decoder_output_data(decoder, data);
     return 1;
 }
