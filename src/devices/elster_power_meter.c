@@ -86,14 +86,20 @@ share the same CRC-16/X-25 algorithm and a similar address layout:
 - SRC, DST: same meaning and top-bit mesh convention as type-1
 - DATA byte 4 (i.e. absolute offset 16) selects a message class in plain
   meter reports (SRC top bit clear): 0x56 = AES-ECB encrypted body (a
-  per-meter key, not recoverable here -- reported as data_raw), 0x57 =
-  cleartext. Mesh/collector frames (SRC top bit set) don't use this byte
-  the same way and are not further decoded, same as type-1
-- Cleartext (0x57) neighbour-table frames (seen at LEN=189) carry, at a
-  fixed offset, a record count N followed by N 20-byte neighbour records;
-  only the first 4 bytes of each record (the neighbour's own address) are
-  confidently decoded here as nbr_ids, the remaining 16 bytes per record
-  are of unconfirmed meaning and folded into data_raw instead of guessed at
+  per-meter key, not recoverable here -- reported as data_raw), 0x57 and
+  0x7f = cleartext neighbour tables (issue #3618). Mesh/collector frames
+  (SRC top bit set) don't use this byte the same way and are not further
+  decoded, same as type-1
+- Cleartext neighbour-table frames carry a record count N at a fixed
+  offset followed by N 20-byte neighbour records; only the first 4 bytes
+  of each record (the neighbour's own address) are confidently decoded
+  here as nbr_ids, the remaining 16 bytes per record are of unconfirmed
+  meaning and folded into data_raw instead of guessed at. 0x57 (seen at
+  LEN=189) and 0x7f differ by one byte in where the records start
+  relative to the count -- confirmed against real captures of both, not
+  yet explained. A few other header bytes also differ between the two
+  and are of unconfirmed meaning; treat 0x57 vs 0x7f as two distinct,
+  independently-verified layouts rather than one
 - Other cleartext frames (e.g. a LEN=38 status/heartbeat report) are
   reported via data_raw only -- little of their content varies between
   real captures beyond the sending meter's own address, and what does vary
@@ -334,16 +340,19 @@ static int elster_power_meter2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         msg = buf[16];
     }
 
-    // Neighbour table: msg 0x57, a record count at a fixed offset followed
-    // by that many 20 byte records, only the leading 4-byte neighbour
-    // address of each is confidently decoded (see file doc comment).
+    // Neighbour table: msg 0x57 or 0x7f, a record count at a fixed offset
+    // followed by that many 20 byte records (only the leading 4-byte
+    // neighbour address of each is confidently decoded, see file doc
+    // comment). The two message classes start their records one byte
+    // apart, confirmed against real captures of both.
     char nbr_ids[ELSTER2_NBR_MAX * 9] = "";
-    if (msg == 0x57 && len > 30) {
-        int n = buf[28];
-        if (n > 0 && n <= ELSTER2_NBR_MAX && 30 + n * 20 <= len) {
+    if ((msg == 0x57 || msg == 0x7f) && len > 30) {
+        int n         = buf[28];
+        int rec_start = (msg == 0x57) ? 30 : 29;
+        if (n > 0 && n <= ELSTER2_NBR_MAX && rec_start + n * 20 <= len) {
             char *p = nbr_ids;
             for (int i = 0; i < n; ++i) {
-                uint8_t const *nbr = &buf[30 + i * 20];
+                uint8_t const *nbr = &buf[rec_start + i * 20];
                 p += sprintf(p, "%s%02x%02x%02x%02x", i ? "," : "",
                         nbr[0], nbr[1], nbr[2], nbr[3]);
             }
