@@ -423,14 +423,14 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 #ifdef _DEBUG
     char tstr[256];
-    data = data_hex(data, "Packet", NULL, NULL, packet.bb[row], packet.bits_per_row[row] / 8, tstr);
-    data = data_hex(data, "Header", NULL, NULL, &msg.header, 1, tstr);
+    data = data_hex(data, "Packet", "", NULL, packet.bb[row], packet.bits_per_row[row] / 8, tstr);
+    data = data_hex(data, "Header", "", NULL, &msg.header, 1, tstr);
     uint8_t cmd[2] = {msg.command >> 8, msg.command & 0x00FF};
-    data = data_hex(data, "Command", NULL, NULL, cmd, 2, tstr);
-    data = data_hex(data, "Payload", NULL, NULL, msg.payload, msg.payload_length, tstr);
-    data = data_hex(data, "Unparsed", NULL, NULL, msg.unparsed, msg.unparsed_length, tstr);
-    data = data_hex(data, "CRC", NULL, NULL, &msg.crc, 1, tstr);
-    data = data_int(data, "# man errors", NULL, NULL, man_errors);
+    data = data_hex(data, "Command", "", NULL, cmd, 2, tstr);
+    data = data_hex(data, "Payload", "", NULL, msg.payload, msg.payload_length, tstr);
+    data = data_hex(data, "Unparsed", "", NULL, msg.unparsed, msg.unparsed_length, tstr);
+    data = data_hex(data, "CRC", "", NULL, &msg.crc, 1, tstr);
+    data = data_int(data, "# man errors", "", NULL, man_errors);
 #endif
 
     /* clang-format off */
