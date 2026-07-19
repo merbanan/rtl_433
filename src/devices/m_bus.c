@@ -1455,6 +1455,36 @@ static void radian_hex(char *dst, size_t dst_len, uint8_t const *src, unsigned s
     }
 }
 
+// RADIAN's payload wraps a complete wired M-Bus (EN 13757-2) telegram:
+// START(0x68) L L START(0x68) C A CI ... user data ... checksum STOP(0x16).
+// Find it by its self-verifying markers (repeated length, matching checksum,
+// stop byte) rather than assuming a fixed offset, and hand back a pointer to
+// the C byte plus the declared length (covering C, A, CI and user data, not
+// the wired-frame checksum/stop).
+static uint8_t const *radian_find_wmbus_frame(uint8_t const *body, unsigned body_len, unsigned *out_len)
+{
+    for (unsigned i = 0; i + 4 <= body_len; ++i) {
+        if (body[i] != 0x68 || body[i + 3] != 0x68 || body[i + 1] != body[i + 2])
+            continue;
+
+        unsigned wlen = body[i + 1];
+        if (i + 4 + wlen + 2 > body_len)
+            continue; // declared length runs past the body, not a real match
+
+        uint8_t const *c_frame = &body[i + 4];
+        uint8_t checksum       = 0;
+        for (unsigned j = 0; j < wlen; ++j)
+            checksum += c_frame[j];
+
+        if (checksum != c_frame[wlen] || c_frame[wlen + 1] != 0x16)
+            continue; // checksum or stop byte mismatch, not a real match
+
+        *out_len = wlen;
+        return c_frame;
+    }
+    return NULL;
+}
+
 static int radian_decode_row(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row)
 {
     // Sync tail seen in the #3408 sample: low bits followed by high idle bits.
@@ -1558,6 +1588,22 @@ static int radian_decode_row(r_device *decoder, bitbuffer_t *bitbuffer, unsigned
             NULL);
     /* clang-format on */
 
+    unsigned wmbus_len;
+    uint8_t const *wmbus = radian_find_wmbus_frame(&frame[body_off], body_len, &wmbus_len);
+    if (wmbus) {
+        m_bus_block1_t block1 = {0};
+        block1.L              = wmbus_len;
+
+        m_bus_data_t wmbus_data = {0};
+        wmbus_data.length       = MIN(wmbus_len, sizeof(wmbus_data.data));
+        memcpy(wmbus_data.data, wmbus, wmbus_data.length);
+
+        m_bus_parse_ci(&wmbus_data.data[2], 2, &block1.block2); // data: C A CI ...
+        if (block1.block2.CI == 0x72 || block1.block2.CI == 0x7A) {
+            parse_payload(data, &block1, &wmbus_data);
+        }
+    }
+
     decoder_output_data(decoder, data);
     return 1;
 }
@@ -1575,9 +1621,24 @@ RADIAN notes attached there:
 - Trailer is CRC-16/KERMIT over all bytes except the final two CRC bytes,
   stored little-endian.
 
-This currently outputs the verified RADIAN transport fields and raw body
-bytes only. The response body appears to contain M-Bus-like DIF/DIFE/VIF
-records, but the #3408 sample does not yet pin a complete semantic map.
+The response body wraps a complete wired M-Bus (EN 13757-2) telegram --
+START(0x68) L L START(0x68) C A CI ... checksum STOP(0x16), found via its
+self-verifying length/checksum/stop-byte markers -- so its CI/AC/ST/CW and
+DIF/DIFE/VIF/VIFE records are decoded by the same code wireless M-Bus uses
+(m_bus_parse_ci(), parse_payload()). The wired-frame addressing
+(manufacturer/ID/version/medium) is reported as raw hex in "body" rather
+than decoded, since it doesn't look like standard BCD and the meaning of
+the RADIAN-specific 4-byte prefix ahead of the wired frame isn't pinned
+down either.
+
+Inherited limitation from the shared parser: it stops at the first DIF
+coding it doesn't implement (e.g. 32-bit float), and can emit one spurious
+zero-valued field for that record before stopping -- confirmed on the
+#3408 sample, which has three real fields (software_version, a timedate,
+and one H.C.A. units record) followed by a 32-bit float record that cuts
+the rest of the payload off.
+
+@sa m_bus_parse_ci() parse_payload()
 
 Known flex equivalent for the #3408 sample:
 
@@ -1617,6 +1678,9 @@ static int radian_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return DECODE_ABORT_LENGTH;
 }
 
+// NOTE: same caveat as m_bus's own output_fields -- storage-numbered DIF
+// records (e.g. "inst_hca_0") produce dynamic key names not listed here,
+// so CSV output will drop them; JSON output is unaffected.
 static char const *const radian_output_fields[] = {
         "model",
         "len",
@@ -1630,6 +1694,19 @@ static char const *const radian_output_fields[] = {
         "crc",
         "mic",
         "data",
+        "model_version",
+        "hardware_version",
+        "firmware_version",
+        "software_version",
+        "temperature_C",
+        "average_temperature_1h_C",
+        "average_temperature_24h_C",
+        "humidity",
+        "average_humidity_1h",
+        "average_humidity_24h",
+        "switch",
+        "counter_0",
+        "counter_1",
         NULL,
 };
 
