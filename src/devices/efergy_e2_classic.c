@@ -40,24 +40,23 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *bytes = bitbuffer->bb[0];
     data_t *data;
 
-    if (num_bits < 64 || num_bits > 80) {
+    if (bitbuffer->num_rows != 1) {
+        return DECODE_ABORT_EARLY;
+    }
+
+    // All known real captures are 64 or 65 bits (a spurious trailing bit
+    // sometimes gets recorded); the 80-bit upper bound was only ever
+    // needed to give the old shift-search room to work.
+    if (num_bits < 64 || num_bits > 65) {
         return DECODE_ABORT_LENGTH;
     }
 
-    // The bit buffer isn't always aligned to the transmitted data, so
-    // search for data start and shift out the bits which aren't part
-    // of the data. The data always starts with 0000 (or 1111 if
-    // gaps/pulses are mixed up).
-    while ((bytes[0] & 0xf0) != 0xf0 && (bytes[0] & 0xf0) != 0x00) {
-        num_bits -= 1;
-        if (num_bits < 64) {
-            return DECODE_FAIL_SANITY;
-        }
-
-        for (unsigned i = 0; i < (num_bits + 7) / 8; ++i) {
-            bytes[i] <<= 1;
-            bytes[i] |= (bytes[i + 1] & 0x80) >> 7;
-        }
+    // The data always starts with 0000 (or 1111 if gaps/pulses are mixed
+    // up). All known real captures are already aligned to this; reject
+    // anything that isn't rather than searching for an alignment (issue
+    // #3611 -- the search gave noise many chances to accidentally align).
+    if ((bytes[0] & 0xf0) != 0xf0 && (bytes[0] & 0xf0) != 0x00) {
+        return DECODE_ABORT_EARLY;
     }
 
     // Sometimes pulses and gaps are mixed up. If this happens, invert
