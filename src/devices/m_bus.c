@@ -16,6 +16,7 @@ Wireless M-Bus protocol. Will return a data string (including the CI byte)
 for further processing by an Application layer (outside this program).
 */
 #include "decoder.h"
+#include <math.h>
 
 #define BLOCK1A_SIZE 12     // Size of Block 1, format A
 #define BLOCK1B_SIZE 10     // Size of Block 1, format B
@@ -488,9 +489,17 @@ static int m_bus_decode_val(const uint8_t *b, uint8_t dif_coding, int64_t *out_v
             }
             *out_value = (int64_t)val;
             return 6;
-        case 5: // 32bit float
-            *out_value = 0; // TODO
-            return -1;
+        case 5: { // 32bit float, IEEE-754 single precision, little-endian
+            uint32_t bits = (uint32_t)b[0] | (uint32_t)b[1] << 8 | (uint32_t)b[2] << 16 | (uint32_t)b[3] << 24;
+            float f;
+            memcpy(&f, &bits, sizeof(f));
+            // Same convention as every other coding here: out_value carries
+            // the raw numeric magnitude, and the caller's VIF-derived
+            // exponent scales it from there -- so round to the nearest
+            // integer rather than trying to guess/cancel that scale here.
+            *out_value = (int64_t)llround((double)f);
+            return 4;
+        }
         case 4: // 32bit
             *out_value = (int32_t)(b[3] << 24 | b[2] << 16 | b[1] << 8 | b[0]);
             return 4;
@@ -1631,12 +1640,11 @@ than decoded, since it doesn't look like standard BCD and the meaning of
 the RADIAN-specific 4-byte prefix ahead of the wired frame isn't pinned
 down either.
 
-Inherited limitation from the shared parser: it stops at the first DIF
-coding it doesn't implement (e.g. 32-bit float), and can emit one spurious
-zero-valued field for that record before stopping -- confirmed on the
-#3408 sample, which has three real fields (software_version, a timedate,
-and one H.C.A. units record) followed by a 32-bit float record that cuts
-the rest of the payload off.
+Confirmed on the #3408 sample: software_version, a timedate, 19
+storage-numbered H.C.A. units records, two flow/external temperatures,
+two dates, and an energy field all decode correctly, including a
+32-bit float record among them (rounded to the nearest integer before
+the caller's usual VIF-derived scaling, same as every other coding).
 
 @sa m_bus_parse_ci() parse_payload()
 
