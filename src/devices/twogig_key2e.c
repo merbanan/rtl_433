@@ -74,7 +74,7 @@ static int twogig_key2e_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "",             DATA_STRING, "2GIG-KEY2E345",
+            "model",            "",             DATA_STRING, "TwoGig-KEY2E345",
             "encrypted_id",     "Encrypted ID", DATA_STRING, enc_id,
             "encrypted_status", "Encrypted Status", DATA_STRING, enc_status,
             "mic",              "Integrity",    DATA_STRING, "CRC",
