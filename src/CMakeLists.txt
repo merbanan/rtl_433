@@ -287,6 +287,7 @@ add_library(r_433 STATIC
     devices/sharp_spc775.c
     devices/shenzhen_wale_wl_th6r.c
     devices/siemens_5wy72xx.c
+    devices/silver_spring_mesh.c
     devices/silvercrest.c
     devices/simplisafe.c
     devices/simplisafe_gen3.c
