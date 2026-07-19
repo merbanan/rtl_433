@@ -1494,6 +1494,12 @@ static uint8_t const *radian_find_wmbus_frame(uint8_t const *body, unsigned body
     return NULL;
 }
 
+/**
+Decode one RADIAN / RADIAN0 bitbuffer row.
+
+The registered decoder wrapper scans all rows and delegates accepted rows here,
+where the RADIAN UART frame is decoded and the JSON output is emitted.
+*/
 static int radian_decode_row(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row)
 {
     // Sync tail seen in the #3408 sample: low bits followed by high idle bits.
@@ -1646,7 +1652,7 @@ two dates, and an energy field all decode correctly, including a
 32-bit float record among them (rounded to the nearest integer before
 the caller's usual VIF-derived scaling, same as every other coding).
 
-@sa m_bus_parse_ci() parse_payload()
+@sa radian_decode_row()
 
 Known flex equivalent for the #3408 sample:
 
