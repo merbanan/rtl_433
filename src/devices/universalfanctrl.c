@@ -45,6 +45,12 @@ static int universalfan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     uint8_t *b  = bitbuffer->bb[row];
+
+    if (!(b[4] & 0x80)) {
+        decoder_log(decoder, 1, __func__, "Fixed trailing bit not set.");
+        return DECODE_FAIL_SANITY;
+    }
+
     // int chk_msg = (b[3] & 0x0F);
     int sum = xor_bytes(b, 4); // xor message bytes, last byte also has the checksum
     sum     = (sum >> 4) ^ (sum & 0xf); // fold nibbles
