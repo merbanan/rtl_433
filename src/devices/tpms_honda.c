@@ -49,11 +49,10 @@ static int tpms_honda_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     static uint8_t const marker[3] = {0xda, 0xe3, 0x54}; // 23 bits
 
-    unsigned bitpos = bitbuffer_search(bitbuffer, 0, 0, marker, 23);
-    if (bitpos >= bitbuffer->bits_per_row[0]) {
-        return DECODE_ABORT_EARLY; // marker not found
+    if (bitbuffer_search(bitbuffer, 0, 0, marker, 23) != 0) {
+        return DECODE_ABORT_EARLY; // marker not found at row start
     }
-    bitpos += 23;
+    unsigned bitpos = 23;
 
     // 8 bytes Manchester coded is 128 raw bits; reject a truncated capture
     // before decoding rather than relying on the post-decode length check
@@ -80,6 +79,12 @@ static int tpms_honda_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int temperature_C   = temperature_raw - 50;
     uint32_t id         = ((uint32_t)b[2] << 24) | (b[3] << 16) | (b[4] << 8) | b[5];
     int flags           = b[6];
+
+    // Avoid TRW GQ4-44T / Elantra2012 overlap: those frames can match this
+    // structure but decode here as implausible nonzero sub-10 PSI pressure.
+    if (pressure_raw > 0 && pressure_raw < 50) {
+        return DECODE_ABORT_EARLY;
+    }
 
     char id_str[9];
     snprintf(id_str, sizeof(id_str), "%08x", id);
