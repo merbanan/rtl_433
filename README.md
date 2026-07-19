@@ -467,6 +467,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [376]  McPower Kinetic battery-less wall switch
     [377]  Typhur Sync Gold meat thermometer probe
     [378]  Sefis M3 / Careud / Sykik SRTP300 TPMS
+    [379]  RADIAN/RADIAN0 meter
 
 * Disabled by default, use -R n or a conf file to enable
 

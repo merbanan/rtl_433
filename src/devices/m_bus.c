@@ -1423,3 +1423,222 @@ r_device const m_bus_mode_f = {
         .decode_fn   = &m_bus_mode_f_callback,
         .disabled    = 1, // Disable per default, as it runs on non-standard frequency
 };
+
+#define RADIAN_MAX_FRAME_BYTES 256
+#define RADIAN_MIN_FRAME_BYTES 6
+
+static char const *radian_control_string(uint8_t control)
+{
+    switch (control) {
+    case 0x06:
+        return "ack";
+    case 0x10:
+        return "request";
+    case 0x11:
+        return "response";
+    default:
+        return "unknown";
+    }
+}
+
+static void radian_hex(char *dst, size_t dst_len, uint8_t const *src, unsigned src_len)
+{
+    unsigned pos = 0;
+
+    if (!dst_len)
+        return;
+
+    dst[0] = '\0';
+
+    for (unsigned i = 0; i < src_len && pos + 3 <= dst_len; ++i) {
+        pos += snprintf(&dst[pos], dst_len - pos, "%02x", src[i]);
+    }
+}
+
+static int radian_decode_row(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row)
+{
+    // Sync tail seen in the #3408 sample: low bits followed by high idle bits.
+    // Start decoding after this and let extract_bytes_uart_8n2() skip leading
+    // idle 1 bits until the first UART start bit.
+    static uint8_t const sync_tail[] = {0x0f, 0xff, 0xff, 0xff, 0xf0}; // {36}0x0ffffffff
+
+    uint8_t frame[RADIAN_MAX_FRAME_BYTES] = {0};
+    unsigned row_bits = bitbuffer->bits_per_row[row];
+    unsigned pos      = bitbuffer_search(bitbuffer, row, 0, sync_tail, 36);
+
+    if (pos >= row_bits) {
+        decoder_log(decoder, 2, __func__, "RADIAN sync tail not found");
+        return DECODE_ABORT_EARLY;
+    }
+
+    pos += 36;
+    if (pos >= row_bits) {
+        decoder_log(decoder, 2, __func__, "RADIAN row ends at sync tail");
+        return DECODE_ABORT_LENGTH;
+    }
+
+    unsigned avail_bits = row_bits - pos;
+    unsigned max_bits   = MIN(avail_bits, RADIAN_MAX_FRAME_BYTES * 11);
+    unsigned frame_len  = extract_bytes_uart_8n2(bitbuffer->bb[row], pos, max_bits, frame);
+
+    if (frame_len < RADIAN_MIN_FRAME_BYTES) {
+        decoder_logf(decoder, 2, __func__, "UART decode too short: %u bytes", frame_len);
+        return DECODE_ABORT_LENGTH;
+    }
+
+    unsigned declared_len = frame[0];
+    if (declared_len < RADIAN_MIN_FRAME_BYTES || declared_len > RADIAN_MAX_FRAME_BYTES) {
+        decoder_logf(decoder, 2, __func__, "Bad RADIAN length byte: %u", declared_len);
+        return DECODE_FAIL_SANITY;
+    }
+
+    if (frame_len < declared_len) {
+        decoder_logf(decoder, 2, __func__, "UART decode truncated: got %u need %u", frame_len, declared_len);
+        return DECODE_ABORT_LENGTH;
+    }
+
+    uint16_t crc_rx   = (uint16_t)frame[declared_len - 2] | (uint16_t)frame[declared_len - 1] << 8;
+    uint16_t crc_calc = crc16lsb(frame, declared_len - 2, 0x8408, 0x0000);
+
+    if (crc_calc != crc_rx) {
+        decoder_logf(decoder, 2, __func__, "CRC fail: calc=%04x rx=%04x", crc_calc, crc_rx);
+        return DECODE_FAIL_MIC;
+    }
+
+    uint8_t control = frame[1];
+
+    // Variant A described in the recovered notes uses zero spacers:
+    //   L C 00 rx[5] 00 tx[5] 00 body crc
+    // The #3408 RADIAN0 sample does not match those spacer positions, so
+    // default to the observed compact variant:
+    //   L C rx[5] tx[5] body crc
+    unsigned addr_off   = 2;
+    unsigned body_off   = 12;
+    unsigned spaced_hdr = 0;
+
+    if (declared_len >= 18 && frame[2] == 0x00 && frame[8] == 0x00 && frame[14] == 0x00) {
+        addr_off   = 3;
+        body_off   = 15;
+        spaced_hdr = 1;
+    }
+
+    if (body_off + 2 > declared_len) {
+        decoder_logf(decoder, 2, __func__, "Header longer than frame: body_off=%u len=%u", body_off, declared_len);
+        return DECODE_FAIL_SANITY;
+    }
+
+    unsigned body_len = declared_len - body_off - 2;
+
+    char receiver[11];
+    char sender[11];
+    char body[RADIAN_MAX_FRAME_BYTES * 2 + 1];
+    char frame_hex[RADIAN_MAX_FRAME_BYTES * 2 + 1];
+
+    radian_hex(receiver, sizeof(receiver), &frame[addr_off], 5);
+    radian_hex(sender, sizeof(sender), &frame[addr_off + 5 + spaced_hdr], 5);
+    radian_hex(body, sizeof(body), &frame[body_off], body_len);
+    radian_hex(frame_hex, sizeof(frame_hex), frame, declared_len);
+
+    decoder_log_bitrow(decoder, 1, __func__, frame, declared_len * 8, "UART decoded frame");
+
+    /* clang-format off */
+    data_t *data = data_make(
+            "model",          "",                DATA_STRING, "RADIAN",
+            "len",            "Length",          DATA_INT,    declared_len,
+            "control",        "Control",         DATA_FORMAT, "0x%02x", DATA_INT, control,
+            "control_string", "Control type",    DATA_STRING, radian_control_string(control),
+            "header_variant", "Header variant",  DATA_STRING, spaced_hdr ? "spaced" : "compact",
+            "receiver_id",    "Receiver ID",     DATA_STRING, receiver,
+            "sender_id",      "Sender ID",       DATA_STRING, sender,
+            "body_len",       "Body length",     DATA_INT,    body_len,
+            "body",           "Body",            DATA_STRING, body,
+            "crc",            "CRC",             DATA_FORMAT, "0x%04x", DATA_INT, crc_rx,
+            "mic",            "Integrity",       DATA_STRING, "CRC",
+            "data",           "Data",            DATA_STRING, frame_hex,
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
+/**
+RADIAN / RADIAN0 meter.
+
+The physical/link layer is based on rtl_433 issue #3408 and the recovered
+RADIAN notes attached there:
+
+- FSK PCM at 2400 baud, nominal symbol width 416 us.
+- Preamble is alternating 0101... followed by a long low/high sync region.
+- Payload is UART 8N2: start=0, 8 data bits LSB-first, no parity, two stops=1.
+- Decoded frame has a length byte at byte 0.
+- Trailer is CRC-16/KERMIT over all bytes except the final two CRC bytes,
+  stored little-endian.
+
+This currently outputs the verified RADIAN transport fields and raw body
+bytes only. The response body appears to contain M-Bus-like DIF/DIFE/VIF
+records, but the #3408 sample does not yet pin a complete semantic map.
+
+Known flex equivalent for the #3408 sample:
+
+    rtl_433 -R 0 -X 'n=RADIAN,m=FSK_PCM,s=416,l=416,r=20000,preamble={36}0x0ffffffff,decode_uart=8n2'
+*/
+static int radian_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    int events = 0;
+    int aborts = 0;
+    int fails = 0;
+
+    for (unsigned row = 0; row < bitbuffer->num_rows; ++row) {
+        // Need enough bits for sync tail plus a minimum UART frame.
+        if (bitbuffer->bits_per_row[row] < 36 + RADIAN_MIN_FRAME_BYTES * 11) {
+            ++aborts;
+            continue;
+        }
+
+        int ret = radian_decode_row(decoder, bitbuffer, row);
+        if (ret > 0) {
+            events += ret;
+        }
+        else if (ret == DECODE_FAIL_MIC || ret == DECODE_FAIL_SANITY) {
+            ++fails;
+        }
+        else {
+            ++aborts;
+        }
+    }
+
+    if (events)
+        return events;
+    if (fails)
+        return DECODE_FAIL_MIC;
+    if (aborts)
+        return DECODE_ABORT_EARLY;
+    return DECODE_ABORT_LENGTH;
+}
+
+static char const *const radian_output_fields[] = {
+        "model",
+        "len",
+        "control",
+        "control_string",
+        "header_variant",
+        "receiver_id",
+        "sender_id",
+        "body_len",
+        "body",
+        "crc",
+        "mic",
+        "data",
+        NULL,
+};
+
+r_device const radian = {
+        .name        = "RADIAN/RADIAN0 meter",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 416,
+        .long_width  = 416,
+        .reset_limit = 20000,
+        .decode_fn   = &radian_decode,
+        .fields      = radian_output_fields,
+};

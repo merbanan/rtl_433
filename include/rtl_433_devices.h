@@ -386,6 +386,7 @@
     DECL(mcpower_kinetic) \
     DECL(typhur_sync_gold) \
     DECL(tpms_sefis_m3) \
+    DECL(radian) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
