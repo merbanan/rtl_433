@@ -470,6 +470,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [379]  RADIAN/RADIAN0 meter
     [380]* Jeep TPMS
     [381]  Honda (TRW PPA-GF33) TPMS
+    [382]* Cotech 36-7900 rain gauge
 
 * Disabled by default, use -R n or a conf file to enable
 
