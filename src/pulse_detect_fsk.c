@@ -449,7 +449,7 @@ int pulse_detect_fsk_package(pulse_detect_fsk_t *pulse_detect_fsk, int16_t const
     if (ook_pulses->serialno == pulse_detect_fsk->curr_serial
             && pulse_detect_fsk->pulse_done > 0 // this is implied by partial_pulse > 0
             && pulse_detect_fsk->partial_pulse > 0
-            && ook_pulses->num_pulses >= pulse_detect_fsk->pulse_done
+            && ook_pulses->num_pulses + 1 >= pulse_detect_fsk->pulse_done
             && pulse_detect_fsk->partial_pulse < (unsigned)ook_pulses->pulse[pulse_detect_fsk->pulse_done - 1]) {
 
         fprintf(stderr, "IMPORTANT: pulse_detect_fsk_package: continue a partial pulse %u==%u, %u done <= %u pulses now, partial %u, now %d length\n",
@@ -458,8 +458,15 @@ int pulse_detect_fsk_package(pulse_detect_fsk_t *pulse_detect_fsk, int16_t const
         unsigned fsk_start = 0;
         unsigned pulse_length = (unsigned)ook_pulses->pulse[pulse_detect_fsk->pulse_done - 1];
         unsigned fsk_end = pulse_length - pulse_detect_fsk->partial_pulse;
+        pulse_detect_fsk->partial_pulse = (unsigned)ook_pulses->pulse[pulse_detect_fsk->pulse_done - 1];
+
         if (pulse_detect_fsk_package_internal(pulse_detect_fsk, fm_data, fsk_start, fsk_end, fsk_pulses, fpdm)) {
-            return 1;
+            if (ook_pulses->gap[pulse_detect_fsk->pulse_done - 1] > 0) {
+                return 1; // complete pulse
+            }
+            else {
+                return 0; // still partial
+            }
         }
 
         // FIXME: run and return state
@@ -531,10 +538,11 @@ int pulse_detect_fsk_package(pulse_detect_fsk_t *pulse_detect_fsk, int16_t const
         }
 
         unsigned fsk_start = n_samples - pulse_start_ago;
-        unsigned fsk_end   = fsk_start + pulse_length;
+        unsigned fsk_end   = fsk_start + pulse_length + 1;
         fsk_pulses->start_ago         = pulse_start_ago;
         fsk_pulses->end_ago           = pulse_start_ago - pulse_length;
 
+        fsk_end   = MIN(fsk_end + 10, n_samples); // the gap_start leniency from ook detect
         if (pulse_detect_fsk_package_internal(pulse_detect_fsk, fm_data, fsk_start, fsk_end, fsk_pulses, fpdm)) {
             return 1;
         }
@@ -620,14 +628,14 @@ int pulse_detect_fsk_package(pulse_detect_fsk_t *pulse_detect_fsk, int16_t const
         }
 
         unsigned fsk_start = n_samples - pulse_start_ago;
-        unsigned fsk_end   = fsk_start + pulse_length;
+        unsigned fsk_end   = fsk_start + pulse_length + 1;
         fsk_pulses->start_ago = pulse_start_ago;
         fsk_pulses->end_ago   = pulse_start_ago - pulse_length;
 
         pulse_detect_fsk_package_internal(pulse_detect_fsk, fm_data, fsk_start, fsk_end, fsk_pulses, fpdm);
 /* COPIED */
 
-        pulse_detect_fsk->partial_pulse = (unsigned)ook_pulses->pulse[pulse_detect_fsk->pulse_done];
+        pulse_detect_fsk->partial_pulse = (unsigned)ook_pulses->pulse[pulse_detect_fsk->pulse_done - 1];
     }
 
     return 0;
