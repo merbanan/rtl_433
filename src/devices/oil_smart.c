@@ -21,7 +21,8 @@ Tested devices:
 
 Should apply to similar Watchman, Beckett, and Apollo devices too.
 
-There is a preamble plus de-sync of 555558, then MC coded an inner preamble of 5558 (raw 9999996a).
+There is a preamble plus de-sync of 555558, followed by a Manchester-coded 64-bit payload.
+The original sample's ID began with 5558 (raw 9999996a), which was initially mistaken for an inner preamble.
 End of frame is the last half-bit repeated additional 2 times, then 4 times mark.
 
 The sensor sends a single packet once every half hour to 33 mins or twice a second

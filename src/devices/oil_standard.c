@@ -42,6 +42,13 @@ Start of frame full preamble is depending on first data bit either
 */
 static int oil_standard_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
+    // The Smart protocol's 555558 preamble contains a Standard sync at bit 10.
+    // Reject clipped Smart packets before the checksumless Standard decoder can accept them.
+    uint8_t const smart_preamble[3] = {0x55, 0x55, 0x58};
+    if (bitpos >= 24 &&
+            bitbuffer_search(bitbuffer, row, bitpos - 24, smart_preamble, 24) == bitpos - 24)
+        return 0;
+
     bitbuffer_t databits = {0};
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &databits, 41);
 
