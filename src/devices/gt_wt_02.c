@@ -74,19 +74,36 @@ static int gt_wt_02_process_row(r_device *decoder, bitbuffer_t *bitbuffer, int r
     if ((sum_nibbles & 0x3F) != checksum)
         return 0; // DECODE_FAIL_MIC
 
-    // humidity: see above the note about working range
-    int humidity = (b[3] >> 1); // extract bits for humidity
-    if (humidity <= 10) // actually the sensors sends 10 below working range of 20%
-        humidity = 0;
-    else if (humidity > 90) // actually the sensors sends 110 above working range of 90%
-        humidity = 100;
-
     int sensor_id      = (b[0]);          // 8 bits
     int battery_low    = (b[1] >> 7 & 1); // 1 bits
     int button_pressed = (b[1] >> 6 & 1); // 1 bits
     int channel        = (b[1] >> 4 & 3); // 2 bits
     int temp_raw       = (int16_t)(((b[1] & 0x0f) << 12) | (b[2] << 4)); // uses sign extend
     float temp_c       = (temp_raw >> 4) * 0.1F;
+
+    if (channel > 2) {
+        decoder_log(decoder, 2, __func__, "invalid channel code");
+        return 0; // DECODE_FAIL_SANITY
+    }
+
+    // The sensor's specified temperature range is -20 C to 60 C.
+    if (temp_c < -20.0F || temp_c > 60.0F) {
+        decoder_logf(decoder, 2, __func__, "temperature sanity check failed: %.1f C", temp_c);
+        return 0; // DECODE_FAIL_SANITY
+    }
+
+    // Values outside the measurable humidity range use exact LL/HH sentinels.
+    int humidity_raw = b[3] >> 1;
+    if (humidity_raw != 10 && humidity_raw != 110
+            && (humidity_raw < 20 || humidity_raw > 90)) {
+        decoder_logf(decoder, 2, __func__, "invalid humidity value: %d", humidity_raw);
+        return 0; // DECODE_FAIL_SANITY
+    }
+    int humidity = humidity_raw;
+    if (humidity_raw == 10)
+        humidity = 0;
+    else if (humidity_raw == 110)
+        humidity = 100;
 
     /* clang-format off */
     data = data_make(
@@ -108,6 +125,10 @@ static int gt_wt_02_process_row(r_device *decoder, bitbuffer_t *bitbuffer, int r
 /** @sa gt_wt_02_process_row() */
 static int gt_wt_02_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    // A transmission contains at least a payload row and a framing row.
+    if (bitbuffer->num_rows < 2)
+        return DECODE_ABORT_LENGTH;
+
     int counter = 0;
     // iterate through all rows, return on first successful
     for (int row = 0; row < bitbuffer->num_rows && !counter; ++row)
