@@ -472,6 +472,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [381]  Honda (TRW PPA-GF33) TPMS
     [382]* Cotech 36-7900 rain gauge
     [383]  Silver Spring Networks mesh endpoint (-s 1600k)
+    [384]  Mercedes Benz Sprinter 4500 TPMS sensor (52 us capture compatibility)
 
 * Disabled by default, use -R n or a conf file to enable
 

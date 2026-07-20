@@ -13,7 +13,9 @@ Mercedes Benz Sprinter TPMS data.
 
 issue #3539:
 - 2025 Mercedes Benz Sprinter 4500 TPMS sensor
-- Signal is FSK MC and pulse width 25us.
+- The on-air signal uses FSK Manchester with 25 us half-bits.
+- Some degraded 250k recordings replay through a 52 us FSK PCM compatibility
+  slicer; this does not describe a second on-air protocol.
 - Preamble {12} 0x002 or 0xff2
 
 Data Layout:
@@ -114,6 +116,16 @@ r_device const tpms_mercedes_benz = {
         .modulation  = FSK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 25,
         .long_width  = 25,
+        .reset_limit = 2000,
+        .decode_fn   = &tpms_mercedes_benz_decode,
+        .fields      = output_fields,
+};
+
+r_device const tpms_mercedes_benz_pcm = {
+        .name        = "Mercedes Benz Sprinter 4500 TPMS sensor (52 us capture compatibility)",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 52,
+        .long_width  = 52,
         .reset_limit = 2000,
         .decode_fn   = &tpms_mercedes_benz_decode,
         .fields      = output_fields,
