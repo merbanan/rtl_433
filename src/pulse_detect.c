@@ -231,6 +231,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
 
         case PD_OOK_STATE_GAP_START:
             s->ook_state = PD_OOK_STATE_GAP;
+/*
             // Determine if FSK modulation is detected
             if (fsk_pulses->num_pulses > PD_MIN_PULSES) {
                 // Store last pulse/gap
@@ -248,6 +249,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
 
                 return PULSE_DATA_FSK;
             }
+*/
 
             // intentional fallthrough
 #if defined __has_attribute
@@ -265,7 +267,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
             pulses->ook_high_estimate = s->ook_high_estimate;
             pulses->end_ago           = len - s->data_counter;
 
-            return PULSE_DATA_OOK;
+            return PULSE_DATA_OOK_COMPLETE;
 
         default:
             fprintf(stderr, "demod_OOK(): Unknown state!!\n");
