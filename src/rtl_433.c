@@ -1532,7 +1532,7 @@ int main(int argc, char **argv) {
             abuf_t p = {0};
             abuf_init(&p, decoders_str, sizeof(decoders_str));
             // print registered decoder ranges
-            abuf_printf(&p, " [");
+            abuf_printf(&p, "Enabled protocols [");
             for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
                 r_device *r_dev = *iter;
                 unsigned num = r_dev->protocol_num;
@@ -1552,8 +1552,9 @@ int main(int argc, char **argv) {
             }
             abuf_printf(&p, " ]");
         }
-        print_logf(LOG_NOTICE, "Protocols", "Registered %zu out of %u device decoding protocols%s",
-                demod->r_devs.len, cfg->num_r_devices, decoders_str);
+        print_logf(LOG_NOTICE, "Protocols", "Registered %zu out of %u device decoding protocols",
+                demod->r_devs.len, cfg->num_r_devices);
+        print_log(LOG_NOTICE, "Protocols", decoders_str);
     }
 
     char const **well_known = well_known_output_fields(cfg);
