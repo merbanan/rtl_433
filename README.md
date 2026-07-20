@@ -61,7 +61,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)
        Specify a negative number to disable a device decoding protocol (can be used multiple times)
   [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)
-  [-Y auto | classic | minmax] FSK pulse detector mode.
+  [-Y auto | classic | minmax | hysteresis] FSK pulse detector mode.
   [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto).
   [-Y minlevel=<dB level>] Manual minimum detection level used to determine pulses (-1.0 to -99.0).
   [-Y minsnr=<dB level>] Minimum SNR to determine pulses (1.0 to 99.0).

@@ -22,6 +22,7 @@
 #define FSK_DEFAULT_FM_DELTA 6000       // Default estimate for frequency delta
 #define FSK_EST_SLOW        64          // Constant for slowness of FSK estimators
 #define FSK_EST_FAST        16          // Constant for slowness of FSK estimators
+#define FSK_MINMAX_HYSTERESIS_DIVISOR 3
 
 void pulse_detect_fsk_init(pulse_detect_fsk_t *s)
 {
@@ -155,7 +156,7 @@ void pulse_detect_fsk_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pulses)
     }
 }
 
-void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses)
+static void pulse_detect_fsk_minmax_impl(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses, int use_hysteresis)
 {
     int16_t mid = 0;
 
@@ -172,6 +173,8 @@ void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *
         if (fm_n < mid) {
             s->var_test_min += 10;
         }
+        int const span = s->var_test_max - s->var_test_min;
+        int const hyst = use_hysteresis && span > 0 ? span / FSK_MINMAX_HYSTERESIS_DIVISOR : 0;
 
         s->fsk_pulse_length += 1;
         switch(s->fsk_state) {
@@ -184,7 +187,7 @@ void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *
                 }
                 break;
             case PD_FSK_STATE_FH:
-                if (fm_n < mid) {
+                if (fm_n < mid - hyst) {
                     s->fsk_state = PD_FSK_STATE_FL;
                     fsk_pulses->pulse[fsk_pulses->num_pulses] = s->fsk_pulse_length;
                     s->fsk_pulse_length = 0;
@@ -192,7 +195,7 @@ void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *
                 s->fm_f2_est += fm_n / FSK_EST_SLOW - s->fm_f2_est / FSK_EST_SLOW; // Slow estimator
                 break;
             case PD_FSK_STATE_FL:
-                if (fm_n > mid) {
+                if (fm_n > mid + hyst) {
                     s->fsk_state = PD_FSK_STATE_FH;
                     fsk_pulses->gap[fsk_pulses->num_pulses] = s->fsk_pulse_length;
                     fsk_pulses->num_pulses += 1;
@@ -218,4 +221,14 @@ void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *
     if (s->skip_samples > 0) {
         s->skip_samples -= 1;
     }
+}
+
+void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses)
+{
+    pulse_detect_fsk_minmax_impl(s, fm_n, fsk_pulses, 0);
+}
+
+void pulse_detect_fsk_minmax_hysteresis(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses)
+{
+    pulse_detect_fsk_minmax_impl(s, fm_n, fsk_pulses, 1);
 }
