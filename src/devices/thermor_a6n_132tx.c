@@ -15,7 +15,7 @@ Thermor A6N 132TX temperature sensor.
 
 FCC: https://fccid.io/A6N-132TX
 
-32-bit frame, repeated 11 times (look for 5 identical versions).
+32-bit frame, repeated 11 times (require 5 identical versions).
 
 Data layout:
 
@@ -24,7 +24,7 @@ Data layout:
 - I: 4 bit ID
 - C: 2 bit channel
 - -: 2 bit unknown
-- T: 16 bit temperature, stored as int / 10 (e.g. 376 = 37.6C)
+- T: 16 bit temperature, stored as int / 10 (e.g. 376 = 37.6C), valid up to 250C
 - C: 8 bit checksum
 
 Checksum algorithm:
@@ -52,15 +52,13 @@ Flex decoder:
 
 static int thermor_a6n_132tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int row;
+    if (bitbuffer->num_rows < 5) {
+        return DECODE_ABORT_LENGTH;
+    }
 
-    if (bitbuffer->num_rows == 1 && bitbuffer->bits_per_row[0] == 32) {
-        row = 0;
-    } else {
-        row = bitbuffer_find_repeated_row(bitbuffer, 5, 32);
-        if (row < 0) {
-            return DECODE_ABORT_EARLY;
-        }
+    int row = bitbuffer_find_repeated_row(bitbuffer, 5, 32);
+    if (row < 0) {
+        return DECODE_ABORT_EARLY;
     }
 
     if (bitbuffer->bits_per_row[row] != 32) {
@@ -68,6 +66,11 @@ static int thermor_a6n_132tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     uint8_t *b = bitbuffer->bb[row];
+
+    int temp_raw = (b[1] << 8) | b[2];
+    if (temp_raw > 2500) {
+        return DECODE_FAIL_SANITY;
+    }
 
     // Checksum low nibble: sum of low nibbles of payload bytes (mod 16)
     int lo_sum = (b[0] & 0x0f) + (b[1] & 0x0f) + (b[2] & 0x0f);
@@ -97,7 +100,6 @@ static int thermor_a6n_132tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     int channel = (b[0] >> 2) & 0x03;
-    int temp_raw = (b[1] << 8) | b[2];
     float temperature_c = temp_raw * 0.1f;
 
     /* clang-format off */
