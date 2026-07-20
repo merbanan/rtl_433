@@ -76,4 +76,15 @@ void pulse_detect_fsk_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pulses);
 /// @param fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
 void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t const *fm_data, int count, pulse_data_t *fsk_pulses);
 
+/// Demodulate Frequency Shift Keying (FSK) using min/max tracking with hysteresis.
+///
+/// Uses a wide hysteresis band to complement the midpoint min/max detector on
+/// noisy signals rather than replacing its more sensitive slicing behavior.
+/// Function is stateful between calls.
+/// @param s Internal state
+/// @param fm_data Buffer of FM data
+/// @param count Number of samples in the buffer
+/// @param fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
+void pulse_detect_fsk_minmax_hysteresis(pulse_detect_fsk_t *s, int16_t const *fm_data, int count, pulse_data_t *fsk_pulses);
+
 #endif /* INCLUDE_PULSE_DETECT_FSK_H_ */

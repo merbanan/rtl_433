@@ -134,7 +134,7 @@ static void usage(int exit_code)
             "  [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)\n"
             "       Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
             "  [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)\n"
-            "  [-Y auto | classic | minmax] FSK pulse detector mode.\n"
+            "  [-Y auto | classic | minmax | hysteresis] FSK pulse detector mode.\n"
             "  [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto).\n"
             "  [-Y minlevel=<dB level>] Manual minimum detection level used to determine pulses (-1.0 to -99.0).\n"
             "  [-Y minsnr=<dB level>] Minimum SNR to determine pulses (1.0 to 99.0).\n"
@@ -956,6 +956,9 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             else if (kwargs_match(p, "minmax", &val)) {
                 cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_NEW;
             }
+            else if (kwargs_match(p, "hysteresis", &val)) {
+                cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_HYSTERESIS;
+            }
             else if (kwargs_match(p, "ampest", &val)) {
                 cfg->demod->use_mag_est = 0;
             }
@@ -1090,20 +1093,9 @@ static void process_sdr_frame(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         cfg->exit_async = 1;
     }
 
-    // Select needed discriminator based on current frequency or manual setting
-    unsigned fpdm = cfg->fsk_pulse_detect_mode;
-    if (cfg->fsk_pulse_detect_mode == FSK_PULSE_DETECT_AUTO) {
-        if (cfg->center_frequency > FSK_PULSE_DETECTOR_LIMIT) {
-            fpdm = FSK_PULSE_DETECT_NEW;
-        }
-        else {
-            fpdm = FSK_PULSE_DETECT_OLD;
-        }
-    }
-
     // Setup variable demod parameters
     cfg->demod->raw_handler           = &cfg->raw_handler;
-    cfg->demod->fsk_pulse_detect_mode = fpdm; // cfg->fsk_pulse_detect_mode;
+    cfg->demod->fsk_pulse_detect_mode = cfg->fsk_pulse_detect_mode;
     cfg->demod->report_noise          = cfg->report_noise;
     cfg->demod->verbosity             = cfg->verbosity;
     cfg->demod->raw_mode              = cfg->raw_mode;
