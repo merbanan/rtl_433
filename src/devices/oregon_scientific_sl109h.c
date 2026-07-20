@@ -9,7 +9,7 @@ Data layout (bits):
     AAAA CC HHHH HHHH TTTT TTTT TTTT SSSS IIII IIII
 
 - A: 4 bit checksum (add)
-- C: 2 bit channel number
+- C: 2 bit channel code (1/2 are channels 1/2, 0 is channel 3, 3 is invalid)
 - H: 8 bit BCD humidity
 - T: 12 bit signed temperature scaled by 10
 - S: 4 bit status, unknown
@@ -29,6 +29,10 @@ completely wrong values.
 
 static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    // Transmissions contain multiple rows; reject lone rows to limit random matches.
+    if (bitbuffer->num_rows < 2)
+        return DECODE_ABORT_LENGTH;
+
     data_t *data;
     uint8_t *msg;
     uint8_t b[5];
@@ -72,8 +76,12 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
             continue; // DECODE_FAIL_MIC
         }
 
-        channel = b[0] >> 4;
-        channel = (channel % 3) ? channel : 3;
+        int channel_code = b[0] >> 4;
+        if (channel_code == 3) {
+            decoder_log(decoder, 2, __func__, "invalid channel code");
+            continue; // DECODE_FAIL_SANITY
+        }
+        channel = channel_code ? channel_code : 3;
 
         // BCD humidity: reject invalid digits instead of reporting e.g. 150%.
         int hum_tens = b[0] & 0x0f;
