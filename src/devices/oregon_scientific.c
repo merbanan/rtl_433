@@ -645,7 +645,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     uint8_t const cm180_pattern[] = {0x00, 0x46};
     uint8_t const cm180i_pattern[] = {0x00, 0x4A};
     // CM130 preamble is 00 00 00 60, with 0x60 already data
-    uint8_t const cm130_pattern[] = {0x00, 0x60};
+    uint8_t const cm130_pattern[] = {0x00, 0x00, 0x00, 0x60};
     // workaround for a broken manchester demod
     // CM160 preamble might look like 7f ff ff aa, i.e. ff ff f5
     uint8_t const alt_pattern[] = {0xff, 0xf5};
@@ -653,7 +653,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     int os_pos     = bitbuffer_search(bitbuffer, 0, 0, os_pattern, 16) + 16;
     int cm180_pos  = bitbuffer_search(bitbuffer, 0, 0, cm180_pattern, 16) + 8;  // keep the 0x46
     int cm180i_pos = bitbuffer_search(bitbuffer, 0, 0, cm180i_pattern, 16) + 8; // keep the 0x46
-    int cm130_pos  = bitbuffer_search(bitbuffer, 0, 0, cm130_pattern, 16) + 8;  // keep the 0x60
+    int cm130_pos  = bitbuffer_search(bitbuffer, 0, 0, cm130_pattern, sizeof(cm130_pattern) * 8) + 24;  // keep the 0x60
     int alt_pos    = bitbuffer_search(bitbuffer, 0, 0, alt_pattern, 16) + 16;
 
     if (bitbuffer->bits_per_row[0] - os_pos >= 7 * 8) {
