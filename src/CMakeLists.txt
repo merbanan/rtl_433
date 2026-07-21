@@ -217,6 +217,7 @@ add_library(r_433 STATIC
     devices/efth800.c
     devices/elero.c
     devices/elro_db286a.c
+    devices/elsys_ers.c
     devices/elsner_solexa.c
     devices/elster_power_meter.c
     devices/elv.c
