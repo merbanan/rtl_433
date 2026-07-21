@@ -7,6 +7,7 @@
 add_library(r_433 STATIC
     abuf.c
     am_analyze.c
+    aes.c
     baseband.c
     bit_util.c
     bitbuffer.c
@@ -24,6 +25,7 @@ add_library(r_433 STATIC
     list.c
     logger.c
     lora.c
+    lorawan.c
     microtar.c
     mongoose.c
     optparse.c
@@ -223,6 +225,7 @@ add_library(r_433 STATIC
     devices/lacrosse_ws7000.c
     devices/lacrossews.c
     devices/lightwave_rf.c
+    devices/lorawan.c
     devices/m_bus.c
     devices/markisol.c
     devices/marlec_solar.c

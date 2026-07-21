@@ -23,7 +23,7 @@ endif()
 ########################################################################
 # target_compile_definitions was only added in CMake 2.8.11
 add_definitions(-D_TEST)
-foreach(testSrc bitbuffer.c fileformat.c optparse.c bit_util.c r_util.c abuf.c lora.c)
+foreach(testSrc bitbuffer.c fileformat.c optparse.c bit_util.c r_util.c abuf.c aes.c lora.c)
     get_filename_component(testName ${testSrc} NAME_WE)
 
     # Note that r_util.c needs compat_time.c shims
@@ -58,6 +58,39 @@ add_test(flex_decoder_w_getter_and_format_specifier bash -c
     ../src/rtl_433 \
         -X 'n=name,m=FSK_PCM,s=10,l=10,r=10240,get=@2:{32}:code:%x' \
         -r empty_file.cu8")
+
+# Independent LoRaWAN 1.0.x vectors from github.com/brocaar/lorawan.
+add_test(lorawan_data_vector
+    ../src/rtl_433
+    -R 385:nwkskey=02020202020202020202020202020202,appskey=01010101010101010101010101010101,devaddr=01020304
+    -F json
+    -y {144}400403020180010001a694642615d6c3b582)
+set_tests_properties(lorawan_data_vector PROPERTIES
+    PASS_REGULAR_EXPRESSION "Unconfirmed Data Up.*frm_payload.*68656c6c6f.*CMAC")
+
+add_test(lorawan_fport_zero_vector
+    ../src/rtl_433
+    -R 385:nwkskey=01010101010101010101010101010101,devaddr=01020304
+    -F json
+    -y {128}40040302010000000069369eee6aa508)
+set_tests_properties(lorawan_fport_zero_vector PROPERTIES
+    PASS_REGULAR_EXPRESSION "fport.*0.*frm_payload.*020305.*CMAC")
+
+add_test(lorawan_join_request_vector
+    ../src/rtl_433
+    -R 385:appkey=01010101010101010101010101010101
+    -F json
+    -y {184}00040302010403020105040302050403022d106a990e12)
+set_tests_properties(lorawan_join_request_vector PROPERTIES
+    PASS_REGULAR_EXPRESSION "Join Request.*join_eui.*0102030401020304.*dev_nonce.*4141.*CMAC")
+
+add_test(lorawan_join_accept_vector
+    ../src/rtl_433
+    -R 385:appkey=00112233445566778899aabbccddeeff
+    -F json
+    -y {136}20493eeb51fba2116f810edb3742975142)
+set_tests_properties(lorawan_join_accept_vector PROPERTIES
+    PASS_REGULAR_EXPRESSION "Join Accept.*join_nonce.*570bc7.*dev_addr.*02031980.*CMAC")
 
 # Black-box test of the HTTP/WS API server. Starts rtl_433 in manual device
 # mode (no SDR), exercises each endpoint, and shuts it down cleanly. Skipped
