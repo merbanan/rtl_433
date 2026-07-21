@@ -391,6 +391,7 @@
     DECL(tpms_honda) \
     DECL(cotech_36_7900) \
     DECL(silver_spring_mesh) \
+    DECL(cotech_36_9231) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
