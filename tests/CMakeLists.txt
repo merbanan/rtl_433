@@ -59,6 +59,15 @@ add_test(flex_decoder_w_getter_and_format_specifier bash -c
         -X 'n=name,m=FSK_PCM,s=10,l=10,r=10240,get=@2:{32}:code:%x' \
         -r empty_file.cu8")
 
+# OpenSSL-generated LoRaWAN 1.0.x uplink containing an ELSYS ERS CO2 payload.
+add_test(elsys_ers_lorawan
+    ../src/rtl_433
+    -R 386:nwkskey=000102030405060708090a0b0c0d0e0f,appskey=101112131415161718191a1b1c1d1e1f,devaddr=26011bda
+    -F json
+    -y {232}40da1b0126803412054c7b09b35182041da68f1d7f476c16913de6aa95)
+set_tests_properties(elsys_ers_lorawan PROPERTIES
+    PASS_REGULAR_EXPRESSION "ELSYS-ERS-CO2.*temperature_C.*20.500.*co2_ppm.*420.*CMAC")
+
 # Independent LoRaWAN 1.0.x vectors from github.com/brocaar/lorawan.
 add_test(lorawan_data_vector
     ../src/rtl_433
