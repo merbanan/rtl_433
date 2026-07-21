@@ -14,6 +14,9 @@ if(UNIX)
 endif()
 add_test(pulse-detect-test pulse-detect-test)
 
+add_executable(fft-test fft-test.c ../src/fft.c)
+add_test(fft-test fft-test)
+
 add_executable(baseband-test baseband-test.c ../src/baseband.c ../src/logger.c)
 
 if(UNIX)
