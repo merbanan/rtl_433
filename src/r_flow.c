@@ -314,10 +314,18 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 uint64_t const buffer_end = demod->input_pos + n_samples;
                 demod->pulse_data.start_ago = packets[i].start_offset < buffer_end
                         ? (unsigned)(buffer_end - packets[i].start_offset) : 0;
+                demod->lora_spreading_factor = packets[i].spreading_factor;
+                demod->lora_bandwidth = packets[i].bandwidth;
+                demod->lora_coding_rate = packets[i].coding_rate;
+                demod->lora_sync_word = packets[i].sync_word;
                 d_events += run_lora_demods(&demod->r_devs,
                         packets[i].payload, packets[i].payload_len,
                         packets[i].spreading_factor, packets[i].bandwidth,
                         packets[i].sync_word);
+                demod->lora_spreading_factor = 0;
+                demod->lora_bandwidth = 0;
+                demod->lora_coding_rate = 0;
+                demod->lora_sync_word = 0;
             }
         }
     }

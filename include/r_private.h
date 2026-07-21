@@ -55,6 +55,10 @@ struct dm_state {
     pulse_data_t pulse_data;
     pulse_data_t fsk_pulse_data; ///< FSK pulse data currently exposed to decoders and metadata handlers.
     pulse_data_t fsk_pulse_data_all[FSK_PULSE_DETECTOR_COUNT];
+    unsigned lora_spreading_factor; ///< SF of the LoRa packet being dispatched.
+    uint32_t lora_bandwidth;        ///< Bandwidth of the LoRa packet being dispatched.
+    unsigned lora_coding_rate;      ///< Coding-rate suffix: 1 means 4/5, 4 means 4/8.
+    unsigned lora_sync_word;        ///< Sync word of the LoRa packet being dispatched.
     uint64_t input_pos;
     unsigned frame_event_count;
     int frame_quality;

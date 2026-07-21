@@ -342,7 +342,8 @@ char *time_pos_str(r_cfg_t *cfg, unsigned samples_ago, char *buf)
 // well-known field "tag" is only used when output tagging is requested
 // well-known field "protocol" is only used when model protocol is requested
 // well-known field "description" is only used when model description is requested
-// well-known fields "mod", "freq", "freq1", "freq2", "rssi", "snr", "noise" are used by meta report option
+// well-known fields "mod", "freq", "freq1", "freq2", "rssi", "snr", "noise",
+// "sf", "bw", "cr", and "sync" are used by the meta report option
 char const **well_known_output_fields(r_cfg_t *cfg)
 {
     list_t field_list = {0};
@@ -377,6 +378,10 @@ char const **well_known_output_fields(r_cfg_t *cfg)
         list_push(&field_list, "rssi");
         list_push(&field_list, "snr");
         list_push(&field_list, "noise");
+        list_push(&field_list, "sf");
+        list_push(&field_list, "bw");
+        list_push(&field_list, "cr");
+        list_push(&field_list, "sync");
     }
 
     return (char const **)field_list.elems;
@@ -896,7 +901,18 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 data_int(NULL, "protocol", "Protocol", NULL, r_dev->protocol_num));
     }
 
-    if (cfg->report_meta && cfg->demod->fsk_pulse_data.fsk_f2_est) {
+    if (cfg->report_meta && cfg->demod->lora_spreading_factor) {
+        char coding_rate[4];
+        snprintf(coding_rate, sizeof(coding_rate), "4/%u",
+                cfg->demod->lora_coding_rate + 4);
+        data = data_str(data, "mod",  "Modulation",       NULL,         "LoRa");
+        data = data_dbl(data, "freq", "Freq",             "%.1f MHz",   cfg->demod->center_frequency / 1000000.0);
+        data = data_int(data, "sf",   "Spreading factor", NULL,         cfg->demod->lora_spreading_factor);
+        data = data_dbl(data, "bw",   "Bandwidth",        "%.1f kHz",   cfg->demod->lora_bandwidth / 1000.0);
+        data = data_str(data, "cr",   "Coding rate",      NULL,         coding_rate);
+        data = data_int(data, "sync", "Sync word",        "0x%02x",     cfg->demod->lora_sync_word);
+    }
+    else if (cfg->report_meta && cfg->demod->fsk_pulse_data.fsk_f2_est) {
         data = data_str(data, "mod",   "Modulation",  NULL,         "FSK");
         data = data_dbl(data, "freq1", "Freq1",       "%.1f MHz",   cfg->demod->fsk_pulse_data.freq1_hz / 1000000.0);
         data = data_dbl(data, "freq2", "Freq2",       "%.1f MHz",   cfg->demod->fsk_pulse_data.freq2_hz / 1000000.0);
