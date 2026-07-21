@@ -135,6 +135,7 @@ static void usage(int exit_code)
             "       Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
             "  [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)\n"
             "  [-Y auto | classic | minmax | hysteresis | median] FSK pulse detector mode.\n"
+            "  [-Y lora-fft] Enable FFT LoRa; use -s 1000k or 2000k (not 1024k).\n"
             "  [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto).\n"
             "  [-Y minlevel=<dB level>] Manual minimum detection level used to determine pulses (-1.0 to -99.0).\n"
             "  [-Y minsnr=<dB level>] Minimum SNR to determine pulses (1.0 to 99.0).\n"
@@ -962,6 +963,19 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             else if (kwargs_match(p, "median", &val)) {
                 cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_MEDIAN;
             }
+            else if (kwargs_match(p, "lora-fft", &val)) {
+                int const enabled = atobv(val, 1);
+                if (enabled && !cfg->demod->lora_fft_demod) {
+                    cfg->demod->lora_fft_demod = lora_fft_demod_create();
+                    if (!cfg->demod->lora_fft_demod) {
+                        FATAL_CALLOC("lora_fft_demod_create()");
+                    }
+                }
+                else if (!enabled && cfg->demod->lora_fft_demod) {
+                    lora_fft_demod_free(cfg->demod->lora_fft_demod);
+                    cfg->demod->lora_fft_demod = NULL;
+                }
+            }
             else if (kwargs_match(p, "ampest", &val)) {
                 cfg->demod->use_mag_est = 0;
             }
@@ -1510,7 +1524,8 @@ int main(int argc, char **argv) {
     // check if we need FM demod
     for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
         r_device *r_dev = *iter;
-        if (r_dev->modulation >= FSK_DEMOD_MIN_VAL) {
+        if (r_dev->modulation >= FSK_DEMOD_MIN_VAL
+                && r_dev->modulation < LORA_DEMOD_MIN_VAL) {
             demod->enable_FM_demod = 1;
             break;
         }

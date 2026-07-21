@@ -24,6 +24,8 @@
 #include "r_device.h"
 #include "pulse_slicer.h"
 #include "pulse_detect_fsk.h"
+#include "bitbuffer.h"
+#include "decoder_util.h"
 #include "sdr.h"
 #include "data.h"
 #include "data_tag.h"
@@ -206,6 +208,9 @@ void r_free_cfg(r_cfg_t *cfg)
 
     pulse_detect_free(cfg->demod->pulse_detect);
     cfg->demod->pulse_detect = NULL;
+
+    lora_fft_demod_free(cfg->demod->lora_fft_demod);
+    cfg->demod->lora_fft_demod = NULL;
 
     list_free_elems(&cfg->raw_handler, (list_elem_free_fn)raw_output_free);
 
@@ -489,6 +494,7 @@ int run_ook_demods(list_t *r_devs, pulse_data_t *pulse_data)
             case FSK_PULSE_PCM:
             case FSK_PULSE_PWM:
             case FSK_PULSE_MANCHESTER_ZEROBIT:
+            case LORA:
                 break;
             default:
                 fprintf(stderr, "Unknown modulation %u in protocol!\n", r_dev->modulation);
@@ -540,6 +546,8 @@ int run_fsk_demods(list_t *r_devs, pulse_data_t *fsk_pulse_data)
             case FSK_PULSE_MANCHESTER_ZEROBIT:
                 p_events += pulse_slicer_manchester_zerobit(fsk_pulse_data, r_dev);
                 break;
+            case LORA:
+                break;
             default:
                 fprintf(stderr, "Unknown modulation %u in protocol!\n", r_dev->modulation);
             }
@@ -547,6 +555,92 @@ int run_fsk_demods(list_t *r_devs, pulse_data_t *fsk_pulse_data)
     }
 
     return p_events;
+}
+
+int get_lora_params(list_t *r_devs, unsigned *spreading_factor,
+        uint32_t *bandwidth, unsigned *sync_word)
+{
+    int found = 0;
+    for (void **iter = r_devs->elems; iter && *iter; ++iter) {
+        r_device const *r_dev = *iter;
+        if (r_dev->modulation == LORA) {
+            if (!found) {
+                *spreading_factor = r_dev->lora_spreading_factor;
+                *bandwidth = r_dev->lora_bandwidth;
+                *sync_word = r_dev->lora_sync_word;
+                found = 1;
+            }
+            else {
+                if (*spreading_factor != r_dev->lora_spreading_factor) {
+                    *spreading_factor = 0;
+                }
+                if (*bandwidth != r_dev->lora_bandwidth) {
+                    *bandwidth = 0;
+                }
+                if (*sync_word != r_dev->lora_sync_word) {
+                    *sync_word = 0;
+                }
+            }
+        }
+    }
+    return found;
+}
+
+static int account_lora_event(r_device *device, bitbuffer_t *bits)
+{
+    int ret = device->decode_fn ? device->decode_fn(device, bits) : 0;
+    device->decode_events += 1;
+    if (ret > 0) {
+        device->decode_ok += 1;
+        device->decode_messages += ret;
+    }
+    else if (ret >= DECODE_FAIL_SANITY) {
+        device->decode_fails[-ret] += 1;
+        ret = 0;
+    }
+    else {
+        print_logf(LOG_ERROR, __func__, "Decoder \"%s\" gave invalid return value %d: notify maintainer",
+                device->name, ret);
+        exit(1);
+    }
+
+    if (!device->decode_fn || (device->verbose && ret > 0) || device->verbose > 1) {
+        decoder_log_bitbuffer(device, ret > 0 ? 1 : 2, __func__, bits, device->name);
+    }
+    return ret;
+}
+
+int run_lora_demods(list_t *r_devs, uint8_t const *payload,
+        unsigned payload_len, unsigned spreading_factor,
+        uint32_t bandwidth, unsigned sync_word)
+{
+    bitbuffer_t bits = {0};
+    bits.num_rows = 1;
+    bits.bits_per_row[0] = payload_len * 8;
+    memcpy(bits.bb[0], payload, payload_len);
+
+    int events = 0;
+    unsigned next_priority = 0;
+    for (unsigned priority = 0; !events && priority < UINT_MAX; priority = next_priority) {
+        next_priority = UINT_MAX;
+        for (void **iter = r_devs->elems; iter && *iter; ++iter) {
+            r_device *r_dev = *iter;
+            if (r_dev->priority > priority && r_dev->priority < next_priority) {
+                next_priority = r_dev->priority;
+            }
+            if (r_dev->priority != priority || r_dev->modulation != LORA
+                    || (r_dev->lora_spreading_factor
+                            && r_dev->lora_spreading_factor != spreading_factor)
+                    || (r_dev->lora_bandwidth
+                            && r_dev->lora_bandwidth != bandwidth)
+                    || (r_dev->lora_sync_word
+                            && r_dev->lora_sync_word != sync_word)) {
+                continue;
+            }
+            events += account_lora_event(r_dev, &bits);
+        }
+    }
+    return events;
 }
 
 /* handlers */

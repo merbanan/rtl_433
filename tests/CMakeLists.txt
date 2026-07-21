@@ -23,7 +23,7 @@ endif()
 ########################################################################
 # target_compile_definitions was only added in CMake 2.8.11
 add_definitions(-D_TEST)
-foreach(testSrc bitbuffer.c fileformat.c optparse.c bit_util.c r_util.c abuf.c)
+foreach(testSrc bitbuffer.c fileformat.c optparse.c bit_util.c r_util.c abuf.c lora.c)
     get_filename_component(testName ${testSrc} NAME_WE)
 
     # Note that r_util.c needs compat_time.c shims
@@ -32,10 +32,14 @@ foreach(testSrc bitbuffer.c fileformat.c optparse.c bit_util.c r_util.c abuf.c)
     add_test(${testName}_test test_${testName})
 endforeach(testSrc)
 
+# lora.c has a test main but uses the production FFT and CRC helpers.
+target_link_libraries(test_lora r_433)
+
 ########################################################################
 # Define integration tests
 ########################################################################
 add_test(rtl_433_help ../src/rtl_433 -h)
+add_test(lora_fft_demod_option ../src/rtl_433 -Y lora-fft -h)
 add_test(flex_decoder_help ../src/rtl_433 -X)
 add_test(flex_decoder bash -c
     "touch empty_file.cu8 && \

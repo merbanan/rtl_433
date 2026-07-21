@@ -142,6 +142,7 @@ void reset_sdr_flow(r_cfg_t *cfg)
     baseband_demod_FM_reset(&demod->demod_FM_state);
 
     pulse_detect_reset(demod->pulse_detect);
+    lora_fft_demod_reset(demod->lora_fft_demod);
 }
 
 /**
@@ -280,6 +281,46 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
 
     // Run a pulse discriminator and pass packages to all configured slicers
     int d_events = 0; // Sensor events successfully detected
+    int const iq_input = !demod->load_info.format
+            || demod->load_info.format == CU8_IQ
+            || demod->load_info.format == CS8_IQ
+            || demod->load_info.format == CS16_IQ
+            || demod->load_info.format == CF32_IQ;
+    /* LoRa analysis is CPU intensive and is opt-in through -Y lora-fft. */
+    if (demod->lora_fft_demod && len && process_frame && iq_input) {
+        unsigned spreading_factor;
+        uint32_t bandwidth;
+        unsigned sync_word;
+        if (get_lora_params(&demod->r_devs, &spreading_factor, &bandwidth, &sync_word)) {
+            lora_packet_t packets[8];
+            int packet_count;
+            if (demod->sample_size == 2) {
+                packet_count = lora_fft_demod_process_cu8(demod->lora_fft_demod, iq_buf,
+                        n_samples, demod->input_pos, demod->samp_rate,
+                        spreading_factor, bandwidth, sync_word, packets, 8);
+            }
+            else {
+                packet_count = lora_fft_demod_process_cs16(demod->lora_fft_demod,
+                        (int16_t const *)iq_buf, n_samples, demod->input_pos,
+                        demod->samp_rate, spreading_factor, bandwidth,
+                        sync_word, packets, 8);
+            }
+
+            if (packet_count < 0) {
+                print_logf(LOG_WARNING, "LoRa FFT", "No supported SF/BW candidates at %u samples per second",
+                        demod->samp_rate);
+            }
+            for (int i = 0; i < packet_count; ++i) {
+                uint64_t const buffer_end = demod->input_pos + n_samples;
+                demod->pulse_data.start_ago = packets[i].start_offset < buffer_end
+                        ? (unsigned)(buffer_end - packets[i].start_offset) : 0;
+                d_events += run_lora_demods(&demod->r_devs,
+                        packets[i].payload, packets[i].payload_len,
+                        packets[i].spreading_factor, packets[i].bandwidth,
+                        packets[i].sync_word);
+            }
+        }
+    }
     if (demod->r_devs.len || demod->analyze_pulses || demod->dumper.len || demod->samp_grab) {
         // Detect a package and loop through demodulators with pulse data
         int package_type = PULSE_DATA_OOK;  // Just to get us started

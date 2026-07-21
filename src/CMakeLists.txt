@@ -23,6 +23,7 @@ add_library(r_433 STATIC
     jsmn.c
     list.c
     logger.c
+    lora.c
     microtar.c
     mongoose.c
     optparse.c
