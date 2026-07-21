@@ -134,7 +134,7 @@ static void usage(int exit_code)
             "  [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)\n"
             "       Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
             "  [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)\n"
-            "  [-Y auto | classic | minmax | hysteresis] FSK pulse detector mode.\n"
+            "  [-Y auto | classic | minmax | hysteresis | median] FSK pulse detector mode.\n"
             "  [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto).\n"
             "  [-Y minlevel=<dB level>] Manual minimum detection level used to determine pulses (-1.0 to -99.0).\n"
             "  [-Y minsnr=<dB level>] Minimum SNR to determine pulses (1.0 to 99.0).\n"
@@ -958,6 +958,9 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             }
             else if (kwargs_match(p, "hysteresis", &val)) {
                 cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_HYSTERESIS;
+            }
+            else if (kwargs_match(p, "median", &val)) {
+                cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_MEDIAN;
             }
             else if (kwargs_match(p, "ampest", &val)) {
                 cfg->demod->use_mag_est = 0;

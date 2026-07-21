@@ -78,22 +78,29 @@ static unsigned fsk_detector_order(struct dm_state const *demod, unsigned order[
         order[0] = FSK_PULSE_DETECTOR_HYSTERESIS;
         return 1;
     }
+    if (demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_MEDIAN) {
+        order[0] = FSK_PULSE_DETECTOR_MEDIAN;
+        return 1;
+    }
     if (demod->center_frequency > FSK_PULSE_DETECTOR_LIMIT) {
         order[0] = FSK_PULSE_DETECTOR_MINMAX;
         order[1] = FSK_PULSE_DETECTOR_CLASSIC;
         order[2] = FSK_PULSE_DETECTOR_HYSTERESIS;
+        order[3] = FSK_PULSE_DETECTOR_MEDIAN;
     }
     else {
         order[0] = FSK_PULSE_DETECTOR_CLASSIC;
         order[1] = FSK_PULSE_DETECTOR_MINMAX;
         order[2] = FSK_PULSE_DETECTOR_HYSTERESIS;
+        order[3] = FSK_PULSE_DETECTOR_MEDIAN;
     }
     return FSK_PULSE_DETECTOR_COUNT;
 }
 
 static char const *fsk_detector_name(unsigned detector)
 {
-    static char const *const names[FSK_PULSE_DETECTOR_COUNT] = {"classic", "minmax", "hysteresis"};
+    static char const *const names[FSK_PULSE_DETECTOR_COUNT] = {
+            "classic", "minmax", "hysteresis", "median"};
     return detector < FSK_PULSE_DETECTOR_COUNT ? names[detector] : "unknown";
 }
 
@@ -244,6 +251,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         // Preserve the legacy frequency-dependent filter while running the pulse detectors in parallel.
         int const prefer_minmax = demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_NEW
                 || demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_HYSTERESIS
+                || demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_MEDIAN
                 || (demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_AUTO
                         && demod->center_frequency > FSK_PULSE_DETECTOR_LIMIT);
         float fm_low_pass = demod->fm_low_pass != 0.0f ? demod->fm_low_pass : (prefer_minmax ? 0.2f : 0.1f);

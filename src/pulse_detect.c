@@ -64,6 +64,9 @@ static int fsk_detector_enabled(unsigned fpdm, unsigned detector)
     if (fpdm == FSK_PULSE_DETECT_HYSTERESIS) {
         return detector == FSK_PULSE_DETECTOR_HYSTERESIS;
     }
+    if (fpdm == FSK_PULSE_DETECT_MEDIAN) {
+        return detector == FSK_PULSE_DETECTOR_MEDIAN;
+    }
     return fpdm == FSK_PULSE_DETECT_AUTO;
 }
 
@@ -88,6 +91,10 @@ static void pulse_detect_fsk_sample(pulse_detect_t *s, int16_t fm_n,
     if (fsk_detector_enabled(fpdm, FSK_PULSE_DETECTOR_HYSTERESIS)) {
         pulse_detect_fsk_minmax_hysteresis(&s->pulse_detect_fsk[FSK_PULSE_DETECTOR_HYSTERESIS], fm_n,
                 &fsk_pulses[FSK_PULSE_DETECTOR_HYSTERESIS]);
+    }
+    if (fsk_detector_enabled(fpdm, FSK_PULSE_DETECTOR_MEDIAN)) {
+        pulse_detect_fsk_minmax_median(&s->pulse_detect_fsk[FSK_PULSE_DETECTOR_MEDIAN], fm_n,
+                &fsk_pulses[FSK_PULSE_DETECTOR_MEDIAN]);
     }
 }
 
