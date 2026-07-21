@@ -36,6 +36,7 @@
 #include "sdr.h"
 #include "r_flow.h"
 #include "baseband.h"
+#include "bitbuffer.h"
 #include "pulse_analyzer.h"
 #include "pulse_detect.h"
 #include "pulse_detect_fsk.h"
@@ -1021,6 +1022,43 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
     }
 }
 
+/** Test an already-demodulated bit string.
+
+    LoRa application decoders share a PHY payload with the generic LoRaWAN
+    fallback, so an all-LoRa test set must use normal priority dispatch.
+*/
+static int run_demodulated_test_data(r_cfg_t *cfg, char const *code)
+{
+    list_t *devices = &cfg->demod->r_devs;
+    int all_lora = devices->len > 0;
+    for (void **iter = devices->elems; iter && *iter; ++iter) {
+        r_device const *r_dev = *iter;
+        if (r_dev->modulation != LORA) {
+            all_lora = 0;
+            break;
+        }
+    }
+    if (all_lora) {
+        bitbuffer_t bits = {0};
+        bitbuffer_parse(&bits, code);
+        if (bits.num_rows != 1 || bits.bits_per_row[0] % 8) {
+            return 0;
+        }
+        return run_lora_demods(devices, bits.bb[0],
+                bits.bits_per_row[0] / 8, 0, 0, 0);
+    }
+
+    int events = 0;
+    for (void **iter = devices->elems; iter && *iter; ++iter) {
+        r_device *r_dev = *iter;
+        if (cfg->verbosity >= LOG_NOTICE) {
+            print_logf(LOG_NOTICE, "Input", "Verifying test data with device %s.", r_dev->name);
+        }
+        events += pulse_slicer_string(code, r_dev);
+    }
+    return events;
+}
+
 static r_cfg_t g_cfg;
 static volatile sig_atomic_t sig_hup;
 
@@ -1653,13 +1691,9 @@ int main(int argc, char **argv) {
                 }
                 else
                     r += run_fsk_demods(&demod->r_devs, &pulse_data);
-            } else
-            for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
-                r_device *r_dev = *iter;
-                if (cfg->verbosity >= LOG_NOTICE) {
-                    print_logf(LOG_NOTICE, "Input", "Verifying test data with device %s.", r_dev->name);
-                }
-                r += pulse_slicer_string(line, r_dev);
+            }
+            else {
+                r += run_demodulated_test_data(cfg, line);
             }
         }
 
@@ -1682,13 +1716,9 @@ int main(int argc, char **argv) {
             else {
                 r += run_fsk_demods(&demod->r_devs, &pulse_data);
             }
-        } else
-        for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
-            r_device *r_dev = *iter;
-            if (cfg->verbosity >= LOG_NOTICE) {
-                print_logf(LOG_NOTICE, "Input", "Verifying test data with device %s.", r_dev->name);
-            }
-            r += pulse_slicer_string(cfg->test_data, r_dev);
+        }
+        else {
+            r += run_demodulated_test_data(cfg, cfg->test_data);
         }
         r_free_cfg(cfg);
         exit(!r);

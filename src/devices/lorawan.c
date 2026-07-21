@@ -191,5 +191,7 @@ r_device const lorawan = {
         .lora_sync_word = 0x34,
         .decode_fn = &lorawan_decode,
         .create_fn = &lorawan_create,
+        /* Application decoders use priority 0; report unmatched MAC frames. */
+        .priority = 1,
         .fields = output_fields,
 };

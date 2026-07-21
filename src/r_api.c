@@ -629,11 +629,11 @@ int run_lora_demods(list_t *r_devs, uint8_t const *payload,
                 next_priority = r_dev->priority;
             }
             if (r_dev->priority != priority || r_dev->modulation != LORA
-                    || (r_dev->lora_spreading_factor
+                    || (spreading_factor && r_dev->lora_spreading_factor
                             && r_dev->lora_spreading_factor != spreading_factor)
-                    || (r_dev->lora_bandwidth
+                    || (bandwidth && r_dev->lora_bandwidth
                             && r_dev->lora_bandwidth != bandwidth)
-                    || (r_dev->lora_sync_word
+                    || (sync_word && r_dev->lora_sync_word
                             && r_dev->lora_sync_word != sync_word)) {
                 continue;
             }
