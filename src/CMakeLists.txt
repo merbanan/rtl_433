@@ -86,6 +86,7 @@ add_library(r_433 STATIC
     devices/bresser_5in1.c
     devices/bresser_6in1.c
     devices/bresser_7in1.c
+    devices/bresser_garden.c
     devices/bresser_leakage.c
     devices/bresser_lightning.c
     devices/bresser_st1005h.c
