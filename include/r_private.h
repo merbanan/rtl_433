@@ -16,6 +16,7 @@
 #include "am_analyze.h"
 #include "rtl_433.h"
 #include "compat_time.h"
+#include "lora.h"
 
 struct dm_state {
     float auto_level;
@@ -40,6 +41,7 @@ struct dm_state {
     int sample_size; // CU8: 2, CS16: 4
     pulse_detect_t *pulse_detect;
     pulse_detect_fsk_t pulse_detect_fsk[FSK_PULSE_DETECTOR_COUNT];
+    lora_fft_demod_t *lora_fft_demod; // allocated only with -Y lora-fft
     filter_state_t lowpass_filter_state;
     demodfm_state_t demod_FM_state;
     int enable_FM_demod;
