@@ -18,6 +18,36 @@
 #include <stdlib.h>
 #include <string.h>
 
+/*
+TODO:
+## Fail with tests/alecto_ws_1200/01/g001_433.92M_250k.cu8
+## Fail with tests/Toyota_TPMS/03/others/g002_315M_250k.cu8
+## Fail with tests/Toyota_TPMS/03/others/g005_314.98M_250k.cu8
+## Fail with tests/Toyota_TPMS/03/others/g006_314.98M_250k.cu8
+## Fail with tests/holman_ws5029/02/g022_433.92M_250k.cu8
+## Fail with tests/holman_ws5029/02/g020_433.92M_250k.cu8
+## Fail with tests/holman_ws5029/02/g009_433.92M_250k.cu8
+## Fail with tests/holman_ws5029/02/g005_433.92M_250k.cu8
+## Fail with tests/holman_ws5029/02/g019_433.92M_250k.cu8
+## Fail with tests/holman_ws5029/02/g004_433.92M_250k.cu8
+## Fail with tests/holman_ws5029/02/g001_433.92M_250k.cu8
+## Fail with tests/holman_ws5029/02/g007_433.92M_250k.cu8
+## Fail with tests/holman_ws5029/02/g002_433.92M_250k.cu8
+## Fail with tests/holman_ws5029/02/g006_433.92M_250k.cu8
+## Fail with tests/hosmart/01/g011_433.92M_250k.cu8
+## Fail with tests/nidec/OUCG8D-344H-A/01/unlock_313.8M_1024k.cu8
+## Fail with tests/TFA-303307/01/g003_868M_1000k.cu8
+## Fail with tests/TFA-303307/01/g013_868M_1000k.cu8
+## Fail with tests/TFA-303307/01/g007_868M_1000k.cu8
+## Fail with tests/froggit_wh1080_Pass14c/01/gfile001.cu8
+## Fail with tests/insteon/03/g005_915M_1024k.cu8
+## Fail with tests/insteon/03/g006_915M_1024k.cu8
+## Fail with tests/insteon/01/g002_915M_1024k.cu8
+## Fail with tests/insteon/01/g003_915M_1024k.cu8
+## Fail with tests/insteon/01/g001_915M_1024k.cu8
+## Fail with tests/continental/72147-SNA-A01/01/trunk_long_press_313.8M_1024k.cu8
+*/
+
 // FSK adaptive frequency estimator constants
 #define FSK_DEFAULT_FM_DELTA 6000       // Default estimate for frequency delta
 #define FSK_EST_SLOW        64          // Constant for slowness of FSK estimators
@@ -364,6 +394,21 @@ static int pulse_detect_fsk_package_internal(pulse_detect_fsk_t *pulse_detect_fs
         // FIXME: pull the loop into the fsk detectors
         for (unsigned j = fsk_start; j < fsk_end; ++j) {
             pulse_detect_fsk_minmax(pulse_detect_fsk, fm_data[j], fsk_pulses);
+        }
+    }
+
+    // Handle the quirk where a gap starts the frame and we need to collapse two entries
+    for (unsigned j = 1; j < fsk_pulses->num_pulses; ++j) {
+        if (fsk_pulses->pulse[j] == 0) {
+            // collapse with previous entry
+            // fsk_pulses->gap[j - 1] += fsk_pulses->gap[j]; // FIXME: should the gap expand?
+            fsk_pulses->gap[j - 1] = fsk_pulses->gap[j];
+            // shift all entries
+            for (unsigned k = j; k < fsk_pulses->num_pulses; ++k) {
+                fsk_pulses->pulse[k] = fsk_pulses->pulse[k + 1];
+                fsk_pulses->gap[k] = fsk_pulses->gap[k + 1];
+            }
+            fsk_pulses->num_pulses -= 1;
         }
     }
 
