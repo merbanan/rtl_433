@@ -7,6 +7,9 @@ target_link_libraries(data-test data)
 
 add_test(data-test data-test)
 
+add_executable(fft-test fft-test.c ../src/fft.c)
+add_test(fft-test fft-test)
+
 add_executable(baseband-test baseband-test.c ../src/baseband.c ../src/logger.c)
 
 if(UNIX)
