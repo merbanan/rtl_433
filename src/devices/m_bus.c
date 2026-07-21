@@ -149,6 +149,13 @@ typedef struct {
     uint8_t     ST;
     uint16_t    CW;         // Configuration word
     uint8_t     pl_offset;  // Payload offset
+    /* Extended Link Layer (EN 13757-4), when the frame has one: this
+       wraps the actual Transport/Application Layer CI above, which is
+       parsed from just after it once found not to be encrypted. */
+    uint8_t     ell_ci;
+    uint8_t     ell_cc;
+    uint8_t     ell_acc;
+    uint8_t     ell_sec_mode;
     /* KNX */
     uint8_t     knx_ctrl;
     uint16_t    src;
@@ -868,19 +875,105 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
     }
 }
 
+// EN 13757-4 Extended Link Layer (ELL): an optional sub-header that can
+// sit between the DLL and the real Transport/Application Layer CI this
+// function otherwise expects, used for link-layer addressing and/or
+// encryption. Byte layout after the CI byte (EN 13757-4 Table 44-47):
+//
+//     CI  CC  ACC [ M2(2) A2(4) VER TYPE ]  [ SN(4) PL_CRC(2) ]
+//     I   (0x8C): CC, ACC only                                -- len 2
+//     II  (0x8D): CC, ACC, then SN, PL_CRC                     -- len 8
+//     III (0x8E): CC, ACC, then M2, A2, VER, TYPE               -- len 10
+//     IV  (0x8F): CC, ACC, then M2, A2, VER, TYPE, SN, PL_CRC   -- len 16
+//     V   (0x86): variable length, not handled here
+//
+// SN (Session Number, 4 bytes LE) bits 29-31 give the security mode: 0 =
+// no encryption, in which case the real CI follows immediately after
+// PL_CRC and is parsed by recursing into this same function; 1 = AES-128
+// CTR, reported as encrypted like the Transport Layer case since there's
+// no key management here to actually decrypt it; any other value is an
+// unknown/reserved mode and is treated the same as encrypted (safest
+// assumption -- we don't know the real layout either way).
+static int m_bus_ell_len(uint8_t ci)
+{
+    switch (ci) {
+    case 0x8C: return 2;
+    case 0x8D: return 8;
+    case 0x8E: return 10;
+    case 0x8F: return 16;
+    default:   return -1;
+    }
+}
+
 // CI=0x72: long data header, CI=0x7a: short data header, CI=0x78: no data header.
 // A short header contains: Access number (1 byte), Status (1 byte), Configuration (2 bytes)
 // A long data header contains the secondary address of the meter in addition to all the fields of the short header.
 // Long header for CI-fields 0x5B, 0x60, 0x64, 0x6C, 0x6D, 0x72, 0x7C, 0x7E, 0x80 and 0x8B.
 // Short header for CI-fields 0x5A, 0x61, 0x65, 0x7A, 0x7D, 0x7F and 0x8A.
 //
-// `b` must point at the CI byte. `pl_base` is added to the resulting
-// pl_offset so callers can express it relative to their own buffer origin
-// (a wireless M-Bus block1, or any other transport wrapping a plain CI
-// frame, e.g. a wired M-Bus telegram embedded in RADIAN's payload).
-static void m_bus_parse_ci(const uint8_t *b, unsigned pl_base, m_bus_block2_t *b2)
+// `b` must point at the CI byte, with `remaining` bytes available from
+// there. `pl_base` is added to the resulting pl_offset so callers can
+// express it relative to their own buffer origin (a wireless M-Bus
+// block1, or any other transport wrapping a plain CI frame, e.g. a wired
+// M-Bus telegram embedded in RADIAN's payload).
+static void m_bus_parse_ci(const uint8_t *b, unsigned remaining, unsigned pl_base, m_bus_block2_t *b2)
 {
+    if (remaining < 1) {
+        return;
+    }
     b2->CI = b[0];
+
+    int ell_len = m_bus_ell_len(b2->CI);
+    if (ell_len >= 0) {
+        if (remaining < (unsigned)(1 + ell_len)) {
+            return; // truncated capture, leave pl_offset at 0 (unparsed)
+        }
+        b2->ell_ci  = b[0];
+        b2->ell_cc  = b[1];
+        b2->ell_acc = b[2];
+
+        int has_sn = (b2->CI == 0x8D || b2->CI == 0x8F);
+        if (has_sn) {
+            unsigned sn_off = (b2->CI == 0x8F) ? 11 : 3; // after M2/A2/VER/TYPE if present
+            uint32_t sn = (uint32_t)b[sn_off] | (uint32_t)b[sn_off + 1] << 8
+                    | (uint32_t)b[sn_off + 2] << 16 | (uint32_t)b[sn_off + 3] << 24;
+            b2->ell_sec_mode = (sn >> 29) & 0x7;
+        }
+        else {
+            b2->ell_sec_mode = 0; // ELL I/III carry no session number/security mode
+        }
+
+        if (b2->ell_sec_mode != 0) {
+            // Encrypted (or an unrecognized mode) -- can't safely parse further.
+            return;
+        }
+
+        // Not encrypted: the real Transport/Application Layer CI follows
+        // immediately after this ELL sub-header. Recurse once to parse it;
+        // this overwrites b2->CI/AC/ST/CW/pl_offset with the real values.
+        m_bus_parse_ci(b + 1 + ell_len, remaining - 1 - ell_len, pl_base + 1 + ell_len, b2);
+        return;
+    }
+
+    // AFL (Authentication and Fragmentation Layer, EN 13757-7): another
+    // optional layer that can sit between ELL and the real TPL, used for
+    // message authentication (CMAC) and/or fragmentation. Its internal
+    // layout depends on flag bits in its own FC field, but it carries an
+    // explicit length byte (total bytes following, excluding CI+LEN) --
+    // enough to skip the whole thing without decoding those flags, since
+    // there's no key to verify the MAC against here anyway.
+    if (b2->CI == 0x90) {
+        if (remaining < 2) {
+            return;
+        }
+        unsigned afl_len = b[1];
+        if (remaining < 2 + afl_len) {
+            return; // truncated capture
+        }
+        m_bus_parse_ci(b + 2 + afl_len, remaining - 2 - afl_len, pl_base + 2 + afl_len, b2);
+        return;
+    }
+
     /* Short transport layer */
     if (b2->CI == 0x7A) {
         b2->AC = b[1];
@@ -895,6 +988,13 @@ static void m_bus_parse_ci(const uint8_t *b, unsigned pl_base, m_bus_block2_t *b
         b2->ST = b[10];
         b2->CW = b[12]<<8 | b[11];
         b2->pl_offset = pl_base + 13;
+    }
+    /* No transport layer at all: no AC/ST/CW fields exist (so it can't
+       be TPL-encrypted either), the DIF/VIF payload starts right after
+       the CI byte. Overridden below for the Qundis walk_by sub-format,
+       which reuses this same CI with its own fixed layout. */
+    else if (b2->CI == 0x78) {
+        b2->pl_offset = pl_base + 1;
     }
 
     // QDS walk_by
@@ -917,10 +1017,10 @@ static void m_bus_parse_ci(const uint8_t *b, unsigned pl_base, m_bus_block2_t *b
 //    fprintf(stderr, "Instantaneous Value: %02x%02x : %f\n",b[9],b[10],((b[10]<<8)|b[9])*0.01);
 }
 
-static int parse_block2(const m_bus_data_t *in, m_bus_block1_t *block1)
+static int parse_block2(const m_bus_data_t *in, m_bus_block1_t *block1, unsigned block1_size, unsigned pl_base)
 {
     m_bus_block2_t *b2 = &block1->block2;
-    const uint8_t *b = in->data+BLOCK1A_SIZE;
+    const uint8_t *b = in->data+block1_size;
 
     if (block1->knx_mode) {
         b2->knx_ctrl = b[0];
@@ -931,7 +1031,8 @@ static int parse_block2(const m_bus_data_t *in, m_bus_block1_t *block1)
         b2->apci = b[7];
         /* data */
     } else {
-        m_bus_parse_ci(b, BLOCK1A_SIZE-2, b2);
+        unsigned remaining = in->length > block1_size ? in->length - block1_size : 0;
+        m_bus_parse_ci(b, remaining, pl_base, b2);
     }
     return 0;
 }
@@ -981,7 +1082,7 @@ static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bu
         memcpy(out_ptr, in_ptr, block_size);
     }
 
-    parse_block2(in, block1);
+    parse_block2(in, block1, BLOCK1A_SIZE, BLOCK1A_SIZE-2);
 
     return 1;
 }
@@ -1024,6 +1125,9 @@ static int m_bus_decode_format_b(r_device *decoder, const m_bus_data_t *in, m_bu
     }
     // Include the final CRC, for wmbusmeters to verify decryption
     out->length += 2;
+
+    parse_block2(in, block1, BLOCK1B_SIZE, BLOCK1B_SIZE);
+
     return 1;
 }
 
@@ -1069,21 +1173,45 @@ static int m_bus_output_data(r_device *decoder, bitbuffer_t *bitbuffer, const m_
     char str_buf[1024];
     data = data_hex(data, "data", "Data", NULL, out->data, out->length, str_buf);
 
-    if (block1->block2.CI) {
+    if (block1->block2.ell_ci) {
         /* clang-format off */
-        data = data_int(data, "CI",     "Control Info",         "0x%02X",   block1->block2.CI);
-        data = data_int(data, "AC",     "Access number",        "0x%02X",   block1->block2.AC);
-        data = data_int(data, "ST",     "Status",               "0x%02X",   block1->block2.ST);
-        data = data_int(data, "CW",     "Configuration Word",   "0x%04X",   block1->block2.CW);
+        data = data_int(data, "ell_ci",  "ELL Control Info",   "0x%02X",   block1->block2.ell_ci);
+        data = data_int(data, "ell_cc",  "ELL Comm Control",   "0x%02X",   block1->block2.ell_cc);
+        data = data_int(data, "ell_acc", "ELL Access number",  "0x%02X",   block1->block2.ell_acc);
         /* clang-format on */
     }
-    /* Encryption not supported */
-    if (!(block1->block2.CW&0x0500)) {
-        parse_payload(data, block1, out);
-    } else {
+    if (block1->block2.CI && block1->block2.CI != block1->block2.ell_ci) {
+        /* clang-format off */
+        data = data_int(data, "CI",     "Control Info",         "0x%02X",   block1->block2.CI);
+        /* clang-format on */
+        if (block1->block2.pl_offset) {
+            /* clang-format off */
+            data = data_int(data, "AC", "Access number",        "0x%02X",   block1->block2.AC);
+            data = data_int(data, "ST", "Status",               "0x%02X",   block1->block2.ST);
+            data = data_int(data, "CW", "Configuration Word",    "0x%04X",   block1->block2.CW);
+            /* clang-format on */
+        }
+    }
+    /* Encryption not supported. Also, only parse the payload if the CI byte
+       was one of the header formats we actually recognize (pl_offset is 0
+       otherwise) -- parsing from an unknown/zero offset just reads the
+       link-layer header bytes as if they were data records, producing
+       nonsense values rather than an honest "can't parse this". KNX mode
+       doesn't go through CI/pl_offset at all (it has its own fixed header),
+       so it's exempt from this check. */
+    if (!block1->knx_mode && !block1->block2.pl_offset) {
+        if (block1->block2.ell_ci && block1->block2.ell_sec_mode) {
+            /* clang-format off */
+            data = data_int(data, "payload_encrypted", "Payload Encrypted", NULL, 1);
+            /* clang-format on */
+        }
+        /* else: header not recognized at all, leave "data" as the only output */
+    } else if (block1->block2.CW&0x0500) {
         /* clang-format off */
         data = data_int(data, "payload_encrypted", "Payload Encrypted", NULL, 1);
         /* clang-format on */
+    } else {
+        parse_payload(data, block1, out);
     }
 
     data = data_str(data, "mic", "Integrity", NULL, "CRC");
@@ -1319,10 +1447,14 @@ static char const *const output_fields[] = {
         "version",
         "type",
         "type_string",
+        "ell_ci",
+        "ell_cc",
+        "ell_acc",
         "CI",
         "AC",
         "ST",
         "CW",
+        "payload_encrypted",
         "sn",
         "knx_ctrl",
         "src",
@@ -1612,7 +1744,8 @@ static int radian_decode_row(r_device *decoder, bitbuffer_t *bitbuffer, unsigned
         wmbus_data.length       = MIN(wmbus_len, sizeof(wmbus_data.data));
         memcpy(wmbus_data.data, wmbus, wmbus_data.length);
 
-        m_bus_parse_ci(&wmbus_data.data[2], 2, &block1.block2); // data: C A CI ...
+        unsigned wmbus_remaining = wmbus_data.length > 2 ? wmbus_data.length - 2 : 0;
+        m_bus_parse_ci(&wmbus_data.data[2], wmbus_remaining, 2, &block1.block2); // data: C A CI ...
         if (block1.block2.CI == 0x72 || block1.block2.CI == 0x7A) {
             parse_payload(data, &block1, &wmbus_data);
         }
