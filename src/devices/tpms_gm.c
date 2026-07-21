@@ -59,16 +59,14 @@ static int tpms_gm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
-    static uint8_t const preamble_pattern[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-
-    int pos = bitbuffer_search(bitbuffer, 0, 0, preamble_pattern, sizeof(preamble_pattern) * 8);
-    if (pos < 0) {
-        return DECODE_ABORT_EARLY;
-    }
-
     // Buffer for extracted bytes
     uint8_t b[17] = {0};
     bitbuffer_extract_bytes(bitbuffer, 0, 0, b, 130);
+
+    static uint8_t const preamble_pattern[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    if (memcmp(b, preamble_pattern, sizeof(preamble_pattern)) != 0) {
+        return DECODE_ABORT_EARLY;
+    }
 
     // Checksum skips preamble
     uint8_t computed_checksum = 0;
