@@ -7,8 +7,6 @@
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
-
-    tested use with: rtl_433 -f 868.9M -Y classic -M level
 */
 
 #include "decoder.h"
@@ -80,6 +78,24 @@ own OOK-oriented pulse analyzer could not lock onto that capture at all
 analyzer's squelch to trigger on), so this has not been confirmed
 end-to-end against a live receiver or raw capture with this decoder.
 reset_limit is a guess pending real hardware/capture confirmation.
+*/
+
+/*
+Device had not been found fully working for different Eberle Instat Revisions.
+Tests have been done with following systems:analog VN0402, digital Rev2.6, digital Rev2.8 
+- Pulse lenght changed from 400 => 360
+- Gray code fully removed
+- inversed and LSB nibble encoding
+- nibble sequence for ID modified
+- commands based on action codes modified for new encoding
+
+Confirmed output using rtl_433 -f 868.9M -Y classic -M level:
+
+time      : 2026-07-22 19:06:00
+model     : Eberle-Instat868r1                     id        : 26C
+Command   : Off          Action Code: 0            Data      : 5             Integrity : CHECKSUM
+Modulation: FSK          Freq1     : 868.9 MHz     Freq2     : 868.8 MHz
+RSSI      : -7.4 dB      SNR       : 20.6 dB       Noise     : -28.0 dB
 */
 
 // Preamble: no leading zeros to allow leveling, but 18-bit sync marker.
