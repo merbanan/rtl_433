@@ -91,8 +91,8 @@ endif()
 # Proper object library type was only introduced with CMake 2.8.8
 add_library(r_433 STATIC
     abuf.c
-    am_analyze.c
     aes.c
+    am_analyze.c
     baseband.c
     bit_util.c
     bitbuffer.c
@@ -102,13 +102,14 @@ add_library(r_433 STATIC
     data.c
     data_tag.c
     decoder_util.c
-    fileformat.c
     fft.c
+    fileformat.c
     http_server.c
     jsmn.c
     list.c
     logger.c
     lora.c
+    lora_fm.c
     lorawan.c
     microtar.c
     mongoose.c
@@ -217,9 +218,9 @@ add_library(r_433 STATIC
     devices/efth800.c
     devices/elero.c
     devices/elro_db286a.c
-    devices/elsys_ers.c
     devices/elsner_solexa.c
     devices/elster_power_meter.c
+    devices/elsys_ers.c
     devices/elv.c
     devices/emax.c
     devices/emontx.c

@@ -163,6 +163,9 @@ void r_init_cfg(r_cfg_t *cfg)
     for (unsigned i = 0; i < FSK_PULSE_DETECTOR_COUNT; ++i) {
         pulse_detect_fsk_init(&cfg->demod->pulse_detect_fsk[i]);
     }
+    cfg->demod->lora_fm_demod = lora_fm_demod_create();
+    if (!cfg->demod->lora_fm_demod)
+        FATAL_CALLOC("lora_fm_demod_create()");
     // initialize tables
     baseband_init();
 
@@ -214,6 +217,8 @@ void r_free_cfg(r_cfg_t *cfg)
 
     lora_fft_demod_free(cfg->demod->lora_fft_demod);
     cfg->demod->lora_fft_demod = NULL;
+    lora_fm_demod_free(cfg->demod->lora_fm_demod);
+    cfg->demod->lora_fm_demod = NULL;
 
     list_free_elems(&cfg->raw_handler, (list_elem_free_fn)raw_output_free);
 
@@ -716,6 +721,9 @@ void event_occurred_handler(r_cfg_t *cfg, data_t *data)
 /// An FSK package can start later than its OOK envelope package, e.g. after a lead-in.
 static unsigned package_start_ago(r_cfg_t const *cfg, r_device const *r_dev)
 {
+    if (r_dev->modulation >= LORA_DEMOD_MIN_VAL) {
+        return cfg->demod->lora_start_ago;
+    }
     if (r_dev->modulation >= FSK_DEMOD_MIN_VAL) {
         return cfg->demod->fsk_pulse_data.start_ago;
     }

@@ -17,6 +17,7 @@
 #include "rtl_433.h"
 #include "compat_time.h"
 #include "lora.h"
+#include "lora_fm.h"
 
 struct dm_state {
     float auto_level;
@@ -42,6 +43,12 @@ struct dm_state {
     pulse_detect_t *pulse_detect;
     pulse_detect_fsk_t pulse_detect_fsk[FSK_PULSE_DETECTOR_COUNT];
     lora_fft_demod_t *lora_fft_demod; // allocated only with -Y lora-fft
+    lora_fm_demod_t *lora_fm_demod; // default LoRa demodulator
+    int16_t lora_fm_history[512]; // discriminator pre-roll across input blocks
+    size_t lora_fm_history_count;
+    uint64_t lora_fm_history_end;
+    unsigned lora_fm_tail; // discriminator samples still to pass after a segment
+    unsigned lora_fm_segment; // 0: none, 1: started, no samples yet, 2: active
     filter_state_t lowpass_filter_state;
     demodfm_state_t demod_FM_state;
     int enable_FM_demod;
@@ -59,10 +66,11 @@ struct dm_state {
     pulse_data_t    fsk_pulse_data_all[FSK_PULSE_DETECTOR_COUNT]; ///< FSK pulse data of each detector
     unsigned        fsk_ready;    ///< Bitmask of detectors with a complete current FSK package
     int             fsk_rejected; ///< Current FSK package did not decode, auto mode keeps the OOK package
-    unsigned lora_spreading_factor; ///< SF of the LoRa packet being dispatched.
-    uint32_t lora_bandwidth;        ///< Bandwidth of the LoRa packet being dispatched.
-    unsigned lora_coding_rate;      ///< Coding-rate suffix: 1 means 4/5, 4 means 4/8.
-    unsigned lora_sync_word;        ///< Sync word of the LoRa packet being dispatched.
+    unsigned        lora_start_ago;        ///< Start of the LoRa packet being dispatched, in samples ago.
+    unsigned        lora_spreading_factor; ///< SF of the LoRa packet being dispatched.
+    uint32_t        lora_bandwidth;        ///< Bandwidth of the LoRa packet being dispatched.
+    unsigned        lora_coding_rate;      ///< Coding-rate suffix: 1 means 4/5, 4 means 4/8.
+    unsigned        lora_sync_word;        ///< Sync word of the LoRa packet being dispatched.
     uint64_t input_pos;
     unsigned frame_event_count;
     int frame_quality;
