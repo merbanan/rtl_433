@@ -13,7 +13,7 @@
 #include <math.h>
 
 /**
-Typhur Sync Gold / Thermomaven WT10 meat thermometer probe.
+Typhur Sync Gold / ThermoMaven G1 / WT10 meat thermometer probe.
 
 Reverse engineered in issue #3138 by \@hakong and \@kevin-david, with
 guidance from \@zuckschwerdt. FSK_PCM at 12.5 us/bit, long 0xaa
@@ -25,19 +25,19 @@ preamble, 16 bit sync word `0x5754`, 24 byte payload:
 - ID: 24 bit, one per physical probe
 - STATUS: bit 3 set when the probe is seated in its charging base
 - VARIANT (byte 5): model/firmware tag, constant per model. 0x1d =
-  Thermomaven WT10, 0x57 = Typhur Sync Gold. See below.
+  ThermoMaven G1 / WT10, 0x57 = Typhur Sync Gold. See below.
 - T1-T5: probe temperature sensors, little-endian
 - AMBIENT: little-endian, separate thermistor
-- BATTERY: little-endian; scale is per-model (Typhur 0.01 V, WT10
+- BATTERY: little-endian; scale is per-model (Typhur 0.01 V, G1/WT10
   0.01/3 V)
 - COUNTER: little-endian, increments every transmission
 - CRC: CRC-16 poly 0x8005 init 0x0000 over the preceding 22 bytes
 
 Temperature encoding differs by model, selected by the byte-5 variant
 tag (constant per model, distinct between models -- confirmed against
-CRC-valid captures from two Typhur units and one WT10 unit).
+CRC-valid captures from two Typhur units and one G1/WT10 unit).
 
-Thermomaven WT10 (variant 0x1d): each 16-bit field is the raw ADC code
+ThermoMaven G1 / WT10 (variant 0x1d): each 16-bit field is the raw ADC code
 of an NTC thermistor read through a voltage divider, not a scaled
 temperature (the code decreases as temperature rises). Recover the
 resistance as R = code / (N - code) (the series resistor folds into
@@ -47,7 +47,7 @@ the constants) and apply Steinhart-Hart:
 
 The probe channels and the ambient sensor use different thermistors,
 so each has its own constants, reverse engineered for unit id 913719
-by capturing raw codes alongside the Thermomaven app. Probes were
+by capturing raw codes alongside the ThermoMaven app. Probes were
 fitted across an ice bath (~0 C), room (~25-28 C), mid-range points
 (~48-57 C) and a rolling boil (~98 C): worst-case residual 0.25 C over
 0-98 C (the ln(R)^2 term is unused, C == 0), monotonic but uncalibrated
@@ -64,10 +64,10 @@ and masks the spurious ambient bit when the flag is set (when clear,
 bit 0x8000 is a legitimate cold-end magnitude bit).
 
 Typhur Sync Gold (variant 0x57): uses a different thermistor whose raw
-codes do NOT fit the WT10 curve, and no app ground truth was available.
+codes do NOT fit the G1/WT10 curve, and no app ground truth was available.
 Its fields are reported with the original issue-#3138 linear scale
 (probes * 0.01 C, ambient * 0.1 C). NOTE: that scale is almost
-certainly wrong -- the fields are raw NTC codes, same as the WT10 --
+certainly wrong -- the fields are raw NTC codes, same as the G1/WT10 --
 but it is retained until Typhur app ground truth allows a proper
 Steinhart-Hart fit. Treat Typhur temperatures as unverified.
 */
@@ -96,7 +96,7 @@ typedef struct {
 } typhur_variant_t;
 
 static typhur_variant_t const typhur_variants[] = {
-        {0x1d, "Thermomaven-WT10", TYPHUR_CONV_STEINHART,
+        {0x1d, "Thermomaven-G1-WT10", TYPHUR_CONV_STEINHART,
                 39740.0f, 3.336648967e-03f, 2.907677078e-04f, 0.0f, -8.446529470e-07f,
                 48420.0f, 3.273739948e-03f, 3.237830150e-04f, 5.655028386e-05f, 1.257351231e-05f,
                 0.0f, 0.0f, 0.01f / 3.0f},
@@ -236,7 +236,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const typhur_sync_gold = {
-        .name        = "Typhur Sync Gold / Thermomaven WT10 meat thermometer probe",
+        .name        = "Typhur Sync Gold / ThermoMaven G1 / WT10 meat thermometer probe",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 13,
         .long_width  = 13,
