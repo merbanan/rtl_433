@@ -210,7 +210,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [119]  Bresser Weather Center 5-in-1
     [120]  Digitech XC-0324 / AmbientWeather FT005TH temp/hum sensor
     [121]  Opus/Imagintronix XT300 Soil Moisture
-    [122]  FS20 / FHT
+    [122]* FS20 / FHT
     [123]* Jansite TPMS Model TY02S
     [124]  LaCrosse/ELV/Conrad WS7000/WS2500 weather sensors
     [125]  TS-FT002 Wireless Ultrasonic Tank Liquid Level Meter With Temperature Sensor

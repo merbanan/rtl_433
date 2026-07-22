@@ -20,6 +20,8 @@ enum {
     FS20_BASE_FRAME_BITS  = FS20_BASE_BYTES * FS20_PARITY_BYTE_BITS,
     FS20_EXT_FRAME_BITS   = FS20_EXT_BYTES * FS20_PARITY_BYTE_BITS,
     FS20_EXT_FLAG         = 0x20,
+    FS20_CMD_MASK         = 0x1f,
+    FS20_CMD_RESERVED_MIN = 0x1c, // 0x1c-0x1f ("frei"/unused) never sent by real devices
     FHT_CMD_MASK          = 0x0f,
     FHT_CMD_END_OF_SYNC   = 0x00,
 };
@@ -277,6 +279,12 @@ static int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
     }
 
+    // FS20 command codes 0x1c-0x1f are documented as unused/reserved and
+    // never sent by real devices; a foreign bitstream is the likelier source.
+    if (is_fs20 && (cmd & FS20_CMD_MASK) >= FS20_CMD_RESERVED_MIN) {
+        return DECODE_FAIL_SANITY;
+    }
+
     // A real FS20 housecode is a user-set DIP-switch code, effectively
     // uniform over the whole address space; an all-zero housecode and
     // address is a degenerate pattern that mainly shows up when foreign
@@ -334,4 +342,5 @@ r_device const fs20 = {
         .reset_limit = 9000,
         .decode_fn   = &fs20_decode,
         .fields      = output_fields,
+        .disabled    = 1, // false decodes from foreign bitstreams, see issue #3611
 };
