@@ -84,9 +84,10 @@ reset_limit is a guess pending real hardware/capture confirmation.
 Device had not been found fully working for different Eberle Instat Revisions.
 Tests have been done with following systems:analog VN0402, digital Rev2.6, digital Rev2.8 
 - Pulse lenght changed from 400 => 360
+- preamble pattern adapted to improve recognition, specifically for Rev2.8
 - Gray code fully removed
 - inversed and LSB nibble encoding
-- nibble sequence for ID modified
+- nibble sequence for ID reversed => confirmed against ID on LCD digital thermostats
 - commands based on action codes modified for new encoding
 
 Confirmed output using rtl_433 -f 868.9M -Y classic -M level:
