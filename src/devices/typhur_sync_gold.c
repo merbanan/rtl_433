@@ -43,16 +43,18 @@ temperature (the code decreases as temperature rises). Recover the
 resistance as R = code / (N - code) (the series resistor folds into
 the constants) and apply Steinhart-Hart:
 
-    1/T[K] = A + B*ln(R) + C*ln(R)^3
+    1/T[K] = A + B*ln(R) + C*ln(R)^2 + D*ln(R)^3
 
 The probe channels and the ambient sensor use different thermistors,
 so each has its own constants, reverse engineered for unit id 913719
 by capturing raw codes alongside the Thermomaven app. Probes were
-fitted across an ice bath (~0 C), room (~25-28 C), a mid-range point
-(~48-51 C) and a rolling boil (~98 C): worst-case residual 0.25 C over
-0-98 C, monotonic but uncalibrated extrapolation above ~98 C. Ambient
-additionally used two grill points (~125 C): <=0.35 C over 0-125 C,
-extrapolation (tends to overshoot) above ~125 C.
+fitted across an ice bath (~0 C), room (~25-28 C), mid-range points
+(~48-57 C) and a rolling boil (~98 C): worst-case residual 0.25 C over
+0-98 C (the ln(R)^2 term is unused, C == 0), monotonic but uncalibrated
+extrapolation above ~98 C. Ambient additionally used a ~61 C and two
+~125 C grill points and needs the full four-term fit: worst-case
+residual 0.4 C over 0-125 C, extrapolation (tends to overshoot) above
+~125 C.
 
 Ambient/battery status flag: a per-frame flag rides in bit 0x0800 of
 the battery field. When set it also forces bit 0x8000 of the ambient
@@ -81,9 +83,12 @@ typedef struct {
     uint8_t variant; // byte-5 tag
     char const *model;
     typhur_conv_t conv;
-    // Steinhart-Hart + voltage-divider constants (probe, then ambient).
-    float probe_n, probe_a, probe_b, probe_c;
-    float amb_n, amb_a, amb_b, amb_c;
+    // Voltage-divider full-scale + Steinhart-Hart coefficients for the
+    // 1, ln(R), ln(R)^2 and ln(R)^3 terms (probe, then ambient). The probe
+    // needs only three terms (c == 0); ambient needs the ln(R)^2 term to
+    // span its wider 0-125 C range.
+    float probe_n, probe_a, probe_b, probe_c, probe_d;
+    float amb_n, amb_a, amb_b, amb_c, amb_d;
     // Linear scale (probe, ambient) for TYPHUR_CONV_LINEAR.
     float probe_scale, amb_scale;
     // Battery voltage scale (the raw field is scaled differently per model).
@@ -92,18 +97,18 @@ typedef struct {
 
 static typhur_variant_t const typhur_variants[] = {
         {0x1d, "Thermomaven-WT10", TYPHUR_CONV_STEINHART,
-                39820.0f, 3.337914614e-03f, 2.918389929e-04f, -9.998324687e-07f,
-                40140.0f, 3.182108432e-03f, 2.309766424e-04f, 2.744203041e-06f,
+                39740.0f, 3.336648967e-03f, 2.907677078e-04f, 0.0f, -8.446529470e-07f,
+                48420.0f, 3.273739948e-03f, 3.237830150e-04f, 5.655028386e-05f, 1.257351231e-05f,
                 0.0f, 0.0f, 0.01f / 3.0f},
         {0x57, "Typhur-SyncGold", TYPHUR_CONV_LINEAR,
-                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0.01f, 0.1f, 0.01f},
 };
 
 static uint8_t const typhur_sync_gold_sync[2] = {0x57, 0x54};
 
 /// Convert a raw NTC ADC code to degrees Celsius via divider + Steinhart-Hart.
-static float typhur_sync_gold_steinhart(int code, float n, float a, float b, float c)
+static float typhur_sync_gold_steinhart(int code, float n, float a, float b, float c, float d)
 {
     // Guard the divider/log domain: code must stay within (0, N).
     if (code < 1) {
@@ -113,7 +118,7 @@ static float typhur_sync_gold_steinhart(int code, float n, float a, float b, flo
         code = (int)(n - 1.0f);
     }
     float lr  = logf((float)code / (n - (float)code));
-    float t_k = 1.0f / (a + b * lr + c * lr * lr * lr);
+    float t_k = 1.0f / (a + b * lr + c * lr * lr + d * lr * lr * lr);
     return t_k - 273.15f;
 }
 
@@ -124,9 +129,9 @@ static float typhur_sync_gold_temp_c(typhur_variant_t const *v, int code, int is
         return code * (is_ambient ? v->amb_scale : v->probe_scale);
     }
     if (is_ambient) {
-        return typhur_sync_gold_steinhart(code, v->amb_n, v->amb_a, v->amb_b, v->amb_c);
+        return typhur_sync_gold_steinhart(code, v->amb_n, v->amb_a, v->amb_b, v->amb_c, v->amb_d);
     }
-    return typhur_sync_gold_steinhart(code, v->probe_n, v->probe_a, v->probe_b, v->probe_c);
+    return typhur_sync_gold_steinhart(code, v->probe_n, v->probe_a, v->probe_b, v->probe_c, v->probe_d);
 }
 
 static int typhur_sync_gold_decode(r_device *decoder, bitbuffer_t *bitbuffer)
