@@ -271,12 +271,36 @@ static void print_att_hist(char const *s, int att_hist[])
 }
 
 /// Demodulate On/Off Keying (OOK) and Frequency Shift Keying (FSK) from an envelope signal
-int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t fsk_pulses[FSK_PULSE_DETECTOR_COUNT], unsigned fpdm, unsigned fsk_primary)
+static void report_segment(pulse_segment_fn segment_fn, void *context,
+        int start, int end, uint64_t sample_offset, unsigned flags)
+{
+    if (segment_fn && start >= 0 && end >= start
+            && (end > start || flags)) {
+        segment_fn(context, (size_t)start, (size_t)(end - start),
+                sample_offset + (uint64_t)start, flags);
+    }
+}
+
+int pulse_detect_package(pulse_detect_t *pulse_detect,
+        int16_t const *envelope_data, int16_t const *fm_data, int len,
+        uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses,
+        pulse_data_t fsk_pulses[FSK_PULSE_DETECTOR_COUNT], unsigned fpdm,
+        unsigned fsk_primary, pulse_segment_fn segment_fn,
+        void *segment_context)
 {
     pulse_detect_t *s = pulse_detect;
+    int segment_start = (s->ook_state == PD_OOK_STATE_PULSE
+                    || s->ook_state == PD_OOK_STATE_GAP_START)
+            && pulses->num_pulses == 0 ? s->data_counter : -1;
+    unsigned segment_flags = 0;
 
     // Special case: flush any partial package
     if (len == 0) {
+
+        if (segment_start >= 0) {
+            report_segment(segment_fn, segment_context, 0, 0,
+                    sample_offset, PULSE_SEGMENT_END);
+        }
 
         switch (s->ook_state) {
         case PD_OOK_STATE_IDLE:
@@ -391,6 +415,10 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     s->max_pulse = 0;
                     pulse_detect_fsk_init_all(s);
                     s->ook_state = PD_OOK_STATE_PULSE;
+                    /* The FSK detectors start on the sample after the carrier
+                       threshold crossing. Export that same discriminator range. */
+                    segment_start = s->data_counter + 1;
+                    segment_flags = PULSE_SEGMENT_START;
                 }
                 else {    // We are still idle..
                     // Estimate low (noise) level
@@ -438,6 +466,15 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 if (pulses->num_pulses == 0) {    // Only during first pulse
                     pulse_detect_fsk_sample(s, fm_data[s->data_counter], fsk_pulses, fpdm);
                 }
+                if (s->ook_state == PD_OOK_STATE_IDLE
+                        && segment_start >= 0) {
+                    report_segment(segment_fn, segment_context,
+                            segment_start, s->data_counter + 1,
+                            sample_offset,
+                            segment_flags | PULSE_SEGMENT_END);
+                    segment_start = -1;
+                    segment_flags = 0;
+                }
                 break;
             case PD_OOK_STATE_GAP_START:    // Beginning of gap - it might be a spurious gap
                 s->pulse_length += 1;
@@ -454,6 +491,10 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     if (pulse_detect_fsk_finalize(s, fsk_pulses, fpdm, fsk_primary, end_ago)) {
                         pulses->end_ago = end_ago;
                         s->ook_state = PD_OOK_STATE_IDLE;    // Ensure everything is reset
+                        report_segment(segment_fn, segment_context,
+                                segment_start, s->data_counter,
+                                sample_offset,
+                                segment_flags | PULSE_SEGMENT_END);
                         if (pulse_detect->verbosity >= LOG_INFO) {
                             print_att_hist("PULSE_DATA_FSK", att_hist);
                         }
@@ -470,6 +511,15 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 // FSK Demodulation (continue during short gap - we might return...)
                 if (pulses->num_pulses == 0) {    // Only during first pulse
                     pulse_detect_fsk_sample(s, fm_data[s->data_counter], fsk_pulses, fpdm);
+                }
+                if (s->ook_state == PD_OOK_STATE_GAP
+                        && segment_start >= 0) {
+                    report_segment(segment_fn, segment_context,
+                            segment_start, s->data_counter + 1,
+                            sample_offset,
+                            segment_flags | PULSE_SEGMENT_END);
+                    segment_start = -1;
+                    segment_flags = 0;
                 }
                 break;
             case PD_OOK_STATE_GAP:
@@ -524,9 +574,22 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
             default:
                 fprintf(stderr, "demod_OOK(): Unknown state!!\n");
                 s->ook_state = PD_OOK_STATE_IDLE;
+                if (segment_start >= 0) {
+                    report_segment(segment_fn, segment_context,
+                            segment_start, s->data_counter,
+                            sample_offset,
+                            segment_flags | PULSE_SEGMENT_END);
+                    segment_start = -1;
+                    segment_flags = 0;
+                }
         } // switch
         s->data_counter += 1;
     } // while
+
+    if (segment_start >= 0) {
+        report_segment(segment_fn, segment_context, segment_start, len,
+                sample_offset, segment_flags);
+    }
 
     s->data_counter = 0;
     if (pulse_detect->verbosity >= LOG_DEBUG) {

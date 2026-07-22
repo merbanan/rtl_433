@@ -160,6 +160,9 @@ void r_init_cfg(r_cfg_t *cfg)
 
     // note: this should be optional
     cfg->demod->pulse_detect = pulse_detect_create();
+    cfg->demod->lora_fm_demod = lora_fm_demod_create();
+    if (!cfg->demod->lora_fm_demod)
+        FATAL_CALLOC("lora_fm_demod_create()");
     // initialize tables
     baseband_init();
 
@@ -211,6 +214,8 @@ void r_free_cfg(r_cfg_t *cfg)
 
     lora_fft_demod_free(cfg->demod->lora_fft_demod);
     cfg->demod->lora_fft_demod = NULL;
+    lora_fm_demod_free(cfg->demod->lora_fm_demod);
+    cfg->demod->lora_fm_demod = NULL;
 
     list_free_elems(&cfg->raw_handler, (list_elem_free_fn)raw_output_free);
 

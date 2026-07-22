@@ -62,7 +62,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
        Specify a negative number to disable a device decoding protocol (can be used multiple times)
   [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)
   [-Y auto | classic | minmax | hysteresis | median] FSK pulse detector mode.
-  [-Y lora-fft] Enable FFT LoRa; use -s 1000k or 2000k (not 1024k).
+  [-Y lora-fm | lora-fft] Select filtered-FM (default) or FFT LoRa; use -s 1000k or 2000k (not 1024k).
   [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto).
   [-Y minlevel=<dB level>] Manual minimum detection level used to determine pulses (-1.0 to -99.0).
   [-Y minsnr=<dB level>] Minimum SNR to determine pulses (1.0 to 99.0).

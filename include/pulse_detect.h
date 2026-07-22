@@ -13,6 +13,7 @@
 #ifndef INCLUDE_PULSE_DETECT_H_
 #define INCLUDE_PULSE_DETECT_H_
 
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include "pulse_data.h"
@@ -45,6 +46,21 @@ enum {
 
 typedef struct pulse_detect pulse_detect_t;
 
+/// Flags reported with an active carrier segment.
+enum pulse_segment_flags {
+    PULSE_SEGMENT_START = 1U,
+    PULSE_SEGMENT_END   = 2U,
+};
+
+/** Observe the first active-carrier range consumed by the FSK detectors.
+
+    @p start and @p count index the input buffers passed to
+    pulse_detect_package(). An empty range can report the end of a partial
+    segment when the input is flushed.
+*/
+typedef void (*pulse_segment_fn)(void *context, size_t start, size_t count,
+        uint64_t sample_offset, unsigned flags);
+
 pulse_detect_t *pulse_detect_create(void);
 
 void pulse_detect_free(pulse_detect_t *pulse_detect);
@@ -76,10 +92,17 @@ void pulse_detect_set_levels(pulse_detect_t *pulse_detect, int use_mag_est, floa
 /// @param[in,out] fsk_pulses Will return pulse data for each enabled FSK detector
 /// @param fpdm FSK pulse detector mode to use
 /// @param fsk_primary Detector responsible for classifying the package as FSK
+/// @param segment_fn Optional observer for active carrier ranges
+/// @param segment_context Opaque context passed to @p segment_fn
 /// @return if a package is detected
 /// @retval 0 all input sample data is processed
 /// @retval 1 OOK package is detected (but all sample data is still not completely processed)
 /// @retval 2 FSK package is detected (but all sample data is still not completely processed)
-int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t fsk_pulses[FSK_PULSE_DETECTOR_COUNT], unsigned fpdm, unsigned fsk_primary);
+int pulse_detect_package(pulse_detect_t *pulse_detect,
+        int16_t const *envelope_data, int16_t const *fm_data, int len,
+        uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses,
+        pulse_data_t fsk_pulses[FSK_PULSE_DETECTOR_COUNT], unsigned fpdm,
+        unsigned fsk_primary, pulse_segment_fn segment_fn,
+        void *segment_context);
 
 #endif /* INCLUDE_PULSE_DETECT_H_ */

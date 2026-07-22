@@ -35,11 +35,16 @@ endforeach(testSrc)
 # lora.c has a test main but uses the production FFT and CRC helpers.
 target_link_libraries(test_lora r_433)
 
+add_executable(test_lora_fm lora-fm-test.c)
+target_link_libraries(test_lora_fm r_433)
+add_test(lora_fm_test test_lora_fm)
+
 ########################################################################
 # Define integration tests
 ########################################################################
 add_test(rtl_433_help ../src/rtl_433 -h)
 add_test(lora_fft_demod_option ../src/rtl_433 -Y lora-fft -h)
+add_test(lora_fm_demod_option ../src/rtl_433 -Y lora-fm -h)
 add_test(flex_decoder_help ../src/rtl_433 -X)
 add_test(flex_decoder bash -c
     "touch empty_file.cu8 && \

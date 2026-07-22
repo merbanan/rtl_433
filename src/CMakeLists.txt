@@ -25,6 +25,7 @@ add_library(r_433 STATIC
     list.c
     logger.c
     lora.c
+    lora_fm.c
     lorawan.c
     microtar.c
     mongoose.c
