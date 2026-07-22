@@ -7,6 +7,7 @@
 add_library(r_433 STATIC
     abuf.c
     am_analyze.c
+    aes.c
     baseband.c
     bit_util.c
     bitbuffer.c
@@ -18,10 +19,14 @@ add_library(r_433 STATIC
     decoder_util.c
     delay_timer.c
     fileformat.c
+    fft.c
     http_server.c
     jsmn.c
     list.c
     logger.c
+    lora.c
+    lora_fm.c
+    lorawan.c
     microtar.c
     mongoose.c
     optparse.c
@@ -106,6 +111,7 @@ add_library(r_433 STATIC
     devices/continental_car_remote.c
     devices/cotech_36_7900.c
     devices/cotech_36_7959.c
+    devices/cotech_36_9231.c
     devices/cotech_ft0203.c
     devices/ctt_life_power_hybrid.c
     devices/current_cost.c
@@ -126,6 +132,7 @@ add_library(r_433 STATIC
     devices/efth800.c
     devices/elero.c
     devices/elro_db286a.c
+    devices/elsys_ers.c
     devices/elsner_solexa.c
     devices/elster_power_meter.c
     devices/elv.c
@@ -220,6 +227,7 @@ add_library(r_433 STATIC
     devices/lacrosse_ws7000.c
     devices/lacrossews.c
     devices/lightwave_rf.c
+    devices/lorawan.c
     devices/m_bus.c
     devices/markisol.c
     devices/marlec_solar.c

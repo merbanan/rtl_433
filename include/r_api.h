@@ -51,6 +51,18 @@ int run_ook_demods(struct list *r_devs, struct pulse_data *pulse_data);
 
 int run_fsk_demods(struct list *r_devs, struct pulse_data *fsk_pulse_data);
 
+int get_lora_params(struct list *r_devs, unsigned *spreading_factor,
+        uint32_t *bandwidth, unsigned *sync_word);
+
+/** Dispatch a decoded LoRa PHY payload in decoder-priority order.
+
+    Zero SF, bandwidth, or sync values mean the parameter is unknown and do
+    not filter decoders. IQ demodulation supplies nonzero detected values.
+*/
+int run_lora_demods(struct list *r_devs, uint8_t const *payload,
+        unsigned payload_len, unsigned spreading_factor,
+        uint32_t bandwidth, unsigned sync_word);
+
 /* handlers */
 
 void r_redirect_logging(struct r_cfg *cfg);

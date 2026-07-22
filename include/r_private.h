@@ -15,6 +15,8 @@
 #include "am_analyze.h"
 #include "rtl_433.h"
 #include "compat_time.h"
+#include "lora.h"
+#include "lora_fm.h"
 
 struct dm_state {
     float auto_level;
@@ -38,6 +40,12 @@ struct dm_state {
     float f32_buf[MAXIMAL_BUF_LENGTH]; // format conversion buffer
     int sample_size; // CU8: 2, CS16: 4
     pulse_detect_t *pulse_detect;
+    lora_fft_demod_t *lora_fft_demod; // allocated only with -Y lora-fft
+    lora_fm_demod_t *lora_fm_demod; // default LoRa demodulator
+    int16_t lora_fm_history[512]; // discriminator pre-roll across input blocks
+    size_t lora_fm_history_count;
+    uint64_t lora_fm_history_end;
+    unsigned lora_fm_tail;
     filter_state_t lowpass_filter_state;
     demodfm_state_t demod_FM_state;
     int enable_FM_demod;
@@ -50,8 +58,13 @@ struct dm_state {
     /* Protocol states */
     list_t r_devs;
 
-    pulse_data_t    pulse_data;
-    pulse_data_t    fsk_pulse_data;
+    pulse_data_t pulse_data;
+    pulse_data_t fsk_pulse_data; ///< FSK pulse data currently exposed to decoders and metadata handlers.
+    pulse_data_t fsk_pulse_data_all[FSK_PULSE_DETECTOR_COUNT];
+    unsigned lora_spreading_factor; ///< SF of the LoRa packet being dispatched.
+    uint32_t lora_bandwidth;        ///< Bandwidth of the LoRa packet being dispatched.
+    unsigned lora_coding_rate;      ///< Coding-rate suffix: 1 means 4/5, 4 means 4/8.
+    unsigned lora_sync_word;        ///< Sync word of the LoRa packet being dispatched.
     uint64_t input_pos;
     unsigned frame_event_count;
     int frame_quality;
