@@ -3,7 +3,12 @@
 rtl_433 (despite the name) is a generic data receiver, mainly for the 433.92 MHz, 868 MHz (SRD), 315 MHz, 345 MHz, and 915 MHz ISM bands.
 
 The official source code is in the https://github.com/merbanan/rtl_433/ repository.
-For more documentation and related projects see the https://triq.org/ site.
+
+See also [a list of software that works with
+rtl_433](https://github.com/merbanan/rtl_433/wiki/Built-with-rtl_433!)
+in the wiki.
+For more documentation and related projects, particularly those that
+help with rtl_433 development, see the https://triq.org/ site.
 
 It works with [RTL-SDR](https://github.com/osmocom/rtl-sdr/) and/or [SoapySDR](https://github.com/pothosware/SoapySDR/).
 Actively tested and supported are Realtek RTL2832 based DVB dongles (using RTL-SDR) and LimeSDR ([LimeSDR USB](https://www.crowdsupply.com/lime-micro/limesdr) and [LimeSDR mini](https://www.crowdsupply.com/lime-micro/limesdr-mini) engineering samples kindly provided by [MyriadRf](https://myriadrf.org/)), PlutoSDR, HackRF One (using SoapySDR drivers), as well as SoapyRemote.
