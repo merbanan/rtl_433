@@ -115,19 +115,32 @@ static int gt_wt_03_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    // humidity: see above the note about working range
-    int humidity = b[1]; // extract 8 bits humidity
-    if (humidity <= 10) // actually the sensors sends 10 below working range of 20%
-        humidity = 0;
-    else if (humidity > 95) // actually the sensors sends 110 above working range of 90%
-        humidity = 100;
-
     int sensor_id      = (b[0]);          // 8 bits
     int battery_low    = (b[2] >> 7 & 1); // 1 bits
     int button_pressed = (b[2] >> 6 & 1); // 1 bits
     int channel        = (b[2] >> 4 & 3); // 2 bits
     int temp_raw       = (int16_t)(((b[2] & 0x0f) << 12) | (b[3] << 4)); // uses sign extend
     float temp_c       = (temp_raw >> 4) * 0.1F;
+
+    // The sensor's specified temperature range is -50.0 C to 70.0 C, plus the
+    // -50.1 C (Lo) and 70.1 C (Hi) out-of-range indicator readings.
+    if (temp_c <= -50.2F || temp_c >= 70.2F) {
+        decoder_logf(decoder, 2, __func__, "temperature sanity check failed: %.1f C", temp_c);
+        return DECODE_FAIL_SANITY;
+    }
+
+    // Values outside the measurable humidity range use exact LL/HH sentinels.
+    int humidity_raw = b[1]; // extract 8 bits humidity
+    if (humidity_raw != 10 && humidity_raw != 110
+            && (humidity_raw < 20 || humidity_raw > 95)) {
+        decoder_logf(decoder, 2, __func__, "invalid humidity value: %d", humidity_raw);
+        return DECODE_FAIL_SANITY;
+    }
+    int humidity = humidity_raw;
+    if (humidity_raw == 10)
+        humidity = 0;
+    else if (humidity_raw == 110)
+        humidity = 100;
 
     /* clang-format off */
     data = data_make(
