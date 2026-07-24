@@ -124,7 +124,7 @@ static int gt_wt_03_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // The sensor's specified temperature range is -50.0 C to 70.0 C, plus the
     // -50.1 C (Lo) and 70.1 C (Hi) out-of-range indicator readings.
-    if (temp_c < -51.0F || temp_c > 71.0F) {
+    if (temp_c <= -50.2F || temp_c >= 70.2F) {
         decoder_logf(decoder, 2, __func__, "temperature sanity check failed: %.1f C", temp_c);
         return DECODE_FAIL_SANITY;
     }
