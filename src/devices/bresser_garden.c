@@ -2,6 +2,7 @@
     Bresser SmartHome Garden set.
 
     Copyright (C) 2024 Bruno OCTAU (\@ProfBoc75)
+    Copyright (C) 2026 Mattias Jonsson (\@mjonss)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -10,230 +11,6 @@
 */
 
 #include "decoder.h"
-
-/** @fn int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-Bresser SmartHome Garden set (Fujian Baldr / Homgar family, also sold as RainPoint). 433.92 MHz
-FSK PCM. A bidirectional irrigation set. Each frame is reported under the model of its actual
-transmitter, taken from the top byte of the 32-bit id (the device class):
-
-    model                  class  Bresser              Homgar (Baldr)     RainPoint
-    ---------------------  -----  -------------------  -----------------  -----------------------
-    Bresser-Gateway        0x01   HWS388WRF-V7 7510100 HWS388             TWG004WRF (Wi-Fi hub)
-    Bresser-WaterTimer     0x1F   HTV103FRF 7910100    HTV103 (1-zone)    ITV0103W / TTV1013WRF
-                                  HTV203FRF 7910101    HTV203 (2-zone)    TTV203WRF (2-zone)
-    Bresser-SoilMoisture   0x47   HCS005FRF 7910102    HCS005             ICS0001W
-    Bresser-Garden          --    (fallback for an unrecognised class byte)
-
-FCC: gateway 2AWDBHWS388WRF, soil sensor 2AWDBTCS005FRF. Issue #2988 (\@kami83), PR #3005.
-
-Topology (the thermo-hygro unit is separate and already supported, so it is left out here):
-
-    Soil Moisture (0x47) --0x09--> Water Timer (0x1F) --0x0a relay--> Gateway / base (0x01)
-                                        |  The Water Timer has NO soil probe: it forwards the
-                                        |  sensor's reading to the base in a new 0x0a message.
-                                        |  It also stores the watering schedule and runs it on
-                                        |  its own clock, emitting 0x04 watering events.
-        base --0x85 config / 0x86 schedule table / 0x20 config counter--> Water Timer
-
-Also in the set but NOT handled by this decoder:
-- An outdoor thermo-hygro sensor (Homgar H666TH outdoor / H999TH indoor with LCD) that the base
-  station reads; it transmits on the already-supported Bresser Thermo-/Hygro 3CH decoder
-  (protocol 52), not here.
-- The base station's barometric pressure: shown on the display and sent to the cloud only, never
-  transmitted on 433 MHz.
-
-The protocol:
-
-- Bidirectional: messages go source -> target, then the target acknowledges back to the source.
-  An acknowledgement's message type is the acked type with bit 7 set (0x0a -> 0x8a) and it repeats
-  the acked message counter.
-- The 32-bit id's top byte is the device class (0x01/0x1F/0x47), pattern CC00xxxx. The id is stable
-  across a power cycle (the 0x01 INIT after power-up carries the same id with the counter reset to
-  1); stability across a full battery *replacement* is assumed but not yet explicitly tested.
-- Whatever the message type, the framed message is always 33 bytes after the preamble/sync word.
-  The Soil Moisture Sensor prepends a long (~1250-bit) wake-up preamble so its frames reach
-  ~1520 bits, but the decoded frame is still 33 bytes.
-
-Flex decoder:
-
-    rtl_433 -R 0 -X "n=Bresser_FSK,m=FSK_PCM,s=50,l=50,r=10000,bits>=40,bits<=1000,preamble=aaf3" -M level -Y minmax -Y magest -s 1200k 2>&1 | grep codes
-
-    codes     : {298}e9105e51000000001f05004701010805ff4747000435030000000000000000000000007ab60
-    codes     : {298}e9105e511f05004788160001018110000505e001b946ed110102000000000000000000ec640
-    codes     : {298}e9105e51881600011f050047020307050988008527030000000000000000000000000067220
-    codes     : {298}e9105e511f050047881600010283010000000000000000000000000000000000000000dcc90
-
-Data layout (example frames from PR #3005's household; "?" marks a byte that was unknown to the
-original author - several are decoded below):
-
-    Byte Position                   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33
-               preample syncword   TT TT TT TT SS SS SS SS RR AC LL MM MM MM MM MM MM MM MM MM MM MM MM MM MM MM MM MM MM MM MM ZZ ZZ XX
-                                                                    ID ?? ?? ?? ?? ?? FF ??
-    Sensor INIT aaaaaaa f3e9105e51 00 00 00 00 1f 05 00 47 01 01 08 05 ff 47 47 00 04 35 03 00 00 00 00 00 00 00 00 00 00 00 00 7a b6 0
-                                                                    ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??
-    Base acknowledgemt    e9105e51 1f 05 00 47 88 16 00 01 01 81 10 00 05 05 e0 01 b9 46 ed 11 01 02 00 00 00 00 00 00 00 00 00 ec 64 0
-                                                                    ID BB 88 HH 85 TEMP
-    Sensor Send T/H       e9105e51 88 16 00 01 1f 05 00 47 02 03 07 05 09 88 00 85 27 03 00 00 00 00 00 00 00 00 00 00 00 00 00 67 22 0
-
-    Base acknowledge T/H  e9105e51 1f 05 00 47 88 16 00 01 02 83 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 dc c9 0
-                                                                    ID?05 ?? BB 88 HH 85 TEMP
-    Water to Base         e9105e51 88 16 00 01 52 12 00 1f 0f 0a 09 0b 05 10 09 88 00 85 10 03 00 00 00 00 00 00 00 00 00 00 00 8f 1b 0
-
-Frame envelope (common to every message; the "sub-message" is the type-specific inner payload):
-
-- TT:{32} Target id, little-endian (0x00000000 during the init/pairing broadcast).
-- SS:{32} Source id, little-endian, hard-coded (top byte = device class).
-- RR: {8} Message counter (increments per message; an acknowledgement repeats the acked value).
-- MT: {8} Message type. Bit 7 (0x80) is the REPLY flag: a reply's type is the request's type with
-          bit 7 set (0xNN -> 0x8N) and it echoes the request's counter. The reply is either an empty
-          acknowledgement (when the data was in the request, e.g. 0x09 -> 0x89) or carries the
-          requested data (when the request was a bare poll, e.g. 0x02 -> 0x82). The low 7 bits
-          identify the sub-message (0x01 init, 0x03/0x09/0x0a telemetry, 0x04 watering,
-          0x02/0x05/0x06 Water Timer polls, 0x85/0x86/0x20 config).
-- LL: {8} Sub-message length.
-- MM:{..} Sub-message (see below).
-- ZZ:{16} CRC-16, poly 0x1021, init 0xd636.
-- XX: Trailing bit.
-
-0x01 - INIT / pairing broadcast (VERIFIED, seen on power-up)
-
-- Soil sensor -> target 0x00000000 (broadcast); the counter resets to 1.
-- ID:{8} device type (0x0e on HCS005FRF, 0x05 on the original author's unit),
-- FF:{8} firmware, 0x35 = 53 (matches the app).
-
-0x81 - acknowledgement of the INIT (UNCONFIRMED)
-
-- Payload varies between captures. This was the date/time-sync candidate, but 0x82 (below) turned
-  out to be the 0x02-poll reply, so 0x81's role is unclear. Left as Unknown msg.
-
-0x02 / 0x05 / 0x06 - Water Timer -> gateway polls (VERIFIED via reply pairing, see Bit 7 above)
-
-- The Water Timer polls the gateway; the gateway replies with type|0x80 (0x82/0x85/0x86), same
-  counter, ~0.07 s later. 0x05 (get-config) and 0x06 (get-schedule, byte[2] = page 0/1) are bare
-  2-3 byte requests; 0x02 (status request) is longer (len 15) and carries the Water Timer's own
-  state. Payloads emitted raw (msg), not yet field-decoded; reported as "Status/Config/Schedule
-  request".
-- Polling is autonomous, not gateway-gated (VERIFIED, 2026-07-21 gateway power-off): with the
-  gateway off for 46 min the Water Timer kept sending 0x02 on a fixed ~9.4 min timer (gaps 9m20s,
-  9m20s, 9m41s) and simply got no reply, while its other frames continued (so the valve was alive
-  and reception was fine). Only 0x02 is periodic - no 0x05/0x06 fired in that window, so those two
-  look event-driven (a boot/config resync) rather than timed.
-
-0x82 - gateway's reply to the Water Timer's 0x02 status request (VERIFIED: 17/17 captured 0x02
-  polls were answered by an 0x82 with the same counter, ~0.07 s later; 0 unsolicited)
-
-- gateway_time = bytes[2:5] (little-endian u24) is a monotonic counter the base keeps cloud-synced:
-  pulling the base's batteries reset it to 0 and it re-synced from the cloud on boot (it does NOT
-  free-run like an uptime timer), ticking at ~1.07/s. It behaves like a wall clock, but its exact
-  unit is unconfirmed, so the raw counter is emitted and the status is the generic "Status response"
-  rather than claiming "time". byte[1] increments slowly (a frame/epoch counter).
-
-0x03 - Temp/Hum send (UNCONFIRMED: the original PR's frames show a direct soil -> base path; our
-  set uses 0x09 soil -> Water Timer then the 0x0a relay instead)
-
-- ID:{8} device type (0x05 on the author's unit),
-- BB:{8} battery (0x09 full / 0x11 low; low nibble ~ level, high nibble low-battery flag),
-- 0x88 moisture field marker, HH:{8} moisture %,
-- 0x85 temperature field marker, TEMP:{16} temperature, little-endian, Fahrenheit x10.
-
-0x83 / 0x89 / 0x8a - acknowledgements, empty (zero) payload. An ack's type is the acked type with
-  bit 7 set: 0x8a acks the Water Timer's 0x0a (VERIFIED), 0x89 the soil 0x09, 0x83 the 0x03.
-
-0x0a - Water Timer -> base telemetry, RELAYED soil reading (VERIFIED)
-
-The Water Timer has no soil probe; this message relays the Soil Moisture Sensor's reading
-(same battery / moisture / temperature block as the sensor's own 0x09 below).
-
-- ID:{8} Water Timer device type / address (0x06 observed on HTV103FRF; identifies the unit).
-- AD:{8} Address of the paired Soil Moisture Sensor (0x06 observed; matches the sensor's 0x09).
-- ??:{8} Variable, value changes each message (per-message counter, meaning unknown).
-- BB:{8} Battery information, 0x09 = Full battery, 0x11 = Low Battery.
-         Last nibble probably the battery level, 1 for 3.6 / 3.8V , 9 for 4.5 V
-         First nibble probably the low battery flag.
-- 88:{8} Fixed value 0x88, moisture field marker.
-- HH:{8} Moisture %, relayed from the Soil Moisture Sensor (moves continuously, not 0x00).
-- 85:{8} Fixed value 0x85, temperature field marker.
-- TEMP:{16} Temperature_F, little indian, scale 10.
-
-0x09 - Soil Moisture Sensor -> Water Timer telemetry (VERIFIED)
-
-The sensor's own reading before the Water Timer relays it as 0x0a. Layout TY AD 00 BB 88 HH 85 TL TH:
-
-- TY:{8} Device type (0x0e on HCS005FRF, 0x05 on the original author's unit).
-- AD:{8} Device address.
-- BB:{8} Battery, same encoding as 0x0a.
-- HH:{8} Moisture %, preceded by the 0x88 marker.
-- TEMP:{16} Temperature_F, little indian, scale 10, preceded by the 0x85 marker.
-
-0x04 - Water Timer -> base watering event (VERIFIED)
-
-Sent when a scheduled or manual run actually waters (the timer skips a slot when the soil is
-already wet enough), so it is seen at most about twice a day:
-
-- AD:{8} Soil Moisture Sensor address.
-- programme:{16} programme id, tracks the schedule slot (one value per daily slot).
-- cycle_counter:{16} scheduled-slot counter, little-endian, monotonic; advances once per
-  scheduled slot and NOT on manual runs (two manual runs on the same day read the same value).
-- trigger:{8} high nibble = source (0x4 scheduled, 0x2 manual), low nibble = irrigation mode
-  (0x1 normal, 0x2 misting). So 0x41 scheduled-normal, 0x21 manual-normal, 0x22 manual-misting.
-- b[19]:{8} unknown (small; differs normal vs misting; possibly a segment/pulse count).
-- duration:{8} the *actual* run duration in seconds, not the programmed value (a manual run
-  hand-stopped at ~90 s reads 91; 0x3c = 60 matches the app default of 1 min).
-
-0x85 - base -> Water Timer schedule/duration config (VERIFIED)
-
-Pushed on each app settings change; decoded by setting distinctive values and diffing the payload:
-
-- 00,
-- default_duration:{16} default run duration, little-endian seconds (0x0078 = 120 = 2 min,
-  0x495c = 18780 = 5 h 13 m),
-- mist_run:{16} misting run-time, little-endian seconds,
-- mist_interval:{16} misting interval, little-endian seconds,
-- AD:{8} Soil Moisture Sensor address (0 = none),
-- stop_moisture:{8} Stop-Plan moisture threshold percent (a scheduled plan is skipped while the
-  soil is wetter than this),
-- 00 00, b[11] unknown (0x42 observed), 00,
-- flow_rate:{8} flow-rate calibration percent (the constant used to compute litres).
-
-Note: the recurring 0x21 message ("0109013c000a…") is a periodic status/heartbeat whose 0x3c is a
-fixed 60 s interval, NOT the watering duration (that lives here in 0x85). Educated-guess only.
-
-0x86 - base -> Water Timer schedule table (VERIFIED)
-
-A 1-byte header - the more_parts flag: 1 = another 0x86 page follows, 0 = last page (a table with
->2 plans splits across several 0x86 messages; confirmed by pushing a 5-plan table that split
-2+2+1) - followed by one 7-byte record per watering plan. Per record:
-
-- enabled(0x80) | weekday bitmask (bits 0-6 = Sun..Sat, used in weekly mode),
-- minute | ((hour & 3) << 6),
-- irrigation-type | (day_mode << 3) | (hour >> 2): type bit6 (0x40) normal / bit7 (0x80) misting;
-  day_mode 1 = every day, 2 = odd, 3 = even, 4 = weekly,
-- duration:{16} little-endian seconds,
-- water_limit:{16} little-endian, units of 0.1 L (0 = no limit).
-A misting plan's run-time / interval live in 0x85, not here.
-
-0x20 - base config-change counter (VERIFIED)
-
-A one-byte counter that increments by one on each settings change (e.g. 0x1e -> 0x1f); the base
-station emits it around a config push.
-
-0x21 - base -> Water Timer heartbeat (educated guess)
-
-Periodic status ("0109013c000a…"); the 0x3c = 60 s is a fixed interval, not the watering duration
-(that lives in 0x85). Gateway-dependent: vanished entirely when the base was powered off (Part C).
-
-0xa0 / 0xa1 - beacon (educated guess)
-
-Periodic, ack bit set; payload usually just 0x02 (0xa1) / 0x00 (0xa0), with a fuller payload
-momentarily around a config push. Also gateway-dependent (vanished with the base off), so despite
-the source id in the frame the exchange needs the gateway present.
-
-The base power-off (Part C) also confirmed the Water Timer is autonomous: it stores the 0x86
-schedule and runs it on its own clock (emitting 0x04) with the base gone; the base is only the
-cloud gateway, config pusher and time (0x82) source. A disabled plan rides in the 0x86 table with
-enabled=0 rather than being dropped, and day_mode 2/3 (odd/even) are confirmed via the app.
-
-*/
 
 /*
 Each of the set's devices transmits with a distinct 32-bit id whose top byte is the device class
@@ -245,21 +22,421 @@ back to the generic "Bresser-Garden".
 static char const *bresser_garden_model(uint32_t source_id)
 {
     switch (source_id >> 24) {
-        case 0x47: return "Bresser-SoilMoisture";
-        case 0x1f: return "Bresser-WaterTimer";
-        case 0x01: return "Bresser-Gateway";
-        default:   return "Bresser-Garden"; // fallback for an unrecognised device class
+    case 0x47: return "Bresser-SoilMoisture";
+    case 0x1f: return "Bresser-WaterTimer";
+    case 0x01: return "Bresser-Gateway";
+    default: return "Bresser-Garden"; // fallback for an unrecognised device class
     }
 }
 
+// Fill buf with the sub-message payload (from byte 11) as lowercase hex, for the raw "msg" field.
+// buf must hold 2*20 + 1 bytes and is always NUL-terminated - an empty payload yields "". The
+// caller rejects msg_length above 20 (b[11] .. b[30], the last two of the 33 bytes being the CRC);
+// the clamp here repeats that bound so the write stays inside buf however this is called.
+static void print_payload_hex(char *buf, uint8_t const *b, int msg_length)
+{
+    int len = msg_length > 20 ? 20 : msg_length; // msg_length is a byte, so always >= 0
+    char *p = buf;
+    for (int i = 0; i < len; i++)
+        p += sprintf(p, "%02x", b[11 + i]);
+    *p = '\0';
+}
+
+/** @fn int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+Bresser SmartHome Garden set (Fujian Baldr / Homgar family, also sold as RainPoint). 433 MHz ISM
+band, FSK PCM, bidirectional. Each frame is reported under the model of its actual transmitter,
+taken from the top byte of the 32-bit id (the device class):
+
+    model                  class  Bresser              Homgar (Baldr)     RainPoint
+    ---------------------  -----  -------------------  -----------------  -----------------------
+    Bresser-Gateway        0x01   HWS388WRF-V7 7510100 HWS388             TWG004WRF (Wi-Fi hub)
+    Bresser-WaterTimer     0x1F   HTV103FRF 7910100    HTV103 (1-zone)    ITV0103W / TTV1013WRF
+                                  HTV203FRF 7910101    HTV203 (2-zone)    TTV203WRF (2-zone)
+    Bresser-SoilMoisture   0x47   HCS005FRF 7910102    HCS005             ICS0001W
+    Bresser-Garden          --    (fallback for an unrecognised class byte)
+
+The three devices:
+- Soil Moisture Sensor (0x47) - a small battery sensor. It normally sends telemetry to its Water
+  Timer to be relayed (0x09), but sends straight to the gateway (0x03) when the app's "Relay
+  Communication" is off. Its telemetry is fire-and-forget - an ack does not drive retransmission -
+  but it does RECEIVE: pairing, config and acknowledgement traffic all reach it on ~434.57 MHz.
+- Water Timer / valve (0x1F) - the battery irrigation valve. It has no soil probe: it relays the
+  soil sensor's reading to the gateway, and stores the watering schedule and runs it on its own
+  clock, so it keeps watering even with the gateway off.
+- Gateway / base station (0x01) - the mains-powered Wi-Fi hub with a display; bridges to the HomGar
+  cloud / app. Pairing is set up in the app (the water timer's "Select Soil Sensor") and is partly
+  visible on the RF - the 0x01 INIT and its 0x81 reply are seen during a re-pair.
+
+FCC: gateway 2AWDBHWS388WRF, soil sensor 2AWDBTCS005FRF. Issue #2988 (\@kami83), PR #3621
+(based on #3005).
+
+Topology (the outdoor thermo-hygro unit is separate; see "Not handled" below):
+
+        Soil Moisture Sensor (0x47)
+                 |
+                 |  0x09  moisture / temperature   relay mode (the default)
+                 v
+        Water Timer / valve (0x1F)
+                 ^
+                 |
+      Water Timer -> gateway:  0x0a (relayed soil reading), 0x04 (watering), 0x02 (status), ...
+      gateway -> Water Timer:  0x8a (ack), 0x85 / 0x86 (schedule config), 0x20 / 0x21 (control), ...
+                 |
+                 v
+        Gateway / base station (0x01)  ==Wi-Fi==>  HomGar cloud / app
+
+        Direct mode ("Relay Communication" off):
+        Soil Moisture Sensor  --0x03-->  Gateway  --0x83-->  Soil Moisture Sensor
+
+Not handled by this decoder:
+- The outdoor thermo-hygro sensor (Homgar H666TH / H999TH) the base also reads: it uses the
+  already-supported Bresser Thermo-/Hygro 3CH decoder (protocol 52), not this one.
+- The base's barometric pressure: shown on the display / sent to the cloud only, never on 433 MHz.
+
+Physical layer: 433 MHz ISM band, FSK PCM at 50 us/bit (20 kbit/s). FSK deviation runs ~36 kHz for
+the soil sensor, ~38 kHz for the gateway, ~65 kHz for the Water Timer. Per-channel center frequencies
+are in the "frequencies" section below.
+
+Frame envelope (every message; after the aa..aa f3 e9 10 5e 51 preamble+sync the frame is always
+33 bytes). The Soil Moisture Sensor prepends a long ~1250-bit wake-up preamble, but its frame is
+still 33 bytes:
+
+    bytes:   0  1  2  3   4  5  6  7   8   9  10   11 ...... sub-message ......    31 32
+    field:   TT TT TT TT  SS SS SS SS  RR  MT  LL   MM MM MM ..................    ZZ ZZ
+
+- TT:{32} Target id, little-endian - the specific paired peer's id (e.g. the soil sensor's frames
+          carry its water timer's id), NOT a broadcast. Exception: the 0x01 INIT targets 0x00000000.
+          Telemetry frames surface this recipient as the `station_id` field, control frames as
+          `target_id` - the same value under two names, split by message class.
+- SS:{32} Source id, little-endian, fixed per device. Top byte = device class (0x01/0x1F/0x47),
+          pattern CC00xxxx (the 2nd byte has always been 0x00; the low 16 bits are a per-unit
+          serial). Survives a power cycle (the 0x01 INIT after power-up carries the same id).
+- RR: {8} Message counter. Only 1..63 are used - a 6-bit counter that wraps 63 -> 1 (0 reserved),
+          seen on all three devices. A reply/ack echoes the request's value.
+- MT: {8} Message type. Bit 7 (0x80) is the REPLY flag: reply = 0x80 | request (0x0a -> 0x8a,
+          0x02 -> 0x82), echoing the counter. A reply is EITHER an empty acknowledgement (when the
+          data was already in the request, e.g. telemetry) OR carries the requested data (when the
+          request was a bare poll/fetch, e.g. 0x02 -> 0x82, 0x08 -> 0x88). Low 7 bits identify the
+          sub-message (see the per-type sections below).
+- LL: {8} Sub-message length (meaningful payload bytes; the rest of the 33-byte frame is zero-pad).
+- MM:{..} Sub-message, starting at byte 11 (see below).
+- ZZ:{16} CRC-16 (poly 0x1021, init 0xd636) over bytes 0..30, ALWAYS at bytes 31..32 - the frame is
+          a fixed 33 bytes regardless of LL, so the CRC position never moves.
+
+Data layout - four real frames from this set (soil sensor 0x470005B5, water timer 0x1F000D9C,
+gateway 0x01000EC2), preamble + sync word stripped, ids little-endian on the wire. "?" = a byte not
+decoded in that message's section.
+
+    field:   TT TT TT TT  SS SS SS SS  RR  MT  LL   MM ...                        ZZ ZZ
+
+  0x09  soil sensor -> water timer   (soil's own moisture/temp; one-way, relayed as 0x0a)
+    9c 0d 00 1f  b5 05 00 47  0f  09  09   0e 06 00 08 88 2f 85 94 02  00..00  12 c5
+    ->1F000D9C   470005B5     15         (b13 = 00 here; the water timer inserts soil_rssi in 0x0a)
+
+  0x0a  water timer -> gateway       (relays that reading and adds its own soil_rssi; see "0x0a")
+    c2 0e 00 01  9c 0d 00 1f  23  0a  09   06 06 17 08 88 2f 85 94 02  00..00  5a c0
+    ->01000EC2   1F000D9C     35         soil_rssi=0x17 (23, ~-116 dBm), moisture=0x2f (47%), temp 66.0F
+
+  0x8a  gateway -> water timer       (ack of the 0x0a: MT = 0x80|0x0a, echoes counter 35, empty)
+    9c 0d 00 1f  c2 0e 00 01  23  8a  01   00                          00..00  39 d0
+    ->1F000D9C   01000EC2     35
+
+  0x04  water timer -> gateway       (watering event; see "0x04")
+    c2 0e 00 01  9c 0d 00 1f  17  04  0e   06 01 01 ad ae e4 19 21 05 00 00 00 3c 00  d8 e0
+    ->01000EC2   1F000D9C     23         trigger=0x21 (manual/normal), duration=0x3c (60 s)
+
+Direction: in relay mode the soil sensor sends 0x09 to the Water Timer, which forwards the reading
+as 0x0a; in direct mode it sends the compact 0x03 to the gateway and is acked with 0x83. An ack goes
+to whoever SENT the data - above, the gateway acks the Water Timer, echoing its counter. Telemetry is
+fire-and-forget either way: receiving an ack does not drive retransmission.
+
+Each sub-message below starts at byte 11. Layouts are shown as "Layout: <bytes>", "?" = undecoded.
+
+Message inventory (S = soil sensor, V = Water Timer/valve, G = gateway/base; "len" = payload length;
+"name" is a descriptive label, not on-air data):
+
+    type   len       dir           name              meaning
+    -----  --------  ------------  ----------------  --------------------------------------------------
+    0x01   7 or 8    any->bcast/G  Init / pairing    power-up announce; soil also re-announces
+    0x02   15        V->G          Status poll       poll; also carries the live watering countdown
+    0x03   7         S->G          Soil telemetry    direct soil moisture/temp (compact form of 0x09)
+    0x04   14        V->G          Watering event    a watering run actually happened
+    0x05   2         V->G          Config request    fetch the 0x85 schedule/duration config
+    0x06   3         V->G          Schedule request  fetch an 0x86 schedule page (byte selects page)
+    0x08   var       V->G          Moisture request  fetch current moisture
+    0x09   9         S->V          Soil telemetry    relay soil moisture/temp to the valve
+    0x0a   9         V->G          Relay telemetry   valve re-emits the soil block + its soil RSSI
+    0x20   2 or 3    G->V          Config change     config-change counter (+ RF channel, 3-byte form)
+    0x21   >=3       G->V          Run / keep-alive  start/stop a run, or a recurring keep-alive
+    0x81   11 or 16  G->S/V        Pairing/control   len 16 replies to the soil INIT; len 11 unknown
+    0x82   >=2       G->V          Status reply      reply to 0x02: config counter (+ gateway time)
+    0x83/84/89/8a  1 any           Acknowledgement   empty ack (bit 7 set on the acked type)
+    0x85   15        G->V          Schedule config   default/misting durations, sensor addr, threshold
+    0x86   8 or 15   G->V          Schedule table    watering-plan table (paged), 1 or 2 records
+    0x88   >=3       G->V          Moisture reply    reply to 0x08
+    0xa0   -         V->G          Acknowledgement   valve acks the 0x20 config change
+    0xa1   -         V->G          Run reply/beacon  reply to a 0x21 run; else a ~120 s beacon (02)
+
+A reply's type is the request's type with bit 7 set (req | 0x80), echoing the request's counter; it
+is either an empty ack (data already in the request, e.g. telemetry) or carries the fetched data
+(0x02->0x82, 0x08->0x88). A couple of types (0x21, 0xa1) cover more than one behaviour, told apart by
+their payload.
+
+=== pairing / startup ===
+
+0x01 - INIT / pairing announce (on power-up, and periodically re-announced)
+
+  Layout (7 bytes Water Timer, 8 bytes soil sensor):  TY FF CC CC 00 ?? FW [SS]
+  - TY:{8} device type (0x0e HCS005FRF soil, 0x06 Water Timer, 0x05 on other soil units),
+  - FF:{8} 0xff,
+  - CC CC:{16} the device class byte, duplicated on the reference (single-valve) unit (47 47 soil,
+    1f 1f valve) - a 2-zone valve (HTV203FRF) might differ; untested,
+  - FW:{8} firmware (0x35 = 53, matches the app),
+  - SS:{8} soil sensor only (the 8-byte form): a session/pairing nibble that varies between announces.
+  A genuine power-up broadcasts to 0x00000000 with the counter reset to 1; the soil sensor's periodic
+  re-announce instead addresses its paired gateway. A power-up INIT can be provoked from the soil
+  sensor's own buttons as well as by removing its batteries (which button, and whether re-pairing
+  differs from a plain power cycle, is untested).
+
+0x81 - pairing / control (two forms, both rare)
+
+  The len-16 form is decoded as the Pairing ack, the gateway's reply to the soil 0x01 INIT; its
+  payload is not further decoded, only emitted raw. A separate len-11 form was caught in a flex
+  capture during a manual re-pair, addressed to the WATER TIMER rather than the soil
+  (e.g. "000506e00110c7e8190137"); it does not match the len-16 guard, so it falls through to
+  Unknown msg. Both payloads vary; roles unclear.
+
+=== telemetry ===
+
+0x09 - Soil Moisture Sensor -> Water Timer, the sensor's own reading
+
+  Layout:  TY AD 00 BB 88 HH 85 TL TH
+  - TY:{8} device type (0x0e HCS005FRF, 0x05 on other units),
+  - AD:{8} the soil sensor's device address (0x06 on this set),
+  - 00:{8} constant (this is where the Water Timer inserts soil_rssi in its 0x0a relay),
+  - BB:{8} battery (0x09 full / 0x11 low; low nibble = level, high nibble = low-battery flag),
+  - 88:{8} moisture field marker, HH:{8} moisture %,
+  - 85:{8} temperature field marker, TL TH:{16} temperature, signed little-endian, Fahrenheit x10.
+
+0x0a - Water Timer -> gateway, RELAYED soil reading
+
+  The Water Timer has no soil probe; this relays the soil sensor's 0x09 (same battery/moisture/
+  temperature block) and adds soil_rssi.
+  Layout:  ID AD SR BB 88 HH 85 TL TH
+  - ID:{8} Water Timer device type (0x06 on HTV103FRF),
+  - AD:{8} the paired soil sensor's address (0x06; matches the 0x09),
+  - SR:{8} soil_rssi - the raw RSSI register the Water Timer reports for the soil sensor (the value
+           the app shows as the soil-sensor RSSI; ~= 0.36*SR - 124.7 dBm). Emitted raw. Absent from
+           the sensor's own 0x09 (constant 00 there); only the relay adds it.
+  - BB, 88, HH, 85, TL TH: as in 0x09.
+
+0x03 - direct Soil -> base telemetry
+
+  Emitted when the app's "Relay Communication" is turned off: the sensor then talks straight to the
+  gateway instead of via the Water Timer. Same battery/moisture/temperature block as 0x0a, but the
+  compact form - it drops the sensor address and the spacer byte, so the markers land two bytes
+  earlier. Note the sensor also CHANGES FREQUENCY with the mode (see the frequencies section).
+
+0x83 / 0x84 / 0x89 / 0x8a - acknowledgements (empty payload, length 1)
+
+  An ack's type is the acked type with bit 7 set, and it echoes the acked message's counter (RR):
+  0x8a acks the Water Timer's 0x0a, 0x89 the soil 0x09, 0x83 the 0x03, 0x84 the 0x04 watering event.
+
+=== watering ===
+
+0x04 - Water Timer -> gateway, watering event
+
+  Emitted when a scheduled or manual run actually delivers water. A scheduled slot is SKIPPED (no
+  0x04) when the soil is already wet enough: the Water Timer reads the moisture from the gateway
+  (0x08 below) and compares it against the Stop-Plan threshold in the 0x85 config. So 0x04 appears
+  as often as the watering schedule fires, minus the skipped-because-wet slots.
+  Layout:  AD ?? ?? PR PR CC CC TR WW WW 00 00 DR DR
+  - AD:{8} the associated soil sensor's address (which sensor this plan uses; 0x06 here),
+  - PR PR:{16} programme id, big-endian, tracks the schedule slot (one value per slot),
+  - CC CC:{16} counter, little-endian, monotonic over days and NOT bumped by manual runs. It does
+    not advance once per run either - repeated scheduled runs of one plan in a night all read the
+    same value - so the granularity is coarser (per day?); unconfirmed,
+  - TR:{8} trigger: high nibble = source (0x4 scheduled, 0x2 manual from the app, 0x1 the button on
+    the Water Timer itself), low nibble = mode (0x1 normal, 0x2 misting) - e.g. 0x41 scheduled-normal,
+    0x21 manual-normal, 0x22 manual-misting, 0x42 scheduled-misting, 0x11 button-normal. A button
+    press runs for default_duration_s from the 0x85 config,
+  - WW WW:{16} water usage of this run, little-endian, units of 0.1 L. The Water Timer MEASURES it
+    with a flow meter - a run with the supply shut off reports 0 - so it is not run time times a
+    constant. The same figure is echoed by the following 0x02 and 0xa1 frames (see 0x02). b[21:23]
+    are always zero, so the field may be wider than 16 bits.
+    The meter is rated 5-35 L/min and reads true within that band, but under-reads below it (27 % low
+    at 1.26 L/min against a measured volume). Drip irrigation runs an order of magnitude below the
+    range, so its litres under-report and the real flow is higher than reported. The 0x85 flow_rate
+    is a single trim and can only be correct at one flow rate,
+  - DR DR:{16} duration, the run's elapsed length in seconds, little-endian. WALL-CLOCK: it counts
+    the misting pauses and is padded to the programmed total, so a 360 s misting plan that delivered
+    only 15 s of water still reports 360, matching the 0x02 duration_s for the same run. It is
+    measured rather than copied from config, so a run stopped early reports less.
+
+=== base -> Water Timer control and config ===
+
+The base pushes control and config to the Water Timer; a config change normally triggers the Water
+Timer's fetch rounds (0x05/0x06, below).
+
+0x20 - config-change counter (and RF channel change)
+
+  b[11] is a counter that bumps on each settings edit (0x1e -> 0x1f). The base emits it around a
+  config push; the Water Timer then acks (0xa0) and fetches with 0x05/0x06 (below).
+  A 3-byte variant also reports the changed setting: b[12] = field id (0x04 = RF communication
+  channel), b[13] = the new value (Channel 2 -> "..0402", Channel 3 -> "..0403"), emitted
+  as rf_channel. The channel moves ONLY the valve->gateway uplink (center ~433.17 Ch1, ~434.68 Ch2,
+  ~433.24 Ch3); the downlink and everything to the soil stay fixed. See the "frequencies" section.
+
+0x21 - base -> Water Timer run command / heartbeat
+
+  Layout:  01 VV MM DD DD ...   VV = variant (0x02 manual run, 0x09 recurring keep-alive), MM = mode
+  (0 stop, 1 normal, 2 misting), DD DD = duration s, little-endian (16 bits: a 300 s run sends
+  "01 02 01 2c 01").
+  Drives a manual run: "01 02 02 78 00" starts a 120 s misting run (VV=02, MM=02, DD=0x78), "01 02 00"
+  stops it (VV=02, MM=00), each answered by an 0xa1 with the run state. The recurring "01 09 01 3c 00
+  0a" variant (VV=09, DD=0x3c=60 s) is emitted as a Heartbeat; its exact role is unconfirmed.
+  Gateway-dependent.
+
+0x85 - schedule / duration config (base -> Water Timer; also the 0x05 fetch reply)
+
+  Pushed on each app settings change.
+  Layout:  00 DD DD MR MR MI MI AD ST 00 00 ?? 00 FR ??   (15 bytes; b[25], the last, is undecoded)
+  - DD DD:{16} default run duration, little-endian seconds (0x0078=120=2min, 0x495c=18780=5h13m),
+  - MR MR:{16} misting run-time, little-endian seconds,
+  - MI MI:{16} misting interval, little-endian seconds,
+  - AD:{8} selected soil sensor address (0 = none; always 0x06 on this set),
+  - ST:{8} the app's "Stop Plan Moisture" % - a scheduled plan is skipped while the soil is wetter
+    than this (it tracks the app value, e.g. 62 -> 46). This is what makes 0x04 watering
+    events rarer than the schedule.
+  - ??:{8} (b[22]) unknown, 0x42 observed.
+  - FR:{8} flow_rate, SIGNED (int8): the app's -20..+20 % calibration (-20 -> 0xec). It is a trim on
+    the water usage the Water Timer measures (see 0x04), not the basis of a computed figure.
+    Being one constant it can only be correct at one flow rate.
+  The misting run-time / interval are here (global), NOT per-plan in 0x86 - so ALL misting plans and
+  manual misting runs share the one pattern (verified from the config log: changing misting for any
+  one schedule moves this single global pair; default_duration is separate and unaffected).
+
+0x86 - schedule table (base -> Water Timer; also the 0x06 fetch reply)
+
+  A 1-byte header then one 7-byte record per plan. Header b[0] = more_parts flag (1 = another 0x86
+  page follows, 0 = last; a table with >2 plans splits across pages, reassembled in counter order).
+  Layout per record:  WD MN TY DD DD WL WL
+  - WD:{8} enabled (0x80) | weekday bitmask (bits 0..6 = Sun..Sat, used in weekly mode),
+  - MN:{8} minute | ((hour & 3) << 6),
+  - TY:{8} irrigation-type | (day_mode << 3) | (hour >> 2): type bit6 (0x40) normal / bit7 (0x80)
+    misting; day_mode 1 every day, 2 odd, 3 even, 4 weekly,
+  - DD DD:{16} duration, little-endian seconds,
+  - WL WL:{16} water-usage limit, little-endian, units of 0.1 L (0 = no limit). The Water Timer
+    enforces it ITSELF, cutting a plan short once the metered volume reaches the cap - no stop
+    command comes from the gateway, in keeping with it running schedules on its own clock. The cap
+    is on METERED litres, so below the meter's rated range (see 0x04) it is reached later than the
+    true volume warrants and more water goes out than the setting implies.
+
+0xa0 / 0xa1 - the Water Timer's replies to the base's control frames
+
+  - 0xa0 = ack of the 0x20 config change (0x80 | 0x20): empty payload, echoes the counter.
+  - 0xa1 = reply to the 0x21 run command (0x80 | 0x21): carries the resulting run state (trigger,
+    remaining_s, duration_s) in the same 0x9f/0x81/0xad marker layout as the 0x02 report. Its byte
+    after the 0x9f (b[14:16]) is the last run's water usage, exactly as in 0x02 - both messages
+    share the sub-structure GG 9f WW WW .. 81 RR RR ad DD DD (placeholders as in 0x02 below:
+    GG trigger, WW WW water usage, RR RR remaining_s, DD DD duration_s).
+  A frequent (~120 s) bare "02" 0xa1 also appears whose role is unproven - it is labelled Beacon.
+  All are gateway-dependent (they vanish with the base powered off).
+
+=== Water Timer polls, and the gateway's replies ===
+
+The Water Timer periodically reports its status and fetches config/moisture (the fetches are
+normally triggered by the base's 0x20 config-change above); the gateway answers with type|0x80
+(echoing the counter, ~0.07 s later).
+
+0x02 - status report (len 15). The Water Timer pushes its own run state; the gateway replies 0x82.
+
+  Layout:  06 TT 01 GG 9f WW WW 00 00 81 RR RR ad DD DD
+  - GG:{8} trigger, same encoding as the 0x04 event; 0 when idle,
+  - WW WW:{16} water usage of the last COMPLETED run, units of 0.1 L - the same field the 0x04 event
+    carries, held until the next run ends. So a status report pairs the current run's countdown with
+    the PREVIOUS run's usage; it never shows the run in progress,
+  - RR RR:{16} remaining_s, little-endian - seconds left in the current run, counting down 1/s and
+    continuing through misting pauses,
+  - DD DD:{16} duration_s, little-endian - the run's total length.
+  trigger, remaining_s and duration_s read 0 when idle, so a 0x02 doubles as a live watering
+  countdown; water usage persists. It is sent on a fixed ~9.4 min timer whether or not the gateway
+  answers. 0x9f/0x81/0xad are constant markers. TT (b[12]) is undecoded - it varies within a single
+  run (0x0b at the start, 0x0e later).
+
+0x05 / 0x06 / 0x08 - fetches (bare requests; the data comes back in the reply):
+  - 0x05 get-config   -> 0x85 reply (the schedule/duration config),
+  - 0x06 get-schedule -> 0x86 reply (byte[2] selects a page for multi-page tables),
+  - 0x08 get-soil-moisture (payload "06 06" = soil address 6, then a constant) -> 0x88 reply with the
+    current moisture %. The Water Timer relays the soil reading itself yet still asks the gateway for
+    it - probably to act on the gateway's (cloud-authoritative) value; unresolved.
+  These are event-driven: every 0x05/0x06 burst follows a 0x20 config-change notice (above).
+
+0x82 - reply to the 0x02 status report (same counter)
+
+  Two forms: a bare 2-byte ack, or a longer form (>= 5 bytes) carrying gateway_time = b[13:16]
+  (little-endian u24), a seconds-scale monotonic counter (~1.07 ticks/s free-run, measured over 111
+  samples; cloud-disciplined, so it takes occasional large forward jumps). It is NOT a disciplined
+  wall clock - absolute time can't be read from it - and being u24 it wraps roughly every ~180 days.
+  It is emitted raw and the status is the generic "Status response". payload[1] (b[12]) is the
+  gateway's config_counter (the 0x20 value), which is how a config change reaches the valve.
+
+0x88 - reply to the 0x08 moisture fetch:  00 00 MM,  MM = moisture %.
+
+=== autonomy ===
+
+The Water Timer runs the schedule on its own clock with the base absent (it stores the 0x86 table
+and emits 0x04 events); the base is only the cloud gateway, config pusher and time (0x82) source. A
+disabled plan rides in the 0x86 table with enabled=0 rather than being dropped.
+
+=== frequencies ===
+
+Per-channel FSK center frequencies ((freq1+freq2)/2), measured 2026-07-23 and cross-checked on two
+SDRs (absolute values carry ~+-40 kHz, but the relationships are solid). The RF Communication Channel
+moves ONLY the valve->gateway uplink; the downlink, the soil->valve relay, and everything to the soil
+(~434.57) are channel-independent.
+
+    link                              Ch1       Ch2       Ch3      behaviour
+    --------------------------------  --------  --------  -------  ----------------------------
+    valve -> gateway uplink           ~433.17   ~434.68   ~433.24  moves (Ch2 far up; Ch1 ~ Ch3)
+    gateway -> valve downlink         ~433.69   ~433.70   ~433.69  fixed
+    soil 0x09 -> valve (relay)        ~433.68   ~433.70   ~433.69  fixed
+    to-soil (0x89 / 0x83 / config)    434.57    434.57    434.57   fixed
+
+The soil sensor CHANGES TRANSMIT FREQUENCY WITH ITS MODE, which is why direct-mode frames are easy
+to miss: on Channel 3 its direct 0x03 -> gateway was measured ~433.34, while its relayed 0x09 -> Water
+Timer uses the fixed ~433.69 link, and the 0x01 INIT broadcast sweeps ~433.1 + 433.3 on boot/re-pair.
+Everything sent TO the soil stays on its fixed ~434.57 receive channel. The values above are FSK
+centers ((f1+f2)/2), not single tones.
+
+=== known unknowns / guesses ===
+
+- 0xa1 Beacon (payload 02, ~120 s): role unexplained; it also arrives ~7 dB hotter than every other
+  frame, unexplained.
+- 0x81 pairing-ack payload, the 0x21 "01 09.." keep-alive role, 0x85 bytes b[22] (0x42 constant) and
+  b[25], 0x04 bytes b[12]/b[13], the 0x01 INIT b[16], and the 0x82 long form's trailing "19 06"
+  (after config_counter and the u24 gateway_time): all undecoded.
+- 0x02 byte b[12] (TT) changes WITHIN a single run, so it tracks live state rather than config -
+  probably the most tractable of the remaining unknowns.
+- Water-usage field width: read as 16-bit LE (0x04 b[19:21], 0x02 b[16:18], 0xa1 b[14:16]). The two
+  bytes above it are zero in every capture, so it could be 24 or 32 bits; only a run past 6553.5 L
+  would tell, which is not a practical experiment.
+- soil_rssi -> dBm (0x0a) is an empirical linear fit, unconfirmed above register ~150.
+- bcfa4417.. frames: ~1520-bit frames with a DIFFERENT sync word (not f3 e9 10 5e 51); not part of
+  this frame format - likely a separate gateway link, possibly pairing.
+- Multi-sensor topology: the set reportedly supports several soil sensors; untested (one here). Each
+  0x0a relay carries the soil sensor's own address, so several sensors would interleave by address.
+
+*/
+
 static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const preamble_pattern[] = { 0xaa, 0xf3, 0xe9, 0x10, 0x5e, 0x51};
+    uint8_t const preamble_pattern[] = {0xaa, 0xf3, 0xe9, 0x10, 0x5e, 0x51};
 
     uint8_t b[33];
 
-    if (bitbuffer->num_rows > 1) {
-        decoder_logf(decoder, 1, __func__, "Too many rows: %d", bitbuffer->num_rows);
+    if (bitbuffer->num_rows != 1) {
+        decoder_logf(decoder, 1, __func__, "Expected one row: %d", bitbuffer->num_rows);
         return DECODE_FAIL_SANITY;
     }
     int msg_len = bitbuffer->bits_per_row[0];
@@ -288,55 +465,48 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_extract_bytes(bitbuffer, 0, offset, b, 33 * 8);
 
-    if (crc16(b,33,0x1021,0xd636)) {
+    if (crc16(b, 33, 0x1021, 0xd636)) {
         decoder_logf(decoder, 1, __func__, "CRC error");
         return DECODE_FAIL_MIC;
     }
 
-    decoder_log_bitrow(decoder, 1, __func__, b, 33 * 8 , "MSG");
+    decoder_log_bitrow(decoder, 1, __func__, b, 33 * 8, "MSG");
 
-    //Extract info ...
+    // Extract info ...
 
-    uint32_t target_id = (b[3] << 24) | (b[2] << 16) | (b[1] << 8) | b[0];
-    uint32_t source_id = (b[7] << 24) | (b[6] << 16) | (b[5] << 8) | b[4];
-    int counter        = b[8];
-    int msg_type       = b[9];
-    int msg_length     = b[10];
-    int acknowledgement = (msg_type & 0xf0) >> 7;
+    uint32_t target_id  = ((uint32_t)b[3] << 24) | (b[2] << 16) | (b[1] << 8) | b[0];
+    uint32_t source_id  = ((uint32_t)b[7] << 24) | (b[6] << 16) | (b[5] << 8) | b[4];
+    int counter         = b[8];
+    int msg_type        = b[9];
+    int msg_length      = b[10];
+    int acknowledgement = msg_type >> 7; // bit 7 is the reply/ack flag
 
-    /*
-    Device Init/Pairing message (submessage not fully decoded). Emitted by any device class on
-    power-up, and *periodically* by the soil sensor as a sender-only re-announce (the sensor
-    never receives) - which is how a power-cycled Water Timer re-pairs without a back-channel.
-    target_id varies: a power-up INIT is a broadcast (0, as the Water Timer's here); the soil
-    sensor's periodic re-announce is addressed to the paired gateway (target_id = gateway id).
-    Layout: TY ff CC CC 00 LL FW [SS]
-      TY device_type (byte[0]); CC device class byte x2; FW firmware (byte[6] = b[17]);
-      soil sensor is length 8 with a trailing SS = session/pairing nibble that varies between
-      broadcasts (seen 0x03 and 0x07), the Water Timer is length 7 with no SS.
-    msg_counter (b[8]) is a 6-bit counter (1..63, wraps 63->1, 0 reserved): it resets to 1 on
-    a real power-up (so the Water Timer's INIT reads 1) but runs continuously through the soil
-    sensor's periodic re-announce - so the gap between two soil INIT counters is its period.
-    */
+    // The payload runs b[11]..b[30] - the last two of the fixed 33 bytes are the CRC - so a declared
+    // length above 20 cannot be real, whatever the CRC says. Reject rather than decode past the end.
+    if (msg_length > 20) {
+        decoder_logf(decoder, 1, __func__, "Invalid payload length: %d", msg_length);
+        return DECODE_FAIL_SANITY;
+    }
+
+    // 0x01 Init/Pairing (see header): device_type b[11], firmware b[17]; payload is otherwise
+    // emitted raw as msg (not fully decoded).
     if (msg_type == 0x01 && (msg_length == 0x07 || msg_length == 0x08)) {
 
-        int device_type = b[11]; // 0x0e soil, 0x06 water timer, 0x05 on the PR author's unit; same field as 0x09
+        int device_type = b[11]; // 0x0e soil, 0x06 water timer; same field as 0x09
         int firmware    = b[17];
-        char msg[17];
-        int n = 0;
-        for (int i = 0; i < msg_length && n < (int)sizeof(msg) - 2; i++)
-            n += snprintf(msg + n, sizeof(msg) - n, "%02x", b[11 + i]);
+        char msg[41];
+        print_payload_hex(msg, b, msg_length);
 
         /* clang-format off */
         data_t *data = data_make(
                 "model",         "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-SoilMoisture" "Bresser-WaterTimer"
-                "status",        "",            DATA_STRING, "Init Pairing",
+                "msg_name",      "",            DATA_STRING, "Init Pairing",
                 "id",            "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",     "",            DATA_FORMAT, "%u", DATA_INT, target_id,
                 "msg_counter",   "Msg Counter", DATA_INT,    counter,
                 "device_type",   "",            DATA_FORMAT, "%u", DATA_INT, device_type,
                 "firmware",      "Firmware",    DATA_FORMAT, "%u", DATA_INT, firmware,
-                "msg_type",      "",            DATA_FORMAT, "%X", DATA_INT, msg_type & 0xf,
+                "msg_type",      "",            DATA_FORMAT, "%X", DATA_INT, msg_type,
                 "msg_length",    "",            DATA_FORMAT, "%02X", DATA_INT, msg_length,
                 "msg",           "",            DATA_STRING, msg,
                 "mic",           "Integrity",   DATA_STRING, "CRC",
@@ -349,30 +519,19 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Basestation Acknowledgement for Soil Moisture init message
     else if (msg_type == 0x81 && msg_length == 0x10) {
 
-        /*
-        Acknowledgement but message answer not yet decoded, not always same values, could be date and time information ?
-        11 12 13 14 15 16 17 18 19 20 21
-
-        00 05 05 e0 01 5a 9a e8 11 06 02
-        00 05 05 e0 01 b9 46 ed 11 01 02
-        00 05 05 e0 01 2d 48 ed 11 01 02
-        00 05 05 e0 01 6c 48 ed 11 01 02
-        00 05 05 e0 01 3b 4c ed 11 01 02
-        */
-
-        char msg[23];
-        snprintf(msg, 23, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
-                 b[11],b[12],b[13],b[14],b[15],b[16],b[17],b[18],b[19],b[20],b[21]);
+        // Acknowledgement of the INIT; payload varies between captures and is not decoded.
+        char msg[41];
+        print_payload_hex(msg, b, msg_length);
 
         /* clang-format off */
         data_t *data = data_make(
                 "model",           "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-Gateway"
-                "status",          "",            DATA_STRING, "Pairing Acknowledgement",
+                "msg_name",        "",            DATA_STRING, "Pairing ack",
                 "id",              "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",       "",            DATA_FORMAT, "%u", DATA_INT, target_id,
                 "msg_counter",     "Msg Counter", DATA_INT,    counter,
                 "acknowledgement", "",            DATA_INT,    acknowledgement,
-                "msg_type",        "",            DATA_FORMAT, "%X", DATA_INT, msg_type & 0xf,
+                "msg_type",        "",            DATA_FORMAT, "%X", DATA_INT, msg_type,
                 "msg_length",      "",            DATA_FORMAT, "%02X", DATA_INT, msg_length,
                 "msg",             "",            DATA_STRING, msg,
                 "mic",             "Integrity",   DATA_STRING, "CRC",
@@ -383,22 +542,24 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
     }
 
-    // if message from Soil Moisture Sensor message to Basestation?
+    // 0x03 direct soil -> base telemetry, sent when "Relay Communication" is off (see header 0x03)
     else if (msg_type == 0x03 && msg_length == 0x07) {
 
-        int sensor_number = b[11];
+        int device_type   = b[11];
         int battery_low   = (b[12] & 0x10) >> 4;
         int battery_level = (b[12] & 0x0f);
-        int moisture      = b[14];   // b[13]=0x88 and b[15]=0x85 are field markers, not data
-        int temperature_f = (b[17] << 8) | b[16];
+        int moisture      = b[14]; // b[13]=0x88 and b[15]=0x85 are field markers, not data
+        int temperature_f = (int16_t)((b[17] << 8) | b[16]); // signed: below-zero F is two's complement
 
         /* clang-format off */
         data_t *data = data_make(
                 "model",         "",              DATA_STRING, bresser_garden_model(source_id), // "Bresser-SoilMoisture"
+                "msg_name",      "",              DATA_STRING, "Soil telemetry",
                 "id",            "",              DATA_FORMAT, "%u",   DATA_INT,    source_id,
-                "sensor_number", "",              DATA_FORMAT, "%u",   DATA_INT,    sensor_number,
+                "device_type",   "",              DATA_FORMAT, "%u",   DATA_INT,    device_type,
                 "station_id",    "",              DATA_FORMAT, "%u",   DATA_INT,    target_id,
                 "msg_counter",   "Msg Counter",   DATA_INT,    counter,
+                "msg_type",      "",              DATA_FORMAT, "%02X", DATA_INT,    msg_type,
                 "temperature_F", "Temperature",   DATA_FORMAT, "%.1f F", DATA_DOUBLE, temperature_f * 0.1f,
                 "moisture",      "Moisture",      DATA_FORMAT, "%u %%",DATA_INT,    moisture,
                 "battery_ok",    "Battery OK",    DATA_FORMAT, "%u",   DATA_INT,    !battery_low,
@@ -412,20 +573,20 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     /*
     Acknowledgement (empty 1-byte payload). An ack's type is the acked type with bit 7 set:
-    0x8a acks the Water Timer's 0x0a (gateway->valve), 0x89 the soil 0x09, 0x83 the 0x03. The low
-    nibble of msg_type distinguishes them; the model is the sender's, from its id class byte.
+    0x8a acks the Water Timer's 0x0a, 0x89 the soil sensor's 0x09, and 0x83 its 0x03. The full
+    msg_type identifies the acked request; the model is the sender's, from its id class byte.
     */
-    else if ((msg_type == 0x83 || msg_type == 0x89 || msg_type == 0x8a) && msg_length == 0x01) {
+    else if ((msg_type == 0x83 || msg_type == 0x84 || msg_type == 0x89 || msg_type == 0x8a) && msg_length == 0x01) {
 
         /* clang-format off */
         data_t *data = data_make(
                 "model",           "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-SoilMoisture" "Bresser-WaterTimer" "Bresser-Gateway"
-                "status",          "",            DATA_STRING, "Acknowledgement",
+                "msg_name",        "",            DATA_STRING, "Acknowledgement",
                 "id",              "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",       "",            DATA_FORMAT, "%u", DATA_INT, target_id,
                 "msg_counter",     "Msg Counter", DATA_INT,    counter,
                 "acknowledgement", "",            DATA_INT,    acknowledgement,
-                "msg_type",        "",            DATA_FORMAT, "%X", DATA_INT, msg_type & 0xf,
+                "msg_type",        "",            DATA_FORMAT, "%X", DATA_INT, msg_type,
                 "msg_length",      "",            DATA_FORMAT, "%02X", DATA_INT, msg_length,
                 "mic",             "Integrity",   DATA_STRING, "CRC",
                 NULL);
@@ -436,36 +597,34 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /*
-    Water Timer -> Base station: relays the Soil Moisture Sensor reading. Same
-    battery/moisture/temperature block as the sensor's own 0x09.
-    b[11] and b[12] differ between device sets (0x06/0x06 here, 0x0b/0x05 in the
-    header example above), so they are ids, not constants: b[11] the Water Timer
-    device type, b[12] the paired sensor address (matches the sensor's own 0x09).
-    b[13] varies over time (meaning unknown, emitted as "unknown"); the original decoder
-    glued b[12]+b[13] into one misleading value. b[15]=0x88 and b[17]=0x85 are constant field
-    markers (they precede moisture and temperature), not data.
+    0x0a Water Timer -> gateway: relays the soil sensor's 0x09 block and inserts soil_rssi at b[13]
+    (raw RSSI register the app shows for the soil sensor; ~ 0.36 * soil_rssi - 124.7 dBm, emitted raw
+    as the fit is empirical, unconfirmed above ~150). b[15]=0x88 and b[17]=0x85 are field markers.
+    See header 0x0a.
     */
     else if (msg_type == 0x0a && msg_length == 0x09) {
 
         int device_type   = b[11];
         int sensor_number = b[12];
-        int unknown       = b[13];   // varies over time, meaning not established
+        int soil_rssi     = b[13]; // raw RSSI register the Water Timer reports for the soil sensor
         int battery_low   = (b[14] & 0x10) >> 4;
         int battery_level = (b[14] & 0x0f);
         int moisture      = b[16];
-        int temperature_f = (b[19] << 8) | b[18];
+        int temperature_f = (int16_t)((b[19] << 8) | b[18]); // signed: below-zero F is two's complement
 
         /* clang-format off */
         data_t *data = data_make(
                 "model",         "",              DATA_STRING, bresser_garden_model(source_id), // "Bresser-WaterTimer"
+                "msg_name",      "",              DATA_STRING, "Relay telemetry",
                 "id",            "",              DATA_FORMAT, "%u",     DATA_INT,    source_id,
                 "device_type",   "",              DATA_FORMAT, "%u",     DATA_INT,    device_type,
                 "sensor_number", "",              DATA_FORMAT, "%u",     DATA_INT,    sensor_number,
                 "station_id",    "",              DATA_FORMAT, "%u",     DATA_INT,    target_id,
                 "msg_counter",   "Msg Counter",   DATA_INT,    counter,
+                "msg_type",      "",              DATA_FORMAT, "%02X",   DATA_INT,    msg_type,
                 "temperature_F", "Temperature",   DATA_FORMAT, "%.1f F", DATA_DOUBLE, temperature_f * 0.1f,
                 "moisture",      "Moisture",      DATA_FORMAT, "%u %%",  DATA_INT,    moisture,
-                "unknown",       "Unknown",       DATA_FORMAT, "%02x",   DATA_INT,    unknown,
+                "soil_rssi",     "Soil RSSI",     DATA_INT,    soil_rssi,
                 "battery_ok",    "Battery OK",    DATA_FORMAT, "%u",     DATA_INT,    !battery_low,
                 "battery_level", "Battery Level", DATA_INT,    battery_level,
                 "mic",           "Integrity",     DATA_STRING, "CRC",
@@ -475,14 +634,8 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_output_data(decoder, data);
         return 1;
     }
-    /*
-    Soil Moisture Sensor -> Water Timer telemetry (captured 2026-07 with an SDR next to
-    the sensor). Same battery/moisture/temperature block as the Water Timer 0x0a relay;
-    this is the original reading before the Water Timer forwards it to the base station.
-    Sub message layout: TY AD 00 BB 88 HH 85 TL TH
-      TY device type (0x0e on HCS005FRF, 0x05 on other units), AD device address,
-      BB battery, 0x88 moisture marker, HH moisture %, 0x85 temp marker, T temperature_F LE.
-    */
+    // 0x09 soil sensor -> Water Timer telemetry: the original reading the 0x0a relay forwards (same
+    // battery/moisture/temperature block, without soil_rssi). See header 0x09.
     else if (msg_type == 0x09 && msg_length == 0x09) {
 
         int device_type   = b[11];
@@ -490,16 +643,18 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int battery_low   = (b[14] & 0x10) >> 4;
         int battery_level = (b[14] & 0x0f);
         int moisture      = b[16];
-        int temperature_f = (b[19] << 8) | b[18];
+        int temperature_f = (int16_t)((b[19] << 8) | b[18]); // signed: below-zero F is two's complement
 
         /* clang-format off */
         data_t *data = data_make(
                 "model",         "",              DATA_STRING, bresser_garden_model(source_id), // "Bresser-SoilMoisture"
+                "msg_name",      "",              DATA_STRING, "Soil telemetry",
                 "id",            "",              DATA_FORMAT, "%u",     DATA_INT,    source_id,
                 "device_type",   "",              DATA_FORMAT, "%u",     DATA_INT,    device_type,
                 "sensor_number", "",              DATA_FORMAT, "%u",     DATA_INT,    sensor_number,
                 "station_id",    "",              DATA_FORMAT, "%u",     DATA_INT,    target_id,
                 "msg_counter",   "Msg Counter",   DATA_INT,    counter,
+                "msg_type",      "",              DATA_FORMAT, "%02X",   DATA_INT,    msg_type,
                 "temperature_F", "Temperature",   DATA_FORMAT, "%.1f F", DATA_DOUBLE, temperature_f * 0.1f,
                 "moisture",      "Moisture",      DATA_FORMAT, "%u %%",  DATA_INT,    moisture,
                 "battery_ok",    "Battery OK",    DATA_FORMAT, "%u",     DATA_INT,    !battery_low,
@@ -511,41 +666,30 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_output_data(decoder, data);
         return 1;
     }
-    /*
-    Water Timer watering event (14-byte submessage), sent when a scheduled or manual
-    run actually waters. Fields verified against 30 events cross-checked with the
-    HomGar app's own water-usage export, plus controlled manual runs from the app:
-      b[14:16] programme id (tracks the schedule slot: one value per daily slot),
-      b[16:18] scheduled-slot counter (LE, monotonic; advances per scheduled slot, not
-               on manual runs),
-      b[18]    trigger: high nibble = source (0x4 scheduled, 0x2 manual), low nibble =
-               mode (0x1 normal, 0x2 misting) -> 0x41 sched-normal, 0x21 manual-normal,
-               0x22 manual-misting,
-      b[19]    unknown (small, differs normal vs misting; possibly a segment/pulse count),
-      b[23]    actual run duration in seconds (a hand-stopped run reads the real elapsed
-               time, not the programmed value; 0x3c=60 matches the app default of 1 min).
-    */
+    // 0x04 watering event (see header 0x04): programme b[14:16] (BE), cycle_counter b[16:18] (LE),
+    // trigger b[18], water_usage b[19:21] (0.1 L, LE), duration_s b[23:25] (actual elapsed s, LE).
     else if (msg_type == 0x04 && msg_length == 0x0e) {
 
         int sensor_number = b[11];
         int programme     = (b[14] << 8) | b[15]; // opaque slot id; big-endian on purpose so its %04x hex matches the on-wire byte order (unlike the numeric LE fields below)
         int cycle_counter = b[16] | (b[17] << 8);
         int trigger       = b[18];
-        int unknown       = b[19];   // small; differs normal vs misting, possibly a segment/pulse count
-        int duration_s    = b[23];
+        int water_usage   = b[19] | (b[20] << 8); // 0.1 L units; b[21:23] stay 0, so it may be wider
+        int duration_s    = b[23] | (b[24] << 8);
 
         /* clang-format off */
         data_t *data = data_make(
                 "model",         "",              DATA_STRING, bresser_garden_model(source_id), // "Bresser-WaterTimer"
-                "status",        "",              DATA_STRING, "Watering",
+                "msg_name",      "",              DATA_STRING, "Watering",
                 "id",            "",              DATA_FORMAT, "%u",   DATA_INT,    source_id,
                 "sensor_number", "",              DATA_FORMAT, "%u",   DATA_INT,    sensor_number,
                 "station_id",    "",              DATA_FORMAT, "%u",   DATA_INT,    target_id,
                 "msg_counter",   "Msg Counter",   DATA_INT,    counter,
+                "msg_type",      "",              DATA_FORMAT, "%02X", DATA_INT,    msg_type,
                 "programme",     "",              DATA_FORMAT, "%04x", DATA_INT,    programme,
                 "cycle_counter", "",              DATA_INT,    cycle_counter,
                 "trigger",       "",              DATA_FORMAT, "%02x", DATA_INT,    trigger,
-                "unknown",       "Unknown",       DATA_FORMAT, "%02x", DATA_INT,    unknown,
+                "water_usage_l", "Water Usage",   DATA_FORMAT, "%.1f l", DATA_DOUBLE, water_usage * 0.1f,
                 "duration_s",    "Duration",      DATA_FORMAT, "%u s", DATA_INT,    duration_s,
                 "mic",           "Integrity",     DATA_STRING, "CRC",
                 NULL);
@@ -555,40 +699,32 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
     }
 
-    /*
-    Base Station schedule/duration config (0x85), pushed to the Water Timer on each
-    settings change in the app. Byte offsets decoded by setting distinctive values and
-    diffing the payload:
-      b[12:14] default run duration, LE u16 seconds (0x0078=120=2min, 0x495c=18780=5h13m),
-      b[14:16] misting run-time, LE u16 seconds,
-      b[16:18] misting interval, LE u16 seconds (0x0327=807=13m27s),
-      b[18]    Soil Moisture Sensor address (0 = none),
-      b[19]    Stop Plan moisture threshold, percent (skip a plan while the soil is wetter),
-      b[24]    flow rate calibration, percent.
-    */
+    // 0x85 schedule/duration config, pushed on each app settings change (see header 0x85 for the
+    // field semantics; offsets are in the reads below).
     else if (msg_type == 0x85 && msg_length == 0x0f) {
 
         int default_duration_s = b[12] | (b[13] << 8);
-        int mist_run_s      = b[14] | (b[15] << 8);
-        int mist_interval_s = b[16] | (b[17] << 8);
-        int sensor_number   = b[18];
-        int stop_moisture   = b[19];
-        int unknown         = b[22];   // 0x42 observed, meaning unknown
-        int flow_rate       = b[24];
+        int mist_run_s         = b[14] | (b[15] << 8);
+        int mist_interval_s    = b[16] | (b[17] << 8);
+        int sensor_number      = b[18];
+        int stop_moisture      = b[19];
+        int unknown            = b[22];         // 0x42 observed, meaning unknown
+        int flow_rate          = (int8_t)b[24]; // signed: app range -20..+20 %, e.g. -20 -> 0xec
 
         /* clang-format off */
         data_t *data = data_make(
                 "model",           "",              DATA_STRING, bresser_garden_model(source_id), // "Bresser-Gateway"
-                "status",          "",              DATA_STRING, "Schedule config",
+                "msg_name",        "",              DATA_STRING, "Schedule config",
                 "id",              "",              DATA_FORMAT, "%u",   DATA_INT,    source_id,
                 "target_id",       "",              DATA_FORMAT, "%u",   DATA_INT,    target_id,
                 "sensor_number",   "",              DATA_FORMAT, "%u",   DATA_INT,    sensor_number,
                 "msg_counter",     "Msg Counter",   DATA_INT,    counter,
+                "msg_type",        "",              DATA_FORMAT, "%02X", DATA_INT, msg_type,
                 "default_duration_s", "Default Duration", DATA_FORMAT, "%u s", DATA_INT, default_duration_s,
                 "mist_run_s",      "Mist Run",      DATA_FORMAT, "%u s", DATA_INT,    mist_run_s,
                 "mist_interval_s", "Mist Interval", DATA_FORMAT, "%u s", DATA_INT,    mist_interval_s,
                 "stop_moisture",   "Stop Moisture", DATA_FORMAT, "%u %%", DATA_INT,   stop_moisture,
-                "flow_rate",       "Flow Rate",     DATA_FORMAT, "%u %%", DATA_INT,   flow_rate,
+                "flow_rate",       "Flow Rate",     DATA_FORMAT, "%d %%", DATA_INT,   flow_rate,
                 "unknown",         "Unknown",       DATA_FORMAT, "%02x",  DATA_INT,   unknown,
                 "mic",             "Integrity",     DATA_STRING, "CRC",
                 NULL);
@@ -598,17 +734,22 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
     }
 
-    // Config-change counter (0x20): a one-byte counter that increments on each settings edit.
-    else if (msg_type == 0x20 && msg_length == 0x02) {
+    // Config-change counter (0x20): b[11] increments on each settings edit. A 3-byte variant also
+    // reports the changed setting: b[12] = field id (0x04 = RF communication channel), b[13] = value.
+    else if (msg_type == 0x20 && (msg_length == 0x02 || msg_length == 0x03)) {
+
+        int has_channel = (msg_length == 0x03 && b[12] == 0x04); // b[13] = RF channel (1/2/3)
 
         /* clang-format off */
         data_t *data = data_make(
                 "model",          "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-Gateway"
-                "status",         "",            DATA_STRING, "Config change",
+                "msg_name",       "",            DATA_STRING, "Config change",
                 "id",             "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",      "",            DATA_FORMAT, "%u", DATA_INT, target_id,
                 "msg_counter",    "Msg Counter", DATA_INT,    counter,
+                "msg_type",       "",            DATA_FORMAT, "%02X", DATA_INT, msg_type,
                 "config_counter", "",            DATA_INT,    b[11],
+                "rf_channel",     "RF Channel",  DATA_COND,   has_channel, DATA_INT, b[13],
                 "mic",            "Integrity",   DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
@@ -618,35 +759,22 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /*
-    Base Station schedule table (0x86): a 1-byte header (b[11]) then one 7-byte record per
-    watering plan, emitted as a `plans` array. b[11] is a "more parts" flag - 1 = another 0x86
-    page follows, 0 = this is the last page - CONFIRMED by pushing a 5-plan table that split
-    2+2+1 across three frames with headers 1,1,0. A table with >2 plans splits across several
-    0x86 messages (a 33-byte frame holds at most 2 records); reassemble the pages in msg_counter
-    order until more_parts=0. Byte offsets (per record r) decoded by editing plans in the app:
-      r[0]   enabled (0x80) | weekday bitmask (bits 0-6 = Sun..Sat, used in weekly mode),
-      r[1]   minute | ((hour & 3) << 6),
-      r[2]   type | (day_mode << 3) | (hour >> 2); type bit6=0x40 normal / bit7=0x80 misting;
-             day_mode 1=every day, 2=odd, 3=even, 4=weekly,
-      r[3:5] duration, LE u16 seconds,
-      r[5:7] water usage limit, LE u16, in units of 0.1 L (0 = no limit).
-    A misting plan's run-time and interval are not here; they ride in the 0x85 config.
-    NOTE: `plan` is the record's 1-based index WITHIN THIS MESSAGE. A large table is split
-    across several 0x86 messages with no global index in the frame, so it is not the app's
-    absolute plan number; identify a plan by its start time.
+    0x86 schedule table (see header 0x86): a 1-byte more_parts header (b[11]) then one 7-byte
+    record per watering plan (fields r[0..6] decoded below), at most 2 records per 33-byte frame.
+    NOTE: `plan` is the record's 1-based index WITHIN THIS MESSAGE, not the app's absolute plan
+    number (a large table splits across pages with no global index) - identify a plan by start time.
     */
-    else if (msg_type == 0x86 && msg_length >= 0x08) {
+    else if (msg_type == 0x86 && (msg_length == 0x08 || msg_length == 0x0f)) {
 
         char const *const day_mode[] = {"unknown", "every day", "odd days",
                 "even days", "weekly", "unknown", "unknown", "unknown"};
-        data_t *plan_data[4] = {0};
-        int np      = 0;
-        int n_plans = msg_length / 7;
-        // Each record is 7 bytes after the 1-byte header; bound the reads (r[6] is the highest
-        // byte touched) to the extracted 33-byte frame so a bogus msg_length cannot over-read.
-        for (int p = 0; p < n_plans
-                && np < (int)(sizeof(plan_data) / sizeof(plan_data[0]))
-                && (12 + p * 7 + 6) < (int)sizeof(b); p++) {
+        data_t *plan_data[2]         = {0};
+        int np                       = 0;
+        int n_plans                  = (msg_length - 1) / 7; // 1-byte header, then 7 bytes per record
+        // A 33-byte frame holds at most 2 records (1-byte header + 2*7), so plan_data is sized 2;
+        // that cap plus the (12 + p*7 + 6) < sizeof(b) guard keep the reads inside the frame and off
+        // the trailing CRC bytes even if msg_length is bogus.
+        for (int p = 0; p < n_plans && np < (int)(sizeof(plan_data) / sizeof(plan_data[0])) && (12 + p * 7 + 6) < (int)sizeof(b); p++) {
             uint8_t const *r = &b[12 + p * 7];
             int enabled      = (r[0] & 0x80) ? 1 : 0;
             int weekday_mask = r[0] & 0x7f;
@@ -675,11 +803,12 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format off */
         data_t *data = data_make(
                 "model",       "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-Gateway"
-                "status",      "",            DATA_STRING, "Schedule",
+                "msg_name",    "",            DATA_STRING, "Schedule",
                 "id",          "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",   "",            DATA_FORMAT, "%u", DATA_INT, target_id,
                 "msg_counter", "Msg Counter", DATA_INT,    counter,
                 "more_parts",  "",            DATA_INT,    b[11] ? 1 : 0,
+                "msg_type",    "",            DATA_FORMAT, "%02X", DATA_INT, msg_type,
                 "plans",       "",            DATA_ARRAY,  data_array(np, DATA_DATA, plan_data),
                 "mic",         "Integrity",   DATA_STRING, "CRC",
                 NULL);
@@ -689,22 +818,32 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
     }
 
-    // Recurring status/heartbeat (educated guess). Payload e.g. "01 09 01 3c 00 0a 00"; b[14] =
-    // 0x3c = 60 is a fixed heartbeat interval, the rest is not understood (kept as raw `msg`).
-    else if (msg_type == 0x21 && msg_length == 0x07) {
+    // 0x21 base -> Water Timer run command / heartbeat (see header 0x21). variant b[12]: 0x02 = a
+    // manual run (mode b[13]: 0 stop / 1 normal / 2 misting; duration_s b[14:16]), else Heartbeat.
+    else if (msg_type == 0x21 && msg_length >= 0x03) {
 
-        char msg[15];
-        snprintf(msg, sizeof(msg), "%02x%02x%02x%02x%02x%02x%02x",
-                 b[11], b[12], b[13], b[14], b[15], b[16], b[17]);
+        int variant        = b[12];
+        int mode           = b[13];
+        int duration_s     = (msg_length >= 0x04) ? b[14] : 0;
+        if (msg_length >= 0x05)
+            duration_s |= b[15] << 8; // 2-byte LE, like every other duration in this decoder
+        int is_run         = (variant == 0x02);
+        char const *status = !is_run ? "Heartbeat" : (mode == 0 ? "Run stop" : "Run start");
+
+        char msg[41];
+        print_payload_hex(msg, b, msg_length);
 
         /* clang-format off */
         data_t *data = data_make(
                 "model",                "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-Gateway"
-                "status",               "",            DATA_STRING, "Heartbeat",
+                "msg_name",             "",            DATA_STRING, status,
                 "id",                   "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",            "",            DATA_FORMAT, "%u", DATA_INT, target_id,
                 "msg_counter",          "Msg Counter", DATA_INT,    counter,
-                "heartbeat_interval_s", "",            DATA_INT,    b[14],
+                "msg_type",             "",            DATA_FORMAT, "%02X", DATA_INT, msg_type,
+                "mode",                 "",            DATA_COND,   is_run, DATA_INT, mode,
+                "duration_s",           "Duration",    DATA_COND,   is_run && msg_length >= 0x04, DATA_FORMAT, "%u s", DATA_INT, duration_s,
+                "heartbeat_interval_s", "",            DATA_COND,   !is_run && msg_length >= 0x04, DATA_INT, duration_s,
                 "msg",                  "",            DATA_STRING, msg,
                 "mic",                  "Integrity",   DATA_STRING, "CRC",
                 NULL);
@@ -714,22 +853,34 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
     }
 
-    // Periodic beacon (educated guess). Ack bit set; payload is usually just 0x02 (0xa1) / 0x00
-    // (0xa0), with a fuller payload momentarily around a config push (kept as raw `msg`).
+    // 0xa0/0xa1 Water Timer replies to the gateway's control frames (see header 0xa0/0xa1): 0xa0 acks
+    // the 0x20 config change (empty); 0xa1 answers a 0x21 run with the run state, else bare "02" Beacon.
     else if (msg_type == 0xa1 || msg_type == 0xa0) {
 
+        /* 0xa1 run-state layout (same markers as the 0x02 report, without its 06 TT 01 prefix):
+           00 TT 9f WW WW 00 00 81 RR RR ad DD DD -> trigger b[12], water_usage b[14:16], remaining_s
+           b[19:21], duration_s b[22:24]; the 9f/81/ad markers gate has_run. */
+        int has_run     = (msg_type == 0xa1 && msg_length >= 0x0d && b[13] == 0x9f && b[18] == 0x81 && b[21] == 0xad);
+        int trigger     = has_run ? b[12] : 0;
+        int water_usage = has_run ? (b[14] | (b[15] << 8)) : 0; // last COMPLETED run, 0.1 L units
+        int remaining_s = has_run ? (b[19] | (b[20] << 8)) : 0;
+        int duration_s  = has_run ? (b[22] | (b[23] << 8)) : 0;
+        char const *status = (msg_type == 0xa0) ? "Acknowledgement" : (has_run ? "Run response" : "Beacon");
         char msg[41];
-        int n = 0;
-        for (int i = 0; i < msg_length && n < (int)sizeof(msg) - 2; i++)
-            n += snprintf(msg + n, sizeof(msg) - n, "%02x", b[11 + i]);
+        print_payload_hex(msg, b, msg_length);
 
         /* clang-format off */
         data_t *data = data_make(
-                "model",           "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-Gateway"
-                "status",          "",            DATA_STRING, "Beacon",
+                "model",           "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-WaterTimer"
+                "msg_name",        "",            DATA_STRING, status,
                 "id",              "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",       "",            DATA_FORMAT, "%u", DATA_INT, target_id,
                 "msg_counter",     "Msg Counter", DATA_INT,    counter,
+                "msg_type",        "",            DATA_FORMAT, "%02X", DATA_INT, msg_type,
+                "trigger",         "",            DATA_COND,   has_run, DATA_FORMAT, "%02x", DATA_INT, trigger,
+                "duration_s",      "Duration",    DATA_COND,   has_run, DATA_FORMAT, "%u s", DATA_INT, duration_s,
+                "remaining_s",     "Remaining",   DATA_COND,   has_run, DATA_FORMAT, "%u s", DATA_INT, remaining_s,
+                "water_usage_l",   "Water Usage", DATA_COND,   has_run, DATA_FORMAT, "%.1f l", DATA_DOUBLE, water_usage * 0.1f,
                 "acknowledgement", "",            DATA_INT,    acknowledgement,
                 "msg",             "",            DATA_STRING, msg,
                 "mic",             "Integrity",   DATA_STRING, "CRC",
@@ -741,27 +892,54 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /*
-    Gateway's reply to the Water Timer's 0x02 status request (0x02|0x80, same counter). gateway_time
-    is a monotonic u24 the base keeps cloud-synced (it reset to 0 on a base power-off and re-synced
-    on boot); it behaves like a wall clock but its exact unit is unconfirmed, so it is emitted raw
-    and the status is left generic rather than claiming "time".
+    0x82 gateway reply to the Water Timer's 0x02 status request (0x02|0x80, same counter). Two
+    lengths: a short one (length 2) with no clock bytes, and a long one (length >= 5) carrying
+    gateway_time = b[13:16] (LE u24), emitted only when present - see header 0x82 for what
+    gateway_time is. payload[1] (b[12]) is the gateway's config_counter (the 0x20 value).
     */
-    else if (msg_type == 0x82 && msg_length >= 0x05) {
+    else if (msg_type == 0x82 && msg_length >= 0x02) {
 
-        uint32_t gateway_time = b[13] | (b[14] << 8) | (b[15] << 16);
+        int config_counter    = b[12]; // payload[1]
+        uint32_t gateway_time = (msg_length >= 0x05) ? (uint32_t)(b[13] | (b[14] << 8) | (b[15] << 16)) : 0;
         char msg[41];
-        int n = 0;
-        for (int i = 0; i < msg_length && n < (int)sizeof(msg) - 2; i++)
-            n += snprintf(msg + n, sizeof(msg) - n, "%02x", b[11 + i]);
+        print_payload_hex(msg, b, msg_length);
 
         /* clang-format off */
         data_t *data = data_make(
                 "model",        "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-Gateway"
-                "status",       "",            DATA_STRING, "Status response",
+                "msg_name",     "",            DATA_STRING, "Status response",
                 "id",           "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",    "",            DATA_FORMAT, "%u", DATA_INT, target_id,
                 "msg_counter",  "Msg Counter", DATA_INT,    counter,
-                "gateway_time", "",            DATA_INT,    (int)gateway_time,
+                "msg_type",     "",            DATA_FORMAT, "%02X", DATA_INT, msg_type,
+                "config_counter", "",          DATA_INT,    config_counter,
+                "gateway_time", "",            DATA_COND,   msg_length >= 0x05, DATA_INT, (int)gateway_time,
+                "msg",          "",            DATA_STRING, msg,
+                "mic",          "Integrity",   DATA_STRING, "CRC",
+                NULL);
+        /* clang-format on */
+
+        decoder_output_data(decoder, data);
+        return 1;
+    }
+
+    // 0x88 gateway reply to the 0x08 moisture request (0x08|0x80). Payload 00 00 MM, moisture % at
+    // b[13]. See header 0x88.
+    else if (msg_type == 0x88 && msg_length >= 0x03) {
+
+        int moisture = b[13]; // payload[2]
+        char msg[41];
+        print_payload_hex(msg, b, msg_length);
+
+        /* clang-format off */
+        data_t *data = data_make(
+                "model",        "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-Gateway"
+                "msg_name",     "",            DATA_STRING, "Moisture response",
+                "id",           "",            DATA_FORMAT, "%u", DATA_INT, source_id,
+                "target_id",    "",            DATA_FORMAT, "%u", DATA_INT, target_id,
+                "msg_counter",  "Msg Counter", DATA_INT,    counter,
+                "msg_type",     "",            DATA_FORMAT, "%02X", DATA_INT, msg_type,
+                "moisture",     "Moisture",    DATA_FORMAT, "%u %%", DATA_INT, moisture,
                 "msg",          "",            DATA_STRING, msg,
                 "mic",          "Integrity",   DATA_STRING, "CRC",
                 NULL);
@@ -772,32 +950,41 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /*
-    Water Timer -> gateway poll. The gateway answers each poll with reply type msg_type|0x80,
-    echoing the counter (verified in every captured exchange, reply ~0.07 s later):
-      0x02 -> 0x82  status request   (the poll carries the Water Timer's own state; see 0x82)
-      0x05 -> 0x85  config request
-      0x06 -> 0x86  schedule request  (byte[2], 0x00/0x01, appears to select a schedule page)
-    The poll payloads are emitted raw (msg) but not yet field-decoded.
+    Water Timer -> gateway polls; the gateway replies with type|0x80 (echoing the counter). Only the
+    0x02 poll carries data: its 15-byte payload holds the live run state behind the 0x9f/0x81/0xad
+    markers (see header 0x02) - trigger b[14], remaining_s b[21:23] (starts at duration_s + 1, counts
+    down 1/s), duration_s b[24:26]; all 0 when idle. 0x05/0x06/0x08 are bare fetches whose data comes
+    back in the 0x85/0x86/0x88 replies (0x06 payload byte[2] selects a schedule page).
     */
-    else if (msg_type == 0x02 || msg_type == 0x05 || msg_type == 0x06) {
+    else if (msg_type == 0x02 || msg_type == 0x05 || msg_type == 0x06 || msg_type == 0x08) {
 
-        char const *status = (msg_type == 0x02) ? "Status request"
-                           : (msg_type == 0x05) ? "Config request"
-                           :                      "Schedule request";
+        char const *status = (msg_type == 0x02)   ? "Status report"
+                             : (msg_type == 0x05) ? "Config request"
+                             : (msg_type == 0x08) ? "Moisture request"
+                                                  : "Schedule request";
         char msg[41];
-        int n = 0;
-        for (int i = 0; i < msg_length && n < (int)sizeof(msg) - 2; i++)
-            n += snprintf(msg + n, sizeof(msg) - n, "%02x", b[11 + i]);
+        print_payload_hex(msg, b, msg_length);
+
+        // Only the 0x02 poll carries the run state, and only when both markers are in place.
+        int has_run     = (msg_type == 0x02 && msg_length >= 0x0f && b[20] == 0x81 && b[23] == 0xad);
+        int trigger     = has_run ? b[14] : 0;
+        int water_usage = has_run ? (b[16] | (b[17] << 8)) : 0; // last COMPLETED run, 0.1 L units
+        int remaining_s = has_run ? (b[21] | (b[22] << 8)) : 0;
+        int duration_s  = has_run ? (b[24] | (b[25] << 8)) : 0;
 
         /* clang-format off */
         data_t *data = data_make(
                 "model",        "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-WaterTimer"
-                "status",       "",            DATA_STRING, status,
+                "msg_name",     "",            DATA_STRING, status,
                 "id",           "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",    "",            DATA_FORMAT, "%u", DATA_INT, target_id,
                 "msg_counter",  "Msg Counter", DATA_INT,    counter,
                 "msg_type",     "",            DATA_FORMAT, "%02X", DATA_INT, msg_type,
                 "msg_length",   "",            DATA_FORMAT, "%02X", DATA_INT, msg_length,
+                "trigger",      "",            DATA_COND,   has_run, DATA_FORMAT, "%02x", DATA_INT, trigger,
+                "duration_s",   "Duration",    DATA_COND,   has_run, DATA_FORMAT, "%u s", DATA_INT, duration_s,
+                "remaining_s",  "Remaining",   DATA_COND,   has_run, DATA_FORMAT, "%u s", DATA_INT, remaining_s,
+                "water_usage_l", "Water Usage", DATA_COND,  has_run, DATA_FORMAT, "%.1f l", DATA_DOUBLE, water_usage * 0.1f,
                 "msg",          "",            DATA_STRING, msg,
                 "mic",          "Integrity",   DATA_STRING, "CRC",
                 NULL);
@@ -808,23 +995,20 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /*
-    Not-yet-decoded control frames fall through here and are emitted with their raw `msg`.
-    Still opaque, seen during a Water Timer re-pair (deliberately left undecoded, not guessed):
-      0x81 len 11  base -> valve, e.g. "000506e00110c7e8190137" - was our date/time-sync
-                   candidate; 0x82 turned out to be the poll reply instead, so 0x81's role is unknown.
+    Not-yet-decoded control frames fall through here and are emitted with their raw `msg` rather than
+    guessed. Seen during a Water Timer re-pair, still opaque:
+      0x81 len 11  base -> valve, e.g. "000506e00110c7e8190137" - role unknown.
     */
     else {
 
         // Not yet decoded message type - emit its raw sub-message (msg_length bytes) for analysis
         char msg[41];
-        int n = 0;
-        for (int i = 0; i < msg_length && n < (int)sizeof(msg) - 2; i++)
-            n += snprintf(msg + n, sizeof(msg) - n, "%02x", b[11 + i]);
+        print_payload_hex(msg, b, msg_length);
 
         /* clang-format off */
         data_t *data = data_make(
                 "model",           "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-SoilMoisture" "Bresser-WaterTimer" "Bresser-Gateway" "Bresser-Garden"
-                "status",          "",            DATA_STRING, "Unknown msg",
+                "msg_name",        "",            DATA_STRING, "Unknown msg",
                 "id",              "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",       "",            DATA_FORMAT, "%u", DATA_INT, target_id,
                 "msg_counter",     "Msg Counter", DATA_INT,    counter,
@@ -841,7 +1025,6 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     return 0;
-
 }
 
 static char const *const output_fields[] = {
@@ -853,27 +1036,49 @@ static char const *const output_fields[] = {
         "target_id",
         "msg_counter",
         "temperature_F",
-        "status",
+        "msg_name",
         "firmware",
         "moisture",
+        "soil_rssi",
         "programme",
         "cycle_counter",
         "trigger",
-        "duration_s", "default_duration_s",
-        "mist_run_s", "mist_interval_s", "stop_moisture", "flow_rate",
+        "mode",
+        "duration_s",
+        "remaining_s",
+        "default_duration_s",
+        "mist_run_s",
+        "mist_interval_s",
+        "stop_moisture",
+        "flow_rate",
         "config_counter",
+        "rf_channel",
+        "gateway_time",
         "plans",
-        "plan", "enabled", "irrigation", "start_hour", "start_minute", "day_mode", "weekday_mask", "water_limit_l",
-        "unknown", "heartbeat_interval_s",
-        "battery_ok", "battery_level",
-        "acknowledgement", "msg_type", "msg_length",
+        "more_parts",
+        "plan",
+        "enabled",
+        "irrigation",
+        "start_hour",
+        "start_minute",
+        "day_mode",
+        "weekday_mask",
+        "water_limit_l",
+        "water_usage_l",
+        "unknown",
+        "heartbeat_interval_s",
+        "battery_ok",
+        "battery_level",
+        "acknowledgement",
+        "msg_type",
+        "msg_length",
         "msg",
         "mic",
         NULL,
 };
 
 r_device const bresser_garden = {
-        .name        = "Bresser SmartHome Garden 7510100/7510200 (Baldr Homgar, RainPoint)",
+        .name        = "Bresser SmartHome Garden soil moisture and water timer valve (Baldr Homgar, RainPoint)",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 50,
         .long_width  = 50,
