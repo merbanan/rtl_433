@@ -99,6 +99,17 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     temp          = (temp_whole - 50.0f) + (temp_fraction / 16.0f);
     seq           = (b[4] >> 6);
 
+    // Only 2 parity bits gate this frame; sanity-check the decoded values.
+    // WT450H range is -30 to 70 C, so reject well outside it and humidity > 100%.
+    if (humidity > 100) {
+        decoder_logf(decoder, 1, __func__, "implausible humidity: %u %%", humidity);
+        return DECODE_FAIL_SANITY;
+    }
+    if (temp < -35.0f || temp > 75.0f) {
+        decoder_logf(decoder, 1, __func__, "implausible temperature: %.2f C", temp);
+        return DECODE_FAIL_SANITY;
+    }
+
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, "WT450-TH",
