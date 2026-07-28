@@ -183,9 +183,10 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         demod->total_frames_squelch += 1;
         demod->noise_level = (demod->noise_level * 7 + avg_db) / 8; // fast fall over 8 frames
         // If auto_level and noise level well below min_level and significant change in noise level
+        float min_level_auto_target = fmaxf(demod->noise_level + 3.0f, MIN_LEVEL_AUTO_FLOOR);
         if (demod->auto_level > 0 && demod->noise_level < demod->min_level - 3.0f
-                && fabsf(demod->min_level_auto - demod->noise_level - 3.0f) > 1.0f) {
-            demod->min_level_auto = fmaxf(demod->noise_level + 3.0f, MIN_LEVEL_AUTO_FLOOR);
+                && fabsf(demod->min_level_auto - min_level_auto_target) > 1.0f) {
+            demod->min_level_auto = min_level_auto_target;
             print_logf(LOG_WARNING, "Auto Level", "Estimated noise level is %.1f dB, adjusting minimum detection level to %.1f dB",
                     demod->noise_level, demod->min_level_auto);
             pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level_auto, demod->min_snr, demod->detect_verbosity);
