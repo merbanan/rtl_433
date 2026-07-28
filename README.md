@@ -70,8 +70,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto).
   [-Y minlevel=<dB level>] Manual minimum detection level used to determine pulses (-1.0 to -99.0).
   [-Y minsnr=<dB level>] Minimum SNR to determine pulses (1.0 to 99.0).
-  [-Y autolevel] Set minlevel automatically based on average estimated noise.
-  [-Y squelch] Skip frames below estimated noise level to reduce cpu load.
+  [-Y autolevel] Set minlevel automatically based on average estimated noise (default: on, use 0|no|off to disable).
+  [-Y squelch] Skip frames below estimated noise level to reduce cpu load (use 0|no|off to disable).
   [-Y ampest | magest] Choose amplitude or magnitude level estimator.
   [-Y filter=<value>] Manual FM low-pass filter cutoff to separate simultaneous transmissions: us (1-9999, e.g. 20), Hz (10000+), or ratio of sample rate (0.0-1.0).
 		= Analyze/Debug options =

@@ -18,6 +18,7 @@
 
 struct dm_state {
     float auto_level;
+    int auto_level_set; // set to 1 if autolevel was explicitly requested (CLI or conf file), 0 if only the default
     float squelch_offset;
     float level_limit;
     float noise_level;
