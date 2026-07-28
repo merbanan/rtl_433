@@ -284,6 +284,18 @@ mappings = {
         }
     },
 
+    "conductivity": {
+        "device_type": "sensor",
+        "object_suffix": "EC",
+        "config": {
+            "device_class": "conductivity",
+            "name": "Conductivity",
+            "unit_of_measurement": "μS/cm",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
+
     "detect_wet": {
         "device_type": "binary_sensor",
         "object_suffix": "moisture",
