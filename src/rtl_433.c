@@ -1460,6 +1460,12 @@ int main(int argc, char **argv) {
     }
 
     parse_conf_args(cfg, argc, argv);
+
+    // notify once if autolevel is active only because of the new default, not an explicit request
+    if (demod->auto_level > 0 && !demod->auto_level_set) {
+        fprintf(stderr, "\nAuto Level is now enabled by default, use \"-Y autolevel=0\" for the previous fixed -12 dB minimum level\n\n");
+    }
+
     // apply hop defaults and set first frequency
     if (cfg->frequencies == 0) {
         cfg->frequency[0] = DEFAULT_FREQUENCY;
