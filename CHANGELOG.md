@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Changed pulse detector `autolevel` to be enabled by default, BREAKING behavioral change to the minimum detection level: it now tracks estimated noise instead of a fixed -12 dB floor; use `-Y autolevel=0` (`no`/`off` also accepted) to restore the previous fixed floor
+
 ## Release 25.12 (2025-12-12)
 
 ### Breaking Changes
