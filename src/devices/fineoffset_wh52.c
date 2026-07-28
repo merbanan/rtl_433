@@ -47,7 +47,7 @@ Preamble: aa aa aa 2d d4
 - Byte 9: EC bits 15..8
 - Byte 10: EC bits 7..0; ec_raw = ((b8 & 0x0F) << 16) | (b9 << 8) | b10 (20-bit); conductivity_uS = ec_raw / 25.6 (empirical; 25.6 = 256/10)
 - Byte 11: coarse EC / range indicator (redundant, low nibble fixed 0x6)
-- Byte 15: battery voltage; volts ~= b15 * 0.02 - 0.06 (empirical, fit from 4 field units reading 1.56/1.58/1.58/1.62 V vs bytes 0x51/0x52/0x52/0x54; scale approximate pending a wider range)
+- Byte 15: battery voltage; battery_mV ~= b15 * 20 - 60 (0.02 V/LSB, -0.06 V offset; empirical, fit from 4 field units reading 1.56/1.58/1.58/1.62 V vs bytes 0x51/0x52/0x52/0x54; scale approximate pending a wider range). Reported as battery_ok (low below 1.4 V) + battery_pct + battery_mV.
 - Bytes 12-14, 16-21: per-unit fixed data (factory serial / calibration), constant per unit, differ between units. Not decoded.
 - Byte 22: CRC-8, poly 0x31, init 0x00, over bytes 0..21
 - Byte 23: checksum = sum(bytes 0..22) & 0xFF
@@ -95,13 +95,24 @@ static int fineoffset_wh52_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char id[7];
     snprintf(id, sizeof(id), "%02x%02x%02x", b[1], b[2], b[3]);
 
-    int boost       = (b[4] & 0xe0) >> 5;
-    int temp_raw    = ((b[4] & 0x1f) << 8) | b[5];
-    float temp_c    = temp_raw * 0.1f - 40.0f;
-    int moisture    = b[6];
-    int ec_raw      = ((b[8] & 0x0f) << 16) | (b[9] << 8) | b[10];
-    float ec_uscm   = ec_raw / 25.6f;      // empirical calibration, see notes above
-    float battery_v = b[15] * 0.02f - 0.06f; // empirical, see notes above
+    int boost      = (b[4] & 0xe0) >> 5;
+    int temp_raw   = ((b[4] & 0x1f) << 8) | b[5];
+    float temp_c   = temp_raw * 0.1f - 40.0f;
+    int moisture   = b[6];
+    int ec_raw     = ((b[8] & 0x0f) << 16) | (b[9] << 8) | b[10];
+    float ec_uscm  = ec_raw / 25.6f;  // empirical calibration, see notes above
+    int battery_mv = b[15] * 20 - 60; // 0.02 V/LSB, -0.06 V offset (empirical, see notes above)
+
+    // Battery reported as an OK flag + a percentage of the usable ~1.3-1.6 V range
+    // (WH51 sibling breakpoints), following the standard battery convention.
+    float batt_lvl = (battery_mv - 1300) * (1.0f / 300.0f);
+    if (batt_lvl < 0.0f) {
+        batt_lvl = 0.0f;
+    }
+    if (batt_lvl > 1.0f) {
+        batt_lvl = 1.0f;
+    }
+    int battery_ok = battery_mv >= 1400;
 
     /* clang-format off */
     data_t *data = data_make(
@@ -110,7 +121,9 @@ static int fineoffset_wh52_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "temperature_C",    "Temperature",          DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "moisture",         "Moisture",             DATA_FORMAT, "%u %%",  DATA_INT,    moisture,
             "conductivity",     "Conductivity",         DATA_FORMAT, "%.0f uS/cm", DATA_DOUBLE, ec_uscm,
-            "battery_V",        "Battery Voltage",      DATA_FORMAT, "%.2f V",     DATA_DOUBLE, battery_v,
+            "battery_ok",       "Battery",              DATA_INT,    battery_ok,
+            "battery_pct",      "Battery level",        DATA_DOUBLE, 100.0f * batt_lvl, // Note: this might change with #3103
+            "battery_mV",       "Battery",              DATA_FORMAT, "%d mV",      DATA_INT,    battery_mv,
             "boost",            "Transmission boost",   DATA_INT,    boost,
             "mic",              "Integrity",            DATA_STRING, "CRC",
             NULL);
@@ -126,7 +139,9 @@ static char const *const output_fields_wh52[] = {
         "temperature_C",
         "moisture",
         "conductivity",
-        "battery_V",
+        "battery_ok",
+        "battery_pct",
+        "battery_mV",
         "boost",
         "mic",
         NULL,
