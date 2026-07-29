@@ -493,7 +493,7 @@ static int vivint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int tamper_bit      = 0;    // Case open tamper
     int reed_bit        = 0;    // Primary use case for DW11
     int alarm_bit       = 0;    // Unknown meaning for DW11, copied from honeywell.c
-    int battery_low_bit = 0;    // Untested
+    int battery_low_bit = 0;    // Tested
     int heartbeat_bit   = 0;    // Unknown meaning for DW11, copied from honeywell.c
 
     if (event_type == 0x7a) {
