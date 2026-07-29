@@ -20,7 +20,7 @@ endif()
 ########################################################################
 # target_compile_definitions was only added in CMake 2.8.11
 add_definitions(-D_TEST)
-foreach(testSrc bitbuffer.c fileformat.c optparse.c bit_util.c r_util.c abuf.c)
+foreach(testSrc bitbuffer.c fileformat.c optparse.c bit_util.c r_util.c abuf.c auto_level.c)
     get_filename_component(testName ${testSrc} NAME_WE)
 
     # Note that r_util.c needs compat_time.c shims
@@ -59,6 +59,20 @@ if(UNIX)
     find_program(BASH_PROGRAM sh)
     find_program(CURL_PROGRAM curl)
     find_program(PYTHON3_PROGRAM python3)
+    # Black-box test of the pulse detector auto level, which is on by default.
+    # Checks every documented spelling of -Y autolevel and the conf file
+    # equivalent, then runs generated noise-only samples to confirm the tracked
+    # detection floor moves, stays inside its clamp, and settles. Needs python3
+    # to generate the samples.
+    if(BASH_PROGRAM AND PYTHON3_PROGRAM)
+        add_test(
+            NAME autolevel
+            COMMAND ${BASH_PROGRAM}
+                ${CMAKE_CURRENT_SOURCE_DIR}/autolevel-test.sh
+                $<TARGET_FILE:rtl_433>)
+    else()
+        message(STATUS "Skipping autolevel test (need sh and python3)")
+    endif()
     if(BASH_PROGRAM AND CURL_PROGRAM)
         add_test(
             NAME http_server_integration

@@ -29,14 +29,9 @@
 #include "raw_output.h"
 #include "r_util.h"
 #include "am_analyze.h"
+#include "auto_level.h"
 #include "logger.h"
 #include "fatal.h"
-
-// Lower bound for the auto-tracked detection floor (min_level_auto).
-// Measured on real hardware: letting the tracked floor fall below -30 dB
-// raises CPU usage sharply (~3.9x at -35 dB vs -30 dB) for negligible
-// additional decode benefit, so auto-level tracking is clamped here.
-#define MIN_LEVEL_AUTO_FLOOR -30.0f
 
 static void calc_rssi_snr(struct dm_state const *demod, pulse_data_t *pulse_data)
 {
@@ -183,10 +178,10 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         demod->total_frames_squelch += 1;
         demod->noise_level = (demod->noise_level * 7 + avg_db) / 8; // fast fall over 8 frames
         // If auto_level and noise level well below min_level and significant change in noise level
-        float min_level_auto_target = fmaxf(demod->noise_level + 3.0f, MIN_LEVEL_AUTO_FLOOR);
-        if (demod->auto_level > 0 && demod->noise_level < demod->min_level - 3.0f
-                && fabsf(demod->min_level_auto - min_level_auto_target) > 1.0f) {
-            demod->min_level_auto = min_level_auto_target;
+        float min_level_auto_next = 0.0f;
+        if (demod->auto_level > 0
+                && auto_level_next(demod->noise_level, demod->min_level, demod->min_level_auto, &min_level_auto_next)) {
+            demod->min_level_auto = min_level_auto_next;
             print_logf(LOG_WARNING, "Auto Level", "Estimated noise level is %.1f dB, adjusting minimum detection level to %.1f dB",
                     demod->noise_level, demod->min_level_auto);
             pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level_auto, demod->min_snr, demod->detect_verbosity);
