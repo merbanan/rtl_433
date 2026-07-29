@@ -492,10 +492,10 @@ static int vivint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int contact_bit     = 0;    // External contact open/closed state
     int tamper_bit      = 0;    // Case open tamper
     int reed_bit        = 0;    // Primary use case for DW11
-    int alarm_bit       = 0;    // Unknown meaning for DW11, copied from honweywell.c
+    int alarm_bit       = 0;    // Unknown meaning for DW11, copied from honeywell.c
     int battery_low_bit = 0;    // Untested
-    int heartbeat_bit   = 0;    // Unknown meaning for DW11, copied from honweywell.c
-    
+    int heartbeat_bit   = 0;    // Unknown meaning for DW11, copied from honeywell.c
+
     if (event_type == 0x7a) {
         vivint_seed_t *s = vivint_ctx_find((vivint_ctx_t *)decoder_user_data(decoder), id);
         if (s) {
