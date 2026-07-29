@@ -22,7 +22,7 @@
 /**
 Vivint Door/Window Sensors (345.0 MHz).
 
-Tested with the Vivint V-DW21R-345 door/window sensor.
+Tested with the Vivint V-DW21R-345 door/window sensor and Vivint V-DW11-345 Door Sensor.
 
 OOK Manchester (zerobit), 0xFFFE preamble, 96 bit (12 byte) packet. Decoded
 payload (80 data bits, 10 bytes) after the preamble:
@@ -488,14 +488,29 @@ static int vivint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     snprintf(id_str, sizeof(id_str), "%04u-%07u", (id >> 20) & 0xfff, id & 0xfffff);
 
     int has_contact  = 0;
-    int contact_open = 0;
+
+    int contact_bit     = 0;    // External contact open/closed state
+    int tamper_bit      = 0;    // Case open tamper
+    int reed_bit        = 0;    // Primary use case for DW11
+    int alarm_bit       = 0;    // Unknown meaning for DW11, copied from honeywell.c
+    int battery_low_bit = 0;    // Tested
+    int heartbeat_bit   = 0;    // Unknown meaning for DW11, copied from honeywell.c
+
     if (event_type == 0x7a) {
         vivint_seed_t *s = vivint_ctx_find((vivint_ctx_t *)decoder_user_data(decoder), id);
         if (s) {
             int c1 = vivint_seed_c1_at(s, (uint16_t)counter);
             if (c1 >= 0) {
                 has_contact  = 1;
-                contact_open = (flags ^ c1) & 0x80 ? 1 : 0;
+                /* Extract DW11 event bits (CTRABHUU layout):
+                   C=contact(7), T=tamper(6), R=reed(5), A=alarm(4),
+                   B=battery_low(3), H=heartbeat(2), U,U=unused(1,0) */
+                contact_bit     = (flags ^ c1) & 0x80 ? 1 : 0;
+                tamper_bit      = (flags ^ c1) & 0x40 ? 1 : 0;
+                reed_bit        = (flags ^ c1) & 0x20 ? 1 : 0;
+                alarm_bit       = (flags ^ c1) & 0x10 ? 1 : 0;
+                battery_low_bit = (flags ^ c1) & 0x08 ? 1 : 0;
+                heartbeat_bit   = (flags ^ c1) & 0x04 ? 1 : 0;
             }
         }
     }
@@ -513,8 +528,13 @@ static int vivint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "counter",      "",              DATA_FORMAT, "%04x", DATA_INT, counter,
             "flags",        "",              DATA_FORMAT, "%02x", DATA_INT, flags,
             "event_type",   "",              DATA_FORMAT, "%02x", DATA_INT, event_type,
-            "state",        "",              DATA_COND, has_contact,  DATA_STRING, contact_open ? "open" : "closed",
-            "contact_open", "",              DATA_COND, has_contact,  DATA_INT, contact_open,
+            "state",        "",              DATA_COND, has_contact,  DATA_STRING, contact_bit ? "open" : "closed",
+            "contact_open", "",              DATA_COND, has_contact,  DATA_INT,     contact_bit,
+            "tamper",       "",              DATA_COND, has_contact,  DATA_INT,     tamper_bit,
+            "reed",         "",              DATA_COND, has_contact,  DATA_INT,     reed_bit,
+            "alarm",        "",              DATA_COND, has_contact,  DATA_INT,     alarm_bit,
+            "battery_low",  "Battery",       DATA_COND, has_contact,  DATA_INT,     battery_low_bit,
+            "heartbeat",    "",              DATA_COND, has_contact,  DATA_INT,     heartbeat_bit,
             "data",         "",              DATA_COND, !has_contact, DATA_STRING, payload,
             "mic",          "Integrity",     DATA_STRING, "CRC",
             NULL);
@@ -532,13 +552,18 @@ static char const *const output_fields[] = {
         "event_type",
         "state",
         "contact_open",
+        "tamper",
+        "reed",
+        "alarm",
+        "battery_low",
+        "heartbeat",
         "data",
         "mic",
         NULL,
 };
 
 r_device const vivint = {
-        .name        = "Vivint Door/Window Sensor, V-DW21R-345",
+        .name        = "Vivint Door/Window Sensor, V-DW21R-345/V-DW11-345",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 150,
         .long_width  = 0,
