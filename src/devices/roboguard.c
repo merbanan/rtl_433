@@ -29,6 +29,8 @@
     |   |_
     HIGH 2480uS
 
+    Examples
+
     heartbeat:  BIN - 0010 1101010000101111011 - DEC - 1483131 - HEX - 0x16 A17B
     alarm:      BIN - 1100 1101010000101111011 - DEC - 6726011 - HEX - 0x66 A17B
     tamper:     BIN - 0100 1101010000101111011 - DEC - 2531707 - HEX - 0x26 A17B
@@ -124,7 +126,7 @@ static int32_t roboguard_decode(r_device *decoder, bitbuffer_t *bitbuffer, int32
     // getting data from the second repeat b[3]     b[4]     b[5]
     int32_t id       = ((b[3] & 0x0F) << 16) | (b[4] << 8) | b[5]; // combine 3 bytes to get device_id
     int32_t type_dec = (b[3] >> 4);                                // signal_type encoded in 1st 4 bits
-    int32_t bit24    = (b[3] << 16) | (b[4] << 8) | b[5];          // gets the 1st full signal
+    int32_t bit24    = (b[3] << 16) | (b[4] << 8) | b[5];          // gets the 1st full signal (we only need 1)
     int32_t bit23    = bit24 / 2;                                  // Helps the people using RC-SWITCH to see the signal, you know who you are ;)
 
     for (uint8_t i = 0; i < SIGNAL_TYPES; i++) // 4
@@ -148,8 +150,8 @@ static int32_t roboguard_decode(r_device *decoder, bitbuffer_t *bitbuffer, int32
             "id", "ID", DATA_INT, id,
             "type_dec", "Type DEC", DATA_INT, type_dec,
             "type_str", "Name", DATA_STRING, type_str,
-            "bit24", "24bit", DATA_INT, bit24,
-            "bit23", "23bit", DATA_INT, bit23,
+            "bit24", "24-bit", DATA_INT, bit24,
+            "bit23", "23-bit", DATA_INT, bit23,
             NULL);
 
     decoder_output_data(decoder, data, bitbuffer, 0, 0, startPulses, package_type);
