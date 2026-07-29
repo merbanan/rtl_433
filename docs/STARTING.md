@@ -209,7 +209,7 @@ Use `-Y autolevel` to track the detection floor to the estimated noise instead o
 
 `-Y minlevel=<dB level>` still matters with autolevel on: it sets the *initial* detection level, and it is the level the tracked noise must fall at least 3 dB below before autolevel starts lowering the floor further -- it is not a lower bound on how far autolevel can track down. To prevent the tracked floor from drifting arbitrarily low on a quiet band (and pulling in more CPU-costly false candidates), autolevel's own adjustment is clamped to a built-in lower bound of -30 dB. Setting `-Y minlevel` *below* -30 dB lowers that clamp to match, so an explicitly requested sensitivity is never raised back up by the default.
 
-Use `-Y squelch` to skip frames below estimated noise level to reduce cpu load. Squelch decides per received sample frame (the SDR callback buffer, about 1 second at the default 250k sample rate) using that frame's *average* level, so a short weak-signal burst can raise the average too little to change the frame's classification -- the whole frame, burst included, gets discarded.
+Use `-Y squelch` to skip frames below estimated noise level to reduce cpu load. Squelch decides per received sample frame (the SDR callback buffer, 256 kB — 128k samples, about half a second at the default 250k sample rate, or ~0.13 s at the 1000k rate used for 868M) using that frame’s average level using that frame's *average* level, so a short weak-signal burst can raise the average too little to change the frame's classification -- the whole frame, burst included, gets discarded.
 
 :::tip
     [-Y auto | classic | minmax] FSK pulse detector mode.
