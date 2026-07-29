@@ -489,12 +489,13 @@ static int vivint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int has_contact  = 0;
 
-    int contact_bit     = 0;
-    int tamper_bit      = 0;
-    int reed_bit        = 0;
-    int alarm_bit       = 0;
-    int battery_low_bit = 0;
-    int heartbeat_bit   = 0;
+    int contact_bit     = 0;    // External contact open/closed state
+    int tamper_bit      = 0;    // Case open tamper
+    int reed_bit        = 0;    // Primary use case for DW11
+    int alarm_bit       = 0;    // Unknown meaning for DW11, copied from honweywell.c
+    int battery_low_bit = 0;    // Untested
+    int heartbeat_bit   = 0;    // Unknown meaning for DW11, copied from honweywell.c
+    
     if (event_type == 0x7a) {
         vivint_seed_t *s = vivint_ctx_find((vivint_ctx_t *)decoder_user_data(decoder), id);
         if (s) {
@@ -528,8 +529,7 @@ static int vivint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "flags",        "",              DATA_FORMAT, "%02x", DATA_INT, flags,
             "event_type",   "",              DATA_FORMAT, "%02x", DATA_INT, event_type,
             "state",        "",              DATA_COND, has_contact,  DATA_STRING, contact_bit ? "open" : "closed",
-            "contact_open", "",              DATA_COND, has_contact,  DATA_INT, contact_bit,
-            /* DW11 event bits (CTRABHUU layout) */
+            "contact_open", "",              DATA_COND, has_contact,  DATA_INT,     contact_bit,
             "tamper",       "",              DATA_COND, has_contact,  DATA_INT,     tamper_bit,
             "reed",         "",              DATA_COND, has_contact,  DATA_INT,     reed_bit,
             "alarm",        "",              DATA_COND, has_contact,  DATA_INT,     alarm_bit,
@@ -552,7 +552,6 @@ static char const *const output_fields[] = {
         "event_type",
         "state",
         "contact_open",
-        /* DW11 event bits (CTRABHUU layout) */
         "tamper",
         "reed",
         "alarm",
