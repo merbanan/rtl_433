@@ -138,8 +138,8 @@ static void usage(int exit_code)
             "  [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto).\n"
             "  [-Y minlevel=<dB level>] Manual minimum detection level used to determine pulses (-1.0 to -99.0).\n"
             "  [-Y minsnr=<dB level>] Minimum SNR to determine pulses (1.0 to 99.0).\n"
-            "  [-Y autolevel] Set minlevel automatically based on average estimated noise (default: on, use 0|no|off to disable).\n"
-            "  [-Y squelch] Skip frames below estimated noise level to reduce cpu load (use 0|no|off to disable).\n"
+            "  [-Y autolevel] Set minlevel automatically based on average estimated noise (default: on, use 0|no|off|false to disable).\n"
+            "  [-Y squelch] Skip frames below estimated noise level to reduce cpu load (default: off).\n"
             "  [-Y ampest | magest] Choose amplitude or magnitude level estimator.\n"
             "  [-Y filter=<value>] Manual FM low-pass filter cutoff to separate simultaneous transmissions: us (1-9999, e.g. 20), Hz (10000+), or ratio of sample rate (0.0-1.0).\n"
             "\t\t= Analyze/Debug options =\n"
@@ -942,25 +942,15 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         while (p && *p) {
             char const *val = NULL;
             if (kwargs_match(p, "autolevel", &val)) {
-                // autolevel  autolevel:1  autolevel:on  autolevel:yes
-                // autolevel:0  autolevel:off  autolevel:no
-                if (val && (!strncasecmp(val, "0", 1) || !strncasecmp(val, "no", 2) || !strncasecmp(val, "off", 3))) {
-                    cfg->demod->auto_level = 0;
-                }
-                else {
-                    cfg->demod->auto_level = atoiv(val, 1); // arg_float_default(p + 9, "-Y autolevel: ");
-                }
+                // autolevel  autolevel:1  autolevel:on  autolevel:yes  autolevel:true  autolevel:enable
+                // autolevel:0  autolevel:off  autolevel:no  autolevel:false  autolevel:disable
+                cfg->demod->auto_level     = atobv(val, 1);
                 cfg->demod->auto_level_set = 1;
             }
             else if (kwargs_match(p, "squelch", &val)) {
-                // squelch  squelch:1  squelch:on  squelch:yes
-                // squelch:0  squelch:off  squelch:no
-                if (val && (!strncasecmp(val, "0", 1) || !strncasecmp(val, "no", 2) || !strncasecmp(val, "off", 3))) {
-                    cfg->demod->squelch_offset = 0;
-                }
-                else {
-                    cfg->demod->squelch_offset = atoiv(val, 1); // arg_float_default(p + 7, "-Y squelch: ");
-                }
+                // squelch  squelch:1  squelch:on  squelch:yes  squelch:true  squelch:enable
+                // squelch:0  squelch:off  squelch:no  squelch:false  squelch:disable
+                cfg->demod->squelch_offset = atobv(val, 1); // arg_float_default(p + 7, "-Y squelch: ");
             }
             else if (kwargs_match(p, "auto", &val)) {
                 cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_AUTO;

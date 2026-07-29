@@ -1,7 +1,7 @@
 /** @file
     Auto-tracked detection floor for the pulse detector.
 
-    Copyright (C) 2026 Christian W. Zuckschwerdt <zany@triq.net>
+    Copyright (C) 2026 Andrew Berry <andrew@furrypaws.ca>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -13,10 +13,17 @@
 
 int auto_level_next(float noise_level, float min_level, float current, float *out)
 {
-    // track the noise, but never below the clamp
+    // Track the noise, but never below the clamp. A minimum level configured
+    // below the clamp is an explicit request for that sensitivity, so it wins:
+    // the clamp is there to stop the floor drifting down on its own, not to
+    // overrule what was asked for.
+    float clamp = MIN_LEVEL_AUTO_FLOOR;
+    if (min_level < clamp) {
+        clamp = min_level;
+    }
     float target = noise_level + AUTO_LEVEL_HEADROOM_DB;
-    if (target < MIN_LEVEL_AUTO_FLOOR) {
-        target = MIN_LEVEL_AUTO_FLOOR;
+    if (target < clamp) {
+        target = clamp;
     }
 
     // only track down when the noise is well below the configured minimum level
@@ -111,6 +118,13 @@ int main(void)
     ASSERT_ADJUSTS(-99.0f, def_min, -22.0f, MIN_LEVEL_AUTO_FLOOR);
     // the last value that is not clamped
     ASSERT_ADJUSTS(-33.0f, def_min, -22.0f, MIN_LEVEL_AUTO_FLOOR);
+    // A minimum level configured below the clamp must not be overruled by it:
+    // -Y minlevel=-35 asks for -35 dB and must not be raised back to -30 dB.
+    ASSERT_ADJUSTS(-40.0f, -35.0f, -32.0f, -35.0f);
+    // and the floor still may not pass that lower clamp
+    ASSERT_ADJUSTS(-99.0f, -35.0f, -32.0f, -35.0f);
+    // a minimum level above the clamp leaves the clamp in charge
+    ASSERT_ADJUSTS(-40.0f, -20.0f, -25.0f, MIN_LEVEL_AUTO_FLOOR);
 
     fprintf(stderr, "auto_level::convergence:\n");
     // Regression: once the floor is clamped, a noise level that keeps

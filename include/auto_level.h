@@ -1,7 +1,7 @@
 /** @file
     Auto-tracked detection floor for the pulse detector.
 
-    Copyright (C) 2026 Christian W. Zuckschwerdt <zany@triq.net>
+    Copyright (C) 2026 Andrew Berry <andrew@furrypaws.ca>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -29,7 +29,8 @@
 /// Decide whether the auto-tracked detection floor should move.
 ///
 /// The floor tracks @p noise_level plus ::AUTO_LEVEL_HEADROOM_DB, clamped to
-/// ::MIN_LEVEL_AUTO_FLOOR. It only moves when the estimated noise sits at least
+/// ::MIN_LEVEL_AUTO_FLOOR, or to @p min_level when that was configured lower
+/// still. It only moves when the estimated noise sits at least
 /// ::AUTO_LEVEL_HEADROOM_DB below @p min_level and the move is larger than
 /// ::AUTO_LEVEL_HYSTERESIS_DB.
 ///

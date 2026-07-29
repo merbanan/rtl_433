@@ -70,6 +70,9 @@ if(UNIX)
             COMMAND ${BASH_PROGRAM}
                 ${CMAKE_CURRENT_SOURCE_DIR}/autolevel-test.sh
                 $<TARGET_FILE:rtl_433>)
+        # The script exits 77 when it cannot generate its samples, e.g. python3
+        # was found at configure time but is gone at test time.
+        set_tests_properties(autolevel PROPERTIES SKIP_RETURN_CODE 77)
     else()
         message(STATUS "Skipping autolevel test (need sh and python3)")
     endif()
