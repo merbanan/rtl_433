@@ -188,6 +188,20 @@ expect_disabled "conf file autolevel=0"   -c "$CONF_OFF"
 # and having stopped there it must not keep re-adjusting. Re-adjusting on every
 # frame is a real regression this catches: it re-arms the pulse detector and
 # logs a warning per frame for as long as rtl_433 runs.
+# An explicit -Y minlevel is a request for that detection level, so it turns the
+# new default off rather than letting the tracked floor walk away from it. The
+# trigger is "noise 3 dB below minlevel", so without this a user raising
+# minlevel to cut load would make autolevel engage sooner and settle lower than
+# the -12 dB default they were trying to get away from. An explicit -Y autolevel
+# still wins in either direction.
+echo "autolevel::minlevel:"
+expect_disabled "-Y minlevel alone turns the default off"      $NO_CONF -Y minlevel=-10
+expect_enabled  "-Y minlevel with explicit autolevel tracks"   $NO_CONF -Y minlevel=-10 -Y autolevel
+expect_enabled  "order does not matter, autolevel first"       $NO_CONF -Y autolevel -Y minlevel=-10
+expect_disabled "-Y minlevel with explicit autolevel=0"        $NO_CONF -Y minlevel=-10 -Y autolevel=0
+expect_enabled  "no minlevel still gets the default"           $NO_CONF
+expect_notice   "-Y minlevel suppresses the notice too"      0 $NO_CONF -Y minlevel=-10
+
 echo "autolevel::clamp:"
 clamped=$(adjust_log | tail -1)
 case "$clamped" in
@@ -216,7 +230,9 @@ below=$(adjust_log \
 # have the floor quietly raised to the -30 dB clamp and lose 5 dB of the
 # sensitivity they explicitly configured. Nothing may move the floor above the
 # configured level; tracking it no further down is fine.
-raised=$("$RTL_433" -vv $NO_CONF -Y minlevel=-35 -r "$SILENT_CU8" 2>/dev/null \
+# -Y autolevel is explicit here on purpose: minlevel alone now turns tracking
+# off, which would make this case pass without ever exercising the clamp.
+raised=$("$RTL_433" -vv $NO_CONF -Y minlevel=-35 -Y autolevel -r "$SILENT_CU8" 2>/dev/null \
     | sed -n "s/.*detection level to \(-\{0,1\}[0-9]\{1,\}\.[0-9]\{1,\}\) dB.*/\1/p" \
     | awk '$1 > -35.0 { n++ } END { print n + 0 }')
 [ "$raised" = 0 ] \
