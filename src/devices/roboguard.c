@@ -139,7 +139,6 @@ static int roboguard_ibis_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             NULL);
 
     decoder_output_data(decoder, data);
-    //decoder_output_data(decoder, data, bitbuffer, 0, 0, startPulses, package_type);
     return 1;
 }
 
