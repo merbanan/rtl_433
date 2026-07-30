@@ -1324,32 +1324,13 @@ static void R_API_CALLCONV print_http_data(data_output_t *output, data_t *data, 
     UNUSED(format);
     data_output_http_t *http = (data_output_http_t *)output;
 
-    // collect well-known top level keys
-    data_t *data_model = NULL;
-    for (data_t *d = data; d; d = d->next) {
-        if (!strcmp(d->key, "model")) {
-            data_model = d;
-        }
+    char *buf = data_print_jsons_dup(data);
+    if (!buf) {
+        WARN_MALLOC("print_http_data()");
+        return; // NOTE: skip output on alloc failure.
     }
-
-    if (data_model) {
-        // "events"
-        char buf[2048]; // we expect the biggest strings to be around 500 bytes.
-        size_t len = data_print_jsons(data, buf, sizeof(buf));
-        http_broadcast_send(http->server, buf, len);
-    }
-    else {
-        // "states"
-        size_t buf_size = 20000; // state message need a large buffer
-        char *buf       = malloc(buf_size);
-        if (!buf) {
-            WARN_MALLOC("print_http_data()");
-            return; // NOTE: skip output on alloc failure.
-        }
-        size_t len = data_print_jsons(data, buf, buf_size);
-        http_broadcast_send(http->server, buf, len);
-        free(buf);
-    }
+    http_broadcast_send(http->server, buf, strlen(buf));
+    free(buf);
 }
 
 static void R_API_CALLCONV data_output_http_free(data_output_t *output)
