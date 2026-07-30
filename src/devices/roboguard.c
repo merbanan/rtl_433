@@ -163,9 +163,11 @@ static uint8_t const *const output_fields[] = {
 r_device const roboguard = {
         .name        = "Roboguard and IQ-Blue Integrated Systems (IBIS) ASK alarm devices",
         .modulation  = OOK_PULSE_PWM,
-        .short_width = 1230,
-        .long_width  = 2480,
-        .reset_limit = 20000,
+        .short_width = 1200,
+        .long_width  = 2400,
+        .reset_limit = 29700,
+        .sync_width  = 13200,
+        .gap_limit   = 31500, // gap: Maximum gap size before new row of bits [us]
         .decode_fn   = &roboguard_ibis_decode,
         .fields      = output_fields,
 };
