@@ -9,10 +9,16 @@ and reads the reply. This exercises the server's WebSocket code paths
 
 Pure standard library so it runs in CI without extra packages.
 
-Usage: ws-probe.py HOST PORT [timeout_seconds] [expect_substring]
+Usage: ws-probe.py HOST PORT [timeout_seconds] [expect_substring] [signal_pid] [signal_num]
 If expect_substring is given, the probe also asserts that a pushed frame (the
 history the server replays on connect, or a live broadcast) contains it -- used
 to confirm a decoded event is retrievable over the WS API.
+
+If signal_pid/signal_num are also given, the probe sends that signal to that
+PID right after the meta frame arrives (e.g. SIGINFO/29 to make rtl_433 push a
+full-level stats report), then additionally requires the matched frame to
+parse as valid JSON -- catching a truncated/corrupted broadcast that a plain
+substring match would miss.
 Exit 0 on success, non-zero otherwise; received text frames go to stdout.
 """
 import base64
@@ -121,6 +127,8 @@ def main():
     port = int(sys.argv[2])
     timeout = float(sys.argv[3]) if len(sys.argv) > 3 else 10.0
     expect = sys.argv[4] if len(sys.argv) > 4 else None
+    signal_pid = int(sys.argv[5]) if len(sys.argv) > 5 else None
+    signal_num = int(sys.argv[6]) if len(sys.argv) > 6 else None
 
     sock = socket.create_connection((host, port), timeout=timeout)
     sock.settimeout(timeout)
@@ -132,13 +140,24 @@ def main():
             print("FAIL: never received a meta frame with 'center_frequency'", file=sys.stderr)
             return 1
 
+        if signal_pid is not None:
+            os.kill(signal_pid, signal_num)
+
         # If asked, confirm a decoded event is retrievable over the WS API: the
         # server replays its history ring on connect, so a decode that already
         # happened arrives as a pushed frame (a live broadcast also matches).
         if expect is not None:
-            if read_until_contains(sock, expect, max_frames=200) is None:
+            frame = read_until_contains(sock, expect, max_frames=200)
+            if frame is None:
                 print("FAIL: never received a frame containing %r" % expect, file=sys.stderr)
                 return 1
+            if signal_pid is not None:
+                try:
+                    json.loads(frame)
+                except ValueError as e:
+                    print("FAIL: matched frame (%d bytes) is not valid JSON: %s" % (len(frame), e),
+                          file=sys.stderr)
+                    return 1
 
         # The WebSocket RPC uses the simple {"cmd": ...} form (json_parse),
         # NOT the JSON-RPC envelope the /jsonrpc HTTP endpoint expects.

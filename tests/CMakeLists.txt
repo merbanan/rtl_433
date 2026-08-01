@@ -74,6 +74,13 @@ if(UNIX)
                 COMMAND ${BASH_PROGRAM}
                     ${CMAKE_CURRENT_SOURCE_DIR}/http-rtltcp-test.sh
                     $<TARGET_FILE:rtl_433>)
+            # Regression test for print_http_data() truncating a large stats
+            # report into invalid JSON (fixed-size buffer -> data_print_jsons_dup()).
+            add_test(
+                NAME http_server_stats_truncation
+                COMMAND ${BASH_PROGRAM}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/http-stats-truncation-test.sh
+                    $<TARGET_FILE:rtl_433>)
         else()
             message(STATUS "Skipping http_server_rtltcp test (need python3)")
         endif()
