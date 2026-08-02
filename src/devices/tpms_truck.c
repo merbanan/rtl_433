@@ -61,6 +61,11 @@ static int tpms_truck_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned
     uint8_t b[9] = {0};
     bitbuffer_extract_bytes(&packet_bits, 0, 4, b, 72);
 
+    // reject all-zero data, the XOR checksum can't catch it
+    if (!b[0] && !b[1] && !b[2] && !b[3]) {
+        return 0; // DECODE_FAIL_SANITY;
+    }
+
     int chk = xor_bytes(b, 9);
     if (chk != 0) {
         return 0; // DECODE_FAIL_MIC;
