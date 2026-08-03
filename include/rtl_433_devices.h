@@ -392,6 +392,7 @@
     DECL(cotech_36_7900) \
     DECL(silver_spring_mesh) \
     DECL(bresser_garden) \
+    DECL(roboguard) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
