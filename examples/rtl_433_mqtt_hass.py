@@ -89,10 +89,7 @@ There is a single global set of field mappings to Home Assistant meta data.
 
 """
 
-
-
 # import daemon
-
 
 import os
 import argparse
@@ -108,14 +105,34 @@ discovery_timeouts = {}
 # Fields that get ignored when publishing to Home Assistant
 # (reduces noise to help spot missing field mappings)
 SKIP_KEYS = [ "type", "model", "subtype", "channel", "id", "mic", "mod",
-                "freq", "sequence_num", "message_type", "exception", "raw_msg" ]
+                "freq", "sequence_num", "message_type", "exception", "raw_msg",
+                "flags", "protocol", "freq1", "freq2" ]
 
 
 # Global mapping of rtl_433 field names to Home Assistant metadata.
-# @todo - should probably externalize to a config file
-# @todo - Model specific definitions might be needed
-
 mappings = {
+    "distance_mm": {
+        "device_type": "sensor",
+        "object_suffix": "dist_mm",
+        "config": {
+            "device_class": "distance",
+            "name": "Distance (mm)",
+            "unit_of_measurement": "mm",
+            "value_template": "{{ value|int }}",
+            "state_class": "measurement"
+        }
+    },
+    "distance_m": {
+        "device_type": "sensor",
+        "object_suffix": "dist_m",
+        "config": {
+            "device_class": "distance",
+            "name": "Distance (m)",
+            "unit_of_measurement": "m",
+            "value_template": "{{ value|float|round(3) }}",
+            "state_class": "measurement"
+        }
+    },
     "temperature_C": {
         "device_type": "sensor",
         "object_suffix": "T",
@@ -183,10 +200,6 @@ mappings = {
         }
     },
 
-    # This diagnostic sensor is useful to see when a device last sent a value,
-    # even if the value didn't change.
-    # https://community.home-assistant.io/t/send-metrics-to-influxdb-at-regular-intervals/9096
-    # https://github.com/home-assistant/frontend/discussions/13687
     "time": {
         "device_type": "sensor",
         "object_suffix": "UTC",
@@ -866,11 +879,7 @@ mappings = {
 
 }
 
-# Use secret_knock to trigger device automations for Honeywell ActivLink
-# doorbells. We have this outside of mappings as we need to configure two
-# different configuration topics.
 secret_knock_mappings = [
-
     {
         "device_type": "device_automation",
         "object_suffix": "Knock",
@@ -892,14 +901,12 @@ secret_knock_mappings = [
             "payload": 1,
         }
     },
-
 ]
 
 TOPIC_PARSE_RE = re.compile(r'\[(?P<slash>/?)(?P<token>[^\]:]+):?(?P<default>[^\]:]*)\]')
 
 def mqtt_connect(client, userdata, flags, rc):
     """Callback for MQTT connects."""
-
     logging.info("MQTT connected: " + mqtt.connack_string(rc))
     if rc != 0:
         logging.error("Could not connect. Error: " + str(rc))
@@ -918,9 +925,7 @@ def mqtt_message(client, userdata, msg):
     logging.debug("MQTT message: " + json.dumps(msg.payload.decode()))
 
     try:
-        # Decode JSON payload
         data = json.loads(msg.payload.decode())
-
     except json.decoder.JSONDecodeError:
         logging.error("JSON decode error: " + msg.payload.decode())
         return
@@ -938,19 +943,15 @@ def sanitize(text):
             .replace("&", ""))
 
 def rtl_433_device_info(data, topic_prefix):
-    """Return rtl_433 device topic to subscribe to for a data element, based on the
-    rtl_433 device topic argument, as well as the device identifier"""
-
+    """Return rtl_433 device topic to subscribe to for a data element"""
     path_elements = []
     id_elements = []
     last_match_end = 0
-    # The default for args.device_topic_suffix is the same topic structure
-    # as set by default in rtl433 config
+
     for match in re.finditer(TOPIC_PARSE_RE, args.device_topic_suffix):
         path_elements.append(args.device_topic_suffix[last_match_end:match.start()])
         key = match.group(2)
         if key in data:
-            # If we have this key, prepend a slash if needed
             if match.group(1):
                 path_elements.append('/')
             element = sanitize(str(data[key]))
@@ -975,7 +976,6 @@ def publish_config(mqttc, topic, model, object_id, mapping, key=None):
 
     path = "/".join([args.discovery_prefix, device_type, object_id, object_name, "config"])
 
-    # check timeout
     now = time.time()
     if path in discovery_timeouts:
         if discovery_timeouts[path] > now:
@@ -986,9 +986,6 @@ def publish_config(mqttc, topic, model, object_id, mapping, key=None):
 
     config = mapping["config"].copy()
 
-    # Device Automation configuration is in a different structure compared to
-    # all other mqtt discovery types.
-    # https://www.home-assistant.io/integrations/device_trigger.mqtt/
     if device_type == 'device_automation':
         config["topic"] = topic
         config["platform"] = 'mqtt'
@@ -1020,7 +1017,6 @@ def bridge_event_to_hass(mqttc, topic_prefix, data):
     """Translate some rtl_433 sensor data to Home Assistant auto discovery."""
 
     if "model" not in data:
-        # not a device event
         logging.debug("Model is not defined. Not sending event to Home Assistant.")
         return
 
@@ -1031,19 +1027,15 @@ def bridge_event_to_hass(mqttc, topic_prefix, data):
 
     base_topic, device_id = rtl_433_device_info(data, topic_prefix)
     if not device_id:
-        # no unique device identifier
         logging.warning("No suitable identifier found for model: %s", model)
         return
 
     if args.ids and "id" in data and data.get("id") not in args.ids:
-        # not in the safe list
         logging.debug("Device (%s) is not in the desired list of device ids: [%s]" % (data["id"], ids))
         return
 
-    # detect known attributes
     for key in data.keys():
         if key in mappings:
-            # topic = "/".join([topicprefix,"devices",model,instance,key])
             topic = "/".join([base_topic, key])
             if publish_config(mqttc, topic, model, device_id, mappings[key], key):
                 published_keys.append(key)
@@ -1067,7 +1059,7 @@ def bridge_event_to_hass(mqttc, topic_prefix, data):
 def rtl_433_bridge():
     """Run a MQTT Home Assistant auto discovery bridge for rtl_433."""
 
-    if hasattr(mqtt, 'CallbackAPIVersion'):  # paho >= 2.0.0
+    if hasattr(mqtt, 'CallbackAPIVersion'):
         mqttc = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION1)
     else:
         mqttc = mqtt.Client()
@@ -1093,12 +1085,6 @@ def rtl_433_bridge():
 
 
 def run():
-    """Run main or daemon."""
-    # with daemon.DaemonContext(files_preserve=[sock]):
-    #  detach_process=True
-    #  uid
-    #  gid
-    #  working_directory
     rtl_433_bridge()
 
 
@@ -1132,7 +1118,6 @@ if __name__ == "__main__":
                         dest="discovery_prefix",
                         default="homeassistant",
                         help="Home Assistant MQTT topic prefix (default: %(default)s)")
-    # This defaults to the rtl433 config default, so we assemble the same topic structure
     parser.add_argument("-T", "--device-topic_suffix", type=str,
                         dest="device_topic_suffix",
                         default="devices[/type][/model][/subtype][/channel][/id]",
@@ -1158,7 +1143,6 @@ if __name__ == "__main__":
     if args.quiet:
         logging.getLogger().setLevel(logging.ERROR)
 
-    # allow setting MQTT username and password via environment variables
     if not args.user and 'MQTT_USERNAME' in os.environ:
         args.user = os.environ['MQTT_USERNAME']
 
