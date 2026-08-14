@@ -287,7 +287,7 @@ r_device const elster_power_meter = {
 #define ELSTER2_COLLECTOR_BITMASK 0x80000000 // collector ID indication bit
 
 struct __attribute__((packed, scalar_storage_order("big-endian"))) Header {
-    uint16_t len;     // [0,1] packet length
+    uint16_t len;     // [0,1] packet length (counts _all_ bytes in the message, including these length bytes)
     uint8_t flags;    // [2] flags? broadcast/unicast? always 0x09 or 0x01?
     uint32_t src;     // [3,7] origin address
     uint32_t dst;     // [8,11] destination address
@@ -295,7 +295,7 @@ struct __attribute__((packed, scalar_storage_order("big-endian"))) Header {
 };
 
 struct __attribute__((packed, scalar_storage_order("little-endian"))) SubHeader {
-    uint8_t len;      // [0] length
+    uint8_t len;      // [0] length (count starts the byte after this one)
     uint8_t flags;    // [1] flags?
     uint8_t cls;      // [2] subclass
 };
@@ -456,14 +456,21 @@ static int elster_power_meter2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     decoder_logf(decoder, 2, __func__, "Leftover = %i", header->len - sh->len);
                     switch (sh->cls) {  // branch on the message class byte in the sub-header
                         case 0x23:  // meter reading type. length = 164 or 171
-                            if (remaining >= sizeof(*struct_23)) {
-                                struct_23 = (struct Structure23*)&pl[13];
-                                meter_kwh = ((float) struct_23->reading1000x) / 1000.0;
-                                if (struct_23->reading1000x != 0) {
-                                    good_reading = 1;
-                                    // report meter reading timestamp using format: YYY-MM-DDThh:mm:ss
-                                    snprintf(reading_timestamp, sizeof(reading_timestamp), "%04u-%02u-%02uT%02u:%02u:%02u", struct_23->YY + 2000, struct_23->MM, struct_23->DD, struct_23->hh, struct_23->mm, struct_23->ss);
+                            if ((sh->len == 164) || (sh->len == 171)){
+                                if (remaining >= sizeof(*struct_23)) {
+                                    struct_23 = (struct Structure23*)&pl[13];
+                                    remaining -= sizeof(*struct_23);
+                                    meter_kwh = ((float) struct_23->reading1000x) / 1000.0;
+                                    if (struct_23->reading1000x != 0) {
+                                        good_reading = 1;
+                                        // report meter reading timestamp using format: YYY-MM-DDThh:mm:ss
+                                        snprintf(reading_timestamp, sizeof(reading_timestamp), "%04u-%02u-%02uT%02u:%02u:%02u", struct_23->YY + 2000, struct_23->MM, struct_23->DD, struct_23->hh, struct_23->mm, struct_23->ss);
+                                    }
                                 }
+                            } else if (sh->len == 159) {  // false meter reading type
+                                (void)0;
+                            } else {  // never seen this
+                                (void)0;
                             }
                             break;
                         case 0x0d:  // heartbeat/beacon type? length = 7
