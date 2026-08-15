@@ -1,7 +1,7 @@
 /** @file
     Neptune R900 BCD flow meter decoder.
 
-    Copyright (C) 2024 Your Name
+    Copyright (C) 2024 the rtl_433 authors
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -13,6 +13,8 @@
 
 /** @fn int neptune_r900bcd_decode(r_device *decoder, bitbuffer_t * bitbuffer)
 Neptune R900 BCD flow meter decoder.
+
+Tested with Neptune T-10 meter.
 
 The device uses PPM encoding,
 - 1 is encoded as 30 us pulse.
@@ -40,7 +42,7 @@ Once the payload is decoded, the message is as follows:
 - Leak - 4 bits
 - LeakNow - 2 bits
 
-This version handles BCD (Binary Coded Decimal) decoding of the consumption field.
+This version handles BCD (Binary Coded Decimal) decoding of the consumption field.  Same as device in rtlamr: https://github.com/bemasher/rtlamr/blob/master/r900bcd/r900bcd.go
 
 After decoding the bitstream into 168 bits of payload, the layout appears to be:
 
