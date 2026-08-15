@@ -1,7 +1,7 @@
 /** @file
     Neptune R900 BCD flow meter decoder.
 
-    Copyright (C) 2024 the rtl_433 authors
+    Copyright (C) 2026 the rtl_433 authors
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
