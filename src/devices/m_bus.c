@@ -148,7 +148,7 @@ typedef struct {
     uint8_t     AC;         // Access number
     uint8_t     ST;
     uint16_t    CW;         // Configuration word
-    uint8_t     pl_offset;  // Payload offset
+    unsigned    pl_offset;  // Payload offset
     /* Extended Link Layer (EN 13757-4), when the frame has one: this
        wraps the actual Transport/Application Layer CI above, which is
        parsed from just after it once found not to be encrypted. */
