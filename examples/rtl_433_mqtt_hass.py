@@ -1035,7 +1035,7 @@ def bridge_event_to_hass(mqttc, topic_prefix, data):
         logging.warning("No suitable identifier found for model: %s", model)
         return
 
-    if args.ids and "id" in data and data.get("id") not in args.ids:
+    if args.ids and "id" in data and str(data.get("id")) not in args.ids:
         # not in the safe list
         logging.debug("Device (%s) is not in the desired list of device ids: [%s]" % (data["id"], ids))
         return
@@ -1144,7 +1144,7 @@ if __name__ == "__main__":
     parser.add_argument("-x", "--expire-after", type=int,
                         dest="expire_after",
                         help="Number of seconds with no updates after which the sensor becomes unavailable")
-    parser.add_argument("-I", "--ids", type=int, nargs="+",
+    parser.add_argument("-I", "--ids", type=str, nargs="+",
                         help="ID's of devices that will be discovered (omit for all)")
     args = parser.parse_args()
 
@@ -1169,7 +1169,7 @@ if __name__ == "__main__":
         logging.warning("User or password is not set. Check credentials if subscriptions do not return messages.")
 
     if args.ids:
-        ids = ', '.join(str(id) for id in args.ids)
+        ids = ', '.join(args.ids)
         logging.info("Only discovering devices with ids: [%s]" % ids)
     else:
         logging.info("Discovering all devices")
