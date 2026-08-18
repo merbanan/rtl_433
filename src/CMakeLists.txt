@@ -379,6 +379,10 @@ add_library(r_433 STATIC
     devices/x10_rf.c
     devices/x10_sec.c
     devices/yale_hsa.c
+    devices/door_sensor_aliexp.c
+    devices/doorbell_solight_1l43.c
+    devices/honda_frv.c
+    devices/suzuki_sx4.c
 )
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")

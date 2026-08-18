@@ -392,6 +392,10 @@
     DECL(cotech_36_7900) \
     DECL(silver_spring_mesh) \
     DECL(bresser_garden) \
+    DECL(door_sensor_aliexp) \
+    DECL(doorbell_solight_1l43) \
+    DECL(honda_frv) \
+    DECL(suzuki_sx4) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
