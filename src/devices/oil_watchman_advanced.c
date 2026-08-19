@@ -17,6 +17,7 @@ Watchman Sonic Advanced/Plus oil tank level monitor.
 Tested devices:
 - Watchman Sonic Advanced, model code 0x0401 (seen on two devices)
 - Tekelek, model code 0x0106 (seen on two devices)
+- Tekelek sensor TEK608A with code 0x0101
 
 The devices uses GFSK with 500 us long and short pulses.
 Using -Y minmax should be sufficient to get it to work.
@@ -50,7 +51,7 @@ Same message, second check with unshifted CRC
 - PP: 40 bits of preamble, i.e. 10101010 etc.
 - SS: 2 byte of 0x2dd4 - 'standard' sync word
 - HH: 1 byte - hearder message length, fixed 0x0e (14)
-- MM: 2 byte - fixed 0x0401 or 0x0106 - presumably a model identifier, common at least to the devices we have tested
+- MM: 2 byte - fixed 0x0401 or 0x0106 or 0x0101 - presumably a model identifier, common at least to the devices we have tested
 - II: 3 byte integer serial number - as printed on a label attached to the device itself
 - FF: 1 byte status:
   - 0xC0 - during the first 20ish minutes after sync with the receiver when the device is transmitting once per second
@@ -99,7 +100,7 @@ static int oil_watchman_advanced_decode(r_device *decoder, bitbuffer_t *bitbuffe
         }
 
         int mcode = (b[1] << 8) | b[2];
-        if (mcode != 0x0401 && mcode != 0x0106) {
+        if (mcode != 0x0401 && mcode != 0x0106 && mcode != 0x0101) {
             decoder_logf(decoder, 1, __func__, "Unknown model code %04x", mcode);
             return DECODE_FAIL_SANITY;
         }
