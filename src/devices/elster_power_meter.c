@@ -309,7 +309,10 @@ struct __attribute__((packed, scalar_storage_order("little-endian"))) Structure2
     uint8_t mm;
     uint8_t ss;
     uint8_t unknown1;
-    uint32_t reading1000x;
+    uint32_t readinga1000x;
+    uint32_t readingb1000x;
+    uint32_t readingc1000x;
+    uint32_t readingd1000x;
 };
 
 /** @fn static int elster_power_meter2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -381,7 +384,10 @@ static int elster_power_meter2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     struct Structure23* struct_23;
     int good_reading = 0;
     char reading_timestamp[20] = {0};
-    float meter_kwh = 0.0f;
+    float metera_kwh = 0.0f;
+    float meterb_kwh = 0.0f;
+    float meterc_kwh = 0.0f;
+    float meterd_kwh = 0.0f;
 
     if ((unsigned int)len >= sizeof(struct Header)){
         header = (struct Header*)buf;
@@ -460,8 +466,12 @@ static int elster_power_meter2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                                 if (remaining >= sizeof(*struct_23)) {
                                     struct_23 = (struct Structure23*)&pl[13];
                                     remaining -= sizeof(*struct_23);
-                                    meter_kwh = ((float) struct_23->reading1000x) / 1000.0;
-                                    if (struct_23->reading1000x != 0) {
+                                    metera_kwh = ((float) struct_23->readinga1000x) / 1000.0;
+                                    meterb_kwh = ((float) struct_23->readingb1000x) / 1000.0;
+                                    meterc_kwh = ((float) struct_23->readingc1000x) / 1000.0;
+                                    meterd_kwh = ((float) struct_23->readingd1000x) / 1000.0;
+
+                                    if (struct_23->readinga1000x != 0) {
                                         good_reading = 1;
                                         // report meter reading timestamp using format: YYY-MM-DDThh:mm:ss
                                         snprintf(reading_timestamp, sizeof(reading_timestamp), "%04u-%02u-%02uT%02u:%02u:%02u", struct_23->YY + 2000, struct_23->MM, struct_23->DD, struct_23->hh, struct_23->mm, struct_23->ss);
@@ -521,7 +531,10 @@ static int elster_power_meter2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 //            "smsg_len", "Submessage Length",     DATA_COND, smsg_len > 0, DATA_INT, smsg_len,
 //            "nbr_ids",  "Neighbour IDs",         DATA_COND, nbr_ids[0] != '\0', DATA_STRING, nbr_ids,
             "t_meter",  "Reading Timestamp",     DATA_COND, good_reading, DATA_STRING, reading_timestamp,  // "YYY-MM-DDThh:mm:ss"
-            "reading_kWh", "Reading",            DATA_COND, good_reading, DATA_FORMAT, "%.3f kWh", DATA_DOUBLE, (double)meter_kwh,
+            "readinga_kWh", "Reading A",         DATA_COND, good_reading, DATA_FORMAT, "%.3f kWh", DATA_DOUBLE, (double)metera_kwh,
+            "readingb_kWh", "Reading B",         DATA_COND, good_reading, DATA_FORMAT, "%.3f kWh", DATA_DOUBLE, (double)meterb_kwh,
+            "readingc_kWh", "Reading C",         DATA_COND, good_reading, DATA_FORMAT, "%.3f kWh", DATA_DOUBLE, (double)meterc_kwh,
+            "readingd_kWh", "Reading D",         DATA_COND, good_reading, DATA_FORMAT, "%.3f kWh", DATA_DOUBLE, (double)meterd_kwh,
             "data_raw", "Raw data",              DATA_STRING, data_raw,
             NULL);
     /* clang-format on */
@@ -543,7 +556,10 @@ static char const *const output_fields2[] = {
 //        "smsg_len",
 //        "nbr_ids",
         "t_meter",
-        "reading_kWh",
+        "readinga_kWh",
+        "readingb_kWh",
+        "readingc_kWh",
+        "readingd_kWh",
         "data_raw",
         NULL,
 };
