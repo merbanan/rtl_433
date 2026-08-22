@@ -284,7 +284,7 @@ mappings = {
         }
     },
 
-    "conductivity": {
+    "conductivity_uS_cm": {
         "device_type": "sensor",
         "object_suffix": "EC",
         "config": {
