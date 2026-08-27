@@ -89,12 +89,17 @@ static int infactory_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int battery_low = (b[1] >> 2) & 1;
     int temp_raw    = (b[2] << 4) | (b[3] >> 4);
     int humidity    = (b[3] & 0x0F) * 10 + (b[4] >> 4); // BCD, 'A0'=100%rH
+    float temp_f    = (temp_raw - 900) * 0.1f;
 
     if (humidity > 100) {
         return DECODE_FAIL_SANITY;
     }
 
-    float temp_f    = (temp_raw - 900) * 0.1f;
+    // Sensor family is rated -40 C to +70 C at the widest (NC-3982 manual and
+    // variants); anything outside cannot be a real reading.
+    if (temp_f < -40.0f || temp_f > 158.0f) {
+        return DECODE_FAIL_SANITY;
+    }
 
     /* clang-format off */
     data_t *data = data_make(
