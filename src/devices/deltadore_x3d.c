@@ -157,6 +157,7 @@ To get raw data:
 #define DELTADORE_X3D_HEADER_TEMP_OUTDOOR     0x01
 
 #define DELTADORE_X3D_MAX_PKT_LEN             (64U)
+#define DELTADORE_X3D_STANDARD_PAYLOAD_LEN    (12U)
 
 struct deltadore_x3d_message_header {
     uint8_t number;
@@ -246,7 +247,7 @@ static uint8_t deltadore_x3d_parse_message_payload(uint8_t *buffer, struct delta
     out->register_high = *buffer++;
     out->register_low  = *buffer++;
     out->target_ack    = deltadore_x3d_read_le_u16(&buffer);
-    return 12;
+    return DELTADORE_X3D_STANDARD_PAYLOAD_LEN;
 }
 
 static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -285,8 +286,8 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // dewhite length
     ccitt_whitening(&len, 1);
 
-    if (len > DELTADORE_X3D_MAX_PKT_LEN) {
-        decoder_logf(decoder, 1, __func__, "packet too large (%u bytes), dropping it\n", len);
+    if (len < 2 || len > DELTADORE_X3D_MAX_PKT_LEN) {
+        decoder_logf(decoder, 1, __func__, "invalid packet length (%u bytes), dropping it\n", len);
         return DECODE_ABORT_LENGTH;
     }
 
@@ -310,6 +311,14 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     struct deltadore_x3d_message_header head = {0};
     uint8_t bytes_read                       = 2; // step over length and FF field
     bytes_read += deltadore_x3d_parse_message_header(&frame[bytes_read], &head);
+
+    if (head.type == DELTADORE_X3D_MSGTYPE_STANDARD
+            && !(head.header_flags & DELTADORE_X3D_HEADER_FLAG_NO_PAYLOAD)
+            && len < bytes_read + DELTADORE_X3D_STANDARD_PAYLOAD_LEN + 2) {
+        decoder_logf(decoder, 1, __func__, "standard message payload truncated\n");
+        return DECODE_ABORT_LENGTH;
+    }
+
     const char *class, *wnd_stat, *temp_type;
 
     /* clang-format off */
@@ -362,7 +371,7 @@ static int deltadore_x3d_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             data = data_str(data, "wnd_stat", "Window Status", NULL, wnd_stat);
         }
     }
-    else {
+    else if (head.type == DELTADORE_X3D_MSGTYPE_STANDARD) {
         struct deltadore_x3d_message_payload body = {0};
         bytes_read += deltadore_x3d_parse_message_payload(&frame[bytes_read], &body);
 
