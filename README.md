@@ -338,7 +338,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [242]* Baldr / RainPoint rain gauge.
     [243]  Celsia CZC1 Thermostat
     [244]  Fine Offset Electronics WS90 weather station
-    [245]* ThermoPro TX-2C Thermometer and Humidity sensor
+    [245]* ThermoPro TX-2C, TX-2B Thermometer and Humidity sensor
     [246]  TFA 30.3151 Weather Station
     [247]  Bresser water leakage
     [248]  Nissan TPMS

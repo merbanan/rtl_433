@@ -1,8 +1,9 @@
 /** @file
-    ThermoPro TX-2C Outdoor Thermometer and humidity sensor.
+    ThermoPro TX-2C and TX-2B Outdoor Thermometer and humidity sensor.
 
     Copyright (C) 2023 igor@pele.tech.
     Copyright (C) 2023 maxime@werlen.fr.
+    Copyright (C) 2026 Philippe McLean
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -13,7 +14,13 @@
 #include "decoder.h"
 
 /**
-ThermoPro TX-2C Outdoor Thermometer.
+ThermoPro TX-2C Outdoor Thermometer, also ThermoPro TX-2B.
+
+The TX-2B is the 915 MHz (North America ISM band) variant of the TX-2C.
+It uses the same message layout and timing: fixed 452 us pulses with
+gaps of nominally 1950 us (short) and 3810-3920 us (long), and a packet
+gap of 8550 us. The long gap varies slightly between units, so the gap
+limit needs headroom above the longest observed value.
 
 Example data:
 
@@ -103,11 +110,11 @@ static char const *const output_fields[] = {
 };
 
 r_device const thermopro_tx2c = {
-        .name        = "ThermoPro TX-2C Thermometer and Humidity sensor",
+        .name        = "ThermoPro TX-2C, TX-2B Thermometer and Humidity sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1958,
         .long_width  = 3825,
-        .gap_limit   = 3829,
+        .gap_limit   = 7000, // long gap varies up to 3920 us between units, packet gap is 8550 us
         .reset_limit = 8643,
         .decode_fn   = &thermopro_tx2c_decode,
         .fields      = output_fields,
