@@ -62,12 +62,12 @@ Data layout:
 - E: 24-bit extra data???
 
 */
-int const bcd_map16to6[16] = { -1, -1, -1, 0, -1, 1, 2, -1, -1, 5, 4, -1, 3, -1, -1, -1 };
+int const bcd_map16to6[16] = {-1, -1, -1, 0, -1, 1, 2, -1, -1, 5, 4, -1, 3, -1, -1, -1};
 
 static void bcd_decode_5to8(bitbuffer_t *bytes, uint8_t *base6_dec)
 {
     // is there a better way to convert groups of 5 bits to groups of 8 bits?
-    for (int i=0; i < 21; i++) {
+    for (int i = 0; i < 21; i++) {
         uint8_t data = base6_dec[i];
         bitbuffer_add_bit(bytes, data >> 4 & 0x01);
         bitbuffer_add_bit(bytes, data >> 3 & 0x01);
@@ -80,7 +80,7 @@ static void bcd_decode_5to8(bitbuffer_t *bytes, uint8_t *base6_dec)
 static int neptune_r900bcd_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // partial preamble and sync word shifted by 1 bit
-    uint8_t const preamble[] = {0x55, 0x55, 0x55, 0xa9, 0x66, 0x69, 0x65};
+    uint8_t const preamble[]  = {0x55, 0x55, 0x55, 0xa9, 0x66, 0x69, 0x65};
     int const preamble_length = sizeof(preamble) * 8;
 
     if (bitbuffer->num_rows != 1) {
@@ -104,10 +104,10 @@ static int neptune_r900bcd_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t bits[21]; // 168 bits
     bitbuffer_extract_bytes(bitbuffer, 0, start_pos + preamble_length, bits, 21 * 8);
 
-    uint8_t *bb = bitbuffer->bb[0];
-    bitbuffer_t bytes = {0};
+    uint8_t *bb           = bitbuffer->bb[0];
+    bitbuffer_t bytes     = {0};
     uint8_t base6_dec[21] = {0};
-    int count = 0;
+    int count             = 0;
 
     /*
      * Each group of four of these chips must be interpreted as a digit in base 6
@@ -118,12 +118,12 @@ static int neptune_r900bcd_decode(r_device *decoder, bitbuffer_t *bitbuffer)
      * 1100 -> 3
      * 1010 -> 4
      * 1001 -> 5
-    */
+     */
     // create a pair of char bit array of '0' and '1' for each base6 byte
-    for (uint8_t k = start_pos+preamble_length; k < start_pos + preamble_length + 168; k=k+8) {
-        uint8_t byte = bitrow_get_byte(bb, k);
+    for (uint8_t k = start_pos + preamble_length; k < start_pos + preamble_length + 168; k = k + 8) {
+        uint8_t byte   = bitrow_get_byte(bb, k);
         int highNibble = bcd_map16to6[(byte >> 4 & 0xF)];
-        int lowNibble = bcd_map16to6[(byte & 0xF)];
+        int lowNibble  = bcd_map16to6[(byte & 0xF)];
 
         if (highNibble < 0 || lowNibble < 0)
             return DECODE_ABORT_EARLY;
@@ -137,67 +137,67 @@ static int neptune_r900bcd_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // the first 80 bits are used in this decoder, the last 24 bits are decoded as extra
     bcd_decode_5to8(&bytes, base6_dec);
     uint8_t b[13]; // 104 bits
-    bitbuffer_extract_bytes(&bytes, 0, 0, b, sizeof(b)*8);
+    bitbuffer_extract_bytes(&bytes, 0, 0, b, sizeof(b) * 8);
 
     // decode the data
 
     // meter_id 32 bits
     uint32_t meter_id = ((uint32_t)b[0] << 24) | (b[1] << 16) | (b[2] << 8) | (b[3]);
-    //Unkn1 4 bits
+    // Unkn1 4 bits
     int unkn1 = b[4] >> 4;
-    //MeterType 4 bits
-    int metertype = b[4]&0x0F;
-    //Unkn2 3 bits
+    // MeterType 4 bits
+    int metertype = b[4] & 0x0F;
+    // Unkn2 3 bits
     int unkn2 = b[5] >> 5;
-    //NoUse 3 bits
-    // 0 = 0 days
-    // 1 = 1-2 days
-    // 2 = 3-7 days
-    // 3 = 8-14 days
-    // 4 = 15-21 days
-    // 5 = 22-34 days
-    // 6 = 35+ days
-    int nouse = ((b[5] >> 1)&0x0F) >> 1;
-    //BackFlow 2 bits
-    // During the last 35 days
-    // 0 = none
-    // 1 = low
-    // 2 = high
-    int backflow = b[5]&0x03;
-    //Consumption 24 bits + 3-bit Wrap on Non-BCD meters
+    // NoUse 3 bits
+    //  0 = 0 days
+    //  1 = 1-2 days
+    //  2 = 3-7 days
+    //  3 = 8-14 days
+    //  4 = 15-21 days
+    //  5 = 22-34 days
+    //  6 = 35+ days
+    int nouse = ((b[5] >> 1) & 0x0F) >> 1;
+    // BackFlow 2 bits
+    //  During the last 35 days
+    //  0 = none
+    //  1 = low
+    //  2 = high
+    int backflow = b[5] & 0x03;
+    // Consumption 24 bits + 3-bit Wrap on Non-BCD meters
     int consumption = ((b[9] >> 5) << 24) | (b[6] << 16) | (b[7] << 8) | (b[8]);
-    //Leak 3 bits
-    // 0 = 0 days
-    // 1 = 1-2 days
-    // 2 = 3-7 days
-    // 3 = 8-14 days
-    // 4 = 15-21 days
-    // 5 = 22-34 days
-    // 6 = 35+ days
-    int leak = ((b[9] >> 1)&0x0F) >> 1;
-    //LeakNow 2 bits
-    // During the last 24 hours
-    // 0 = none
-    // 1 = low (intermittent leak) water used for at least 50 of the 96 15-minute intervals
-    // 2 = high (continuous leak) water use in every 15-min interval for the last 24 hours
-    int leaknow = b[9]&0x03;
+    // Leak 3 bits
+    //  0 = 0 days
+    //  1 = 1-2 days
+    //  2 = 3-7 days
+    //  3 = 8-14 days
+    //  4 = 15-21 days
+    //  5 = 22-34 days
+    //  6 = 35+ days
+    int leak = ((b[9] >> 1) & 0x0F) >> 1;
+    // LeakNow 2 bits
+    //  During the last 24 hours
+    //  0 = none
+    //  1 = low (intermittent leak) water used for at least 50 of the 96 15-minute intervals
+    //  2 = high (continuous leak) water use in every 15-min interval for the last 24 hours
+    int leaknow = b[9] & 0x03;
     // extra 24 bits ???
     char extra[7];
-    snprintf(extra, sizeof(extra),"%02x%02x%02x", b[10], b[11], b[12]);
+    snprintf(extra, sizeof(extra), "%02x%02x%02x", b[10], b[11], b[12]);
 
     // Convert BCD consumption to decimal
     // In BCD format, each nibble represents a decimal digit
-    int bcd_consumption = consumption;
+    int bcd_consumption     = consumption;
     int decimal_consumption = 0;
-    int multiplier = 1;
+    int multiplier          = 1;
 
     // Extract each digit from BCD and convert to decimal
     // We have 24 bits (6 nibbles) to process
-    for (int i = 0; i < 6; i++) {  // 6 digits for 24 bits
+    for (int i = 0; i < 6; i++) { // 6 digits for 24 bits
         int digit = bcd_consumption & 0x0F;
         if (digit > 9) {
             // Invalid BCD digit - this should not happen in valid data
-            decimal_consumption = -1;  // Invalid value
+            decimal_consumption = -1; // Invalid value
             return DECODE_ABORT_EARLY;
         }
         decimal_consumption += digit * multiplier;
