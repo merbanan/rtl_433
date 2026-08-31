@@ -479,6 +479,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [383]  Silver Spring Networks mesh endpoint (-s 1600k)
     [384]  Bresser SmartHome Garden soil moisture and water timer valve (Baldr Homgar, RainPoint)
     [385]* Neptune R900 BCD flow meters
+    [386]  Olympia Protect 9571 alarm system sensors
 
 * Disabled by default, use -R n or a conf file to enable
 
