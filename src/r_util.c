@@ -90,7 +90,7 @@ char *usecs_time_str(char *buf, char const *format, int with_tz, struct timeval 
 const char *parse_time_str(const char *buf, struct timeval *out)
 {
     int year, mon, day, hour, min, sec, consumed;
-    long micros = 0;
+    long micros = 0; // should be suseconds_t and long on Windows only
 
     if (sscanf(buf, "%4d-%2d-%2d%*1[ T]%2d:%2d:%2d%n", &year, &mon, &day, &hour, &min, &sec, &consumed) == 6) {
         buf += consumed;

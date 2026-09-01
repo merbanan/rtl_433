@@ -83,8 +83,8 @@ int main(int argc, char *argv[])
     int16_t *s16_buf;
     int32_t *s32_buf;
     char *filename;
-    long n_read;
-    unsigned long n_samples;
+    int n_read;
+    unsigned n_samples;
     int max_block_size = 4096000;
     filter_state_t state;
     demodfm_state_t fm_state;
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
 
     n_samples = n_read / (sizeof(uint8_t) * 2);
 
-    for (unsigned long i = 0; i < n_samples * 2; i++) {
+    for (unsigned i = 0; i < n_samples * 2; i++) {
         //cs16_buf[i] = 127 - cu8_buf[i];
         //cs16_buf[i] = (int16_t)cu8_buf[i] * 16 - 2040;
         cs16_buf[i] = (int16_t)cu8_buf[i] * 128 - 16320;

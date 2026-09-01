@@ -132,10 +132,10 @@ void baseband_demod_FM_reset(demodfm_state_t *demod_fm);
     @param samp_rate sample rate of samples to process
     @param low_pass Low-pass filter frequency or ratio
 */
-void baseband_demod_FM(demodfm_state_t *state, uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, uint32_t samp_rate, float low_pass);
+void baseband_demod_FM(demodfm_state_t *state, uint8_t const *x_buf, int16_t *y_buf, uint32_t num_samples, uint32_t samp_rate, float low_pass);
 
 /// For evaluation.
-void baseband_demod_FM_cs16(demodfm_state_t *state, int16_t const *x_buf, int16_t *y_buf, unsigned long num_samples, uint32_t samp_rate, float low_pass);
+void baseband_demod_FM_cs16(demodfm_state_t *state, int16_t const *x_buf, int16_t *y_buf, uint32_t num_samples, uint32_t samp_rate, float low_pass);
 
 /** Initialize tables and constants.
     Should be called once at startup.

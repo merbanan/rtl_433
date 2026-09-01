@@ -112,7 +112,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         return 0; // ignore the data
     }
 
-    unsigned long n_samples = len / demod->sample_size;
+    unsigned n_samples = len / demod->sample_size;
     if (n_samples * demod->sample_size != len) {
         print_log(LOG_WARNING, __func__, "Sample buffer length not aligned to sample size!");
     }
