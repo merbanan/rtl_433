@@ -124,9 +124,15 @@ static void influx_client_timer(struct mg_connection *nc, int ev, void *ev_data)
 
 static influx_client_t *influx_client_init(influx_client_t *ctx, char const *url, char const *token, const char *metric_format)
 {
-    snprintf(ctx->url, sizeof(ctx->url), "%s", url);
-    snprintf(ctx->extra_headers, sizeof (ctx->extra_headers), "Authorization: Token %s\r\n", token);
-    snprintf(ctx->metric_format, sizeof(ctx->metric_format), "%s", metric_format);
+    if (url) {
+        snprintf(ctx->url, sizeof(ctx->url), "%s", url);
+    }
+    if (token) {
+        snprintf(ctx->extra_headers, sizeof (ctx->extra_headers), "Authorization: Token %s\r\n", token);
+    }
+    if (metric_format) {
+        snprintf(ctx->metric_format, sizeof(ctx->metric_format), "%s", metric_format);
+    }
 
     return ctx;
 }
