@@ -784,8 +784,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             char *p = arg_param(arg);
             cfg->report_stats = atoiv(p, 1);
             cfg->stats_interval = atoiv(arg_param(p), 600); // atoi_time_default()
-            time(&cfg->stats_time);
-            cfg->stats_time += cfg->stats_interval;
+            cfg->stats_time = monotonic_time();
         }
         else if (!strncasecmp(arg, "replay", 6)) {
             cfg->in_replay = atobv(arg_param(arg), 1);
@@ -1143,21 +1142,18 @@ static void process_sdr_frame(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
     }
 
     // Check for timer actions
-    time_t rawtime;
-    time(&rawtime);
+    time_t rawtime = monotonic_time();
 
     // Check for maximum run duration
-    if (cfg->duration > 0 && rawtime >= cfg->stop_time) {
+    if (cfg->duration > 0 && monotonic_time_diff(rawtime, cfg->start_time) > cfg->duration) {
         cfg->exit_async = 1;
         print_log(LOG_CRITICAL, __func__, "Time expired, exiting!");
     }
     // Check for interval stats printing
-    if (cfg->stats_now || (cfg->report_stats && cfg->stats_interval && rawtime >= cfg->stats_time)) {
+    if (cfg->stats_now || (cfg->report_stats && cfg->stats_interval && monotonic_time_diff(rawtime, cfg->stats_time) >= cfg->stats_interval)) {
         event_occurred_handler(cfg, create_report_data(cfg, cfg->stats_now ? 3 : cfg->report_stats));
         flush_report_data(cfg);
-        if (rawtime >= cfg->stats_time) {
-            cfg->stats_time += cfg->stats_interval;
-        }
+        cfg->stats_time = rawtime;
         if (cfg->stats_now) {
             cfg->stats_now--;
         }
@@ -1165,13 +1161,13 @@ static void process_sdr_frame(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
     // Check for hopping timer
     // choose hop_index as frequency_index, if there are too few hop_times use the last one
     int hop_index = cfg->hop_times > cfg->frequency_index ? cfg->frequency_index : cfg->hop_times - 1;
-    if (cfg->hop_times > 0 && cfg->frequencies > 1 && difftime(rawtime, cfg->hop_start_time) >= cfg->hop_time[hop_index]) {
+    if (cfg->hop_times > 0 && cfg->frequencies > 1 && monotonic_time_diff(rawtime, cfg->hop_start_time) >= cfg->hop_time[hop_index]) {
         cfg->hop_now = 1;
     }
     // Apply hopping, might be set by timer, successful decode event, or signal handler
     if (cfg->hop_now && !cfg->exit_async) {
         cfg->hop_now = 0;
-        time(&cfg->hop_start_time);
+        cfg->hop_start_time  = rawtime;
         cfg->frequency_index = (cfg->frequency_index + 1) % cfg->frequencies;
         sdr_set_center_freq(cfg->dev, cfg->frequency[cfg->frequency_index], 1);
     }
@@ -1371,7 +1367,8 @@ static void timer_handler(struct mg_connection *nc, int ev, void *ev_data)
             if (cfg->dev_state == DEVICE_STATE_STARTING
                     || cfg->dev_state == DEVICE_STATE_GRACE) {
                 cfg->dev_state = DEVICE_STATE_STARTED;
-                time(&cfg->sdr_since);
+                cfg->sdr_start = time(NULL);
+                cfg->sdr_since = monotonic_time();
             }
             cfg->watchdog = 0;
             break;
@@ -1695,11 +1692,6 @@ int main(int argc, char **argv) {
             FATAL_MALLOC("test_mode_float_buf");
         }
 
-        if (cfg->duration > 0) {
-            time(&cfg->stop_time);
-            cfg->stop_time += cfg->duration;
-        }
-
         for (void **iter = cfg->in_files.elems; iter && *iter; ++iter) {
             cfg->in_filename = *iter;
 
@@ -1801,7 +1793,7 @@ int main(int argc, char **argv) {
             do {
                 // Replay in realtime if requested
                 if (cfg->in_replay) {
-                    // per block delay
+                    // per block interval
                     unsigned interval_us = (unsigned)(1000000llu * DEFAULT_BUF_LENGTH / cfg->samp_rate / demod->sample_size / cfg->in_replay);
                     if (demod->load_info.format == CF32_IQ) {
                         interval_us /= 2; // adjust for float only reading half as many samples
@@ -1896,13 +1888,6 @@ int main(int argc, char **argv) {
             exit(2);
         }
     }
-
-    if (cfg->duration > 0) {
-        time(&cfg->stop_time);
-        cfg->stop_time += cfg->duration;
-    }
-
-    time(&cfg->hop_start_time);
 
     // add dummy socket to receive timer broadcasts
     struct mg_add_sock_opts opts = {.user_data = cfg};
