@@ -69,12 +69,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14]
+        os: [macos-15, macos-15-intel]
         feat: [rtlsdr, soapysdr]
         include:
-          #- os: macos-13
-          #  arch: x86_64
-          - os: macos-14
+          - os: macos-15-intel
+            arch: x86_64
+          - os: macos-15
             arch: arm64
     runs-on: ${{ matrix.os }}
     name: Build with ${{ matrix.feat }} for ${{ matrix.arch }} on ${{ matrix.os }}
