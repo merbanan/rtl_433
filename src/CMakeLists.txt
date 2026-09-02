@@ -153,6 +153,7 @@ add_library(r_433 STATIC
     devices/fineoffset_wh52.c
     devices/fineoffset_wh55.c
     devices/fineoffset_wn34.c
+    devices/fineoffset_wn35.c
     devices/fineoffset_ws80.c
     devices/fineoffset_ws85.c
     devices/fineoffset_ws90.c

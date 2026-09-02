@@ -478,6 +478,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [382]* Cotech 36-7900 rain gauge
     [383]  Silver Spring Networks mesh endpoint (-s 1600k)
     [384]  Bresser SmartHome Garden soil moisture and water timer valve (Baldr Homgar, RainPoint)
+    [385]  Fine Offset Electronics WN35 Leaf Wetness sensor
 
 * Disabled by default, use -R n or a conf file to enable
 
