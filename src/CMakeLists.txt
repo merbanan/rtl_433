@@ -68,6 +68,7 @@ add_library(r_433 STATIC
     devices/atech_ws308.c
     devices/audiovox_pro_oe3b.c
     devices/auriol_4ld5661.c
+    devices/auriol_4ld6654.c
     devices/auriol_aft77b2.c
     devices/auriol_afw2a1.c
     devices/auriol_ahfl.c

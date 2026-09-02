@@ -392,6 +392,7 @@
     DECL(cotech_36_7900) \
     DECL(silver_spring_mesh) \
     DECL(bresser_garden) \
+    DECL(auriol_4ld6654) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
