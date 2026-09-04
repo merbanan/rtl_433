@@ -273,6 +273,7 @@ add_library(r_433 STATIC
     devices/rftech.c
     devices/rfxmeter.c
     devices/risco_agility.c
+    devices/roboguard.c
     devices/rojaflex.c
     devices/rosstech_dcu706.c
     devices/rubicson.c
