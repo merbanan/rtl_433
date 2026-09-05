@@ -57,11 +57,18 @@ Data layout:
 - M:  4-bit Meter Type
 - N:  6-bit NoUse (3 bits)
 - B:  2-bit backflow flag
-- C: 24-bit Consumption Data, might be 1/10 gallon units
+- C: 24-bit Consumption Data, might be 1/10 gallon units, binary or BCD depending on meter
 - W:  3-bit Wrap, high bits of Consumption on Non-BCD meters, consumption = (WRAP << 24 | CONSUMPTION) / 10
 - T:  4-bit days of leak mapping (3 bits)
 - L:  2-bit leak flag type
 - E: 24-bit extra data????
+
+Two meter families share this frame format and differ only in how the 24-bit
+consumption field is read. Most meters use plain binary with the 3-bit Wrap as
+high bits; others, e.g. the T-10, pack six BCD digits into the same 24 bits.
+The encoding is not carried in the frame, so each is registered as its own
+decoder, Neptune-R900 and Neptune-R900BCD, and both are decoded here by
+neptune_r900_decode_common(). Enable whichever matches your meter.
 */
 
 int const map16to6[16] = { -1, -1, -1, 0, -1, 1, 2, -1, -1, 5, 4, -1, 3, -1, -1, -1 };
@@ -79,8 +86,14 @@ static void decode_5to8(bitbuffer_t *bytes, uint8_t *base6_dec)
     }
 }
 
-static int neptune_r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+/// Consumption field encoding, selected by the calling decoder.
+#define NEPTUNE_CONSUMPTION_BINARY 0 ///< plain binary, Wrap holds the high bits
+#define NEPTUNE_CONSUMPTION_BCD    1 ///< six packed BCD digits
+
+static int neptune_r900_decode_common(r_device *decoder, bitbuffer_t *bitbuffer, int consumption_encoding)
 {
+    int const is_bcd = consumption_encoding == NEPTUNE_CONSUMPTION_BCD;
+
     // partial preamble and sync word shifted by 1 bit
     uint8_t const preamble[] = {0x55, 0x55, 0x55, 0xa9, 0x66, 0x69, 0x65};
     int const preamble_length = sizeof(preamble) * 8;
@@ -100,7 +113,7 @@ static int neptune_r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (start_pos == bitbuffer->bits_per_row[0])
         return DECODE_ABORT_EARLY;
 
-    decoder_logf(decoder, 1, __func__, "Neptune R900 detected, buffer is %d bits length", bitbuffer->bits_per_row[0]);
+    decoder_logf(decoder, 1, __func__, "%s detected, buffer is %d bits length", decoder->name, bitbuffer->bits_per_row[0]);
 
     // Remove preamble and sync word, keep whole payload
     uint8_t bits[21]; // 168 bits
@@ -168,6 +181,19 @@ static int neptune_r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int backflow = b[5]&0x03;
     //Consumption 24 bits + 3-bit Wrap on Non-BCD meters
     int consumption = ((b[9] >> 5) << 24) | (b[6] << 16) | (b[7] << 8) | (b[8]);
+    if (is_bcd) {
+        // The same 24 bits hold six BCD digits; the Wrap bits are unused.
+        // A nibble above 9 cannot be BCD, so this is not a BCD meter.
+        int bcd = 0;
+        for (int i = 5; i >= 0; i--) {
+            int digit = (consumption >> (4 * i)) & 0x0F;
+            if (digit > 9) {
+                return DECODE_ABORT_EARLY;
+            }
+            bcd = bcd * 10 + digit;
+        }
+        consumption = bcd;
+    }
     //Leak 3 bits
     // 0 = 0 days
     // 1 = 1-2 days
@@ -189,7 +215,7 @@ static int neptune_r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",       "",    DATA_STRING, "Neptune-R900",
+            "model",       "",    DATA_STRING, is_bcd ? "Neptune-R900BCD" : "Neptune-R900",
             "id",          "",    DATA_INT,    meter_id,
             "unkn1",       "",    DATA_INT,    unkn1,
             "metertype",   "",    DATA_INT,    metertype,
@@ -206,6 +232,16 @@ static int neptune_r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Return 1 if message successfully decoded
     return 1;
+}
+
+static int neptune_r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    return neptune_r900_decode_common(decoder, bitbuffer, NEPTUNE_CONSUMPTION_BINARY);
+}
+
+static int neptune_r900bcd_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    return neptune_r900_decode_common(decoder, bitbuffer, NEPTUNE_CONSUMPTION_BCD);
 }
 
 /*
@@ -241,5 +277,16 @@ r_device const neptune_r900 = {
         .long_width  = 30,
         .reset_limit = 320, // a bit longer than packet gap
         .decode_fn   = &neptune_r900_decode,
+        .fields      = output_fields,
+};
+
+r_device const neptune_r900bcd = {
+        .name        = "Neptune R900 BCD flow meters",
+        .modulation  = OOK_PULSE_PCM,
+        .short_width = 30,
+        .long_width  = 30,
+        .reset_limit = 320, // a bit longer than packet gap
+        .decode_fn   = &neptune_r900bcd_decode,
+        .disabled    = 1, // enable only on a BCD meter, it overlaps Neptune-R900
         .fields      = output_fields,
 };
