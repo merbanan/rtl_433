@@ -92,6 +92,7 @@ endif()
 add_library(r_433 STATIC
     abuf.c
     am_analyze.c
+    auto_level.c
     baseband.c
     bit_util.c
     bitbuffer.c

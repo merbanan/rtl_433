@@ -136,10 +136,10 @@ static void usage(int exit_code)
             "  [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)\n"
             "  [-Y auto | classic | minmax] FSK pulse detector mode.\n"
             "  [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto).\n"
-            "  [-Y minlevel=<dB level>] Manual minimum detection level used to determine pulses (-1.0 to -99.0).\n"
+            "  [-Y minlevel=<dB level>] Manual minimum detection level used to determine pulses (-1.0 to -99.0) (disables autolevel).\n"
             "  [-Y minsnr=<dB level>] Minimum SNR to determine pulses (1.0 to 99.0).\n"
-            "  [-Y autolevel] Set minlevel automatically based on average estimated noise.\n"
-            "  [-Y squelch] Skip frames below estimated noise level to reduce cpu load.\n"
+            "  [-Y autolevel] Set minlevel automatically based on average estimated noise (default: on, 0 disables).\n"
+            "  [-Y squelch] Skip frames below estimated noise level to reduce cpu load (default: off).\n"
             "  [-Y ampest | magest] Choose amplitude or magnitude level estimator.\n"
             "  [-Y filter=<value>] Manual FM low-pass filter cutoff to separate simultaneous transmissions: us (1-9999, e.g. 20), Hz (10000+), or ratio of sample rate (0.0-1.0).\n"
             "\t\t= Analyze/Debug options =\n"
@@ -942,10 +942,15 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         while (p && *p) {
             char const *val = NULL;
             if (kwargs_match(p, "autolevel", &val)) {
-                cfg->demod->auto_level = atoiv(val, 1); // arg_float_default(p + 9, "-Y autolevel: ");
+                // autolevel  autolevel:1  autolevel:on  autolevel:yes  autolevel:true  autolevel:enable
+                // autolevel:0  autolevel:off  autolevel:no  autolevel:false  autolevel:disable
+                cfg->demod->auto_level     = atobv(val, 1);
+                cfg->demod->auto_level_set = 1;
             }
             else if (kwargs_match(p, "squelch", &val)) {
-                cfg->demod->squelch_offset = atoiv(val, 1); // arg_float_default(p + 7, "-Y squelch: ");
+                // squelch  squelch:1  squelch:on  squelch:yes  squelch:true  squelch:enable
+                // squelch:0  squelch:off  squelch:no  squelch:false  squelch:disable
+                cfg->demod->squelch_offset = atobv(val, 1); // arg_float_default(p + 7, "-Y squelch: ");
             }
             else if (kwargs_match(p, "auto", &val)) {
                 cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_AUTO;
@@ -969,7 +974,8 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
                 cfg->demod->level_limit = arg_float(val, "-Y level: ");
             }
             else if (kwargs_match(p, "minlevel", &val)) {
-                cfg->demod->min_level = arg_float(val, "-Y minlevel: ");
+                cfg->demod->min_level     = arg_float(val, "-Y minlevel: ");
+                cfg->demod->min_level_set = 1;
             }
             else if (kwargs_match(p, "minsnr", &val)) {
                 cfg->demod->min_snr = arg_float(val, "-Y minsnr: ");
@@ -1445,6 +1451,22 @@ int main(int argc, char **argv) {
     }
 
     parse_conf_args(cfg, argc, argv);
+
+    // An explicit minlevel is a request for that detection level, so it turns
+    // off the new autolevel default: otherwise the tracked floor would walk
+    // away from the level that was asked for. Note the tracking starts once the
+    // noise is 3 dB below minlevel, so raising minlevel to reduce load would
+    // otherwise make autolevel engage sooner and end up lower than the default.
+    // An explicit autolevel still wins, in either direction.
+    if (demod->min_level_set && !demod->auto_level_set) {
+        demod->auto_level = 0;
+    }
+
+    // notify once if autolevel is active only because of the new default, not an explicit request
+    if (demod->auto_level > 0 && !demod->auto_level_set) {
+        fprintf(stderr, "\nAuto Level is now enabled by default, use \"-Y autolevel=0\" for the previous fixed -12 dB minimum level\n\n");
+    }
+
     // apply hop defaults and set first frequency
     if (cfg->frequencies == 0) {
         cfg->frequency[0] = DEFAULT_FREQUENCY;
