@@ -56,9 +56,10 @@ void pulse_detect_fsk_init(pulse_detect_fsk_t *s);
 /// Includes spurious suppression by coalescing pulses when pulse/gap widths are too short.
 /// Pulses equal higher frequency (F1) and Gaps equal lower frequency (F2)
 /// @param s Internal state
-/// @param fm_n One single sample of FM data
+/// @param fm_data Buffer of FM data
+/// @param count Number of samples in the buffer
 /// @param fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
-void pulse_detect_fsk_classic(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses);
+void pulse_detect_fsk_classic(pulse_detect_fsk_t *s, int16_t const *fm_data, int count, pulse_data_t *fsk_pulses);
 
 /// Wrap up FSK modulation and store last data at End Of Package.
 ///
@@ -70,8 +71,9 @@ void pulse_detect_fsk_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pulses);
 ///
 /// Function is stateful between calls
 /// @param s Internal state
-/// @param fm_n One single sample of FM data
+/// @param fm_data Buffer of FM data
+/// @param count Number of samples in the buffer
 /// @param fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
-void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses);
+void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t const *fm_data, int count, pulse_data_t *fsk_pulses);
 
 #endif /* INCLUDE_PULSE_DETECT_FSK_H_ */

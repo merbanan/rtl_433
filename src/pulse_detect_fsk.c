@@ -31,8 +31,10 @@ void pulse_detect_fsk_init(pulse_detect_fsk_t *s)
     s->skip_samples = 40;
 }
 
-void pulse_detect_fsk_classic(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses)
+void pulse_detect_fsk_classic(pulse_detect_fsk_t *s, int16_t const *fm_data, int count, pulse_data_t *fsk_pulses)
 {
+    for (int i = 0; i < count; ++i) {
+    int16_t const fm_n    = fm_data[i];
     int const fm_f1_delta = abs(fm_n - s->fm_f1_est); // Get delta from F1 frequency estimate
     int const fm_f2_delta = abs(fm_n - s->fm_f2_est); // Get delta from F2 frequency estimate
     s->fsk_pulse_length += 1;
@@ -139,6 +141,7 @@ void pulse_detect_fsk_classic(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t 
             s->fsk_state = PD_FSK_STATE_ERROR;
     } // switch(s->fsk_state)
 }
+}
 
 void pulse_detect_fsk_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pulses)
 {
@@ -155,9 +158,11 @@ void pulse_detect_fsk_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pulses)
     }
 }
 
-void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses)
+void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t const *fm_data, int count, pulse_data_t *fsk_pulses)
 {
-    int16_t mid = 0;
+    for (int i = 0; i < count; ++i) {
+    int16_t const fm_n = fm_data[i];
+    int16_t mid        = 0;
 
     /* Skip a few samples in the beginning, need for framing
      * otherwise the min/max trackers won't converge properly
@@ -218,4 +223,5 @@ void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *
     if (s->skip_samples > 0) {
         s->skip_samples -= 1;
     }
+}
 }

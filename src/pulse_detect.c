@@ -51,7 +51,46 @@ struct pulse_detect {
     int verbosity; ///< Debug output verbosity, 0=None, 1=Levels, 2=Histograms
 
     pulse_detect_fsk_t pulse_detect_fsk;
+
+    /* Pending run of samples to hand to the FSK detector. The detector is fed a
+     * whole contiguous run at a time instead of sample by sample. */
+    int fsk_run_start; ///< Index into the current fm buffer where the run starts
+    int fsk_run_len;   ///< Number of samples in the run, 0 if none pending
 };
+
+/// Demodulate the pending run of samples in a single call.
+static void pulse_detect_fsk_flush(struct pulse_detect *s, int16_t const *fm_data,
+        pulse_data_t *fsk_pulses, unsigned fpdm)
+{
+    if (s->fsk_run_len <= 0) {
+        return;
+    }
+    int16_t const *run = fm_data + s->fsk_run_start;
+    int const count    = s->fsk_run_len;
+    s->fsk_run_len     = 0;
+
+    if (fpdm == FSK_PULSE_DETECT_OLD) {
+        pulse_detect_fsk_classic(&s->pulse_detect_fsk, run, count, fsk_pulses);
+    }
+    else {
+        pulse_detect_fsk_minmax(&s->pulse_detect_fsk, run, count, fsk_pulses);
+    }
+}
+
+/// Note the sample at @p index as belonging to the FSK run; it is demodulated
+/// by pulse_detect_fsk_flush() once the run is complete.
+static void pulse_detect_fsk_mark(struct pulse_detect *s, int16_t const *fm_data,
+        pulse_data_t *fsk_pulses, unsigned fpdm, int index)
+{
+    // Runs must stay contiguous, flush if this sample does not extend the current one.
+    if (s->fsk_run_len > 0 && s->fsk_run_start + s->fsk_run_len != index) {
+        pulse_detect_fsk_flush(s, fm_data, fsk_pulses, fpdm);
+    }
+    if (s->fsk_run_len == 0) {
+        s->fsk_run_start = index;
+    }
+    s->fsk_run_len += 1;
+}
 
 pulse_detect_t *pulse_detect_create(void)
 {
@@ -236,6 +275,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
         case PD_OOK_STATE_GAP_START:
             s->ook_state = PD_OOK_STATE_GAP;
             // Determine if FSK modulation is detected
+            pulse_detect_fsk_flush(s, fm_data, fsk_pulses, fpdm);
             if (fsk_pulses->num_pulses > PD_MIN_PULSES) {
                 // Store last pulse/gap
                 if (fpdm == FSK_PULSE_DETECT_OLD) {
@@ -269,6 +309,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
             pulses->ook_high_estimate = s->ook_high_estimate;
             pulses->end_ago           = len - s->data_counter;
 
+            pulse_detect_fsk_flush(s, fm_data, fsk_pulses, fpdm);
             return PULSE_DATA_OOK;
 
         default:
@@ -320,6 +361,8 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     s->pulse_length = 0;
                     s->max_pulse = 0;
                     pulse_detect_fsk_init(&s->pulse_detect_fsk);
+                    s->fsk_run_start = 0;
+                    s->fsk_run_len   = 0;
                     s->ook_state = PD_OOK_STATE_PULSE;
                 }
                 else {    // We are still idle..
@@ -366,11 +409,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 }
                 // FSK Demodulation
                 if (pulses->num_pulses == 0) {    // Only during first pulse
-                    if (fpdm == FSK_PULSE_DETECT_OLD) {
-                        pulse_detect_fsk_classic(&s->pulse_detect_fsk, fm_data[s->data_counter], fsk_pulses);
-                    } else {
-                        pulse_detect_fsk_minmax(&s->pulse_detect_fsk, fm_data[s->data_counter], fsk_pulses);
-                    }
+                    pulse_detect_fsk_mark(s, fm_data, fsk_pulses, fpdm, s->data_counter);
                 }
                 break;
             case PD_OOK_STATE_GAP_START:    // Beginning of gap - it might be a spurious gap
@@ -384,6 +423,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 else if (s->pulse_length >= PD_MIN_PULSE_SAMPLES) {
                     s->ook_state = PD_OOK_STATE_GAP;
                     // Determine if FSK modulation is detected
+                    pulse_detect_fsk_flush(s, fm_data, fsk_pulses, fpdm);
                     if (fsk_pulses->num_pulses > PD_MIN_PULSES) {
                         // Store last pulse/gap
                         if (fpdm == FSK_PULSE_DETECT_OLD) {
@@ -412,11 +452,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 } // if
                 // FSK Demodulation (continue during short gap - we might return...)
                 if (pulses->num_pulses == 0) {    // Only during first pulse
-                    if (fpdm == FSK_PULSE_DETECT_OLD) {
-                        pulse_detect_fsk_classic(&s->pulse_detect_fsk, fm_data[s->data_counter], fsk_pulses);
-                    } else {
-                        pulse_detect_fsk_minmax(&s->pulse_detect_fsk, fm_data[s->data_counter], fsk_pulses);
-                    }
+                    pulse_detect_fsk_mark(s, fm_data, fsk_pulses, fpdm, s->data_counter);
                 }
                 break;
             case PD_OOK_STATE_GAP:
@@ -436,6 +472,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                         if (pulse_detect->verbosity >= LOG_INFO) {
                             print_att_hist("PULSE_DATA_OOK MAX_PULSES", att_hist);
                         }
+                        pulse_detect_fsk_flush(s, fm_data, fsk_pulses, fpdm);
                         return PULSE_DATA_OOK;    // End Of Package!!
                     }
 
@@ -465,6 +502,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                                 mag_to_att(ook_threshold + ook_hysteresis),
                                 mag_to_att(ook_threshold - ook_hysteresis));
                     }
+                    pulse_detect_fsk_flush(s, fm_data, fsk_pulses, fpdm);
                     return PULSE_DATA_OOK;    // End Of Package!!
                 }
                 break;
@@ -479,5 +517,6 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
     if (pulse_detect->verbosity >= LOG_DEBUG) {
         print_att_hist("Out of data", att_hist);
     }
+    pulse_detect_fsk_flush(s, fm_data, fsk_pulses, fpdm);
     return 0;    // Out of data
 }
