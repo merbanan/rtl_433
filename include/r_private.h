@@ -53,6 +53,7 @@ struct dm_state {
     pulse_data_t pulse_data;
     pulse_data_t fsk_pulse_data; ///< FSK pulse data currently exposed to decoders and metadata handlers.
     pulse_data_t fsk_pulse_data_all[FSK_PULSE_DETECTOR_COUNT];
+    unsigned fsk_detector_used; ///< Detector that produced the currently exposed FSK pulse data.
     uint64_t input_pos;
     unsigned frame_event_count;
     int frame_quality;

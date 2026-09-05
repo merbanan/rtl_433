@@ -248,7 +248,7 @@ static void pulse_detect_fsk_minmax_impl(pulse_detect_fsk_t *s, int16_t const *f
     if (s->skip_samples > 0) {
         s->skip_samples -= 1;
     }
-    }
+}
 }
 
 void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t const *fm_data, int count, pulse_data_t *fsk_pulses)

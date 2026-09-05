@@ -64,7 +64,7 @@ static int fsk_detector_enabled(unsigned fpdm, unsigned detector)
         return detector == FSK_PULSE_DETECTOR_CLASSIC;
     }
     if (fpdm == FSK_PULSE_DETECT_NEW) {
-        return detector == FSK_PULSE_DETECTOR_MINMAX || detector == FSK_PULSE_DETECTOR_HYSTERESIS;
+        return detector == FSK_PULSE_DETECTOR_MINMAX;
     }
     if (fpdm == FSK_PULSE_DETECT_HYSTERESIS) {
         return detector == FSK_PULSE_DETECTOR_HYSTERESIS;
@@ -83,6 +83,12 @@ static void pulse_detect_fsk_init_all(pulse_detect_t *s)
     s->fsk_run_start = 0;
     s->fsk_run_len   = 0;
 }
+
+/// Note the sample at @p index as belonging to the FSK run; nothing is
+/// demodulated here, the run is handed to the detectors by
+/// pulse_detect_fsk_flush() once it is complete.
+static void pulse_detect_fsk_mark(pulse_detect_t *s, int16_t const *fm_data,
+        pulse_data_t fsk_pulses[FSK_PULSE_DETECTOR_COUNT], unsigned fpdm, int index);
 
 /// Demodulate the pending run of samples, one call per enabled detector.
 static void pulse_detect_fsk_flush(pulse_detect_t *s, int16_t const *fm_data,
@@ -113,8 +119,6 @@ static void pulse_detect_fsk_flush(pulse_detect_t *s, int16_t const *fm_data,
     }
 }
 
-/// Note the sample at @p index as belonging to the FSK run; it is demodulated
-/// by pulse_detect_fsk_flush() once the run is complete.
 static void pulse_detect_fsk_mark(pulse_detect_t *s, int16_t const *fm_data,
         pulse_data_t fsk_pulses[FSK_PULSE_DETECTOR_COUNT], unsigned fpdm, int index)
 {
@@ -563,10 +567,12 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
         s->data_counter += 1;
     } // while
 
+    // The run cannot span buffers, fm_data is only valid for this call.
+    pulse_detect_fsk_flush(s, fm_data, fsk_pulses, fpdm);
+
     s->data_counter = 0;
     if (pulse_detect->verbosity >= LOG_DEBUG) {
         print_att_hist("Out of data", att_hist);
     }
-    pulse_detect_fsk_flush(s, fm_data, fsk_pulses, fpdm);
     return 0;    // Out of data
 }

@@ -71,8 +71,7 @@ static unsigned fsk_detector_order(struct dm_state const *demod, unsigned order[
     }
     if (demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_NEW) {
         order[0] = FSK_PULSE_DETECTOR_MINMAX;
-        order[1] = FSK_PULSE_DETECTOR_HYSTERESIS;
-        return 2;
+        return 1;
     }
     if (demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_HYSTERESIS) {
         order[0] = FSK_PULSE_DETECTOR_HYSTERESIS;
@@ -248,12 +247,15 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
 
     // FM demodulation
     if (demod->enable_FM_demod && process_frame) {
-        // Preserve the legacy frequency-dependent filter while running the pulse detectors in parallel.
-        int const prefer_minmax = demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_NEW
-                || demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_HYSTERESIS
-                || demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_MEDIAN
-                || (demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_AUTO
-                        && demod->center_frequency > FSK_PULSE_DETECTOR_LIMIT);
+        // One FM stream feeds every detector, so the filter follows the primary
+        // detector, the one allowed to classify the package. That keeps the legacy
+        // frequency-dependent choice exactly as it was. The fallback detectors then
+        // run on the primary's filter rather than their own preferred one; they are
+        // only consulted when the primary already found a package the decoders
+        // rejected, so a slightly wider or narrower filter costs sensitivity, not
+        // correctness. Deriving it from fsk_primary_detector() rather than repeating
+        // the frequency test keeps the two from drifting apart.
+        int const prefer_minmax = fsk_primary_detector(demod) != FSK_PULSE_DETECTOR_CLASSIC;
         float fm_low_pass = demod->fm_low_pass != 0.0f ? demod->fm_low_pass : (prefer_minmax ? 0.2f : 0.1f);
         if (demod->sample_size == 2) { // CU8
             baseband_demod_FM(&demod->demod_FM_state, iq_buf, demod->buf.fm, n_samples, demod->samp_rate, fm_low_pass);
@@ -365,11 +367,13 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                     if (first_detector < 0) {
                         first_detector = detector;
                     }
-                    demod->fsk_pulse_data = *candidate;
+                    demod->fsk_pulse_data    = *candidate;
+                    demod->fsk_detector_used = detector;
                     p_events += run_fsk_demods(&demod->r_devs, &demod->fsk_pulse_data);
                 }
                 if (p_events == 0 && first_detector >= 0) {
                     demod->fsk_pulse_data = demod->fsk_pulse_data_all[first_detector];
+                    demod->fsk_detector_used = first_detector;
                 }
                 if (demod->analyze_pulses) {
                     fprintf(stderr, "Detected FSK package\t%s\n", time_pos_str(cfg, demod->fsk_pulse_data.start_ago, time_str));
@@ -440,11 +444,11 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
             file_info_t const *dumper = *iter;
             if (dumper->format == U8_LOGIC) {
-                unsigned order[FSK_PULSE_DETECTOR_COUNT];
-                fsk_detector_order(demod, order);
+                // Dump the detector that produced the reported event, not the
+                // preferred one, so the trace matches the decode.
                 pulse_data_dump_raw(demod->u8_buf, n_samples, demod->input_pos, &demod->pulse_data, 0x02);
                 pulse_data_dump_raw(demod->u8_buf, n_samples, demod->input_pos,
-                        &demod->fsk_pulse_data_all[order[0]], 0x04);
+                        &demod->fsk_pulse_data_all[demod->fsk_detector_used], 0x04);
                 break;
             }
         }
