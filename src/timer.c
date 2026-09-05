@@ -9,7 +9,7 @@
     (at your option) any later version.
 */
 
-#include "delay_timer.h"
+#include "timer.h"
 
 #include <stdio.h>
 #include <time.h>

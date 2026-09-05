@@ -435,7 +435,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [339]  Florabest FB-TH-1 BBQ Thermometer
     [340]  Holman Industries iWeather WS5029 weather station (older PWM, OOK), BIOWIN 270208
     [341]  Esun EN2053 two-channel BBQ thermometer
-    [342]  Vivint Door/Window Sensor, V-DW21R-345
+    [342]  Vivint Door/Window Sensor, V-DW21R-345/V-DW11-345
     [343]  SmarTire TPMS sensor, Aston Martin/Vantage DB9 protocol
     [344]* Dickert MAHS433-01 garage door remote control
     [345]  FSL Cricket Scoreboard Controller

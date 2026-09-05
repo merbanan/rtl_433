@@ -57,7 +57,7 @@
 #include "write_sigrok.h"
 #include "sigmf.h"
 #include "mongoose.h"
-#include "delay_timer.h"
+#include "timer.h"
 #include "rtl_433_devices.h"
 
 #ifdef _WIN32
