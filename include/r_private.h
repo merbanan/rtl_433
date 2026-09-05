@@ -71,7 +71,8 @@ struct dm_state {
     list_t *raw_handler;
 
     /* global stats */
-    time_t running_since;          ///< program start time statistic
+    time_t running_start;          ///< program start wall clock time statistic
+    time_t running_since;          ///< program start monotonic time statistic
     unsigned total_frames_count;   ///< total frames recieved statistic
     unsigned total_frames_squelch; ///< total frames with noise only statistic
     unsigned total_frames_ook;     ///< total frames with ook demod statistic
