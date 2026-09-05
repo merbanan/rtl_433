@@ -23,16 +23,16 @@
 #define usleep(us) Sleep((us) / 1000)
 #endif
 
-void delay_timer_init(delay_timer_t *delay_timer)
+void interval_timer_init(interval_timer_t *interval_timer)
 {
     // set to current wall clock
-    int ret = gettimeofday(delay_timer, NULL);
+    int ret = gettimeofday(interval_timer, NULL);
     if (ret) {
         perror("gettimeofday");
     }
 }
 
-void delay_timer_wait(delay_timer_t *delay_timer, unsigned delay_us)
+void interval_timer_wait(interval_timer_t *interval_timer, unsigned interval_us)
 {
     // sync to wall clock
     struct timeval now_tv;
@@ -41,17 +41,17 @@ void delay_timer_wait(delay_timer_t *delay_timer, unsigned delay_us)
         perror("gettimeofday");
     }
 
-    time_t elapsed_s  = now_tv.tv_sec - delay_timer->tv_sec;
-    time_t elapsed_us = 1000000 * elapsed_s + now_tv.tv_usec - delay_timer->tv_usec;
+    time_t elapsed_s  = now_tv.tv_sec - interval_timer->tv_sec;
+    time_t elapsed_us = 1000000 * elapsed_s + now_tv.tv_usec - interval_timer->tv_usec;
 
     // set next wanted start time
-    delay_timer->tv_usec += delay_us;
-    while (delay_timer->tv_usec > 1000000) {
-        delay_timer->tv_usec -= 1000000;
-        delay_timer->tv_sec += 1;
+    interval_timer->tv_usec += interval_us;
+    while (interval_timer->tv_usec > 1000000) {
+        interval_timer->tv_usec -= 1000000;
+        interval_timer->tv_sec += 1;
     }
 
-    if ((time_t)delay_us > elapsed_us) {
-        usleep(delay_us - elapsed_us);
+    if ((time_t)interval_us > elapsed_us) {
+        usleep(interval_us - elapsed_us);
     }
 }

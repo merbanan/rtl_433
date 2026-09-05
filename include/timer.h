@@ -9,15 +9,15 @@
     (at your option) any later version.
 */
 
-#ifndef INCLUDE_DELAY_TIMER_H_
-#define INCLUDE_DELAY_TIMER_H_
+#ifndef INCLUDE_TIMER_H_
+#define INCLUDE_TIMER_H_
 
 #include "compat_time.h"
 
-typedef struct timeval delay_timer_t;
+typedef struct timeval interval_timer_t;
 
-void delay_timer_init(delay_timer_t *delay_timer);
+void interval_timer_init(interval_timer_t *interval_timer);
 
-void delay_timer_wait(delay_timer_t *delay_timer, unsigned delay_us);
+void interval_timer_wait(interval_timer_t *interval_timer, unsigned interval_us);
 
-#endif /* INCLUDE_DELAY_TIMER_H_ */
+#endif /* INCLUDE_TIMER_H_ */

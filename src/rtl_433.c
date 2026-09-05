@@ -1796,17 +1796,17 @@ int main(int argc, char **argv) {
             // default case for file-inputs
             int n_blocks = 0;
             unsigned long n_read;
-            delay_timer_t delay_timer;
-            delay_timer_init(&delay_timer);
+            interval_timer_t interval_timer;
+            interval_timer_init(&interval_timer);
             do {
                 // Replay in realtime if requested
                 if (cfg->in_replay) {
                     // per block delay
-                    unsigned delay_us = (unsigned)(1000000llu * DEFAULT_BUF_LENGTH / cfg->samp_rate / demod->sample_size / cfg->in_replay);
+                    unsigned interval_us = (unsigned)(1000000llu * DEFAULT_BUF_LENGTH / cfg->samp_rate / demod->sample_size / cfg->in_replay);
                     if (demod->load_info.format == CF32_IQ) {
-                        delay_us /= 2; // adjust for float only reading half as many samples
+                        interval_us /= 2; // adjust for float only reading half as many samples
                     }
-                    delay_timer_wait(&delay_timer, delay_us);
+                    interval_timer_wait(&interval_timer, interval_us);
                 }
                 // Convert CF32 file to CS16 buffer
                 if (demod->load_info.format == CF32_IQ) {
