@@ -11,7 +11,7 @@
 
 #include "decoder.h"
 
-/** @fn int neptune_r900_decode(r_device *decoder, bitbuffer_t * bitbuffer)
+/** @fn int neptune_r900_decode_common(r_device *decoder, bitbuffer_t * bitbuffer)
 Neptune R900 flow meter decoder.
 
 The product site lists E-CODER R900 amd MACH10 R900. Not sure if this decodes both.
@@ -234,11 +234,19 @@ static int neptune_r900_decode_common(r_device *decoder, bitbuffer_t *bitbuffer,
     return 1;
 }
 
+/**
+Neptune R900 flow meters.
+@sa neptune_r900_decode_common()
+*/
 static int neptune_r900_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     return neptune_r900_decode_common(decoder, bitbuffer, NEPTUNE_CONSUMPTION_BINARY);
 }
 
+/**
+Neptune R900 BCD flow meters.
+@sa neptune_r900_decode_common()
+*/
 static int neptune_r900bcd_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     return neptune_r900_decode_common(decoder, bitbuffer, NEPTUNE_CONSUMPTION_BCD);
