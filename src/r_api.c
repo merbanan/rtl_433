@@ -40,6 +40,7 @@
 #include "sigmf.h"
 #include "mongoose.h"
 #include "compat_time.h"
+#include "timer.h"
 #include "logger.h"
 #include "fatal.h"
 #include "http_server.h"
@@ -126,6 +127,9 @@ void r_init_cfg(r_cfg_t *cfg)
     // abnormal messages and LOG_CRITICAL information.
     cfg->verbosity = LOG_WARNING;
 
+    cfg->start_time = monotonic_time();
+    cfg->hop_start_time = monotonic_time();
+
     list_ensure_size(&cfg->in_files, 100);
     list_ensure_size(&cfg->output_handler, 16);
 
@@ -161,8 +165,9 @@ void r_init_cfg(r_cfg_t *cfg)
     // initialize tables
     baseband_init();
 
-    time(&cfg->demod->running_since);
-    time(&cfg->demod->frames_since);
+    cfg->demod->running_start = time(NULL);
+    cfg->demod->running_since = monotonic_time();
+    cfg->demod->frames_since = monotonic_time();
     get_time_now(&cfg->demod->now);
 
     list_ensure_size(&cfg->demod->r_devs, 100);
@@ -902,7 +907,7 @@ void flush_report_data(r_cfg_t *cfg)
 {
     list_t *r_devs = &cfg->demod->r_devs;
 
-    time(&cfg->demod->frames_since);
+    cfg->demod->frames_since = monotonic_time();
     cfg->demod->frames_ook = 0;
     cfg->demod->frames_fsk = 0;
     cfg->demod->frames_events = 0;
