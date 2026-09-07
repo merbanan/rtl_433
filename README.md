@@ -390,7 +390,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [294]  ThermoPro TempSpike XR TP862b / TP863b Wireless Dual-Probe Meat Thermometer
     [295]  Airpuxem TPMS TYH11_EU6_ZQ
     [296]  Apator Metra E-ITN 30 heat cost allocator
-    [297]  ThermoPro TP211B Thermometer
+    [297]  ThermoPro TP211B/TP212B Thermometer
     [298]  TRW TPMS OOK OEM and Clone models
     [299]  TRW TPMS FSK OEM and Clone models
     [300]  Govee Water Leak Detector H5059
