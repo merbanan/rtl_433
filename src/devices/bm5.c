@@ -85,6 +85,10 @@ static int bm5_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (b[0] == 0 && b[1] == 0 && b[2] == 0 && b[10] == 0) {
         return DECODE_FAIL_MIC; // false positive
     }
+    // The sensor is battery powered, 0.0 V is not sensible
+    if (b[6] == 0 && b[7] == 0) {
+        return DECODE_FAIL_SANITY; // false positive
+    }
 
     // check for valid checksum
     if ((unsigned char)add_bytes(&b[0], 10) != b[10]) {
