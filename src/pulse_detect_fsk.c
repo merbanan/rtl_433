@@ -163,15 +163,18 @@ void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *
      * otherwise the min/max trackers won't converge properly
      */
     if (!s->skip_samples) {
+        // Running min/max of the FSK deviation over the package (reset per
+        // package in pulse_detect_fsk_init()). Intentionally tracked without
+        // decay: a fixed per-sample step toward mid is not scaled to the sample
+        // rate and, at high rates, collapses the window faster than one bit
+        // lasts -- which moves mid and shatters the bit framing on weak signals.
         s->var_test_max = MAX(fm_n, s->var_test_max);
         s->var_test_min = MIN(fm_n, s->var_test_min);
         mid = (s->var_test_max + s->var_test_min) / 2;
-        if (fm_n > mid) {
-            s->var_test_max -= 10;
-        }
-        if (fm_n < mid) {
-            s->var_test_min += 10;
-        }
+        // Hysteresis band around the slicing level, proportional to the tracked
+        // FSK deviation, so a noisy weak signal doesn't produce spurious
+        // mid-crossings that shatter the bit framing. Self-scales per device.
+        int16_t const hyst = (s->var_test_max - s->var_test_min) / 8;
 
         s->fsk_pulse_length += 1;
         switch(s->fsk_state) {
@@ -184,7 +187,7 @@ void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *
                 }
                 break;
             case PD_FSK_STATE_FH:
-                if (fm_n < mid) {
+                if (fm_n < mid - hyst) {
                     s->fsk_state = PD_FSK_STATE_FL;
                     fsk_pulses->pulse[fsk_pulses->num_pulses] = s->fsk_pulse_length;
                     s->fsk_pulse_length = 0;
@@ -192,7 +195,7 @@ void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *
                 s->fm_f2_est += fm_n / FSK_EST_SLOW - s->fm_f2_est / FSK_EST_SLOW; // Slow estimator
                 break;
             case PD_FSK_STATE_FL:
-                if (fm_n > mid) {
+                if (fm_n > mid + hyst) {
                     s->fsk_state = PD_FSK_STATE_FH;
                     fsk_pulses->gap[fsk_pulses->num_pulses] = s->fsk_pulse_length;
                     fsk_pulses->num_pulses += 1;
