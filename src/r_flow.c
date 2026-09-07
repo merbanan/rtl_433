@@ -63,6 +63,54 @@ static void calc_rssi_snr(struct dm_state const *demod, pulse_data_t *pulse_data
     }
 }
 
+static unsigned fsk_detector_order(struct dm_state const *demod, unsigned order[FSK_PULSE_DETECTOR_COUNT])
+{
+    if (demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_OLD) {
+        order[0] = FSK_PULSE_DETECTOR_CLASSIC;
+        return 1;
+    }
+    if (demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_NEW) {
+        order[0] = FSK_PULSE_DETECTOR_MINMAX;
+        order[1] = FSK_PULSE_DETECTOR_HYSTERESIS;
+        return 2;
+    }
+    if (demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_HYSTERESIS) {
+        order[0] = FSK_PULSE_DETECTOR_HYSTERESIS;
+        return 1;
+    }
+    if (demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_MEDIAN) {
+        order[0] = FSK_PULSE_DETECTOR_MEDIAN;
+        return 1;
+    }
+    if (demod->center_frequency > FSK_PULSE_DETECTOR_LIMIT) {
+        order[0] = FSK_PULSE_DETECTOR_MINMAX;
+        order[1] = FSK_PULSE_DETECTOR_CLASSIC;
+        order[2] = FSK_PULSE_DETECTOR_HYSTERESIS;
+        order[3] = FSK_PULSE_DETECTOR_MEDIAN;
+    }
+    else {
+        order[0] = FSK_PULSE_DETECTOR_CLASSIC;
+        order[1] = FSK_PULSE_DETECTOR_MINMAX;
+        order[2] = FSK_PULSE_DETECTOR_HYSTERESIS;
+        order[3] = FSK_PULSE_DETECTOR_MEDIAN;
+    }
+    return FSK_PULSE_DETECTOR_COUNT;
+}
+
+static char const *fsk_detector_name(unsigned detector)
+{
+    static char const *const names[FSK_PULSE_DETECTOR_COUNT] = {
+            "classic", "minmax", "hysteresis", "median"};
+    return detector < FSK_PULSE_DETECTOR_COUNT ? names[detector] : "unknown";
+}
+
+static unsigned fsk_primary_detector(struct dm_state const *demod)
+{
+    unsigned order[FSK_PULSE_DETECTOR_COUNT];
+    fsk_detector_order(demod, order);
+    return order[0];
+}
+
 /**
 Flush the SDR IQ data frame processing, e.g. on the end of a input file.
 
@@ -200,8 +248,13 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
 
     // FM demodulation
     if (demod->enable_FM_demod && process_frame) {
-        // Use manual FM low pass value otherwise 0.2 for minmax or 0.1 for classic
-        float fm_low_pass = demod->fm_low_pass != 0.0f ? demod->fm_low_pass : demod->fsk_pulse_detect_mode ? 0.2f : 0.1f;
+        // Preserve the legacy frequency-dependent filter while running the pulse detectors in parallel.
+        int const prefer_minmax = demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_NEW
+                || demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_HYSTERESIS
+                || demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_MEDIAN
+                || (demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_AUTO
+                        && demod->center_frequency > FSK_PULSE_DETECTOR_LIMIT);
+        float fm_low_pass = demod->fm_low_pass != 0.0f ? demod->fm_low_pass : (prefer_minmax ? 0.2f : 0.1f);
         if (demod->sample_size == 2) { // CU8
             baseband_demod_FM(&demod->demod_FM_state, iq_buf, demod->buf.fm, n_samples, demod->samp_rate, fm_low_pass);
         } else { // CS16
@@ -241,7 +294,8 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         while (package_type && process_frame) {
             int p_events = 0; // Sensor events successfully detected per package
             package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples,
-                    demod->samp_rate, demod->input_pos, &demod->pulse_data, &demod->fsk_pulse_data, demod->fsk_pulse_detect_mode);
+                    demod->samp_rate, demod->input_pos, &demod->pulse_data, demod->fsk_pulse_data_all,
+                    demod->fsk_pulse_detect_mode, fsk_primary_detector(demod));
             if (package_type) {
                 // new package: set a first frame start if we are not tracking one already
                 if (!demod->frame_start_ago) {
@@ -294,12 +348,33 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 }
             }
             else if (package_type == PULSE_DATA_FSK) {
-                calc_rssi_snr(demod, &demod->fsk_pulse_data);
+                unsigned order[FSK_PULSE_DETECTOR_COUNT];
+                unsigned const order_len = fsk_detector_order(demod, order);
+                int first_detector = -1;
+                for (unsigned i = 0; i < order_len && p_events == 0; ++i) {
+                    unsigned const detector = order[i];
+                    pulse_data_t *candidate = &demod->fsk_pulse_data_all[detector];
+                    if (candidate->num_pulses <= PD_MIN_PULSES) {
+                        continue;
+                    }
+                    if (demod->verbosity >= LOG_TRACE) {
+                        fprintf(stderr, "Trying FSK detector %s (%u pulses)\n",
+                                fsk_detector_name(detector), candidate->num_pulses);
+                    }
+                    calc_rssi_snr(demod, candidate);
+                    if (first_detector < 0) {
+                        first_detector = detector;
+                    }
+                    demod->fsk_pulse_data = *candidate;
+                    p_events += run_fsk_demods(&demod->r_devs, &demod->fsk_pulse_data);
+                }
+                if (p_events == 0 && first_detector >= 0) {
+                    demod->fsk_pulse_data = demod->fsk_pulse_data_all[first_detector];
+                }
                 if (demod->analyze_pulses) {
                     fprintf(stderr, "Detected FSK package\t%s\n", time_pos_str(cfg, demod->fsk_pulse_data.start_ago, time_str));
                 }
 
-                p_events += run_fsk_demods(&demod->r_devs, &demod->fsk_pulse_data);
                 demod->total_frames_fsk += 1;
                 demod->total_frames_events += p_events > 0;
                 demod->frames_fsk += 1;
@@ -365,8 +440,11 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
             file_info_t const *dumper = *iter;
             if (dumper->format == U8_LOGIC) {
+                unsigned order[FSK_PULSE_DETECTOR_COUNT];
+                fsk_detector_order(demod, order);
                 pulse_data_dump_raw(demod->u8_buf, n_samples, demod->input_pos, &demod->pulse_data, 0x02);
-                pulse_data_dump_raw(demod->u8_buf, n_samples, demod->input_pos, &demod->fsk_pulse_data, 0x04);
+                pulse_data_dump_raw(demod->u8_buf, n_samples, demod->input_pos,
+                        &demod->fsk_pulse_data_all[order[0]], 0x04);
                 break;
             }
         }
