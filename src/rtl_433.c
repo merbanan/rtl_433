@@ -1512,12 +1512,17 @@ int main(int argc, char **argv) {
         register_all_protocols(cfg, 0); // register all defaults
     }
 
-    // check if we need FM demod
+    // check if we need FM or PSK demod
     for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
         r_device *r_dev = *iter;
-        if (r_dev->modulation >= FSK_DEMOD_MIN_VAL) {
+
+        if (r_dev->modulation >= FSK_DEMOD_MIN_VAL
+                && r_dev->modulation <= FSK_DEMOD_MAX_VAL) {
             demod->enable_FM_demod = 1;
-            break;
+        }
+
+        if (r_dev->modulation == PSK_PULSE_DBPSK) {
+            demod->enable_PSK_demod = 1;
         }
     }
     // if any dumpers are requested the FM demod might be needed
