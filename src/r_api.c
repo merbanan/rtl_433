@@ -489,6 +489,7 @@ int run_ook_demods(list_t *r_devs, pulse_data_t *pulse_data)
             case FSK_PULSE_PCM:
             case FSK_PULSE_PWM:
             case FSK_PULSE_MANCHESTER_ZEROBIT:
+            case PSK_PULSE_DBPSK:
                 break;
             default:
                 fprintf(stderr, "Unknown modulation %u in protocol!\n", r_dev->modulation);
@@ -539,6 +540,8 @@ int run_fsk_demods(list_t *r_devs, pulse_data_t *fsk_pulse_data)
                 break;
             case FSK_PULSE_MANCHESTER_ZEROBIT:
                 p_events += pulse_slicer_manchester_zerobit(fsk_pulse_data, r_dev);
+                break;
+            case PSK_PULSE_DBPSK:
                 break;
             default:
                 fprintf(stderr, "Unknown modulation %u in protocol!\n", r_dev->modulation);

@@ -30,10 +30,10 @@
  * as one continuous IQ region.
  *
  * The existing candidate decoder extracts +/-12 ms around the detected
- * signature. A 48 ms window with 24 ms overlap therefore provides ample
+ * signature. A 64 ms window with 24 ms overlap therefore provides ample
  * context around a TX63 transmission while keeping the FFT work bounded.
  */
-#define PSK_STREAM_WINDOW_MS 48
+#define PSK_STREAM_WINDOW_MS 64
 #define PSK_STREAM_OVERLAP_MS 24
 
 /*

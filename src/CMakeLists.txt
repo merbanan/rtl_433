@@ -116,12 +116,12 @@ add_library(r_433 STATIC
     output_rtltcp.c
     output_trigger.c
     output_udp.c
+    psk_demod.c
+    psk_stream.c
     pulse_analyzer.c
     pulse_data.c
     pulse_detect.c
     pulse_detect_fsk.c
-    psk_demod.c
-    psk_stream.c
     pulse_slicer.c
     r_api.c
     r_flow.c
@@ -303,6 +303,7 @@ add_library(r_433 STATIC
     devices/lacrosse_tx31u.c
     devices/lacrosse_tx34.c
     devices/lacrosse_tx35.c
+    devices/lacrosse_tx63.c
     devices/lacrosse_wr1.c
     devices/lacrosse_ws6868.c
     devices/lacrosse_ws7000.c
