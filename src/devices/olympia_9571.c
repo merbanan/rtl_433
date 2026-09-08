@@ -86,7 +86,6 @@ static int olympia_9571_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    char const *model   = "Olympia-9571";
     char const *subtype = NULL;
     char const *state   = NULL;
     char const *cmd     = NULL;
@@ -127,7 +126,7 @@ static int olympia_9571_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",      "Model",     DATA_STRING, model,
+            "model",      "Model",     DATA_STRING, "Olympia-9571",
             "subtype",    "Device",    DATA_STRING, subtype,
             "id",         "ID",        DATA_FORMAT, "%06x", DATA_INT, id,
             "state",      "State",     DATA_COND, has_state, DATA_STRING, state ? state : "",
