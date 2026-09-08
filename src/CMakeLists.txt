@@ -121,6 +121,7 @@ add_library(r_433 STATIC
     pulse_detect.c
     pulse_detect_fsk.c
     psk_demod.c
+    psk_stream.c
     pulse_slicer.c
     r_api.c
     r_flow.c
