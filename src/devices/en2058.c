@@ -20,7 +20,7 @@ Data layout:
     PPPP aa aa aa aa aa ca ca III TT TT TT TT aa CC ffff...ffff SS SS ffff
 
 - P: 30 bit preamble (15 1-bits, 15 0-bits)
-- a/c: fixed bytes, always observed as shown
+- a/c: 56 bits of fixed bytes, always observed as shown
 - I: 24 bit device identifier
 - T: 16 bit temperature, repeated 4x, offset 900 (i.e. raw - 900), scale 10,
   degrees Fahrenheit. A disconnected probe reads a fixed sentinel value.
@@ -28,7 +28,7 @@ Data layout:
 - C: 8 bit checksum: (0x56 + id byte 0 + id byte 1 + id byte 2 +
   sum of the 8 temperature bytes) & 0xff
 - f: 144 bit fixed filler, always observed as a 00-17 (hex) counting sequence
-- S: 8 bit sequence counter, sent twice back to back, increments by 2 each repeat
+- S: 16 bits (8 bit sequence counter, sent twice), increments by 2 each repeat
 - f: 20 bit fixed filler, always observed as 00 01 f
 
 The data is then repeated nine times, back to back with no pause between one
@@ -54,6 +54,11 @@ static int en2058_sensor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned offset = 0;
 
     // A full packet may contain up to 9 repeats (not technically rows because there's no pause between them)
+
+    // \todo This is FEC, not separate transmissions.  Decode them
+    // all, check if they are the same, reject if FEC fails, and
+    // otherwise decode the FEC to one logical transmission.
+
     for (int i = 0; i < 9; i++) {
         uint8_t const preamble[] = {0xff, 0xfe, 0, 0};
         offset                   = bitbuffer_search(bitbuffer, 0, offset, preamble, 30);
@@ -61,6 +66,16 @@ static int en2058_sensor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             return DECODE_ABORT_EARLY; // no (more) preamble found
         }
         offset += 30; // skip this preamble on the next iteration
+
+        // Before decoding anything, check that all data is present,
+        // all the way through and including the fixed filler.  Omit
+        // the sequence counter and final filler because apparently
+        // the sequence counter is optional.
+        if (offset + 56 + 24 + 16 + 8 + 8 + 144 > (unsigned)bitbuffer->bits_per_row[0]) {
+            return DECODE_ABORT_LENGTH;
+        }
+
+        // \todo Extract and validate the 7 bytes of 5 * aa, 2 * ca.
 
         uint8_t id_bytes[3];
         bitbuffer_extract_bytes(bitbuffer, 0, offset + 56, id_bytes, 24);
@@ -72,9 +87,10 @@ static int en2058_sensor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t checksum = (0x56 + add_bytes(id_bytes, 3) + add_bytes(data_bytes, 8)) & 0xff;
         if (checksum != data_bytes[9]) {
             decoder_log(decoder, 1, __func__, "checksum fail");
-            continue;
+            return DECODE_FAIL_MIC;
         }
 
+        // Extract and validate the temperatures (specified range -4 to +572 F)
         uint8_t rawtemp[2];
         bitbuffer_extract_bytes(bitbuffer, 0, offset + 80, rawtemp, 16);
         temp1 = (((rawtemp[0] << 8) | rawtemp[1]) - 900) / 10.0;
@@ -84,6 +100,22 @@ static int en2058_sensor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         temp3 = (((rawtemp[0] << 8) | rawtemp[1]) - 900) / 10.0;
         bitbuffer_extract_bytes(bitbuffer, 0, offset + 80 + 48, rawtemp, 16);
         temp4 = (((rawtemp[0] << 8) | rawtemp[1]) - 900) / 10.0;
+        if (temp1 < -4.0f || temp1 > 572.0F) {
+            return DECODE_FAIL_SANITY;
+        }
+        if (temp2 < -4.0f || temp1 > 572.0F) {
+            return DECODE_FAIL_SANITY;
+        }
+        if (temp3 < -4.0f || temp1 > 572.0F) {
+            return DECODE_FAIL_SANITY;
+        }
+        if (temp4 < -4.0f || temp1 > 572.0F) {
+            return DECODE_FAIL_SANITY;
+        }
+
+        // \todo Extract and validate the fixed byte 'a'.
+
+        // \todo Extract and validate the 18 filler bytes 0x00 to 0x17.
 
         // Sequence counter, sent as a duplicated byte 304 bits past the ID/temperature/checksum
         // block, increments by 2 per repeat. Only present if this repeat wasn't cut off early.
