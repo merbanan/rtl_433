@@ -463,6 +463,17 @@ mappings = {
         }
     },
 
+    "wind_max_dir_deg": {
+        "device_type": "sensor",
+        "object_suffix": "GWD",
+        "config": {
+            "name": "Gust Direction",
+            "unit_of_measurement": "°",
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
+        }
+    },
+
     "rain_mm": {
         "device_type": "sensor",
         "object_suffix": "RT",
