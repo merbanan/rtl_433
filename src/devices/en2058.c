@@ -87,7 +87,7 @@ static int en2058_sensor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t checksum = (0x56 + add_bytes(id_bytes, 3) + add_bytes(data_bytes, 8)) & 0xff;
         if (checksum != data_bytes[9]) {
             decoder_log(decoder, 1, __func__, "checksum fail");
-            return DECODE_FAIL_MIC;
+            continue;
         }
 
         // Extract and validate the temperatures (specified range -4 to +572 F)
