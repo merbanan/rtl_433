@@ -1162,9 +1162,11 @@ static char const *const output_fields_WH25[] = {
         "uv",
         "uvi",
         "light_lux",
-        //WH0290
+        // WH0290
         "pm2_5_ug_m3",
         "estimated_pm10_0_ug_m3",
+        "family",
+        "unknown1",
         "mic",
         NULL,
 };
