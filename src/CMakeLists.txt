@@ -333,6 +333,7 @@ add_library(r_433 STATIC
     devices/oil_standard.c
     devices/oil_watchman.c
     devices/oil_watchman_advanced.c
+    devices/olympia_9571.c
     devices/omni.c
     devices/opel_mokka.c
     devices/opus_xt300.c

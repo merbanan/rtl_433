@@ -115,7 +115,8 @@ static int geevon_tx19_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char const *const output_fields[] = {
         "model",
-        "battery",
+        "id",
+        "battery_ok",
         "channel",
         "temperature_C",
         "humidity",

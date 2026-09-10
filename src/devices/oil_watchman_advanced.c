@@ -137,6 +137,7 @@ static char const *const output_fields[] = {
         "version",
         "temperature_C",
         "depth_cm",
+        "status",
         "mic",
         NULL,
 };

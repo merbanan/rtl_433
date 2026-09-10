@@ -170,11 +170,11 @@ static int tpms_bmw_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "type",
-        "alert",
         "id",
+        "alert",
         "brand",
-        "battery_ok",
         "pressure_kPa",
+        "temperature_C",
         "flags1",
         "flags2",
         "flags3",
