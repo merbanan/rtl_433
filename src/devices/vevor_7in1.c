@@ -13,7 +13,7 @@
 
 #include "decoder.h"
 
-/**
+/** @fn static int vevor_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 Vevor Wireless Weather Station 7-in-1.
 
 Manufacturer : Fujian Youtong Industries Co., Ltd. rebrand under Vevor name.
@@ -62,14 +62,6 @@ Data Layout:
 
 #define VEVOR_MESSAGE_BITLEN     264
 
-// Multi-byte values are transmitted with an offset of one applied to each
-// byte independently. Decode the bytes before combining them so a low-byte
-// wrap from 0xff to 0x00 does not borrow from the high byte.
-static int vevor_decode_offset_1(uint8_t high, uint8_t low)
-{
-    return ((uint8_t)(high - 1) << 8) | (uint8_t)(low - 1);
-}
-
 static int vevor_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // preamble is ....aaaaaaaaaacaca54
@@ -116,6 +108,17 @@ static int vevor_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             continue;
         }
 
+        // Multi-byte values are transmitted with an offset of one applied to
+        // each byte independently. uint8_t conversion wraps 0x00 to 0xff.
+        b[8]  = b[8] - 1;
+        b[9]  = b[9] - 1;
+        b[11] = b[11] - 1;
+        b[12] = b[12] - 1;
+        b[13] = b[13] - 1;
+        b[14] = b[14] - 1;
+        b[16] = b[16] - 1;
+        b[17] = b[17] - 1;
+
         //int kind        = ((b[1] & 0xf0) >> 4);
         int channel     = (b[1] & 0x0f);
         int id          = (b[2] << 8) | b[3];
@@ -126,15 +129,15 @@ static int vevor_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             int temp_raw      = (b[5] << 8) | b[6];
             float temp_c      = (temp_raw - 500) * 0.1f;
             int humidity      = b[7];
-            int wind_raw      = vevor_decode_offset_1(b[8], b[9]);
+            int wind_raw      = (b[8] << 8) | b[9];
             float speed_kmh   = wind_raw / 8.333f; // wind_raw / 30.0f for m/s
             int gust_raw      = b[10];
             float gust_kmh    = gust_raw / 1.25f; // gust_raw / 4.5f for m/s
-            int direction_deg = vevor_decode_offset_1(b[11] & 0x0f, b[12]) & 0x0fff;
-            int rain_raw      = vevor_decode_offset_1(b[13], b[14]);
+            int direction_deg = ((b[11] & 0x0f) << 8) | b[12];
+            int rain_raw      = (b[13] << 8) | b[14];
             float rain_mm     = rain_raw * 0.233f;
             int uv_index      = (b[15] & 0x1f) - 1;
-            int light_lux     = vevor_decode_offset_1(b[16], b[17]);
+            int light_lux     = (b[16] << 8) | b[17];
             int lux_multi     = (light_lux & 0x8000) >> 15;
 
             if (lux_multi == 1) {
