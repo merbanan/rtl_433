@@ -94,6 +94,26 @@ void reset_sdr_flow(r_cfg_t *cfg)
     baseband_demod_FM_reset(&demod->demod_FM_state);
 
     pulse_detect_reset(demod->pulse_detect);
+    pulse_detect_fsk_init(&demod->pulse_detect_fsk);
+}
+
+/// Run the envelope and FSK stages until a package or the buffer end is reached.
+static int detect_package(struct dm_state *demod, unsigned n_samples)
+{
+    for (;;) {
+        pulse_detect_span_t span;
+        int event = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm,
+                n_samples, demod->samp_rate, demod->input_pos, &demod->pulse_data, &span);
+        if (pulse_detect_fsk_package(&demod->pulse_detect_fsk, demod->buf.fm,
+                    &span, event, &demod->pulse_data, &demod->fsk_pulse_data, demod->fsk_pulse_detect_mode)) {
+            pulse_detect_skip_package(demod->pulse_detect);
+            return PULSE_DATA_FSK;
+        }
+        if (event == PULSE_DETECT_OOK)
+            return PULSE_DATA_OOK;
+        if (event == PULSE_DETECT_END)
+            return 0;
+    }
 }
 
 /**
@@ -238,10 +258,10 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 break;
             }
         }
+        demod->fsk_pulse_data.start_ago += n_samples;
         while (package_type && process_frame) {
             int p_events = 0; // Sensor events successfully detected per package
-            package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples,
-                    demod->samp_rate, demod->input_pos, &demod->pulse_data, &demod->fsk_pulse_data, demod->fsk_pulse_detect_mode);
+            package_type = detect_package(demod, n_samples);
             if (package_type) {
                 // new package: set a first frame start if we are not tracking one already
                 if (!demod->frame_start_ago) {
