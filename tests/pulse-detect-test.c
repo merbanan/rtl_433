@@ -80,6 +80,12 @@ static void process(detector_t *d, unsigned offset, unsigned len, result_t *resu
         if (event == PULSE_DETECT_END)
             break;
     }
+
+    // Empty buffers must leave warmup and partially received carriers intact.
+    if (d->mode == FSK_PULSE_DETECT_OLD)
+        pulse_detect_fsk_classic(&d->fsk, NULL, 0, &d->fsk_pulses);
+    else
+        pulse_detect_fsk_minmax(&d->fsk, NULL, 0, &d->fsk_pulses);
 }
 
 static void run(detector_t *d, unsigned len, unsigned chunk, result_t *result)
