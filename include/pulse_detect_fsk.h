@@ -15,11 +15,18 @@
 #define INCLUDE_PULSE_DETECT_FSK_H_
 
 #include "pulse_data.h"
+#include "pulse_detect.h"
 #include <stdint.h>
 
+/// FSK pulse detector to use.
+enum {
+    FSK_PULSE_DETECT_OLD,
+    FSK_PULSE_DETECT_NEW,
+    FSK_PULSE_DETECT_AUTO,
+    FSK_PULSE_DETECT_END,
+};
+
 /// State data for pulse_detect_fsk_ functions.
-///
-/// This should be private/opaque but the OOK pulse_detect uses this.
 typedef struct {
     unsigned int fsk_pulse_length; ///< Counter for internal FSK pulse detection
     enum {
@@ -73,5 +80,13 @@ void pulse_detect_fsk_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pulses);
 /// @param fm_n One single sample of FM data
 /// @param fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
 void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses);
+
+/// Consume one envelope event and its FM span. Returns 1 for a complete FSK
+/// package, otherwise 0. Partial spans retain state; only PULSE_DETECT_PULSE
+/// finalizes a package. PULSE_DETECT_START resets the detector and pulse data.
+/// The caller ages fsk_pulses->start_ago once per input buffer.
+int pulse_detect_fsk_package(pulse_detect_fsk_t *s, int16_t const *fm_data,
+        pulse_detect_span_t const *span, int event, pulse_data_t const *pulses,
+        pulse_data_t *fsk_pulses, unsigned fpdm);
 
 #endif /* INCLUDE_PULSE_DETECT_FSK_H_ */

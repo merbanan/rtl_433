@@ -7,6 +7,13 @@ target_link_libraries(data-test data)
 
 add_test(data-test data-test)
 
+add_executable(pulse-detect-test pulse-detect-test.c)
+target_link_libraries(pulse-detect-test r_433)
+if(UNIX)
+    target_link_libraries(pulse-detect-test m)
+endif()
+add_test(pulse-detect-test pulse-detect-test)
+
 add_executable(baseband-test baseband-test.c ../src/baseband.c ../src/logger.c)
 
 if(UNIX)

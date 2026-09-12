@@ -10,6 +10,7 @@
 #include "list.h"
 #include "baseband.h"
 #include "pulse_detect.h"
+#include "pulse_detect_fsk.h"
 #include "fileformat.h"
 #include "samp_grab.h"
 #include "am_analyze.h"
@@ -38,6 +39,7 @@ struct dm_state {
     float f32_buf[MAXIMAL_BUF_LENGTH]; // format conversion buffer
     int sample_size; // CU8: 2, CS16: 4
     pulse_detect_t *pulse_detect;
+    pulse_detect_fsk_t pulse_detect_fsk;
     filter_state_t lowpass_filter_state;
     demodfm_state_t demod_FM_state;
     int enable_FM_demod;

@@ -31,6 +31,42 @@ void pulse_detect_fsk_init(pulse_detect_fsk_t *s)
     s->skip_samples = 40;
 }
 
+int pulse_detect_fsk_package(pulse_detect_fsk_t *s, int16_t const *fm_data,
+        pulse_detect_span_t const *span, int event, pulse_data_t const *pulses,
+        pulse_data_t *fsk_pulses, unsigned fpdm)
+{
+    if (event == PULSE_DETECT_START) {
+        pulse_detect_fsk_init(s);
+        pulse_data_clear(fsk_pulses);
+        fsk_pulses->sample_rate = pulses->sample_rate;
+        fsk_pulses->offset      = pulses->offset;
+        fsk_pulses->start_ago   = pulses->start_ago;
+        return 0;
+    }
+
+    // Buffer boundaries do not terminate the carrier or restart estimation.
+    if (fpdm == FSK_PULSE_DETECT_OLD) {
+        for (unsigned i = 0; i < span->len; ++i)
+            pulse_detect_fsk_classic(s, fm_data[span->start + i], fsk_pulses);
+    }
+    else {
+        for (unsigned i = 0; i < span->len; ++i)
+            pulse_detect_fsk_minmax(s, fm_data[span->start + i], fsk_pulses);
+    }
+
+    if (event != PULSE_DETECT_PULSE || fsk_pulses->num_pulses <= PD_MIN_PULSES)
+        return 0;
+
+    if (fpdm == FSK_PULSE_DETECT_OLD)
+        pulse_detect_fsk_wrap_up(s, fsk_pulses);
+    fsk_pulses->fsk_f1_est        = s->fm_f1_est;
+    fsk_pulses->fsk_f2_est        = s->fm_f2_est;
+    fsk_pulses->ook_low_estimate  = pulses->ook_low_estimate;
+    fsk_pulses->ook_high_estimate = pulses->ook_high_estimate;
+    fsk_pulses->end_ago           = pulses->end_ago;
+    return 1;
+}
+
 void pulse_detect_fsk_classic(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses)
 {
     int const fm_f1_delta = abs(fm_n - s->fm_f1_est); // Get delta from F1 frequency estimate

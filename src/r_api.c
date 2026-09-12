@@ -158,6 +158,7 @@ void r_init_cfg(r_cfg_t *cfg)
 
     // note: this should be optional
     cfg->demod->pulse_detect = pulse_detect_create();
+    pulse_detect_fsk_init(&cfg->demod->pulse_detect_fsk);
     // initialize tables
     baseband_init();
 
