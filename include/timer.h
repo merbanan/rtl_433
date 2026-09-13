@@ -12,9 +12,26 @@
 #ifndef INCLUDE_TIMER_H_
 #define INCLUDE_TIMER_H_
 
-#include "compat_time.h"
+#ifdef _WIN32
 
-typedef struct timeval interval_timer_t;
+typedef struct unsigned long interval_timer_t;
+
+#else
+
+#include <time.h>
+typedef struct timespec interval_timer_t;
+
+#endif
+
+/// Number of seconds that have elapsed since some arbitrary time in the past.
+///
+/// Might wrap, use `monotonic_time_diff()` to calculate elapsed time.
+time_t monotonic_time(void);
+
+/// Number of seconds that have elapsed between `time0` and `time1`.
+///
+/// Accounts for possible wrap around.
+time_t monotonic_time_diff(time_t time1, time_t time0);
 
 void interval_timer_init(interval_timer_t *interval_timer);
 
