@@ -160,6 +160,12 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_invert(bitbuffer);
 
+    // reject all-zero 5 bytes #3695
+    if ((b[0] | b[1] | b[2] | b[3] | b[4]) == 0) {
+        decoder_log(decoder, 1, __func__, "all-zero 5 bytes, not valid");
+        return DECODE_ABORT_EARLY;
+    }
+
     int id = (b[0] << 8) | b[1];
     // reduce false positives
     if (id == 0xffff) {
