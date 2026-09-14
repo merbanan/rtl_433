@@ -1012,7 +1012,6 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
                 "power_W",          "Power",            DATA_FORMAT, "%d W", DATA_INT, power_w,
                 "energy_kWh",       "Energy",           DATA_FORMAT, "%.2f kWh", DATA_DOUBLE, (double)energy_kwh,
                 "mic",              "Integrity",        DATA_STRING, "CRC",
-                "mic",              "Integrity",    DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
         decoder_output_data(decoder, data);
