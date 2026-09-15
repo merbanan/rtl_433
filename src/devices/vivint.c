@@ -193,7 +193,7 @@ When OUTPUT_VIVINT_DECODE is enabled (the default), a configured or discovered
 seed is reported in `seed` as a four-character hexadecimal string along with
 the seed-discovery status fields; set it to 0 to omit them. Valid seeds and
 authentication nibbles emit the decrypted `state`, `loop1`, `tamper`, `loop2`,
-`loop3`, `battery_low`, and `heartbeat` fields. Otherwise, `data` contains the
+`loop3`, `battery_ok`, and `heartbeat` fields. Otherwise, `data` contains the
 raw payload.
 
 For example, create `vivint-defines.cmake` in the source directory to supply a
@@ -999,7 +999,7 @@ static int vivint_decode_event(r_device *decoder, uint8_t *b, int id, const char
             "tamper",       "",              DATA_COND, has_valid_flags,  DATA_INT,     tamper_bit,
             "loop2",        "",              DATA_COND, has_valid_flags,  DATA_INT,     loop2_bit,
             "loop3",        "",              DATA_COND, has_valid_flags,  DATA_INT,     loop3_bit,
-            "battery_low",  "Battery",       DATA_COND, has_valid_flags,  DATA_INT,     battery_low_bit,
+            "battery_ok",   "Battery",       DATA_COND, has_valid_flags,  DATA_INT,     !battery_low_bit,
             "heartbeat",    "",              DATA_COND, has_valid_flags,  DATA_INT,     heartbeat_bit,
             "data",         "",              DATA_COND, !has_valid_flags, DATA_STRING,  payload,
             "mic",          "Integrity",     DATA_STRING, "CRC",
@@ -1137,7 +1137,7 @@ static char const *const output_fields[] = {
         "tamper",
         "loop2",
         "loop3",
-        "battery_low",
+        "battery_ok",
         "heartbeat",
         "data",
         "battery_level",
