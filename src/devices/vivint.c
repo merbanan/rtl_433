@@ -675,6 +675,7 @@ static int vivint_decode_poweron(r_device *decoder, uint8_t *b)
     /* clang-format off */
     data_t *data = data_make(
             "id",              "TXID",          DATA_STRING, id_str,
+            "channel",         "",              DATA_INT, CHANNEL_POWERON >> 4,
             "event",           "Event",         DATA_STRING, "power_on",
             "model",           "",              DATA_STRING, model,
             "battery_level",   "",              DATA_INT, battery_level,
@@ -698,6 +699,7 @@ static int vivint_decode_battery(r_device *decoder, uint8_t *b, const char *id_s
     data_t *data = data_make(
             "model",             "",              DATA_STRING, "Vivint Security",
             "id",                "TXID",          DATA_STRING, id_str,
+            "channel",           "",              DATA_INT, CHANNEL_VIVINT >> 4,
             "event",             "Event",         DATA_STRING, "battery",
             "battery_level",     "",              DATA_INT, bat_level,
             "battery_threshold", "",              DATA_INT, bat_threshold,
@@ -713,7 +715,7 @@ static int vivint_decode_battery(r_device *decoder, uint8_t *b, const char *id_s
 /* For devices that are not yet included in this decoder.
  * If you have a device that generates this type of message,
  * consider creating an issue with some captured data */
-static int vivint_decode_unknown(r_device *decoder, uint8_t *b)
+static int vivint_decode_unknown(r_device *decoder, uint8_t *b, int channel)
 {
     char payload[21];
 
@@ -725,6 +727,7 @@ static int vivint_decode_unknown(r_device *decoder, uint8_t *b)
     data_t *data = data_make(
             "model",             "",              DATA_STRING, "Vivint Security",
             "id",                "",              DATA_STRING, "0000-000-0000",
+            "channel",           "",              DATA_INT, channel,
             "event",             "Event",         DATA_STRING, "unknown",
             "data",              "",              DATA_STRING,  payload,
             "mic",               "Integrity",     DATA_STRING, "CRC",
@@ -761,6 +764,7 @@ static int vivint_decode_mfg_boot(r_device *decoder, uint8_t *b, const char *id_
     data_t *data = data_make(
             "model",             "",              DATA_STRING, "Vivint Security",
             "id",                "TXID",          DATA_STRING, id_str,
+            "channel",           "",              DATA_INT, CHANNEL_VIVINT >> 4,
             "counter",           "",              DATA_INT,    counter,
             "event",             "Event",         DATA_STRING, "battery",
             "data",              "",              DATA_STRING,  payload,
@@ -812,6 +816,7 @@ static int vivint_decode_seed(r_device *decoder, uint8_t *b, int id, const char 
     data_t *data = data_make(
             "model",           "",              DATA_STRING, "Vivint Security",
             "id",              "TXID",          DATA_STRING, id_str,
+            "channel",         "",              DATA_INT, CHANNEL_VIVINT >> 4,
             "event",           "Event",         DATA_STRING, "seed",
             "seed",            "",              DATA_INT, seed_str,
             "mic",             "Integrity",     DATA_STRING, "CRC",
@@ -977,6 +982,7 @@ static int vivint_decode_event(r_device *decoder, uint8_t *b, int id, const char
     data_t *data = data_make(
             "model",        "",              DATA_STRING, "Vivint Security",
             "id",           "TXID",          DATA_STRING, id_str,
+            "channel",      "",              DATA_INT, CHANNEL_VIVINT >> 4,
             "counter",      "",              DATA_COND, has_valid_flags, DATA_FORMAT, "%04x", DATA_INT, counter,
 #if OUTPUT_VIVINT_DECODE
             "seed",         "",              DATA_COND, has_encrypted_flags && seed != 0xffff && seed != 0x0000, DATA_STRING, seed_str,
@@ -1105,7 +1111,7 @@ static int vivint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             }
             b[8] = b8_full;
         }
-        return vivint_decode_unknown(decoder, b);
+        return vivint_decode_unknown(decoder, b, channel);
     }
 
     return DECODE_FAIL_OTHER;
@@ -1114,6 +1120,7 @@ static int vivint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char const *const output_fields[] = {
         "model",
         "id",
+        "channel",
         "counter",
 #if OUTPUT_VIVINT_DECODE
         "seed",
@@ -1122,6 +1129,7 @@ static char const *const output_fields[] = {
         "seed_data_required",
         "seed_candidate_count",
 #endif
+        "event",
         "flags",
         "event_type",
         "state",
