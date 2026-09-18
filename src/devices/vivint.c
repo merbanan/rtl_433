@@ -65,13 +65,12 @@
 #define VIVINT_UNENCRYPTED_FLAG_BIT 0x02
 
 /* Sent with the 0xd0 packet */
-#define VIVINT_DEVICE_TYPE_V_PIR2_345    0x0a
-#define VIVINT_DEVICE_TYPE_VS_SKEY2_345  0x0b
-#define VIVINT_DEVICE_TYPE_VS_FLD001_345 0x0c
-#define VIVINT_DEVICE_TYPE_V_DW21R_345   0x0f
-/* Also the V-GB3-345 */
-#define VIVINT_DEVICE_TYPE_V_GB2_345  0x14
-#define VIVINT_DEVICE_TYPE_V_DW11_345 0x18
+#define VIVINT_DEVICE_TYPE_MD01 0x0a /* Motion detection such as V-PIR2-345/V-PIR3-345 */
+#define VIVINT_DEVICE_TYPE_KF01 0x0b /* Keyfob such as VS-SKEY2-345 */
+#define VIVINT_DEVICE_TYPE_FT01 0x0c /* Flood and freeze detection such as VS-FLD001-345 */
+#define VIVINT_DEVICE_TYPE_DW21 0x0f /* Door/window recessed sensor, V-DW21R-345 */
+#define VIVINT_DEVICE_TYPE_GB01 0x14 /* Glass break detection such as V-GB2-345/V-GB3-345 */
+#define VIVINT_DEVICE_TYPE_DW02 0x18 /* Door/window sensor such as V-DW11-345/V-DW12-345 */
 
 // Include seed and seed-discovery diagnostics in decoder output by default.
 // Define OUTPUT_VIVINT_DECODE=0 to omit these fields from emitted data.
@@ -682,24 +681,23 @@ static int vivint_decode_poweron(r_device *decoder, uint8_t *b, vivint_data_t *v
     snprintf(v->id_str, sizeof(v->id_str), "%04u-%07u", (v->id >> 20) & 0xfff, v->id & 0xfffff);
 
     switch (v->model_type) {
-    case VIVINT_DEVICE_TYPE_VS_FLD001_345:
-        v->model = "Vivint-Security VS-FLD001-345";
+    case VIVINT_DEVICE_TYPE_FT01:
+        v->model = "Vivint-Security FT01";
         break;
-    case VIVINT_DEVICE_TYPE_VS_SKEY2_345:
-        v->model = "Vivint-Security VS-SKEY2-345";
+    case VIVINT_DEVICE_TYPE_KF01:
+        v->model = "Vivint-Security KF01";
         break;
-    case VIVINT_DEVICE_TYPE_V_DW11_345:
-        /* Can also be the V-DW12-345 */
-        v->model = "Vivint-Security V-DW11-345";
+    case VIVINT_DEVICE_TYPE_DW02:
+        v->model = "Vivint-Security DW02";
         break;
-    case VIVINT_DEVICE_TYPE_V_DW21R_345:
-        v->model = "Vivint-Security V-DW21R-345";
+    case VIVINT_DEVICE_TYPE_DW21:
+        v->model = "Vivint-Security DW21";
         break;
-    case VIVINT_DEVICE_TYPE_V_GB2_345:
-        v->model = "Vivint-Security V-GBx-345";
+    case VIVINT_DEVICE_TYPE_GB01:
+        v->model = "Vivint-Security GB01";
         break;
-    case VIVINT_DEVICE_TYPE_V_PIR2_345:
-        v->model = "Vivint-Security V-PIRx-345";
+    case VIVINT_DEVICE_TYPE_MD01:
+        v->model = "Vivint-Security MD01";
         break;
     default:
         break;
@@ -932,7 +930,7 @@ static int vivint_decode_event(r_device *decoder, uint8_t *b, vivint_data_t *v)
     }
 
     if (v->has_valid_flags) {
-        /* Extract DW11 event bits (1T23BHEZ layout):
+        /* Extract event bits (1T23BHEZ layout):
                    1=loop1(7), T=tamper(6), 2=loop2(5), 3=loop3(4),
                    B=battery_low(3), H=heartbeat(2), E=Encrypted(1),
                    Z=zero(0) */
@@ -979,7 +977,7 @@ static int vivint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     vivint_data_t v;
     memset(&v, 0, sizeof(v));
-    v.model = "Vivint-Security";
+    v.model         = "";
     v.event_str     = "";
     v.decode_status = "";
     v.channel       = b[0] & 0xf0;
@@ -1026,6 +1024,9 @@ static int vivint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             ret = vivint_decode_mfg_boot(decoder, b, &v);
         }
         else if (v.event == VIVINT_EVENT_DW || v.event == VIVINT_EVENT_GB || v.event == VIVINT_EVENT_PIR || v.event == VIVINT_EVENT_FLOOD) {
+            /* It is possible that these could interpret the different loops and make more meaningful interpretations of what the loop is */
+            /* For example, GB and PIR events could provide motion=1 or glass_break=1 for loop1 */
+            /* For DW events, the DW21R uses loop1 as the reed and the DW11 uses loop2 for the reed. They both send the same event. */
             ret = vivint_decode_event(decoder, b, &v);
         }
         else {
@@ -1065,7 +1066,7 @@ static int vivint_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (ret > 0) {
         /* clang-format off */
         data_t *data = data_make(
-            "model",                "Model",                  DATA_STRING, v.model,
+            "model",                "Model",                  DATA_STRING, v.has_exact_model ? v.model : "Vivint-Security",
             "model_id",             "",                       DATA_COND,   v.has_exact_model,       DATA_INT, v.model_type,
             "event",                "Event",                  DATA_STRING, v.event_str,
             "event_type",           "",                       DATA_FORMAT, "%02x", DATA_INT, v.event,
