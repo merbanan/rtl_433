@@ -135,10 +135,10 @@ static int neptune_r900_decode_common(r_device *decoder, bitbuffer_t *bitbuffer,
      * 1001 -> 5
     */
     // create a pair of char bit array of '0' and '1' for each base6 byte
-    for (uint8_t k = start_pos+preamble_length; k < start_pos + preamble_length + 168; k=k+8) {
-        uint8_t byte = bitrow_get_byte(bb, k);
+    for (unsigned k = start_pos + preamble_length; k < start_pos + preamble_length + 168; k = k + 8) {
+        uint8_t byte   = bitrow_get_byte(bb, k);
         int highNibble = map16to6[(byte >> 4 & 0xF)];
-        int lowNibble = map16to6[(byte & 0xF)];
+        int lowNibble  = map16to6[(byte & 0xF)];
 
         if (highNibble < 0 || lowNibble < 0)
             return DECODE_ABORT_EARLY;

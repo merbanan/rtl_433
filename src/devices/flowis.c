@@ -68,6 +68,9 @@ static int flowis_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t len;
     bitbuffer_extract_bytes(bitbuffer, row, start_pos + sizeof (preamble) * 8, &len, 8);
 
+    if (start_pos + sizeof(preamble) * 8 + (len + 2) * 8 > bitbuffer->bits_per_row[row]) {
+        return DECODE_ABORT_LENGTH; // truncated message
+    }
 
     uint8_t frame[256+2+1] = {0}; // uint8_t max bytes + 2 bytes crc + 1 length byte
     frame[0] = len;
