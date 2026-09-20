@@ -1080,9 +1080,16 @@ Side effects are:
 - stats printing
 - hop on events.
 - quit on events.
+
+NOTE: this handler might be called while already in `r_free_cfg()`.
 */
 static void process_sdr_frame(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
 {
+    // Abort if no demod is running
+    if (!cfg->demod) {
+        return;
+    }
+
     // Clip frame length and exit if requested
     if ((cfg->bytes_to_read > 0) && (cfg->bytes_to_read <= len)) {
         len = cfg->bytes_to_read;
