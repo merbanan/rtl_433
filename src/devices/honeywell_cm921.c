@@ -93,26 +93,16 @@ static void decode_device_id(const uint8_t device_id[3], char *buf, size_t buf_s
 }
 */
 
-static uint8_t next(const uint8_t *bb, unsigned *ipos, unsigned num_bytes)
-{
-    uint8_t r = bitrow_get_byte(bb, *ipos);
-    *ipos += 8;
-    if (*ipos >= num_bytes * 8) {
-        return DECODE_FAIL_SANITY;
-    }
-    return r;
-}
-
 static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
 {
     if (!bmsg || row >= bmsg->num_rows || bmsg->bits_per_row[row] < 8) {
         return DECODE_ABORT_LENGTH;
     }
 
-    unsigned num_bytes = bmsg->bits_per_row[0]/8;
-    unsigned num_bits = bmsg->bits_per_row[0];
-    unsigned ipos = 0;
-    const uint8_t *bb = bmsg->bb[row];
+    unsigned num_bytes = bmsg->bits_per_row[0] / 8;
+    unsigned num_bits  = bmsg->bits_per_row[0];
+    unsigned ipos      = 0;
+    const uint8_t *bb  = bmsg->bb[row];
     memset(msg, 0, sizeof(message_t));
 
     // Checksum: All bytes add up to 0.
@@ -124,7 +114,8 @@ static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
         return DECODE_FAIL_MIC;
     }
 
-    msg->header = next(bb, &ipos, num_bytes);
+    msg->header = bitrow_get_byte(bb, ipos);
+    ipos += 8;
 
     msg->num_device_ids = msg->header == 0x14 ? 1 :
                           msg->header == 0x18 ? 2 :
@@ -135,15 +126,23 @@ static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
 
     for (unsigned i = 0; i < msg->num_device_ids; i++) {
         for (unsigned j = 0; j < 3; j++) {
-            msg->device_id[i][j] = next(bb, &ipos, num_bytes);
+            msg->device_id[i][j] = bitrow_get_byte(bb, ipos);
+            ipos += 8;
         }
     }
 
-    msg->command = (next(bb, &ipos, num_bytes) << 8) | next(bb, &ipos, num_bytes);
-    msg->payload_length = next(bb, &ipos, num_bytes);
+    msg->command = (bitrow_get_byte(bb, ipos) << 8) | bitrow_get_byte(bb, ipos + 8);
+    ipos += 16;
+    msg->payload_length = bitrow_get_byte(bb, ipos);
+    ipos += 8; // ipos == 56 == 7*8 here
+
+    if (msg->payload_length + 8 > num_bytes) {
+        return DECODE_ABORT_LENGTH; // truncated message
+    }
 
     for (unsigned i = 0; i < msg->payload_length; i++) {
-        msg->payload[i] = next(bb, &ipos, num_bytes);
+        msg->payload[i] = bitrow_get_byte(bb, ipos);
+        ipos += 8;
     }
 
     if (ipos < num_bits - 8) {
