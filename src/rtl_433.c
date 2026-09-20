@@ -1943,6 +1943,7 @@ int main(int argc, char **argv) {
     if (cfg->exit_code >= 0) {
         r = cfg->exit_code;
     }
+    close_dumpers(cfg);
     r_free_cfg(cfg);
 
     return r >= 0 ? r : -r;

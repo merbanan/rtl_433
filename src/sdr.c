@@ -940,7 +940,7 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, char const *dev_query, int verbos
         dev->fullScale = 32768.0; // assume max for SOAPY_SDR_CS16
     }
     else if (supports_cf32) {
-        // native CF32 or forced CF32
+        // native CF32 or forced CF32, e.g. RedPitaya
         selected_format    = SOAPY_SDR_CF32;
         dev->sample_size   = sizeof(float) * 2; // CF32
         dev->sample_signed = 1;
