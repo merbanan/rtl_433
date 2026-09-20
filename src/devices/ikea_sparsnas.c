@@ -9,7 +9,7 @@
 /** @fn int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 IKEA Sparsnäs Energy Meter Monitor.
 
-@attention stateful
+\attention stateful
 This decoder has an internal state that may change between invocations and influence the output.
 The sensor ID is discovered via brute-force decryption on the first packet and cached in a static variable for subsequent invocations.
 
