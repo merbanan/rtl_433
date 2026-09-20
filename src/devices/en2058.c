@@ -42,11 +42,6 @@ Verified against real captures in https://github.com/merbanan/rtl_433_tests/pull
 
 static int en2058_sensor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    float temp1 = 0.0f;
-    float temp2 = 0.0f;
-    float temp3 = 0.0f;
-    float temp4 = 0.0f;
-
     if (bitbuffer->num_rows != 1 || bitbuffer->bits_per_row[0] < 174) {
         return DECODE_ABORT_LENGTH;
     }
@@ -90,26 +85,35 @@ static int en2058_sensor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             continue;
         }
 
-        // Extract and validate the temperatures (specified range -4 to +572 F)
+        // Extract and validate the temperatures (specified range -4 to +572 F and 0x00c8 (-70 F) sentinel)
         uint8_t rawtemp[2];
         bitbuffer_extract_bytes(bitbuffer, 0, offset + 80, rawtemp, 16);
-        temp1 = (((rawtemp[0] << 8) | rawtemp[1]) - 900) / 10.0;
+        int temp1_raw = (rawtemp[0] << 8) | rawtemp[1];
+        float temp1 = (temp1_raw - 900) * 0.1f;
+
         bitbuffer_extract_bytes(bitbuffer, 0, offset + 80 + 16, rawtemp, 16);
-        temp2 = (((rawtemp[0] << 8) | rawtemp[1]) - 900) / 10.0;
+        int temp2_raw = (rawtemp[0] << 8) | rawtemp[1];
+        float temp2 = (temp2_raw - 900) * 0.1f;
+
         bitbuffer_extract_bytes(bitbuffer, 0, offset + 80 + 32, rawtemp, 16);
-        temp3 = (((rawtemp[0] << 8) | rawtemp[1]) - 900) / 10.0;
+        int temp3_raw = (rawtemp[0] << 8) | rawtemp[1];
+        float temp3 = (temp3_raw - 900) * 0.1f;
+
         bitbuffer_extract_bytes(bitbuffer, 0, offset + 80 + 48, rawtemp, 16);
-        temp4 = (((rawtemp[0] << 8) | rawtemp[1]) - 900) / 10.0;
-        if (temp1 < -4.0f || temp1 > 572.0F) {
+        int temp4_raw = (rawtemp[0] << 8) | rawtemp[1];
+        float temp4 = (temp4_raw - 900) * 0.1f;
+
+        // Assume values below 0x100 are status codes, 0x00c8 is "disconnected"
+        if (temp1_raw >= 0xff && (temp1 < -4.0f || temp1 > 572.0F)) {
             return DECODE_FAIL_SANITY;
         }
-        if (temp2 < -4.0f || temp1 > 572.0F) {
+        if (temp2_raw >= 0xff && (temp2 < -4.0f || temp1 > 572.0F)) {
             return DECODE_FAIL_SANITY;
         }
-        if (temp3 < -4.0f || temp1 > 572.0F) {
+        if (temp3_raw >= 0xff && (temp3 < -4.0f || temp1 > 572.0F)) {
             return DECODE_FAIL_SANITY;
         }
-        if (temp4 < -4.0f || temp1 > 572.0F) {
+        if (temp4_raw >= 0xff && (temp4 < -4.0f || temp1 > 572.0F)) {
             return DECODE_FAIL_SANITY;
         }
 
@@ -131,10 +135,10 @@ static int en2058_sensor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data_t *data = data_make(
                 "model",            "",             DATA_STRING, "EN2058",
                 "id",               "",             DATA_INT,    id,
-                "temperature1_F",   "Temperature 1",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp1,
-                "temperature2_F",   "Temperature 2",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp2,
-                "temperature3_F",   "Temperature 3",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp3,
-                "temperature4_F",   "Temperature 4",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp4,
+                "temperature_1_F",   "Temperature 1",   DATA_COND, temp1_raw != 0x00c8, DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp1,
+                "temperature_2_F",   "Temperature 2",   DATA_COND, temp2_raw != 0x00c8, DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp2,
+                "temperature_3_F",   "Temperature 3",   DATA_COND, temp3_raw != 0x00c8, DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp3,
+                "temperature_4_F",   "Temperature 4",   DATA_COND, temp4_raw != 0x00c8, DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp4,
                 "sequence",         "Sequence",     DATA_COND, has_sequence, DATA_INT, sequence,
                 "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
                 NULL);
