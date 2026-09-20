@@ -134,9 +134,9 @@ static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
     msg->command = (bitrow_get_byte(bb, ipos) << 8) | bitrow_get_byte(bb, ipos + 8);
     ipos += 16;
     msg->payload_length = bitrow_get_byte(bb, ipos);
-    ipos += 8; // ipos == 56 == 7*8 here
+    ipos += 8; // ipos == 56(7*8) or 88(11*8) here
 
-    if (msg->payload_length + 8 > num_bytes) {
+    if (ipos / 8 + msg->payload_length + 1 > num_bytes) {
         return DECODE_ABORT_LENGTH; // truncated message
     }
 
