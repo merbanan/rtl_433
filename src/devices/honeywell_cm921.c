@@ -48,8 +48,6 @@ typedef struct {
     uint16_t command;
     uint8_t payload_length;
     uint8_t payload[256];
-    uint8_t unparsed_length;
-    uint8_t unparsed[256];
     uint8_t crc;
 } message_t;
 
@@ -100,10 +98,10 @@ static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
     }
 
     unsigned num_bytes = bmsg->bits_per_row[0] / 8;
-    unsigned num_bits  = bmsg->bits_per_row[0];
     unsigned ipos      = 0;
     const uint8_t *bb  = bmsg->bb[row];
-    memset(msg, 0, sizeof(message_t));
+
+    *msg = (message_t){0};
 
     // Checksum: All bytes add up to 0.
     int bsum = add_bytes(bb, num_bytes) & 0xff;
@@ -114,8 +112,7 @@ static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
         return DECODE_FAIL_MIC;
     }
 
-    msg->header = bitrow_get_byte(bb, ipos);
-    ipos += 8;
+    msg->header = bb[ipos++];
 
     msg->num_device_ids = msg->header == 0x14 ? 1 :
                           msg->header == 0x18 ? 2 :
@@ -126,31 +123,21 @@ static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
 
     for (unsigned i = 0; i < msg->num_device_ids; i++) {
         for (unsigned j = 0; j < 3; j++) {
-            msg->device_id[i][j] = bitrow_get_byte(bb, ipos);
-            ipos += 8;
+            msg->device_id[i][j] = bb[ipos++];
         }
     }
 
-    msg->command = (bitrow_get_byte(bb, ipos) << 8) | bitrow_get_byte(bb, ipos + 8);
-    ipos += 16;
-    msg->payload_length = bitrow_get_byte(bb, ipos);
-    ipos += 8; // ipos == 56(7*8) or 88(11*8) here
+    msg->command = (bb[ipos] << 8) | bb[ipos + 1];
+    ipos += 2;
+    msg->payload_length = bb[ipos++];
 
-    if (ipos / 8 + msg->payload_length + 1 > num_bytes) {
+    // ipos == 56(7*8) or 88(11*8) here, plus one crc byte at the end
+    if (ipos + msg->payload_length + 1 > num_bytes) {
         return DECODE_ABORT_LENGTH; // truncated message
     }
 
     for (unsigned i = 0; i < msg->payload_length; i++) {
-        msg->payload[i] = bitrow_get_byte(bb, ipos);
-        ipos += 8;
-    }
-
-    if (ipos < num_bits - 8) {
-        unsigned num_unparsed_bits = (bmsg->bits_per_row[row] - 8) - ipos;
-        msg->unparsed_length = (num_unparsed_bits + 7) / 8;
-        if (msg->unparsed_length != 0) {
-            bitbuffer_extract_bytes(bmsg, row, ipos, msg->unparsed, num_unparsed_bits);
-        }
+        msg->payload[i] = bb[ipos++];
     }
 
     return ipos;
@@ -427,7 +414,6 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t cmd[2] = {msg.command >> 8, msg.command & 0x00FF};
     data = data_hex(data, "Command", "", NULL, cmd, 2, tstr);
     data = data_hex(data, "Payload", "", NULL, msg.payload, msg.payload_length, tstr);
-    data = data_hex(data, "Unparsed", "", NULL, msg.unparsed, msg.unparsed_length, tstr);
     data = data_hex(data, "CRC", "", NULL, &msg.crc, 1, tstr);
     data = data_int(data, "# man errors", "", NULL, man_errors);
 #endif
@@ -449,7 +435,6 @@ static char const *const output_fields[] = {
         "Header",
         "Command",
         "Payload",
-        "Unparsed",
         "CRC",
         "# man errors",
 #endif
