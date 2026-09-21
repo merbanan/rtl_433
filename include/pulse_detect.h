@@ -24,13 +24,19 @@ enum package_types {
     PULSE_DATA_FSK = 2,
 };
 
-/// FSK pulse detector to use.
-enum {
-    FSK_PULSE_DETECT_OLD,
-    FSK_PULSE_DETECT_NEW,
-    FSK_PULSE_DETECT_AUTO,
-    FSK_PULSE_DETECT_END,
+/// Envelope detector events, independent of the modulation inside a pulse.
+enum pulse_detect_events {
+    PULSE_DETECT_END,   ///< Input buffer consumed; the package may be incomplete.
+    PULSE_DETECT_OOK,   ///< Complete envelope pulse train.
+    PULSE_DETECT_START, ///< New envelope package; reset downstream detectors.
+    PULSE_DETECT_PULSE, ///< Confirmed gap, or end-of-input while inside a pulse.
 };
+
+/// Newly consumed samples of the first carrier pulse, including short gaps.
+typedef struct {
+    unsigned start; ///< Index in the current input buffer.
+    unsigned len;   ///< Sample count; never extends beyond the current buffer.
+} pulse_detect_span_t;
 
 typedef struct pulse_detect pulse_detect_t;
 
@@ -40,6 +46,10 @@ void pulse_detect_free(pulse_detect_t *pulse_detect);
 
 /// Reset pulse detector to initial values.
 void pulse_detect_reset(pulse_detect_t *pulse_detect);
+
+/// Accept a carrier package at PULSE_DETECT_PULSE and discard its OOK envelope.
+/// Preserves level estimates and resumes at the gap boundary in the same buffer.
+void pulse_detect_skip_package(pulse_detect_t *pulse_detect);
 
 /// Set pulse detector level values.
 ///
@@ -51,23 +61,23 @@ void pulse_detect_reset(pulse_detect_t *pulse_detect);
 /// @param verbosity Debug output verbosity, 0=None, 1=Levels, 2=Histograms
 void pulse_detect_set_levels(pulse_detect_t *pulse_detect, int use_mag_est, float fixed_high_level, float min_high_level, float high_low_ratio, int verbosity);
 
-/// Demodulate On/Off Keying (OOK) and Frequency Shift Keying (FSK) from an envelope signal.
+/// Detect an OOK envelope and expose carrier spans for downstream demodulation.
 ///
-/// Function is stateful and can be called with chunks of input data.
+/// Call repeatedly with the same buffer until PULSE_DETECT_END is returned.
+/// Process span even on PULSE_DETECT_END, retaining downstream state between
+/// buffers. Pass len=0 to flush at end-of-input. At PULSE_DETECT_PULSE a caller
+/// may accept another modulation with pulse_detect_skip_package(), otherwise
+/// the next call continues building the OOK package.
 ///
 /// @param pulse_detect The pulse_detect instance
 /// @param envelope_data Samples with amplitude envelope of carrier
-/// @param fm_data Samples with frequency offset from center frequency
+/// @param fm_data Frequency samples used only for the OOK carrier estimate
 /// @param len Number of samples in input buffers
 /// @param samp_rate Sample rate in samples per second
 /// @param sample_offset Offset tracking for ringbuffer
 /// @param[in,out] pulses Will return a pulse_data_t structure
-/// @param[in,out] fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
-/// @param fpdm Index of filter setting to use
-/// @return if a package is detected
-/// @retval 0 all input sample data is processed
-/// @retval 1 OOK package is detected (but all sample data is still not completely processed)
-/// @retval 2 FSK package is detected (but all sample data is still not completely processed)
-int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses, unsigned fpdm);
+/// @param[out] span Newly consumed samples of the first carrier pulse
+/// @return An enum pulse_detect_events value
+int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_detect_span_t *span);
 
 #endif /* INCLUDE_PULSE_DETECT_H_ */
