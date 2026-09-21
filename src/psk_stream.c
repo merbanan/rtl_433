@@ -1,7 +1,7 @@
 /** @file
     Streaming raw-IQ support for PSK demodulation.
 
-    Copyright (C) 2026
+    Copyright (C) 2026 Kim Bloxsom
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

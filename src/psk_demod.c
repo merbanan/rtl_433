@@ -1,3 +1,14 @@
+/** @file
+    PSK candidate detection and differential BPSK demodulation.
+
+    Copyright (C) 2026 Kim Bloxsom
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+
 #include "psk_demod.h"
 
 #include <math.h>
@@ -408,7 +419,7 @@ static int demod_bits(
         return 0;
     }
 
-    cumulative = malloc((count + 1) * sizeof(*cumulative));
+    cumulative = calloc(count + 1, sizeof(*cumulative));
     if (!cumulative) {
         free(mixed);
         return 0;
@@ -469,6 +480,12 @@ static int demod_bits(
 
         if (start < 0) {
             start = 0;
+        }
+        if (start > (long)count) {
+            start = (long)count;
+        }
+        if (end < 0) {
+            end = 0;
         }
         if (end > (long)count) {
             end = (long)count;

@@ -1,7 +1,7 @@
 /** @file
     La Crosse TX63U-IT solar wind sensor.
 
-    Copyright (C) 2026
+    Copyright (C) 2026 Kim Bloxsom
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -265,9 +265,7 @@ int lacrosse_tx63_validate(
     return tx63_find_frame(bitbuffer, frame);
 }
 
-static int lacrosse_tx63_decode(
-        r_device *decoder,
-        bitbuffer_t *bitbuffer)
+static int lacrosse_tx63_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t frame[TX63_FRAME_BYTES];
     unsigned direction_code;

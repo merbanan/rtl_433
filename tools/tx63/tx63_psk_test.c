@@ -1,6 +1,13 @@
 /*
  * TX63U-IT standalone PSK demodulation proof-of-concept
  *
+ * Copyright (C) 2026 Kim Bloxsom
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
  * Port of the working Python decoder used for La Crosse TX63U-IT / FCC OMO-M-12.
  * This file is intentionally isolated from rtl_433 core. It reads CU8 I/Q files,
  * detects the ~36 kHz phase-signature sidebands, differentially demodulates the
