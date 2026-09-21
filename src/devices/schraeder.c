@@ -80,11 +80,13 @@ static int schraeder_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
-TPMS Model: Schrader Electronics EG53MA4.
+TPMS Model: Schrader Electronics EG53MA4, AG6SP4
 Contributed by: Leonardo Hamada (hkazu).
 
 Also Schrader Opel OEM No. 13348393 TPMS Sensor (might be found in Saab, Opel, Vauxhall, Chevrolet).
 GM (Chevrolet) OEM No. 13540600 for 2006-2025 GM.
+GM 13581558 314.9 MHz
+GM 13598773 433 MHz
 
 Probable packet payload:
 
@@ -108,13 +110,20 @@ static int schrader_EG53MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int pressure;    // mbar
     int temperature; // degree Fahrenheit
     int checksum;
+    uint8_t const preamble[] = {0x4c, 0x90};
+    int pos = 0;
+    const int packet_bits_len = 80;
 
     // Check for incorrect number of bits received
-    if (bitbuffer->bits_per_row[0] != 120)
+    if (bitbuffer->bits_per_row[0] < packet_bits_len)
         return DECODE_ABORT_LENGTH;
 
-    // Discard the first 40 bits
-    bitbuffer_extract_bytes(bitbuffer, 0, 40, b, 80);
+    pos = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble)*8);
+    if (pos + packet_bits_len > bitbuffer->bits_per_row[0]) {
+        return DECODE_ABORT_EARLY;
+    }
+
+    bitbuffer_extract_bytes(bitbuffer, 0, pos, b, packet_bits_len);
 
     // No need to decode/extract values for simple test
     // check serial flags pressure temperature value not zero
