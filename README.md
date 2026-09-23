@@ -106,7 +106,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [04]  Waveman Switch Transmitter
     [06]* ELV EM 1000
     [07]* ELV WS 2000
-    [08]  LaCrosse TX Temperature / Humidity Sensor
+    [08]  LaCrosse TX Temperature / Humidity Sensor, TX5U rain gauge
     [10]  Acurite 896 Rain Gauge
     [11]  Acurite 609TXC Temperature and Humidity Sensor
     [12]  Oregon Scientific Weather Sensor
