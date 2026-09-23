@@ -839,11 +839,43 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
     data_free(data);
 }
 
-// level 0: do not report (don't call this), 1: report successful devices, 2: report active devices, 3: report all
+// Report builder levels:
+// 0: aggregates only (internal; e.g. RPC get_stats arg=summary)
+// 1: successful devices
+// 2: active devices
+// 3: all devices
+//
+// Periodic -M stats:0 still means reporting disabled; those callers never
+// invoke this builder when report_stats is 0.
 data_t *create_report_data(r_cfg_t *cfg, int level)
 {
     list_t *r_devs = &cfg->demod->r_devs;
     data_t *data;
+    data_t *frames;
+    data_t *report;
+    char since_str[LOCAL_TIME_BUFLEN];
+
+    frames = data_make(
+            "count",            "", DATA_INT, cfg->demod->frames_ook,
+            "fsk",              "", DATA_INT, cfg->demod->frames_fsk,
+            "events",           "", DATA_INT, cfg->demod->frames_events,
+            NULL);
+
+    format_time_str(since_str, "%Y-%m-%dT%H:%M:%S", cfg->report_time_tz, cfg->demod->frames_since);
+
+    report = data_make(
+            "enabled",          "", DATA_INT, r_devs->len,
+            "since",            "", DATA_STRING, since_str,
+            "frames",           "", DATA_DATA, frames,
+            NULL);
+
+    if (!report)
+        return NULL;
+
+    // Aggregate-only representation: no per-decoder stats list.
+    if (level == 0)
+        return report;
+
     list_t dev_data_list = {0};
     list_ensure_size(&dev_data_list, r_devs->len);
 
@@ -878,24 +910,24 @@ data_t *create_report_data(r_cfg_t *cfg, int level)
         list_push(&dev_data_list, data);
     }
 
-    data = data_make(
-            "count",            "", DATA_INT, cfg->demod->frames_ook,
-            "fsk",              "", DATA_INT, cfg->demod->frames_fsk,
-            "events",           "", DATA_INT, cfg->demod->frames_events,
-            NULL);
+    data_array_t *arr = data_array((int)dev_data_list.len, DATA_DATA, dev_data_list.elems);
+    if (!arr) {
+        // Keep the aggregate root; free decoder rows still owned by the list.
+        list_free_elems(&dev_data_list, (list_elem_free_fn)data_free);
+        return report;
+    }
 
-    char since_str[LOCAL_TIME_BUFLEN];
-    format_time_str(since_str, "%Y-%m-%dT%H:%M:%S", cfg->report_time_tz, cfg->demod->frames_since);
-
-    data = data_make(
-            "enabled",          "", DATA_INT, r_devs->len,
-            "since",            "", DATA_STRING, since_str,
-            "frames",           "", DATA_DATA, data,
-            "stats",            "", DATA_ARRAY, data_array((int)dev_data_list.len, DATA_DATA, dev_data_list.elems),
-            NULL);
+    // data_ary takes ownership of arr (and thus the decoder data_t * rows).
+    // On failure it frees report and arr; do not free the rows again.
+    data = data_ary(report, "stats", "", NULL, arr);
+    if (!data) {
+        list_free_elems(&dev_data_list, NULL);
+        return NULL;
+    }
+    report = data;
 
     list_free_elems(&dev_data_list, NULL);
-    return data;
+    return report;
 }
 
 void flush_report_data(r_cfg_t *cfg)
