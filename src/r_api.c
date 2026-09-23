@@ -850,45 +850,47 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
 data_t *create_report_data(r_cfg_t *cfg, int level)
 {
     list_t *r_devs = &cfg->demod->r_devs;
-    data_t *data;
-    data_t *frames;
-    data_t *report;
-    char since_str[LOCAL_TIME_BUFLEN];
 
-    frames = data_make(
+    data_t *frames = data_make(
             "count",            "", DATA_INT, cfg->demod->frames_ook,
             "fsk",              "", DATA_INT, cfg->demod->frames_fsk,
             "events",           "", DATA_INT, cfg->demod->frames_events,
             NULL);
 
+    char since_str[LOCAL_TIME_BUFLEN];
     format_time_str(since_str, "%Y-%m-%dT%H:%M:%S", cfg->report_time_tz, cfg->demod->frames_since);
 
-    report = data_make(
+    data_t *report = data_make(
             "enabled",          "", DATA_INT, r_devs->len,
             "since",            "", DATA_STRING, since_str,
             "frames",           "", DATA_DATA, frames,
             NULL);
 
-    if (!report)
+    if (!report) {
         return NULL;
+    }
 
     // Aggregate-only representation: no per-decoder stats list.
-    if (level == 0)
+    if (level == 0) {
         return report;
+    }
 
     list_t dev_data_list = {0};
     list_ensure_size(&dev_data_list, r_devs->len);
 
     for (void **iter = r_devs->elems; iter && *iter; ++iter) {
         r_device *r_dev = *iter;
-        if (level <= 2 && r_dev->decode_events == 0)
+        if (level <= 2 && r_dev->decode_events == 0) {
             continue;
-        if (level <= 1 && r_dev->decode_ok == 0)
+        }
+        if (level <= 1 && r_dev->decode_ok == 0) {
             continue;
-        if (level <= 0)
+        }
+        if (level <= 0) {
             continue;
+        }
 
-        data = data_make(
+        data_t *data = data_make(
                 "device",       "", DATA_INT, r_dev->protocol_num,
                 "name",         "", DATA_STRING, r_dev->name,
                 "events",       "", DATA_INT, r_dev->decode_events,
@@ -896,16 +898,21 @@ data_t *create_report_data(r_cfg_t *cfg, int level)
                 "messages",     "", DATA_INT, r_dev->decode_messages,
                 NULL);
 
-        if (r_dev->decode_fails[-DECODE_FAIL_OTHER])
+        if (r_dev->decode_fails[-DECODE_FAIL_OTHER]) {
             data = data_int(data, "fail_other",   "", NULL, r_dev->decode_fails[-DECODE_FAIL_OTHER]);
-        if (r_dev->decode_fails[-DECODE_ABORT_LENGTH])
+        }
+        if (r_dev->decode_fails[-DECODE_ABORT_LENGTH]) {
             data = data_int(data, "abort_length", "", NULL, r_dev->decode_fails[-DECODE_ABORT_LENGTH]);
-        if (r_dev->decode_fails[-DECODE_ABORT_EARLY])
+        }
+        if (r_dev->decode_fails[-DECODE_ABORT_EARLY]) {
             data = data_int(data, "abort_early",  "", NULL, r_dev->decode_fails[-DECODE_ABORT_EARLY]);
-        if (r_dev->decode_fails[-DECODE_FAIL_MIC])
+        }
+        if (r_dev->decode_fails[-DECODE_FAIL_MIC]) {
             data = data_int(data, "fail_mic",     "", NULL, r_dev->decode_fails[-DECODE_FAIL_MIC]);
-        if (r_dev->decode_fails[-DECODE_FAIL_SANITY])
+        }
+        if (r_dev->decode_fails[-DECODE_FAIL_SANITY]) {
             data = data_int(data, "fail_sanity",  "", NULL, r_dev->decode_fails[-DECODE_FAIL_SANITY]);
+        }
 
         list_push(&dev_data_list, data);
     }
@@ -919,12 +926,11 @@ data_t *create_report_data(r_cfg_t *cfg, int level)
 
     // data_ary takes ownership of arr (and thus the decoder data_t * rows).
     // On failure it frees report and arr; do not free the rows again.
-    data = data_ary(report, "stats", "", NULL, arr);
-    if (!data) {
+    report = data_ary(report, "stats", "", NULL, arr);
+    if (!report) {
         list_free_elems(&dev_data_list, NULL);
         return NULL;
     }
-    report = data;
 
     list_free_elems(&dev_data_list, NULL);
     return report;
