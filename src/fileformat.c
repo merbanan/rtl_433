@@ -43,7 +43,7 @@ void file_info_clear(file_info_t *info)
     }
 }
 
-void file_info_check_read(file_info_t *info)
+void file_info_check_read(file_info_t const *info)
 {
     if (info->format != CU8_IQ
             && info->format != CS8_IQ
@@ -56,7 +56,7 @@ void file_info_check_read(file_info_t *info)
     }
 }
 
-void file_info_check_write(file_info_t *info)
+void file_info_check_write(file_info_t const *info)
 {
     if (info->format != CU8_IQ
             && info->format != CS8_IQ
@@ -75,7 +75,7 @@ void file_info_check_write(file_info_t *info)
     }
 }
 
-char const *file_info_string(file_info_t *info)
+char const *file_info_string(file_info_t const *info)
 {
     switch (info->format) {
     case CU8_IQ:    return "CU8 IQ (2ch uint8)";
@@ -94,7 +94,30 @@ char const *file_info_string(file_info_t *info)
     }
 }
 
-char const *file_info_to_sigmf_type(file_info_t *info)
+char const *file_info_to_ext(file_info_t const *info)
+{
+    if (info->container == FILEFMT_SIGMF) {
+        return "sigmf";
+    }
+    switch (info->format) {
+    case CU8_IQ: return "cu8";
+    case CS8_IQ: return "cs8";
+    case S16_AM: return "am.s16";
+    case S16_FM: return "fm.s16";
+    case CS16_IQ: return "cs16";
+    case CF32_IQ: return "cf32";
+    case F32_AM: return "am.f32";
+    case F32_FM: return "fm.f32";
+    case F32_I: return "i.f32";
+    case F32_Q: return "q.f32";
+    case U8_LOGIC: return "logic.u8";
+    case VCD_LOGIC: return "vcd";
+    case PULSE_OOK: return "ook";
+    default: return "unknown";
+    }
+}
+
+char const *file_info_to_sigmf_type(file_info_t const *info)
 {
     switch (info->format) {
     case CU8_IQ:    return "cu8";

@@ -1098,34 +1098,70 @@ void add_sr_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
     cfg->sr_execopen = overwrite;
 }
 
+// Construct a file name if no base filename given
+static void generate_dumper_path(r_cfg_t *cfg, file_info_t const *dumper, char *path, unsigned path_size)
+{
+    char const *datatype = file_info_to_ext(dumper);
+    uint32_t freq_hz     = (cfg->frequencies == 0) ? DEFAULT_FREQUENCY : cfg->frequency[0];
+    double freq_mhz      = freq_hz / 1000000.0;
+    double rate_khz      = cfg->samp_rate / 1000.0;
+    for (unsigned cnt = 1;; ++cnt) {
+        // TODO: maybe use something like format_time_str(...);
+        snprintf(path, path_size, "rec%03u_%gM_%gk.%s", cnt, freq_mhz, rate_khz, datatype);
+        if (access(path, F_OK) == -1) {
+            break;
+        }
+    }
+}
+
 void reopen_dumpers(struct r_cfg *cfg)
 {
 #ifndef _WIN32
     for (void **iter = cfg->demod->dumper.elems; iter && *iter; ++iter) {
         file_info_t *dumper = *iter;
         if (dumper->file && (dumper->file != stdout)) {
+            // Construct a file name if no base filename given
+            char path_tmp[64]       = {0};
+            char const *dumper_path = dumper->path;
+            if (!dumper->path || !*dumper->path) {
+                generate_dumper_path(cfg, dumper, path_tmp, sizeof(path_tmp));
+                dumper_path = path_tmp;
+            }
+
             // Get current file inode
             struct stat old_st = {0};
             int ret = fstat(fileno(dumper->file), &old_st);
             if (ret) {
-                fprintf(stderr, "Failed to fstat %s (%d)\n", dumper->path, errno);
+                fprintf(stderr, "Failed to fstat %s (%d)\n", dumper_path, errno);
                 exit(1);
             }
 
             // Get new path inode if available
             struct stat new_st = {0};
-            stat(dumper->path, &new_st);
+            stat(dumper_path, &new_st);
             // ok for stat() to fail, the file might not exist
             if (old_st.st_ino == new_st.st_ino) {
                 continue;
             }
 
             // Reopen the file
-            print_logf(LOG_INFO, "Dumper", "Reopening \"%s\"", dumper->path);
-            fclose(dumper->file);
-            dumper->file = fopen(dumper->path, "wb");
+            print_logf(LOG_INFO, "Dumper", "Reopening \"%s\"", dumper_path);
+            if (dumper->container == FILEFMT_SIGMF) {
+                sigmf_t *sigmf =(sigmf_t *)dumper->file_aux;
+                sigmf_writer_close(sigmf);
+                int r = sigmf_writer_open(sigmf, dumper_path, 0);
+                if (r) {
+                    fprintf(stderr, "Failed to open %s\n", dumper_path);
+                    return;
+                }
+                dumper->file = sigmf->mtar.stream;
+            }
+            else {
+                fclose(dumper->file);
+                dumper->file = fopen(dumper_path, "wb");
+            }
             if (!dumper->file) {
-                fprintf(stderr, "Failed to open %s\n", dumper->path);
+                fprintf(stderr, "Failed to open %s\n", dumper_path);
                 exit(1);
             }
             if (dumper->format == VCD_LOGIC) {
@@ -1182,11 +1218,21 @@ void add_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
     }
 
     file_info_t *dumper = calloc(1, sizeof(*dumper));
-    if (!dumper)
+    if (!dumper) {
         FATAL_CALLOC("add_dumper()");
+    }
     list_push(&cfg->demod->dumper, dumper);
 
     file_info_parse_filename(dumper, spec);
+
+    // Construct a file name if no base filename given
+    char path_tmp[64]  = {0};
+    if (!dumper->path || !*dumper->path) {
+        generate_dumper_path(cfg, dumper, path_tmp, sizeof(path_tmp));
+        file_info_parse_filename(dumper, path_tmp); // Note: this leaks path_buf
+        dumper->spec = spec; // restore original spec
+    }
+
     // Open the output
     if (dumper->container == FILEFMT_SIGMF) {
         sigmf_t *sigmf = calloc(1, sizeof(*sigmf));
@@ -1239,6 +1285,9 @@ void add_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
             fprintf(stderr, "Failed to open %s\n", spec);
             exit(1);
         }
+    }
+    if (dumper->path == path_tmp) {
+        dumper->path = NULL; // don't leak the local string
     }
     if (dumper->format == VCD_LOGIC) {
         pulse_data_print_vcd_header(dumper->file, cfg->samp_rate);

@@ -131,22 +131,25 @@ int file_info_parse_filename(file_info_t *info, const char *filename);
 /// print a warning and exit otherwise.
 ///
 /// @param info the file info to check
-void file_info_check_read(file_info_t *info);
+void file_info_check_read(file_info_t const *info);
 
 /// Check if the format in this file info is supported for reading,
 /// print a warning and exit otherwise.
 ///
 /// @param info the file info to check
-void file_info_check_write(file_info_t *info);
+void file_info_check_write(file_info_t const *info);
 
 /// Return a string describing the format in this file info.
 ///
 /// @param info the file info to check
 /// @return a string describing the format
-char const *file_info_string(file_info_t *info);
+char const *file_info_string(file_info_t const *info);
+
+/// Return a the file extension string for the format.
+char const *file_info_to_ext(file_info_t const *info);
 
 /// Return a SigMF dataset type string for the format.
-char const *file_info_to_sigmf_type(file_info_t *info);
+char const *file_info_to_sigmf_type(file_info_t const *info);
 
 /// Parse a SigMF dataset type string to a format.
 uint32_t file_info_from_sigmf_type(char const *sigmf_datatype);
