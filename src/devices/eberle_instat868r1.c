@@ -80,8 +80,32 @@ end-to-end against a live receiver or raw capture with this decoder.
 reset_limit is a guess pending real hardware/capture confirmation.
 */
 
-// 30 bit fixed preamble, see file header.
-static uint8_t const preamble_pattern[4] = {0x00, 0x0f, 0xe0, 0x30};
+/*
+Device had not been found fully working for different Eberle Instat Revisions.
+Tests have been done with following systems:analog VN0402, digital Rev2.6, digital Rev2.8 
+- Pulse lenght changed from 400 => 360
+- preamble pattern adapted to improve recognition, specifically for Rev2.8
+- Gray code fully removed
+- inversed and LSB nibble encoding
+- nibble sequence for ID reversed => confirmed against ID on LCD digital thermostats
+- commands based on action codes modified for new encoding
+
+Confirmed output using rtl_433 -f 868.9M -Y classic -M level:
+
+time      : 2026-07-22 19:06:00
+model     : Eberle-Instat868r1                     id        : 26C
+Command   : Off          Action Code: 0            Data      : 5             Integrity : CHECKSUM
+Modulation: FSK          Freq1     : 868.9 MHz     Freq2     : 868.8 MHz
+RSSI      : -7.4 dB      SNR       : 20.6 dB       Noise     : -28.0 dB
+*/
+
+// Preamble: no leading zeros to allow leveling, but 18-bit sync marker.
+#define PREAMBLE_BITS 18
+static uint8_t const preamble_pattern[3] = {
+    0xfe,   // 11111110
+    0x03,   // 00000011
+    0x00    // letzte 2 Bits = 00
+};
 
 static int nibble_lsb_first(uint8_t const *bitrow, unsigned bit_offset)
 {
@@ -91,6 +115,15 @@ static int nibble_lsb_first(uint8_t const *bitrow, unsigned bit_offset)
             val |= (1 << i);
     }
     return val;
+}
+
+// Read a 4-bit nibble LSB-first from the inverted raw bits.
+// The transmitted raw bits are active-low, so every bit is inverted before
+// the logical value is formed. Inverting then reading LSB-first is the same
+// as reading LSB-first and complementing the nibble: val ^ 0xf.
+static int nibble_lsb_first_inverted(uint8_t const *bitrow, unsigned bit_offset)
+{
+    return nibble_lsb_first(bitrow, bit_offset) ^ 0x0f;
 }
 
 static int eberle_instat868r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -104,16 +137,16 @@ static int eberle_instat868r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned search_start = 0;
     bitbuffer_t decoded   = {0};
     int mic_ok            = 0;
-    while (search_start + 30 + 50 <= row_len) {
-        unsigned pos = bitbuffer_search(bitbuffer, row, search_start, preamble_pattern, 30);
-        if (pos + 30 + 50 > row_len) {
+    while (search_start + PREAMBLE_BITS + 50 <= row_len) {
+        unsigned pos = bitbuffer_search(bitbuffer, row, search_start, preamble_pattern, PREAMBLE_BITS);
+        if (pos + PREAMBLE_BITS + 50 > row_len) {
             break;
         }
 
-        bitbuffer_differential_manchester_decode(bitbuffer, row, pos + 30, &decoded, 25);
+        bitbuffer_differential_manchester_decode(bitbuffer, row, pos + PREAMBLE_BITS, &decoded, 26);
 
         if (decoded.bits_per_row[0] < 25) {
-            search_start = pos + 30 + 1; // look for a further repeat past this preamble
+            search_start = pos + PREAMBLE_BITS + 1; // look for a further repeat past this preamble
             continue;
         }
         uint8_t const *b = decoded.bb[0];
@@ -124,7 +157,7 @@ static int eberle_instat868r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             checksum += nibble_lsb_first(b, 1 + n * 4);
         }
         if ((checksum & 0xf) != 0xb) {
-            search_start = pos + 30 + 1; // look for a further repeat past this preamble
+            search_start = pos + PREAMBLE_BITS + 1; // look for a further repeat past this preamble
             continue;
         }
 
@@ -136,37 +169,23 @@ static int eberle_instat868r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     uint8_t const *b = decoded.bb[0];
 
-    // Gray-decode (cumulative XOR) then complement the 24 data bits for the logical fields.
-    int gray_bits[24];
-    int prev = bitrow_get_bit(b, 1);
-    gray_bits[0] = !prev;
-    for (int i = 1; i < 24; i++) {
-        prev ^= bitrow_get_bit(b, 1 + i);
-        gray_bits[i] = !prev;
-    }
-
     int nibble[6];
     for (int n = 0; n < 6; n++) {
-        int val = 0;
-        for (int i = 0; i < 4; i++) {
-            val = (val << 1) | gray_bits[n * 4 + i];
-        }
-        nibble[n] = val;
+        nibble[n] = nibble_lsb_first_inverted(b, 1 + n * 4);
     }
 
-    int id     = (nibble[0] << 8) | (nibble[1] << 4) | nibble[2];
+    int id     = (nibble[2] << 8) | (nibble[1] << 4) | nibble[0];
     int action = nibble[3];
     int data   = nibble[4];
 
     char const *command = "Unknown";
-    int id_odd = id & 1;
-    if (action == (id_odd ? 0x3 : 0xc))
+    if (action == 0x8 || action == 0xa)
         command = "Learn";
-    else if (action == (id_odd ? 0xb : 0x4))
+    else if (action == 0x9)
         command = "Reset";
-    else if (action == (id_odd ? 0xe : 0x1))
+    else if (action == 0x1 || action == 0x7 || action == 0x5)
         command = "On";
-    else if (action == (id_odd ? 0x5 : 0xa))
+    else if (action == 0x0 || action == 0x4)
         command = "Off";
 
     /* clang-format off */
@@ -197,8 +216,8 @@ static char const *const output_fields[] = {
 r_device const eberle_instat868r1 = {
         .name        = "Eberle Instat 868r1 floor heating thermostat remote",
         .modulation  = FSK_PULSE_PCM,
-        .short_width = 400,
-        .long_width  = 400,
+        .short_width = 360,
+        .long_width  = 360,
         .reset_limit = 8000,
         .decode_fn   = &eberle_instat868r1_decode,
         .fields      = output_fields,
