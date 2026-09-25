@@ -29,6 +29,7 @@
 #include "raw_output.h"
 #include "r_util.h"
 #include "am_analyze.h"
+#include "auto_level.h"
 #include "logger.h"
 #include "fatal.h"
 
@@ -94,6 +95,11 @@ void reset_sdr_flow(r_cfg_t *cfg)
     baseband_demod_FM_reset(&demod->demod_FM_state);
 
     pulse_detect_reset(demod->pulse_detect);
+    // Put the configured level back too. Clearing min_level_auto above only
+    // resets what we track; without this the detector keeps the floor auto
+    // level left it at, so a tracked floor would leak from one input file into
+    // the next and decoding a file would depend on what preceded it.
+    pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level, demod->min_snr, demod->detect_verbosity);
 }
 
 /**
@@ -177,9 +183,10 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         demod->total_frames_squelch += 1;
         demod->noise_level = (demod->noise_level * 7 + avg_db) / 8; // fast fall over 8 frames
         // If auto_level and noise level well below min_level and significant change in noise level
-        if (demod->auto_level > 0 && demod->noise_level < demod->min_level - 3.0f
-                && fabsf(demod->min_level_auto - demod->noise_level - 3.0f) > 1.0f) {
-            demod->min_level_auto = demod->noise_level + 3.0f;
+        float min_level_auto_next = 0.0f;
+        if (demod->auto_level > 0
+                && auto_level_next(demod->noise_level, demod->min_level, demod->min_level_auto, &min_level_auto_next)) {
+            demod->min_level_auto = min_level_auto_next;
             print_logf(LOG_WARNING, "Auto Level", "Estimated noise level is %.1f dB, adjusting minimum detection level to %.1f dB",
                     demod->noise_level, demod->min_level_auto);
             pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level_auto, demod->min_snr, demod->detect_verbosity);
