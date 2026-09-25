@@ -52,6 +52,11 @@ add_test(flex_decoder_w_getter_and_format_specifier bash -c
         -X 'n=name,m=FSK_PCM,s=10,l=10,r=10240,get=@2:{32}:code:%x' \
         -r empty_file.cu8")
 
+# A long symbol-decoded row must copy decoded bits as bytes, not as a byte count.
+add_test(flex_symbol_copy ../src/rtl_433
+    -X n=ELRO,m=OOK_PWM,s=330,l=970,g=1200,r=9000,bits=25,symbol_zero={2}8,symbol_one={2}c,unique
+    -F null ${CMAKE_CURRENT_SOURCE_DIR}/flex_symbol_copy.ook)
+
 # Black-box test of the HTTP/WS API server. Starts rtl_433 in manual device
 # mode (no SDR), exercises each endpoint, and shuts it down cleanly. Skipped
 # on Windows (POSIX shell script) and when python3/curl are unavailable.
