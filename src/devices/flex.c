@@ -241,7 +241,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             unsigned len    = bitbuffer->bits_per_row[i];
             bitbuffer_t tmp = {0};
             len             = extract_bits_symbols(bitbuffer->bb[i], 0, len, zero, one, sync, tmp.bb[0]);
-            memcpy(bitbuffer->bb[i], tmp.bb[0], len); // safe to write over: can only be shorter
+            memcpy(bitbuffer->bb[i], tmp.bb[0], (len + 7) / 8); // safe to write over: can only be shorter
             bitbuffer->bits_per_row[i] = len;
         }
         // TODO: apply min_bits, max_bits check
