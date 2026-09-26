@@ -159,6 +159,49 @@ expect_status        "GET /cmd get_center_frequency" 200 "$BASE/cmd?cmd=get_cent
 expect_status        "GET /cmd setter center_frequency" 200 "$BASE/cmd?cmd=center_frequency&val=433920000"
 expect_body_contains "GET /cmd unknown method is rejected" "Unknown method" "$BASE/cmd?cmd=no_such_method"
 
+# expect_json_pred DESC PY_EXPR curl-args...
+# Fetch body, parse as JSON, eval PY_EXPR with the root object bound as `obj`.
+# Expression must be a Python boolean expression (e.g. '"frames" in obj["result"]').
+expect_json_pred() {
+    desc=$1; expr=$2; shift 2
+    if [ "$HAVE_PY" != 1 ]; then
+        echo "  skip: $desc (python3 not found)"
+        return
+    fi
+    body=$(curl -s --max-time 10 "$@")
+    if printf '%s' "$body" | python3 -c "
+import sys, json
+obj = json.load(sys.stdin)
+ok = bool($expr)
+sys.exit(0 if ok else 1)
+" 2>/dev/null; then
+        pass "$desc"
+    else
+        fail "$desc: predicate failed: $expr"
+        printf '    got: %.300s\n' "$body" >&2
+    fi
+}
+
+# --- get_stats full / summary / unknown-arg compatibility ---
+# Full (default): aggregates + per-decoder stats[].
+expect_json_pred "GET /cmd get_stats full has frames+stats" \
+    '"result" in obj and isinstance(obj["result"], dict) and "frames" in obj["result"] and "stats" in obj["result"]' \
+    "$BASE/cmd?cmd=get_stats"
+# Summary: aggregates only — no stats[] key.
+expect_json_pred "GET /cmd get_stats arg=summary omits stats" \
+    '"result" in obj and isinstance(obj["result"], dict) and "enabled" in obj["result"] and "since" in obj["result"] and "frames" in obj["result"] and isinstance(obj["result"]["frames"], dict) and "count" in obj["result"]["frames"] and "fsk" in obj["result"]["frames"] and "events" in obj["result"]["frames"] and "stats" not in obj["result"]' \
+    "$BASE/cmd?cmd=get_stats&arg=summary"
+# Unknown arg keeps full report (rpc->arg was historically ignored).
+expect_json_pred "GET /cmd get_stats arg=unknown keeps stats" \
+    '"result" in obj and isinstance(obj["result"], dict) and "stats" in obj["result"]' \
+    "$BASE/cmd?cmd=get_stats&arg=unknown"
+# JSON-RPC params string becomes rpc->arg.
+expect_json_pred "POST /jsonrpc get_stats summary omits stats" \
+    '"result" in obj and isinstance(obj["result"], dict) and "enabled" in obj["result"] and "frames" in obj["result"] and "stats" not in obj["result"]' \
+    -H 'Content-Type: application/json' \
+    -d '{"jsonrpc":"2.0","method":"get_stats","params":["summary"],"id":1}' \
+    "$BASE/jsonrpc"
+
 # --- JSON-RPC ---
 expect_status        "POST /jsonrpc valid method"  200 \
     -H 'Content-Type: application/json' \
