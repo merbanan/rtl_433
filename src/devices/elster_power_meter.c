@@ -32,8 +32,8 @@ with a repeating 0x55 (i.e. every decoded byte is XORed with 0x55):
   between meters/collectors rather than a plain meter->collector report
   (that whole sub-protocol, and the separate dst==0 flood-broadcast
   format, are not decoded here, only the common meter-report case)
-- DST: destination (collector) address, may be 0. Matches the meter's
-  printed "LAN ID", decimal (issue #1196, \@greyltc) -- id/dst are
+  Matches the meter's printed "LAN ID", decimal (issue #1196, \@greyltc)
+- DST: destination (collector) address, may be 0. -- id/dst are
   reported as decimal strings for this reason and to avoid a negative
   JSON int for addresses with the high bit set
 - DATA: mostly unknown; a sub-command (length byte 0x33) at a fixed
@@ -100,18 +100,27 @@ share the same CRC-16/X-25 algorithm and a similar address layout:
   yet explained. A few other header bytes also differ between the two
   and are of unconfirmed meaning; treat 0x57 vs 0x7f as two distinct,
   independently-verified layouts rather than one
-- Other cleartext frames (e.g. a LEN=38 status/heartbeat report) are
-  reported via data_raw only -- little of their content varies between
-  real captures beyond the sending meter's own address, and what does vary
-  isn't confidently attributable
+- Clear text meter readings arrive as submessage type 0x23 and are partially
+  decoded here yielding a kWh meter reading and a timestamp for when
+  the meter thinks it took the reading. Reporting the meter's
+  timestamp is useful for precise calculation of delta t for computing
+  average power (since the time our radio read the packet might not match
+  the time the meter took the reading).
+- Other cleartext frames (e.g. a LEN=38 status/heartbeat report,
+  submessage type 0x0d) are reported via data_raw only -- little of their
+  content varies between real captures beyond the sending meter's
+  own address, and what does vary isn't confidently attributable
 - CHK: same CRC-16/X-25 as type-1, but covering LEN through the last DATA
   byte using the *16 bit* LEN value (i.e. bytes[0:LEN], not LEN+2)
 
-No cmd 0x23/0xce usage (kWh reading) frame has ever been observed on this
-type-2 path across ~900 captures/~30 meters/4 days -- on this deployment
-all usage traffic appears to go out AES-encrypted, so there is no cleartext
-type-2 counterpart to type-1's speculative reading_kWh field.
-*/
+NB:
+- Some jurisdictions seem to have enabled some sort of encryption (AES?)
+which likely prevents the current codebase from correctly parsing those messages.
+- My (\@greyltc's) meter can enter radio silence mode (as indicated by
+the disappearance of a radio tower icon on the display) for long periods.
+- Look for messages with a Source ID matching a number printed on the face of
+your meter marked there as "LAN ID" or similar
+  */
 
 #define ELSTER_MIN_LEN 9   // at least LEN FLAG SRC(4) DST(4)
 #define ELSTER_MAX_LEN 200 // sanity bound; longest confirmed real frame is a
@@ -275,6 +284,36 @@ r_device const elster_power_meter = {
 #define ELSTER2_MAX_LEN 200 // sanity bound; longest confirmed real frame is a
                             // 189-byte neighbour table (issue #3618)
 #define ELSTER2_NBR_MAX 8   // sanity bound on the neighbour-table record count
+#define ELSTER2_COLLECTOR_BITMASK 0x80000000 // collector ID indication bit
+
+struct __attribute__((packed, scalar_storage_order("big-endian"))) Header {
+    uint16_t len;     // [0,1] packet length (counts _all_ bytes in the message, including these length bytes)
+    uint8_t flags;    // [2] flags? broadcast/unicast? always 0x09 or 0x01?
+    uint32_t src;     // [3,7] origin address
+    uint32_t dst;     // [8,11] destination address
+    uint8_t network;  // [12] network prefix
+};
+
+struct __attribute__((packed, scalar_storage_order("little-endian"))) SubHeader {
+    uint8_t len;      // [0] length (count starts the byte after this one)
+    uint8_t flags;    // [1] flags?
+    uint8_t cls;      // [2] subclass
+};
+
+struct __attribute__((packed, scalar_storage_order("little-endian"))) Structure23 {
+    uint8_t uk0[6];  // unknown
+    uint8_t YY;
+    uint8_t MM;
+    uint8_t DD;
+    uint8_t hh;
+    uint8_t mm;
+    uint8_t ss;
+    uint8_t unknown1;
+    uint32_t readinga1000x;
+    uint32_t readingb1000x;
+    uint32_t readingc1000x;
+    uint32_t readingd1000x;
+};
 
 /** @fn static int elster_power_meter2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 Elster/Honeywell R2S/REXU power meter, type-2 frames, see issue #3618.
@@ -294,11 +333,14 @@ static int elster_power_meter2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t buf[ELSTER2_MAX_LEN + 2];
     int found_pos = -1;
     int len       = 0;
+    int len_hi;
+    int len_lo;
+    int cand_len;
 
     for (int pos = 0; pos + (ELSTER2_MIN_LEN + 2) * 8 <= row_bits; ++pos) {
-        int len_hi = bitrow_get_byte(row, pos) ^ 0xaa;
-        int len_lo = bitrow_get_byte(row, pos + 8) ^ 0xaa;
-        int cand_len = (len_hi << 8) | len_lo;
+        len_hi = bitrow_get_byte(row, pos) ^ 0xaa;
+        len_lo = bitrow_get_byte(row, pos + 8) ^ 0xaa;
+        cand_len = (len_hi << 8) | len_lo;
         if (cand_len < ELSTER2_MIN_LEN || cand_len > ELSTER2_MAX_LEN) {
             continue;
         }
@@ -325,63 +367,175 @@ static int elster_power_meter2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    // buf[0:2]=LEN, buf[2]=const, buf[3:7]=SRC, buf[7:11]=DST, buf[11]=const (0x09)
-    uint32_t src = ((uint32_t)buf[3] << 24) | (buf[4] << 16) | (buf[5] << 8) | buf[6];
-    uint32_t dst = ((uint32_t)buf[7] << 24) | (buf[8] << 16) | (buf[9] << 8) | buf[10];
+    struct Header* header;
+    struct SubHeader* sh;
+    uint32_t src = 0;
+    int from_collector = 0;
+    uint32_t dst = 0;
+    int to_collector = 0;
+    uint8_t network = 0;
+    char src_str[15] = {0};
+    char dst_str[15] = {0};
+    uint8_t cls = 0x00;
+    uint8_t *pl;  // payload
+    //uint8_t scls = 0x00;  // subclass
+    int remaining = len;
 
-    char src_str[11];
-    char dst_str[11];
-    snprintf(src_str, sizeof(src_str), "%u", src);
-    snprintf(dst_str, sizeof(dst_str), "%u", dst);
+    struct Structure23* struct_23;
+    int good_reading = 0;
+    char reading_timestamp[20] = {0};
+    float metera_kwh = 0.0f;
+    float meterb_kwh = 0.0f;
+    float meterc_kwh = 0.0f;
+    float meterd_kwh = 0.0f;
 
-    int is_mesh = (src & 0x80000000) != 0;
-    int msg     = -1;
-    if (!is_mesh && len > 16) {
-        msg = buf[16];
-    }
+    if ((unsigned int)len >= sizeof(struct Header)){
+        header = (struct Header*)buf;
+        remaining -= sizeof(*header);
 
-    // Neighbour table: msg 0x57 or 0x7f, a record count at a fixed offset
-    // followed by that many 20 byte records (only the leading 4-byte
-    // neighbour address of each is confidently decoded, see file doc
-    // comment). The two message classes start their records one byte
-    // apart, confirmed against real captures of both.
-    char nbr_ids[ELSTER2_NBR_MAX * 9] = "";
-    if ((msg == 0x57 || msg == 0x7f) && len > 30) {
-        int n         = buf[28];
-        int rec_start = (msg == 0x57) ? 30 : 29;
-        if (n > 0 && n <= ELSTER2_NBR_MAX && rec_start + n * 20 <= len) {
-            char *p = nbr_ids;
-            for (int i = 0; i < n; ++i) {
-                uint8_t const *nbr = &buf[rec_start + i * 20];
-                p += sprintf(p, "%s%02x%02x%02x%02x", i ? "," : "",
-                        nbr[0], nbr[1], nbr[2], nbr[3]);
+        decoder_logf(decoder, 2, __func__, "packet len = %u", len);
+        decoder_logf(decoder, 2, __func__, "header len = %u", header->len);
+        decoder_logf(decoder, 2, __func__, "len mismatch = %u", (header->len != len));
+        decoder_logf(decoder, 2, __func__, "flags = 0x%02x", header->flags);
+
+        src = header->src;
+        from_collector = (src & ELSTER2_COLLECTOR_BITMASK) != 0;
+        decoder_logf(decoder, 2, __func__, "from_collector = %u", from_collector);
+        if (from_collector){  // this packet is from a collector-type node
+            src ^= ELSTER2_COLLECTOR_BITMASK;
+        }
+
+        dst = header->dst;
+        to_collector = (dst & ELSTER2_COLLECTOR_BITMASK) != 0;
+        decoder_logf(decoder, 2, __func__, "to_collector = %u", to_collector);
+        if (to_collector){  // this packet is to a collector-type node
+            dst ^= ELSTER2_COLLECTOR_BITMASK;
+        }
+
+        network = header->network;
+
+        // this format exactly matches the "LAN-ID" marking that may appear on a meter face
+        snprintf(src_str, sizeof(src_str), "%u-%010u", network, src);
+        snprintf(dst_str, sizeof(dst_str), "%u-%010u", network, dst);
+
+        if (remaining) {
+            pl = &buf[sizeof(*header)];  // payload begins immediately after header
+
+            if ((header->flags == 0x09) && from_collector && !to_collector) {
+                // messages from collector nodes have an unknown format
+
+                // I think the neighbor table decoding stuff will end up living here
+
+                /*
+                // Neighbour table: msg 0x57 or 0x7f, a record count at a fixed offset
+                // followed by that many 20 byte records (only the leading 4-byte
+                // neighbour address of each is confidently decoded, see file doc
+                // comment). The two message classes start their records one byte
+                // apart, confirmed against real captures of both.
+                char nbr_ids[ELSTER2_NBR_MAX * 9] = "";
+                if ((msg == 0x57 || msg == 0x7f) && len > 30) {
+                    int n         = buf[28];
+                    int rec_start = (msg == 0x57) ? 30 : 29;
+                    if (n > 0 && n <= ELSTER2_NBR_MAX && rec_start + n * 20 <= len) {
+                        char *p = nbr_ids;
+                        for (int i = 0; i < n; ++i) {
+                            uint8_t const *nbr = &buf[rec_start + i * 20];
+                            p += sprintf(p, "%s%02x%02x%02x%02x", i ? "," : "",
+                                    nbr[0], nbr[1], nbr[2], nbr[3]);
+                        }
+                    }
+                }
+                */
+            } else if ((header->flags == 0x01) && !from_collector && to_collector && remaining >= 5) {
+                decoder_logf(decoder, 2, __func__, "Pre-class unknown = 0x%02x%02x%02x%02x", pl[0], pl[1], pl[2], pl[3]);
+                cls = pl[4];  // this often ends up being 0x56 or 0x57, but I'm not sure we really care. sh->cls (below) seems more important
+                remaining -= 5;
+                decoder_logf(decoder, 2, __func__, "class = 0x%02x", cls);
+                if (remaining >= 5 + sizeof(*sh)) {
+                    decoder_logf(decoder, 2, __func__, "Post-class unknown = 0x%02x%02x%02x%02x%02x", pl[5], pl[6], pl[7], pl[8], pl[9]);
+                    remaining -= 5;
+                    sh = (struct SubHeader*)&pl[10];
+                    remaining -= 3;
+                    decoder_logf(decoder, 2, __func__, "Sub-length = %u", sh->len);
+                    decoder_logf(decoder, 2, __func__, "Sub-flags = 0x%02x", sh->flags);
+                    decoder_logf(decoder, 2, __func__, "Sub-class = 0x%02x", sh->cls);
+                    decoder_logf(decoder, 2, __func__, "Leftover = %i", header->len - sh->len);
+                    switch (sh->cls) {  // branch on the message class byte in the sub-header
+                        case 0x23:  // meter reading type. length = 164 or 171
+                            if ((sh->len == 164) || (sh->len == 171)){
+                                if (remaining >= sizeof(*struct_23)) {
+                                    struct_23 = (struct Structure23*)&pl[13];
+                                    remaining -= sizeof(*struct_23);
+                                    metera_kwh = ((float) struct_23->readinga1000x) / 1000.0;
+                                    meterb_kwh = ((float) struct_23->readingb1000x) / 1000.0;
+                                    meterc_kwh = ((float) struct_23->readingc1000x) / 1000.0;
+                                    meterd_kwh = ((float) struct_23->readingd1000x) / 1000.0;
+
+                                    if (struct_23->readinga1000x != 0) {
+                                        good_reading = 1;
+                                        // report meter reading timestamp using format: YYY-MM-DDThh:mm:ss
+                                        snprintf(reading_timestamp, sizeof(reading_timestamp), "%04u-%02u-%02uT%02u:%02u:%02u", struct_23->YY + 2000, struct_23->MM, struct_23->DD, struct_23->hh, struct_23->mm, struct_23->ss);
+                                    }
+                                }
+                            } else if (sh->len == 159) {  // false meter reading type
+                                (void)0;
+                            } else {  // never seen this
+                                (void)0;
+                            }
+                            break;
+                        case 0x0d:  // heartbeat/beacon type? length = 7
+                            break;
+                        case 0xa4:  // unknown
+                            break;
+                        case 0x01:  // unknown
+                            break;
+                        case 0x20:  // unknown, length = 52
+                            break;
+                        case 0x0f:  // unknown
+                            break;
+                        case 0x33:  // unknown
+                            break;
+                        case 0x28:  // unknown
+                            break;
+                        case 0x05:  // unknown
+                            break;
+                        case 0x18:  // unknown, length = 164
+                            break;
+                        default:
+                            (void)0;
+                    }
+                }
             }
         }
     }
 
-    // Raw DATA region (after LEN/?/SRC/DST/?, before the CRC).
-    char data_raw[2 * (ELSTER2_MAX_LEN - 12) + 1];
+    // __All__ the bytes (not including CRC)
+    char data_raw[2 * ELSTER2_MAX_LEN + 1];
     data_raw[0]  = '\0';
-    int data_len = len - 12;
-    for (int i = 0; i < data_len; ++i) {
-        snprintf(&data_raw[i * 2], 3, "%02x", buf[12 + i]);
+    for (int i = 0; i < len; ++i) {
+        snprintf(&data_raw[i * 2], 3, "%02x", buf[i]);
     }
 
-    char msg_str[3] = "";
-    if (msg >= 0) {
-        snprintf(msg_str, sizeof(msg_str), "%02x", msg);
-    }
 
     /* clang-format off */
     data_t *data = data_make(
             "model",    "",                      DATA_STRING, "Elster-PowerMeter2",
-            "id",       "Meter ID",              DATA_STRING, src_str,
-            "dst",      "Collector ID (LAN ID)", DATA_STRING, dst_str,
-            "mesh",     "Mesh Frame",            DATA_INT,    is_mesh,
-            "msg",      "Message Class",         DATA_COND, msg >= 0, DATA_STRING, msg_str,
-            "nbr_ids",  "Neighbour IDs",         DATA_COND, nbr_ids[0] != '\0', DATA_STRING, nbr_ids,
-            "data_raw", "Undecoded data",        DATA_STRING, data_raw,
+            "len",      "Message Length",        DATA_INT, len,
+//            "flags",    "",                      DATA_STRING, flags_str,
+            "src",      "Source ID",             DATA_STRING, src_str,
+            "fm_coll",  "From Collector",        DATA_INT, from_collector,
+            "dst",      "Destination ID",        DATA_STRING, dst_str,
+            "to_coll",  "To Collector",          DATA_INT, to_collector,
             "mic",      "Integrity",             DATA_STRING, "CRC",
+//            "scls",     "Message Subclass",      DATA_COND, scls > 0, DATA_STRING, scls_str,
+//            "smsg_len", "Submessage Length",     DATA_COND, smsg_len > 0, DATA_INT, smsg_len,
+//            "nbr_ids",  "Neighbour IDs",         DATA_COND, nbr_ids[0] != '\0', DATA_STRING, nbr_ids,
+            "t_meter",  "Reading Timestamp",     DATA_COND, good_reading, DATA_STRING, reading_timestamp,  // "YYY-MM-DDThh:mm:ss"
+            "readinga_kWh", "Reading A",         DATA_COND, good_reading, DATA_FORMAT, "%.3f kWh", DATA_DOUBLE, (double)metera_kwh,
+            "readingb_kWh", "Reading B",         DATA_COND, good_reading, DATA_FORMAT, "%.3f kWh", DATA_DOUBLE, (double)meterb_kwh,
+            "readingc_kWh", "Reading C",         DATA_COND, good_reading, DATA_FORMAT, "%.3f kWh", DATA_DOUBLE, (double)meterc_kwh,
+            "readingd_kWh", "Reading D",         DATA_COND, good_reading, DATA_FORMAT, "%.3f kWh", DATA_DOUBLE, (double)meterd_kwh,
+            "data_raw", "Raw data",              DATA_STRING, data_raw,
             NULL);
     /* clang-format on */
 
@@ -391,13 +545,22 @@ static int elster_power_meter2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char const *const output_fields2[] = {
         "model",
-        "id",
+        "len",
+//        "flags",
+        "src",
+        "fm_coll",
         "dst",
-        "mesh",
-        "msg",
-        "nbr_ids",
-        "data_raw",
+        "to_coll",
         "mic",
+//        "smsg",
+//        "smsg_len",
+//        "nbr_ids",
+        "t_meter",
+        "readinga_kWh",
+        "readingb_kWh",
+        "readingc_kWh",
+        "readingd_kWh",
+        "data_raw",
         NULL,
 };
 
