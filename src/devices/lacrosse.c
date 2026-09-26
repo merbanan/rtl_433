@@ -11,6 +11,7 @@
 /**
 LaCrosse TX 433 Mhz Temperature and Humidity Sensors.
 - Tested: TX-7U and TX-6U (Temperature only)
+- Tested: TX5U rain gauge (e.g. WS-7038U, WS-7058U stations)
 - Not Tested but should work: TX-3, TX-4
 - also TFA Dostmann 30.3120.90 sensor (for e.g. 35.1018.06 (WS-9015) station)
 - also TFA Dostmann 30.3121 sensor
@@ -39,6 +40,11 @@ Notes:
 - LaCrosse Sensors in other frequency ranges (915 Mhz) use FSK not OOK
   so they can't be decoded by rtl_433 currently.
 - Temperature and Humidity are sent in different messages bursts.
+- Rain (TX5U) is type 0xA. The three value nybbles are a 12 bit binary
+  (not BCD) bucket tip counter, the repeated nybbles hold its upper 8 bits.
+  One tip is 0.0105 in (0.2667 mm) according to La Crosse specifications.
+  A message is sent immediately on each tip, then repeated every few seconds
+  for a few minutes, then about once a minute.
 
 */
 
@@ -159,6 +165,20 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             decoder_output_data(decoder, data);
             events++;
         }
+        else if (msg_type == 0x0A) {
+            float rain_in = msg_value_raw * 0.0105f;
+            /* clang-format off */
+            data_t *data = data_make(
+                    "model",            "",             DATA_STRING, "LaCrosse-TX5U",
+                    "id",               "",             DATA_INT,    sensor_id,
+                    "rain_in",          "Total rain",   DATA_FORMAT, "%.4f in", DATA_DOUBLE, rain_in,
+                    "rain_raw",         "Raw rain",     DATA_INT,    msg_value_raw,
+                    "mic",              "Integrity",    DATA_STRING, "PARITY",
+                    NULL);
+            /* clang-format on */
+            decoder_output_data(decoder, data);
+            events++;
+        }
         else  {
             // TODO: this should be reported/counted as exception, not considered debug
             decoder_logf(decoder, 1, __func__,
@@ -179,12 +199,14 @@ static char const *const output_fields[] = {
         "id",
         "temperature_C",
         "humidity",
+        "rain_in",
+        "rain_raw",
         "mic",
         NULL,
 };
 
 r_device const lacrossetx = {
-        .name        = "LaCrosse TX Temperature / Humidity Sensor",
+        .name        = "LaCrosse TX Temperature / Humidity Sensor, TX5U rain gauge",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 550,  // 550 us pulse + 1000 us gap is 1
         .long_width  = 1400, // 1400 us pulse + 1000 us gap is 0
