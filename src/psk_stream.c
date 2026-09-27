@@ -31,7 +31,7 @@
  *
  * The existing candidate decoder extracts +/-12 ms around the detected
  * signature. A 64 ms window with 24 ms overlap therefore provides ample
- * context around a TX63 transmission while keeping the FFT work bounded.
+ * context around a TX63 transmission while preserving stream boundaries.
  */
 #define PSK_STREAM_WINDOW_MS 64
 #define PSK_STREAM_OVERLAP_MS 24
@@ -221,6 +221,7 @@ static int run_psk_window(
                 ++iter) {
             r_device *r_dev = *iter;
             bitbuffer_t bits = {0};
+            psk_candidate_t decoder_candidate = candidate;
 
             if (r_dev->modulation != PSK_PULSE_DBPSK) {
                 continue;
@@ -239,12 +240,19 @@ static int run_psk_window(
                 continue;
             }
 
+            if (r_dev->short_width <= 0.0f) {
+                continue;
+            }
+
+            decoder_candidate.symbol_rate_hint =
+                    1000000.0 / (double)r_dev->short_width;
+
             if (!psk_demod_candidate(
                         iq_buf,
                         sample_count,
                         demod->sample_size,
                         demod->samp_rate,
-                        &candidate,
+                        &decoder_candidate,
                         r_dev->validate_fn,
                         r_dev->decode_ctx,
                         &bits)) {

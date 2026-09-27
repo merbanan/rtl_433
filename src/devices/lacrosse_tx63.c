@@ -27,11 +27,11 @@ Recovered bit stream:
 
 Known frame layout:
 
-    3C C0 D0 D1 D2 D3 38 CRClo CRChi
+    3C C0 D0 D1 D2 D3 XX CRClo CRChi
 
-The meanings of bytes 0x3c, 0xc0, and 0x38 are not yet known. They have
-been constant in all verified captures and are therefore currently used
-as protocol-family validation bytes.
+The meanings of bytes 0x3c, 0xc0, and XX are not yet known. The first two
+have been constant in all verified captures and are currently used as
+protocol-family validation bytes. XX varies across otherwise valid frames.
 
 Fields:
 
@@ -224,8 +224,7 @@ static int tx63_find_frame(
              * Their precise semantic meaning is not yet known.
              */
             if (frame[0] != 0x3c ||
-                    frame[1] != 0xc0 ||
-                    frame[6] != 0x38) {
+                    frame[1] != 0xc0) {
                 continue;
             }
 
@@ -345,6 +344,7 @@ static char const *const output_fields[] = {
 r_device const lacrosse_tx63 = {
         .name        = "La Crosse TX63U-IT solar wind sensor",
         .modulation  = PSK_PULSE_DBPSK,
+        .short_width = 28,
         .decode_fn   = &lacrosse_tx63_decode,
         .validate_fn = &lacrosse_tx63_validate,
         .fields      = output_fields,

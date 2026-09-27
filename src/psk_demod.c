@@ -65,90 +65,12 @@ static cpx_t c_expj(double phase)
     return r;
 }
 
-static void fft_inplace(cpx_t *a, size_t n)
-{
-    size_t i;
-    size_t j;
-    size_t len;
-
-    for (i = 1, j = 0; i < n; i++) {
-        size_t bit = n >> 1;
-
-        for (; j & bit; bit >>= 1) {
-            j ^= bit;
-        }
-        j ^= bit;
-
-        if (i < j) {
-            cpx_t t = a[i];
-            a[i] = a[j];
-            a[j] = t;
-        }
-    }
-
-    for (len = 2; len <= n; len <<= 1) {
-        double ang = -2.0 * M_PI / (double)len;
-        cpx_t wlen = c_expj(ang);
-
-        for (i = 0; i < n; i += len) {
-            cpx_t w = {1.0, 0.0};
-            size_t half = len >> 1;
-
-            for (j = 0; j < half; j++) {
-                cpx_t u = a[i + j];
-                cpx_t v = c_mul(a[i + j + half], w);
-
-                a[i + j] = c_add(u, v);
-                a[i + j + half] = c_sub(u, v);
-                w = c_mul(w, wlen);
-            }
-        }
-    }
-}
-
 static int cmp_double(void const *pa, void const *pb)
 {
     double a = *(double const *)pa;
     double b = *(double const *)pb;
 
     return (a > b) - (a < b);
-}
-
-static double median_copy(double const *v, size_t n)
-{
-    double *tmp;
-    double result;
-
-    if (!n) {
-        return 0.0;
-    }
-
-    tmp = malloc(n * sizeof(*tmp));
-    if (!tmp) {
-        return 0.0;
-    }
-
-    memcpy(tmp, v, n * sizeof(*tmp));
-    qsort(tmp, n, sizeof(*tmp), cmp_double);
-
-    if (n & 1) {
-        result = tmp[n / 2];
-    }
-    else {
-        result = 0.5 * (tmp[n / 2 - 1] + tmp[n / 2]);
-    }
-
-    free(tmp);
-    return result;
-}
-
-static double fft_bin_freq(size_t bin, size_t nfft, double sample_rate)
-{
-    if (bin <= nfft / 2) {
-        return (double)bin * sample_rate / (double)nfft;
-    }
-
-    return ((double)bin - (double)nfft) * sample_rate / (double)nfft;
 }
 
 static cpx_t cu8_sample(uint8_t const *iq_buf, size_t sample)
@@ -167,12 +89,21 @@ int psk_find_candidate(
         unsigned sample_rate,
         psk_candidate_t *candidate)
 {
-    size_t window_samples;
-    size_t rows;
-    size_t nfft = 1;
-    size_t row;
-    int found = 0;
-    psk_candidate_t global_best = {0};
+    size_t block_samples;
+    size_t block_count;
+    double *block_power;
+    double *sorted_power;
+    double background;
+    double peak;
+    double threshold;
+    size_t block;
+    size_t best_start = 0;
+    size_t best_end = 0;
+    double best_peak = 0.0;
+    cpx_t phase_sum = {0.0, 0.0};
+    size_t start_sample;
+    size_t end_sample;
+    size_t i;
 
     if (!iq_buf || !candidate || !sample_rate) {
         return 0;
@@ -183,195 +114,114 @@ int psk_find_candidate(
         return 0;
     }
 
-    window_samples = (size_t)((double)sample_rate * 0.004);
-    if (window_samples < 256) {
-        window_samples = 256;
+    /* Half-millisecond blocks smooth the envelope without hiding the burst. */
+    block_samples = sample_rate / 2000;
+    if (block_samples < 16) {
+        block_samples = 16;
     }
 
-    rows = sample_count / window_samples;
-    if (!rows) {
+    block_count = sample_count / block_samples;
+    if (block_count < 3) {
         return 0;
     }
 
-    while (nfft < window_samples) {
-        nfft <<= 1;
+    block_power = malloc(block_count * sizeof(*block_power));
+    if (!block_power) {
+        return 0;
     }
 
-    for (row = 0; row < rows; row++) {
-        cpx_t *buf;
-        double *bg;
-        size_t bg_count = 0;
-        size_t k;
-        size_t top_bins[16] = {0};
-        double top_power[16] = {0};
-        cpx_t mean = {0.0, 0.0};
-        double bg_hi;
-        double background;
-        double row_best_score = 0.0;
-        double row_best_midpoint = 0.0;
-        double row_best_sep = 0.0;
-
-        buf = calloc(nfft, sizeof(*buf));
-        if (!buf) {
-            return 0;
-        }
-
-        bg = malloc(nfft * sizeof(*bg));
-        if (!bg) {
-            free(buf);
-            return 0;
-        }
-
-        for (k = 0; k < window_samples; k++) {
-            mean = c_add(mean, cu8_sample(iq_buf, row * window_samples + k));
-        }
-        mean = c_scale(mean, 1.0 / (double)window_samples);
-
-        for (k = 0; k < window_samples; k++) {
-            double w = 0.5 - 0.5 * cos(
-                                         2.0 * M_PI * (double)k /
-                                         (double)(window_samples - 1));
-            cpx_t sample = cu8_sample(iq_buf, row * window_samples + k);
-
-            buf[k] = c_scale(c_sub(sample, mean), w);
-        }
-
-        fft_inplace(buf, nfft);
-
-        bg_hi = (double)sample_rate / 2.0 * 0.90;
-        if (bg_hi > 110000.0) {
-            bg_hi = 110000.0;
-        }
-
-        for (k = 0; k < nfft; k++) {
-            double f = fft_bin_freq(k, nfft, (double)sample_rate);
-            double af = fabs(f);
-            double p = c_abs2(buf[k]);
-
-            if (af > 2000.0 && af < 60000.0) {
-                int slot;
-
-                for (slot = 0; slot < 16; slot++) {
-                    if (p > top_power[slot]) {
-                        int s;
-
-                        for (s = 15; s > slot; s--) {
-                            top_power[s] = top_power[s - 1];
-                            top_bins[s] = top_bins[s - 1];
-                        }
-
-                        top_power[slot] = p;
-                        top_bins[slot] = k;
-                        break;
-                    }
-                }
-            }
-
-            if (af > 60000.0 && af < bg_hi) {
-                bg[bg_count++] = p;
-            }
-        }
-
-        if (bg_count < 5) {
-            bg_count = 0;
-
-            for (k = 0; k < nfft; k++) {
-                double f = fft_bin_freq(k, nfft, (double)sample_rate);
-                double af = fabs(f);
-
-                if (af > 40000.0 &&
-                        af < (double)sample_rate / 2.0 * 0.90) {
-                    bg[bg_count++] = c_abs2(buf[k]);
-                }
-            }
-        }
-
-        if (bg_count >= 5) {
-            int a;
-            int b;
-
-            background = median_copy(bg, bg_count) + 1e-12;
-
-            for (a = 0; a < 16; a++) {
-                if (top_power[a] <= 0.0) {
-                    continue;
-                }
-
-                for (b = a + 1; b < 16; b++) {
-                    double fi;
-                    double fj;
-                    double sep;
-                    double midpoint;
-                    double score;
-
-                    if (top_power[b] <= 0.0) {
-                        continue;
-                    }
-
-                    fi = fft_bin_freq(
-                            top_bins[a], nfft, (double)sample_rate);
-                    fj = fft_bin_freq(
-                            top_bins[b], nfft, (double)sample_rate);
-
-                    if (fj < fi) {
-                        double t = fi;
-                        fi = fj;
-                        fj = t;
-                    }
-
-                    sep = fj - fi;
-                    midpoint = (fi + fj) / 2.0;
-
-                    if (sep >= 34500.0 &&
-                            sep <= 37500.0 &&
-                            fabs(midpoint) <= 22000.0) {
-                        double weaker =
-                                top_power[a] < top_power[b] ?
-                                        top_power[a] :
-                                        top_power[b];
-
-                        score = weaker / background;
-
-                        if (score > row_best_score) {
-                            row_best_score = score;
-                            row_best_midpoint = midpoint;
-                            row_best_sep = sep;
-                        }
-                    }
-                }
-            }
-
-            if (row_best_score > 20.0) {
-                psk_candidate_t detected;
-
-                detected.offset_s =
-                        (double)(row * window_samples) /
-                        (double)sample_rate;
-                detected.signature_db =
-                        10.0 * log10(row_best_score);
-                detected.carrier_offset_hz =
-                        row_best_midpoint;
-                detected.symbol_rate_hint =
-                        row_best_sep;
-
-                if (!found ||
-                        detected.signature_db >
-                                global_best.signature_db) {
-                    global_best = detected;
-                    found = 1;
-                }
-            }
-        }
-
-        free(buf);
-        free(bg);
+    sorted_power = malloc(block_count * sizeof(*sorted_power));
+    if (!sorted_power) {
+        free(block_power);
+        return 0;
     }
 
-    if (found) {
-        *candidate = global_best;
+    peak = 0.0;
+    for (block = 0; block < block_count; block++) {
+        double sum = 0.0;
+        size_t begin = block * block_samples;
+
+        for (i = 0; i < block_samples; i++) {
+            sum += c_abs2(cu8_sample(iq_buf, begin + i));
+        }
+        block_power[block] = sum / (double)block_samples;
+        sorted_power[block] = block_power[block];
+        if (block_power[block] > peak) {
+            peak = block_power[block];
+        }
     }
 
-    return found;
+    qsort(sorted_power, block_count, sizeof(*sorted_power), cmp_double);
+    background = sorted_power[block_count / 2] + 1e-12;
+    free(sorted_power);
+
+    if (peak < background * 2.0) {
+        free(block_power);
+        return 0;
+    }
+
+    threshold = background + 0.30 * (peak - background);
+
+    for (block = 0; block < block_count;) {
+        size_t run_start;
+        double run_peak = 0.0;
+
+        if (block_power[block] <= threshold) {
+            block++;
+            continue;
+        }
+
+        run_start = block;
+        while (block < block_count && block_power[block] > threshold) {
+            if (block_power[block] > run_peak) {
+                run_peak = block_power[block];
+            }
+            block++;
+        }
+
+        if (block - run_start >= 2 && run_peak > best_peak) {
+            best_start = run_start;
+            best_end = block;
+            best_peak = run_peak;
+        }
+    }
+    free(block_power);
+
+    if (best_end <= best_start) {
+        return 0;
+    }
+
+    start_sample = best_start * block_samples;
+    end_sample = best_end * block_samples;
+    if (end_sample > sample_count) {
+        end_sample = sample_count;
+    }
+
+    for (i = start_sample + 1; i < end_sample; i++) {
+        cpx_t previous = cu8_sample(iq_buf, i - 1);
+        cpx_t current = cu8_sample(iq_buf, i);
+        cpx_t delta = c_mul(current, c_conj(previous));
+        double magnitude = sqrt(c_abs2(delta));
+
+        if (magnitude > 0.0) {
+            phase_sum = c_add(phase_sum, c_scale(delta, 1.0 / magnitude));
+        }
+    }
+
+    if (c_abs2(phase_sum) <= 0.0) {
+        return 0;
+    }
+
+    candidate->offset_s =
+            0.5 * (double)(start_sample + end_sample) /
+            (double)sample_rate;
+    candidate->signature_db = 10.0 * log10(best_peak / background);
+    candidate->carrier_offset_hz =
+            atan2(phase_sum.im, phase_sum.re) *
+            (double)sample_rate / (2.0 * M_PI);
+    candidate->symbol_rate_hint = 0.0;
+
+    return 1;
 }
 
 static int demod_bits(
