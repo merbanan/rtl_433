@@ -151,6 +151,7 @@ void r_init_cfg(r_cfg_t *cfg)
         FATAL_CALLOC("r_init_cfg()");
 
     cfg->demod->level_limit = 0.0f;
+    cfg->demod->auto_level = 1;
     cfg->demod->min_level = -12.1442f;
     cfg->demod->min_snr = 9.0f;
     // Pulse detect will only print LOG_NOTICE and lower.

@@ -92,16 +92,16 @@ FSK pulse detector mode.
 Manual detection level used to determine pulses (\-1.0 to \-30.0) (0=auto).
 .TP
 [ \fB\-Y\fI minlevel=<dB level>\fP ]
-Manual minimum detection level used to determine pulses (\-1.0 to \-99.0).
+Manual minimum detection level used to determine pulses (\-1.0 to \-99.0) (disables autolevel).
 .TP
 [ \fB\-Y\fI minsnr=<dB level>\fP ]
 Minimum SNR to determine pulses (1.0 to 99.0).
 .TP
 [ \fB\-Y\fI autolevel\fP ]
-Set minlevel automatically based on average estimated noise.
+Set minlevel automatically based on average estimated noise (default: on, 0 disables).
 .TP
 [ \fB\-Y\fI squelch\fP ]
-Skip frames below estimated noise level to reduce cpu load.
+Skip frames below estimated noise level to reduce cpu load (default: off).
 .TP
 [ \fB\-Y\fI ampest | magest\fP ]
 Choose amplitude or magnitude level estimator.
