@@ -47,7 +47,7 @@ Data layout (72 bits):
 
 - I: {32} Sensor ID (bytes 0-3), hexadecimal string in output.
 - P: {9} Raw tire pressure = (byte4 << 1) | (byte5 >> 7) [8 bits in byte4 + MSB of byte5].
-    Pressure in PSI = raw * 0.25, converted to kPa for output.
+    Pressure in PSI = raw * 0.25
 - R: {2} Burst repeat counter (byte5 bits 5-4)
 - Q: {3} Sequence (byte5 bits 2-0; not a monotonic counter, 0 in alert frames)
 - U: {2} Unknown (byte5 bits 6 and 3)
@@ -109,7 +109,7 @@ static int tpms_schrader_fsk_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             uint32_t id = ((uint32_t)b[0] << 24) | ((uint32_t)b[1] << 16) | ((uint32_t)b[2] << 8) | b[3];
             // 0.25 PSI per count, no offset: an empty tire reads 0.
             unsigned pressure_raw = ((unsigned)b[4] << 1) | (b[5] >> 7);
-            double pressure_kpa   = pressure_raw * 0.25 * 6.894757;
+            double pressure_psi   = pressure_raw * 0.25;
             // Byte 5 also carries a 2-bit index within a burst and a 3-bit sequence value.
             unsigned burst_repeat = (b[5] >> 4) & 0x03;
             unsigned sequence     = b[5] & 0x07;
@@ -124,7 +124,7 @@ static int tpms_schrader_fsk_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "model",         "",             DATA_STRING, "Schrader-FSK",
                     "type",          "",             DATA_STRING, "TPMS",
                     "id",            "",             DATA_STRING, id_str,
-                    "pressure_kPa",  "Pressure",     DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, pressure_kpa,
+                    "pressure_PSI",  "Pressure",     DATA_FORMAT, "%.2f PSI", DATA_DOUBLE, pressure_psi,
                     "temperature_C", "Temperature",  DATA_FORMAT, "%.0f C",   DATA_DOUBLE, (double)temperature_c,
                     "burst_repeat",  "Burst repeat", DATA_INT,    burst_repeat,
                     "sequence",      "Sequence",     DATA_INT,    sequence,
@@ -147,7 +147,7 @@ static char const *const output_fields[] = {
         "model",
         "type",
         "id",
-        "pressure_kPa",
+        "pressure_PSI",
         "temperature_C",
         "burst_repeat",
         "sequence",
