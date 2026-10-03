@@ -41,21 +41,43 @@ Packet layout:
 - L = light value, unit of 10 lux
 - B = battery voltage, unit of 20 mV, we assume a range of 3.0V to 1.4V
 - F = flags and MSBs, 0x03: temp MSB, 0x10: wind MSB, 0x20: bearing MSB, 0x40: gust MSB
-      0x80 or 0x08: maybe battery good? seems to be always 0x88
+      0x04: temp MSB, only set for the invalid value 0x7ff
+      0x80, 0x08: ultrasonic signal quality bits (0x88 = good signal)
 - T = temperature, lowest 8 bits of temperature, offset 40, scale 10
 - H = humidity
 - W = wind speed, lowest 8 bits of wind speed, m/s, scale 10
 - D = wind bearing, lowest 8 bits of wind bearing, range 0-359 deg, 0x1ff if invalid
 - G = wind gust, lowest 8 bits of wind gust, m/s, scale 10
 - V = uv index, scale 10
-- P = ambient pressure or 3f ff for invalid
-- U = unknown
+- P = 2 bit ultrasonic status (mask 0xc000), 14 bit pressure in 0.1 hPa (mask 0x3fff),
+      0x3fff if no barometer is fitted
 - R = rain total (R3 << 8 | R4) * 0.1 mm
-- RS = rain start dection ((R1 & 0x10) >>4), 1 = raining, 0 = not raining
+- RS = rain start dection ((R0 & 0x10) >>4), 1 = raining, 0 = not raining
+      (bits 0xf0 of R0 are a 4 bit counter incremented on each rain state change)
+- R0 & 0x0f, R1, R2 = 20 bit rain intensity sum, unit unknown
 - S = super cap voltage, unit of 0.1V, lower 6 bits, mask 0x3f
+      bits 0xc0 are a rain/wet state (0-2)
+- U = bytes 22-28 are piezo rain sensor diagnostics (wave counts, ADC values and slopes)
 - Z = Firmware version. 0x82 = 130 = 1.3.0
-- A = checksum
-- X = CRC
+- A = CRC over bytes 0-29
+- X = checksum over bytes 0-30
+
+Newer firmware (seen with 1.6.1 and 1.6.2) sends 39 bytes. The first 32 bytes are
+unchanged and bytes 32-38 are appended:
+
+    32 33 34 35 36 37 38
+    OO OO EE EE EE C2 X2
+
+- O = 14 bit uncompensated temperature (bytes 32 to 33 bit 2), 0.01 C, offset 40, 0x3fff if invalid
+- E = 14 bit second temperature sensor (byte 33 bits 1-0 to byte 35 bit 4), 0.01 C, offset 40,
+      0x3fff if invalid; the low nibble of byte 35 is the 0.01 C digit of the main temperature
+      and the top 3 bits of byte 36 are an ultrasonic mode
+- C2 = CRC over bytes 0-36
+- X2 = checksum over bytes 0-37 (often truncated at reception: the frame has no trailer, so the
+       last bits get lost; the extension is then accepted on C2 alone)
+
+The main temperature (T) and humidity are compensated for solar heating by the sensor.
+Byte meanings for 1.6.2 were confirmed by analysis of the Ecowitt V1.6.2 firmware image.
 
 Rain start info:
 Status 1 will be reset to 0 when:
@@ -67,7 +89,7 @@ Status 1 will be reset to 0 when:
 static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble[] = {0xaa, 0xaa, 0x2d, 0xd4}; // 32 bit, part of preamble and sync word
-    uint8_t b[32];
+    uint8_t b[39]; // 32 bytes, newer firmware appends 7 more
 
     // Validate package, WS90 nominal size is 345 bit periods
     if (bitbuffer->bits_per_row[0] < 168 || bitbuffer->bits_per_row[0] > 500) {
@@ -77,13 +99,16 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Find a data package and extract data buffer
     unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, 32) + 32;
-    if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) { // Did not find a big enough package
+    if (bit_offset + 32 * 8 > bitbuffer->bits_per_row[0]) { // Did not find a big enough package
         decoder_logf_bitbuffer(decoder, 2, __func__, bitbuffer, "short package at %u (%u)", bit_offset, bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH;
     }
 
-    // Extract package data
-    bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
+    // Extract package data, including the extension bytes if present
+    unsigned len = (bitbuffer->bits_per_row[0] - bit_offset) / 8;
+    if (len > sizeof(b))
+        len = sizeof(b);
+    bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, len * 8);
 
     if (b[0] != 0x90) // Check for family code 0x90
         return DECODE_ABORT_EARLY;
@@ -97,6 +122,12 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_logf(decoder, 1, __func__, "Checksum error: %02x %02x (%02x)", crc, chk, b[31]);
         return DECODE_FAIL_MIC;
     }
+
+    // The extension bytes 32-38 have their own CRC (byte 37) and checksum (byte 38). The frame
+    // has no trailer, so the last 1-5 bits are often lost by the demodulator; if the checksum
+    // byte is incomplete, accept the extension on its CRC alone.
+    int has_ext = len >= 38 && crc8(b, 38, 0x31, 0x00) == 0 &&
+            (len < 39 || (add_bytes(b, 38) & 0xff) == b[38]);
 
     int id          = (b[1] << 16) | (b[2] << 8) | (b[3]);
     int light_raw   = (b[4] << 8) | (b[5]);
@@ -112,11 +143,13 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int wind_dir    = ((b[7] & 0x20) << 3) | (b[11]);
     int wind_max    = ((b[7] & 0x40) << 2) | (b[12]);
     int uv_index    = (b[13]);
-    int pressure    = (b[14] << 8) | (b[15]);
+    int pressure    = ((b[14] & 0x3f) << 8) | (b[15]); // 0.1 hPa, top 2 bits are ultrasonic status
     int rain_raw    = (b[19] << 8 ) | (b[20]);
     int rain_start  = (b[16] & 0x10) >> 4;
     int supercap_V  = (b[21] & 0x3f);
     int firmware    = b[29];
+    int temp_raw_ext = has_ext ? (b[32] << 6) | (b[33] >> 2) : 0x3fff;                          // uncompensated
+    int temp_2_raw      = has_ext ? ((b[33] & 0x03) << 12) | (b[34] << 4) | (b[35] >> 4) : 0x3fff; // second sensor
 
     if (battery_lvl > 100) // More then 100%?
         battery_lvl = 100;
@@ -132,7 +165,9 @@ static int fineoffset_ws90_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "battery_mV",       "Battery Voltage",  DATA_FORMAT, "%d mV", DATA_INT,    battery_mv,
             "temperature_C",    "Temperature",      DATA_COND, temp_raw != 0x3ff,   DATA_FORMAT, "%.1f C",   DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",         DATA_COND, humidity != 0xff,    DATA_FORMAT, "%u %%",    DATA_INT, humidity,
-            "pressure_hPa",     "Pressure",         DATA_COND, pressure != 0x3fff, DATA_FORMAT, "%.1f hPa", DATA_DOUBLE, (double)pressure,
+            "temperature_raw_C", "Raw Temperature", DATA_COND, temp_raw_ext != 0x3fff, DATA_FORMAT, "%.2f C", DATA_DOUBLE, (temp_raw_ext - 4000) * 0.01f,
+            "temperature_2_C",  "Temperature 2",    DATA_COND, temp_2_raw != 0x3fff, DATA_FORMAT, "%.2f C", DATA_DOUBLE, (temp_2_raw - 4000) * 0.01f,
+            "pressure_hPa",     "Pressure",         DATA_COND, pressure != 0x3fff, DATA_FORMAT, "%.1f hPa", DATA_DOUBLE, pressure * 0.1f,
             "wind_dir_deg",     "Wind direction",   DATA_COND, wind_dir != 0x1ff,   DATA_INT, wind_dir,
             "wind_avg_m_s",     "Wind speed",       DATA_COND, wind_avg != 0x1ff,   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_avg * 0.1f,
             "wind_max_m_s",     "Gust speed",       DATA_COND, wind_max != 0x1ff,   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_max * 0.1f,
@@ -159,6 +194,8 @@ static char const *const output_fields[] = {
         "battery_mV",
         "temperature_C",
         "humidity",
+        "temperature_raw_C",
+        "temperature_2_C",
         "pressure_hPa",
         "wind_dir_deg",
         "wind_avg_m_s",
