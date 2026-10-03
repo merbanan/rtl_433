@@ -34,9 +34,11 @@ Flex decoder:
 
     Decoded frames (9 bytes / 72 bits, after Manchester decode):
 
-    Rolling (byte7=0x1c): 9187740a 54 07 58 1c 65
-    Rolling (byte7=0x1c): 9187740a 54 17 58 1c 75  (byte5 burst counter steps)
-    Pressure-loss (0x01): 9187740a 4e 00 5d 01 42
+    Rolling        (byte7=0x1c): 9187740a 54 07 58 1c 65
+    Rolling        (byte7=0x1c): 9187740a 54 17 58 1c 75  (byte5 burst counter steps)
+    Pressure alert (byte7=0x01): 9187740a 4e 00 5d 01 42
+    Pressure alert (byte7=0x01): 861cd61b 3c 00 52 01 22  (another tire, 30 PSI)
+    Pressure alert (byte7=0x01): 861cd397 00 00 57 01 64  (empty tire, 0 PSI)
 
 Data layout (72 bits):
 
@@ -45,16 +47,16 @@ Data layout (72 bits):
 
 - I: {32} Sensor ID (bytes 0-3), hexadecimal string in output.
 - P: {9} Raw tire pressure = (byte4 << 1) | (byte5 >> 7) [8 bits in byte4 + MSB of byte5].
-    Pressure in PSI = raw * 0.254 + 0.3, converted to kPa for output.
+    Pressure in PSI = raw * 0.25, converted to kPa for output.
 - R: {2} Burst repeat counter (byte5 bits 5-4)
-- Q: {3} Sequence (byte5 bits 2-0)
+- Q: {3} Sequence (byte5 bits 2-0; not a monotonic counter, 0 in alert frames)
 - U: {2} Unknown (byte5 bits 6 and 3)
 - T: {8} Temperature, degrees C = byte6 - 55.
 - M: {8} Transmit Mode / Status (byte7). PARTIAL enumeration:
     - 0x1c: Rolling (normal; most common)
     - 0x1d: Rolling (hard accel/brake, tentative)
     - 0x0e: Rolling (less common, tentative)
-    - 0x01: Pressure-loss alert
+    - 0x01: Pressure-change alert (on rapid fall or rise; verified by deflating and inflating)
     Other states not yet observed.
 - C: {8} Checksum = sum(byte0..byte7) & 0xFF.
 
@@ -105,10 +107,10 @@ static int tpms_schrader_fsk_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             }
 
             uint32_t id = ((uint32_t)b[0] << 24) | ((uint32_t)b[1] << 16) | ((uint32_t)b[2] << 8) | b[3];
-            // The 9-bit pressure count was calibrated against physical digital gauge readings.
+            // 0.25 PSI per count, no offset: an empty tire reads 0.
             unsigned pressure_raw = ((unsigned)b[4] << 1) | (b[5] >> 7);
-            double pressure_kpa   = (pressure_raw * 0.254 + 0.3) * 6.895;
-            // Byte 5 also carries a 2-bit index within a burst and a 3-bit sequence counter.
+            double pressure_kpa   = pressure_raw * 0.25 * 6.894757;
+            // Byte 5 also carries a 2-bit index within a burst and a 3-bit sequence value.
             unsigned burst_repeat = (b[5] >> 4) & 0x03;
             unsigned sequence     = b[5] & 0x07;
             int temperature_c     = b[6] - 55;
