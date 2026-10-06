@@ -150,3 +150,68 @@ jobs:
         run: |
           clang -Iinclude -DTHREADS --analyze -Xanalyzer -analyzer-output=text -Xanalyzer -analyzer-disable-checker=deadcode.DeadStores include/[a-ikln-z]*.h src/[a-ikln-z]*.c src/devices/*.c 2>&1 | tee analyzer.out
           [ ! -s analyzer.out ]
+
+  sample_tests_gate_job:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    name: Sample regression (pinned baseline, ${{ matrix.runner }})
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y --no-install-recommends cmake ninja-build python3-venv
+          python3 -m venv .venv
+          .venv/bin/pip install -q deepdiff==4.0.9
+      - name: Build rtl_433
+        run: |
+          cmake -GNinja -B build -DENABLE_RTLSDR=OFF -DENABLE_SOAPYSDR=OFF
+          cmake --build build
+      - name: Shallow-fetch pinned rtl_433_tests
+        run: |
+          SHA="$(cat tests/rtl_433_tests_pinned_sha.txt)"
+          mkdir rtl_433_tests && cd rtl_433_tests && git init -q \
+            && git remote add origin https://github.com/merbanan/rtl_433_tests \
+            && git fetch --depth 1 -q origin "$SHA" \
+            && git checkout -q FETCH_HEAD
+      - name: Run gated sample tests
+        # Fails only when a capture in tests/rtl_433_tests_baseline.txt regresses.
+        # Newly-passing captures are reported to the step summary, never fatal.
+        run: |
+          .venv/bin/python tests/rtl_433_tests_regression.py \
+            --rtl433 build/src/rtl_433 \
+            --conf ./conf \
+            --tests rtl_433_tests/tests \
+            --runner rtl_433_tests/bin/run_test.py \
+            --baseline tests/rtl_433_tests_baseline.txt
+
+  sample_tests_master_job:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    name: Sample regression (master, informational, ${{ matrix.runner }})
+    # Informational only: tracks the latest samples, never blocks the build.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y --no-install-recommends cmake ninja-build python3-venv
+          python3 -m venv .venv
+          .venv/bin/pip install -q deepdiff==4.0.9
+      - name: Build rtl_433
+        run: |
+          cmake -GNinja -B build -DENABLE_RTLSDR=OFF -DENABLE_SOAPYSDR=OFF
+          cmake --build build
+      - name: Shallow-clone rtl_433_tests master
+        run: git clone --depth 1 https://github.com/merbanan/rtl_433_tests rtl_433_tests
+      - name: Run informational sample tests
+        run: |
+          .venv/bin/python rtl_433_tests/bin/run_test.py -c build/src/rtl_433 -C ./conf -t rtl_433_tests/tests -I time --first-line | tee summary.txt
+          { echo '### rtl_433_tests (master) — informational'; echo '```'; tail -n 40 summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

@@ -102,6 +102,43 @@ until you've added test signals and the description to the repository.
 
 The rtl_433_test repository is also used to help test that changes to rtl_433 haven't caused any regressions.
 
+### Sample regression CI
+
+On every push and pull request, `.github/workflows/check.yml` runs the
+rtl_433_tests sample files against a freshly built `rtl_433` in two jobs:
+
+- **`sample_tests_gate_job`** (blocking) shallow-fetches the rtl_433_tests
+  commit pinned in `tests/rtl_433_tests_pinned_sha.txt` and runs
+  `tests/rtl_433_tests_regression.py` against the allowlist in
+  `tests/rtl_433_tests_baseline.txt`. The build fails when a baselined capture
+  regresses (now failing or skipped) or is missing from the fetched sample set
+  (a guard against a partial fetch or wrong path). Captures not in the baseline
+  never fail the build.
+- **`sample_tests_master_job`** (informational, never blocks) shallow-clones
+  the rtl_433_tests `master` branch and reports a plain pass/fail summary so
+  upstream drift is visible.
+
+Both jobs use a `--depth 1` shallow clone to avoid the large binary history of
+the rtl_433_tests sample files.
+
+**Promoting newly-passing captures.** When a decoder change makes more captures
+pass, the gate job's step summary lists them under "Newly passing — promote
+these". Copy those paths into `tests/rtl_433_tests_baseline.txt` (keep the file
+sorted) and commit; they then become enforced.
+
+**Bumping the pinned samples.** Update the SHA in
+`tests/rtl_433_tests_pinned_sha.txt`, regenerate the baseline locally, and
+commit both files:
+
+```
+python3 tests/rtl_433_tests_regression.py \
+    --rtl433 build/src/rtl_433 --conf ./conf \
+    --tests <rtl_433_tests>/tests --runner <rtl_433_tests>/bin/run_test.py \
+    --baseline tests/rtl_433_tests_baseline.txt --record
+```
+
+The runner needs `deepdiff==4.0.9` (see the rtl_433_tests `requirements.txt`).
+
 ## Code style
 
 Indentation is 4 spaces. Check with `clang-format`.
