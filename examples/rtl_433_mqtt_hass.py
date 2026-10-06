@@ -116,6 +116,17 @@ SKIP_KEYS = [ "type", "model", "subtype", "channel", "id", "mic", "mod",
 # @todo - Model specific definitions might be needed
 
 mappings = {
+    "distance_m": {
+        "device_type": "sensor",
+        "object_suffix": "dist_m",
+        "config": {
+            "device_class": "distance",
+            "name": "Distance (m)",
+            "unit_of_measurement": "m",
+            "value_template": "{{ value|float|round(3) }}",
+            "state_class": "measurement"
+        }
+    },
     "temperature_C": {
         "device_type": "sensor",
         "object_suffix": "T",
