@@ -38,6 +38,9 @@ typedef struct {
     int16_t minn;
     int16_t midd;
     int skip_samples;
+
+    int16_t median_samples[3];
+    unsigned median_count;
 } pulse_detect_fsk_t;
 
 /// Init/clear Demodulate Frequency Shift Keying (FSK) state.
@@ -73,5 +76,25 @@ void pulse_detect_fsk_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pulses);
 /// @param fm_n One single sample of FM data
 /// @param fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
 void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses);
+
+/// Demodulate Frequency Shift Keying (FSK) using min/max tracking with hysteresis.
+///
+/// Uses a wide hysteresis band to complement the midpoint min/max detector on
+/// noisy signals rather than replacing its more sensitive slicing behavior.
+/// Function is stateful between calls.
+/// @param s Internal state
+/// @param fm_n One single sample of FM data
+/// @param fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
+void pulse_detect_fsk_minmax_hysteresis(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses);
+
+/// Demodulate Frequency Shift Keying (FSK) using median-filtered min/max tracking.
+///
+/// A median-of-three filter suppresses isolated FM spikes. The min/max levels do
+/// not decay, preserving their separation throughout weak or noisy packages.
+/// Function is stateful between calls.
+/// @param s Internal state
+/// @param fm_n One single sample of FM data
+/// @param fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
+void pulse_detect_fsk_minmax_median(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses);
 
 #endif /* INCLUDE_PULSE_DETECT_FSK_H_ */
