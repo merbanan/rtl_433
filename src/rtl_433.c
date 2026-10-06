@@ -1413,13 +1413,18 @@ static void timer_handler(struct mg_connection *nc, int ev, void *ev_data)
             }
         }
         if (cfg->dev_state != DEVICE_STATE_STOPPED) {
-            cfg->exit_async = 1;
-            cfg->exit_code = 3;
+            // NOTE: In DEVICE_MODE_RESTART do not set exit_async, as that would
+            // terminate the main polling loop immediately after restart.
+            if (cfg->dev_mode != DEVICE_MODE_RESTART) {
+                cfg->exit_async = 1;
+                cfg->exit_code = 3;
+            }
             sdr_stop(cfg->dev);
             cfg->dev_state = DEVICE_STATE_STOPPED;
         }
         if (cfg->dev_mode == DEVICE_MODE_QUIT) {
             cfg->exit_async = 1;
+            cfg->exit_code = 3;
         }
         if (cfg->dev_mode == DEVICE_MODE_RESTART) {
             start_sdr(cfg);
