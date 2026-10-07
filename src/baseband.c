@@ -49,7 +49,7 @@ float envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 float envelope_detect_nolut(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     uint32_t sum = 0;
-    for (uint32_t i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         int16_t x = 127 - iq_buf[2 * i];
         int16_t y = 127 - iq_buf[2 * i + 1];
         y_buf[i]  = x * x + y * y; // max 32768, fs 16384
