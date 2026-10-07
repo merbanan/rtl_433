@@ -406,6 +406,7 @@
     DECL(kinggates_stylo4k) \
     DECL(ido) \
     DECL(bresser_3ch_v0) \
+    DECL(nexus_th40) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;

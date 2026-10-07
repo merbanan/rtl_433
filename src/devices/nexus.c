@@ -205,6 +205,93 @@ static int nexus_sauna_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
+/**
+VOCOO 6202 indoor/outdoor thermometer hygrometer, outdoor sensor.
+
+Nexus compatible protocol with 40 bit messages. An identical looking set is
+sold without brand as "Digital Thermometer Hygrometer with remote sensor".
+
+The sensor sends 40 bits about 9 times every ~57 seconds,
+ppm modulated (distance coding) like the Nexus sensors: a pulse of ~500 us
+followed by a short gap of ~1000 us for a 0 bit or a long ~2000 us gap
+for a 1 bit, the sync gap is ~4000 us.
+
+The layout is the Nexus one with a different constant nibble and an
+additional constant nibble at the end:
+
+    [id0] [id1] [flags] [temp0] [temp1] [temp2] [const] [humi0] [humi1] [const2]
+
+- The 8-bit id changes when the battery is changed in the sensor.
+- flags are 4 bits B T C C
+  - B is the battery status: 1=OK, 0=LOW
+  - T is Test mode (unconfirmed), 0=Normal, 1=Test
+  - CC is the channel: 0=CH1, 1=CH2, 2=CH3
+- temp is 12 bit signed scaled by 10
+- const is always 0101 (0x5), the Nexus protocol has 1111 (0xF)
+- humidity is 8 bits
+- const2 is always 1010 (0xA)
+
+Example: `{40}1e80ce53ea` is id 30, battery OK, channel 1, 20.6 C, 62 %.
+
+Format string:
+
+    ID:8d BATT:b TEST:b CH:2d TEMP:12d CONST:4h HUMI:8d CONST2:4h
+
+There is no checksum. A message is only accepted with exactly 40 bits,
+at least 3 identical repeats, both constant nibbles (8 fixed bits)
+and a plausible channel and humidity.
+*/
+static int nexus_th40_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    int r = bitbuffer_find_repeated_row(bitbuffer, 3, 40);
+    if (r < 0) {
+        return DECODE_ABORT_EARLY;
+    }
+
+    uint8_t *b = bitbuffer->bb[r];
+
+    // we expect 40 bits but there might be a trailing 0 bit
+    if (bitbuffer->bits_per_row[r] > 41) {
+        return DECODE_ABORT_LENGTH;
+    }
+
+    if ((b[3] & 0xf0) != 0x50 || (b[4] & 0x0f) != 0x0a) {
+        return DECODE_ABORT_EARLY; // const not 0101 or const2 not 1010
+    }
+
+    if ((b[1] & 0x30) == 0x30) {
+        return DECODE_ABORT_EARLY; // channel not 1-3
+    }
+
+    int humidity = ((b[3] & 0x0f) << 4) | (b[4] >> 4);
+    if (humidity > 100) {
+        decoder_logf(decoder, 2, __func__, "implausible humidity: %d %%", humidity);
+        return DECODE_FAIL_SANITY;
+    }
+
+    int id       = b[0];
+    int battery  = b[1] & 0x80;
+    int testmode = b[1] & 0x40;
+    int channel  = ((b[1] & 0x30) >> 4) + 1;
+    int temp_raw = (int16_t)((b[1] << 12) | (b[2] << 4)); // sign-extend
+    float temp_c = (temp_raw >> 4) * 0.1f;
+
+    /* clang-format off */
+    data_t *data = data_make(
+            "model",         "",            DATA_STRING, "Vocoo-6202",
+            "id",            "House Code",  DATA_INT,    id,
+            "channel",       "Channel",     DATA_INT,    channel,
+            "battery_ok",    "Battery",     DATA_INT,    !!battery,
+            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+            "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "test",          "Test?",       DATA_COND,   testmode, DATA_INT,    !!testmode,
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
 static char const *const output_fields[] = {
         "model",
         "id",
@@ -248,4 +335,15 @@ r_device const nexus_sauna = {
         .decode_fn   = &nexus_sauna_decode,
         .priority    = 10, // Eliminate false positives by letting Rubicson-Temperature go earlier
         .fields      = sauna_output_fields,
+};
+
+r_device const nexus_th40 = {
+        .name        = "VOCOO 6202 temperature/humidity sensor (Nexus compatible, 40 bit)",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 1000,
+        .long_width  = 2000,
+        .gap_limit   = 3000,
+        .reset_limit = 5000,
+        .decode_fn   = &nexus_th40_decode,
+        .fields      = output_fields,
 };
