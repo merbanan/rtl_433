@@ -22,6 +22,8 @@ int gettimeofday(struct timeval *tv, void *tz)
         return -1; // we don't support TZ
     }
 
+    // A file time is a 64-bit value that represents the number of 100-nanosecond intervals
+    // that have elapsed since 12:00 A.M. January 1, 1601 Coordinated Universal Time (UTC).
     FILETIME ft;
     unsigned __int64 t64;
     GetSystemTimeAsFileTime(&ft);

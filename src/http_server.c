@@ -101,6 +101,7 @@ or `(echo "GET /stream HTTP/1.0\n"; sleep 600) | socat - tcp:127.0.0.1:8433`
 #include "r_private.h" // used for protocols
 #include "r_util.h"
 #include "optparse.h"
+#include "timer.h"
 #include "abuf.h"
 #include "list.h" // used for protocols
 #include "jsmn.h"
@@ -787,8 +788,7 @@ static void handle_openmetrics(struct mg_connection *nc, struct http_message *hm
     struct http_server_context *ctx = nc->user_data;
     r_cfg_t *cfg = ctx->cfg;
 
-    time_t now;
-    time(&now);
+    time_t now = monotonic_time();
 
     char buf[2000];
     int len = snprintf(buf, sizeof(buf),
@@ -827,10 +827,10 @@ static void handle_openmetrics(struct mg_connection *nc, struct http_message *hm
             "input_event_frames_total %u\n"
             "# EOF\n",
             (float)(now - cfg->demod->running_since), // uptime_seconds_total,
-            (float)cfg->demod->running_since,         // uptime_seconds_created,
+            (float)cfg->demod->running_start,         // uptime_seconds_created,
             (unsigned)cfg->demod->r_devs.len,         // decoder_enabled,
             (float)(now - cfg->sdr_since),            // input_uptime_seconds_total,
-            (float)cfg->sdr_since,                    // input_uptime_seconds_created,
+            (float)cfg->sdr_start,                    // input_uptime_seconds_created,
             cfg->demod->total_frames_count,           // input_count_frames_total,
             cfg->demod->total_frames_squelch,         // input_squelch_frames_total,
             cfg->demod->total_frames_ook,             // input_ook_frames_total,
