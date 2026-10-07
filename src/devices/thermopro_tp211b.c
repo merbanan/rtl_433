@@ -1,5 +1,5 @@
 /** @file
-    ThermoPro TP211B Thermometer.
+    ThermoPro TP211B/TP212B Thermometer.
 
     Copyright (C) 2026, Ali Rahimi, Bruno OCTAU, Christian W. Zuckschwerdt
 
@@ -12,10 +12,14 @@
 #include "decoder.h"
 
 /**
-ThermoPro TP211B Thermometer.
+ThermoPro TP211B/TP212B Thermometer.
 
 RF:
 - 915 MHz FSK temperature sensor.
+
+The TP212B uses the same modulation, sync word, packet layout, and
+temperature encoding observed for the TP211B. The checksum uses a
+different final XOR constant: 0x411B for TP211B and 0x455B for TP212B.
 
 Based on issue #3435 open by \@splobsterman, and thanks to the analysis conducted there by Ali, Bruno, Christian
 And contributors with lot of samples from \@splobsterman, \@moryckaz, and Ali
@@ -29,13 +33,15 @@ Data layout after preamble:
     Byte Position   0  1  2  3  4  5  6  7
     Sample          01 1e d6 03 6c aa 14 ff
     Sample          01 1e d6 02 fa aa c4 1e
+    TP212B sample    03 89 71 02 db aa 34 04
                     II II II BT TT aa CC CC
 
 - III: {24} Sensor ID
 - B:    {4} Battery flag, Battery OK = 0x0, LOW battery = 0x8
 - TTT: {12} Temperature, raw value, °C = (raw - 500) / 10
 - aa:   {8} Fixed value 0xAA
-- CC:  {16} Checksum, XOR bit with a specific WORD to get the 16 bit values, and final XOR with 0x411B, see table below.
+- CC:  {16} Checksum, XOR bit with a specific WORD to get the 16 bit values.
+       Final XOR is 0x411B for TP211B and 0x455B for TP212B, see table below.
 - Followed by trailing d2 d2 d2 d2 d2 00 00 (not used).
 
 XOR Table by bit position into the frame:
@@ -160,10 +166,22 @@ static int thermopro_tp211b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
     }
 
-    const uint16_t checksum_calc     = tp211b_checksum(b);
-    const uint16_t checksum_from_row = b[6] << 8 | b[7];
-    if (checksum_from_row != checksum_calc) {
-        decoder_logf(decoder, 2, __func__, "Checksum error, calculated %04x, expected %04x", checksum_calc, checksum_from_row);
+    const uint16_t checksum_calc_tp211b = tp211b_checksum(b);
+    // TP212B differs only in the final XOR: 0x411B -> 0x455B.
+    const uint16_t checksum_calc_tp212b = checksum_calc_tp211b ^ 0x0440;
+    const uint16_t checksum_from_row    = (b[6] << 8) | b[7];
+
+    char const *model;
+    if (checksum_from_row == checksum_calc_tp211b) {
+        model = "ThermoPro-TP211B";
+    }
+    else if (checksum_from_row == checksum_calc_tp212b) {
+        model = "ThermoPro-TP212B";
+    }
+    else {
+        decoder_logf(decoder, 2, __func__,
+                "Checksum error, calculated %04x/%04x, expected %04x",
+                checksum_calc_tp211b, checksum_calc_tp212b, checksum_from_row);
         return DECODE_FAIL_MIC;
     }
 
@@ -176,7 +194,7 @@ static int thermopro_tp211b_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",         "",            DATA_STRING, "ThermoPro-TP211B",
+            "model",         "",            DATA_STRING, model,
             "id",            "Id",          DATA_FORMAT, "%06x",   DATA_INT,    id,
             "battery_ok",    "Battery",     DATA_INT,    !low_bat,
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temp_c,
@@ -198,7 +216,7 @@ static char const *const output_fields[] = {
 };
 
 r_device const thermopro_tp211b = {
-        .name        = "ThermoPro TP211B Thermometer",
+        .name        = "ThermoPro TP211B/TP212B Thermometer",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 105,
         .long_width  = 105,
