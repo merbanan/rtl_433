@@ -225,10 +225,10 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t const preamble_fsk[] = {0xAA, 0x2D, 0xD4}; // part of preamble and sync word for FSK
 
     if (decoder->modulation == OOK_PULSE_PWM && bits == 79 && bitbuffer->bb[0][0] == 0xfe) {
-        fineoffset_wh1050_decode(decoder, bitbuffer, 7, TYPE_OOK);
+        events = fineoffset_wh1050_decode(decoder, bitbuffer, 7, TYPE_OOK);
     }
     else if (decoder->modulation == OOK_PULSE_PWM && bits == 80 && bitbuffer->bb[0][0] == 0xff) {
-        fineoffset_wh1050_decode(decoder, bitbuffer, 8, TYPE_OOK);
+        events = fineoffset_wh1050_decode(decoder, bitbuffer, 8, TYPE_OOK);
     }
     else if (decoder->modulation == FSK_PULSE_PCM && bits > 112 && bits < 760) {
         while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_fsk, sizeof(preamble_fsk) * 8))

@@ -1,9 +1,21 @@
+/** @file
+    Regression tests for Fine Offset WH1050 frame validation and accounting.
+
+    Copyright (C) 2026 Vryuz
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "bitbuffer.h"
 #include "data.h"
+#include "pulse_slicer.h"
 #include "rtl_433_devices.h"
 
 typedef struct {
@@ -11,19 +23,29 @@ typedef struct {
     char model[64];
 } capture_t;
 
+typedef struct {
+    char const *name;
+    r_device const *device_template;
+    char const *code;
+    int expected_rc;
+    int expected_outputs;
+    char const *expected_model;
+} decode_case_t;
+
 static void test_log_output(r_device *decoder, int level, data_t *data)
 {
-    (void)level;
     (void)decoder;
+    (void)level;
     data_free(data);
 }
 
 static void test_data_output(r_device *decoder, data_t *data)
 {
     capture_t *capture = decoder->output_ctx;
-    data_t *node       = data;
 
     if (capture) {
+        data_t *node = data;
+
         capture->output_calls++;
         for (; node; node = node->next) {
             if (node->key && !strcmp(node->key, "model") && node->type == DATA_STRING && node->value.v_ptr) {
@@ -36,23 +58,13 @@ static void test_data_output(r_device *decoder, data_t *data)
     data_free(data);
 }
 
-static int run_decode(r_device const *template, bitbuffer_t *bits, capture_t *capture)
+static void init_test_device(r_device *decoder, r_device const *device_template, capture_t *capture)
 {
-    r_device decoder = *template;
-
+    *decoder = *device_template;
     memset(capture, 0, sizeof(*capture));
-    decoder.output_fn  = test_data_output;
-    decoder.log_fn     = test_log_output;
-    decoder.output_ctx = capture;
-
-    return decoder.decode_fn(&decoder, bits);
-}
-
-static int run_decode_code(r_device const *template, char const *code, capture_t *capture)
-{
-    bitbuffer_t bits = {0};
-    bitbuffer_parse(&bits, code);
-    return run_decode(template, &bits, capture);
+    decoder->output_fn  = test_data_output;
+    decoder->log_fn     = test_log_output;
+    decoder->output_ctx = capture;
 }
 
 static int failf(char const *name, char const *detail)
@@ -61,71 +73,64 @@ static int failf(char const *name, char const *detail)
     return 1;
 }
 
-static int expect_output(
-        char const *name,
-        r_device const *template,
-        char const *code,
-        int expected_outputs,
-        char const *expected_model)
+static int run_decode_case(decode_case_t const *test_case)
 {
+    bitbuffer_t bits = {0};
     capture_t capture;
-    int decode_rc = run_decode_code(template, code, &capture);
+    r_device decoder;
+    int decode_rc;
 
-    if (capture.output_calls != expected_outputs) {
-        char detail[160];
+    bitbuffer_parse(&bits, test_case->code);
+    init_test_device(&decoder, test_case->device_template, &capture);
+    decode_rc = decoder.decode_fn(&decoder, &bits);
+
+    if (decode_rc != test_case->expected_rc) {
+        char detail[192];
         snprintf(detail, sizeof(detail),
-                "expected %d output event(s), got %d (decode_rc=%d)",
-                expected_outputs, capture.output_calls, decode_rc);
-        return failf(name, detail);
+                "expected decode_rc=%d, got %d",
+                test_case->expected_rc, decode_rc);
+        return failf(test_case->name, detail);
     }
 
-    if (expected_outputs > 0) {
+    if (capture.output_calls != test_case->expected_outputs) {
+        char detail[192];
+        snprintf(detail, sizeof(detail),
+                "expected %d output event(s), got %d",
+                test_case->expected_outputs, capture.output_calls);
+        return failf(test_case->name, detail);
+    }
+
+    if (test_case->expected_outputs > 0) {
         if (!capture.model[0]) {
-            return failf(name, "missing model field on emitted event");
+            return failf(test_case->name, "missing model field on emitted event");
         }
-        if (strcmp(capture.model, expected_model) != 0) {
-            char detail[160];
+        if (strcmp(capture.model, test_case->expected_model) != 0) {
+            char detail[192];
             snprintf(detail, sizeof(detail),
                     "expected model %s, got %s",
-                    expected_model, capture.model);
-            return failf(name, detail);
+                    test_case->expected_model, capture.model);
+            return failf(test_case->name, detail);
         }
     }
 
     return 0;
 }
 
-static int expect_no_output(char const *name, r_device const *template, char const *code)
-{
-    return expect_output(name, template, code, 0, NULL);
-}
-
-static int expect_no_output_bits(char const *name, r_device const *template, bitbuffer_t *bits)
+static int expect_no_output_bits(char const *name, r_device const *device_template, bitbuffer_t *bits)
 {
     capture_t capture;
-    int decode_rc = run_decode(template, bits, &capture);
+    r_device decoder;
+    int decode_rc;
 
-    if (capture.output_calls != 0) {
-        char detail[160];
-        snprintf(detail, sizeof(detail),
-                "expected 0 output events, got %d (decode_rc=%d)",
-                capture.output_calls, decode_rc);
-        return failf(name, detail);
-    }
+    init_test_device(&decoder, device_template, &capture);
+    decode_rc = decoder.decode_fn(&decoder, bits);
 
-    return 0;
-}
-
-static int expect_return_code(char const *name, r_device const *template, char const *code, int expected_rc)
-{
-    capture_t capture;
-    int decode_rc = run_decode_code(template, code, &capture);
-
-    if (decode_rc != expected_rc) {
+    if (decode_rc != DECODE_ABORT_EARLY) {
         char detail[160];
         snprintf(detail, sizeof(detail),
                 "expected decode_rc=%d, got %d",
-                expected_rc, decode_rc);
+                DECODE_ABORT_EARLY,
+                decode_rc);
         return failf(name, detail);
     }
     if (capture.output_calls != 0) {
@@ -155,100 +160,111 @@ static int expect_rows(char const *name, char const *code, unsigned expected_row
     return 0;
 }
 
+static int expect_truncated_fsk_no_output(int bit_len)
+{
+    bitbuffer_t bits = {0};
+    capture_t capture;
+    r_device decoder;
+    char code[96];
+    char name[96];
+    int decode_rc;
+
+    snprintf(code, sizeof(code), "{%d}00000000aaaaaa2dd45d5193480009000000", bit_len);
+    snprintf(name, sizeof(name), "truncated FSK len %d under tfa", bit_len);
+
+    bitbuffer_parse(&bits, code);
+    init_test_device(&decoder, &tfa_303151, &capture);
+    decode_rc = decoder.decode_fn(&decoder, &bits);
+
+    if (decode_rc != 0 || capture.output_calls != 0) {
+        char detail[192];
+        snprintf(detail, sizeof(detail),
+                "bit length %d expected decode_rc=0/output=0, got decode_rc=%d/output=%d",
+                bit_len, decode_rc, capture.output_calls);
+        return failf(name, detail);
+    }
+
+    return 0;
+}
+
+static int expect_slicer_accounting(char const *name, char const *code)
+{
+    capture_t capture;
+    r_device decoder;
+    int ret;
+
+    init_test_device(&decoder, &fineoffset_wh1050, &capture);
+    ret = pulse_slicer_string(code, &decoder);
+
+    if (ret != 1) {
+        char detail[160];
+        snprintf(detail, sizeof(detail), "expected pulse_slicer_string() return 1, got %d", ret);
+        return failf(name, detail);
+    }
+    if (capture.output_calls != 1) {
+        char detail[160];
+        snprintf(detail, sizeof(detail), "expected 1 output event, got %d", capture.output_calls);
+        return failf(name, detail);
+    }
+    if (decoder.decode_events != 1 || decoder.decode_ok != 1 || decoder.decode_messages != 1) {
+        char detail[192];
+        snprintf(detail, sizeof(detail),
+                "expected events/ok/messages = 1/1/1, got %u/%u/%u",
+                decoder.decode_events, decoder.decode_ok, decoder.decode_messages);
+        return failf(name, detail);
+    }
+    if (decoder.decode_fails[0] != 0) {
+        char detail[160];
+        snprintf(detail, sizeof(detail), "expected decode_fails[0]=0, got %u", decoder.decode_fails[0]);
+        return failf(name, detail);
+    }
+
+    return 0;
+}
+
 int main(void)
 {
-    int failed = 0;
-    char code[96];
     bitbuffer_t bits = {0};
+    int failed       = 0;
+    int bit_len;
 
-    failed += expect_output(
-            "valid OOK80 under fineoffset",
-            &fineoffset_wh1050,
-            "{80}ff5f51934800001246aa",
-            1,
-            "Fineoffset-WH1050");
-    failed += expect_no_output(
-            "valid OOK80 under tfa",
-            &tfa_303151,
-            "{80}ff5f51934800001246aa");
+    static decode_case_t const decode_cases[] = {
+            {"valid OOK80 under fineoffset", &fineoffset_wh1050, "{80}ff5f51934800001246aa", 1, 1, "Fineoffset-WH1050"},
+            {"valid OOK80 under tfa", &tfa_303151, "{80}ff5f51934800001246aa", DECODE_ABORT_LENGTH, 0, NULL},
+            {"valid OOK79 under fineoffset", &fineoffset_wh1050, "{79}febea326900000248d54", 1, 1, "Fineoffset-WH1050"},
+            {"valid OOK79 under tfa", &tfa_303151, "{79}febea326900000248d54", DECODE_ABORT_LENGTH, 0, NULL},
+            {"valid FSK144 under tfa", &tfa_303151, "{144}00000000aaaaaa2dd45d5193480009000000", 1, 1, "TFA-303151"},
+            {"valid FSK144 under fineoffset", &fineoffset_wh1050, "{144}00000000aaaaaa2dd45d5193480009000000", DECODE_ABORT_LENGTH, 0, NULL},
+            {"truncated FSK120 under tfa", &tfa_303151, "{120}00000000aaaaaa2dd45d5193480009", 0, 0, NULL},
+            {"invalid CRC OOK under fineoffset", &fineoffset_wh1050, "{80}ff5f51934800001246ab", 0, 0, NULL},
+            {"invalid CRC FSK under tfa", &tfa_303151, "{144}00000000aaaaaa2dd45d5193480009000001", 0, 0, NULL},
+            {"invalid 79-bit OOK preamble returns abort length", &fineoffset_wh1050, "{79}ffbea326900000248d54", DECODE_ABORT_LENGTH, 0, NULL},
+            {"invalid 80-bit OOK preamble returns abort length", &fineoffset_wh1050, "{80}fe5f51934800001246aa", DECODE_ABORT_LENGTH, 0, NULL},
+            {"two rows under fineoffset", &fineoffset_wh1050, "{80}ff5f51934800001246aa{80}ff5f51934800001246aa", DECODE_ABORT_EARLY, 0, NULL},
+            {"two rows under tfa", &tfa_303151, "{144}00000000aaaaaa2dd45d5193480009000000{144}00000000aaaaaa2dd45d5193480009000000", DECODE_ABORT_EARLY, 0, NULL},
+    };
 
-    failed += expect_output(
-            "valid OOK79 under fineoffset",
-            &fineoffset_wh1050,
-            "{79}febea326900000248d54",
-            1,
-            "Fineoffset-WH1050");
-    failed += expect_no_output(
-            "valid OOK79 under tfa",
-            &tfa_303151,
-            "{79}febea326900000248d54");
-
-    failed += expect_output(
-            "valid FSK144 under tfa",
-            &tfa_303151,
-            "{144}00000000aaaaaa2dd45d5193480009000000",
-            1,
-            "TFA-303151");
-    failed += expect_no_output(
-            "valid FSK144 under fineoffset",
-            &fineoffset_wh1050,
-            "{144}00000000aaaaaa2dd45d5193480009000000");
-
-    failed += expect_no_output(
-            "truncated FSK120 under tfa",
-            &tfa_303151,
-            "{120}00000000aaaaaa2dd45d5193480009");
+    for (unsigned i = 0; i < sizeof(decode_cases) / sizeof(decode_cases[0]); ++i) {
+        failed += run_decode_case(&decode_cases[i]);
+    }
 
     // The CRC byte and final 24 payload bits are zero, so old boundary handling
     // could synthesize absent trailing bits as zeros and still pass the CRC.
-    for (int bits_len = 120; bits_len < 144; ++bits_len) {
-        snprintf(code, sizeof(code), "{%d}00000000aaaaaa2dd45d5193480009000000", bits_len);
-        failed += expect_no_output("truncated FSK length under tfa", &tfa_303151, code);
+    for (bit_len = 120; bit_len < 144; ++bit_len) {
+        failed += expect_truncated_fsk_no_output(bit_len);
     }
 
-    failed += expect_output(
-            "exact FSK144 accepted under tfa",
-            &tfa_303151,
-            "{144}00000000aaaaaa2dd45d5193480009000000",
-            1,
-            "TFA-303151");
-
-    failed += expect_no_output(
-            "invalid CRC OOK under fineoffset",
-            &fineoffset_wh1050,
-            "{80}ff5f51934800001246ab");
-    failed += expect_no_output(
-            "invalid CRC FSK under tfa",
-            &tfa_303151,
-            "{144}00000000aaaaaa2dd45d5193480009000001");
-
-    failed += expect_return_code(
-            "invalid 79-bit OOK preamble returns abort length",
-            &fineoffset_wh1050,
-            "{79}ffbea326900000248d54",
-            DECODE_ABORT_LENGTH);
-    failed += expect_return_code(
-            "invalid 80-bit OOK preamble returns abort length",
-            &fineoffset_wh1050,
-            "{80}fe5f51934800001246aa",
-            DECODE_ABORT_LENGTH);
+    failed += expect_slicer_accounting("pulse slicer accounting for valid OOK80", "{80}ff5f51934800001246aa");
+    failed += expect_slicer_accounting("pulse slicer accounting for valid OOK79", "{79}febea326900000248d54");
 
     failed += expect_rows(
             "two-row OOK fixture row count",
             "{80}ff5f51934800001246aa{80}ff5f51934800001246aa",
             2);
-    failed += expect_no_output(
-            "two rows under fineoffset",
-            &fineoffset_wh1050,
-            "{80}ff5f51934800001246aa{80}ff5f51934800001246aa");
     failed += expect_rows(
             "two-row FSK fixture row count",
             "{144}00000000aaaaaa2dd45d5193480009000000{144}00000000aaaaaa2dd45d5193480009000000",
             2);
-    failed += expect_no_output(
-            "two rows under tfa",
-            &tfa_303151,
-            "{144}00000000aaaaaa2dd45d5193480009000000{144}00000000aaaaaa2dd45d5193480009000000");
 
     memset(&bits, 0, sizeof(bits));
     failed += expect_no_output_bits("zero rows under fineoffset", &fineoffset_wh1050, &bits);
