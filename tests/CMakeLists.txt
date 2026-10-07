@@ -15,6 +15,10 @@ endif()
 
 #add_test(baseband-test baseband-test)
 
+add_executable(acurite-rain-test acurite_rain_test.c)
+target_link_libraries(acurite-rain-test r_433)
+add_test(acurite_rain_test acurite-rain-test)
+
 ########################################################################
 # Define and build all unit tests
 ########################################################################
