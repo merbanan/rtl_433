@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Build on ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Setup
         run: brew install soapysdr librtlsdr
       - name: Configure
@@ -32,7 +32,7 @@ jobs:
         cmake-build-type: [Debug, Release]
     name: Build ${{ matrix.cmake-build-type }} ${{ matrix.cmake-generator }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Apt Update
         run: sudo apt-get update -q -y --no-install-recommends
       - name: Install Build Tools
@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build documentation
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install Doxygen
         run: |
           sudo apt-get update -q -y
@@ -79,7 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Check code style
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Style Check
         uses: ./.github/actions/style-check
 
@@ -87,7 +87,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Needs maintainer_update
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Working directory clean excluding untracked files
         run: |
           ./maintainer_update.py
@@ -97,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Check symbol errors
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Symbolizer report
         run: |
           ./tests/symbolizer.py check
@@ -106,7 +106,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Run tests with code coverage
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Setup
         run: |
           sudo apt-get update -q -y
@@ -137,7 +137,7 @@ jobs:
     runs-on: ubuntu-24.04
     name: Analyze with Clang
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install Clang
         run: |
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key 2>/dev/null | sudo apt-key add -

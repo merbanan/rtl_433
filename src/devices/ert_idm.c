@@ -12,7 +12,9 @@
 #include "decoder.h"
 
 /*
-Freq 912600155
+ERT Interval Data Message (IDM) and Interval Data Message (IDM) for Net Meters.
+
+- Freq 912.6M
 
 Random information:
 
