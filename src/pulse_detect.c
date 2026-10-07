@@ -26,6 +26,10 @@
 #define OOK_EST_HIGH_RATIO  64          // Constant for slowness of OOK high level estimator
 #define OOK_EST_LOW_RATIO   1024        // Constant for slowness of OOK low level (noise) estimator (very slow)
 
+// Blip absorption constants (e.g. FSK TX lock pulse before the real burst)
+#define BLIP_MAX_US         150  // Maximum width of an absorbable leading blip (us)
+#define BLIP_GAP_MAX_US     1000 // Maximum gap between the blip and the real burst (us)
+
 /// Internal state data for pulse_pulse_package()
 struct pulse_detect {
     int use_mag_est;          ///< Whether the envelope data is an amplitude or magnitude.
@@ -41,6 +45,7 @@ struct pulse_detect {
     } ook_state;
     int pulse_length; ///< Counter for internal pulse detection
     int max_pulse;    ///< Size of biggest pulse detected
+    int fsk_blip_restart; ///< A short leading blip was absorbed, FSK demod continues during the second pulse
 
     int data_counter;    ///< Counter for how much of data chunk is processed
     int lead_in_counter; ///< Counter for allowing initial noise estimate to settle
@@ -319,6 +324,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     fsk_pulses->start_ago = len - s->data_counter;
                     s->pulse_length = 0;
                     s->max_pulse = 0;
+                    s->fsk_blip_restart = 0;
                     pulse_detect_fsk_init(&s->pulse_detect_fsk);
                     s->ook_state = PD_OOK_STATE_PULSE;
                 }
@@ -365,7 +371,8 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     pulses->fsk_f1_est += fm_data[s->data_counter] / OOK_EST_HIGH_RATIO - pulses->fsk_f1_est / OOK_EST_HIGH_RATIO;
                 }
                 // FSK Demodulation
-                if (pulses->num_pulses == 0) {    // Only during first pulse
+                if (pulses->num_pulses == 0
+                        || (pulses->num_pulses == 1 && s->fsk_blip_restart)) {    // Only during first pulse
                     if (fpdm == FSK_PULSE_DETECT_OLD) {
                         pulse_detect_fsk_classic(&s->pulse_detect_fsk, fm_data[s->data_counter], fsk_pulses);
                     } else {
@@ -411,7 +418,8 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     }
                 } // if
                 // FSK Demodulation (continue during short gap - we might return...)
-                if (pulses->num_pulses == 0) {    // Only during first pulse
+                if (pulses->num_pulses == 0
+                        || (pulses->num_pulses == 1 && s->fsk_blip_restart)) {    // Only during first pulse
                     if (fpdm == FSK_PULSE_DETECT_OLD) {
                         pulse_detect_fsk_classic(&s->pulse_detect_fsk, fm_data[s->data_counter], fsk_pulses);
                     } else {
@@ -425,6 +433,22 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 if (am_n > (ook_threshold + ook_hysteresis)) {    // New pulse?
                     pulses->gap[pulses->num_pulses] = s->pulse_length;    // Store gap width
                     pulses->num_pulses += 1;    // Next pulse
+
+                    // Absorb a short leading blip (e.g. FSK transmitter lock
+                    // pulse) followed by a short gap, so FSK demod (gated on
+                    // num_pulses == 0) keeps running into the real burst that
+                    // follows. Restart the FSK detectors on the burst.
+                    // OOK pulse data is left untouched.
+                    if (pulses->num_pulses == 1
+                            && pulses->pulse[0] < (int)(BLIP_MAX_US * samp_rate / 1000000)
+                            && pulses->gap[0] < (int)(BLIP_GAP_MAX_US * samp_rate / 1000000)) {
+                        pulse_data_clear(fsk_pulses);
+                        fsk_pulses->sample_rate = samp_rate;
+                        fsk_pulses->offset = sample_offset + s->data_counter;
+                        fsk_pulses->start_ago = len - s->data_counter;
+                        pulse_detect_fsk_init(&s->pulse_detect_fsk);
+                        s->fsk_blip_restart = 1;
+                    }
 
                     // EOP if too many pulses
                     if (pulses->num_pulses >= PD_MAX_PULSES) {
