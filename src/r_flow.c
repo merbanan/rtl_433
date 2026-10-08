@@ -154,7 +154,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
             avg_db = magnitude_est_cu8(iq_buf, demod->buf.temp, n_samples);
         }
         else { // amp est
-            avg_db = envelope_detect(iq_buf, demod->buf.temp, n_samples);
+            avg_db = envelope_detect_nolut(iq_buf, demod->buf.temp, n_samples);
         }
     } else { // CS16
         //magnitude_true_cs16((int16_t *)iq_buf, demod->buf.temp, n_samples);
