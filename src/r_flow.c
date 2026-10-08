@@ -31,6 +31,7 @@
 #include "am_analyze.h"
 #include "logger.h"
 #include "fatal.h"
+#include "psk_stream.h"
 
 static void calc_rssi_snr(struct dm_state const *demod, pulse_data_t *pulse_data)
 {
@@ -93,8 +94,9 @@ void reset_sdr_flow(r_cfg_t *cfg)
     baseband_low_pass_filter_reset(&demod->lowpass_filter_state);
     baseband_demod_FM_reset(&demod->demod_FM_state);
 
-    pulse_detect_reset(demod->pulse_detect);
-}
+    psk_stream_reset(cfg);
+
+    pulse_detect_reset(demod->pulse_detect);}
 
 /**
 Push an IQ data frame to the SDR IQ data frame processing.
@@ -118,6 +120,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
     }
 
     int process_frame = 1;
+    int d_events = 0;
 
     // Process new frame data if available
     if (len) {
@@ -145,6 +148,15 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
     if (demod->samp_grab) {
         samp_grab_push(demod->samp_grab, iq_buf, len);
     }
+
+    /*
+     * PSK demodulation operates directly on raw IQ. It runs before AM/FSK
+     * processing and independently of the AM squelch decision.
+     */
+    d_events += psk_stream_push(
+            cfg,
+            iq_buf,
+            n_samples);
 
     // AM demodulation
     float avg_db;
@@ -226,7 +238,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
     }
 
     // Run a pulse discriminator and pass packages to all configured slicers
-    int d_events = 0; // Sensor events successfully detected
+
     if (demod->r_devs.len || demod->analyze_pulses || demod->dumper.len || demod->samp_grab) {
         // Detect a package and loop through demodulators with pulse data
         int package_type = PULSE_DATA_OOK;  // Just to get us started
@@ -374,9 +386,13 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
 
     // End processing if no new frame data
     if (!len) {
+        d_events += psk_stream_push(
+                cfg,
+                NULL,
+                0);
+
         return d_events;
     }
-
     // Run the AM analyzer (deprecated)
     if (demod->am_analyze) {
         am_analyze(demod->am_analyze, demod->am_buf, n_samples, demod->verbosity >= LOG_INFO, NULL);
