@@ -80,13 +80,13 @@ static int schraeder_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
-TPMS Model: Schrader Electronics EG53MA4, AG6SP4
+TPMS Model: Schrader Electronics EG53MA4, AG6SP4.
 Contributed by: Leonardo Hamada (hkazu).
 
 Also Schrader Opel OEM No. 13348393 TPMS Sensor (might be found in Saab, Opel, Vauxhall, Chevrolet).
-GM (Chevrolet) OEM No. 13540600 for 2006-2025 GM.
-GM 13581558 314.9 MHz
-GM 13598773 433 MHz
+- GM (Chevrolet) OEM No. 13540600 for 2006-2025 GM.
+- GM 13581558 314.9 MHz
+- GM 13598773 433 MHz
 
 Probable packet payload:
 
@@ -98,6 +98,10 @@ Probable packet payload:
 - P: pressure, 25 mbar per bit
 - T: temperature, degrees Fahrenheit
 - C: checksum, sum of byte data modulo 256
+
+Example packets:
+- GM 13581558: {120}00000000004c900073a2913401530a
+- GM 13598773: {113}000000004c9000314c1a1c0053e28
 */
 static int schrader_EG53MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
