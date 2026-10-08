@@ -569,7 +569,11 @@ static void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
         rpc->response(rpc, 2, NULL, cfg->conversion_mode);
     }
     else if (!strcmp(rpc->method, "get_stats")) {
-        data_t *data = create_report_data(cfg, 2/*report active devices*/);
+        // Default remains full active-device report (level 2). Optional
+        // arg=summary returns aggregates only (no stats[]). Unknown args keep
+        // the full report — get_stats historically ignored rpc->arg.
+        int level = (rpc->arg && !strcasecmp(rpc->arg, "summary")) ? 0 : 2;
+        data_t *data = create_report_data(cfg, level);
         // flush_report_data(cfg); // snapshot, do not flush
         // The stats report scales with the number of enabled decoders that have
         // seen frames; a fixed buffer truncates it into invalid JSON, so grow to
@@ -994,6 +998,7 @@ static void handle_json_stream(struct mg_connection *nc, struct http_message *hm
 // Handles GET with query string and POST with form-encoded body
 // curl -D - 'http://127.0.0.1:8433/cmd?cmd=report_meta&arg=level'
 // curl -D - -d "cmd=report_meta&arg=level" -X POST 'http://127.0.0.1:8433/cmd'
+// curl -D - 'http://127.0.0.1:8433/cmd?cmd=get_stats&arg=summary'
 // http :8433/cmd cmd==center_frequency val==868000000'
 // http --form POST :8433/cmd cmd=report_meta arg=level val=1
 // xh :8433/cmd cmd==center_frequency val==433920123
