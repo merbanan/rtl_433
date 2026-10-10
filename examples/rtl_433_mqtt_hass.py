@@ -559,6 +559,43 @@ mappings = {
         }
     },
 
+    "loop1": {
+        "device_type": "binary_sensor",
+        "object_suffix": "loop1",
+        "config": {
+            "device_class": "safety",
+            "force_update": "true",
+            "payload_on": "1",
+            "payload_off": "0",
+            "entity_category": "diagnostic"
+        }
+    },
+
+    "loop2": {
+        "device_type": "binary_sensor",
+        "object_suffix": "loop2",
+        "config": {
+            "device_class": "safety",
+            "force_update": "true",
+            "payload_on": "1",
+            "payload_off": "0",
+            "entity_category": "diagnostic"
+        }
+    },
+
+    "loop3": {
+        "device_type": "binary_sensor",
+        "object_suffix": "loop3",
+        "config": {
+            "device_class": "safety",
+            "force_update": "true",
+            "payload_on": "1",
+            "payload_off": "0",
+            "entity_category": "diagnostic"
+        }
+    },
+
+
     "closed": {
         "device_type": "binary_sensor",
         "object_suffix": "opening",
