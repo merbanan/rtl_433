@@ -168,6 +168,11 @@ void pulse_data_load(FILE *file, struct timeval *now, pulse_data_t *data, uint32
             print_logf(LOG_WARNING, __func__, "skipping invalid mark %ld space %ld line", mark, space);
             continue;
         }
+        // Random upper bound for lengths, e.g. 100 us at 1 M.
+        if (mark > 100000 || space > 100000) {
+            print_logf(LOG_WARNING, __func__, "skipping too wide mark %ld space %ld line", mark, space);
+            continue;
+        }
         data->pulse[i] = (int)(to_sample * mark);
         data->gap[i++] = (int)(to_sample * space);
     }
