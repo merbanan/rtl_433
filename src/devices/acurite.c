@@ -1265,7 +1265,7 @@ static int acurite_optimus_decode(r_device *decoder, bitbuffer_t *bitbuffer, uin
 }
 
 
-static int acurite_txr_check(r_device *decoder, uint8_t const bb[], unsigned browlen, unsigned explen)
+static int acurite_txr_check(r_device *decoder, uint8_t const bb[], unsigned browlen, unsigned explen, int check_chan)
 {
 
     // Currently shortest Acurite "TXR" message is 6 bytes
@@ -1300,8 +1300,9 @@ static int acurite_txr_check(r_device *decoder, uint8_t const bb[], unsigned bro
     // All of these devices have channel (A, B, C) in two bits (mask 0c0) of byte 0
     // 00: C, 10: B, 11: A, (01 aka 'E' is invalid)
     // check sanity to cut down an bad messages that pass MIC checks
+    // Don't check for 899 Rainfall, the channel numbering is different
     char const *channel_str = acurite_getChannel(bb[0]);
-    if (*channel_str == 'E') {
+    if (check_chan && *channel_str == 'E') {
         uint8_t message_type = bb[2] & 0x3f;
         decoder_logf(decoder, 1, __func__,
                      "bad channel Ch %s, msg type 0x%02x, msg len %d",
@@ -1418,7 +1419,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // NOTE: since we are processing each row, do not return
         // until all rows have been processed
         if (message_type == ACURITE_MSGTYPE_TOWER_SENSOR) {
-            if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_TXR_BYTELEN)) != 0) {
+            if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_TXR_BYTELEN, 1)) != 0) {
                 error_ret = ret;
             } else {
                     if ((ret = acurite_tower_decode(decoder, bitbuffer, bb)) > 0) {
@@ -1430,7 +1431,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         if (message_type == ACURITE_MSGTYPE_1190_DETECTOR) {
-            if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_1190_BYTELEN)) != 0) {
+            if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_1190_BYTELEN, 1)) != 0) {
                 error_ret = ret;
             } else {
                 if ((ret = acurite_1190_decode(decoder, bitbuffer, bb)) > 0) {
@@ -1442,7 +1443,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         if (message_type == ACURITE_MSGTYPE_6045M) {
-            if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_6045_BYTELEN)) != 0) {
+            if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_6045_BYTELEN, 1)) != 0) {
                 error_ret = ret;
             } else {
                 if ((ret = acurite_6045_decode(decoder, bitbuffer, brow)) > 0) {
@@ -1455,7 +1456,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         if (message_type == ACURITE_MSGTYPE_515_REFRIGERATOR ||
             message_type == ACURITE_MSGTYPE_515_FREEZER) {
-            if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_515_BYTELEN)) != 0) {
+            if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_515_BYTELEN, 1)) != 0) {
                 error_ret = ret;
             } else {
                 if ((ret = acurite_515_decode(decoder, bitbuffer, bb)) > 0) {
@@ -1468,7 +1469,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         if (message_type == ACURITE_MSGTYPE_5N1_WINDSPEED_TEMP_HUMIDITY ||
             message_type == ACURITE_MSGTYPE_5N1_WINDSPEED_WINDDIR_RAINFALL) {
-            if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_5N1_BYTELEN)) != 0) {
+            if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_5N1_BYTELEN, 1)) != 0) {
                 error_ret = ret;
             } else {
                 if ((ret = acurite_5n1_decode(decoder, bitbuffer, bb)) > 0) {
@@ -1481,7 +1482,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         if (message_type == ACURITE_MSGTYPE_OPTIMUS_TEMP_HUM ||
             message_type == ACURITE_MSGTYPE_OPTIMUS_WIND_RAIN) {
-            if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_OPTIMUS_BYTELEN)) != 0) {
+            if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_OPTIMUS_BYTELEN, 1)) != 0) {
                 error_ret = ret;
             } else {
                 if ((ret = acurite_optimus_decode(decoder, bitbuffer, bb)) > 0) {
@@ -1526,7 +1527,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
               but there isn't enough accumulated rain in the data bytes
               to see if parity is used
             */
-            if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_899_BYTELEN)) != 0) {
+            if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_899_BYTELEN, 0)) != 0) {
                 error_ret = ret;
             } else {
                 if ((ret = acurite_899_decode(decoder, bitbuffer, bb)) > 0) {
@@ -1543,7 +1544,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             case ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM:
             case ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN:
             case ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX:
-                if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_ATLAS_BYTELEN)) != 0) {
+                if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_ATLAS_BYTELEN, 1)) != 0) {
                     error_ret = ret;
                 } else {
                     if ((ret = acurite_atlas_decode(decoder, bitbuffer, brow)) > 0) {
@@ -1558,7 +1559,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             case ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM_LTNG:
             case ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN_LTNG:
             case ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX_LTNG:
-                if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_ATLAS_LTNG_BYTELEN)) != 0) {
+                if ((ret = acurite_txr_check(decoder, bb, browlen, ACURITE_ATLAS_LTNG_BYTELEN, 1)) != 0) {
                     error_ret = ret;
                 } else {
                     if ((ret = acurite_atlas_decode(decoder, bitbuffer, brow)) > 0) {
