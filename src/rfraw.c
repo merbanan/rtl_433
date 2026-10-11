@@ -94,7 +94,7 @@ static bool parse_rfraw(pulse_data_t *data, char const **p)
     if (!p || !*p || !**p) return false;
 
     int hdr = hexstr_get_byte(p);
-    if (hdr !=0xaa) return false;
+    if (hdr != 0xaa) return false;
 
     int fmt = hexstr_get_byte(p);
     if (fmt != 0xb0 && fmt != 0xb1)
@@ -134,7 +134,8 @@ static bool parse_rfraw(pulse_data_t *data, char const **p)
     unsigned prev_pulses = data->num_pulses;
     bool pulse_needed = true;
     bool aligned = true;
-    while (*p) {
+    // read all as long as the pulse data array has enough space
+    while (*p && data->num_pulses < PD_MAX_PULSES - 1) {
         if (aligned && hexstr_peek_byte(*p) == 0x55) {
             hexstr_get_byte(p); // consume 0x55
             break;
@@ -158,10 +159,6 @@ static bool parse_rfraw(pulse_data_t *data, char const **p)
             data->gap[data->num_pulses] = bins[w];
             data->num_pulses++;
             pulse_needed = true;
-        }
-        // abort reading if the pulse data array is full
-        if (data->num_pulses >= PD_MAX_PULSES) {
-            break;
         }
     }
     //data->gap[data->num_pulses - 1] = 3000; // TODO: extend last gap?
