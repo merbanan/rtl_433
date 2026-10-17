@@ -35,12 +35,17 @@ in PR #3668, which also named the conductivity field; the original submission ha
 placed battery voltage at byte 15.
 
 Bytes 7, 8 and 11 were characterised in 2026-09 with a stepped salt-water series
-and raw IQ captures covering every value the 20-bit EC carry can take. Everything
-here is from 915 MHz units: eight of them for the per-byte observations, four of
+and raw IQ captures covering every value the 20-bit EC carry can take. Unless marked
+868 MHz, everything here is from 915 MHz units: eight of them for the per-byte observations, four of
 those for the per-unit moisture figures, which should be read as examples of the
 spread rather than as bounds. Method, data, and the
 conclusions we published and later withdrew:
 https://github.com/Verstreubulator/wh52-characterization
+
+The 868 MHz observations below (bytes 8, 11, 14, 18 and 21) are from vgabor99's
+measurements on five EU units, three of one batch and two of a newer one: a salt
+series from distilled water to the ceiling plus air readings (rtl_433_tests #519,
+2026-10-11).
 
 Data layout:
 
@@ -63,12 +68,19 @@ Preamble: aa aa aa 2d d4
   (9.86-10.37 counts per 1%, zero point 607-640 across 4 units), so raw values are not comparable
   between sensors without calibrating each one. The WH51 exposes the equivalent field as ad_raw;
   it is 9-bit there with endpoints near 70 and 450, so the two are not on the same scale.
+  On some units it may not be an independent measurement: the two 868 MHz units with byte 21 = 0x0F
+  sent moisture_raw = 192 + round(14.52 * moisture) on every frame. They reported only 0% and 95-100%,
+  so this is shown at those values only; there it added no detail.
 - Byte 9: EC bits 15..8
 - Byte 10: EC bits 7..0; ec_raw = ((b8 & 0x0F) << 16) | (b9 << 8) | b10 (20-bit); conductivity_uS = ec_raw / 25.6 (empirical; 25.6 = 256/10)
   The sensor clamps conductivity at about 10000 uS/cm (we recorded 10001 to 10008) while the
   20-bit field has room for roughly four times that. Whether the limit is the sensing element or the firmware we cannot say.
 - Byte 11: bits 7..4 = EC auto-ranging gain indicator; bits 3..0 = 0x6 in every CRC-valid frame we
-  have. ec_range = b11 >> 4. Ten distinct values were seen between 5 and 10000 uS/cm.
+  have. ec_range = b11 >> 4. Thirteen distinct values, 1 to 13, have been seen from about 5 to
+  10000 uS/cm (ranges 9 to 11 so far only in the 868 MHz data). The first change, from 1 to 2,
+  came at 310 uS/cm on three 868 MHz units. A fourth read 350 in range 1 and then 340 in range 2,
+  and three 915 MHz units stayed in range 1 up to 360, so in reported conductivity the thresholds
+  differ per unit.
   It is not monotone in the reported value, and that is the reason to expose it: the same sensor
   reported 4870 uS/cm in range 6 and 4700 in range 7, so two readings showing the same conductivity
   can come from different gain states and nothing else in the frame says which.
@@ -78,16 +90,19 @@ Preamble: aa aa aa 2d d4
   validation only, and one frame is excluded from those counts: it decoded to 89.4 degC with this
   byte's low nibble at 0xc. Including it gives 102 of 103. The raw captures we published are
   CRC-checked but contain ranges 1, 4, 5, 7 and 13 with no transitions between them.
+  In the CRC-checked 868 MHz runs it moved with the reported value in 53 of 57 changes: three
+  exceptions are at the clamped ceiling, and the fourth is the 1-to-2 change from 350 to 340 above.
   It does not rescale the EC value. The switching thresholds are uneven when expressed as reported
   conductivity and no rule has been established.
   Do not use this byte as a validity check; it is not constant.
 - Byte 20: battery voltage; battery_mV ~= b20 * 20 (0.02 V/LSB, no offset; empirical). Reported as battery_ok + battery_mV.
 - Bytes 12, 13, 15, 16, 17, 19: per-unit fixed data (factory serial / calibration), constant per unit,
   differ between units. Not decoded.
-- Byte 14: 0x93 on all 8 units seen. Constant, NOT per-unit.
-- Byte 18: 0x7b on 7 of 8 units, 0x8c on the eighth. Appears per-unit.
-- Byte 21: 0x08 on units with IDs beginning 0x005, 0x09 on those beginning 0x007. Probably a batch or
-  revision marker. All observations are from 915 MHz units; 868 MHz behaviour is unknown.
+- Byte 14: 0x93 on 11 units (8 at 915 MHz, 3 at 868 MHz), 0x13 on the two newer 868 MHz units.
+  Not per-unit; it appears to change with the batch.
+- Byte 18: 0x7b, 0x7c or 0x8c across 13 units. Appears per-unit.
+- Byte 21: 0x08, 0x09 or 0x0F. Probably a batch or revision marker, but it cannot be predicted
+  from the device ID: an 868 MHz unit reading 0x0F has an ID between two that read 0x09.
 - Byte 22: CRC-8, poly 0x31, init 0x00, over bytes 0..21
 - Byte 23: checksum = sum(bytes 0..22) & 0xFF
 
