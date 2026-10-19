@@ -121,3 +121,7 @@ add_test(clang-analyzer
     -Xanalyzer
     ${ANALYZER_CHECK_FILES})
 endif()
+
+add_executable(fineoffset-frame-validation-test fineoffset-frame-validation-test.c)
+target_link_libraries(fineoffset-frame-validation-test r_433)
+add_test(fineoffset-frame-validation-test fineoffset-frame-validation-test)
