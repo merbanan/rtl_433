@@ -269,7 +269,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [173]  Bresser Weather Center 7-in-1, Air Quality PM2.5/PM10 7009970, CO2 7009977, HCHO/VOC 7009978 sensors
     [174]  EcoDHOME Smart Socket and MCEE Solar monitor
     [175]  LaCrosse Technology View LTV-R1, LTV-R3 Rainfall Gauge, LTV-W1/W2 Wind Sensor
-    [176]  BlueLine Innovations Power Cost Monitor
+    [176]  BlueLine Innovations Power Cost Monitor, Black & Decker EM100B
     [177]  Burnhard BBQ thermometer
     [178]  Security+ (Keyfob)
     [179]  Cavius smoke, heat and water detector
