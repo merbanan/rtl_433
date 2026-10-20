@@ -103,6 +103,7 @@ These scripts are in the directory but have not been sorted and described.
 
   - rtl_433_graphite_relay.py: Send data to graphite
   - rtl_433_influxdb_relay.py: Send data to influxdb
+  - rtl_433_nats_relay.py: Send data to NATS
   - rtl_433_prometheus_relay.py: Send data to prometheus
   - rtl_433_rrd_relay.py: Send data to rrd
   - rtl_433_statsd_relay.py: Send data to statsd
