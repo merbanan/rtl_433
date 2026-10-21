@@ -135,6 +135,7 @@
     DECL(ts_ft002) \
     DECL(companion_wtr001) \
     DECL(ecowitt) \
+    DECL(ecowitt_lds01) \
     DECL(directv) \
     DECL(eurochron) \
     DECL(ikea_sparsnas) \
