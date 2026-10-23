@@ -1042,9 +1042,33 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint
         unsigned n_read  = 0, i;
         int r;
 
+        size_t mtu = SoapySDRDevice_getStreamMTU(dev->soapy_dev, dev->soapy_stream);
+        size_t max_req = (mtu < 512) ? mtu : 512; // small, driver-friendly requests, 512 is the largest size known to work with SoapyRedPitaya
+        size_t buf_elems = buf_len / dev->sample_size;
+
+        unsigned timeouts = 0;                 // consecutive timeouts
+
         do {
-            buffs[0] = &buffer[n_read * 2];
-            r  = SoapySDRDevice_readStream(dev->soapy_dev, dev->soapy_stream, buffs, buf_elems - n_read, &flags, &timeNs, timeoutUs);
+            buffs[0] = (uint8_t*)buffer + (size_t)n_read * dev->sample_size;
+            size_t want = buf_elems - n_read;
+            if (want > max_req)
+                want = max_req;
+
+            r  = SoapySDRDevice_readStream(dev->soapy_dev, dev->soapy_stream, buffs, want, &flags, &timeNs, timeoutUs);
+            //fprintf(stderr, "want=%zu ret=%d n_read=%u timeouts=%u\n", want, r, n_read, timeouts);
+
+            if (r == SOAPY_SDR_TIMEOUT) {
+                if (++timeouts >= 5)
+                    break;                     // give up; r stays SOAPY_SDR_TIMEOUT
+
+#ifdef _WIN32
+                Sleep(100);
+#else
+                usleep(100 * 1000);
+#endif
+                continue;                      // retry (jumps to the while condition)
+            }
+
             if (r < 0)
                 break;
             n_read += r; // r is number of elements read, elements=complex pairs, so buffer length is twice
