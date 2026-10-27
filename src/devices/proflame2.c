@@ -43,11 +43,11 @@ The payload data is 7 bytes:
 #include "decoder.h"
 
 /// out needs to be at least (bits / 26, usually 7) bytes long
-static int proflame2_mc(bitbuffer_t *bitbuffer, unsigned row, unsigned start, uint8_t *out)
+static int proflame2_mc(bitbuffer_t *bitbuffer, unsigned row, unsigned start, uint8_t *out, size_t out_len)
 {
     uint8_t *b   = bitbuffer->bb[row];
     unsigned pos = start;
-    for (int f = 0;; ++f) {
+    for (int f = 0; f < (int)out_len; ++f) {
         if (bitbuffer->bits_per_row[row] - pos < 26)
             return f;
         // expect sync and start bit of "1110"
@@ -84,14 +84,14 @@ static int proflame2_mc(bitbuffer_t *bitbuffer, unsigned row, unsigned start, ui
 
         out[f] = data;
     }
-    return 0;
+    return f;
 }
 
 static int proflame2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     for (int row = 0; row < bitbuffer->num_rows; ++row) {
         uint8_t b[7] = {0};
-        int ret = proflame2_mc(bitbuffer, row, 0, b);
+        int ret = proflame2_mc(bitbuffer, row, 0, b, sizeof(b));
 
         if (ret != 7)
             continue;
