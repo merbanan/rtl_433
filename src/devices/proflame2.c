@@ -84,7 +84,7 @@ static int proflame2_mc(bitbuffer_t *bitbuffer, unsigned row, unsigned start, ui
 
         out[f] = data;
     }
-    return f;
+    return out_len;
 }
 
 static int proflame2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
