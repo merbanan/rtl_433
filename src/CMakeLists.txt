@@ -432,6 +432,7 @@ add_library(r_433 STATIC
     devices/tpms_porsche.c
     devices/tpms_renault.c
     devices/tpms_renault_0435r.c
+    devices/tpms_schrader_fsk.c
     devices/tpms_schrader_motorcycle.c
     devices/tpms_sefis_m3.c
     devices/tpms_smartire.c
