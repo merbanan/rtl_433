@@ -45,7 +45,8 @@ W9 = lane(W1, W3, W5, W7); W10 = lane(W2, W4, W6, W8).
 For each lane start at zero and apply acc = T(acc XOR word), where T is the legacy
 Err transform with C = D = 0. Both lanes must match; reported mic is DIGEST.
 Legacy mic is PARITY (formerly CHECKSUM): learned command-integrity C/D is not checked.
-W4 bit 7 is not interpreted as pilot in extended packets. W6-W8 remain raw.
+W4 bit 7 is not interpreted as pilot in extended packets. Pilot is -1 (unknown)
+until a capture-backed mapping permits 0/1 output. W6-W8 remain raw.
 JSON id and individual bytes are integers; human-readable output formats them as hex.
 raw_words is lowercase fixed-width hex in on-air order, without separators or prefix.
 
@@ -167,9 +168,9 @@ static void proflame2_output(r_device *decoder, proflame2_frame_t const *frame)
 
     /* clang-format off */
     data_t *data = data_make(
+            "protocol_variant", "Variant",  DATA_STRING, extended ? "extended_10_word" : "legacy_7_word",
             "model",        "",             DATA_STRING, "Proflame2-Remote",
             "id",           "Id",           DATA_FORMAT, "%06x", DATA_INT, id,
-            "protocol_variant", "Variant",  DATA_STRING, extended ? "extended_10_word" : "legacy_7_word",
             "cmd1",         "Cmd1",         DATA_FORMAT, "%02x", DATA_INT, b[3],
             "cmd2",         "Cmd2",         DATA_FORMAT, "%02x", DATA_INT, b[4],
             "err1",         "Err1",         DATA_COND, !extended, DATA_FORMAT, "%02x", DATA_INT, b[5],
@@ -179,8 +180,7 @@ static void proflame2_output(r_device *decoder, proflame2_frame_t const *frame)
             "w8",           "W8",           DATA_COND, extended, DATA_FORMAT, "%02x", DATA_INT, b[7],
             "w9",           "W9",           DATA_COND, extended, DATA_FORMAT, "%02x", DATA_INT, b[8],
             "w10",          "W10",          DATA_COND, extended, DATA_FORMAT, "%02x", DATA_INT, b[9],
-            "raw_words",    "Raw words",    DATA_STRING, raw_words,
-            "pilot",        "Pilot",        DATA_COND, !extended, DATA_INT, b[3] >> 7,
+            "pilot",        "Pilot",        DATA_INT, extended ? -1 : b[3] >> 7,
             "light",        "Light",        DATA_INT, (b[3] & 0x70) >> 4,
             "thermostat",   "Thermostat",   DATA_INT, (b[3] & 0x02) >> 1,
             "power",        "Power",        DATA_INT, b[3] & 0x01,
@@ -189,6 +189,7 @@ static void proflame2_output(r_device *decoder, proflame2_frame_t const *frame)
             "aux",          "Aux",          DATA_INT, (b[4] & 0x08) >> 3,
             "flame",        "Flame",        DATA_INT, b[4] & 0x07,
             "mic",          "Integrity",    DATA_STRING, extended ? "DIGEST" : "PARITY",
+            "raw_words",    "Raw words",    DATA_STRING, raw_words,
             NULL);
     /* clang-format on */
     decoder_output_data(decoder, data);
