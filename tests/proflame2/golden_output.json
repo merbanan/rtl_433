@@ -1,0 +1,43 @@
+{
+  "legacy": {
+    "model": "Proflame2-Remote",
+    "id": 1193046,
+    "protocol_variant": "legacy_7_word",
+    "cmd1": 33,
+    "cmd2": 38,
+    "err1": 20,
+    "err2": 188,
+    "raw_words": "123456212614bc",
+    "pilot": 0,
+    "light": 2,
+    "thermostat": 0,
+    "power": 1,
+    "front": 0,
+    "fan": 2,
+    "aux": 0,
+    "flame": 6,
+    "mic": "PARITY"
+  },
+  "extended": {
+    "model": "Proflame2-Remote",
+    "id": 1193046,
+    "protocol_variant": "extended_10_word",
+    "cmd1": 129,
+    "cmd2": 32,
+    "w6": 21,
+    "w7": 200,
+    "w8": 0,
+    "w9": 33,
+    "w10": 110,
+    "raw_words": "123456812015c800216e",
+    "light": 0,
+    "thermostat": 0,
+    "power": 1,
+    "front": 0,
+    "fan": 2,
+    "aux": 0,
+    "flame": 0,
+    "mic": "DIGEST",
+    "pilot": -1
+  }
+}
