@@ -58,7 +58,7 @@ int main(int argc, char **argv)
             int pretty = argc == 3 && !strcmp(argv[2], "kv");
             if (pretty)
                 last_output = data_prepend(last_output, data_str(NULL, "time", "", NULL, "2026-01-01 12:00:00"));
-            data_output_t *output = pretty ? data_output_kv_create(0, stdout) : data_output_json_create(0, stdout);
+            data_output_t *output = pretty ? data_output_kv_create(0, NULL) : data_output_json_create(0, NULL);
             data_output_print(output, last_output);
             data_output_free(output);
             data_free(last_output);
