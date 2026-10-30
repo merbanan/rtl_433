@@ -7,6 +7,10 @@ target_link_libraries(data-test data)
 
 add_test(data-test data-test)
 
+add_executable(proflame2-test proflame2-test.c)
+target_link_libraries(proflame2-test r_433)
+add_test(proflame2-test proflame2-test)
+
 add_executable(baseband-test baseband-test.c ../src/baseband.c ../src/logger.c)
 
 if(UNIX)

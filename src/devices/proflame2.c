@@ -42,25 +42,22 @@ The payload data is 7 bytes:
 */
 #include "decoder.h"
 
-/// out needs to be at least (bits / 26, usually 7) bytes long
-static int proflame2_mc(bitbuffer_t *bitbuffer, unsigned row, unsigned start, uint8_t *out, size_t out_len)
+/// Parse words without writing beyond the caller-provided output capacity.
+static int proflame2_mc(bitbuffer_t *bitbuffer, unsigned row, unsigned start, uint8_t *out, unsigned capacity)
 {
     uint8_t *b   = bitbuffer->bb[row];
     unsigned pos = start;
-    for (int f = 0; f < (int)out_len; ++f) {
-        if (bitbuffer->bits_per_row[row] - pos < 26)
+    for (int f = 0;; ++f) {
+        if (pos > bitbuffer->bits_per_row[row] || bitbuffer->bits_per_row[row] - pos < 26)
             return f;
         // expect sync and start bit of "1110"
-        int sync = bitrow_get_bit(b, pos + 0) << 3
-                | bitrow_get_bit(b, pos + 1) << 2
-                | bitrow_get_bit(b, pos + 2) << 1
-                | bitrow_get_bit(b, pos + 3) << 0;
+        int sync = bitrow_get_bit(b, pos + 0) << 3 | bitrow_get_bit(b, pos + 1) << 2 | bitrow_get_bit(b, pos + 2) << 1 | bitrow_get_bit(b, pos + 3) << 0;
         pos += 4;
         if (sync != 0xe)
             return f;
 
         bitbuffer_t decoded = {0};
-        pos = bitbuffer_manchester_decode(bitbuffer, row, pos, &decoded, 11);
+        pos                 = bitbuffer_manchester_decode(bitbuffer, row, pos, &decoded, 11);
         if (decoded.bits_per_row[0] != 11)
             return f;
 
@@ -82,16 +79,18 @@ static int proflame2_mc(bitbuffer_t *bitbuffer, unsigned row, unsigned start, ui
         if (end != 1)
             return f;
 
+        if ((unsigned)f >= capacity)
+            return DECODE_ABORT_LENGTH;
         out[f] = data;
     }
-    return out_len;
+    return 0;
 }
 
 static int proflame2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     for (int row = 0; row < bitbuffer->num_rows; ++row) {
         uint8_t b[7] = {0};
-        int ret = proflame2_mc(bitbuffer, row, 0, b, sizeof(b));
+        int ret      = proflame2_mc(bitbuffer, row, 0, b, sizeof(b));
 
         if (ret != 7)
             continue;
