@@ -485,3 +485,15 @@ r_device const secplus_v2 = {
         .decode_fn   = &secplus_v2_callback,
         .fields      = output_fields,
 };
+
+r_device const secplus_v2_433 = {
+        .name        = "Security+ 2.0 (Merlin+2.0, 433MHz)",
+        .modulation  = OOK_PULSE_PCM,
+        .short_width = 2388,
+        .long_width  = 2388,
+        .tolerance   = 600,
+        .gap_limit   = 14000,
+        .reset_limit = 90000,
+        .decode_fn   = &secplus_v2_callback,
+        .fields      = output_fields,
+};
