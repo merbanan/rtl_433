@@ -73,6 +73,23 @@ int main(int argc, char **argv)
     if (run_row(&decoder, &bits) > 0 || outputs)
         return EXIT_FAILURE;
 
+    uint8_t extended[] = {0x12, 0x34, 0x56, 0x81, 0x20, 0x15, 0xc8, 0x00, 0x21, 0x6e};
+    bitbuffer_clear(&bits);
+    encode_words(&bits, extended, 10);
+    --bits.bits_per_row[0]; // Missing only the physical terminal low half.
+    bitbuffer_t original = bits;
+    if (run_row(&decoder, &bits) != 1 || outputs != 1 || memcmp(&bits, &original, sizeof(bits)))
+        return EXIT_FAILURE;
+
+    // A damaged extended row cannot hide a valid subsequent legacy row.
+    bitbuffer_clear(&bits);
+    extended[9] ^= 1;
+    encode_words(&bits, extended, 10);
+    bitbuffer_add_row(&bits);
+    encode_words(&bits, words, 7);
+    if (run_row(&decoder, &bits) != 1 || outputs != 1)
+        return EXIT_FAILURE;
+
     data_free(last_output);
     return EXIT_SUCCESS;
 }
