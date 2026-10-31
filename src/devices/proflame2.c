@@ -20,9 +20,10 @@ Transmission rate is 2400 baud. Packet is transmitted 5 times, repetitions are s
 
 Encoded with a variant of Thomas Manchester encoding:
 0 is represented by 01, a 1 by 10, zero padding (Z) by 00, and synchronization words (S) as 11.
-The encoded command packet is 182 bits, and the decoded packet is 91 bits.
+Legacy packets contain 7 words (182 PCM bits); extended packets contain 10 words (260 PCM bits).
+The last low half of the final end guard may be absent at the physical row end.
 
-A packet is made up of 7 words, each 13 bits,
+Each word contains 13 decoded symbols,
 starts with a synchronization symbol, followed by a 1 as a guard bit,
 then 8 bits of data, a padding bit, a parity bit, and finally a 1 as an end guard bit.
 The padding bit is 1 for the first word and 0 for all other words.
@@ -39,107 +40,198 @@ The payload data is 7 bytes:
 - Error Detection 1
 - Error Detection 2
 
+Extended payloads contain serial W1-W3, commands W4/W5, raw W6-W8, and integrity W9/W10.
+W9 = lane(W1, W3, W5, W7); W10 = lane(W2, W4, W6, W8).
+For each lane start at zero and apply acc = T(acc XOR word), where T is the legacy
+Err transform with C = D = 0. Both lanes must match; reported mic is DIGEST.
+Legacy mic is PARITY (formerly CHECKSUM): learned command-integrity C/D is not checked.
+W4 bit 7 is not interpreted as pilot in extended packets. Pilot is -1 (unknown)
+until a capture-backed mapping permits 0/1 output. W6-W8 remain raw.
+JSON id and individual bytes are integers; human-readable output formats them as hex.
+raw_words is lowercase fixed-width hex in on-air order, without separators or prefix.
+
 */
 #include "decoder.h"
 
-/// out needs to be at least (bits / 26, usually 7) bytes long
-static int proflame2_mc(bitbuffer_t *bitbuffer, unsigned row, unsigned start, uint8_t *out, size_t out_len)
+typedef enum {
+    PROFLAME2_LEGACY,
+    PROFLAME2_EXTENDED,
+} proflame2_variant_t;
+
+typedef struct {
+    uint8_t words[10];
+    unsigned word_count;
+    unsigned consumed_bits;
+    proflame2_variant_t variant;
+    int result;
+} proflame2_frame_t;
+
+// The PCM slicer retains up to two low bits after the last high pulse.
+// One belongs to the final end guard; at most one further low bit is a gap.
+static int proflame2_parse_words(bitbuffer_t const *bits, unsigned row,
+        uint8_t *out, unsigned capacity, proflame2_frame_t *frame)
 {
-    uint8_t *b   = bitbuffer->bb[row];
-    unsigned pos = start;
-    for (int f = 0; f < (int)out_len; ++f) {
-        if (bitbuffer->bits_per_row[row] - pos < 26)
-            return f;
-        // expect sync and start bit of "1110"
-        int sync = bitrow_get_bit(b, pos + 0) << 3
-                | bitrow_get_bit(b, pos + 1) << 2
-                | bitrow_get_bit(b, pos + 2) << 1
-                | bitrow_get_bit(b, pos + 3) << 0;
+    unsigned length  = bits->bits_per_row[row];
+    uint8_t const *b = bits->bb[row];
+    unsigned pos     = 0;
+    unsigned count   = 0;
+
+    if (length > BITBUF_COLS * 8)
+        return DECODE_ABORT_LENGTH;
+
+    while (pos < length) {
+        if (count && length - pos == 1 && !bitrow_get_bit(b, pos)) {
+            ++pos;
+            break;
+        }
+        if (count >= capacity || length - pos < 25)
+            return DECODE_ABORT_LENGTH;
+
+        // Sync and start guard must be 1110 for every word.
+        if (!bitrow_get_bit(b, pos) || !bitrow_get_bit(b, pos + 1) || !bitrow_get_bit(b, pos + 2) || bitrow_get_bit(b, pos + 3))
+            return DECODE_FAIL_SANITY;
         pos += 4;
-        if (sync != 0xe)
-            return f;
 
-        bitbuffer_t decoded = {0};
-        pos = bitbuffer_manchester_decode(bitbuffer, row, pos, &decoded, 11);
-        if (decoded.bits_per_row[0] != 11)
-            return f;
+        unsigned symbols = 0;
+        for (unsigned symbol = 0; symbol < 11; ++symbol) {
+            if (pos >= length)
+                return DECODE_ABORT_LENGTH;
+            unsigned high = bitrow_get_bit(b, pos++);
+            if (pos == length) {
+                // Only the final low half of the final end guard may be absent.
+                if (symbol != 10 || !high || (count != 6 && count != 9))
+                    return DECODE_ABORT_LENGTH;
+            }
+            else if (high == bitrow_get_bit(b, pos++)) {
+                return DECODE_FAIL_SANITY;
+            }
+            symbols = (symbols << 1) | high;
+        }
 
-        // invert IEEE MC to G.E.T. MC
-        uint8_t data = decoded.bb[0][0] ^ 0xff;
-        uint8_t flag = decoded.bb[0][1] ^ 0xe0;
+        uint8_t data = symbols >> 3;
+        unsigned pad = (symbols >> 2) & 1;
+        unsigned par = (symbols >> 1) & 1;
+        if (pad != (count == 0) || !(symbols & 1))
+            return DECODE_FAIL_SANITY;
+        if (parity8(data) ^ pad ^ par)
+            return DECODE_FAIL_MIC;
 
-        int pad = (flag >> 7) & 1;
-        int par = (flag >> 6) & 1;
-        int end = (flag >> 5) & 1;
-
-        if (pad != (f == 0))
-            return f;
-
-        int par_chk = parity8(data) ^ pad ^ par;
-        if (par_chk)
-            return f;
-
-        if (end != 1)
-            return f;
-
-        out[f] = data;
+        out[count++] = data;
     }
-    return out_len;
+
+    frame->word_count    = count;
+    frame->consumed_bits = pos;
+    return 1;
+}
+
+static int proflame2_classify(proflame2_frame_t *frame)
+{
+    if (frame->word_count == 7)
+        frame->variant = PROFLAME2_LEGACY;
+    else if (frame->word_count == 10)
+        frame->variant = PROFLAME2_EXTENDED;
+    else
+        return DECODE_ABORT_LENGTH;
+    return 1;
+}
+
+// Legacy Err transform with C = D = 0, in byte-width arithmetic.
+static uint8_t proflame2_transform(uint8_t value)
+{
+    unsigned high = value >> 4;
+    unsigned low  = value & 0x0f;
+    return (((high ^ (high << 1) ^ (low << 1)) & 0x0f) << 4) | (high ^ low);
+}
+
+static int proflame2_integrity(proflame2_frame_t const *frame)
+{
+    if (frame->variant == PROFLAME2_LEGACY)
+        return 1; // Word parity is checked; learned C/D values are unknown.
+
+    uint8_t odd  = 0;
+    uint8_t even = 0;
+    for (unsigned i = 0; i < 8; i += 2) {
+        odd  = proflame2_transform(odd ^ frame->words[i]);
+        even = proflame2_transform(even ^ frame->words[i + 1]);
+    }
+    return odd == frame->words[8] && even == frame->words[9] ? 1 : DECODE_FAIL_MIC;
+}
+
+static void proflame2_output(r_device *decoder, proflame2_frame_t const *frame)
+{
+    uint8_t const *b = frame->words;
+    int extended     = frame->variant == PROFLAME2_EXTENDED;
+    int id           = b[0] << 16 | b[1] << 8 | b[2];
+    char raw_words[21];
+    for (unsigned i = 0; i < frame->word_count; ++i)
+        snprintf(raw_words + 2 * i, sizeof(raw_words) - 2 * i, "%02x", b[i]);
+
+    /* clang-format off */
+    data_t *data = data_make(
+            "protocol_variant", "Variant",  DATA_STRING, extended ? "extended_10_word" : "legacy_7_word",
+            "model",        "",             DATA_STRING, "Proflame2-Remote",
+            "id",           "Id",           DATA_FORMAT, "%06x", DATA_INT, id,
+            "cmd1",         "Cmd1",         DATA_FORMAT, "%02x", DATA_INT, b[3],
+            "cmd2",         "Cmd2",         DATA_FORMAT, "%02x", DATA_INT, b[4],
+            "err1",         "Err1",         DATA_COND, !extended, DATA_FORMAT, "%02x", DATA_INT, b[5],
+            "err2",         "Err2",         DATA_COND, !extended, DATA_FORMAT, "%02x", DATA_INT, b[6],
+            "w6",           "W6",           DATA_COND, extended, DATA_FORMAT, "%02x", DATA_INT, b[5],
+            "w7",           "W7",           DATA_COND, extended, DATA_FORMAT, "%02x", DATA_INT, b[6],
+            "w8",           "W8",           DATA_COND, extended, DATA_FORMAT, "%02x", DATA_INT, b[7],
+            "w9",           "W9",           DATA_COND, extended, DATA_FORMAT, "%02x", DATA_INT, b[8],
+            "w10",          "W10",          DATA_COND, extended, DATA_FORMAT, "%02x", DATA_INT, b[9],
+            "pilot",        "Pilot",        DATA_INT, extended ? -1 : b[3] >> 7,
+            "light",        "Light",        DATA_INT, (b[3] & 0x70) >> 4,
+            "thermostat",   "Thermostat",   DATA_INT, (b[3] & 0x02) >> 1,
+            "power",        "Power",        DATA_INT, b[3] & 0x01,
+            "front",        "Front",        DATA_INT, b[4] >> 7,
+            "fan",          "Fan",          DATA_INT, (b[4] & 0x70) >> 4,
+            "aux",          "Aux",          DATA_INT, (b[4] & 0x08) >> 3,
+            "flame",        "Flame",        DATA_INT, b[4] & 0x07,
+            "mic",          "Integrity",    DATA_STRING, extended ? "DIGEST" : "PARITY",
+            "raw_words",    "Raw words",    DATA_STRING, raw_words,
+            NULL);
+    /* clang-format on */
+    decoder_output_data(decoder, data);
 }
 
 static int proflame2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    for (int row = 0; row < bitbuffer->num_rows; ++row) {
-        uint8_t b[7] = {0};
-        int ret = proflame2_mc(bitbuffer, row, 0, b, sizeof(b));
-
-        if (ret != 7)
+    int result = DECODE_ABORT_LENGTH;
+    for (unsigned row = 0; row < bitbuffer->num_rows; ++row) {
+        proflame2_frame_t frame = {0};
+        frame.result            = proflame2_parse_words(bitbuffer, row, frame.words, sizeof(frame.words), &frame);
+        if (frame.result > 0)
+            frame.result = proflame2_classify(&frame);
+        if (frame.result > 0)
+            frame.result = proflame2_integrity(&frame);
+        if (frame.result <= 0) {
+            decoder_logf(decoder, 2, __func__, "Rejected row %u: %d", row, frame.result);
+            // Prefer a specific integrity/framing failure over an empty row.
+            if (result == DECODE_ABORT_LENGTH || frame.result != DECODE_ABORT_LENGTH)
+                result = frame.result;
             continue;
-
-        int id   = b[0] << 16 | b[1] << 8 | b[2];
-        int cmd1 = b[3];
-        int cmd2 = b[4];
-        int err1 = b[5];
-        int err2 = b[6];
-
-        int pilot      = (b[3] >> 7);
-        int light      = (b[3] & 0x70) >> 4;
-        int thermostat = (b[3] & 0x02) >> 1;
-        int power      = (b[3] & 0x01);
-        int front      = (b[4] >> 7);
-        int fan        = (b[4] & 0x70) >> 4;
-        int aux        = (b[4] & 0x08) >> 3;
-        int flame      = (b[4] & 0x07);
-
-        /* clang-format off */
-        data_t *data = data_make(
-                "model",        "",             DATA_STRING, "Proflame2-Remote",
-                "id",           "Id",           DATA_FORMAT, "%06x", DATA_INT,    id,
-                "cmd1",         "Cmd1",         DATA_FORMAT, "%02x", DATA_INT,    cmd1, // add chk then remove this
-                "cmd2",         "Cmd2",         DATA_FORMAT, "%02x", DATA_INT,    cmd2, // add chk then remove this
-                "err1",         "Err1",         DATA_FORMAT, "%02x", DATA_INT,    err1, // add chk then remove this
-                "err2",         "Err2",         DATA_FORMAT, "%02x", DATA_INT,    err2, // add chk then remove this
-                "pilot",        "Pilot",        DATA_INT,    pilot,
-                "light",        "Light",        DATA_INT,    light,
-                "thermostat",   "Thermostat",   DATA_INT,    thermostat,
-                "power",        "Power",        DATA_INT,    power,
-                "front",        "Front",        DATA_INT,    front,
-                "fan",          "Fan",          DATA_INT,    fan,
-                "aux",          "Aux",          DATA_INT,    aux,
-                "flame",        "Flame",        DATA_INT,    flame,
-                "mic",          "Integrity",    DATA_STRING, "CHECKSUM",
-                NULL);
-        /* clang-format on */
-
-        decoder_output_data(decoder, data);
+        }
+        proflame2_output(decoder, &frame);
         return 1;
     }
-    return 0;
+    return result;
 }
 
 static char const *const output_fields[] = {
         "model",
         "id",
+        "protocol_variant",
+        "cmd1",
+        "cmd2",
+        "err1",
+        "err2",
+        "w6",
+        "w7",
+        "w8",
+        "w9",
+        "w10",
+        "raw_words",
         "pilot",
         "light",
         "thermostat",

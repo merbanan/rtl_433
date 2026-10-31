@@ -7,6 +7,30 @@ target_link_libraries(data-test data)
 
 add_test(data-test data-test)
 
+add_executable(proflame2-test proflame2-test.c)
+target_link_libraries(proflame2-test r_433)
+add_test(proflame2-test proflame2-test)
+
+# Optional standard-library corpus and detector replay tests. Keep the core C
+# tests available on machines without Python 3.10 or newer.
+if(CMAKE_VERSION VERSION_LESS "3.12")
+    find_package(PythonInterp 3 QUIET)
+    if(PYTHONINTERP_FOUND AND NOT PYTHON_VERSION_STRING VERSION_LESS "3.10")
+        set(PROFLAME2_TEST_PYTHON "${PYTHON_EXECUTABLE}")
+    endif()
+else()
+    find_package(Python3 3.10 COMPONENTS Interpreter QUIET)
+    set(PROFLAME2_TEST_PYTHON "${Python3_EXECUTABLE}")
+endif()
+if(PROFLAME2_TEST_PYTHON)
+    add_test(NAME proflame2-regression
+        COMMAND ${PROFLAME2_TEST_PYTHON} ${CMAKE_CURRENT_SOURCE_DIR}/proflame2/test_decoder.py
+        --decoder-binary $<TARGET_FILE:proflame2-test>
+        --rtl433-binary $<TARGET_FILE:rtl_433>)
+else()
+    message(STATUS "Proflame2 corpus tests require Python 3.10 or newer")
+endif()
+
 add_executable(baseband-test baseband-test.c ../src/baseband.c ../src/logger.c)
 
 if(UNIX)

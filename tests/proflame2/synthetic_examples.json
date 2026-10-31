@@ -1,0 +1,15 @@
+{
+  "description": "Entirely synthetic protocol examples; no captured remote data.",
+  "legacy": [
+    {"name": "controls", "words": "123456212614bc"},
+    {"name": "pilot_and_high_bits", "words": "abcdeff3df5aa5"},
+    {"name": "zero_bytes", "words": "00000000000000"}
+  ],
+  "extended": [
+    {"name": "power_on_flame_zero", "words": "123456812015c800216e"},
+    {"name": "mixed_bytes", "words": "abcdef629e00ff5aa4de"},
+    {"name": "zero_bytes", "words": "00000000000000000000"},
+    {"name": "ones_bytes", "words": "ffffffffffffffff8282"},
+    {"name": "serial_high_bit", "words": "8000018000aa558077ea"}
+  ]
+}
