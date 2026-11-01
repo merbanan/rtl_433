@@ -95,7 +95,8 @@ void pulse_detect_fsk_minmax_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pu
 
 /// Consume one envelope event and its FM span. Returns 1 for a complete FSK
 /// package, otherwise 0. Partial spans retain state; only PULSE_DETECT_PULSE
-/// finalizes a package. PULSE_DETECT_START resets the detector and pulse data.
+/// finalizes a package. PULSE_DETECT_START resets the detector and pulse data,
+/// PULSE_DETECT_RESTART does the same starting at the second envelope pulse.
 /// The caller ages fsk_pulses->start_ago once per input buffer.
 int pulse_detect_fsk_package(pulse_detect_fsk_t *s, int16_t const *fm_data,
         pulse_detect_span_t const *span, int event, pulse_data_t const *pulses,

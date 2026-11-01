@@ -26,6 +26,9 @@
 #define OOK_EST_HIGH_RATIO  64          // Constant for slowness of OOK high level estimator
 #define OOK_EST_LOW_RATIO   1024        // Constant for slowness of OOK low level (noise) estimator (very slow)
 
+#define PD_FSK_MAX_LEADIN_US 200        // Max width of a leading transient (e.g. transmitter key-up) to skip for FSK detection
+#define PD_FSK_MIN_LEADIN_GAP_US 200    // Min gap after such a transient, to not split dense OOK data
+
 /// Internal state data for pulse_pulse_package()
 struct pulse_detect {
     int use_mag_est;          ///< Whether the envelope data is an amplitude or magnitude.
@@ -41,6 +44,7 @@ struct pulse_detect {
     } ook_state;
     int pulse_length; ///< Counter for internal pulse detection
     int max_pulse;    ///< Size of biggest pulse detected
+    unsigned fsk_pulse_num; ///< Index of the pulse spanned for FSK detection (0, or 1 after a lead-in)
 
     int data_counter;    ///< Counter for how much of data chunk is processed
     int buffer_started;  ///< Current buffer has already aged the pulse data.
@@ -85,6 +89,7 @@ void pulse_detect_reset(pulse_detect_t *pulse_detect)
     pulse_detect->ook_low_estimate  = 0;
     pulse_detect->ook_high_estimate = 0;
     pulse_detect->pending_gap       = 0;
+    pulse_detect->fsk_pulse_num     = 0;
     pulse_detect->eop_on_spurious   = 0;
     memset(pulse_detect->att_hist, 0, sizeof(pulse_detect->att_hist));
 }
@@ -240,7 +245,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
     // If the caller kept the OOK package, consume the confirmed gap sample.
     // An accepted carrier package instead reprocesses it in the idle state.
     if (s->pending_gap) {
-        if (pulses->num_pulses == 0)
+        if (pulses->num_pulses == s->fsk_pulse_num)
             span->len = 1;
         s->data_counter += 1;
         s->pending_gap = 0;
@@ -335,6 +340,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     s->pulse_length = 0;
                     s->max_pulse = 0;
                     s->eop_on_spurious = 0;
+                    s->fsk_pulse_num = 0;
                     s->ook_state = PD_OOK_STATE_PULSE;
                     s->data_counter += 1;
                     span->len = 0;
@@ -382,7 +388,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     // Estimate pulse carrier frequency
                     pulses->fsk_f1_est += fm_data[s->data_counter] / OOK_EST_HIGH_RATIO - pulses->fsk_f1_est / OOK_EST_HIGH_RATIO;
                 }
-                if (pulses->num_pulses == 0) {
+                if (pulses->num_pulses == s->fsk_pulse_num) {
                     if (!span->len)
                         span->start = s->data_counter;
                     span->len += 1;
@@ -404,7 +410,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     s->pending_gap           = 1;
                     return PULSE_DETECT_PULSE;
                 } // if
-                if (pulses->num_pulses == 0) {
+                if (pulses->num_pulses == s->fsk_pulse_num) {
                     if (!span->len)
                         span->start = s->data_counter;
                     span->len += 1;
@@ -434,6 +440,18 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
 
                     s->pulse_length = 0;
                     s->ook_state = PD_OOK_STATE_PULSE;
+
+                    // A short first pulse followed by a clear gap is likely a transmitter
+                    // key-up transient: restart FSK detection on this second pulse.
+                    // OOK pulse data is unaffected.
+                    if (pulses->num_pulses == 1
+                            && pulses->pulse[0] < PD_FSK_MAX_LEADIN_US * samples_per_ms / 1000
+                            && pulses->gap[0] >= PD_FSK_MIN_LEADIN_GAP_US * samples_per_ms / 1000) {
+                        s->fsk_pulse_num = 1;
+                        s->data_counter += 1;
+                        span->len = 0;
+                        return PULSE_DETECT_RESTART;
+                    }
                 }
 
                 // EOP if gap is too long

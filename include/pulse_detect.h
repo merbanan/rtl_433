@@ -30,9 +30,11 @@ enum pulse_detect_events {
     PULSE_DETECT_OOK,   ///< Complete envelope pulse train.
     PULSE_DETECT_START, ///< New envelope package; reset downstream detectors.
     PULSE_DETECT_PULSE, ///< Confirmed gap, or end-of-input while inside a pulse.
+    PULSE_DETECT_RESTART, ///< Second pulse after a short lead-in; restart downstream detectors on it.
 };
 
-/// Newly consumed samples of the first carrier pulse, including short gaps.
+/// Newly consumed samples of the carrier pulse used for FSK detection, including short gaps.
+/// This is the first pulse, or the second pulse after PULSE_DETECT_RESTART.
 typedef struct {
     unsigned start; ///< Index in the current input buffer.
     unsigned len;   ///< Sample count; never extends beyond the current buffer.
@@ -76,7 +78,7 @@ void pulse_detect_set_levels(pulse_detect_t *pulse_detect, int use_mag_est, floa
 /// @param samp_rate Sample rate in samples per second
 /// @param sample_offset Offset tracking for ringbuffer
 /// @param[in,out] pulses Will return a pulse_data_t structure
-/// @param[out] span Newly consumed samples of the first carrier pulse
+/// @param[out] span Newly consumed samples of the carrier pulse used for FSK detection
 /// @return An enum pulse_detect_events value
 int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_detect_span_t *span);
 

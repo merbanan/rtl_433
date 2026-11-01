@@ -35,12 +35,14 @@ int pulse_detect_fsk_package(pulse_detect_fsk_t *s, int16_t const *fm_data,
         pulse_detect_span_t const *span, int event, pulse_data_t const *pulses,
         pulse_data_t *fsk_pulses, unsigned fpdm)
 {
-    if (event == PULSE_DETECT_START) {
+    if (event == PULSE_DETECT_START || event == PULSE_DETECT_RESTART) {
+        // A restart begins at the second pulse, right after the first pulse and gap.
+        unsigned const skip = event == PULSE_DETECT_RESTART ? pulses->pulse[0] + pulses->gap[0] : 0;
         pulse_detect_fsk_init(s);
         pulse_data_clear(fsk_pulses);
         fsk_pulses->sample_rate = pulses->sample_rate;
-        fsk_pulses->offset      = pulses->offset;
-        fsk_pulses->start_ago   = pulses->start_ago;
+        fsk_pulses->offset      = pulses->offset + skip;
+        fsk_pulses->start_ago   = pulses->start_ago - skip;
         return 0;
     }
 
