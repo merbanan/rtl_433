@@ -24,7 +24,8 @@ ML4000 8/12-bit radio mode guide: https://www.catec.nl/uploads/pdf/Han-ml4000-gu
 Preamble (24x short mark pairs) and sync (long mark pair, 3x the short
 width) are handled by FSK_PULSE_PWM's own sync detection, no explicit
 search needed. 40 data bits follow, each received byte bit-reversed
-(least-significant bit transmitted first within a byte).
+(least-significant bit transmitted first within a byte), then a
+trailing pulse that demodulates as a 41st bit and is ignored.
 
 Data layout, after reverse8() on each byte:
 
@@ -54,8 +55,9 @@ static int hanwell_ml4000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->num_rows < 1) {
         return DECODE_ABORT_EARLY;
     }
+    // 40 data bits, plus the trailing pulse if the demod kept it
     int row = bitbuffer->num_rows - 1;
-    if (bitbuffer->bits_per_row[row] != 40) {
+    if (bitbuffer->bits_per_row[row] < 40 || bitbuffer->bits_per_row[row] > 41) {
         return DECODE_ABORT_LENGTH;
     }
 
