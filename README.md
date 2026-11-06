@@ -484,6 +484,9 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [387]  Cotech 36-9231 FT020TL LoRa weather station
     [388]  LoRaWAN 1.0.x generic MAC frame
     [389]  ELSYS ERS Series LoRaWAN sensors
+    [390]* CAME, Prastel, Airforce gate remotes
+    [391]* CAME TWEE gate remotes
+    [392]* CAME Atomo gate remotes
 
 * Disabled by default, use -R n or a conf file to enable
 
