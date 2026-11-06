@@ -402,6 +402,7 @@
     DECL(feron) \
     DECL(paradox_magellan) \
     DECL(gangqi) \
+    DECL(chamberlain_code) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;

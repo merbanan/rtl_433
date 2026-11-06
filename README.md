@@ -489,6 +489,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [392]* Feron LED light remotes
     [393]  Paradox Magellan security sensors
     [394]  GangQi alarm system remotes
+    [395]* Chamberlain / LiftMaster DIP switch remotes
 
 * Disabled by default, use -R n or a conf file to enable
 
