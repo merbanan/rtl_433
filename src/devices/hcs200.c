@@ -37,6 +37,11 @@ In programming mode (all button bits set) some remotes send a fixed hopping code
 
 These are reported with a subtype only.
 
+Jarolift shutter remotes send the same 64 bits (KeeLoq hopping code with their own key) with a
+different frame: a 1500 us pulse and 8 short pulses as warm-up, a 3.8 ms gap, then the 64 bits
+and an 8 bit group byte instead of the 2 status bits (72 bits). These are reported with the
+subtype Jarolift and the group byte (LSB first), without battery and repeat.
+
 - Datasheet HCS200: http://ww1.microchip.com/downloads/en/devicedoc/40138c.pdf
 - Datasheet HCS300: http://ww1.microchip.com/downloads/en/devicedoc/21137g.pdf
 
@@ -50,19 +55,32 @@ rtl_433 -R 0 -X 'n=hcs200,m=OOK_PWM,s=370,l=772,r=9000,g=1500,t=152'
 
 static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    // HCS: 12 bit preamble row, 66 bit data row. Jarolift: 8 bit preamble row, 72 bit data row.
+    int row      = -1;
+    int jarolift = 0;
+    if (bitbuffer->bits_per_row[0] == 12 && bitbuffer->bits_per_row[1] == 66) {
+        uint8_t *p = bitbuffer->bb[0];
+        // Reject codes with an incorrect preamble (expected 0xfff)
+        if (p[0] != 0xff || (p[1] & 0xf0) != 0xf0) {
+            decoder_log(decoder, 2, __func__, "Preamble not found");
+            return DECODE_ABORT_EARLY;
+        }
+        row = 1;
+    }
+    else {
+        for (int r = 1; r < bitbuffer->num_rows; ++r) {
+            if (bitbuffer->bits_per_row[r] == 72 && bitbuffer->bits_per_row[r - 1] == 8 && bitbuffer->bb[r - 1][0] == 0xff) {
+                row      = r;
+                jarolift = 1;
+                break;
+            }
+        }
+    }
     // Reject codes of wrong length
-    if (bitbuffer->bits_per_row[0] != 12 || bitbuffer->bits_per_row[1] != 66)
+    if (row < 0)
         return DECODE_ABORT_LENGTH;
 
-    uint8_t *b = bitbuffer->bb[0];
-    // Reject codes with an incorrect preamble (expected 0xfff)
-    if (b[0] != 0xff || (b[1] & 0xf0) != 0xf0) {
-        decoder_log(decoder, 2, __func__, "Preamble not found");
-        return DECODE_ABORT_EARLY;
-    }
-
-    // Second row is data
-    b = bitbuffer->bb[1];
+    uint8_t *b = bitbuffer->bb[row];
 
     // No need to decode/extract values for simple test
     if (b[1] == 0xff && b[2] == 0xff && b[3] == 0xff && b[4] == 0xff
@@ -79,13 +97,17 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int learn          = (b[7] & 0x0f) == 0x0f;
     int battery_low    = (b[8] & 0x80) == 0x80;
     int repeat         = (b[8] & 0x40) == 0x40;
+    int group          = reverse8(b[8]);
 
     // Unencrypted hopping codes, the button bits in transmit order
     int btn_tx          = reverse8(btn) >> 4;
     char const *subtype = "";
     int counter         = 0;
     int has_counter     = 0;
-    if (learn && encrypted == 0x1a2b3c4d) {
+    if (jarolift) {
+        subtype = "Jarolift";
+    }
+    else if (learn && encrypted == 0x1a2b3c4d) {
         subtype = "Aprimatic";
     }
     else if (learn && encrypted == 0) {
@@ -111,13 +133,14 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data = data_make(
             "model",            "",             DATA_STRING,    "Microchip-HCS200",
             "id",               "",             DATA_STRING,    serial_str,
-            "battery_ok",       "Battery",      DATA_INT,       !battery_low,
+            "battery_ok",       "Battery",      DATA_COND,      !jarolift,       DATA_INT,    !battery_low,
             "button",           "Button",       DATA_INT,       btn_num,
             "learn",            "Learn mode",   DATA_INT,       learn,
-            "repeat",           "Repeat",       DATA_INT,       repeat,
+            "repeat",           "Repeat",       DATA_COND,      !jarolift,       DATA_INT,    repeat,
             "encrypted",        "",             DATA_STRING,    encrypted_str,
             "subtype",          "Type",         DATA_COND,      *subtype,        DATA_STRING, subtype,
             "counter",          "Counter",      DATA_COND,      has_counter,     DATA_INT,    counter,
+            "group",            "Group",        DATA_COND,      jarolift,        DATA_FORMAT, "%02x", DATA_INT, group,
             NULL);
     /* clang-format on */
 
@@ -135,6 +158,7 @@ static char const *const output_fields[] = {
         "encrypted",
         "subtype",
         "counter",
+        "group",
         NULL,
 };
 
