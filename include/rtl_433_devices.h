@@ -400,6 +400,7 @@
     DECL(hollarm) \
     DECL(power_smart) \
     DECL(feron) \
+    DECL(paradox_magellan) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
