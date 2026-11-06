@@ -257,6 +257,7 @@ add_library(r_433 STATIC
     devices/fsl_scoreboard.c
     devices/ft004b.c
     devices/funkbus.c
+    devices/gangqi.c
     devices/gasmate_ba1008.c
     devices/ge_coloreffects.c
     devices/geevon.c

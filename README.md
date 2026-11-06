@@ -488,6 +488,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [391]  Power Smart blind remotes
     [392]* Feron LED light remotes
     [393]  Paradox Magellan security sensors
+    [394]  GangQi alarm system remotes
 
 * Disabled by default, use -R n or a conf file to enable
 
