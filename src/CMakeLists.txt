@@ -235,6 +235,7 @@ add_library(r_433 STATIC
     devices/esperanza_ews.c
     devices/esun_en2053.c
     devices/eurochron.c
+    devices/faac_slh.c
     devices/fineoffset.c
     devices/fineoffset_wh1050.c
     devices/fineoffset_wh1080.c
