@@ -448,6 +448,7 @@ add_library(r_433 STATIC
     devices/tpms_trw.c
     devices/tpms_tyreguard400.c
     devices/tr_502msv.c
+    devices/treadmill37.c
     devices/ts_ft002.c
     devices/ttx201.c
     devices/twogig_key2e.c
