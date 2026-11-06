@@ -187,6 +187,7 @@ add_library(r_433 STATIC
     devices/cavius.c
     devices/ced7000.c
     devices/celsia_czc1.c
+    devices/chamberlain_code.c
     devices/chamberlain_cwpirc.c
     devices/chrysler_car_remote.c
     devices/chuango.c
