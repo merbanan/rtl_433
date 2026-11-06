@@ -491,6 +491,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [394]  GangQi alarm system remotes
     [395]* Chamberlain / LiftMaster DIP switch remotes
     [396]* King Gates Stylo 4k gate remotes
+    [397]* iDo 117/111 gate remotes
 
 * Disabled by default, use -R n or a conf file to enable
 
