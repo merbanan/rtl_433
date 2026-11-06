@@ -486,6 +486,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [389]  ELSYS ERS Series LoRaWAN sensors
     [390]* Hollarm alarm system remotes
     [391]  Power Smart blind remotes
+    [392]* Feron LED light remotes
 
 * Disabled by default, use -R n or a conf file to enable
 
