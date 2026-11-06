@@ -397,6 +397,8 @@
     DECL(cotech_36_9231) \
     DECL(lorawan) \
     DECL(elsys_ers) \
+    DECL(holtek_ht640) \
+    DECL(holtek_ht12e) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
