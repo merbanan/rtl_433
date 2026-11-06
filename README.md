@@ -485,6 +485,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [388]  LoRaWAN 1.0.x generic MAC frame
     [389]  ELSYS ERS Series LoRaWAN sensors
     [390]* Hollarm alarm system remotes
+    [391]  Power Smart blind remotes
 
 * Disabled by default, use -R n or a conf file to enable
 

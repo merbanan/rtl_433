@@ -398,6 +398,7 @@
     DECL(lorawan) \
     DECL(elsys_ers) \
     DECL(hollarm) \
+    DECL(power_smart) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
