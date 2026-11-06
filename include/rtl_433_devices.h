@@ -403,6 +403,7 @@
     DECL(paradox_magellan) \
     DECL(gangqi) \
     DECL(chamberlain_code) \
+    DECL(kinggates_stylo4k) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
