@@ -208,6 +208,7 @@ add_library(r_433 STATIC
     devices/digitech_xc0324.c
     devices/directv.c
     devices/dish_remote_6_3.c
+    devices/ditec.c
     devices/dsc.c
     devices/eberle_instat868r1.c
     devices/ec3k.c
