@@ -13,7 +13,8 @@ Quhwa HS1527.
 
 Tested devices:
 QH-C-CE-3V (which should be compatible with QH-832AC),
-also sold as "1 by One" wireless doorbell
+also sold as "1 by One" wireless doorbell,
+Legrand wireless doorbells
 */
 
 #include "decoder.h"
