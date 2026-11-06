@@ -484,6 +484,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [387]  Cotech 36-9231 FT020TL LoRa weather station
     [388]  LoRaWAN 1.0.x generic MAC frame
     [389]  ELSYS ERS Series LoRaWAN sensors
+    [390]  Marantec garage door remote
+    [391]* Marantec24 clone remote
 
 * Disabled by default, use -R n or a conf file to enable
 
