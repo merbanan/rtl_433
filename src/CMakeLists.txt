@@ -352,6 +352,7 @@ add_library(r_433 STATIC
     devices/oria_wa150km.c
     devices/philips_aj3650.c
     devices/philips_aj7010.c
+    devices/power_smart.c
     devices/proflame2.c
     devices/prologue.c
     devices/proove.c
