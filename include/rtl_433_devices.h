@@ -397,6 +397,7 @@
     DECL(cotech_36_9231) \
     DECL(lorawan) \
     DECL(elsys_ers) \
+    DECL(doitrand) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;
