@@ -257,6 +257,7 @@ add_library(r_433 STATIC
     devices/ft004b.c
     devices/funkbus.c
     devices/gasmate_ba1008.c
+    devices/gate_tx.c
     devices/ge_coloreffects.c
     devices/geevon.c
     devices/geevon_tx19.c
