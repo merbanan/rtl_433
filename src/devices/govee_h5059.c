@@ -23,6 +23,7 @@
 
 #define GOVEE_H5059_MSG_CLASS_OFFSET    0
 #define GOVEE_H5059_ID_OFFSET           1
+#define GOVEE_H5059_BATTERY_OFFSET      11
 #define GOVEE_H5059_SUBTYPE_OFFSET      13
 #define GOVEE_H5059_LEAK_TOP_OFFSET     14
 #define GOVEE_H5059_LEAK_BOTTOM_OFFSET  15
@@ -34,6 +35,7 @@
 #define GOVEE_H5059_MSG_CLASS_PAIRING   0x01
 #define GOVEE_H5059_MSG_CLASS_OTHER     0x02
 
+#define GOVEE_H5059_SUBTYPE_POWER_ON    0x00
 #define GOVEE_H5059_SUBTYPE_BUTTON      0x05
 #define GOVEE_H5059_SUBTYPE_LEAK        0x06
 #define GOVEE_H5059_SUBTYPE_POST_ALARM  0x07
@@ -76,8 +78,14 @@ Decrypted payload (19+ bytes):
 
 - dec[0]: message class (0x11 = telemetry, 0x01 = pairing, 0x02 = other)
 - dec[1-4]: 32-bit device ID in wire byte order
-- dec[5-12]: unknown/reserved bytes
-- dec[13]: subtype (0x05 = button, 0x06 = leak, 0x07 = post-alarm)
+- dec[5-8]: big-endian Unix time from the sensor's clock, set by the gateway (FFFFFFFF after
+    power-up until the gateway syncs it; stops advancing on sensors that lost their gateway)
+- dec[9]: unknown, constant per device (0x1e on most units, 0x13 on one; unchanged by a battery swap)
+- dec[10]: unknown, 0x14 on all units seen
+- dec[11]: battery level in percent (telemetry frames)
+- dec[12]: signed RSSI in dBm of the last packet the sensor received from the gateway
+    (0 after power-up; varies widely from packet to packet)
+- dec[13]: subtype (0x00 = power on, 0x05 = button, 0x06 = leak, 0x07 = post-alarm)
 - dec[14]: top probe wet flag (0x01 = top probe pair detects water)
 - dec[15]: bottom probe wet flag (0x01 = bottom probe pair detects water)
 - dec[16]: unknown
@@ -90,8 +98,15 @@ Event mapping:
 - msg_class 0x11 + subtype 0x05: Button Press
 - msg_class 0x11 + subtype 0x06 + dec[17] != 0 + (dec[14] == 0x01 or dec[15] == 0x01): Water Leak
 - msg_class 0x11 + subtype 0x07: Post Alarm
+- msg_class 0x11 + subtype 0x00: Power On (sent when batteries are inserted)
 - msg_class 0x01: Pairing
 - msg_class 0x02: Class 0x02
+
+Battery level (observed 2026-11-06):
+
+- dec[11] read 100 on 12 units with fresh cells (~3.0 V). Swapping 2.4 V used cells into a
+    paired unit changed it to 0x26 (38) in both the power-on and the following button frames,
+    while the Govee app showed 2 of 4 battery bars. Reported as battery_ok (0..1) + battery_pct.
 
 Top/bottom probe flags (confirmed 2026-06-14):
 
@@ -247,11 +262,18 @@ static int govee_h5059_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int leak_bottom = enc_len > GOVEE_H5059_LEAK_BOTTOM_OFFSET ? dec[GOVEE_H5059_LEAK_BOTTOM_OFFSET] : -1;
     int leak_alarm  = enc_len > GOVEE_H5059_LEAK_ALARM_OFFSET ? dec[GOVEE_H5059_LEAK_ALARM_OFFSET] : -1;
     int leak_status = GOVEE_H5059_LEAK_UNKNOWN;
+    int battery_pct = -1;
 
     char const *event = "Unknown";
     if (msg_class == GOVEE_H5059_MSG_CLASS_TELEMETRY) {
         event = "Telemetry";
-        if (subtype == GOVEE_H5059_SUBTYPE_BUTTON) {
+        if (dec[GOVEE_H5059_BATTERY_OFFSET] <= 100) {
+            battery_pct = dec[GOVEE_H5059_BATTERY_OFFSET];
+        }
+        if (subtype == GOVEE_H5059_SUBTYPE_POWER_ON) {
+            event = "Power On";
+        }
+        else if (subtype == GOVEE_H5059_SUBTYPE_BUTTON) {
             event       = "Button Press";
             leak_status = GOVEE_H5059_LEAK_DRY;
         }
@@ -284,6 +306,8 @@ static int govee_h5059_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "detect_wet",   "",                 DATA_COND,   leak_status >= 0, DATA_INT, leak_status,
             "leak_top",     "",                 DATA_COND,   leak_status == GOVEE_H5059_LEAK_WET, DATA_INT, leak_top == GOVEE_H5059_LEAK_FLAG_ACTIVE,
             "leak_bottom",  "",                 DATA_COND,   leak_status == GOVEE_H5059_LEAK_WET, DATA_INT, leak_bottom == GOVEE_H5059_LEAK_FLAG_ACTIVE,
+            "battery_ok",   "Battery level",    DATA_COND,   battery_pct >= 0, DATA_DOUBLE, battery_pct * 0.01,
+            "battery_pct",  "Battery level",    DATA_COND,   battery_pct >= 0, DATA_FORMAT, "%d %%", DATA_INT, battery_pct,
             "mic",          "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -303,6 +327,8 @@ static char const *const output_fields[] = {
         "detect_wet",
         "leak_top",
         "leak_bottom",
+        "battery_ok",
+        "battery_pct",
         "mic",
         NULL,
 };
