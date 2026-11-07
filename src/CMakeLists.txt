@@ -336,6 +336,7 @@ add_library(r_433 STATIC
     devices/nexus.c
     devices/nice_flor_s.c
     devices/nidec_car_remote.c
+    devices/nord_ice.c
     devices/norgo.c
     devices/oil_smart.c
     devices/oil_standard.c
