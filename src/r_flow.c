@@ -258,7 +258,11 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 break;
             }
         }
-        demod->fsk_pulse_data.start_ago += n_samples;
+        // Age the FSK package like pulse_detect_package() ages the OOK one,
+        // i.e. only for buffers that are processed.
+        if (process_frame) {
+            demod->fsk_pulse_data.start_ago += n_samples;
+        }
         while (package_type && process_frame) {
             int p_events = 0; // Sensor events successfully detected per package
             package_type = detect_package(demod, n_samples);
