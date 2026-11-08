@@ -114,6 +114,12 @@ static int tpms_eezrv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     int temperature_C      = b[4] - 50;
+
+    // Sanity check to drop false decodes outside the -40C to +80C operating range
+    if (temperature_C < -40 || temperature_C > 80) {
+        return DECODE_FAIL_SANITY;
+    }
+
     int flags1             = b[5];
     int flags2             = b[6];
     int fast_leak_detected = (flags1 & 0x10);      // fast leak - reports every second
