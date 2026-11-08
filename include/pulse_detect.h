@@ -31,10 +31,11 @@ enum pulse_detect_events {
     PULSE_DETECT_START, ///< New envelope package; reset downstream detectors.
     PULSE_DETECT_PULSE, ///< Confirmed gap, or end-of-input while inside a pulse.
     PULSE_DETECT_RESTART, ///< Second pulse after a short lead-in; restart downstream detectors on it.
+    PULSE_DETECT_RETRY, ///< New pulse after pulse_detect_retry_fsk(); restart downstream detectors on it.
 };
 
 /// Newly consumed samples of the carrier pulse used for FSK detection, including short gaps.
-/// This is the first pulse, or the second pulse after PULSE_DETECT_RESTART.
+/// This is the first pulse, or the pulse after PULSE_DETECT_RESTART or PULSE_DETECT_RETRY.
 typedef struct {
     unsigned start; ///< Index in the current input buffer.
     unsigned len;   ///< Sample count; never extends beyond the current buffer.
@@ -52,6 +53,11 @@ void pulse_detect_reset(pulse_detect_t *pulse_detect);
 /// Accept a carrier package at PULSE_DETECT_PULSE and discard its OOK envelope.
 /// Preserves level estimates and resumes at the gap boundary in the same buffer.
 void pulse_detect_skip_package(pulse_detect_t *pulse_detect);
+
+/// Reject a carrier package at PULSE_DETECT_PULSE and keep the OOK envelope, but
+/// span the next pulse of this package for FSK detection again, signalled with
+/// PULSE_DETECT_RETRY. Only one retry per package, later calls are ignored.
+void pulse_detect_retry_fsk(pulse_detect_t *pulse_detect);
 
 /// Set pulse detector level values.
 ///

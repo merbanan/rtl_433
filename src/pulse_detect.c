@@ -44,7 +44,8 @@ struct pulse_detect {
     } ook_state;
     int pulse_length; ///< Counter for internal pulse detection
     int max_pulse;    ///< Size of biggest pulse detected
-    unsigned fsk_pulse_num; ///< Index of the pulse spanned for FSK detection (0, or 1 after a lead-in)
+    unsigned fsk_pulse_num; ///< Index of the pulse spanned for FSK detection (0, 1 after a lead-in, or later on retry)
+    int fsk_retry;          ///< FSK retry on the next pulse: 0 none, 1 armed, 2 used, see pulse_detect_retry_fsk()
 
     int data_counter;    ///< Counter for how much of data chunk is processed
     int buffer_started;  ///< Current buffer has already aged the pulse data.
@@ -90,6 +91,7 @@ void pulse_detect_reset(pulse_detect_t *pulse_detect)
     pulse_detect->ook_high_estimate = 0;
     pulse_detect->pending_gap       = 0;
     pulse_detect->fsk_pulse_num     = 0;
+    pulse_detect->fsk_retry         = 0;
     pulse_detect->eop_on_spurious   = 0;
     memset(pulse_detect->att_hist, 0, sizeof(pulse_detect->att_hist));
 }
@@ -215,6 +217,13 @@ static void print_levels(pulse_detect_t const *s, int threshold)
             mag_to_att(threshold - hysteresis));
 }
 
+void pulse_detect_retry_fsk(pulse_detect_t *s)
+{
+    if (!s->fsk_retry) {
+        s->fsk_retry = 1;
+    }
+}
+
 void pulse_detect_skip_package(pulse_detect_t *s)
 {
     if (s->pending_gap) {
@@ -229,6 +238,7 @@ void pulse_detect_skip_package(pulse_detect_t *s)
     s->ook_state       = PD_OOK_STATE_IDLE;
     s->pending_gap     = 0;
     s->eop_on_spurious = 0;
+    s->fsk_retry       = 0;
     memset(s->att_hist, 0, sizeof(s->att_hist));
 }
 
@@ -341,6 +351,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     s->max_pulse = 0;
                     s->eop_on_spurious = 0;
                     s->fsk_pulse_num = 0;
+                    s->fsk_retry = 0;
                     s->ook_state = PD_OOK_STATE_PULSE;
                     s->data_counter += 1;
                     span->len = 0;
@@ -427,6 +438,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     if (pulses->num_pulses >= PD_MAX_PULSES) {
                         s->ook_state = PD_OOK_STATE_IDLE;
                         s->eop_on_spurious = 0;
+                        s->fsk_retry = 0;
                         // Store estimates
                         pulses->ook_low_estimate = s->ook_low_estimate;
                         pulses->ook_high_estimate = s->ook_high_estimate;
@@ -452,6 +464,14 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                         span->len = 0;
                         return PULSE_DETECT_RESTART;
                     }
+                    // After a rejected carrier package try FSK detection on the next pulse.
+                    if (s->fsk_retry == 1) {
+                        s->fsk_retry     = 2;
+                        s->fsk_pulse_num = pulses->num_pulses;
+                        s->data_counter += 1;
+                        span->len = 0;
+                        return PULSE_DETECT_RETRY;
+                    }
                 }
 
                 // EOP if gap is too long
@@ -463,6 +483,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     pulses->num_pulses += 1;    // Store last pulse
                     s->ook_state = PD_OOK_STATE_IDLE;
                     s->eop_on_spurious = 0;
+                    s->fsk_retry = 0;
                     // Store estimates
                     pulses->ook_low_estimate = s->ook_low_estimate;
                     pulses->ook_high_estimate = s->ook_high_estimate;

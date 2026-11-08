@@ -55,7 +55,8 @@ struct dm_state {
     pulse_data_t    pulse_data;
     pulse_data_t    fsk_pulse_data; ///< FSK pulse data of the current package as given to the decoders
     pulse_data_t    fsk_pulse_data_all[FSK_PULSE_DETECTOR_COUNT]; ///< FSK pulse data of each detector
-    unsigned        fsk_ready; ///< Bitmask of detectors with a complete current FSK package
+    unsigned        fsk_ready;    ///< Bitmask of detectors with a complete current FSK package
+    int             fsk_rejected; ///< Current FSK package did not decode, auto mode keeps the OOK package
     uint64_t input_pos;
     unsigned frame_event_count;
     int frame_quality;

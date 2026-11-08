@@ -100,8 +100,9 @@ void reset_sdr_flow(r_cfg_t *cfg)
 }
 
 /// FSK pulse detectors to run, in the order their packages are tried.
-/// The first one, the primary, decides if a package is FSK. This is the only
-/// place that resolves the pulse detect mode, including auto by frequency.
+/// A single detector decides if a package is FSK. With several detectors (auto)
+/// a package is FSK if any detector's pulses decode, otherwise it stays OOK.
+/// This is the only place that resolves the pulse detect mode.
 static unsigned fsk_detector_order(struct dm_state const *demod, unsigned order[FSK_PULSE_DETECTOR_COUNT])
 {
     switch (demod->fsk_pulse_detect_mode) {
@@ -118,9 +119,8 @@ static unsigned fsk_detector_order(struct dm_state const *demod, unsigned order[
         order[0] = FSK_PULSE_DETECTOR_MEDIAN;
         return 1;
     default: // FSK_PULSE_DETECT_AUTO
-        // Classic is primary up to 800 MHz, minmax above
-        order[0] = demod->center_frequency > FSK_PULSE_DETECTOR_LIMIT ? FSK_PULSE_DETECTOR_MINMAX : FSK_PULSE_DETECTOR_CLASSIC;
-        order[1] = demod->center_frequency > FSK_PULSE_DETECTOR_LIMIT ? FSK_PULSE_DETECTOR_CLASSIC : FSK_PULSE_DETECTOR_MINMAX;
+        order[0] = FSK_PULSE_DETECTOR_CLASSIC;
+        order[1] = FSK_PULSE_DETECTOR_MINMAX;
         order[2] = FSK_PULSE_DETECTOR_HYSTERESIS;
         order[3] = FSK_PULSE_DETECTOR_MEDIAN;
         return FSK_PULSE_DETECTOR_COUNT;
@@ -143,7 +143,10 @@ static int detect_package(struct dm_state *demod, unsigned n_samples)
         pulse_detect_span_t span;
         int event = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm,
                 n_samples, demod->samp_rate, demod->input_pos, &demod->pulse_data, &span);
-        // Every detector sees the same carrier, only the primary may classify it as FSK.
+        // Every detector sees the same carrier. A single detector classifies it as FSK,
+        // several (auto) offer it as FSK to the decoders, see the caller.
+        if (event == PULSE_DETECT_START || event == PULSE_DETECT_RESTART || event == PULSE_DETECT_RETRY)
+            demod->fsk_rejected = 0;
         unsigned ready = 0;
         for (unsigned i = 0; i < order_len; ++i) {
             unsigned const d = order[i];
@@ -152,7 +155,8 @@ static int detect_package(struct dm_state *demod, unsigned n_samples)
                 ready |= 1u << d;
             }
         }
-        if (ready & (1u << order[0])) {
+        int const accept = order_len > 1 ? ready && !demod->fsk_rejected : (ready & (1u << order[0])) != 0;
+        if (accept) {
             for (unsigned i = 0; i < order_len; ++i) {
                 unsigned const d = order[i];
                 if (ready & (1u << d)) {
@@ -161,7 +165,8 @@ static int detect_package(struct dm_state *demod, unsigned n_samples)
                 }
             }
             demod->fsk_ready = ready;
-            pulse_detect_skip_package(demod->pulse_detect);
+            if (order_len == 1)
+                pulse_detect_skip_package(demod->pulse_detect);
             return PULSE_DATA_FSK;
         }
         if (event == PULSE_DETECT_OOK)
@@ -275,11 +280,9 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
 
     // FM demodulation
     if (demod->enable_FM_demod && process_frame) {
-        // Use manual FM low pass value otherwise 0.1 for a classic or 0.2 for a minmax primary detector.
-        // All detectors share the FM stream, the others are only tried when the primary found a package.
-        unsigned order[FSK_PULSE_DETECTOR_COUNT];
-        fsk_detector_order(demod, order);
-        float fm_low_pass = demod->fm_low_pass != 0.0f ? demod->fm_low_pass : order[0] == FSK_PULSE_DETECTOR_CLASSIC ? 0.1f : 0.2f;
+        // Use manual FM low pass value otherwise 0.2 for minmax or 0.1 for classic and auto
+        float fm_low_pass = demod->fm_low_pass != 0.0f ? demod->fm_low_pass
+                : demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_OLD || demod->fsk_pulse_detect_mode == FSK_PULSE_DETECT_AUTO ? 0.1f : 0.2f;
         if (demod->sample_size == 2) { // CU8
             baseband_demod_FM(&demod->demod_FM_state, iq_buf, demod->buf.fm, n_samples, demod->samp_rate, fm_low_pass);
         } else { // CS16
@@ -379,7 +382,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 }
             }
             else if (package_type == PULSE_DATA_FSK) {
-                // Try the detectors in order until one decodes, otherwise report the primary.
+                // Try the detectors in order until one decodes.
                 unsigned order[FSK_PULSE_DETECTOR_COUNT];
                 unsigned const order_len = fsk_detector_order(demod, order);
                 for (unsigned i = 0; i < order_len && p_events == 0; ++i) {
@@ -395,9 +398,14 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                     calc_rssi_snr(demod, &demod->fsk_pulse_data);
                     p_events += run_fsk_demods(&demod->r_devs, &demod->fsk_pulse_data);
                 }
-                if (p_events == 0 && order_len > 1) {
-                    demod->fsk_pulse_data = demod->fsk_pulse_data_all[order[0]];
-                    calc_rssi_snr(demod, &demod->fsk_pulse_data);
+                if (order_len > 1) {
+                    if (p_events == 0) {
+                        // Not FSK after all: keep the OOK package, but try FSK again on its next pulse.
+                        demod->fsk_rejected = 1;
+                        pulse_detect_retry_fsk(demod->pulse_detect);
+                        continue;
+                    }
+                    pulse_detect_skip_package(demod->pulse_detect);
                 }
                 if (demod->analyze_pulses) {
                     fprintf(stderr, "Detected FSK package\t%s\n", time_pos_str(cfg, demod->fsk_pulse_data.start_ago, time_str));

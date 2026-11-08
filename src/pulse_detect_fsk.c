@@ -42,11 +42,16 @@ int pulse_detect_fsk_package(pulse_detect_fsk_t *s, int16_t const *fm_data,
         pulse_detect_span_t const *span, int event, pulse_data_t const *pulses,
         pulse_data_t *fsk_pulses, unsigned detector)
 {
-    if (event == PULSE_DETECT_START || event == PULSE_DETECT_RESTART) {
-        // A restart begins at the second pulse, right after the first pulse and gap.
-        unsigned const skip = event == PULSE_DETECT_RESTART ? pulses->pulse[0] + pulses->gap[0] : 0;
+    if (event == PULSE_DETECT_START || event == PULSE_DETECT_RESTART || event == PULSE_DETECT_RETRY) {
+        // A restart or retry begins at the new pulse, right after the previous pulses and gaps.
+        unsigned const first = event == PULSE_DETECT_START ? 0 : pulses->num_pulses;
+        unsigned skip = 0;
+        for (unsigned i = 0; i < first; ++i) {
+            skip += pulses->pulse[i] + pulses->gap[i];
+        }
         pulse_detect_fsk_init(s);
-        s->restarted = event == PULSE_DETECT_RESTART;
+        s->restarted   = event == PULSE_DETECT_RESTART;
+        s->first_pulse = first;
         pulse_data_clear(fsk_pulses);
         fsk_pulses->sample_rate = pulses->sample_rate;
         fsk_pulses->offset      = pulses->offset + skip;
@@ -80,7 +85,7 @@ int pulse_detect_fsk_package(pulse_detect_fsk_t *s, int16_t const *fm_data,
         return 0;
 
     // After a lead-in only accept a long burst, a short pulse is OOK data.
-    if (s->restarted && pulses->pulse[1] < (int)(FSK_MIN_RESTART_BURST_US * (pulses->sample_rate / 1000) / 1000))
+    if (s->restarted && pulses->pulse[s->first_pulse] < (int)(FSK_MIN_RESTART_BURST_US * (pulses->sample_rate / 1000) / 1000))
         return 0;
 
     return 1;

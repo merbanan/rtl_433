@@ -32,8 +32,11 @@ typedef struct {
     pulse_detect_fsk_t fsk;
     pulse_data_t pulses;
     pulse_data_t fsk_pulses;
-    uint64_t fsk_start; ///< FSK package start, recorded on START and RESTART
+    uint64_t fsk_start; ///< FSK package start, recorded on START, RESTART and RETRY
     unsigned mode; ///< One of FSK_PULSE_DETECTOR_*
+    unsigned reject; ///< Number of FSK packages to reject per run, like an undecodable package
+    unsigned reject_left;
+    int rejected; ///< Current FSK package was rejected
 } detector_t;
 
 #define CHECK(condition) do { \
@@ -58,9 +61,17 @@ static void process(detector_t *d, unsigned offset, unsigned len, result_t *resu
         pulse_data_t *data = &d->pulses;
         int const fsk = pulse_detect_fsk_package(&d->fsk, fm + offset, &span, event,
                 &d->pulses, &d->fsk_pulses, d->mode);
-        if (event == PULSE_DETECT_START || event == PULSE_DETECT_RESTART)
+        if (event == PULSE_DETECT_START || event == PULSE_DETECT_RESTART || event == PULSE_DETECT_RETRY) {
             d->fsk_start = d->fsk_pulses.offset;
-        if (fsk) {
+            d->rejected  = 0;
+        }
+        if (fsk && !d->rejected && d->reject_left) {
+            // Keep the OOK package, but try FSK again on its next pulses.
+            d->reject_left -= 1;
+            d->rejected = 1;
+            pulse_detect_retry_fsk(d->ook);
+        }
+        else if (fsk && !d->rejected) {
             pulse_detect_fsk_finalize(&d->fsk, &d->pulses, &d->fsk_pulses, d->mode);
             pulse_detect_skip_package(d->ook);
             type = PULSE_DATA_FSK;
@@ -100,6 +111,8 @@ static void process(detector_t *d, unsigned offset, unsigned len, result_t *resu
 static void run(detector_t *d, unsigned len, unsigned chunk, result_t *result)
 {
     *result = (result_t){0};
+    d->reject_left = d->reject;
+    d->rejected    = 0;
     pulse_detect_reset(d->ook);
     pulse_detect_fsk_init(&d->fsk);
     pulse_data_clear(&d->pulses);
@@ -263,6 +276,25 @@ int main(void)
             carrier(2048 + blip + gap, 4096, 1);
             run(&d, SAMPLES, SAMPLES, &result);
             CHECK(result.count == 1 && result.type[0] == PULSE_DATA_OOK && result.start[0] == 2048);
+        }
+
+        // A rejected FSK package stays OOK and FSK is tried again on its next pulse.
+        {
+            unsigned const chunks[] = {1, 10, 64, 1024, 4096, SAMPLES};
+            static result_t result;
+            memset(am, 0, sizeof(am));
+            carrier(2048, 1500, 1);
+            for (unsigned i = 0; i < 1500; ++i)
+                fm[2048 + i] = (i / 32) % 2 ? -6000 : 6000; // faster symbols: more than PD_MIN_PULSES
+            fsk_tail(2048 + 1500, 10, 0);
+            carrier(3748, 4096, 1);
+            fsk_tail(3748 + 4096, 10, 0);
+            d.reject = 1;
+            for (unsigned i = 0; i < sizeof(chunks) / sizeof(*chunks); ++i) {
+                run(&d, SAMPLES, chunks[i], &result);
+                CHECK(result.count == 1 && result.type[0] == PULSE_DATA_FSK && result.start[0] == 3748);
+            }
+            d.reject = 0;
         }
 
         memset(am, 0, sizeof(am));
