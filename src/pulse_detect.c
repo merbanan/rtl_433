@@ -52,6 +52,7 @@ struct pulse_detect {
     int verbosity; ///< Debug output verbosity, 0=None, 1=Levels, 2=Histograms
     int att_hist[37]; ///< Attenuation histogram retained across envelope events.
 
+    int eop_on_spurious; ///< Spurious short pulse seen, end package at next gap sample.
     int pending_gap; ///< Gap boundary returned to the caller, not yet consumed.
 };
 
@@ -84,6 +85,7 @@ void pulse_detect_reset(pulse_detect_t *pulse_detect)
     pulse_detect->ook_low_estimate  = 0;
     pulse_detect->ook_high_estimate = 0;
     pulse_detect->pending_gap       = 0;
+    pulse_detect->eop_on_spurious   = 0;
     memset(pulse_detect->att_hist, 0, sizeof(pulse_detect->att_hist));
 }
 
@@ -219,8 +221,9 @@ void pulse_detect_skip_package(pulse_detect_t *s)
             print_levels(s, threshold);
         }
     }
-    s->ook_state   = PD_OOK_STATE_IDLE;
-    s->pending_gap = 0;
+    s->ook_state       = PD_OOK_STATE_IDLE;
+    s->pending_gap     = 0;
+    s->eop_on_spurious = 0;
     memset(s->att_hist, 0, sizeof(s->att_hist));
 }
 
@@ -305,7 +308,6 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
 
     s->ook_high_estimate = MAX(s->ook_high_estimate, pulse_detect->ook_min_high_level);    // Be sure to set initial minimum level
 
-    int eop_on_spurious = 0;
     // Process all new samples
     while (s->data_counter < len) {
         // Calculate OOK detection threshold and hysteresis
@@ -332,6 +334,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     pulses->start_ago = len - s->data_counter;
                     s->pulse_length = 0;
                     s->max_pulse = 0;
+                    s->eop_on_spurious = 0;
                     s->ook_state = PD_OOK_STATE_PULSE;
                     s->data_counter += 1;
                     span->len = 0;
@@ -359,7 +362,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                             s->ook_state = PD_OOK_STATE_IDLE;
                         } else {
                             // otherwise emit a package, which then goes back to idle
-                            eop_on_spurious = 1;
+                            s->eop_on_spurious = 1;
                             s->ook_state = PD_OOK_STATE_GAP;
                         }
                     }
@@ -417,6 +420,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     // EOP if too many pulses
                     if (pulses->num_pulses >= PD_MAX_PULSES) {
                         s->ook_state = PD_OOK_STATE_IDLE;
+                        s->eop_on_spurious = 0;
                         // Store estimates
                         pulses->ook_low_estimate = s->ook_low_estimate;
                         pulses->ook_high_estimate = s->ook_high_estimate;
@@ -433,13 +437,14 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 }
 
                 // EOP if gap is too long
-                if (eop_on_spurious
+                if (s->eop_on_spurious
                         || (s->pulse_length > (PD_MAX_GAP_RATIO * s->max_pulse)    // gap/pulse ratio exceeded
                             && s->pulse_length > (PD_MIN_GAP_MS * samples_per_ms)) // Minimum gap exceeded
                         || s->pulse_length > (PD_MAX_GAP_MS * samples_per_ms)) {   // maximum gap exceeded
                     pulses->gap[pulses->num_pulses] = s->pulse_length;    // Store gap width
                     pulses->num_pulses += 1;    // Store last pulse
                     s->ook_state = PD_OOK_STATE_IDLE;
+                    s->eop_on_spurious = 0;
                     // Store estimates
                     pulses->ook_low_estimate = s->ook_low_estimate;
                     pulses->ook_high_estimate = s->ook_high_estimate;

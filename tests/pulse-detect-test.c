@@ -206,6 +206,13 @@ int main(void)
         check_chunks(&d, "OOK pulse buffer full", SAMPLES, 2, PULSE_DATA_OOK);
 
         memset(am, 0, sizeof(am));
+        for (unsigned i = 0; i < 4; ++i)
+            carrier(2048 + i * 128, 64, 0);
+        carrier(2048 + 4 * 128, 5, 0);
+        carrier(2048 + 5 * 128, 64, 0);
+        check_chunks(&d, "OOK spurious short pulse EOP", SAMPLES, 2, PULSE_DATA_OOK);
+
+        memset(am, 0, sizeof(am));
         carrier(2048, 4096, 1);
         result_t partial = {0};
         pulse_detect_reset(d.ook);
