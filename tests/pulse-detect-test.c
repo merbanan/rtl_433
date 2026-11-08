@@ -120,8 +120,8 @@ static void check_chunks(detector_t *d, char const *name, unsigned len,
 {
     // Include single samples and boundaries around the short-gap filter.
     unsigned const chunks[] = {1, 9, 10, 11, 63, 64, 127, 1024, 2048, 4096, 6154};
-    result_t reference;
-    result_t actual;
+    static result_t reference;
+    static result_t actual;
     run(d, len, SAMPLES, &reference);
     CHECK(reference.count == count);
     if (count) {
@@ -161,6 +161,27 @@ static void check_chunks(detector_t *d, char const *name, unsigned len,
     }
 }
 
+static void fsk_tail(unsigned start, unsigned len, unsigned high)
+{
+    // FM after the carrier drops: low, then the last `high` samples at the high level
+    for (unsigned i = 0; i < len; ++i)
+        fm[start + i] = i + high >= len ? 6000 : -6000;
+}
+
+static void check_last_pulse(detector_t *d, char const *name, unsigned num_pulses, int pulse, int gap)
+{
+    static result_t result;
+    check_chunks(d, name, SAMPLES, 1, PULSE_DATA_FSK);
+    run(d, SAMPLES, SAMPLES, &result);
+    pulse_data_t const *p = &result.data[0];
+    unsigned const n      = p->num_pulses;
+    if (n != num_pulses || p->pulse[n - 1] != pulse || p->gap[n - 1] != gap) {
+        fprintf(stderr, "%s mode %u: %u pulses, last %d/%d, expected %u pulses, last %d/%d\n",
+                name, d->mode, n, p->pulse[n - 1], p->gap[n - 1], num_pulses, pulse, gap);
+        exit(1);
+    }
+}
+
 int main(void)
 {
     detector_t d = {.ook = pulse_detect_create()};
@@ -184,6 +205,18 @@ int main(void)
         check_chunks(&d, "FSK", SAMPLES, 1, PULSE_DATA_FSK);
         check_chunks(&d, "FSK flush in pulse", 6000, 1, PULSE_DATA_FSK);
         check_chunks(&d, "FSK flush in short gap", 6145, 1, PULSE_DATA_FSK);
+
+        // The burst ends in a low run, the last pulse and gap must be stored.
+        carrier(2048, 4096, 1);
+        fsk_tail(6144, 10, 0);
+        check_last_pulse(&d, "FSK last pulse", 32, 64, 74);
+        // A short high run while the gap is confirmed is noise after the carrier
+        // dropped. Classic keeps it, minmax drops it.
+        fsk_tail(6144, 10, 6);
+        if (d.mode == FSK_PULSE_DETECT_OLD)
+            check_last_pulse(&d, "FSK trailing short run", 33, 6, 0);
+        else
+            check_last_pulse(&d, "FSK trailing short run", 32, 64, 68);
         for (unsigned gap = 1; gap <= 10; ++gap) {
             carrier(2048, 4096, 1);
             memset(am + 4096, 0, gap * sizeof(*am));
@@ -214,7 +247,8 @@ int main(void)
 
         memset(am, 0, sizeof(am));
         carrier(2048, 4096, 1);
-        result_t partial = {0};
+        static result_t partial;
+        partial = (result_t){0};
         pulse_detect_reset(d.ook);
         pulse_detect_fsk_init(&d.fsk);
         process(&d, 0, 5000, &partial);
