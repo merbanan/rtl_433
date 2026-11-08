@@ -27,7 +27,7 @@ RF Information:
 
 Description of the HCS012ARF Rain Gauge Sensor:
 - Rainfall Range: 0-9999mm , but 2 bytes identified, missing 1 bit MSB somewhere in the data layout flags
-- Accuracy: ±0.1mm
+- Accuracy: ±0.1mm (marketing, the tipping bucket resolution is about 1.18 mm)
 - Data Reporting: Every 3 mins
 
 A Transmission contains ten packets with Manchester coded data, reflected
@@ -44,7 +44,10 @@ Data layout:
 - B:{1} Low Battery flag = 1, Good Battery = 0
 - B:{1} Powered on, batteries are inserted = 1, then always = 0
 - FF:{8} Fixed value, 0x03, may contains 1 bit MSB Rain Gauge
-- RR:{16} little-endian rain gauge value, scale 10 (1 Tip = 0,1 mm), 2 bytes are not enough, max 0xFFFF = 6553.5 mm, 1 bit MSB somewhere in flags ?
+- RR:{16} little-endian rain gauge counter, 1 count per bucket tip, 1 bit MSB somewhere in flags ?
+  The vendor app counts 1 mm per tip (adjustable by a user calibration). Measured with a 9 cm
+  funnel (63.62 cm2) and a 7.5 ml bucket, 1 tip = 1.179 mm, see issue #3698 and #3217.
+  The raw counter is reported as rain_counter for compatible sensors with a different funnel.
 - SS:{8} Byte sum of previous bytes except header [value in the hooks, from ID to Rain gauge].
 
 Raw data:
@@ -90,7 +93,7 @@ static int rainpoint_hcs012arf_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     //int bat_in   = (flags1 & 0x01); // power up, battery inserted = 1, then always 0
     int flags2   = b[6];        // may contains 1 bit MSB for Rain Gauge
     int rain_raw  = (b[8] << 8) | b[7]; // little-endian
-    float rain_mm = rain_raw * 0.1f;
+    float rain_mm = rain_raw * 1.179f; // 7.5 ml bucket, 9 cm funnel
 
     /* clang-format off */
     data_t *data = data_make(
@@ -100,6 +103,7 @@ static int rainpoint_hcs012arf_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "flags2",           "Flags 2",          DATA_FORMAT, "%02x", DATA_INT,  flags2,
             "battery_ok",       "Battery",          DATA_INT,    !bat_low,
             "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
+            "rain_counter",     "Rain counter",     DATA_INT,    rain_raw,
             "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
@@ -115,6 +119,7 @@ static char const *const output_fields[] = {
         "flags2",
         "battery_ok",
         "rain_mm",
+        "rain_counter",
         "mic",
         NULL,
 };
