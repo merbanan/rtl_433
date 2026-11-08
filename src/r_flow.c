@@ -97,6 +97,21 @@ void reset_sdr_flow(r_cfg_t *cfg)
     pulse_detect_fsk_init(&demod->pulse_detect_fsk);
 }
 
+/// FSK pulse detector for a resolved (not auto) FSK pulse detect mode.
+static unsigned fsk_detector_for_mode(int fsk_pulse_detect_mode)
+{
+    switch (fsk_pulse_detect_mode) {
+    case FSK_PULSE_DETECT_OLD:
+        return FSK_PULSE_DETECTOR_CLASSIC;
+    case FSK_PULSE_DETECT_HYSTERESIS:
+        return FSK_PULSE_DETECTOR_HYSTERESIS;
+    case FSK_PULSE_DETECT_MEDIAN:
+        return FSK_PULSE_DETECTOR_MEDIAN;
+    default:
+        return FSK_PULSE_DETECTOR_MINMAX;
+    }
+}
+
 /// Run the envelope and FSK stages until a package or the buffer end is reached.
 static int detect_package(struct dm_state *demod, unsigned n_samples)
 {
@@ -105,7 +120,8 @@ static int detect_package(struct dm_state *demod, unsigned n_samples)
         int event = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm,
                 n_samples, demod->samp_rate, demod->input_pos, &demod->pulse_data, &span);
         if (pulse_detect_fsk_package(&demod->pulse_detect_fsk, demod->buf.fm,
-                    &span, event, &demod->pulse_data, &demod->fsk_pulse_data, demod->fsk_pulse_detect_mode)) {
+                    &span, event, &demod->pulse_data, &demod->fsk_pulse_data,
+                    fsk_detector_for_mode(demod->fsk_pulse_detect_mode))) {
             pulse_detect_skip_package(demod->pulse_detect);
             return PULSE_DATA_FSK;
         }

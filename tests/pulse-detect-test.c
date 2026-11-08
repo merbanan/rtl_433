@@ -33,7 +33,7 @@ typedef struct {
     pulse_data_t pulses;
     pulse_data_t fsk_pulses;
     uint64_t fsk_start; ///< FSK package start, recorded on START and RESTART
-    unsigned mode;
+    unsigned mode; ///< One of FSK_PULSE_DETECTOR_*
 } detector_t;
 
 #define CHECK(condition) do { \
@@ -86,10 +86,14 @@ static void process(detector_t *d, unsigned offset, unsigned len, result_t *resu
     }
 
     // Empty buffers must leave warmup and partially received carriers intact.
-    if (d->mode == FSK_PULSE_DETECT_OLD)
+    if (d->mode == FSK_PULSE_DETECTOR_CLASSIC)
         pulse_detect_fsk_classic(&d->fsk, NULL, 0, &d->fsk_pulses);
-    else
+    else if (d->mode == FSK_PULSE_DETECTOR_MINMAX)
         pulse_detect_fsk_minmax(&d->fsk, NULL, 0, &d->fsk_pulses);
+    else if (d->mode == FSK_PULSE_DETECTOR_HYSTERESIS)
+        pulse_detect_fsk_minmax_hysteresis(&d->fsk, NULL, 0, &d->fsk_pulses);
+    else
+        pulse_detect_fsk_minmax_median(&d->fsk, NULL, 0, &d->fsk_pulses);
 }
 
 static void run(detector_t *d, unsigned len, unsigned chunk, result_t *result)
@@ -190,7 +194,7 @@ int main(void)
 {
     detector_t d = {.ook = pulse_detect_create()};
     CHECK(d.ook);
-    for (d.mode = FSK_PULSE_DETECT_OLD; d.mode <= FSK_PULSE_DETECT_NEW; ++d.mode) {
+    for (d.mode = 0; d.mode < FSK_PULSE_DETECTOR_COUNT; ++d.mode) {
         memset(am, 0, sizeof(am));
         memset(fm, 0, sizeof(fm));
         check_chunks(&d, "empty", 0, 0, 0);
@@ -213,11 +217,13 @@ int main(void)
         // The burst ends in a low run, the last pulse and gap must be stored.
         carrier(2048, 4096, 1);
         fsk_tail(6144, 10, 0);
-        check_last_pulse(&d, "FSK last pulse", 32, 64, 74);
+        // The median filter delays the FM samples by one, the last gap ends early.
+        int const delay = d.mode == FSK_PULSE_DETECTOR_MEDIAN;
+        check_last_pulse(&d, "FSK last pulse", 32, 64, 74 - delay);
         // A short high run while the gap is confirmed is noise after the carrier
         // dropped. Classic keeps it, minmax drops it.
         fsk_tail(6144, 10, 6);
-        if (d.mode == FSK_PULSE_DETECT_OLD)
+        if (d.mode == FSK_PULSE_DETECTOR_CLASSIC)
             check_last_pulse(&d, "FSK trailing short run", 33, 6, 0);
         else
             check_last_pulse(&d, "FSK trailing short run", 32, 64, 68);

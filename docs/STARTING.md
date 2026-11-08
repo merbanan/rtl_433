@@ -198,13 +198,15 @@ For the `433.92M` frequency the `classic` pulse detector is used by default,
 for higher frequencies like `868M` the `minmax` pulse detector is used by default.
 
 Use `-Y classic` or `-Y minmax` to force the use of a FSK pulse detector.
+Use `-Y hysteresis` for the `minmax` detector with a wide hysteresis band,
+or `-Y median` for the `minmax` detector on median filtered samples, both can help with noisy signals.
 
 Use `-Y autolevel` to automatically adjust the minimum detection level based on average estimated noise. Recommended.
 
 Use `-Y squelch` to skip frames below estimated noise level to reduce cpu load. Recommended.
 
 :::tip
-    [-Y auto | classic | minmax] FSK pulse detector mode.
+    [-Y auto | classic | minmax | hysteresis | median] FSK pulse detector mode.
     [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto).
     [-Y minlevel=<dB level>] Manual minimum detection level used to determine pulses (-1.0 to -99.0).
     [-Y minsnr=<dB level>] Minimum SNR to determine pulses (1.0 to 99.0).

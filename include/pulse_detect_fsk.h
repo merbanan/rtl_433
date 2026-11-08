@@ -18,12 +18,23 @@
 #include "pulse_detect.h"
 #include <stdint.h>
 
-/// FSK pulse detector to use.
+/// FSK pulse detector mode to use.
 enum {
     FSK_PULSE_DETECT_OLD,
     FSK_PULSE_DETECT_NEW,
     FSK_PULSE_DETECT_AUTO,
+    FSK_PULSE_DETECT_HYSTERESIS,
+    FSK_PULSE_DETECT_MEDIAN,
     FSK_PULSE_DETECT_END,
+};
+
+/// FSK pulse detectors.
+enum {
+    FSK_PULSE_DETECTOR_CLASSIC,    ///< Frequency estimate tracking
+    FSK_PULSE_DETECTOR_MINMAX,     ///< Min/max midpoint slicer
+    FSK_PULSE_DETECTOR_HYSTERESIS, ///< Min/max slicer with a wide hysteresis band
+    FSK_PULSE_DETECTOR_MEDIAN,     ///< Min/max slicer on median filtered samples
+    FSK_PULSE_DETECTOR_COUNT,
 };
 
 /// State data for pulse_detect_fsk_ functions.
@@ -46,6 +57,9 @@ typedef struct {
     int16_t midd;
     int skip_samples;
     int restarted; ///< Detection restarted on the second envelope pulse after a lead-in
+
+    int16_t median_samples[3]; ///< Median filter history
+    unsigned median_count;     ///< Median filter history length
 } pulse_detect_fsk_t;
 
 /// Init/clear Demodulate Frequency Shift Keying (FSK) state.
@@ -84,6 +98,26 @@ void pulse_detect_fsk_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pulses);
 /// @param fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
 void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t const *fm_data, unsigned len, pulse_data_t *fsk_pulses);
 
+/// Demodulate FSK using min/max tracking with a wide hysteresis band.
+///
+/// Complements the midpoint min/max detector on noisy signals.
+/// State and partial pulses are retained between buffers; len=0 is a no-op.
+/// @param s Internal state
+/// @param fm_data Buffer of FM samples; may be NULL when len=0
+/// @param len Number of samples in fm_data
+/// @param fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
+void pulse_detect_fsk_minmax_hysteresis(pulse_detect_fsk_t *s, int16_t const *fm_data, unsigned len, pulse_data_t *fsk_pulses);
+
+/// Demodulate FSK using min/max tracking on median filtered samples.
+///
+/// A median-of-three filter suppresses isolated FM spikes.
+/// State and partial pulses are retained between buffers; len=0 is a no-op.
+/// @param s Internal state
+/// @param fm_data Buffer of FM samples; may be NULL when len=0
+/// @param len Number of samples in fm_data
+/// @param fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
+void pulse_detect_fsk_minmax_median(pulse_detect_fsk_t *s, int16_t const *fm_data, unsigned len, pulse_data_t *fsk_pulses);
+
 /// Wrap up minmax FSK modulation and store last data at End Of Package.
 ///
 /// Like pulse_detect_fsk_wrap_up() but drops a final F1 run shorter than
@@ -99,8 +133,9 @@ void pulse_detect_fsk_minmax_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pu
 /// finalizes a package. PULSE_DETECT_START resets the detector and pulse data,
 /// PULSE_DETECT_RESTART does the same starting at the second envelope pulse.
 /// The caller ages fsk_pulses->start_ago once per input buffer.
+/// @param detector One of FSK_PULSE_DETECTOR_*
 int pulse_detect_fsk_package(pulse_detect_fsk_t *s, int16_t const *fm_data,
         pulse_detect_span_t const *span, int event, pulse_data_t const *pulses,
-        pulse_data_t *fsk_pulses, unsigned fpdm);
+        pulse_data_t *fsk_pulses, unsigned detector);
 
 #endif /* INCLUDE_PULSE_DETECT_FSK_H_ */

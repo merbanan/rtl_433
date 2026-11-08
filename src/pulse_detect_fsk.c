@@ -22,6 +22,8 @@
 #define FSK_DEFAULT_FM_DELTA 6000       // Default estimate for frequency delta
 #define FSK_EST_SLOW        64          // Constant for slowness of FSK estimators
 #define FSK_EST_FAST        16          // Constant for slowness of FSK estimators
+#define FSK_MINMAX_DECAY    10          // Min/max tracker decay per sample
+#define FSK_MINMAX_HYSTERESIS_DIVISOR 3 // Hysteresis band as a fraction of the min/max span
 
 // Min length of an FSK burst after a lead-in (key-up transient). Transmitters
 // with a lead-in send one long burst (8 ms and up), while OOK protocols with a
@@ -38,7 +40,7 @@ void pulse_detect_fsk_init(pulse_detect_fsk_t *s)
 
 int pulse_detect_fsk_package(pulse_detect_fsk_t *s, int16_t const *fm_data,
         pulse_detect_span_t const *span, int event, pulse_data_t const *pulses,
-        pulse_data_t *fsk_pulses, unsigned fpdm)
+        pulse_data_t *fsk_pulses, unsigned detector)
 {
     if (event == PULSE_DETECT_START || event == PULSE_DETECT_RESTART) {
         // A restart begins at the second pulse, right after the first pulse and gap.
@@ -52,18 +54,26 @@ int pulse_detect_fsk_package(pulse_detect_fsk_t *s, int16_t const *fm_data,
         return 0;
     }
 
-    // The caller resolves FSK_PULSE_DETECT_AUTO to a concrete detector.
-    if (fpdm != FSK_PULSE_DETECT_OLD && fpdm != FSK_PULSE_DETECT_NEW) {
-        fprintf(stderr, "pulse_detect_fsk_package(): Unresolved FSK pulse detect mode %u!\n", fpdm);
-        return 0;
-    }
-
     // Buffer boundaries do not terminate the carrier or restart estimation.
     if (span->len) {
-        if (fpdm == FSK_PULSE_DETECT_OLD)
-            pulse_detect_fsk_classic(s, fm_data + span->start, span->len, fsk_pulses);
-        else
-            pulse_detect_fsk_minmax(s, fm_data + span->start, span->len, fsk_pulses);
+        int16_t const *fm = fm_data + span->start;
+        switch (detector) {
+        case FSK_PULSE_DETECTOR_CLASSIC:
+            pulse_detect_fsk_classic(s, fm, span->len, fsk_pulses);
+            break;
+        case FSK_PULSE_DETECTOR_MINMAX:
+            pulse_detect_fsk_minmax(s, fm, span->len, fsk_pulses);
+            break;
+        case FSK_PULSE_DETECTOR_HYSTERESIS:
+            pulse_detect_fsk_minmax_hysteresis(s, fm, span->len, fsk_pulses);
+            break;
+        case FSK_PULSE_DETECTOR_MEDIAN:
+            pulse_detect_fsk_minmax_median(s, fm, span->len, fsk_pulses);
+            break;
+        default:
+            fprintf(stderr, "pulse_detect_fsk_package(): Unknown FSK pulse detector %u!\n", detector);
+            return 0;
+        }
     }
 
     if (event != PULSE_DETECT_PULSE || fsk_pulses->num_pulses <= PD_MIN_PULSES)
@@ -74,7 +84,7 @@ int pulse_detect_fsk_package(pulse_detect_fsk_t *s, int16_t const *fm_data,
         return 0;
 
     // Store last pulse/gap
-    if (fpdm == FSK_PULSE_DETECT_OLD)
+    if (detector == FSK_PULSE_DETECTOR_CLASSIC)
         pulse_detect_fsk_wrap_up(s, fsk_pulses);
     else
         pulse_detect_fsk_minmax_wrap_up(s, fsk_pulses);
@@ -224,11 +234,33 @@ void pulse_detect_fsk_minmax_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pu
     pulse_detect_fsk_wrap_up(s, fsk_pulses);
 }
 
-void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t const *fm_data, unsigned len, pulse_data_t *fsk_pulses)
+static int16_t median3(pulse_detect_fsk_t *s, int16_t sample)
+{
+    if (s->median_count < 3) {
+        s->median_samples[s->median_count++] = sample;
+        return sample;
+    }
+
+    s->median_samples[0] = s->median_samples[1];
+    s->median_samples[1] = s->median_samples[2];
+    s->median_samples[2] = sample;
+
+    int const a = s->median_samples[0];
+    int const b = s->median_samples[1];
+    int const c = s->median_samples[2];
+    return a + b + c - MIN(a, MIN(b, c)) - MAX(a, MAX(b, c));
+}
+
+static void pulse_detect_fsk_minmax_impl(pulse_detect_fsk_t *s, int16_t const *fm_data, unsigned len,
+        pulse_data_t *fsk_pulses, int use_hysteresis, int decay, int use_median)
 {
     for (unsigned i = 0; i < len; ++i) {
-        int16_t const fm_n = fm_data[i];
+        int16_t fm_n = fm_data[i];
         int16_t mid = 0;
+
+        if (use_median) {
+            fm_n = median3(s, fm_n);
+        }
 
         /* Skip a few samples in the beginning, need for framing
          * otherwise the min/max trackers won't converge properly
@@ -238,11 +270,13 @@ void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t const *fm_data, unsi
             s->var_test_min = MIN(fm_n, s->var_test_min);
             mid = (s->var_test_max + s->var_test_min) / 2;
             if (fm_n > mid) {
-                s->var_test_max -= 10;
+                s->var_test_max -= decay;
             }
             if (fm_n < mid) {
-                s->var_test_min += 10;
+                s->var_test_min += decay;
             }
+            int const span = s->var_test_max - s->var_test_min;
+            int const hyst = use_hysteresis && span > 0 ? span / FSK_MINMAX_HYSTERESIS_DIVISOR : 0;
 
             s->fsk_pulse_length += 1;
             switch(s->fsk_state) {
@@ -255,7 +289,7 @@ void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t const *fm_data, unsi
                     }
                     break;
                 case PD_FSK_STATE_FH:
-                    if (fm_n < mid) {
+                    if (fm_n < mid - hyst) {
                         s->fsk_state = PD_FSK_STATE_FL;
                         fsk_pulses->pulse[fsk_pulses->num_pulses] = s->fsk_pulse_length;
                         s->fsk_pulse_length = 0;
@@ -263,7 +297,7 @@ void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t const *fm_data, unsi
                     s->fm_f2_est += fm_n / FSK_EST_SLOW - s->fm_f2_est / FSK_EST_SLOW; // Slow estimator
                     break;
                 case PD_FSK_STATE_FL:
-                    if (fm_n > mid) {
+                    if (fm_n > mid + hyst) {
                         s->fsk_state = PD_FSK_STATE_FH;
                         fsk_pulses->gap[fsk_pulses->num_pulses] = s->fsk_pulse_length;
                         fsk_pulses->num_pulses += 1;
@@ -290,4 +324,19 @@ void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t const *fm_data, unsi
             s->skip_samples -= 1;
         }
     }
+}
+
+void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t const *fm_data, unsigned len, pulse_data_t *fsk_pulses)
+{
+    pulse_detect_fsk_minmax_impl(s, fm_data, len, fsk_pulses, 0, FSK_MINMAX_DECAY, 0);
+}
+
+void pulse_detect_fsk_minmax_hysteresis(pulse_detect_fsk_t *s, int16_t const *fm_data, unsigned len, pulse_data_t *fsk_pulses)
+{
+    pulse_detect_fsk_minmax_impl(s, fm_data, len, fsk_pulses, 1, FSK_MINMAX_DECAY, 0);
+}
+
+void pulse_detect_fsk_minmax_median(pulse_detect_fsk_t *s, int16_t const *fm_data, unsigned len, pulse_data_t *fsk_pulses)
+{
+    pulse_detect_fsk_minmax_impl(s, fm_data, len, fsk_pulses, 0, 0, 1);
 }
