@@ -44,6 +44,12 @@ int pulse_detect_fsk_package(pulse_detect_fsk_t *s, int16_t const *fm_data,
         return 0;
     }
 
+    // The caller resolves FSK_PULSE_DETECT_AUTO to a concrete detector.
+    if (fpdm != FSK_PULSE_DETECT_OLD && fpdm != FSK_PULSE_DETECT_NEW) {
+        fprintf(stderr, "pulse_detect_fsk_package(): Unresolved FSK pulse detect mode %u!\n", fpdm);
+        return 0;
+    }
+
     // Buffer boundaries do not terminate the carrier or restart estimation.
     if (span->len) {
         if (fpdm == FSK_PULSE_DETECT_OLD)
