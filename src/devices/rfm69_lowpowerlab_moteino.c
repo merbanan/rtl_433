@@ -27,7 +27,7 @@ Generic decoder for RFM69 radio modules as used on LowPowerLab.com Moteino board
 
 Test data captured with sample sketch https://github.com/LowPowerLab/RFM69/blob/master/Examples/Node/Node.ino
 
-Encryption must be disabled in the sketch (comment out #define ENCRYPTKEY)
+Encryption must be disabled in the sketch (comment out `#define ENCRYPTKEY`)
 Data captures from 433MHz RFM69HW_HCW board, but 868MHz models should be similar
 
 Protocol description:
