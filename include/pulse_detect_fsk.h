@@ -74,4 +74,14 @@ void pulse_detect_fsk_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pulses);
 /// @param fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
 void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses);
 
+/// Wrap up minmax FSK modulation and store last data at End Of Package.
+///
+/// Like pulse_detect_fsk_wrap_up() but drops a final F1 run shorter than
+/// PD_MIN_PULSE_SAMPLES, the min/max tracker picks that up from noise after
+/// the carrier ends.
+///
+/// @param s Internal state
+/// @param fsk_pulses Pulse_data_t structure for FSK demodulated data
+void pulse_detect_fsk_minmax_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pulses);
+
 #endif /* INCLUDE_PULSE_DETECT_FSK_H_ */

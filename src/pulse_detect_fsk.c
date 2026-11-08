@@ -155,6 +155,17 @@ void pulse_detect_fsk_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pulses)
     }
 }
 
+void pulse_detect_fsk_minmax_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pulses)
+{
+    // The min/max tracker keeps running on noise for a few samples after the
+    // carrier drops, so a final F1 run shorter than a proper pulse is junk.
+    // The preceding pulse/gap pair is already stored, just drop the run.
+    if (s->fsk_state == PD_FSK_STATE_FH && s->fsk_pulse_length + 1 < PD_MIN_PULSE_SAMPLES) {
+        return;
+    }
+    pulse_detect_fsk_wrap_up(s, fsk_pulses);
+}
+
 void pulse_detect_fsk_minmax(pulse_detect_fsk_t *s, int16_t fm_n, pulse_data_t *fsk_pulses)
 {
     int16_t mid = 0;

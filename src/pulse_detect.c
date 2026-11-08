@@ -238,7 +238,12 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
             // Determine if FSK modulation is detected
             if (fsk_pulses->num_pulses > PD_MIN_PULSES) {
                 // Store last pulse/gap
-                pulse_detect_fsk_wrap_up(&s->pulse_detect_fsk, fsk_pulses);
+                if (fpdm == FSK_PULSE_DETECT_OLD) {
+                    pulse_detect_fsk_wrap_up(&s->pulse_detect_fsk, fsk_pulses);
+                }
+                else {
+                    pulse_detect_fsk_minmax_wrap_up(&s->pulse_detect_fsk, fsk_pulses);
+                }
                 // Store estimates
                 fsk_pulses->fsk_f1_est        = s->pulse_detect_fsk.fm_f1_est;
                 fsk_pulses->fsk_f2_est        = s->pulse_detect_fsk.fm_f2_est;
@@ -384,7 +389,12 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     // Determine if FSK modulation is detected
                     if (fsk_pulses->num_pulses > PD_MIN_PULSES) {
                         // Store last pulse/gap
-                        pulse_detect_fsk_wrap_up(&s->pulse_detect_fsk, fsk_pulses);
+                        if (fpdm == FSK_PULSE_DETECT_OLD) {
+                            pulse_detect_fsk_wrap_up(&s->pulse_detect_fsk, fsk_pulses);
+                        }
+                        else {
+                            pulse_detect_fsk_minmax_wrap_up(&s->pulse_detect_fsk, fsk_pulses);
+                        }
                         // Store estimates
                         fsk_pulses->fsk_f1_est = s->pulse_detect_fsk.fm_f1_est;
                         fsk_pulses->fsk_f2_est = s->pulse_detect_fsk.fm_f2_est;
