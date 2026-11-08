@@ -23,6 +23,7 @@
 
 #define GOVEE_H5059_MSG_CLASS_OFFSET    0
 #define GOVEE_H5059_ID_OFFSET           1
+#define GOVEE_H5059_PRODUCT_OFFSET      9
 #define GOVEE_H5059_BATTERY_OFFSET      11
 #define GOVEE_H5059_SUBTYPE_OFFSET      13
 #define GOVEE_H5059_LEAK_TOP_OFFSET     14
@@ -40,6 +41,8 @@
 #define GOVEE_H5059_SUBTYPE_LEAK        0x06
 #define GOVEE_H5059_SUBTYPE_POST_ALARM  0x07
 
+#define GOVEE_H5059_PRODUCT_H5830       0x13
+
 static uint8_t const govee_h5059_sync[]       = {0x2c, 0x4c, 0x4a};
 static uint8_t const govee_h5059_sync_skew1[] = {0x16, 0x26, 0x25};
 static uint8_t const govee_h5059_key[GOVEE_H5059_KEY_LEN + 1] =
@@ -52,7 +55,10 @@ enum {
 };
 
 /**
-Govee Water Leak Detector H5059.
+Govee Water Leak Detector H5059, also H5830.
+
+The H5830 (leak detector with a fixed cable probe) uses the same radio protocol and is
+decoded here too; dec[9] tells the two apart.
 
 Modulation, timing, and transmission:
 
@@ -80,7 +86,8 @@ Decrypted payload (19+ bytes):
 - dec[1-4]: 32-bit device ID in wire byte order
 - dec[5-8]: big-endian Unix time from the sensor's clock, set by the gateway (FFFFFFFF after
     power-up until the gateway syncs it; stops advancing on sensors that lost their gateway)
-- dec[9]: unknown, constant per device (0x1e on most units, 0x13 on one; unchanged by a battery swap)
+- dec[9]: product code, constant per device and unchanged by a battery swap
+    (0x1e = H5059 on 11 units, 0x13 = H5830 on 2 units)
 - dec[10]: unknown, 0x14 on all units seen
 - dec[11]: battery level in percent (telemetry frames)
 - dec[12]: signed RSSI in dBm of the last packet the sensor received from the gateway
@@ -88,7 +95,7 @@ Decrypted payload (19+ bytes):
 - dec[13]: subtype (0x00 = power on, 0x05 = button, 0x06 = leak, 0x07 = post-alarm)
 - dec[14]: top probe wet flag (0x01 = top probe pair detects water)
 - dec[15]: bottom probe wet flag (0x01 = bottom probe pair detects water)
-- dec[16]: unknown
+- dec[16]: unknown (0x03 in every H5830 frame seen)
 - dec[17]: alarm-active flag (non-zero while either probe pair is wet; seen as
     0x01 on the initial leak frame and 0x02 on a follow-up frame ~1s later)
 - dec[18+]: unknown/variable payload
@@ -102,7 +109,7 @@ Event mapping:
 - msg_class 0x01: Pairing
 - msg_class 0x02: Class 0x02
 
-Battery level (observed 2026-11-06):
+Battery level:
 
 - dec[11] read 100 on 12 units with fresh cells (~3.0 V). Swapping 2.4 V used cells into a
     paired unit changed it to 0x26 (38) in both the power-on and the following button frames,
@@ -120,6 +127,15 @@ Top/bottom probe flags (confirmed 2026-06-14):
     generic "Telemetry" event and was never reported as "Water Leak". This is
     fixed by checking dec[17] != 0 and either probe flag, and the specific probe
     (top/bottom) is now reported via the leak_top/leak_bottom fields.
+
+H5830 (2 units, both with dec[9]=0x13):
+
+- The H5830 has bottom contacts on the base plus a fixed cable probe with top and bottom
+    contacts. All three report as one input: wetting each one alone gave identical frames
+    (dec[13..18] = 06 00 01 03 01 80), i.e. leak_bottom=1, leak_top=0. The Govee app also
+    only shows "Bottom Contact / Cord wet".
+- Button, Water Leak, Post Alarm (~2 s after the leak frame), battery and the gateway
+    clock/RSSI bytes behave as on the H5059; no frame is sent when the contacts dry.
 
 Subtype 0x07 note:
 
@@ -263,10 +279,14 @@ static int govee_h5059_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int leak_alarm  = enc_len > GOVEE_H5059_LEAK_ALARM_OFFSET ? dec[GOVEE_H5059_LEAK_ALARM_OFFSET] : -1;
     int leak_status = GOVEE_H5059_LEAK_UNKNOWN;
     int battery_pct = -1;
+    char const *model = "Govee-H5059";
 
     char const *event = "Unknown";
     if (msg_class == GOVEE_H5059_MSG_CLASS_TELEMETRY) {
         event = "Telemetry";
+        if (dec[GOVEE_H5059_PRODUCT_OFFSET] == GOVEE_H5059_PRODUCT_H5830) {
+            model = "Govee-H5830";
+        }
         if (dec[GOVEE_H5059_BATTERY_OFFSET] <= 100) {
             battery_pct = dec[GOVEE_H5059_BATTERY_OFFSET];
         }
@@ -297,7 +317,7 @@ static int govee_h5059_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",        "",                 DATA_STRING, "Govee-H5059",
+            "model",        "",                 DATA_STRING, model,
             "id",           "",                 DATA_STRING, id_str,
             "id_wire",      "",                 DATA_STRING, id_wire_str,
             "event",        "",                 DATA_STRING, event,
