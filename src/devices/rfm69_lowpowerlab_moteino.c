@@ -47,8 +47,8 @@ static int rfm69_fsk_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble_pattern[1] = {0x2d}; // 8 bits
 
-    uint8_t message[BUF_LENGTH]; // max size of header + payload + terminator
-    uint8_t payload[MAX_LENGTH]; // max size of payload + terminator
+    uint8_t message[BUF_LENGTH]; // sync word, header, payload and CRC
+    uint8_t payload[MAX_LENGTH]; // length byte and payload
 
     unsigned posn = bitbuffer_search(bitbuffer, 0, 0, preamble_pattern, 8);
 
@@ -56,15 +56,19 @@ static int rfm69_fsk_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY; // Can't find bit position of sync word
     }
 
-    bitbuffer_extract_bytes(bitbuffer, 0, posn - 24, (uint8_t *)&message, (MAX_LENGTH) * 8); // Extract out full into our aligned buffer. Include 3x8 bits of sync word before the preamble
+    bitbuffer_extract_bytes(bitbuffer, 0, posn - 24, message, BUF_LENGTH * 8); // Extract out full into our aligned buffer. Include 3x8 bits of sync word before the preamble
 
-    uint8_t payload_len = message[LENGTH_POS];
+    unsigned payload_len = message[LENGTH_POS];
 
-    if (payload_len > MAX_LENGTH) {
+    // The length byte and payload must fit the payload buffer, the CRC must fit the message buffer
+    if (payload_len + 1 > MAX_LENGTH || HEADER_LENGTH + payload_len + 2 > BUF_LENGTH) {
         return DECODE_ABORT_LENGTH; // message junk
     }
+    if (posn - 24 + (HEADER_LENGTH + payload_len + 2) * 8 > bitbuffer->bits_per_row[0]) {
+        return DECODE_ABORT_LENGTH; // message truncated
+    }
 
-    bitbuffer_extract_bytes(bitbuffer, 0, posn + 16, (uint8_t *)&payload, (payload_len + 1) * 8); // we need to include length byte in CRC calc
+    bitbuffer_extract_bytes(bitbuffer, 0, posn + 16, payload, (payload_len + 1) * 8); // we need to include length byte in CRC calc
 
     // found the polynomial values in an old Semtech application note.
     uint16_t crc = ~crc16(payload, (payload_len + 1), 0x1021, 0x1d0f) & 0xffff;
@@ -87,8 +91,8 @@ static int rfm69_fsk_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format off */
         data_t *data = data_make(
             "model",        "Model",           DATA_STRING, "Moteino-RFM69",
-            "id",           "Node Id ",        DATA_STRING, node_id,
-            "gateway_id",   "Gateway Id",      DATA_STRING, gateway_id,
+            "id",           "Node Id",         DATA_INT,    node_id,
+            "gateway_id",   "Gateway Id",      DATA_INT,    gateway_id,
             "msg",          "Message",         DATA_STRING, message_str,
             "mic",          "Integrity",       DATA_STRING, "CRC",
             NULL);
