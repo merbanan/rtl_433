@@ -136,13 +136,25 @@ void pulse_detect_fsk_minmax_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pu
 /// PULSE_DETECT_START resets the detector and pulse data,
 /// PULSE_DETECT_RESTART and PULSE_DETECT_RETRY do the same starting at the new envelope pulse.
 /// The caller ages fsk_pulses->start_ago once per input buffer.
+///
+/// @param s Internal state
+/// @param fm_data Buffer of FM samples that span indexes into
+/// @param span Newly consumed samples of the carrier pulse
+/// @param event The enum pulse_detect_events value from pulse_detect_package()
+/// @param pulses The OOK pulse_data_t structure of the envelope
+/// @param[in,out] fsk_pulses Pulse_data_t structure for FSK demodulated data
 /// @param detector One of FSK_PULSE_DETECTOR_*
+/// @return 1 if a complete FSK package is ready, otherwise 0
 int pulse_detect_fsk_package(pulse_detect_fsk_t *s, int16_t const *fm_data,
         pulse_detect_span_t const *span, int event, pulse_data_t const *pulses,
         pulse_data_t *fsk_pulses, unsigned detector);
 
 /// Accept a ready FSK package: store the last pulse/gap and the estimates.
 /// Call once, after pulse_detect_fsk_package() returned 1.
+///
+/// @param s Internal state
+/// @param pulses The OOK pulse_data_t structure of the envelope, for the level and end estimates
+/// @param[in,out] fsk_pulses Pulse_data_t structure for FSK demodulated data
 /// @param detector One of FSK_PULSE_DETECTOR_*
 void pulse_detect_fsk_finalize(pulse_detect_fsk_t *s, pulse_data_t const *pulses,
         pulse_data_t *fsk_pulses, unsigned detector);
