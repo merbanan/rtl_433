@@ -101,7 +101,7 @@ void reset_sdr_flow(r_cfg_t *cfg)
 
 /// FSK pulse detectors to run, in the order their packages are tried.
 /// A single detector decides if a package is FSK. With several detectors (auto)
-/// a package is FSK if any detector's pulses decode, otherwise it stays OOK.
+/// a package is FSK if any detector's pulses decode or classic sees FSK, otherwise it stays OOK.
 /// This is the only place that resolves the pulse detect mode.
 static unsigned fsk_detector_order(struct dm_state const *demod, unsigned order[FSK_PULSE_DETECTOR_COUNT])
 {
@@ -399,8 +399,12 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                     p_events += run_fsk_demods(&demod->r_devs, &demod->fsk_pulse_data);
                 }
                 if (order_len > 1) {
-                    if (p_events == 0) {
-                        // Not FSK after all: keep the OOK package, but try FSK again on its next pulse.
+                    // Not decoded and classic does not see FSK either: likely an OOK package the
+                    // minmax detectors misread. Keep the OOK package, but try FSK again on its next pulse.
+                    // A package classic also sees as FSK is FSK that did not decode, e.g. a weak
+                    // repeat or a collision. It is dropped like with a single detector, keeping it
+                    // would raise the OOK levels and merge the following signals into the package.
+                    if (p_events == 0 && !(demod->fsk_ready & (1u << FSK_PULSE_DETECTOR_CLASSIC))) {
                         demod->fsk_rejected = 1;
                         pulse_detect_retry_fsk(demod->pulse_detect);
                         continue;
