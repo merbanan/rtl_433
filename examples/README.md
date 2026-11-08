@@ -80,6 +80,7 @@ A generally usable script will likely need minor tweaking.
 
   - rtl_433_mqtt_relay.py: Send data via MQTT (e.g. to HA).
   - rtl_433_mqtt_hass.py: Send HA autoconfiguration data, so that entities for the decoded sensors will automatically appear.
+  - rtl_433_mcp.py: Model Context Protocol (MCP) adapter for integration with VS Code Copilot and other MCP-compatible AI assistants.
 
 ## True Examples
 
