@@ -45,6 +45,7 @@ typedef struct {
     int16_t minn;
     int16_t midd;
     int skip_samples;
+    int restarted; ///< Detection restarted on the second envelope pulse after a lead-in
 } pulse_detect_fsk_t;
 
 /// Init/clear Demodulate Frequency Shift Keying (FSK) state.

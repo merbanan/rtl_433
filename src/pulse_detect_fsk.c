@@ -23,6 +23,11 @@
 #define FSK_EST_SLOW        64          // Constant for slowness of FSK estimators
 #define FSK_EST_FAST        16          // Constant for slowness of FSK estimators
 
+// Min length of an FSK burst after a lead-in (key-up transient). Transmitters
+// with a lead-in send one long burst (8 ms and up), while OOK protocols with a
+// short first pulse continue with short data or sync pulses (up to about 6 ms).
+#define FSK_MIN_RESTART_BURST_US 7500
+
 void pulse_detect_fsk_init(pulse_detect_fsk_t *s)
 {
     *s              = (pulse_detect_fsk_t){0};
@@ -39,6 +44,7 @@ int pulse_detect_fsk_package(pulse_detect_fsk_t *s, int16_t const *fm_data,
         // A restart begins at the second pulse, right after the first pulse and gap.
         unsigned const skip = event == PULSE_DETECT_RESTART ? pulses->pulse[0] + pulses->gap[0] : 0;
         pulse_detect_fsk_init(s);
+        s->restarted = event == PULSE_DETECT_RESTART;
         pulse_data_clear(fsk_pulses);
         fsk_pulses->sample_rate = pulses->sample_rate;
         fsk_pulses->offset      = pulses->offset + skip;
@@ -61,6 +67,10 @@ int pulse_detect_fsk_package(pulse_detect_fsk_t *s, int16_t const *fm_data,
     }
 
     if (event != PULSE_DETECT_PULSE || fsk_pulses->num_pulses <= PD_MIN_PULSES)
+        return 0;
+
+    // After a lead-in only accept a long burst, a short pulse is OOK data.
+    if (s->restarted && pulses->pulse[1] < (int)(FSK_MIN_RESTART_BURST_US * (pulses->sample_rate / 1000) / 1000))
         return 0;
 
     // Store last pulse/gap

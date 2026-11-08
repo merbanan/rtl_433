@@ -234,6 +234,18 @@ int main(void)
         carrier(2048, 4096, 1);
         fsk_tail(6144, 10, 0);
         check_chunks(&d, "FSK after key-up blip", SAMPLES, 1, PULSE_DATA_FSK);
+        // A short burst after a lead-in is OOK data, even with enough FSK runs.
+        {
+            static result_t result;
+            memset(am, 0, sizeof(am));
+            carrier(2048 - 49 - 50, 49, 0);
+            carrier(2048, 1500, 1);
+            for (unsigned i = 0; i < 1500; ++i)
+                fm[2048 + i] = (i / 32) % 2 ? -6000 : 6000; // faster symbols: more than PD_MIN_PULSES
+            fsk_tail(2048 + 1500, 10, 0);
+            run(&d, SAMPLES, SAMPLES, &result);
+            CHECK(result.count == 1 && result.type[0] == PULSE_DATA_OOK && result.start[0] == 2048 - 49 - 50);
+        }
         // A longer first pulse or a shorter gap is OOK data, not a lead-in.
         for (unsigned k = 0; k < 2; ++k) {
             unsigned const blip = k ? 49 : 50;
