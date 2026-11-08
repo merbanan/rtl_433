@@ -67,6 +67,11 @@ static int hanwell_ml4000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         b[i] = reverse8(b[i]);
     }
 
+    // Reject all zero bytes, they pass the checksum
+    if (!b[0] && !b[1] && !b[2] && !b[3] && !b[4]) {
+        return DECODE_FAIL_SANITY;
+    }
+
     uint8_t checksum = (b[0] + b[1] + b[2] + b[3]) & 0xff;
     if (checksum != b[4]) {
         return DECODE_FAIL_MIC;
