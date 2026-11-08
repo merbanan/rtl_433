@@ -32,6 +32,7 @@ typedef struct {
     pulse_detect_fsk_t fsk;
     pulse_data_t pulses;
     pulse_data_t fsk_pulses;
+    uint64_t fsk_start; ///< FSK package start, recorded on START and RESTART
     unsigned mode;
 } detector_t;
 
@@ -55,8 +56,11 @@ static void process(detector_t *d, unsigned offset, unsigned len, result_t *resu
         CHECK(span.len <= len - span.start);
         int type = 0;
         pulse_data_t *data = &d->pulses;
-        if (pulse_detect_fsk_package(&d->fsk, fm + offset, &span, event,
-                    &d->pulses, &d->fsk_pulses, d->mode)) {
+        int const fsk = pulse_detect_fsk_package(&d->fsk, fm + offset, &span, event,
+                &d->pulses, &d->fsk_pulses, d->mode);
+        if (event == PULSE_DETECT_START || event == PULSE_DETECT_RESTART)
+            d->fsk_start = d->fsk_pulses.offset;
+        if (fsk) {
             pulse_detect_skip_package(d->ook);
             type = PULSE_DATA_FSK;
             data = &d->fsk_pulses;
@@ -68,7 +72,7 @@ static void process(detector_t *d, unsigned offset, unsigned len, result_t *resu
             unsigned i = result->count++;
             CHECK(i < PACKAGES);
             CHECK(data->num_pulses > 0 && data->num_pulses <= PD_MAX_PULSES);
-            CHECK(offset + len - data->start_ago == d->pulses.offset);
+            CHECK(offset + len - data->start_ago == (type == PULSE_DATA_FSK ? d->fsk_start : d->pulses.offset));
             result->type[i] = type;
             result->start[i] = offset + len - data->start_ago;
             result->end[i] = offset + len - data->end_ago;
@@ -223,6 +227,26 @@ int main(void)
             check_chunks(&d, "FSK short gap", SAMPLES, 1, PULSE_DATA_FSK);
         }
 
+        // A short key-up blip before the FSK burst restarts FSK detection on the
+        // burst (longest blip and shortest gap at 250 kHz).
+        memset(am, 0, sizeof(am));
+        carrier(2048 - 49 - 50, 49, 0);
+        carrier(2048, 4096, 1);
+        fsk_tail(6144, 10, 0);
+        check_chunks(&d, "FSK after key-up blip", SAMPLES, 1, PULSE_DATA_FSK);
+        // A longer first pulse or a shorter gap is OOK data, not a lead-in.
+        for (unsigned k = 0; k < 2; ++k) {
+            unsigned const blip = k ? 49 : 50;
+            unsigned const gap  = k ? 49 : 50;
+            static result_t result;
+            memset(am, 0, sizeof(am));
+            carrier(2048, blip, 0);
+            carrier(2048 + blip + gap, 4096, 1);
+            run(&d, SAMPLES, SAMPLES, &result);
+            CHECK(result.count == 1 && result.type[0] == PULSE_DATA_OOK && result.start[0] == 2048);
+        }
+
+        memset(am, 0, sizeof(am));
         carrier(2048, 4096, 1);
         carrier(6156, 4096, 1);
         check_chunks(&d, "adjacent FSK packages", SAMPLES, 2, PULSE_DATA_FSK);
