@@ -214,7 +214,7 @@ void pulse_detect_skip_package(pulse_detect_t *s)
 {
     if (s->pending_gap) {
         if (s->verbosity >= LOG_INFO)
-            print_att_hist("Carrier package", s->att_hist);
+            print_att_hist("PULSE_DATA_FSK", s->att_hist);
         if (s->verbosity >= LOG_NOTICE) {
             int threshold = s->ook_fixed_high_level ? s->ook_fixed_high_level
                     : (s->ook_low_estimate + MIN(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL)) / 2;
