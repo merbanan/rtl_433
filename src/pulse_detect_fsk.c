@@ -83,6 +83,12 @@ int pulse_detect_fsk_package(pulse_detect_fsk_t *s, int16_t const *fm_data,
     if (s->restarted && pulses->pulse[1] < (int)(FSK_MIN_RESTART_BURST_US * (pulses->sample_rate / 1000) / 1000))
         return 0;
 
+    return 1;
+}
+
+void pulse_detect_fsk_finalize(pulse_detect_fsk_t *s, pulse_data_t const *pulses,
+        pulse_data_t *fsk_pulses, unsigned detector)
+{
     // Store last pulse/gap
     if (detector == FSK_PULSE_DETECTOR_CLASSIC)
         pulse_detect_fsk_wrap_up(s, fsk_pulses);
@@ -93,7 +99,6 @@ int pulse_detect_fsk_package(pulse_detect_fsk_t *s, int16_t const *fm_data,
     fsk_pulses->ook_low_estimate  = pulses->ook_low_estimate;
     fsk_pulses->ook_high_estimate = pulses->ook_high_estimate;
     fsk_pulses->end_ago           = pulses->end_ago;
-    return 1;
 }
 
 void pulse_detect_fsk_classic(pulse_detect_fsk_t *s, int16_t const *fm_data, unsigned len, pulse_data_t *fsk_pulses)

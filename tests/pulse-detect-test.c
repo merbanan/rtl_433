@@ -61,6 +61,7 @@ static void process(detector_t *d, unsigned offset, unsigned len, result_t *resu
         if (event == PULSE_DETECT_START || event == PULSE_DETECT_RESTART)
             d->fsk_start = d->fsk_pulses.offset;
         if (fsk) {
+            pulse_detect_fsk_finalize(&d->fsk, &d->pulses, &d->fsk_pulses, d->mode);
             pulse_detect_skip_package(d->ook);
             type = PULSE_DATA_FSK;
             data = &d->fsk_pulses;

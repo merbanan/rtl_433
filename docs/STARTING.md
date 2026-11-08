@@ -194,12 +194,14 @@ Disable all decoders with `-R 0` if you want only the given flex decoder.
 
 The operation of the demodulator stage can be tuned with the `-Y` option.
 
-For the `433.92M` frequency the `classic` pulse detector is used by default,
-for higher frequencies like `868M` the `minmax` pulse detector is used by default.
+By default the `classic`, `minmax`, `hysteresis` and `median` FSK pulse detectors run in parallel.
+For the `433.92M` frequency the `classic` pulse detector decides if a signal is FSK,
+for higher frequencies like `868M` the `minmax` pulse detector does.
+That detector's result is tried first, the others only if it does not decode.
 
-Use `-Y classic` or `-Y minmax` to force the use of a FSK pulse detector.
-Use `-Y hysteresis` for the `minmax` detector with a wide hysteresis band,
-or `-Y median` for the `minmax` detector on median filtered samples, both can help with noisy signals.
+Use `-Y classic` or `-Y minmax` to run only that FSK pulse detector.
+Use `-Y hysteresis` to run only the `minmax` detector with a wide hysteresis band,
+or `-Y median` to run only the `minmax` detector on median filtered samples, both can help with noisy signals.
 
 Use `-Y autolevel` to automatically adjust the minimum detection level based on average estimated noise. Recommended.
 

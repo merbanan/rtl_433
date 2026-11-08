@@ -39,7 +39,7 @@ struct dm_state {
     float f32_buf[MAXIMAL_BUF_LENGTH]; // format conversion buffer
     int sample_size; // CU8: 2, CS16: 4
     pulse_detect_t *pulse_detect;
-    pulse_detect_fsk_t pulse_detect_fsk;
+    pulse_detect_fsk_t pulse_detect_fsk[FSK_PULSE_DETECTOR_COUNT];
     filter_state_t lowpass_filter_state;
     demodfm_state_t demod_FM_state;
     int enable_FM_demod;
@@ -53,7 +53,9 @@ struct dm_state {
     list_t r_devs;
 
     pulse_data_t    pulse_data;
-    pulse_data_t    fsk_pulse_data;
+    pulse_data_t    fsk_pulse_data; ///< FSK pulse data of the current package as given to the decoders
+    pulse_data_t    fsk_pulse_data_all[FSK_PULSE_DETECTOR_COUNT]; ///< FSK pulse data of each detector
+    unsigned        fsk_ready; ///< Bitmask of detectors with a complete current FSK package
     uint64_t input_pos;
     unsigned frame_event_count;
     int frame_quality;

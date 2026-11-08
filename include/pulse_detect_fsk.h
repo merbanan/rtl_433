@@ -128,14 +128,22 @@ void pulse_detect_fsk_minmax_median(pulse_detect_fsk_t *s, int16_t const *fm_dat
 /// @param fsk_pulses Pulse_data_t structure for FSK demodulated data
 void pulse_detect_fsk_minmax_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pulses);
 
-/// Consume one envelope event and its FM span. Returns 1 for a complete FSK
-/// package, otherwise 0. Partial spans retain state; only PULSE_DETECT_PULSE
-/// finalizes a package. PULSE_DETECT_START resets the detector and pulse data,
+/// Consume one envelope event and its FM span. Returns 1 if a complete FSK
+/// package is ready, otherwise 0. Partial spans retain state; only
+/// PULSE_DETECT_PULSE can complete a package, which the caller then accepts with
+/// pulse_detect_fsk_finalize(). A ready package left unaccepted is unchanged.
+/// PULSE_DETECT_START resets the detector and pulse data,
 /// PULSE_DETECT_RESTART does the same starting at the second envelope pulse.
 /// The caller ages fsk_pulses->start_ago once per input buffer.
 /// @param detector One of FSK_PULSE_DETECTOR_*
 int pulse_detect_fsk_package(pulse_detect_fsk_t *s, int16_t const *fm_data,
         pulse_detect_span_t const *span, int event, pulse_data_t const *pulses,
+        pulse_data_t *fsk_pulses, unsigned detector);
+
+/// Accept a ready FSK package: store the last pulse/gap and the estimates.
+/// Call once, after pulse_detect_fsk_package() returned 1.
+/// @param detector One of FSK_PULSE_DETECTOR_*
+void pulse_detect_fsk_finalize(pulse_detect_fsk_t *s, pulse_data_t const *pulses,
         pulse_data_t *fsk_pulses, unsigned detector);
 
 #endif /* INCLUDE_PULSE_DETECT_FSK_H_ */
