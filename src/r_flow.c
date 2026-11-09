@@ -255,12 +255,12 @@ static void process_lora_fm_segment(lora_fm_segment_context_t *context, size_t s
 }
 
 /// Feed the carrier span used for FSK detection to the LoRa FM demodulator.
-/// A segment starts on a new carrier (or a restart/retry pulse) and ends with that pulse.
+/// A segment starts on each carrier pulse and ends with that pulse.
 static void lora_fm_span(lora_fm_segment_context_t *context, int event, pulse_detect_span_t const *span)
 {
     struct dm_state *demod = context->demod;
     unsigned flags = 0;
-    if (event == PULSE_DETECT_START || event == PULSE_DETECT_RESTART || event == PULSE_DETECT_RETRY) {
+    if (event == PULSE_DETECT_START || event == PULSE_DETECT_RESTART) {
         demod->lora_fm_segment = 1; // started, no samples yet
         return;
     }
@@ -323,7 +323,7 @@ static int detect_package(struct dm_state *demod, unsigned n_samples, lora_fm_se
         }
         // Every detector sees the same carrier. A single detector classifies it as FSK,
         // several (auto) offer it as FSK to the decoders, see the caller.
-        if (event == PULSE_DETECT_START || event == PULSE_DETECT_RESTART || event == PULSE_DETECT_RETRY)
+        if (event == PULSE_DETECT_START || event == PULSE_DETECT_RESTART)
             demod->fsk_rejected = 0;
         unsigned ready = 0;
         for (unsigned i = 0; i < order_len; ++i) {
@@ -333,7 +333,9 @@ static int detect_package(struct dm_state *demod, unsigned n_samples, lora_fm_se
                 ready |= 1u << d;
             }
         }
-        int const accept = order_len > 1 ? ready && !demod->fsk_rejected : (ready & (1u << order[0])) != 0;
+        // A burst on a later pulse of the package is only FSK if it decodes, see the caller.
+        int const decide_by_decoding = order_len > 1 || demod->pulse_data.num_pulses > 0;
+        int const accept = decide_by_decoding ? ready && !demod->fsk_rejected : (ready & (1u << order[0])) != 0;
         if (accept) {
             for (unsigned i = 0; i < order_len; ++i) {
                 unsigned const d = order[i];
@@ -343,7 +345,7 @@ static int detect_package(struct dm_state *demod, unsigned n_samples, lora_fm_se
                 }
             }
             demod->fsk_ready = ready;
-            if (order_len == 1)
+            if (!decide_by_decoding)
                 pulse_detect_skip_package(demod->pulse_detect);
             return PULSE_DATA_FSK;
         }
@@ -352,6 +354,56 @@ static int detect_package(struct dm_state *demod, unsigned n_samples, lora_fm_se
         if (event == PULSE_DETECT_END)
             return 0;
     }
+}
+
+/// Decode and output the OOK package in demod->pulse_data.
+static int process_ook_package(r_cfg_t *cfg, unsigned n_samples)
+{
+    struct dm_state *demod = cfg->demod;
+    char time_str[LOCAL_TIME_BUFLEN];
+
+    calc_rssi_snr(demod, &demod->pulse_data);
+    if (demod->analyze_pulses) {
+        fprintf(stderr, "Detected OOK package\t%s\n", time_pos_str(cfg, demod->pulse_data.start_ago, time_str));
+    }
+
+    int const p_events = run_ook_demods(&demod->r_devs, &demod->pulse_data);
+    demod->total_frames_ook += 1;
+    demod->total_frames_events += p_events > 0;
+    demod->frames_ook += 1;
+    demod->frames_events += p_events > 0;
+
+    // Dump pulse data for this complete package
+    for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
+        file_info_t const *dumper = *iter;
+        if (dumper->format == VCD_LOGIC) {
+            pulse_data_print_vcd(dumper->file, &demod->pulse_data, '\'');
+        }
+        if (dumper->format == U8_LOGIC) {
+            pulse_data_dump_raw(demod->u8_buf, n_samples, demod->input_pos, &demod->pulse_data, 0x02);
+        }
+        if (dumper->format == PULSE_OOK) {
+            pulse_data_dump(dumper->file, &demod->pulse_data);
+        }
+    }
+
+    if (demod->verbosity >= LOG_TRACE) {
+        pulse_data_print(&demod->pulse_data);
+    }
+    if (demod->raw_mode == 1 || (demod->raw_mode == 2 && p_events == 0) || (demod->raw_mode == 3 && p_events > 0)) {
+        data_t *data = pulse_data_print_data(&demod->pulse_data);
+        event_occurred_handler(cfg, data);
+    }
+    if (demod->analyze_pulses && (demod->grab_mode <= 1 || (demod->grab_mode == 2 && p_events == 0) || (demod->grab_mode == 3 && p_events > 0))) {
+        r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
+        pulse_analyzer(&demod->pulse_data, PULSE_DATA_OOK, &device);
+    }
+    if (demod->grab_mode == 4 && p_events == 0) {
+        r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
+        int p_quality   = pulse_analyzer_check(&demod->pulse_data, PULSE_DATA_OOK, &device);
+        demod->frame_quality = p_quality > demod->frame_quality ? p_quality : demod->frame_quality;
+    }
+    return p_events;
 }
 
 /**
@@ -574,47 +626,7 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                 demod->frame_end_ago = demod->pulse_data.end_ago;
             }
             if (package_type == PULSE_DATA_OOK) {
-                calc_rssi_snr(demod, &demod->pulse_data);
-                if (demod->analyze_pulses) {
-                    fprintf(stderr, "Detected OOK package\t%s\n", time_pos_str(cfg, demod->pulse_data.start_ago, time_str));
-                }
-
-                p_events += run_ook_demods(&demod->r_devs, &demod->pulse_data);
-                demod->total_frames_ook += 1;
-                demod->total_frames_events += p_events > 0;
-                demod->frames_ook += 1;
-                demod->frames_events += p_events > 0;
-
-                // Dump pulse data for this complete package
-                for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
-                    file_info_t const *dumper = *iter;
-                    if (dumper->format == VCD_LOGIC) {
-                        pulse_data_print_vcd(dumper->file, &demod->pulse_data, '\'');
-                    }
-                    if (dumper->format == U8_LOGIC) {
-                        pulse_data_dump_raw(demod->u8_buf, n_samples, demod->input_pos, &demod->pulse_data, 0x02);
-                    }
-                    if (dumper->format == PULSE_OOK) {
-                        pulse_data_dump(dumper->file, &demod->pulse_data);
-                    }
-                }
-
-                if (demod->verbosity >= LOG_TRACE) {
-                    pulse_data_print(&demod->pulse_data);
-                }
-                if (demod->raw_mode == 1 || (demod->raw_mode == 2 && p_events == 0) || (demod->raw_mode == 3 && p_events > 0)) {
-                    data_t *data = pulse_data_print_data(&demod->pulse_data);
-                    event_occurred_handler(cfg, data);
-                }
-                if (demod->analyze_pulses && (demod->grab_mode <= 1 || (demod->grab_mode == 2 && p_events == 0) || (demod->grab_mode == 3 && p_events > 0))) {
-                    r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
-                    pulse_analyzer(&demod->pulse_data, package_type, &device);
-                }
-                if (demod->grab_mode == 4 && p_events == 0) {
-                    r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
-                    int p_quality   = pulse_analyzer_check(&demod->pulse_data, package_type, &device);
-                    demod->frame_quality = p_quality > demod->frame_quality ? p_quality : demod->frame_quality;
-                }
+                p_events += process_ook_package(cfg, n_samples);
             }
             else if (package_type == PULSE_DATA_FSK) {
                 // Try the detectors in order until one decodes.
@@ -633,15 +645,17 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                     calc_rssi_snr(demod, &demod->fsk_pulse_data);
                     p_events += run_fsk_demods(&demod->r_devs, &demod->fsk_pulse_data);
                 }
-                if (order_len > 1) {
+                // A burst on a later pulse of the envelope package must decode, in any mode.
+                // Long OOK pulses, e.g. sync pulses of repeats, can look like FSK.
+                int const later_pulse = demod->pulse_data.num_pulses > 0;
+                if (order_len > 1 || later_pulse) {
                     // Not decoded and classic does not see FSK either: likely an OOK package the
-                    // minmax detectors misread. Keep the OOK package, but try FSK again on its next pulse.
+                    // minmax detectors misread. Keep the OOK package, FSK is tried again on its next pulse.
                     // A package classic also sees as FSK is FSK that did not decode, e.g. a weak
                     // repeat or a collision. It is dropped like with a single detector, keeping it
                     // would raise the OOK levels and merge the following signals into the package.
-                    if (p_events == 0 && !(demod->fsk_ready & (1u << FSK_PULSE_DETECTOR_CLASSIC))) {
+                    if (p_events == 0 && (later_pulse || !(demod->fsk_ready & (1u << FSK_PULSE_DETECTOR_CLASSIC)))) {
                         demod->fsk_rejected = 1;
-                        pulse_detect_retry_fsk(demod->pulse_detect);
                         continue;
                     }
                     pulse_detect_skip_package(demod->pulse_detect);
@@ -684,6 +698,13 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                     r_device device = {.log_fn = log_device_handler, .output_ctx = cfg};
                     int p_quality   = pulse_analyzer_check(&demod->fsk_pulse_data, package_type, &device);
                     demod->frame_quality = p_quality > demod->frame_quality ? p_quality : demod->frame_quality;
+                }
+
+                // The FSK burst can be a later pulse of the envelope package, e.g. after a key-up
+                // transient or an interferer. The pulses before it are an OOK package of their own.
+                if (demod->pulse_data.num_pulses > 0) {
+                    demod->pulse_data.end_ago = demod->fsk_pulse_data.start_ago;
+                    p_events += process_ook_package(cfg, n_samples);
                 }
             } // if (package_type == ...
             d_events += p_events;

@@ -937,7 +937,8 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
         data = data_str(data, "cr",   "Coding rate",      NULL,         coding_rate);
         data = data_int(data, "sync", "Sync word",        "0x%02x",     cfg->demod->lora_sync_word);
     }
-    else if (cfg->report_meta && cfg->demod->fsk_pulse_data.fsk_f2_est) {
+    // The FSK package can be left over from an attempt that did not decode, use it for FSK decoders only.
+    else if (cfg->report_meta && r_dev->modulation >= FSK_DEMOD_MIN_VAL && cfg->demod->fsk_pulse_data.fsk_f2_est) {
         data = data_str(data, "mod",   "Modulation",  NULL,         "FSK");
         data = data_dbl(data, "freq1", "Freq1",       "%.1f MHz",   cfg->demod->fsk_pulse_data.freq1_hz / 1000000.0);
         data = data_dbl(data, "freq2", "Freq2",       "%.1f MHz",   cfg->demod->fsk_pulse_data.freq2_hz / 1000000.0);
