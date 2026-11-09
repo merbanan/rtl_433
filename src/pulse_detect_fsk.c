@@ -16,6 +16,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 
 // FSK adaptive frequency estimator constants
@@ -25,10 +26,23 @@
 #define FSK_MINMAX_DECAY    10          // Min/max tracker decay per sample
 #define FSK_MINMAX_HYSTERESIS_DIVISOR 3 // Hysteresis band as a fraction of the min/max span
 
-// Min length of an FSK burst after a lead-in (key-up transient). Transmitters
-// with a lead-in send one long burst (8 ms and up), while OOK protocols with a
-// short first pulse continue with short data or sync pulses (up to about 6 ms).
-#define FSK_MIN_RESTART_BURST_US 7500
+// Min length of an FSK burst on a later pulse of the envelope package, e.g. after
+// a key-up transient or an interferer. Such transmitters send one long burst
+// (8 ms and up), while OOK data or sync pulses are shorter (up to about 6 ms).
+#define FSK_MIN_LATER_BURST_US 7500
+// Min gap before such a burst. A shorter dip is part of the previous carrier.
+#define FSK_MIN_LATER_GAP_US 200
+
+/// Clear pulse data like pulse_data_clear(), but keep the pulse and gap arrays
+/// beyond the first entry. Runs on every envelope pulse, the arrays are large and
+/// the detectors write a pulse or gap before reading it.
+static void pulse_data_reset_fields(pulse_data_t *data)
+{
+    memset(data, 0, offsetof(pulse_data_t, pulse));
+    data->pulse[0] = 0;
+    data->gap[0]   = 0;
+    memset(&data->ook_low_estimate, 0, sizeof(*data) - offsetof(pulse_data_t, ook_low_estimate));
+}
 
 void pulse_detect_fsk_init(pulse_detect_fsk_t *s)
 {
@@ -42,17 +56,17 @@ int pulse_detect_fsk_package(pulse_detect_fsk_t *s, int16_t const *fm_data,
         pulse_detect_span_t const *span, int event, pulse_data_t const *pulses,
         pulse_data_t *fsk_pulses, unsigned detector)
 {
-    if (event == PULSE_DETECT_START || event == PULSE_DETECT_RESTART || event == PULSE_DETECT_RETRY) {
-        // A restart or retry begins at the new pulse, right after the previous pulses and gaps.
-        unsigned const first = event == PULSE_DETECT_START ? 0 : pulses->num_pulses;
-        unsigned skip = 0;
-        for (unsigned i = 0; i < first; ++i) {
-            skip += pulses->pulse[i] + pulses->gap[i];
-        }
+    if (event == PULSE_DETECT_START || event == PULSE_DETECT_RESTART) {
+        // A restart begins at the new pulse, right after the previous pulses and gaps.
+        unsigned const skip = span->pulse_start;
         pulse_detect_fsk_init(s);
-        s->restarted   = event == PULSE_DETECT_RESTART;
-        s->first_pulse = first;
-        pulse_data_clear(fsk_pulses);
+        s->first_pulse = event == PULSE_DETECT_START ? 0 : pulses->num_pulses;
+        if (event == PULSE_DETECT_START) {
+            pulse_data_clear(fsk_pulses);
+        }
+        else {
+            pulse_data_reset_fields(fsk_pulses);
+        }
         fsk_pulses->sample_rate = pulses->sample_rate;
         fsk_pulses->offset      = pulses->offset + skip;
         fsk_pulses->start_ago   = pulses->start_ago - skip;
@@ -84,8 +98,11 @@ int pulse_detect_fsk_package(pulse_detect_fsk_t *s, int16_t const *fm_data,
     if (event != PULSE_DETECT_PULSE || fsk_pulses->num_pulses <= PD_MIN_PULSES)
         return 0;
 
-    // After a lead-in only accept a long burst, a short pulse is OOK data.
-    if (s->restarted && pulses->pulse[s->first_pulse] < (int)(FSK_MIN_RESTART_BURST_US * (pulses->sample_rate / 1000) / 1000))
+    // On a later pulse only accept a long burst after a clear gap, a short pulse is OOK data.
+    int const samples_per_ms = pulses->sample_rate / 1000;
+    if (s->first_pulse
+            && (pulses->pulse[s->first_pulse] < FSK_MIN_LATER_BURST_US * samples_per_ms / 1000
+                    || pulses->gap[s->first_pulse - 1] < FSK_MIN_LATER_GAP_US * samples_per_ms / 1000))
         return 0;
 
     return 1;
