@@ -321,6 +321,7 @@ add_library(r_433 STATIC
     devices/lightwave_rf.c
     devices/lorawan.c
     devices/m_bus.c
+    devices/malibu_surfband.c
     devices/markisol.c
     devices/marlec_solar.c
     devices/martec_mplcd.c
