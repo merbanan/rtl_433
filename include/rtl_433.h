@@ -82,7 +82,7 @@ typedef struct r_cfg {
     int hop_time[MAX_FREQS];
     time_t hop_start_time;
     int duration;
-    time_t stop_time;
+    time_t start_time; ///< Program startup time
     int after_successful_events_flag;
     uint32_t samp_rate;
     uint32_t bytes_to_read;
@@ -116,7 +116,8 @@ typedef struct r_cfg {
     int sr_execopen;
     int watchdog; ///< SDR acquire stall watchdog
     /* sdr stats */
-    time_t sdr_since; ///< time of last SDR connect statistic
+    time_t sdr_start; ///< wall clock time of last SDR connect statistic
+    time_t sdr_since; ///< monotonic time of last SDR connect statistic
     struct mg_mgr *mgr;
 } r_cfg_t;
 
