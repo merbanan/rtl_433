@@ -107,13 +107,13 @@ static int en2058_sensor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (temp1_raw >= 0xff && (temp1 < -4.0f || temp1 > 572.0F)) {
             return DECODE_FAIL_SANITY;
         }
-        if (temp2_raw >= 0xff && (temp2 < -4.0f || temp1 > 572.0F)) {
+        if (temp2_raw >= 0xff && (temp2 < -4.0f || temp2 > 572.0F)) {
             return DECODE_FAIL_SANITY;
         }
-        if (temp3_raw >= 0xff && (temp3 < -4.0f || temp1 > 572.0F)) {
+        if (temp3_raw >= 0xff && (temp3 < -4.0f || temp3 > 572.0F)) {
             return DECODE_FAIL_SANITY;
         }
-        if (temp4_raw >= 0xff && (temp4 < -4.0f || temp1 > 572.0F)) {
+        if (temp4_raw >= 0xff && (temp4 < -4.0f || temp4 > 572.0F)) {
             return DECODE_FAIL_SANITY;
         }
 

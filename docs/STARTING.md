@@ -194,17 +194,31 @@ Disable all decoders with `-R 0` if you want only the given flex decoder.
 
 The operation of the demodulator stage can be tuned with the `-Y` option.
 
-For the `433.92M` frequency the `classic` pulse detector is used by default,
-for higher frequencies like `868M` the `minmax` pulse detector is used by default.
+By default (`-Y auto`) the `classic`, `minmax`, `hysteresis` and `median` FSK pulse detectors run in parallel on every signal.
+A signal is taken as FSK if the pulses of one of the detectors decode, or if the `classic` detector sees FSK.
+Otherwise it is kept as OOK and FSK detection is tried once more on its next pulse.
 
-Use `-Y classic` or `-Y minmax` to force the use of a FSK pulse detector.
+Use `-Y classic` or `-Y minmax` to run only that FSK pulse detector, it then alone decides if a signal is FSK.
+Use this to analyze (`-A`) an unknown FSK signal, in auto mode a signal that does not decode and is only seen by
+the `minmax` detectors is reported as OOK.
+Use `-Y hysteresis` to run only the `minmax` detector with a wide hysteresis band,
+or `-Y median` to run only the `minmax` detector on median filtered samples, both can help with noisy signals.
+
+The filtered-FM LoRa demodulator is enabled by default. Use `-Y lora-fft` to
+select the more CPU-intensive IQ/FFT demodulator instead. Both modes require
+exactly `-s 1000k` or `-s 2000k`; a `1024k` capture has a fractional
+samples-per-chip ratio and must be resampled to `1000k`, not merely replayed
+with a different declared sample rate. The filtered-FM mode reuses the FSK
+frequency discriminator and analyzes only carrier segments selected by the
+pulse detector.
 
 Use `-Y autolevel` to automatically adjust the minimum detection level based on average estimated noise. Recommended.
 
 Use `-Y squelch` to skip frames below estimated noise level to reduce cpu load. Recommended.
 
 :::tip
-    [-Y auto | classic | minmax] FSK pulse detector mode.
+    [-Y auto | classic | minmax | hysteresis | median] FSK pulse detector mode.
+    [-Y lora-fm | lora-fft] Select filtered-FM (default) or FFT LoRa demodulation; requires -s 1000k or -s 2000k (1024k is unsupported).
     [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto).
     [-Y minlevel=<dB level>] Manual minimum detection level used to determine pulses (-1.0 to -99.0).
     [-Y minsnr=<dB level>] Minimum SNR to determine pulses (1.0 to 99.0).
@@ -212,6 +226,10 @@ Use `-Y squelch` to skip frames below estimated noise level to reduce cpu load. 
     [-Y squelch] Skip frames below estimated noise level to reduce cpu load.
     [-Y ampest | magest] Choose amplitude or magnitude level estimator.
 :::
+
+The default `lora-fm` mode uses the filtered FM discriminator and fixes its
+low-pass ratio at `0.2` so received and reference chirps have the same filter
+response. `-Y lora-fft` selects the complementary IQ-domain receiver.
 
 ## Meta-data and data conversion
 

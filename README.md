@@ -66,7 +66,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)
        Specify a negative number to disable a device decoding protocol (can be used multiple times)
   [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)
-  [-Y auto | classic | minmax] FSK pulse detector mode.
+  [-Y auto | classic | minmax | hysteresis | median] FSK pulse detector mode.
+  [-Y lora-fm | lora-fft] LoRa (FM default); needs 1000k/2000k.
   [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto).
   [-Y minlevel=<dB level>] Manual minimum detection level used to determine pulses (-1.0 to -99.0).
   [-Y minsnr=<dB level>] Minimum SNR to determine pulses (1.0 to 99.0).
@@ -480,6 +481,18 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [384]  Bresser SmartHome Garden soil moisture and water timer valve (Baldr Homgar, RainPoint)
     [385]* Neptune R900 BCD flow meters
     [386]  Olympia Protect 9571 alarm system sensors
+    [387]  Cotech 36-9231 FT020TL LoRa weather station
+    [388]  LoRaWAN 1.0.x generic MAC frame
+    [389]  ELSYS ERS Series LoRaWAN sensors
+    [390]* Hollarm alarm system remotes
+    [391]  Power Smart blind remotes
+    [392]* Feron LED light remotes
+    [393]  Paradox Magellan security sensors
+    [394]  GangQi alarm system remotes
+    [395]* Chamberlain / LiftMaster DIP switch remotes
+    [396]* King Gates Stylo 4k gate remotes
+    [397]* iDo 117/111 gate remotes
+    [398]* Bresser Thermo-/Hygro-Sensor 3CH, V0 format
 
 * Disabled by default, use -R n or a conf file to enable
 

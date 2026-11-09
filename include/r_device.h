@@ -5,6 +5,8 @@
 #ifndef INCLUDE_R_DEVICE_H_
 #define INCLUDE_R_DEVICE_H_
 
+#include <stdint.h>
+
 /**
     Supported Modulation and Coding types.
 
@@ -37,6 +39,8 @@ enum modulation_types {
     FSK_PULSE_PCM                = 16, ///< FSK Modulation, Non-Return-to-Zero coding, Pulse = 1, No pulse = 0.
     FSK_PULSE_PWM                = 17, ///< FSK Modulation, Pulse Width Coding. Short pulses = 1, Long = 0.
     FSK_PULSE_MANCHESTER_ZEROBIT = 18, ///< FSK Modulation, Manchester coding.
+    LORA_DEMOD_MIN_VAL           = 32, ///< Dummy. LoRa demodulation must start at this value.
+    LORA                         = 32, ///< LoRa chirp spread spectrum with an explicit PHY header.
 };
 
 /** Decoders should return n>0 for n packets successfully decoded,
@@ -68,6 +72,9 @@ typedef struct r_device {
     float gap_limit;    ///< maximum gap length to end a paket (bit row) in microseconds (us)
     float sync_width;   ///< sync symbol nominal width in microseconds (us)
     float tolerance;    ///< maximum allowed deviation from nominal symbol widths in microseconds (us)
+    uint32_t lora_bandwidth; ///< LoRa signal bandwidth in Hz.
+    uint8_t lora_spreading_factor; ///< LoRa spreading factor.
+    uint8_t lora_sync_word; ///< LoRa network synchronization word.
     int (*decode_fn)(struct r_device *decoder, struct bitbuffer *bitbuffer);
     struct r_device *(*create_fn)(char const *args);
     unsigned priority; ///< Run later and only if no previous events were produced

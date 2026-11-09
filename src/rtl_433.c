@@ -134,14 +134,17 @@ static void usage(int exit_code)
             "  [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)\n"
             "       Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
             "  [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)\n"
-            "  [-Y auto | classic | minmax] FSK pulse detector mode.\n"
+            "  [-Y auto | classic | minmax | hysteresis | median] FSK pulse detector mode.\n"
+            "  [-Y lora-fm | lora-fft] LoRa (FM default); needs 1000k/2000k.\n"
             "  [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto).\n"
             "  [-Y minlevel=<dB level>] Manual minimum detection level used to determine pulses (-1.0 to -99.0).\n"
             "  [-Y minsnr=<dB level>] Minimum SNR to determine pulses (1.0 to 99.0).\n"
             "  [-Y autolevel] Set minlevel automatically based on average estimated noise.\n"
             "  [-Y squelch] Skip frames below estimated noise level to reduce cpu load.\n"
             "  [-Y ampest | magest] Choose amplitude or magnitude level estimator.\n"
-            "  [-Y filter=<value>] Manual FM low-pass filter cutoff to separate simultaneous transmissions: us (1-9999, e.g. 20), Hz (10000+), or ratio of sample rate (0.0-1.0).\n"
+            "  [-Y filter=<value>] Manual FM low-pass filter cutoff to separate simultaneous transmissions: us (1-9999, e.g. 20), Hz (10000+), or ratio of sample rate (0.0-1.0).\n",
+            DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE);
+    term_help_fprintf(exit_code ? stderr : stdout,
             "\t\t= Analyze/Debug options =\n"
             "  [-A] Pulse Analyzer. Enable pulse analysis and decode attempt.\n"
             "       Disable all decoders with -R 0 if you want analyzer output only.\n"
@@ -163,8 +166,7 @@ static void usage(int exit_code)
             "  [-T <seconds>] Specify number of seconds to run, also 12:34 or 1h23m45s\n"
             "  [-E hop | quit] Hop/Quit after outputting successful event(s)\n"
             "  [-h] Output this usage help and exit\n"
-            "       Use -d, -g, -R, -X, -F, -M, -r, -w, or -W without argument for more help\n\n",
-            DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE);
+            "       Use -d, -g, -R, -X, -F, -M, -r, -w, or -W without argument for more help\n\n");
     exit(exit_code);
 }
 
@@ -956,6 +958,42 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             else if (kwargs_match(p, "minmax", &val)) {
                 cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_NEW;
             }
+            else if (kwargs_match(p, "hysteresis", &val)) {
+                cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_HYSTERESIS;
+            }
+            else if (kwargs_match(p, "median", &val)) {
+                cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_MEDIAN;
+            }
+            else if (kwargs_match(p, "lora-fft", &val)) {
+                int const enabled = atobv(val, 1);
+                if (enabled && !cfg->demod->lora_fft_demod) {
+                    cfg->demod->lora_fft_demod = lora_fft_demod_create();
+                    if (!cfg->demod->lora_fft_demod) {
+                        FATAL_CALLOC("lora_fft_demod_create()");
+                    }
+                    lora_fm_demod_free(cfg->demod->lora_fm_demod);
+                    cfg->demod->lora_fm_demod = NULL;
+                }
+                else if (!enabled && cfg->demod->lora_fft_demod) {
+                    lora_fft_demod_free(cfg->demod->lora_fft_demod);
+                    cfg->demod->lora_fft_demod = NULL;
+                }
+            }
+            else if (kwargs_match(p, "lora-fm", &val)) {
+                int const enabled = atobv(val, 1);
+                if (enabled && !cfg->demod->lora_fm_demod) {
+                    cfg->demod->lora_fm_demod = lora_fm_demod_create();
+                    if (!cfg->demod->lora_fm_demod) {
+                        FATAL_CALLOC("lora_fm_demod_create()");
+                    }
+                    lora_fft_demod_free(cfg->demod->lora_fft_demod);
+                    cfg->demod->lora_fft_demod = NULL;
+                }
+                else if (!enabled && cfg->demod->lora_fm_demod) {
+                    lora_fm_demod_free(cfg->demod->lora_fm_demod);
+                    cfg->demod->lora_fm_demod = NULL;
+                }
+            }
             else if (kwargs_match(p, "ampest", &val)) {
                 cfg->demod->use_mag_est = 0;
             }
@@ -1097,20 +1135,9 @@ static void process_sdr_frame(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         cfg->exit_async = 1;
     }
 
-    // Select needed discriminator based on current frequency or manual setting
-    unsigned fpdm = cfg->fsk_pulse_detect_mode;
-    if (cfg->fsk_pulse_detect_mode == FSK_PULSE_DETECT_AUTO) {
-        if (cfg->center_frequency > FSK_PULSE_DETECTOR_LIMIT) {
-            fpdm = FSK_PULSE_DETECT_NEW;
-        }
-        else {
-            fpdm = FSK_PULSE_DETECT_OLD;
-        }
-    }
-
     // Setup variable demod parameters
     cfg->demod->raw_handler           = &cfg->raw_handler;
-    cfg->demod->fsk_pulse_detect_mode = fpdm; // cfg->fsk_pulse_detect_mode;
+    cfg->demod->fsk_pulse_detect_mode = cfg->fsk_pulse_detect_mode; // auto is resolved per frequency in r_flow
     cfg->demod->report_noise          = cfg->report_noise;
     cfg->demod->verbosity             = cfg->verbosity;
     cfg->demod->raw_mode              = cfg->raw_mode;
@@ -1527,13 +1554,22 @@ int main(int argc, char **argv) {
     // check if we need FM demod
     for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
         r_device *r_dev = *iter;
-        if (r_dev->modulation >= FSK_DEMOD_MIN_VAL) {
+        if (r_dev->modulation >= FSK_DEMOD_MIN_VAL
+                && r_dev->modulation < LORA_DEMOD_MIN_VAL) {
             demod->enable_FM_demod = 1;
             break;
         }
     }
     // if any dumpers are requested the FM demod might be needed
     if (cfg->demod->dumper.len) {
+        demod->enable_FM_demod = 1;
+    }
+    unsigned lora_sf;
+    uint32_t lora_bandwidth;
+    unsigned lora_sync_word;
+    if (demod->lora_fm_demod
+            && get_lora_params(&demod->r_devs, &lora_sf, &lora_bandwidth,
+                &lora_sync_word)) {
         demod->enable_FM_demod = 1;
     }
 

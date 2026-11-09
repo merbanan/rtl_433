@@ -101,6 +101,9 @@ Please don't open a new github issue for device support or request decoding help
 until you've added test signals and the description to the repository.
 
 The rtl_433_test repository is also used to help test that changes to rtl_433 haven't caused any regressions.
+To check that a change to the demodulators doesn't alter any output, compare two builds over all captures
+with `tests/compare-demod.py`, e.g.
+`python3 tests/compare-demod.py build-base/src/rtl_433 build/src/rtl_433 rtl_433_tests --modes auto classic minmax`.
 
 ## Code style
 
