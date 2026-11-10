@@ -25,6 +25,10 @@ struct dm_state {
     float level_limit;
     float noise_level;
     float min_level_auto;
+    float auto_level_limit;      ///< lowest auto level allowed by the package rate, 0 if none
+    unsigned auto_level_pkgs;    ///< undecoded packages detected in the current rate window
+    unsigned auto_level_quiet;   ///< quiet rate windows since the last back-off
+    uint64_t auto_level_window;  ///< input position of the current rate window start
     float min_level;
     float min_snr;
     float fm_low_pass;
