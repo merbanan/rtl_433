@@ -45,8 +45,8 @@ W9 = lane(W1, W3, W5, W7); W10 = lane(W2, W4, W6, W8).
 For each lane start at zero and apply acc = T(acc XOR word), where T is the legacy
 Err transform with C = D = 0. Both lanes must match; reported mic is DIGEST.
 Legacy mic is PARITY (formerly CHECKSUM): learned command-integrity C/D is not checked.
-W4 bit 7 is not interpreted as pilot in extended packets. Pilot is -1 (unknown)
-until a capture-backed mapping permits 0/1 output. W6-W8 remain raw.
+W4 bit 7 indicates pilot mode in both formats: 0 = IPI, 1 = CPI.
+W6-W8 remain raw in extended packets.
 JSON id and individual bytes are integers; human-readable output formats them as hex.
 raw_words is lowercase fixed-width hex in on-air order, without separators or prefix.
 
@@ -180,7 +180,7 @@ static void proflame2_output(r_device *decoder, proflame2_frame_t const *frame)
             "w8",           "W8",           DATA_COND, extended, DATA_FORMAT, "%02x", DATA_INT, b[7],
             "w9",           "W9",           DATA_COND, extended, DATA_FORMAT, "%02x", DATA_INT, b[8],
             "w10",          "W10",          DATA_COND, extended, DATA_FORMAT, "%02x", DATA_INT, b[9],
-            "pilot",        "Pilot",        DATA_INT, extended ? -1 : b[3] >> 7,
+            "pilot",        "Pilot",        DATA_INT, b[3] >> 7,
             "light",        "Light",        DATA_INT, (b[3] & 0x70) >> 4,
             "thermostat",   "Thermostat",   DATA_INT, (b[3] & 0x02) >> 1,
             "power",        "Power",        DATA_INT, b[3] & 0x01,

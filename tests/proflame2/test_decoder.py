@@ -74,7 +74,8 @@ class DecoderTests(unittest.TestCase):
 
     def test_pretty_layout_uses_original_control_columns(self):
         columns = (0, 25, 51, 77)
-        for variant, expected in GOLDEN.items():
+        for expected in GOLDEN.values():
+            variant = "legacy" if expected["protocol_variant"] == "legacy_7_word" else "extended"
             row = encode(list(bytes.fromhex(expected["raw_words"])))
             process = subprocess.run([str(self.binary), code(row), "kv"], check=False, capture_output=True, text=True)
             self.assertEqual(process.returncode, 0, process.stderr)
@@ -97,7 +98,7 @@ class DecoderTests(unittest.TestCase):
                 for index, key in enumerate(row_keys):
                     if key is not None:
                         self.assertEqual(line.index(key), columns[index], process.stdout)
-            self.assertIn("Pilot     : -1" if variant == "extended" else "Pilot     : 0", process.stdout)
+            self.assertIn(f"Pilot     : {expected['pilot']}", process.stdout)
             self.assertEqual(lines[-1].index("Raw words"), lines[-2].index("Aux"))
 
     def test_synthetic_extended_examples(self):
@@ -110,8 +111,26 @@ class DecoderTests(unittest.TestCase):
                     self.assertEqual(actual["raw_words"], example["words"])
                     self.assertEqual(actual["id"], int.from_bytes(words[:3], "big"))
                     self.assertEqual(actual["protocol_variant"], "extended_10_word")
-                    self.assertEqual(actual["pilot"], -1)
+                    self.assertEqual(actual["pilot"], words[3] >> 7)
                     self.assertEqual(actual["mic"], "DIGEST")
+
+    def test_extended_pilot_switch_preserves_other_controls(self):
+        ipi = GOLDEN["extended_ipi"]
+        cpi = GOLDEN["extended"]
+        self.assertEqual((ipi["pilot"], cpi["pilot"]), (0, 1))
+        self.assertEqual(ipi["cmd1"] ^ cpi["cmd1"], 0x80)
+        # The independent fixed vectors differ only in Pilot and its integrity.
+        changed_fields = {"cmd1", "pilot", "w10", "raw_words"}
+        self.assertEqual(
+            {key: value for key, value in ipi.items() if key not in changed_fields},
+            {key: value for key, value in cpi.items() if key not in changed_fields},
+        )
+        for expected in (ipi, cpi):
+            words = list(bytes.fromhex(expected["raw_words"]))
+            self.assertEqual(self.decode(encode(words)), expected)
+            words[3] ^= 0x80
+            # Regenerate word parity but retain the old frame integrity bytes.
+            self.decode(encode(words), accepted=False)
 
     def test_synthetic_legacy_examples(self):
         for example in SYNTHETIC["legacy"]:

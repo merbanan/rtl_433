@@ -7,6 +7,7 @@
   ],
   "extended": [
     {"name": "power_on_flame_zero", "words": "123456812015c800216e"},
+    {"name": "power_on_flame_zero_ipi", "words": "123456012015c80021e6"},
     {"name": "mixed_bytes", "words": "abcdef629e00ff5aa4de"},
     {"name": "zero_bytes", "words": "00000000000000000000"},
     {"name": "ones_bytes", "words": "ffffffffffffffff8282"},

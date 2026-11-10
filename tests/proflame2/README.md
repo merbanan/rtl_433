@@ -35,21 +35,28 @@ describes the documented custom alternating-word calculation, not a CRC.
 Legacy previously reported `CHECKSUM` despite checking word parity only. The new
 `PARITY` label is an intentional compatibility correction. Legacy command/error
 bytes remain available. Extended W6/W7 are not legacy error bytes, so extended
-records expose W6-W10, omit `err1` and `err2`, and report integer `pilot=-1`
-to mean unknown. Extended W4 bit 7 is not yet a validated pilot mapping. Once
-that mapping is established, the decoder and consumers can be updated to use
-`0/1`; the current sentinel must not be treated as a pilot state.
+records expose W6-W10 and omit `err1` and `err2`. Both formats decode integer
+`pilot` from W4 bit 7: `0` means IPI (intermittent pilot ignition), and `1`
+means CPI (continuous pilot ignition). This replaces the former extended
+`pilot=-1` sentinel. The extended mapping is supported by the controlled
+IPI/CPI switch in captures 25 and 26 of the public
+[issue #32 attachment](https://github.com/user-attachments/files/34244738/proflame2_10-word_captures.md):
+W4 changes from `0x14` to `0x94`, with other state words unchanged and integrity
+updated. The attachment is evidence only; its captures are not test fixtures.
 Power and flame zero are independent, including power on with flame zero.
 
 Pretty output preserves the original control columns (offsets 0, 25, 51, 77).
 `Variant` follows `time` in column 3, and `Raw words` follows `Integrity` in
 column 3, exactly under `Aux`. Extended command rows contain `Cmd1/Cmd2/W6/W7`
 followed by `W8/W9/W10`. Layout assertions exercise the actual KV formatter,
-including output redirected to a pipe; JSON and CSV checks cover the sentinel.
+including output redirected to a pipe; JSON, CSV, and pretty output checks cover
+both extended IPI and CPI values.
 
-`synthetic_examples.json` contains eight artificial word sequences (three legacy,
-five extended), including zero/one byte boundaries, mixed bytes, a serial with
-its high bit set, pilot on, and power on with flame zero. No example was copied
+`synthetic_examples.json` contains nine artificial word sequences (three legacy,
+six extended), including zero/one byte boundaries, mixed bytes, a serial with
+its high bit set, both pilot modes, and power on with flame zero. The extended
+IPI/CPI pair differs only in W4 bit 7 and W10; a switch retaining the old
+integrity is rejected. No example was copied
 from a remote capture or customer report. Serial values were chosen as test
 constants; they were not taken from customer remotes.
 
