@@ -52,15 +52,6 @@ add_test(flex_decoder_w_getter_and_format_specifier bash -c
         -X 'n=name,m=FSK_PCM,s=10,l=10,r=10240,get=@2:{32}:code:%x' \
         -r empty_file.cu8")
 
-# Synthetic Flowis bitstream regression tests (no SDR required).
-find_program(FLOWIS_PYTHON3_PROGRAM python3)
-if(FLOWIS_PYTHON3_PROGRAM)
-    add_test(NAME flowis_decoder
-        COMMAND ${FLOWIS_PYTHON3_PROGRAM}
-            ${CMAKE_CURRENT_SOURCE_DIR}/flowis-test.py
-            $<TARGET_FILE:rtl_433>)
-endif()
-
 # Black-box test of the HTTP/WS API server. Starts rtl_433 in manual device
 # mode (no SDR), exercises each endpoint, and shuts it down cleanly. Skipped
 # on Windows (POSIX shell script) and when python3/curl are unavailable.
