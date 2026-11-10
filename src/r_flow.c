@@ -32,6 +32,10 @@
 #include "logger.h"
 #include "fatal.h"
 
+#define AUTO_LEVEL_MAX_PKGS_PER_SEC 5 // more undecoded packages than this per second means noise is crossing the level
+#define AUTO_LEVEL_BACKOFF_DB 2.0f    // raise the auto level by this much on too many packages
+#define AUTO_LEVEL_RELAX_SECS 60      // quiet seconds before the back-off limit is lowered by 1 dB
+
 static void calc_rssi_snr(struct dm_state const *demod, pulse_data_t *pulse_data)
 {
     float ook_high_estimate      = pulse_data->ook_high_estimate > 0 ? pulse_data->ook_high_estimate : 1;
@@ -88,6 +92,10 @@ void reset_sdr_flow(r_cfg_t *cfg)
     demod->frame_quality     = 0;
 
     demod->min_level_auto = 0.0f;
+    demod->auto_level_limit  = 0.0f;
+    demod->auto_level_pkgs   = 0;
+    demod->auto_level_quiet  = 0;
+    demod->auto_level_window = 0;
     demod->noise_level    = 0.0f;
 
     baseband_low_pass_filter_reset(&demod->lowpass_filter_state);
@@ -448,9 +456,13 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         demod->total_frames_squelch += 1;
         demod->noise_level = (demod->noise_level * 7 + avg_db) / 8; // fast fall over 8 frames
         // If auto_level and noise level well below min_level and significant change in noise level
+        float auto_target = demod->noise_level + 3.0f;
+        if (demod->auto_level_limit != 0.0f && auto_target < demod->auto_level_limit) {
+            auto_target = demod->auto_level_limit; // the package rate showed this to be too low
+        }
         if (demod->auto_level > 0 && demod->noise_level < demod->min_level - 3.0f
-                && fabsf(demod->min_level_auto - demod->noise_level - 3.0f) > 1.0f) {
-            demod->min_level_auto = demod->noise_level + 3.0f;
+                && fabsf(demod->min_level_auto - auto_target) > 1.0f) {
+            demod->min_level_auto = auto_target;
             print_logf(LOG_WARNING, "Auto Level", "Estimated noise level is %.1f dB, adjusting minimum detection level to %.1f dB",
                     demod->noise_level, demod->min_level_auto);
             pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level_auto, demod->min_snr, demod->detect_verbosity);
@@ -458,6 +470,29 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
     } else {
         demod->noise_level = (demod->noise_level * 31 + avg_db) / 32; // slow rise over 32 frames
     }
+    // Back off the auto level when noise crossing it floods the pulse detector with packages,
+    // the average noise estimate does not show bursty or non-white noise.
+    if (demod->auto_level > 0 && demod->input_pos - demod->auto_level_window >= demod->samp_rate) {
+        if (demod->auto_level_pkgs > AUTO_LEVEL_MAX_PKGS_PER_SEC && demod->min_level_auto < demod->min_level) {
+            float level = demod->min_level_auto + AUTO_LEVEL_BACKOFF_DB;
+            if (level > demod->min_level) {
+                level = demod->min_level;
+            }
+            demod->auto_level_limit = level;
+            demod->auto_level_quiet = 0;
+            print_logf(LOG_WARNING, "Auto Level", "%u packages per second, raising minimum detection level to %.1f dB",
+                    demod->auto_level_pkgs, level);
+            demod->min_level_auto = level;
+            pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level_auto, demod->min_snr, demod->detect_verbosity);
+        }
+        else if (demod->auto_level_limit != 0.0f && ++demod->auto_level_quiet >= AUTO_LEVEL_RELAX_SECS) {
+            demod->auto_level_limit -= 1.0f; // retry a lower level, the interference might be gone
+            demod->auto_level_quiet = 0;
+        }
+        demod->auto_level_pkgs   = 0;
+        demod->auto_level_window = demod->input_pos;
+    }
+
     // Report noise every report_noise seconds, but only for the first frame that second
     if (demod->report_noise && last_frame_sec != demod->now.tv_sec && demod->now.tv_sec % demod->report_noise == 0) {
         print_logf(LOG_WARNING, "Auto Level", "Current %s level %.1f dB, estimated noise %.1f dB",
@@ -686,6 +721,9 @@ int push_sdr_flow(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
                     demod->frame_quality = p_quality > demod->frame_quality ? p_quality : demod->frame_quality;
                 }
             } // if (package_type == ...
+            if (package_type && p_events == 0) {
+                demod->auto_level_pkgs += 1; // undecoded package, likely noise crossing the level
+            }
             d_events += p_events;
         } // while (package_type)...
 
