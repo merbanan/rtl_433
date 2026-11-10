@@ -229,21 +229,44 @@ typedef struct {
 
 #define KV_SEP "_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ "
 
+// Proflame2's control rows define the column anchors. Keep metadata and raw
+// words on those same anchors without changing any machine-readable fields.
+static int kv_proflame2_column(char const *key)
+{
+    static char const *const columns[][8] = {
+            {"time", "model", "cmd1", "w8", "pilot", "front", "mic", NULL},
+            {"cmd2", "w9", "light", "fan", NULL},
+            {"protocol_variant", "id", "err1", "w6", "w10", "thermostat", "aux", "raw_words"},
+            {"err2", "w7", "power", "flame", NULL},
+    };
+    static int const offsets[] = {0, 25, 51, 77};
+    for (unsigned col = 0; col < 4; ++col) {
+        for (unsigned i = 0; i < 8 && columns[col][i]; ++i) {
+            if (!strcmp(key, columns[col][i]))
+                return offsets[col];
+        }
+    }
+    return -1;
+}
+
 static void R_API_CALLCONV print_kv_data(data_output_t *output, data_t *data, char const *format)
 {
     UNUSED(format);
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
-    int color = kv->color;
-    int ring_bell = kv->ring_bell;
-    int is_log = 0;
+    int color        = kv->color;
+    int ring_bell    = kv->ring_bell;
+    int is_log       = 0;
+    int is_proflame2 = 0;
 
     // top-level: update width and print separator
     if (!kv->data_recursion) {
         // collect well-known top level keys
-        data_t *data_src = NULL;
-        data_t *data_lvl  = NULL;
-        data_t *data_msg  = NULL;
+        data_t *data_src     = NULL;
+        data_t *data_lvl     = NULL;
+        data_t *data_msg     = NULL;
+        data_t *data_model   = NULL;
+        data_t *data_variant = NULL;
         for (data_t *d = data; d; d = d->next) {
             if (!strcmp(d->key, "src"))
                 data_src = d;
@@ -251,8 +274,13 @@ static void R_API_CALLCONV print_kv_data(data_output_t *output, data_t *data, ch
                 data_lvl = d;
             else if (!strcmp(d->key, "msg"))
                 data_msg = d;
+            else if (!strcmp(d->key, "model"))
+                data_model = d;
+            else if (!strcmp(d->key, "protocol_variant"))
+                data_variant = d;
         }
-        is_log = data_src && data_lvl && data_msg;
+        is_log       = data_src && data_lvl && data_msg;
+        is_proflame2 = data_model && data_model->type == DATA_STRING && !strcmp(data_model->value.v_ptr, "Proflame2-Remote") && data_variant && data_variant->type == DATA_STRING && (!strcmp(data_variant->value.v_ptr, "legacy_7_word") || !strcmp(data_variant->value.v_ptr, "extended_10_word"));
 
         kv->term_width = term_get_columns(kv->term); // update current term width
         if (!is_log) {
@@ -333,8 +361,19 @@ static void R_API_CALLCONV print_kv_data(data_output_t *output, data_t *data, ch
             continue;
         }
 
+        int layout_column = is_proflame2 ? kv_proflame2_column(data->key) : -1;
+        if (layout_column >= 0) {
+            // Explicit section starts and columns also apply on redirected
+            // output; terminal width must not merge the control rows.
+            if (kv->column > 0 && kv->column >= layout_column) {
+                fprintf(kv->file, "\n");
+                kv->column = 0;
+            }
+            if (kv->column < layout_column)
+                kv->column += fprintf(kv->file, "%*s", layout_column - kv->column, " ");
+        }
         // break before some known keys
-        if (kv->column > 0 && kv_break_before_key(data->key)) {
+        else if (kv->column > 0 && kv_break_before_key(data->key)) {
             fprintf(kv->file, "\n");
             kv->column = 0;
         }
@@ -359,7 +398,7 @@ static void R_API_CALLCONV print_kv_data(data_output_t *output, data_t *data, ch
             term_set_fg(kv->term, TERM_COLOR_RESET);
 
         // force break after some known keys
-        if (kv->column > 0 && kv_break_after_key(data->key)) {
+        if (layout_column < 0 && kv->column > 0 && kv_break_after_key(data->key)) {
             kv->column = kv->term_width; // force break;
         }
     }
