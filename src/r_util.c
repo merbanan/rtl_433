@@ -23,6 +23,30 @@ void get_time_now(struct timeval *tv)
     }
 }
 
+#ifdef ESP_PLATFORM
+/* The ESP-IDF libc's strftime("%z") prints +0000 even with TZ set (localtime_r does apply the zone),
+   so local times went out labelled Z. Derive the offset from localtime_r and gmtime_r instead. */
+static void format_tz_offset(char *buf, size_t len, time_t t, struct tm const *lt)
+{
+    struct tm g;
+    gmtime_r(&t, &g);
+    long days = lt->tm_yday - g.tm_yday;
+    if (lt->tm_year != g.tm_year) {
+        days = lt->tm_year > g.tm_year ? 1 : -1;
+    }
+    long off = ((days * 24 + lt->tm_hour - g.tm_hour) * 60 + lt->tm_min - g.tm_min) * 60 + lt->tm_sec - g.tm_sec;
+    if (off == 0) {
+        snprintf(buf, len, "Z");
+        return;
+    }
+    char sign = off < 0 ? '-' : '+';
+    if (off < 0) {
+        off = -off;
+    }
+    snprintf(buf, len, "%c%02ld%02ld", sign, off / 3600, (off % 3600) / 60);
+}
+#endif
+
 char *format_time_str(char *buf, char const *format, int with_tz, time_t time_secs)
 {
     time_t etime;
@@ -47,10 +71,14 @@ char *format_time_str(char *buf, char const *format, int with_tz, time_t time_se
 
     size_t l = strftime(buf, LOCAL_TIME_BUFLEN, format, &tm_info);
     if (with_tz) {
+#ifdef ESP_PLATFORM
+        format_tz_offset(buf + l, LOCAL_TIME_BUFLEN - l, etime, &tm_info);
+#else
         strftime(buf + l, LOCAL_TIME_BUFLEN - l, "%z", &tm_info);
         if (!strcmp(buf + l, "+0000")) {
             strcpy(buf + l, "Z"); // NOLINT
         }
+#endif
     }
     return buf;
 }
@@ -79,10 +107,14 @@ char *usecs_time_str(char *buf, char const *format, int with_tz, struct timeval 
     size_t l = strftime(buf, LOCAL_TIME_BUFLEN, format, &tm_info);
     l += snprintf(buf + l, LOCAL_TIME_BUFLEN - l, ".%06ld", (long)tv->tv_usec);
     if (with_tz) {
+#ifdef ESP_PLATFORM
+        format_tz_offset(buf + l, LOCAL_TIME_BUFLEN - l, t_secs, &tm_info);
+#else
         strftime(buf + l, LOCAL_TIME_BUFLEN - l, "%z", &tm_info);
         if (!strcmp(buf + l, "+0000")) {
             strcpy(buf + l, "Z"); // NOLINT
         }
+#endif
     }
     return buf;
 }

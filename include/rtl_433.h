@@ -18,7 +18,10 @@
 #define FSK_PULSE_DETECTOR_LIMIT 800000000
 
 #define MINIMAL_BUF_LENGTH      512
+#ifndef MAXIMAL_BUF_LENGTH
+// the demod state embeds buffers of this many samples: small targets can define a lower limit
 #define MAXIMAL_BUF_LENGTH      (256 * 16384)
+#endif
 #define SIGNAL_GRABBER_BUFFER   (12 * DEFAULT_BUF_LENGTH)
 #define MAX_FREQS               32
 

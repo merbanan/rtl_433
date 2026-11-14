@@ -383,11 +383,19 @@ static void help_write(void)
     exit(0);
 }
 
+#ifdef __NEWLIB__
+// newlib and picolibc only fully re-initialise getopt (its scan position too) with optind = 0;
+// with 1 the first call re-reads the '-' of argv[1] as an option character
+#define GETOPT_RESET 0
+#else
+#define GETOPT_RESET 1
+#endif
+
 static int hasopt(int test, int argc, char *argv[], char const *optstring)
 {
     int opt;
 
-    optind = 1; // reset getopt
+    optind = GETOPT_RESET; // reset getopt
     while ((opt = getopt(argc, argv, optstring)) != -1) {
         if (opt == test || optopt == test) {
             return opt;
@@ -482,7 +490,7 @@ static void parse_conf_args(r_cfg_t *cfg, int argc, char *argv[])
 {
     int opt;
 
-    optind = 1; // reset getopt
+    optind = GETOPT_RESET; // reset getopt
     while ((opt = getopt(argc, argv, OPTSTRING)) != -1) {
         if (opt == '?') {
             opt = optopt; // allow missing arguments
