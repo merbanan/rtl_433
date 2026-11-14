@@ -493,6 +493,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [396]* King Gates Stylo 4k gate remotes
     [397]* iDo 117/111 gate remotes
     [398]* Bresser Thermo-/Hygro-Sensor 3CH, V0 format
+    [399]* Phoenix V2 gate remotes
 
 * Disabled by default, use -R n or a conf file to enable
 
