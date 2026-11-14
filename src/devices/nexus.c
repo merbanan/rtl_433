@@ -205,6 +205,117 @@ static int nexus_sauna_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
+/**
+TS-808x family (TS-8081, TS-8082, TS-8083) and VOCOO 6202 sensors.
+
+Nexus compatible protocol with a different constant nibble, see #3431 and #3722.
+
+- TS-8081 (1 channel) and TS-8082 (2 channels) refrigerator/freezer
+  thermometers, temperature only, 36 bit messages.
+  Also sold as Brifit (ASIN B0FMXX5LLG) and Oria (ASIN B0FGPXYNW1).
+- TS-8083 (3 channels) has humidity, the message format is unconfirmed.
+- VOCOO 6202 indoor/outdoor thermometer hygrometer, outdoor sensor,
+  temperature and humidity, 40 bit messages. An identical looking set is
+  sold without brand as "Digital Thermometer Hygrometer with remote sensor".
+
+The packets are ppm modulated (distance coding) like the Nexus sensors:
+a pulse of ~500 us followed by a short gap of ~1000 us for a 0 bit or a
+long ~2000 us gap for a 1 bit, the sync gap is ~4000 us.
+The TS-8082 sends 3 repeats, the VOCOO 6202 about 9 repeats every ~57 seconds.
+
+The layout is the Nexus one with a different constant nibble, the 40 bit
+variant has an additional constant nibble at the end:
+
+    [id0] [id1] [flags] [temp0] [temp1] [temp2] [const] [humi0] [humi1] ([const2])
+
+- The 8-bit id changes when the battery is changed in the sensor.
+- flags are 4 bits B T C C
+  - B is the battery status: 1=OK, 0=LOW
+  - T is Test mode (unconfirmed), 0=Normal, 1=Test
+  - CC is the channel: 0=CH1, 1=CH2, 2=CH3
+- temp is 12 bit signed scaled by 10
+- const is always 0101 (0x5), the Nexus protocol has 1111 (0xF)
+- humidity is 8 bits, always 0 on the 36 bit (temperature only) variant
+- const2 (40 bit variant only) is always 1010 (0xA)
+
+Examples:
+- `{36}da8f45500` is TS-8082 id 218, battery OK, channel 1, -18.7 C.
+- `{40}1e80ce53ea` is VOCOO 6202 id 30, battery OK, channel 1, 20.6 C, 62 %.
+
+Format strings:
+
+    ID:8d BATT:b TEST:b CH:2d TEMP:12d CONST:4h HUMI:8d
+    ID:8d BATT:b TEST:b CH:2d TEMP:12d CONST:4h HUMI:8d CONST2:4h
+
+There is no checksum. A message is only accepted with exactly 36 or 40 bits,
+at least 3 identical repeats, the constant nibbles (12 fixed bits on the
+36 bit variant including the zero humidity, 8 fixed bits on the 40 bit
+variant) and a plausible channel and humidity.
+*/
+static int nexus_ts808x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    int r = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
+    if (r < 0) {
+        return DECODE_ABORT_EARLY;
+    }
+
+    uint8_t *b = bitbuffer->bb[r];
+
+    // we expect 36 or 40 bits but there might be a trailing 0 bit
+    int bits    = bitbuffer->bits_per_row[r];
+    int is_th40 = 0;
+    if (bits == 40 || bits == 41) {
+        is_th40 = 1;
+    }
+    else if (bits != 36 && bits != 37) {
+        return DECODE_ABORT_LENGTH;
+    }
+
+    if ((b[3] & 0xf0) != 0x50) {
+        return DECODE_ABORT_EARLY; // const not 0101
+    }
+
+    if (is_th40 && (b[4] & 0x0f) != 0x0a) {
+        return DECODE_ABORT_EARLY; // const2 not 1010
+    }
+
+    if ((b[1] & 0x30) == 0x30) {
+        return DECODE_ABORT_EARLY; // channel not 1-3
+    }
+
+    int humidity = ((b[3] & 0x0f) << 4) | (b[4] >> 4);
+    if (!is_th40 && humidity != 0) {
+        decoder_logf(decoder, 2, __func__, "unexpected humidity on 36 bit variant: %d %%", humidity);
+        return DECODE_FAIL_SANITY;
+    }
+    if (humidity > 100) {
+        decoder_logf(decoder, 2, __func__, "implausible humidity: %d %%", humidity);
+        return DECODE_FAIL_SANITY;
+    }
+
+    int id       = b[0];
+    int battery  = b[1] & 0x80;
+    int testmode = b[1] & 0x40;
+    int channel  = ((b[1] & 0x30) >> 4) + 1;
+    int temp_raw = (int16_t)((b[1] << 12) | (b[2] << 4)); // sign-extend
+    float temp_c = (temp_raw >> 4) * 0.1f;
+
+    /* clang-format off */
+    data_t *data = data_make(
+            "model",         "",            DATA_STRING, is_th40 ? "Vocoo-6202" : "TS-808x",
+            "id",            "House Code",  DATA_INT,    id,
+            "channel",       "Channel",     DATA_INT,    channel,
+            "battery_ok",    "Battery",     DATA_INT,    !!battery,
+            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+            "humidity",      "Humidity",    DATA_COND,   is_th40,  DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "test",          "Test?",       DATA_COND,   testmode, DATA_INT,    !!testmode,
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
 static char const *const output_fields[] = {
         "model",
         "id",
@@ -248,4 +359,15 @@ r_device const nexus_sauna = {
         .decode_fn   = &nexus_sauna_decode,
         .priority    = 10, // Eliminate false positives by letting Rubicson-Temperature go earlier
         .fields      = sauna_output_fields,
+};
+
+r_device const nexus_ts808x = {
+        .name        = "TS-808x, Brifit, Oria, VOCOO 6202 temperature/humidity sensor (Nexus compatible, 36/40 bit)",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 1000,
+        .long_width  = 2000,
+        .gap_limit   = 3000,
+        .reset_limit = 5000,
+        .decode_fn   = &nexus_ts808x_decode,
+        .fields      = output_fields,
 };
