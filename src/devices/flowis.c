@@ -38,7 +38,16 @@ Message layout type 1 (0x15 bytes of length), 4-bit nibble:
 - ?  xb: unknown
 - C 16b: CRC-16 with poly=0x8005 and init=0xFFFF over data after sync
 
-Message type 2 uses same message syntax, length type, payload and checksum.
+Message type 2 uses the same length, type, meter ID and checksum fields.
+The payload is seven little-endian uint16 values in litres at byte offsets
+6, 8, 10, 12, 14, 16 and 18 (offset 0 is the length byte). These are monthly
+consumption values: the current calendar month followed by the six preceding
+months, newest first. The minimum payload length is 19 bytes, excluding the
+length byte and CRC. Output values are converted to m3.
+
+This layout was reverse engineered from FLOWIS+ meters. The monthly rotation
+was observed across October/November: October consumption moved from index 0
+to index 1. No timestamp, total counter or alarm fields are inferred for type 2.
 
 Type 2 messages usually contain long runs of zeros that might cause bitstream desyncs.
 
@@ -65,10 +74,14 @@ static int flowis_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY; // no preamble detected
     }
 
+    if (start_pos + (sizeof(preamble) + 1) * 8 > bitbuffer->bits_per_row[row]) {
+        return DECODE_ABORT_LENGTH; // missing length byte
+    }
+
     uint8_t len;
     bitbuffer_extract_bytes(bitbuffer, row, start_pos + sizeof (preamble) * 8, &len, 8);
 
-    if (start_pos + sizeof(preamble) * 8 + (len + 2) * 8 > bitbuffer->bits_per_row[row]) {
+    if (start_pos + sizeof(preamble) * 8 + (len + 3) * 8 > bitbuffer->bits_per_row[row]) {
         return DECODE_ABORT_LENGTH; // truncated message
     }
 
@@ -91,10 +104,40 @@ static int flowis_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t* b = frame;
     int type = b[1];
 
-    /* Only type 1 decoding is supported */
-    if (type != 1) return DECODE_ABORT_EARLY;
+    if (type != 1 && type != 2) {
+        return DECODE_ABORT_EARLY;
+    }
+    if ((type == 1 && len < 15) || (type == 2 && len < 19)) {
+        return DECODE_ABORT_LENGTH;
+    }
 
-    int id   = b[5] << 24 | b[4] << 16 | b[3] << 8 | b[2];
+    int id = b[5] << 24 | b[4] << 16 | b[3] << 8 | b[2];
+    if (type == 2) {
+        double consumption[7];
+        for (int month = 0; month < 7; ++month) {
+            int offset = 6 + month * 2;
+            consumption[month] = (b[offset] | b[offset + 1] << 8) / 1000.0;
+        }
+
+        /* clang-format off */
+        data_t *data = data_make(
+                "model",                    "",                    DATA_STRING, "Flowis",
+                "id",                       "Meter id",            DATA_INT,    id,
+                "msg_type",                 "Message Type",        DATA_INT,    type,
+                "consumption_month_0_m3",   "Current month",       DATA_FORMAT, "%.3f m3", DATA_DOUBLE, consumption[0],
+                "consumption_month_1_m3",   "1 month ago",         DATA_FORMAT, "%.3f m3", DATA_DOUBLE, consumption[1],
+                "consumption_month_2_m3",   "2 months ago",        DATA_FORMAT, "%.3f m3", DATA_DOUBLE, consumption[2],
+                "consumption_month_3_m3",   "3 months ago",        DATA_FORMAT, "%.3f m3", DATA_DOUBLE, consumption[3],
+                "consumption_month_4_m3",   "4 months ago",        DATA_FORMAT, "%.3f m3", DATA_DOUBLE, consumption[4],
+                "consumption_month_5_m3",   "5 months ago",        DATA_FORMAT, "%.3f m3", DATA_DOUBLE, consumption[5],
+                "consumption_month_6_m3",   "6 months ago",        DATA_FORMAT, "%.3f m3", DATA_DOUBLE, consumption[6],
+                "mic",                      "Integrity",           DATA_STRING, "CRC",
+                NULL);
+        /* clang-format on */
+
+        decoder_output_data(decoder, data);
+        return 1;
+    }
     int volume = b[13] << 16 | b[12] << 8 | b[11];
 
     int fts_year = b[10] >> 2;
@@ -131,6 +174,13 @@ static char const *const output_fields[] = {
         "device_time",
         "alarm",
         "backflow",
+        "consumption_month_0_m3",
+        "consumption_month_1_m3",
+        "consumption_month_2_m3",
+        "consumption_month_3_m3",
+        "consumption_month_4_m3",
+        "consumption_month_5_m3",
+        "consumption_month_6_m3",
         "mic",
         NULL,
 };
