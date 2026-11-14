@@ -766,7 +766,29 @@ mappings = {
         "device_type": "sensor",
         "object_suffix": "consumption",
         "config": {
+            "name": "Consumption Value",
+            "value_template": "{{ value|int }}",
+            "state_class": "total_increasing",
+        }
+    },
+
+    # SCMplus and IDM/NETIDM emit capitalised keys; drop these once the
+    # decoders move to the lower case convention.
+    "Consumption": {
+        "device_type": "sensor",
+        "object_suffix": "consumption",
+        "config": {
             "name": "SCMplus Consumption Value",
+            "value_template": "{{ value|int }}",
+            "state_class": "total_increasing",
+        }
+    },
+
+    "LastConsumptionCount": {
+        "device_type": "sensor",
+        "object_suffix": "consumption",
+        "config": {
+            "name": "IDM Consumption Value",
             "value_template": "{{ value|int }}",
             "state_class": "total_increasing",
         }
