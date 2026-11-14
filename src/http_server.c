@@ -411,17 +411,23 @@ static int json_parse(rpc_t *rpc, struct mg_str const *json)
     /* Loop over all keys of the root object */
     for (i = 1; i < r; i++) {
         if (jsoneq(json->p, &t[i], "cmd") == 0) {
-            i++;
+            if (++i >= r) {
+                break; // a key without a value: jsmn is not strict, {"cmd"} parses
+            }
             free(cmd);
             cmd = jsondup(json->p, &t[i]);
         }
         else if (jsoneq(json->p, &t[i], "arg") == 0) {
-            i++;
+            if (++i >= r) {
+                break; // a key without a value: jsmn is not strict, {"cmd"} parses
+            }
             free(arg);
             arg = jsondup(json->p, &t[i]);
         }
         else if (jsoneq(json->p, &t[i], "val") == 0) {
-            i++;
+            if (++i >= r) {
+                break; // a key without a value: jsmn is not strict, {"cmd"} parses
+            }
             char *endptr = NULL;
             val = strtol(json->p + t[i].start, &endptr, 10);
             // compare endptr to t[i].end
@@ -469,16 +475,22 @@ static int jsonrpc_parse(rpc_t *rpc, struct mg_str const *json)
     /* Loop over all keys of the root object */
     for (int i = 1; i < r; i++) {
         if (jsoneq(json->p, &t[i], "jsonrpc") == 0) {
-            i++;
+            if (++i >= r) {
+                break; // a key without a value: jsmn is not strict, {"cmd"} parses
+            }
             // (jsoneq(json->p, &t[i], "2.0") == 0);
         }
         else if (jsoneq(json->p, &t[i], "method") == 0) {
-            i++;
+            if (++i >= r) {
+                break; // a key without a value: jsmn is not strict, {"cmd"} parses
+            }
             free(cmd);
             cmd = jsondup(json->p, &t[i]);
         }
         else if (jsoneq(json->p, &t[i], "id") == 0) {
-            i++;
+            if (++i >= r) {
+                break; // a key without a value: jsmn is not strict, {"cmd"} parses
+            }
             if (t[i].type == JSMN_STRING) {
                 free(id);
                 id = jsondupq(json->p, &t[i]);
@@ -490,10 +502,11 @@ static int jsonrpc_parse(rpc_t *rpc, struct mg_str const *json)
         }
         else if (jsoneq(json->p, &t[i], "params") == 0) {
             //printf("- Params:\n");
-            if (t[i + 1].type != JSMN_ARRAY) {
+            if (i + 1 >= r || t[i + 1].type != JSMN_ARRAY) {
                 continue; /* We expect groups to be an array of strings */
             }
-            for (int j = 0; j < t[i + 1].size; j++) {
+            // the array size is its element count, not a token count: stop at the parsed tokens
+            for (int j = 0; j < t[i + 1].size && i + j + 2 < r; j++) {
                 jsmntok_t *g = &t[i + j + 2];
                 if (g->type == JSMN_STRING) {
                     free(arg);
