@@ -30,15 +30,15 @@ enum pulse_detect_events {
     PULSE_DETECT_OOK,   ///< Complete envelope pulse train.
     PULSE_DETECT_START, ///< New envelope package; reset downstream detectors.
     PULSE_DETECT_PULSE, ///< Confirmed gap, or end-of-input while inside a pulse.
-    PULSE_DETECT_RESTART, ///< Second pulse after a short lead-in; restart downstream detectors on it.
-    PULSE_DETECT_RETRY, ///< New pulse after pulse_detect_retry_fsk(); restart downstream detectors on it.
+    PULSE_DETECT_RESTART, ///< New pulse in the package; restart downstream detectors on it.
 };
 
-/// Newly consumed samples of the carrier pulse used for FSK detection, including short gaps.
-/// This is the first pulse, or the pulse after PULSE_DETECT_RESTART or PULSE_DETECT_RETRY.
+/// Newly consumed samples of the current carrier pulse, including short gaps.
+/// Every pulse is spanned, starting at PULSE_DETECT_START or PULSE_DETECT_RESTART.
 typedef struct {
-    unsigned start; ///< Index in the current input buffer.
-    unsigned len;   ///< Sample count; never extends beyond the current buffer.
+    unsigned start;       ///< Index in the current input buffer.
+    unsigned len;         ///< Sample count; never extends beyond the current buffer.
+    unsigned pulse_start; ///< Samples from the package start to the start of this pulse.
 } pulse_detect_span_t;
 
 typedef struct pulse_detect pulse_detect_t;
@@ -50,14 +50,11 @@ void pulse_detect_free(pulse_detect_t *pulse_detect);
 /// Reset pulse detector to initial values.
 void pulse_detect_reset(pulse_detect_t *pulse_detect);
 
-/// Accept a carrier package at PULSE_DETECT_PULSE and discard its OOK envelope.
+/// Accept a carrier package at PULSE_DETECT_PULSE and end the OOK envelope package.
 /// Preserves level estimates and resumes at the gap boundary in the same buffer.
+/// The pulse data is left unchanged, the pulses before the carrier pulse can still
+/// be used as an OOK package until the next call to pulse_detect_package().
 void pulse_detect_skip_package(pulse_detect_t *pulse_detect);
-
-/// Reject a carrier package at PULSE_DETECT_PULSE and keep the OOK envelope, but
-/// span the next pulse of this package for FSK detection again, signalled with
-/// PULSE_DETECT_RETRY. Only one retry per package, later calls are ignored.
-void pulse_detect_retry_fsk(pulse_detect_t *pulse_detect);
 
 /// Set pulse detector level values.
 ///
