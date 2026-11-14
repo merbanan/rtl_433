@@ -188,6 +188,13 @@ r_cfg_t *r_create_cfg(void)
     return cfg;
 }
 
+static void silenced_handler(struct mg_connection *nc, int ev, void *ev_data)
+{
+    UNUSED(nc);
+    UNUSED(ev);
+    UNUSED(ev_data);
+}
+
 void r_free_cfg(r_cfg_t *cfg)
 {
     if (cfg->dev) {
@@ -236,6 +243,13 @@ void r_free_cfg(r_cfg_t *cfg)
     free(cfg->devices);
     cfg->devices = NULL;
 
+    // mg_mgr_free() polls once more and closes every connection through its handler, but the state
+    // those handlers use (outputs, the demod, cfg's timer) is freed by now: silence them first
+    if (cfg->mgr) {
+        for (struct mg_connection *nc = mg_next(cfg->mgr, NULL); nc != NULL; nc = mg_next(cfg->mgr, nc)) {
+            nc->handler = silenced_handler;
+        }
+    }
     mg_mgr_free(cfg->mgr);
     free(cfg->mgr);
     cfg->mgr = NULL;
