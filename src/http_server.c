@@ -725,9 +725,26 @@ struct http_server_context {
     ring_list_t *history;
 };
 
-struct nc_context {
-    int is_chunked;
+/// What an accepted connection receives besides replies to its own requests.
+enum nc_mode {
+    NC_MODE_HTTP = 0, ///< nothing: plain request/response (keep-alive included)
+    NC_MODE_EVENTS,   ///< /events: every event as an HTTP chunk
+    NC_MODE_STREAM,   ///< /stream: every event as a raw line
 };
+
+/// Per-connection state, set up on MG_EV_ACCEPT and freed on MG_EV_CLOSE (or when the server stops).
+/// The listener's user_data is the server context and accepted connections inherit it from there,
+/// so the listener (MG_F_LISTENING) never has one of these and must not be treated as having one.
+struct nc_context {
+    struct http_server_context *server; ///< the server that accepted this connection
+    enum nc_mode mode;
+};
+
+static struct http_server_context *nc_server(struct mg_connection *nc)
+{
+    struct nc_context *cctx = nc->user_data;
+    return cctx ? cctx->server : NULL;
+}
 
 static void handle_options(struct mg_connection *nc, struct http_message *hm)
 {
@@ -784,7 +801,7 @@ static void handle_openmetrics(struct mg_connection *nc, struct http_message *hm
         return;
     }
 
-    struct http_server_context *ctx = nc->user_data;
+    struct http_server_context *ctx = nc_server(nc);
     r_cfg_t *cfg = ctx->cfg;
 
     time_t now;
@@ -961,13 +978,8 @@ static void handle_json_events(struct mg_connection *nc, struct http_message *hm
     mg_printf(nc, "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
 
     /* Mark connection */
-    struct nc_context *ctx = calloc(1, sizeof(*ctx));
-    if (!ctx) {
-        WARN_CALLOC("handle_json_events()");
-        return;
-    }
-    ctx->is_chunked = 1;
-    nc->user_data   = ctx;
+    struct nc_context *cctx = nc->user_data;
+    cctx->mode = NC_MODE_EVENTS;
 
     mg_set_timer(nc, mg_time() + KEEP_ALIVE); // set keep alive timer
 }
@@ -980,13 +992,8 @@ static void handle_json_stream(struct mg_connection *nc, struct http_message *hm
     mg_printf(nc, "HTTP/1.1 200 OK\r\n\r\n");
 
     /* Mark connection */
-    struct nc_context *ctx = calloc(1, sizeof(*ctx));
-    if (!ctx) {
-        WARN_CALLOC("handle_json_stream()");
-        return;
-    }
-    ctx->is_chunked = 0;
-    nc->user_data   = ctx;
+    struct nc_context *cctx = nc->user_data;
+    cctx->mode = NC_MODE_STREAM;
 
     mg_set_timer(nc, mg_time() + KEEP_ALIVE); // set keep alive timer
 }
@@ -1001,7 +1008,7 @@ static void handle_json_stream(struct mg_connection *nc, struct http_message *hm
 // xh :8433/cmd cmd==gain arg==10
 static void handle_cmd_rpc(struct mg_connection *nc, struct http_message *hm)
 {
-    struct http_server_context *ctx = nc->user_data;
+    struct http_server_context *ctx = nc_server(nc);
     char cmd[100], arg[100], val[100];
     rpc_t rpc = {
             .nc = nc,
@@ -1036,7 +1043,7 @@ static void handle_cmd_rpc(struct mg_connection *nc, struct http_message *hm)
 // http POST :8433/jsonrpc jsonrpc=2.0 method=sample_rate params:='[1024000]'
 static void handle_json_rpc(struct mg_connection *nc, struct http_message *hm)
 {
-    struct http_server_context *ctx = nc->user_data;
+    struct http_server_context *ctx = nc_server(nc);
 
     rpc_t rpc = {
             .nc       = nc,
@@ -1064,7 +1071,7 @@ static void handle_json_rpc(struct mg_connection *nc, struct http_message *hm)
 // Handles WS with JSON command
 static void handle_ws_rpc(struct mg_connection *nc, struct websocket_message *wm)
 {
-    struct http_server_context *ctx = nc->user_data;
+    struct http_server_context *ctx = nc_server(nc);
 
     rpc_t rpc = {
             .nc       = nc,
@@ -1096,28 +1103,61 @@ static void send_keep_alive(struct mg_connection *nc)
         return; // this should not happen
     }
 
-    struct nc_context *ctx = nc->user_data;
-    if (!ctx) {
+    struct nc_context *cctx = nc->user_data;
+    if (!cctx) {
         return; // this should not happen
     }
 
-    if (ctx->is_chunked) {
+    if (cctx->mode == NC_MODE_EVENTS) {
         mg_send_http_chunk(nc, "\r\n", 2);
     }
-    else {
+    else if (cctx->mode == NC_MODE_STREAM) {
         mg_send(nc, "\r\n", 2);
+    }
+    else {
+        return; // not streaming: no keep alive
     }
     mg_set_timer(nc, mg_time() + KEEP_ALIVE); // reset keep alive timer
 }
 
 static void ev_handler(struct mg_connection *nc, int ev, void *ev_data)
 {
+    if (nc->flags & MG_F_LISTENING) {
+        return; // the listener only accepts; its user_data is the server context, not a nc_context
+    }
+    if (ev == MG_EV_ACCEPT) {
+        struct nc_context *cctx = calloc(1, sizeof(*cctx));
+        if (!cctx) {
+            WARN_CALLOC("ev_handler()");
+            nc->user_data = NULL;
+            nc->flags |= MG_F_CLOSE_IMMEDIATELY;
+            return;
+        }
+        cctx->server  = nc->user_data; // inherited from the listener
+        cctx->mode    = NC_MODE_HTTP;
+        nc->user_data = cctx;
+        return;
+    }
+    if (ev == MG_EV_CLOSE) {
+        //fprintf(stderr, "MG_EV_CLOSE %p %p %p\n", ev_data, nc, nc->user_data);
+        free(nc->user_data);
+        nc->user_data = NULL;
+        return;
+    }
+    if (!nc_server(nc)) {
+        // the context allocation failed: no requests on this connection
+        if (ev == MG_EV_HTTP_REQUEST || ev == MG_EV_WEBSOCKET_FRAME) {
+            nc->flags |= MG_F_SEND_AND_CLOSE;
+        }
+        return;
+    }
+
     switch (ev) {
     case MG_EV_TIMER:
         send_keep_alive(nc);
         break;
     case MG_EV_WEBSOCKET_HANDSHAKE_DONE: {
-        struct http_server_context *ctx = nc->user_data;
+        struct http_server_context *ctx = nc_server(nc);
         /* New websocket connection. Send meta. */
         data_t *meta = meta_data(ctx->cfg);
         data_output_print(ctx->output, meta);
@@ -1165,15 +1205,12 @@ static void ev_handler(struct mg_connection *nc, int ev, void *ev_data)
         }
 #ifdef SERVE_STATIC
         else {
-            struct http_server_context *ctx = nc->user_data;
+            struct http_server_context *ctx = nc_server(nc);
             mg_serve_http(nc, hm, ctx->server_opts); /* Serve static content */
         }
 #endif
         break;
     }
-    case MG_EV_CLOSE:
-        //fprintf(stderr, "MG_EV_CLOSE %p %p %p\n", ev_data, nc, nc->user_data);
-        break;
     default:
         break;
     }
@@ -1198,21 +1235,26 @@ static void http_broadcast_send(struct http_server_context *ctx, char const *msg
         free(ring_list_push(ctx->history, dup));
     }
 
+    // Only to this server's subscribers: WebSockets and /events or /stream. Never the listener, whose
+    // send buffer is never drained, and never plain HTTP connections, whose replies events would corrupt.
     for (nc = mg_next(mgr, NULL); nc != NULL; nc = mg_next(mgr, nc)) {
-        if (nc->handler != ev_handler) {
+        if (nc->handler != ev_handler || (nc->flags & MG_F_LISTENING)) {
             continue;
         }
 
-        struct nc_context *cctx = nc->user_data; // might not be valid
+        struct nc_context *cctx = nc->user_data;
+        if (!cctx || cctx->server != ctx) {
+            continue;
+        }
         if (is_websocket(nc)) {
             mg_send_websocket_frame(nc, WEBSOCKET_OP_TEXT, msg, len);
         }
-        else if (cctx && cctx->is_chunked) {
+        else if (cctx->mode == NC_MODE_EVENTS) {
             mg_send_http_chunk(nc, msg, len);
             mg_send_http_chunk(nc, "\r\n", 2);
             mg_set_timer(nc, mg_time() + KEEP_ALIVE); // reset keep alive timer
         }
-        else if (cctx && !cctx->is_chunked) {
+        else if (cctx->mode == NC_MODE_STREAM) {
             mg_send(nc, msg, len);
             mg_send(nc, "\r\n", 2);
             mg_set_timer(nc, mg_time() + KEEP_ALIVE); // reset keep alive timer
@@ -1271,6 +1313,14 @@ static struct http_server_context *http_server_start(struct mg_mgr *mgr, char co
 
 #define SHUTDOWN_JSON "{\"shutdown\":\"goodbye\"}"
 
+// A stopped server's connections only flush what is queued (the goodbye) and close: nothing of ours runs
+static void stopped_handler(struct mg_connection *nc, int ev, void *ev_data)
+{
+    UNUSED(nc);
+    UNUSED(ev);
+    UNUSED(ev_data);
+}
+
 static int http_server_stop(struct http_server_context *ctx)
 {
     if (!ctx) {
@@ -1279,28 +1329,38 @@ static int http_server_stop(struct http_server_context *ctx)
 
     // close the server
     ctx->conn->user_data = NULL;
+    ctx->conn->handler   = stopped_handler;
     ctx->conn->flags |= MG_F_CLOSE_IMMEDIATELY;
 
     // close connections with a goodbye
     struct mg_mgr *mgr = ctx->conn->mgr;
     for (struct mg_connection *nc = mg_next(mgr, NULL); nc != NULL; nc = mg_next(mgr, nc)) {
-        if (nc->handler != ev_handler) {
+        if (nc->handler != ev_handler || (nc->flags & MG_F_LISTENING)) {
             continue;
         }
 
-        struct nc_context *cctx = nc->user_data; // might not be valid
+        struct nc_context *cctx = nc->user_data;
+        if (!cctx || cctx->server != ctx) {
+            continue;
+        }
         if (is_websocket(nc)) {
             mg_send_websocket_frame(nc, WEBSOCKET_OP_TEXT, SHUTDOWN_JSON, sizeof(SHUTDOWN_JSON) - 1);
         }
-        else if (cctx && cctx->is_chunked) {
+        else if (cctx->mode == NC_MODE_EVENTS) {
             mg_send_http_chunk(nc, SHUTDOWN_JSON, sizeof(SHUTDOWN_JSON) - 1);
             mg_send_http_chunk(nc, "\r\n", 2);
             mg_send_http_chunk(nc, "", 0);            /* Send empty chunk, the end of response */
         }
-        else if (cctx && !cctx->is_chunked) {
+        else if (cctx->mode == NC_MODE_STREAM) {
             mg_send(nc, SHUTDOWN_JSON, sizeof(SHUTDOWN_JSON) - 1);
             mg_send(nc, "\r\n", 2);
         }
+        // ctx is freed below and the caller may free the rest before the next poll: close the connection
+        // once the goodbye is out, and let nothing of ours run on it again
+        nc->flags |= MG_F_SEND_AND_CLOSE;
+        nc->handler   = stopped_handler;
+        nc->user_data = NULL;
+        free(cctx);
     }
 
     for (void **iter = ring_list_iter(ctx->history); iter; iter = ring_list_next(ctx->history, iter))
