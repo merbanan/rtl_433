@@ -691,20 +691,30 @@ static void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
         if (!rpc->arg) {
             rpc->response(rpc, -1, "Missing arg", 0);
         }
-        set_gain_str(cfg, rpc->arg);
-        rpc->response(rpc, 0, "Ok", 0);
+        else {
+            set_gain_str(cfg, rpc->arg);
+            rpc->response(rpc, 0, "Ok", 0);
+        }
     }
     else if (!strcmp(rpc->method, "center_frequency")) {
         set_center_freq(cfg, rpc->val);
         rpc->response(rpc, 0, "Ok", 0);
     }
     else if (!strcmp(rpc->method, "ppm_error")) {
-        set_freq_correction(cfg, rpc->val);
-        rpc->response(rpc, 0, "Ok", 0);
+        if (set_freq_correction(cfg, rpc->val) < 0) {
+            rpc->response(rpc, -1, "Frequency correction failed", 0);
+        }
+        else {
+            rpc->response(rpc, 0, "Ok", 0);
+        }
     }
     else if (!strcmp(rpc->method, "sample_rate")) {
-        set_sample_rate(cfg, rpc->val);
-        rpc->response(rpc, 0, "Ok", 0);
+        if (set_sample_rate(cfg, rpc->val) < 0) {
+            rpc->response(rpc, -1, "Sample rate failed", 0);
+        }
+        else {
+            rpc->response(rpc, 0, "Ok", 0);
+        }
     }
 
     // Invalid
@@ -1052,8 +1062,8 @@ static void handle_json_rpc(struct mg_connection *nc, struct http_message *hm)
         rpc_exec(&rpc, ctx->cfg);
     }
     else {
-        char *error = "{\"error\":\"Invalid command\"}";
-        mg_send_websocket_frame(nc, WEBSOCKET_OP_TEXT, error, strlen(error));
+        // a JSON-RPC error in the chunked reply, not a WebSocket frame on an HTTP connection
+        rpc.response(&rpc, -1, "Invalid command", 0);
     }
 
     free(rpc.method);
