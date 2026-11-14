@@ -1319,6 +1319,7 @@ static int start_sdr(r_cfg_t *cfg)
 {
     int r;
     if (cfg->dev) {
+        cfg->dev_info = NULL; // owned by the dev: do not leave it dangling if the reopen fails
         r = sdr_close(cfg->dev);
         cfg->dev = NULL;
         if (r < 0) {
@@ -1329,6 +1330,10 @@ static int start_sdr(r_cfg_t *cfg)
     if (r < 0) {
         return -1; // exit(2);
     }
+    // A reopened device often comes back at the same rate and frequency, so process_sdr_frame() sees
+    // no change and resets nothing: start the filters and the pulse detector from scratch instead of
+    // carrying a half-seen pulse across the gap
+    reset_sdr_flow(cfg);
     cfg->dev_info = sdr_get_dev_info(cfg->dev);
     cfg->demod->sample_size = sdr_get_sample_size(cfg->dev);
     // cfg->demod->sample_signed = sdr_get_sample_signed(cfg->dev);
@@ -1360,7 +1365,9 @@ static int start_sdr(r_cfg_t *cfg)
         print_log(LOG_NOTICE, "Input", "Reading samples in async mode...");
     }
 
-    sdr_set_center_freq(cfg->dev, cfg->center_frequency, 1); // always verbose
+    // not center_frequency: that is the last frequency that delivered data, stale after a retune or a hop
+    // made while the device was away
+    sdr_set_center_freq(cfg->dev, cfg->frequency[cfg->frequency_index], 1); // always verbose
 
     r = sdr_start(cfg->dev, acquire_callback, (void *)get_mgr(cfg),
             DEFAULT_ASYNC_BUF_NUMBER, cfg->out_block_size);

@@ -535,7 +535,12 @@ static void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
         rpc->response(rpc, 0, cfg->dev_query, 0);
     }
     else if (!strcmp(rpc->method, "get_dev_info")) {
-        rpc->response(rpc, 1, cfg->dev_info, 0);
+        if (!cfg->dev_info) {
+            rpc->response(rpc, 0, NULL, 0); // no device open: {"result": null}
+        }
+        else {
+            rpc->response(rpc, 1, cfg->dev_info, 0);
+        }
     }
     else if (!strcmp(rpc->method, "get_gain")) {
         rpc->response(rpc, 0, cfg->gain_str, 0);
