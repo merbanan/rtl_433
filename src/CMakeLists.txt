@@ -168,6 +168,7 @@ add_library(r_433 STATIC
     devices/baldr_hcs528arf.c
     devices/baldr_rain.c
     devices/baldr_therm.c
+    devices/baylan_um1.c
     devices/blueline.c
     devices/blyss.c
     devices/bm5.c
