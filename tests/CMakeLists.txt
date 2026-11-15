@@ -148,6 +148,18 @@ if(UNIX)
     else()
         message(STATUS "Skipping http_server_integration test (need sh and curl)")
     endif()
+    # Black-box test of the MQTT client against a scripted fake broker that
+    # doesn't accept the connection.
+    if(PYTHON3_PROGRAM)
+        add_test(
+            NAME mqtt_reconnect
+            COMMAND ${PYTHON3_PROGRAM}
+                ${CMAKE_CURRENT_SOURCE_DIR}/mqtt-reconnect-test.py
+                $<TARGET_FILE:rtl_433>
+                connack_timeout connack_rejected)
+    else()
+        message(STATUS "Skipping mqtt_reconnect tests (need python3)")
+    endif()
 endif()
 
 ########################################################################

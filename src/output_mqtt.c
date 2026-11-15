@@ -155,7 +155,12 @@ typedef struct mqtt_client {
     int publish_flags; // MG_MQTT_RETAIN | MG_MQTT_QOS(0)
     unsigned qos;
     inflight_t inflight;
+    int connack_ok;      // CONNACK accepted on the current connection
+    double connect_time; // when the current TCP connection came up
 } mqtt_client_t;
+
+// Seconds to wait for a CONNACK after the TCP connection is up.
+#define MQTT_CONNACK_TIMEOUT 10
 
 char const *mqtt_availability_online  = "online";
 char const *mqtt_availability_offline = "offline";
@@ -178,7 +183,10 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
             print_log(LOG_NOTICE, "MQTT", "MQTT Connected...");
             mg_set_protocol_mqtt(nc);
             if (ctx) {
-                ctx->reconnect_delay = 0;
+                // Don't reset reconnect_delay yet: a local proxy may accept the
+                // TCP connection even when the broker is unreachable.
+                ctx->connack_ok   = 0;
+                ctx->connect_time = mg_time();
                 mg_send_mqtt_handshake_opt(nc, ctx->client_id, ctx->mqtt_opts);
 
                 // Send us MG_EV_TIMER event after 500 milliseconds
@@ -199,9 +207,12 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
     case MG_EV_MQTT_CONNACK:
         if (msg->connack_ret_code != MG_EV_MQTT_CONNACK_ACCEPTED) {
             print_logf(LOG_WARNING, "MQTT", "MQTT Connection error: %u", msg->connack_ret_code);
+            nc->flags |= MG_F_CLOSE_IMMEDIATELY; // reconnect
         }
         else {
             print_log(LOG_NOTICE, "MQTT", "MQTT Connection established.");
+            ctx->connack_ok      = 1;
+            ctx->reconnect_delay = 0;
             if (ctx->mqtt_opts.will_topic) {
                 ctx->message_id++;
                 mg_mqtt_publish(ctx->conn, ctx->mqtt_opts.will_topic, ctx->message_id, MG_MQTT_QOS(0) | MG_MQTT_RETAIN, mqtt_availability_online, strlen(mqtt_availability_online));
@@ -309,6 +320,15 @@ static void mqtt_client_timer(struct mg_connection *nc, int ev, void *ev_data)
             mg_set_timer(nc, next); // Send us timer event again after 500 milliseconds
 
             if (!ctx->conn || !ctx->conn->proto_handler) {
+                break;
+            }
+
+            // Drop a connection that never got a CONNACK, e.g. when a proxy
+            // accepted the TCP connection but has no route to the broker.
+            // MG_EV_CLOSE then reconnects.
+            if (!ctx->connack_ok && now - ctx->connect_time > MQTT_CONNACK_TIMEOUT) {
+                print_logf(LOG_WARNING, "MQTT", "MQTT no CONNACK from broker in %d seconds", MQTT_CONNACK_TIMEOUT);
+                ctx->conn->flags |= MG_F_CLOSE_IMMEDIATELY;
                 break;
             }
 
