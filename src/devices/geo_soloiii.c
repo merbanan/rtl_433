@@ -228,7 +228,7 @@ static int geo_solo3_a_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t
             "model",        "",             DATA_STRING, "GEO-SoloIII A",
             "id",           "",             DATA_STRING, id,
             "gPower_W",     "Live Gen",     DATA_FORMAT, "%u", DATA_INT, generatingPower,
-            "gPower_W",     "Live Usage",   DATA_FORMAT, "%u", DATA_INT, usagePower,
+            "uPower_W",     "Live Usage",   DATA_FORMAT, "%u", DATA_INT, usagePower,
             "uEnergy_Wh",   "Total Usage",  DATA_FORMAT, "%u", DATA_INT, usageEnergy,
             "gEnergy_Wh",   "Total Gen",    DATA_FORMAT, "%u", DATA_INT, generationEnergy,
             "iEnergy_Wh",   "Total Import", DATA_FORMAT, "%u", DATA_INT, importEnergy,
