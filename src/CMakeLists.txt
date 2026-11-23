@@ -254,6 +254,7 @@ add_library(r_433 STATIC
     devices/florabest.c
     devices/flowis.c
     devices/fordremote.c
+    devices/forever_young_rth11.c
     devices/fs20.c
     devices/fsl_scoreboard.c
     devices/ft004b.c
