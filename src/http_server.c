@@ -540,7 +540,10 @@ static int jsonrpc_parse(rpc_t *rpc, struct mg_str const *json)
 
 static void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
 {
-    if (!rpc || !rpc->method || !*rpc->method) {
+    if (!rpc) {
+        // Do not dereference NULL pointer.
+        return;
+    } else if (!rpc->method || !*rpc->method) {
         rpc->response(rpc, -1, "Method invalid", 0);
     }
     // Getter
