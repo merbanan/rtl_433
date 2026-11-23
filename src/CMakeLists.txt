@@ -471,6 +471,7 @@ add_library(r_433 STATIC
     devices/watts_thermostat.c
     devices/watts_vision.c
     devices/watts_wfht_rf.c
+    devices/wattsclever.c
     devices/waveman.c
     devices/wec2103.c
     devices/wg_pb12v1.c
