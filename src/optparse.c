@@ -429,6 +429,9 @@ char *trim_ws(char *str)
     while (*str == ' ' || *str == '\t' || *str == '\r' || *str == '\n') {
         ++str;
     }
+    if (!*str) {
+        return str; // only whitespace, nothing to cut
+    }
     char *e = str; // end pointer (last non ws)
     char *p = str; // scanning pointer
     while (*p) {
@@ -518,6 +521,13 @@ int main(void)
     ASSERT_EQUALS(atoi_time("02:03:04", ""), 2 * 60 * 60 + 3 * 60 + 4);
     ASSERT_EQUALS(atoi_time(" 2 : 3 ", ""), 2 * 60 * 60 + 3 * 60);
     ASSERT_EQUALS(atoi_time(" 2 : 3 : 4 ", ""), 2 * 60 * 60 + 3 * 60 + 4);
+
+    fprintf(stderr, "optparse:: trim_ws\n");
+    char trim_buf[] = " a b \0next";
+    ASSERT_EQUALS(strcmp(trim_ws(trim_buf), "a b"), 0);
+    char trim_space[] = "  \0next";
+    ASSERT_EQUALS(*trim_ws(trim_space), '\0');
+    ASSERT_EQUALS(trim_space[3], 'n');
 
     fprintf(stderr, "optparse:: test (%u/%u) passed, (%u) failed.\n", passed, passed + failed, failed);
 
