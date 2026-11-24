@@ -143,7 +143,12 @@ static void render_getters(data_t *data, uint8_t *bits, struct flex_params *para
         }
         if (!getter->map[m].val[0]) {
             char const *format = getter->format[0] ? getter->format : NULL;
-            data_int(data, getter->name, "", format, val);
+            if (format && format[0] == '%' && format[1] == '=') {
+                // expand special custom format of "%=FOO" to "FOO"
+                data_str(data, getter->name, "", NULL, &format[2]);
+            } else {
+                data_int(data, getter->name, "", format, val);
+            }
         }
     }
 }
