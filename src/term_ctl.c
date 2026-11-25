@@ -215,11 +215,14 @@ int term_get_columns(void *ctx)
     if (!GetConsoleScreenBufferInfo(console->hnd, &c_info))
        return (80);
     return (c_info.srWindow.Right - c_info.srWindow.Left + 1);
-#else
+#elif defined(TIOCGWINSZ)
     FILE *fp = (FILE *)ctx;
     struct winsize w;
     ioctl(fileno(fp), TIOCGWINSZ, &w);
     return w.ws_col;
+#else
+    (void)ctx;
+    return 80; // no terminal size, e.g. on ESP-IDF
 #endif
 }
 

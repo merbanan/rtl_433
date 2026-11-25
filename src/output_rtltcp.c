@@ -68,10 +68,8 @@
         fprintf(stderr, "Winsock error %d.\n", WSAGetLastError());
     }
 #endif
-#ifdef ESP32
-    #include <tcpip_adapter.h>
-    #define _POSIX_HOST_NAME_MAX 128
-    #define gai_strerror strerror
+#ifdef ESP_PLATFORM
+    #include "compat_esp.h"
 #endif
 
 #ifdef _MSC_VER

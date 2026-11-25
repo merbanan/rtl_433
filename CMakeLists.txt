@@ -1,4 +1,46 @@
 ########################################################################
+# ESP-IDF component
+########################################################################
+# In an ESP-IDF project (in its components/ directory or through the component
+# manager) rtl_433 builds as a component library, with rtl_433_main() in place
+# of main(). With the esp_rtl_sdr component in the build, the RTL-SDR dongle on
+# the ESP32-P4 USB host port is the default input (src/sdr_esp.c); rtl_tcp
+# input works either way.
+# esp_rtl_sdr is AGPL-3.0-only: a firmware that links it is AGPL-3.0 as a whole.
+if(ESP_PLATFORM)
+    file(GLOB R433_SRCS "src/*.c" "src/devices/*.c")
+    set(R433_REQUIRES pthread lwip esp_netif freertos)
+    idf_build_get_property(R433_BUILD_COMPONENTS BUILD_COMPONENTS)
+    if("esp_rtl_sdr" IN_LIST R433_BUILD_COMPONENTS)
+        list(APPEND R433_REQUIRES esp_rtl_sdr)
+    endif()
+
+    idf_component_register(
+        SRCS ${R433_SRCS}
+        INCLUDE_DIRS "include"
+        PRIV_REQUIRES ${R433_REQUIRES})
+
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE
+        THREADS _GNU_SOURCE
+        MG_ENABLE_FILESYSTEM=1 MG_ENABLE_HTTP_CGI=0 MG_ENABLE_DIRECTORY_LISTING=0 MG_ENABLE_BROADCAST=1
+        # mg_broadcast() sends one sdr_event_t; the default 8 KB message lives on the stack of every caller
+        MG_CTL_MSG_MESSAGE_SIZE=64
+        # the demodulator state holds buffers this many samples long; the default would not fit in RAM
+        "MAXIMAL_BUF_LENGTH=(16 * 16384)")
+    if("esp_rtl_sdr" IN_LIST R433_BUILD_COMPONENTS)
+        target_compile_definitions(${COMPONENT_LIB} PRIVATE ESP_RTL_SDR)
+    endif()
+    if(CONFIG_LWIP_IPV6)
+        target_compile_definitions(${COMPONENT_LIB} PRIVATE MG_ENABLE_IPV6=1)
+    endif()
+    # uint32_t is unsigned long on ESP-IDF, so the many "%u" formats warn, and
+    # ESP-IDF turns -Wall warnings into errors, which the desktop build does not
+    target_compile_options(${COMPONENT_LIB} PRIVATE -Wno-format -Wno-error)
+    set_source_files_properties("src/rtl_433.c" PROPERTIES COMPILE_DEFINITIONS "main=rtl_433_main")
+    return()
+endif()
+
+########################################################################
 # Project setup
 ########################################################################
 cmake_minimum_required(VERSION 2.6...3.10)

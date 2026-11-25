@@ -220,3 +220,19 @@ SET(Threads_FOUND TRUE)
 * good luck!
 
 If your system is missing or you find these steps are outdated please PR an update or open an issue.
+
+## ESP-IDF
+
+rtl_433 builds as an ESP-IDF component: put the source tree in your project's `components/` directory
+(e.g. as `components/rtl_433`). It builds as a library, and your application starts it with
+`rtl_433_main(argc, argv)` in place of `main()`, on a task of its own with a large stack.
+Network outputs (HTTP, MQTT, syslog, rtl_tcp) need the network up first.
+
+With the esp_rtl_sdr driver component in the build, an RTL-SDR dongle
+on the USB host port of an ESP32-P4 is the default input (`-d esp`, or `-d esp:<serial>` to pick one dongle).
+Without it, use `-d rtl_tcp:host:port`.
+Supported sample rates are 225k to 300k and 900k to 3.2M; the demodulator buffers are sized for
+up to 16 * 16384 samples per block (`MAXIMAL_BUF_LENGTH`).
+
+esp_rtl_sdr is licensed AGPL-3.0-only. A firmware that links it is licensed AGPL-3.0 as a whole;
+rtl_433 itself stays GPL-2.0-or-later.

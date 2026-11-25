@@ -223,6 +223,10 @@ static void help_device_selection(void)
             "  [-d \"\"] Open default SoapySDR device\n"
             "  [-d driver=rtlsdr] Open e.g. specific SoapySDR device\n"
             "\tTo set gain for SoapySDR use -g ELEM=val,ELEM=val,... e.g. -g LNA=20,TIA=8,PGA=2 (for LimeSDR).\n"
+#ifdef ESP_RTL_SDR
+            "\tUSB host (esp_rtl_sdr) device driver is available.\n"
+            "  [-d esp[:<serial>]] RTL-SDR dongle on the ESP32-P4 USB host port (default here)\n"
+#endif
             "  [-d rtl_tcp[:[//]host[:port]] (default: localhost:1234)\n"
             "\tSpecify host/port to connect to with e.g. -d rtl_tcp:127.0.0.1:1234\n");
     exit(0);

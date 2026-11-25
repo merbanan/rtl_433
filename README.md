@@ -24,6 +24,10 @@ Most common 32-bit and 64-bit CPU architectures like amd64, arm64, armhf, i386, 
 
 See [BUILDING.md](docs/BUILDING.md)
 
+rtl_433 also builds as an ESP-IDF component, with an RTL-SDR dongle on the USB host port of an ESP32-P4 as input,
+see [BUILDING.md](docs/BUILDING.md#esp-idf). That input uses the esp_rtl_sdr driver, which is AGPL-3.0-only,
+so a firmware built with it is licensed AGPL-3.0 as a whole.
+
 ## Installation
 
 Linux (Debian, Ubuntu): `sudo apt install rtl-433`. For other distributions see [repology](https://repology.org/project/rtl-433/versions) or [pkgs.org](https://pkgs.org/download/rtl-433).

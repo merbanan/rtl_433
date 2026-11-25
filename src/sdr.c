@@ -24,6 +24,14 @@
 #include "logger.h"
 #include "fatal.h"
 #include "compat_pthread.h"
+#ifdef ESP_PLATFORM
+#include "compat_esp.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#endif
+#ifdef ESP_RTL_SDR
+#include "sdr_esp.h"
+#endif
 #ifdef RTLSDR
 #include <rtl-sdr.h>
 #if defined(__linux__) && (defined(__GNUC__) || defined(__clang__))
@@ -95,6 +103,10 @@ struct sdr_dev {
     void *rtlsdr_cb_ctx;
 #endif
 
+#ifdef ESP_RTL_SDR
+    sdr_esp_t *esp;
+#endif
+
     char *dev_info;
 
     int running;
@@ -110,6 +122,9 @@ struct sdr_dev {
 
 #ifdef THREADS
     pthread_t thread;
+#ifdef ESP_PLATFORM
+    TaskHandle_t acquire_task; ///< the acquire thread's task, see sdr_on_acquire_thread()
+#endif
     pthread_mutex_t lock; ///< lock for exit_acquire
     int exit_acquire;
 
@@ -120,6 +135,20 @@ struct sdr_dev {
     uint32_t buf_len;
 #endif
 };
+
+#ifdef THREADS
+/// True on the acquire thread, where the setters must not be called.
+static int sdr_on_acquire_thread(sdr_dev_t *dev)
+{
+#ifdef ESP_PLATFORM
+    // ESP-IDF's pthread_self() aborts on a task that was not started with pthread_create(), like the one
+    // an application runs rtl_433 on, so compare the FreeRTOS tasks instead
+    return dev->acquire_task && dev->acquire_task == xTaskGetCurrentTaskHandle();
+#else
+    return pthread_equal(dev->thread, pthread_self());
+#endif
+}
+#endif
 
 /* rtl_tcp helpers */
 
@@ -1131,6 +1160,55 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint
 
 #endif
 
+/* esp_rtl_sdr (ESP32-P4 USB host), see sdr_esp.c */
+
+#ifdef ESP_RTL_SDR
+
+static int sdr_open_esp(sdr_dev_t **out_dev, char const *dev_query, int verbose)
+{
+    UNUSED(verbose);
+    sdr_dev_t *dev = calloc(1, sizeof(sdr_dev_t));
+    if (!dev) {
+        WARN_CALLOC("sdr_open_esp()");
+        return -1;
+    }
+
+    if (sdr_esp_open(&dev->esp, dev_query, &dev->dev_info) < 0) {
+        free(dev);
+        return -1;
+    }
+#ifdef THREADS
+    pthread_mutex_init(&dev->lock, NULL);
+#endif
+    dev->sample_size   = sizeof(uint8_t) * 2; // CU8
+    dev->sample_signed = 0;
+
+    *out_dev = dev;
+    return 0;
+}
+
+static int esp_keep_going(void *ctx)
+{
+    sdr_dev_t *dev   = ctx;
+    int exit_acquire = 0;
+#ifdef THREADS
+    pthread_mutex_lock(&dev->lock);
+    exit_acquire = dev->exit_acquire;
+    pthread_mutex_unlock(&dev->lock);
+#endif
+    return !exit_acquire && dev->running;
+}
+
+static int esp_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len)
+{
+    dev->running = 1;
+    int r = sdr_esp_read_loop(dev->esp, cb, ctx, buf_num, buf_len, esp_keep_going, dev);
+    dev->running = 0;
+    return r;
+}
+
+#endif /* ESP_RTL_SDR */
+
 /* Public API */
 
 int sdr_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
@@ -1138,7 +1216,14 @@ int sdr_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
     if (dev_query && !strncmp(dev_query, "rtl_tcp", 7))
         return rtltcp_open(out_dev, dev_query, verbose);
 
-#if !defined(RTLSDR) && !defined(SOAPYSDR)
+#ifdef ESP_RTL_SDR
+    /* The dongle on the USB host port by default, or if "esp", an index or a serial is given */
+    if (!dev_query || !*dev_query || *dev_query == ':' || (*dev_query >= '0' && *dev_query <= '9')
+            || !strncmp(dev_query, "esp", 3))
+        return sdr_open_esp(out_dev, dev_query, verbose);
+#endif
+
+#if !defined(RTLSDR) && !defined(SOAPYSDR) && !defined(ESP_RTL_SDR)
     if (verbose)
         print_log(LOG_ERROR, __func__, "No input drivers (RTL-SDR or SoapySDR) compiled in.");
     return -1;
@@ -1176,6 +1261,13 @@ int sdr_close(sdr_dev_t *dev)
 
     if (dev->rtl_tcp)
         ret = rtltcp_close(dev->rtl_tcp);
+
+#ifdef ESP_RTL_SDR
+    if (dev->esp) {
+        sdr_esp_close(dev->esp);
+        ret = 0;
+    }
+#endif
 
 #ifdef SOAPYSDR
     if (dev->soapy_dev)
@@ -1227,7 +1319,7 @@ int sdr_set_center_freq(sdr_dev_t *dev, uint32_t freq, int verbose)
         return -1;
 
 #ifdef THREADS
-    if (pthread_equal(dev->thread, pthread_self())) {
+    if (sdr_on_acquire_thread(dev)) {
         fprintf(stderr, "%s: must not be called from acquire callback!\n", __func__);
         return -1;
     }
@@ -1239,6 +1331,11 @@ int sdr_set_center_freq(sdr_dev_t *dev, uint32_t freq, int verbose)
         dev->rtl_tcp_freq = freq;
         r = rtltcp_command(dev, RTLTCP_SET_FREQ, freq);
     }
+
+#ifdef ESP_RTL_SDR
+    if (dev->esp)
+        r = sdr_esp_set_center_freq(dev->esp, freq);
+#endif
 
 #ifdef SOAPYSDR
     SoapySDRKwargs args = {0};
@@ -1280,6 +1377,11 @@ uint32_t sdr_get_center_freq(sdr_dev_t *dev)
     if (dev->rtl_tcp)
         return dev->rtl_tcp_freq;
 
+#ifdef ESP_RTL_SDR
+    if (dev->esp)
+        return sdr_esp_get_center_freq(dev->esp);
+#endif
+
 #ifdef SOAPYSDR
     if (dev->soapy_dev)
         return (uint32_t)SoapySDRDevice_getFrequency(dev->soapy_dev, SOAPY_SDR_RX, 0);
@@ -1299,7 +1401,7 @@ int sdr_set_freq_correction(sdr_dev_t *dev, int ppm, int verbose)
         return -1;
 
 #ifdef THREADS
-    if (pthread_equal(dev->thread, pthread_self())) {
+    if (sdr_on_acquire_thread(dev)) {
         fprintf(stderr, "%s: must not be called from acquire callback!\n", __func__);
         return -1;
     }
@@ -1309,6 +1411,11 @@ int sdr_set_freq_correction(sdr_dev_t *dev, int ppm, int verbose)
 
     if (dev->rtl_tcp)
         r = rtltcp_command(dev, RTLTCP_SET_FREQ_CORRECTION, ppm);
+
+#ifdef ESP_RTL_SDR
+    if (dev->esp)
+        r = sdr_esp_set_freq_correction(dev->esp, ppm);
+#endif
 
 #ifdef SOAPYSDR
     if (dev->soapy_dev)
@@ -1338,7 +1445,7 @@ int sdr_set_auto_gain(sdr_dev_t *dev, int verbose)
         return -1;
 
 #ifdef THREADS
-    if (pthread_equal(dev->thread, pthread_self())) {
+    if (sdr_on_acquire_thread(dev)) {
         fprintf(stderr, "%s: must not be called from acquire callback!\n", __func__);
         return -1;
     }
@@ -1348,6 +1455,11 @@ int sdr_set_auto_gain(sdr_dev_t *dev, int verbose)
 
     if (dev->rtl_tcp)
         r = rtltcp_command(dev, RTLTCP_SET_GAIN_MODE, 0);
+
+#ifdef ESP_RTL_SDR
+    if (dev->esp)
+        r = sdr_esp_set_gain(dev->esp, -1);
+#endif
 
 #ifdef SOAPYSDR
     if (dev->soapy_dev)
@@ -1374,7 +1486,7 @@ int sdr_set_tuner_gain(sdr_dev_t *dev, char const *gain_str, int verbose)
         return -1;
 
 #ifdef THREADS
-    if (pthread_equal(dev->thread, pthread_self())) {
+    if (sdr_on_acquire_thread(dev)) {
         fprintf(stderr, "%s: must not be called from acquire callback!\n", __func__);
         return -1;
     }
@@ -1403,6 +1515,15 @@ int sdr_set_tuner_gain(sdr_dev_t *dev, char const *gain_str, int verbose)
         return rtltcp_command(dev, RTLTCP_SET_GAIN_MODE, 1)
                 || rtltcp_command(dev, RTLTCP_SET_GAIN, gain);
     }
+
+#ifdef ESP_RTL_SDR
+    if (dev->esp) {
+        r = sdr_esp_set_gain(dev->esp, gain);
+        if (verbose)
+            print_logf(LOG_NOTICE, "SDR", "Tuner gain set to %f dB.", gain / 10.0);
+        return r;
+    }
+#endif
 
 #ifdef RTLSDR
     /* Enable manual gain */
@@ -1480,7 +1601,7 @@ int sdr_set_sample_rate(sdr_dev_t *dev, uint32_t rate, int verbose)
         return -1;
 
 #ifdef THREADS
-    if (pthread_equal(dev->thread, pthread_self())) {
+    if (sdr_on_acquire_thread(dev)) {
         fprintf(stderr, "%s: must not be called from acquire callback!\n", __func__);
         return -1;
     }
@@ -1492,6 +1613,11 @@ int sdr_set_sample_rate(sdr_dev_t *dev, uint32_t rate, int verbose)
         dev->rtl_tcp_rate = rate;
         r = rtltcp_command(dev, RTLTCP_SET_SAMPLE_RATE, rate);
     }
+
+#ifdef ESP_RTL_SDR
+    if (dev->esp)
+        r = sdr_esp_set_sample_rate(dev->esp, rate);
+#endif
 
 #ifdef SOAPYSDR
     if (dev->soapy_dev)
@@ -1529,6 +1655,11 @@ uint32_t sdr_get_sample_rate(sdr_dev_t *dev)
     if (dev->rtl_tcp)
         return dev->rtl_tcp_rate;
 
+#ifdef ESP_RTL_SDR
+    if (dev->esp)
+        return sdr_esp_get_sample_rate(dev->esp);
+#endif
+
 #ifdef SOAPYSDR
     if (dev->soapy_dev)
         return (uint32_t)SoapySDRDevice_getSampleRate(dev->soapy_dev, SOAPY_SDR_RX, 0);
@@ -1552,6 +1683,11 @@ int sdr_apply_settings(sdr_dev_t *dev, char const *sdr_settings, int verbose)
 
     if (!sdr_settings || !*sdr_settings)
         return 0;
+
+#ifdef ESP_RTL_SDR
+    if (dev->esp)
+        return sdr_esp_apply_settings(dev->esp, sdr_settings);
+#endif
 
     if (dev->rtl_tcp) {
         while (sdr_settings && *sdr_settings) {
@@ -1726,6 +1862,11 @@ int sdr_start_sync(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_nu
     if (dev->rtl_tcp)
         return rtltcp_read_loop(dev, cb, ctx, buf_num, buf_len);
 
+#ifdef ESP_RTL_SDR
+    if (dev->esp)
+        return esp_read_loop(dev, cb, ctx, buf_num, buf_len);
+#endif
+
 #ifdef SOAPYSDR
     if (dev->soapy_dev)
         return soapysdr_read_loop(dev, cb, ctx, buf_num, buf_len);
@@ -1748,6 +1889,13 @@ int sdr_stop_sync(sdr_dev_t *dev)
         dev->running = 0;
         return 0;
     }
+
+#ifdef ESP_RTL_SDR
+    if (dev->esp) {
+        dev->running = 0;
+        return 0;
+    }
+#endif
 
 #ifdef SOAPYSDR
     if (dev->soapy_dev) {
@@ -1787,6 +1935,9 @@ void sdr_redirect_logging(void)
 static THREAD_RETURN THREAD_CALL acquire_thread(void *arg)
 {
     sdr_dev_t *dev = arg;
+#ifdef ESP_PLATFORM
+    dev->acquire_task = xTaskGetCurrentTaskHandle(); // before anything below can call a setter
+#endif
     print_log(LOG_DEBUG, __func__, "acquire_thread enter...");
 
     int r = sdr_start_sync(dev, dev->async_cb, dev->async_ctx, dev->buf_num, dev->buf_len);
@@ -1803,6 +1954,9 @@ static THREAD_RETURN THREAD_CALL acquire_thread(void *arg)
 //    dev->async_cb(&ev, dev->async_ctx);
 
     print_log(LOG_DEBUG, __func__, "acquire_thread done...");
+#ifdef ESP_PLATFORM
+    dev->acquire_task = NULL;
+#endif
     return (THREAD_RETURN)(intptr_t)r;
 }
 
@@ -1838,7 +1992,7 @@ int sdr_stop(sdr_dev_t *dev)
     if (!dev)
         return -1;
 
-    if (pthread_equal(dev->thread, pthread_self())) {
+    if (sdr_on_acquire_thread(dev)) {
         fprintf(stderr, "%s: must not be called from acquire callback!\n", __func__);
         return -1;
     }
