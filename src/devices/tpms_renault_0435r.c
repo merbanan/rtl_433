@@ -101,6 +101,7 @@ static int tpms_renault_0435r_decode(r_device *decoder, bitbuffer_t *bitbuffer, 
     int flags = b[3];
     // observed always 0xc0 - FIXME: find possible combinations and reject message with impossible combination
     // to avoid confusion with other FSK manchester 9-byte sensors with 8bit xor checksum.
+    // note: when sensor is activated by LF (125 kHz) this is 0xd0, possibly the fifth bit being the flag
 
     int pressure_raw    = b[4];
     double pressure_kpa = pressure_raw / 0.75;
