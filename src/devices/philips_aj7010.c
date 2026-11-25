@@ -11,6 +11,7 @@
 /**
 Philips outdoor temperature sensor -- used with various Philips clock
 radios (tested on AJ7010).
+
 This is inspired from the other Philips driver made by Chris Coffey.
 
 A complete message is 40 bits:

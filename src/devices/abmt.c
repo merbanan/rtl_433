@@ -1,5 +1,5 @@
 /** @file
-    Amazon Basics Meat Thermometer
+    Amazon Basics Meat Thermometer.
 
     Copyright (C) 2021 Benjamin Larsson
 
@@ -9,7 +9,7 @@
     (at your option) any later version.
 */
 /**
-Amazon Basics Meat Thermometer
+Amazon Basics Meat Thermometer.
 
 Manchester encoded PCM signal.
 

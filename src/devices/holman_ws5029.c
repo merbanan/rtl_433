@@ -328,7 +328,7 @@ r_device const holman_ws5029pwm = {
         .fields      = output_fields,
 };
 
-/**
+/*
 OOK variant of the PWM protocol above, sold as BIOWIN / 2measure / Bioterm
 No. 270208 weather station, see issue #1476.
 

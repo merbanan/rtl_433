@@ -81,6 +81,7 @@ static int schraeder_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 /**
 TPMS Model: Schrader Electronics EG53MA4.
+
 Contributed by: Leonardo Hamada (hkazu).
 
 Also Schrader Opel OEM No. 13348393 TPMS Sensor (might be found in Saab, Opel, Vauxhall, Chevrolet).
@@ -155,6 +156,7 @@ static int schrader_EG53MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 /**
 SMD3MA4 Schrader TPMS used in Subaru.
+
 Contributed by: RonNiles.
 
 Also Schrader 3039 TPMS for Infiniti, Nissan, Renault.
@@ -343,7 +345,8 @@ static int schrader_NIS315G3_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
-TPMS Model: Schrader Electronics MRXBC5A4 / MRXBMW433TX1 (BMW)
+TPMS Model: Schrader Electronics MRXBC5A4 / MRXBMW433TX1 (BMW).
+
 Contributed by: Ilias Daradimos.
 
 Packet structure (61 bits):

@@ -11,7 +11,7 @@
 
 #include "decoder.h"
 
-/**
+/*
 Compute the 2-bit CRC per datasheet Equation 3-1, over the 65 bits
 (encrypted portion + fixed portion + battery low bit) preceding the CRC
 bits themselves. Returns the computed (CRC1 << 1 | CRC0) value.

@@ -2,7 +2,8 @@
     Prologue sensor protocol.
 */
 /** @fn int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
-Prologue sensor protocol,
+Prologue sensor protocol.
+
 also FreeTec NC-7104 sensor for FreeTec Weatherstation NC-7102,
 also Pearl NC-7159-675,
 also TFA pool thermometer 30.3240.10 #2651

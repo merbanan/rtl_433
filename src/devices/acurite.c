@@ -145,7 +145,7 @@ static char const *acurite_getChannel(uint8_t byte)
 }
 
 /**
-Acurite 896 rain gauge
+Acurite 896 rain gauge.
 
 */
 static int acurite_rain_896_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -463,7 +463,7 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
 }
 
 /**
-Acurite 899 Rain Gauge decoder
+Acurite 899 Rain Gauge decoder.
 
 */
 static int acurite_899_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t const *bb)
@@ -512,7 +512,7 @@ static int acurite_899_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t
 }
 
 /**
-Acurite 3n1 Weather Station decoder
+Acurite 3n1 Weather Station decoder.
 
 */
 static int acurite_3n1_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t const *bb)
@@ -593,9 +593,7 @@ static int acurite_3n1_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t
 
 
 /**
-Acurite 5n1 Weather Station decoder
-
-XXX todo docs
+Acurite 5n1 Weather Station decoder.
 
 */
 static int acurite_5n1_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t const *bb)
@@ -1016,7 +1014,7 @@ static int acurite_tower_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8
 }
 
 /**
-Acurite 1190/1192 leak detector
+Acurite 1190/1192 leak detector.
 
 Note: it seems like Acurite has deleted this product and
 related information from their website so specs, manual, etc.
@@ -1057,7 +1055,7 @@ static int acurite_1190_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_
 }
 
 /**
-Decode Acurite 515 Refrigerator/Freezer sensors
+Decode Acurite 515 Refrigerator/Freezer sensors.
 
 Byte 0    | Byte 1    | Byte 2    | Byte 3    | Byte 4    | Byte 5
 CCII IIII | IIII IIII | pBMM MMMM | bTTT TTTT | bTTT TTTT | KKKK KKKK
@@ -1149,18 +1147,6 @@ static int acurite_515_decode(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t
     return 1;
 }
 
-/**
-Check Acurite TXR message integrity (length, checksum, parity)
-
-Need to pass in expected length - correct number of bytes for
-that message type.
-
-Return 0 for valid roe or DECODE_ABORT_LENGHT, DECODE_FAIL_MIC, DECODE_FAIL_SANITY
-
-Long rows with extra bits/bytes (from demod/bit slicing)
-will be accepted as long the bytes up to the expected length
-pass checksum and parity tests.
-*/
 /**
 AcuRite Optimus 6-in-1 (06188M) weather station decoder.
 
@@ -1264,7 +1250,18 @@ static int acurite_optimus_decode(r_device *decoder, bitbuffer_t *bitbuffer, uin
     return 1;
 }
 
+/*
+Check Acurite TXR message integrity (length, checksum, parity).
 
+Need to pass in expected length - correct number of bytes for
+that message type.
+
+Return 0 for valid roe or DECODE_ABORT_LENGHT, DECODE_FAIL_MIC, DECODE_FAIL_SANITY
+
+Long rows with extra bits/bytes (from demod/bit slicing)
+will be accepted as long the bytes up to the expected length
+pass checksum and parity tests.
+*/
 static int acurite_txr_check(r_device *decoder, uint8_t const bb[], unsigned browlen, unsigned explen, int check_chan)
 {
 
@@ -1314,7 +1311,8 @@ static int acurite_txr_check(r_device *decoder, uint8_t const bb[], unsigned bro
 }
 
 /**
-Process messages for Acurite weather stations, tower and related sensors
+Acurite weather stations, tower and related sensors.
+
 @sa acurite_1190_decode()
 @sa acurite_515_decode()
 @sa acurite_6045_decode()
@@ -2033,7 +2031,7 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
-Acurite 00275rm Room Monitor sensors
+Acurite 00275rm Room Monitor sensors.
 
 */
 static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)

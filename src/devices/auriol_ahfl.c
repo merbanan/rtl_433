@@ -10,7 +10,7 @@
 */
 
 /**
-Lidl Auriol Auriol AHFL 433B2 IPX4
+Lidl Auriol Auriol AHFL 433B2 IPX4.
 
 [00] {42} f2  00     ef 7c 41 40 : 11110010 00000000 11101111 01111100 01000001 01
 

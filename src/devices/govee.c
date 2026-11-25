@@ -282,7 +282,7 @@ r_device const govee = {
 };
 
 /**
-Govee Water Leak Detector H5054
+Govee Water Leak Detector H5054.
 
 This is an updated decoder for devices with board versions dated circa 2021 as originally
 reported in issue #2265.

@@ -9,6 +9,7 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
+
 /**
 DSC - Digital Security Controls 433 Mhz Wireless Security Contacts
 doors, windows, smoke, CO2, water.

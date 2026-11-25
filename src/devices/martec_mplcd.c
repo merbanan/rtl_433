@@ -1,5 +1,5 @@
 /** @file
-    Decoder for Martec MPLCD ceiling fan remotes
+    Decoder for Martec MPLCD ceiling fan remotes.
 
     Copyright (C) 2024 Don Ashdown
 
@@ -12,7 +12,7 @@
 #include "decoder.h"
 
 /**
-Decoder for Martec MPLCD ceiling fan remotes
+Decoder for Martec MPLCD ceiling fan remotes.
 
 Remote keeps knowledge of fan state and sends combined light and fan setting on each button press.
 

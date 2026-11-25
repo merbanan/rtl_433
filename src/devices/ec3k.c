@@ -1,5 +1,5 @@
 /** @file
-    Decoder for Voltcraft EnergyCount 3000 (ec3k, sold by Conrad), tested with RT-110
+    Decoder for Voltcraft EnergyCount 3000 (ec3k, sold by Conrad), tested with RT-110.
 
     Copyright (C) 2025 Michael Dreher <michael(a)5dot1.de>, nospam2000 at github.com
 
@@ -68,7 +68,7 @@ static inline uint32_t unpack_nibbles(const uint8_t *buf, int32_t start_nibble, 
 }
 
 /**
-Decoder for Voltcraft EnergyCount 3000 (ec3k, sold by Conrad), tested with RT-110
+Decoder for Voltcraft EnergyCount 3000 (ec3k, sold by Conrad), tested with RT-110.
 
 The bit time is 50 us. The device transmits every 5 seconds (if there is a change in power consumption)
 or every 30 minutes (if there is no change). It uses BFSK modulation with two frequencies between

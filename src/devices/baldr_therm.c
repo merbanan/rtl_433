@@ -14,8 +14,9 @@
 
 /**
 Baldr E0666TH Thermo-Hygrometer, which is the remote sensor for the BaldrTherm
-B0598T4H4 Solar Thermo-Hygrometer set. There is a channel selection switch (1-3)
-inside the battery compartment.
+B0598T4H4 Solar Thermo-Hygrometer set.
+
+There is a channel selection switch (1-3) inside the battery compartment.
 
 The sensor sends 64 bits 8 times. The packets are ppm modulated (distance
 coding) with a pulse of ~500 us followed by a short gap of ~1000 us for a 0 bit

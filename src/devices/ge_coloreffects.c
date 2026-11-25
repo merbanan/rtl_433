@@ -24,7 +24,7 @@ static inline int bit(const uint8_t *bytes, unsigned b)
     return bytes[b >> 3] >> (7 - (b & 7)) & 1;
 }
 
-/**
+/*
 Decodes the following encoding scheme:
 - 10 = 0
 - 1100 = 1

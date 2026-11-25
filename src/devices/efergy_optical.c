@@ -9,6 +9,8 @@
     (at your option) any later version.
 */
 /**
+Efergy IR Optical energy consumption meter.
+
 Efergy IR is a devices that periodically reports current energy consumption
 on frequency ~433.55 MHz. The data that is transmitted consists of 8
 bytes:

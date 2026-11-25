@@ -12,7 +12,7 @@
 #include "decoder.h"
 
 /**
-Watts WFHT LCD RF decoder
+Watts WFHT LCD RF decoder.
 
 This decoder is independent of the existing watts_thermostat decoder, which
 targets a different Watts hardware generation. The model string is

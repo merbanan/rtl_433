@@ -1,5 +1,5 @@
 /** @file
-    Dickert MAHS433-01 remote control
+    Dickert MAHS433-01 remote control.
 
     Copyright (C) 2024 daubsi
 
@@ -12,7 +12,7 @@
 #include "decoder.h"
 
 /**
-Dickert MAHS433-01 remote control
+Dickert MAHS433-01 remote control.
 
 The Dickert MAHS433-01 remote contains a user-accessible bank of 10 dip switches labeled "1" to "10" and
 each tristate dip switch can be set to one of three positions. These positions are labeled as "-" (down),

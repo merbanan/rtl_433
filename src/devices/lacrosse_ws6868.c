@@ -11,8 +11,22 @@
 
 #include "decoder.h"
 
+#define WS6868_PREAMBLE_BITLEN 32
+
+static uint8_t const ws6868_preamble[4] = {0xd2, 0xaa, 0x2d, 0xd4};
+
+// Common header fields, same layout for both sensors.
+static void ws6868_parse_header(uint8_t const *b, uint32_t *id, int *battery_low, int *test, int *channel, int *counter)
+{
+    *id          = ((uint32_t)b[0] << 16) | (b[1] << 8) | b[2];
+    *battery_low = (b[3] >> 7) & 1;
+    *test        = (b[3] >> 6) & 1;
+    *channel     = (b[3] >> 4) & 3;
+    *counter     = (b[3] >> 1) & 7;
+}
+
 /**
-LaCrosse WS6868 weather station sensors (TX231RW wind/rain, TX232TH-LCD temperature/humidity).
+LaCrosse WS6868 weather station sensors: TX232TH-LCD temperature/humidity.
 
 Reverse engineered in issue #3120. FSK_PCM at 58 us/bit (not the 100 us
 initially assumed), with a fixed 32 bit preamble/sync `0xd2aa2dd4`
@@ -34,24 +48,8 @@ Split into two decoders below: the two sensors' frames differ in byte
 layout and length, and their post-preamble bit lengths overlap in real
 captures, so length can't tell them apart -- only their own CRC can. Each
 decoder here only has to deal with its own frame.
-*/
 
-#define WS6868_PREAMBLE_BITLEN 32
-
-static uint8_t const ws6868_preamble[4] = {0xd2, 0xaa, 0x2d, 0xd4};
-
-// Common header fields, same layout for both sensors.
-static void ws6868_parse_header(uint8_t const *b, uint32_t *id, int *battery_low, int *test, int *channel, int *counter)
-{
-    *id          = ((uint32_t)b[0] << 16) | (b[1] << 8) | b[2];
-    *battery_low = (b[3] >> 7) & 1;
-    *test        = (b[3] >> 6) & 1;
-    *channel     = (b[3] >> 4) & 3;
-    *counter     = (b[3] >> 1) & 7;
-}
-
-/** @fn static int lacrosse_ws6868_tx232th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
-TX232TH-LCD (temperature/humidity), 8 byte frame after the header above:
+TX232TH-LCD temperature/humidity, 8 byte frame after the header above:
 
     TEMP:12d HUM:12d CRC:8h
 
@@ -139,7 +137,30 @@ r_device const lacrosse_ws6868_tx232th = {
         .fields      = lacrosse_ws6868_tx232th_output_fields,
 };
 
-/** @fn static int lacrosse_ws6868_tx231rw_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+/**
+LaCrosse WS6868 weather station sensors: TX231RW wind/rain.
+
+Reverse engineered in issue #3120. FSK_PCM at 58 us/bit (not the 100 us
+initially assumed), with a fixed 32 bit preamble/sync `0xd2aa2dd4`
+(found by bit-shifting captures for a byte boundary, not a literal
+on-air preamble -- the raw preamble is longer alternating bits).
+
+Common header after the preamble, both sensors:
+
+    ID:24h BAT:1b TEST:1b CHANNEL:2b COUNTER:3b ?:1b
+
+- ID: 24 bit, did not change across a power cycle in the single unit
+  tested (unconfirmed whether that's normal or this unit's quirk)
+- CHANNEL: 0-based, add 1 to match the sensor's physical channel dial
+- COUNTER: increments by 1 every transmission (seen as a raw nibble
+  incrementing by 2, i.e. this 3 bit counter left-shifted by the
+  trailing spare bit)
+
+Split into two decoders below: the two sensors' frames differ in byte
+layout and length, and their post-preamble bit lengths overlap in real
+captures, so length can't tell them apart -- only their own CRC can. Each
+decoder here only has to deal with its own frame.
+
 TX231RW (wind/rain), 12 byte frame after the header above:
 
     ?:48b CRC:8h CHECKSUM:8h

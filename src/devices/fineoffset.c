@@ -14,10 +14,12 @@
 #include "decoder.h"
 
 /**
-Fine Offset Electronics WH2 Temperature/Humidity sensor protocol,
-also Agimex Rosenborg 66796 (sold in Denmark), collides with WH5,
-also ClimeMET CM9088 (Sold in UK),
-also TFA Dostmann/Wertheim 30.3157 (Temperature only!) (sold in Germany).
+Fine Offset Electronics WH2 Temperature/Humidity sensor protocol.
+
+- Fine Offset Electronics WH2 Temperature/Humidity sensor,
+- also Agimex Rosenborg 66796 (sold in Denmark), collides with WH5,
+- also ClimeMET CM9088 (Sold in UK),
+- also TFA Dostmann/Wertheim 30.3157 (Temperature only!) (sold in Germany).
 
 The sensor sends two identical packages of 48 bits each ~48s. The bits are PWM modulated with On Off Keying.
 
@@ -449,10 +451,12 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
-Fine Offset Electronics WH0290 Wireless Air Quality Monitor
-Also: Ambient Weather PM25
-Also: Misol PM25
-Also: Ecowitt WH0290, Ecowitt WH41
+Fine Offset Electronics WH0290 Wireless Air Quality Monitor.
+
+- Fine Offset Electronics WH0290 Wireless Air Quality Monitor
+- Also: Ambient Weather PM25
+- Also: Misol PM25
+- Also: Ecowitt WH0290, Ecowitt WH41
 
 The sensor sends a data burst every 10 minutes.  The bits are PCM
 modulated with Frequency Shift Keying.
@@ -1065,8 +1069,10 @@ static int alecto_ws1200v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
-Fine Offset Electronics WH0530 Temperature/Rain sensor protocol,
-also Agimex Rosenborg 35926 (sold in Denmark).
+Fine Offset Electronics WH0530 Temperature/Rain sensor protocol.
+
+- Fine Offset Electronics WH0530 Temperature/Rain sensor,
+- also Agimex Rosenborg 35926 (sold in Denmark).
 
 The sensor sends two identical packages of 71 bits each ~48s. The bits are PWM modulated with On Off Keying.
 Data consists of 7 bit preamble and 8 bytes.

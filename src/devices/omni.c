@@ -1,5 +1,5 @@
 /** @file
-    Omni Multisensor.
+    Custom Omni Multisensor.
 
     Copyright (C) 2025 H. David Todd <hdtodd@gmail.com>
 
@@ -15,6 +15,8 @@
 #define OMNI_MSGFMT_00 0x00
 #define OMNI_MSGFMT_01 0x01
 /**
+Custom Omni Multisensor.
+
 The 'sensor' is actually a programmed microcontroller, such as
 Raspberry Pi Pico 2 or similar, with multiple possible data-sensor
 attachments.  A message 'format' field indicates the format of the data
@@ -229,9 +231,8 @@ static char const *const output_fields[] = {
         NULL,
 };
 
-/* clang-format off */
 r_device const omni = {
-        .name        = "Omni Multisensor",
+        .name        = "Custom Omni Multisensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 200,  // short pulse is ~200 us
         .long_width  = 400,  // long pulse is ~400 us
@@ -241,4 +242,3 @@ r_device const omni = {
         .decode_fn   = &omni_decode,
         .fields      = output_fields,
 };
-/* clang-format on */

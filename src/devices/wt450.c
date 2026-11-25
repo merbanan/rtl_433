@@ -15,6 +15,8 @@
  */
 
 /**
+WT450 wireless weather sensors protocol.
+
 source from:
 http://ala-paavola.fi/jaakko/doku.php?id=wt450h
 

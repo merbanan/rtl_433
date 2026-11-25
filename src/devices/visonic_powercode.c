@@ -10,6 +10,8 @@
  */
 
 /**
+Decoder for Visonic Powercode devices. Tested with an MCT-302.
+
 The device uses OOK PWM encoding, short pulse 400us long pulse 800us, and repeats 6 times
 You can use a flex decoder -X 'n=visonic_powercode,m=OOK_PWM,s=400,l=800,r=5000,g=900,t=160,y=0'
 

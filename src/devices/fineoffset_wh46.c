@@ -13,7 +13,7 @@
 #include "decoder.h"
 
 /**
-Fine Offset Electronics WH46 air quality sensor,
+Fine Offset Electronics WH46 air quality sensor.
 
 - also Ecowitt WH46
 

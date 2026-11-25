@@ -12,8 +12,9 @@
 #include "decoder.h"
 
 /**
-Fine Offset Electronics WH45 air quality sensor,
+Fine Offset Electronics WH45 air quality sensor.
 
+- Fine Offset Electronics WH45 air quality sensor
 - also Ecowitt WH45, Ecowitt WH0295
 - also Froggit DP250
 - also Ambient Weather AQIN
