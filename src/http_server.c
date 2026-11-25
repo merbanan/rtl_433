@@ -241,6 +241,7 @@ static data_t *meta_data(r_cfg_t *cfg)
     return data_make(
             "frequencies", "", DATA_ARRAY, data_array(cfg->frequencies, DATA_INT, cfg->frequency),
             "hop_times", "", DATA_ARRAY, data_array(cfg->hop_times, DATA_INT, cfg->hop_time),
+            "sample_rates", "", DATA_ARRAY, data_array(cfg->hop_rates, DATA_INT, cfg->hop_rate),
             "center_frequency", "", DATA_INT, cfg->center_frequency,
             "duration", "", DATA_INT, cfg->duration,
             "samp_rate", "", DATA_INT, cfg->samp_rate,

@@ -604,6 +604,13 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         break;
     case 's':
         cfg->samp_rate = atouint32_metric(arg, "-s: ");
+        // like -H: each -s goes with the -f in the same position, e.g. -f 433.92M -s 250k -f 915M -s 1024k
+        if (cfg->hop_rates < MAX_FREQS) {
+            cfg->hop_rate[cfg->hop_rates++] = cfg->samp_rate;
+        }
+        else {
+            fprintf(stderr, "Max number of sample rates reached %d\n", MAX_FREQS);
+        }
         break;
     case 'b':
         cfg->out_block_size = atouint32_metric(arg, "-b: ");
@@ -1115,6 +1122,17 @@ static void sighandler(int signum)
 }
 #endif
 
+/// The sample rate for the current hop frequency, or 0 if a single rate applies (the last -s given).
+static uint32_t current_hop_rate(r_cfg_t *cfg)
+{
+    if (cfg->hop_rates <= 1 || cfg->frequencies <= 1) {
+        return 0;
+    }
+    // choose rate_index as frequency_index, if there are too few hop_rates use the last one
+    int rate_index = cfg->hop_rates > cfg->frequency_index ? cfg->frequency_index : cfg->hop_rates - 1;
+    return cfg->hop_rate[rate_index];
+}
+
 /**
 Process an IQ data frame with push_sdr_flow() and run side effects.
 
@@ -1215,6 +1233,10 @@ static void process_sdr_frame(r_cfg_t *cfg, unsigned char *iq_buf, uint32_t len)
         cfg->hop_now = 0;
         time(&cfg->hop_start_time);
         cfg->frequency_index = (cfg->frequency_index + 1) % cfg->frequencies;
+        uint32_t hop_rate = current_hop_rate(cfg);
+        if (hop_rate && hop_rate != cfg->samp_rate) {
+            sdr_set_sample_rate(cfg->dev, hop_rate, 1);
+        }
         sdr_set_center_freq(cfg->dev, cfg->frequency[cfg->frequency_index], 1);
     }
 }
@@ -1263,6 +1285,9 @@ static void sdr_handler(struct mg_connection *nc, int ev_type, void *ev_data)
         if (cfg->frequencies > 1) {
             data = data_ary(data, "frequencies", "", NULL, data_array(cfg->frequencies, DATA_INT, cfg->frequency));
             data = data_ary(data, "hop_times", "", NULL, data_array(cfg->hop_times, DATA_INT, cfg->hop_time));
+            if (cfg->hop_rates > 1) {
+                data = data_ary(data, "sample_rates", "", NULL, data_array(cfg->hop_rates, DATA_INT, cfg->hop_rate));
+            }
         }
     }
     if (ev->ev & SDR_EV_GAIN) {
@@ -1346,7 +1371,11 @@ static int start_sdr(r_cfg_t *cfg)
     cfg->demod->sample_size = sdr_get_sample_size(cfg->dev);
     // cfg->demod->sample_signed = sdr_get_sample_signed(cfg->dev);
 
-    /* Set the sample rate */
+    /* Set the sample rate, (re)start at the one that goes with the current frequency */
+    uint32_t hop_rate = current_hop_rate(cfg);
+    if (hop_rate) {
+        cfg->samp_rate = hop_rate;
+    }
     sdr_set_sample_rate(cfg->dev, cfg->samp_rate, 1); // always verbose
 
     if (cfg->verbosity || cfg->demod->level_limit < 0.0) {

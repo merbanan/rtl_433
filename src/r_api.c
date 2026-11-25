@@ -86,6 +86,7 @@ void set_center_freq(r_cfg_t *cfg, uint32_t center_freq)
     cfg->frequencies = 1;
     cfg->frequency_index = 0;
     cfg->frequency[0] = center_freq;
+    cfg->hop_rates = 0; // no more hopping: keep the rate that is running (or is set next)
     // cfg->center_frequency = center_freq; // actually applied in the sdr event
     sdr_set_center_freq(cfg->dev, center_freq, 1);
 }
@@ -105,10 +106,15 @@ int set_sample_rate(r_cfg_t *cfg, uint32_t sample_rate)
 {
     if (!cfg->dev) {
         cfg->samp_rate = sample_rate; // no device open: start_sdr() applies it when one is
+        cfg->hop_rates = 0;           // a rate set by hand applies to every frequency
         return 0;
     }
     // cfg->samp_rate = sample_rate; // actually applied in the sdr event
-    return sdr_set_sample_rate(cfg->dev, sample_rate, 0);
+    int r = sdr_set_sample_rate(cfg->dev, sample_rate, 0);
+    if (r >= 0) {
+        cfg->hop_rates = 0; // a rate set by hand applies to every frequency (a refused one changes nothing)
+    }
+    return r;
 }
 
 void set_gain_str(struct r_cfg *cfg, char const *gain_str)
