@@ -183,6 +183,7 @@ add_library(r_433 STATIC
     devices/bt_rain.c
     devices/burnhardbbq.c
     devices/calibeur.c
+    devices/came.c
     devices/cardin.c
     devices/cavius.c
     devices/ced7000.c
