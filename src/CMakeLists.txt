@@ -284,6 +284,7 @@ add_library(r_433 STATIC
     devices/hideki.c
     devices/hollarm.c
     devices/holman_ws5029.c
+    devices/holtek.c
     devices/homelead_hg9901.c
     devices/hondaremote.c
     devices/honeywell.c
