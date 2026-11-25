@@ -126,6 +126,9 @@ A small offset of 10 kHz to 50 kHz works best.
 The `-f` option can be used multiple times to set up a list of frequency to hop.
 Use the `-H` option to set up the time to stay on each frequency or list on `-H` per `-f` to set a stay time for each frequency.
 (The last hop time given will be the default for all frequencies.)
+In the same way, list one `-s` per `-f` to set a sample rate for each frequency,
+e.g. `-f 433.92M -s 250k -f 915M -s 1024k`.
+(The last sample rate given will be the default for the remaining frequencies, a single `-s` applies to all.)
 
 ### PPM correction
 
