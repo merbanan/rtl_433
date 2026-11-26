@@ -19,15 +19,10 @@ transmitter, so e.g. a Water Timer beacon is Bresser-WaterTimer and a gateway co
 Bresser-Gateway, rather than one generic name for all control traffic. An unrecognised class falls
 back to the generic "Bresser-Garden".
 */
-static char const *bresser_garden_model(uint32_t source_id)
-{
-    switch (source_id >> 24) {
-    case 0x47: return "Bresser-SoilMoisture";
-    case 0x1f: return "Bresser-WaterTimer";
-    case 0x01: return "Bresser-Gateway";
-    default: return "Bresser-Garden"; // fallback for an unrecognised device class
-    }
-}
+#define BRESSER_SOILMOISTURE 0x47
+#define BRESSER_WATERTIMER   0x1f
+#define BRESSER_GATEWAY      0x01
+#define BRESSER_UNKNOWN      0x00
 
 // Fill buf with the sub-message payload (from byte 11) as lowercase hex, for the raw "msg" field.
 // buf must hold 2*20 + 1 bytes and is always NUL-terminated - an empty payload yields "". The
@@ -481,6 +476,8 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int msg_length      = b[10];
     int acknowledgement = msg_type >> 7; // bit 7 is the reply/ack flag
 
+    int model_id = source_id >> 24;
+
     // The payload runs b[11]..b[30] - the last two of the fixed 33 bytes are the CRC - so a declared
     // length above 20 cannot be real, whatever the CRC says. Reject rather than decode past the end.
     if (msg_length > 20) {
@@ -497,9 +494,13 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         char msg[41];
         print_payload_hex(msg, b, msg_length);
 
+        // "Bresser-SoilMoisture" "Bresser-WaterTimer"
         /* clang-format off */
         data_t *data = data_make(
-                "model",         "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-SoilMoisture" "Bresser-WaterTimer"
+                "model",         "",            DATA_COND, model_id == BRESSER_SOILMOISTURE, DATA_STRING, "Bresser-SoilMoisture",
+                "model",         "",            DATA_COND, model_id == BRESSER_WATERTIMER,   DATA_STRING, "Bresser-WaterTimer",
+                "model",         "",            DATA_COND, model_id == BRESSER_GATEWAY,      DATA_STRING, "Bresser-Gateway",
+                "model",         "",            DATA_COND, model_id == BRESSER_UNKNOWN,      DATA_STRING, "Bresser-Garden",
                 "msg_name",      "",            DATA_STRING, "Init Pairing",
                 "id",            "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",     "",            DATA_FORMAT, "%u", DATA_INT, target_id,
@@ -523,9 +524,13 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         char msg[41];
         print_payload_hex(msg, b, msg_length);
 
+        // "Bresser-SoilMoisture" "Bresser-WaterTimer"
         /* clang-format off */
         data_t *data = data_make(
-                "model",           "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-Gateway"
+                "model",           "",            DATA_COND, model_id == BRESSER_SOILMOISTURE, DATA_STRING, "Bresser-SoilMoisture",
+                "model",           "",            DATA_COND, model_id == BRESSER_WATERTIMER,   DATA_STRING, "Bresser-WaterTimer",
+                "model",           "",            DATA_COND, model_id == BRESSER_GATEWAY,      DATA_STRING, "Bresser-Gateway",
+                "model",           "",            DATA_COND, model_id == BRESSER_UNKNOWN,      DATA_STRING, "Bresser-Garden",
                 "msg_name",        "",            DATA_STRING, "Pairing ack",
                 "id",              "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",       "",            DATA_FORMAT, "%u", DATA_INT, target_id,
@@ -551,9 +556,13 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int moisture      = b[14]; // b[13]=0x88 and b[15]=0x85 are field markers, not data
         int temperature_f = (int16_t)((b[17] << 8) | b[16]); // signed: below-zero F is two's complement
 
+        // "Bresser-SoilMoisture"
         /* clang-format off */
         data_t *data = data_make(
-                "model",         "",              DATA_STRING, bresser_garden_model(source_id), // "Bresser-SoilMoisture"
+                "model",         "",              DATA_COND, model_id == BRESSER_SOILMOISTURE, DATA_STRING, "Bresser-SoilMoisture",
+                "model",         "",              DATA_COND, model_id == BRESSER_WATERTIMER,   DATA_STRING, "Bresser-WaterTimer",
+                "model",         "",              DATA_COND, model_id == BRESSER_GATEWAY,      DATA_STRING, "Bresser-Gateway",
+                "model",         "",              DATA_COND, model_id == BRESSER_UNKNOWN,      DATA_STRING, "Bresser-Garden",
                 "msg_name",      "",              DATA_STRING, "Soil telemetry",
                 "id",            "",              DATA_FORMAT, "%u",   DATA_INT,    source_id,
                 "device_type",   "",              DATA_FORMAT, "%u",   DATA_INT,    device_type,
@@ -578,9 +587,13 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     */
     else if ((msg_type == 0x83 || msg_type == 0x84 || msg_type == 0x89 || msg_type == 0x8a) && msg_length == 0x01) {
 
+        // "Bresser-SoilMoisture" "Bresser-WaterTimer" "Bresser-Gateway"
         /* clang-format off */
         data_t *data = data_make(
-                "model",           "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-SoilMoisture" "Bresser-WaterTimer" "Bresser-Gateway"
+                "model",         "",              DATA_COND, model_id == BRESSER_SOILMOISTURE, DATA_STRING, "Bresser-SoilMoisture",
+                "model",         "",              DATA_COND, model_id == BRESSER_WATERTIMER,   DATA_STRING, "Bresser-WaterTimer",
+                "model",         "",              DATA_COND, model_id == BRESSER_GATEWAY,      DATA_STRING, "Bresser-Gateway",
+                "model",         "",              DATA_COND, model_id == BRESSER_UNKNOWN,      DATA_STRING, "Bresser-Garden",
                 "msg_name",        "",            DATA_STRING, "Acknowledgement",
                 "id",              "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",       "",            DATA_FORMAT, "%u", DATA_INT, target_id,
@@ -612,9 +625,13 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int moisture      = b[16];
         int temperature_f = (int16_t)((b[19] << 8) | b[18]); // signed: below-zero F is two's complement
 
+        // "Bresser-WaterTimer"
         /* clang-format off */
         data_t *data = data_make(
-                "model",         "",              DATA_STRING, bresser_garden_model(source_id), // "Bresser-WaterTimer"
+                "model",         "",              DATA_COND, model_id == BRESSER_SOILMOISTURE, DATA_STRING, "Bresser-SoilMoisture",
+                "model",         "",              DATA_COND, model_id == BRESSER_WATERTIMER,   DATA_STRING, "Bresser-WaterTimer",
+                "model",         "",              DATA_COND, model_id == BRESSER_GATEWAY,      DATA_STRING, "Bresser-Gateway",
+                "model",         "",              DATA_COND, model_id == BRESSER_UNKNOWN,      DATA_STRING, "Bresser-Garden",
                 "msg_name",      "",              DATA_STRING, "Relay telemetry",
                 "id",            "",              DATA_FORMAT, "%u",     DATA_INT,    source_id,
                 "device_type",   "",              DATA_FORMAT, "%u",     DATA_INT,    device_type,
@@ -645,9 +662,13 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int moisture      = b[16];
         int temperature_f = (int16_t)((b[19] << 8) | b[18]); // signed: below-zero F is two's complement
 
+        // "Bresser-SoilMoisture"
         /* clang-format off */
         data_t *data = data_make(
-                "model",         "",              DATA_STRING, bresser_garden_model(source_id), // "Bresser-SoilMoisture"
+                "model",         "",              DATA_COND, model_id == BRESSER_SOILMOISTURE, DATA_STRING, "Bresser-SoilMoisture",
+                "model",         "",              DATA_COND, model_id == BRESSER_WATERTIMER,   DATA_STRING, "Bresser-WaterTimer",
+                "model",         "",              DATA_COND, model_id == BRESSER_GATEWAY,      DATA_STRING, "Bresser-Gateway",
+                "model",         "",              DATA_COND, model_id == BRESSER_UNKNOWN,      DATA_STRING, "Bresser-Garden",
                 "msg_name",      "",              DATA_STRING, "Soil telemetry",
                 "id",            "",              DATA_FORMAT, "%u",     DATA_INT,    source_id,
                 "device_type",   "",              DATA_FORMAT, "%u",     DATA_INT,    device_type,
@@ -677,9 +698,13 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int water_usage   = b[19] | (b[20] << 8); // 0.1 L units; b[21:23] stay 0, so it may be wider
         int duration_s    = b[23] | (b[24] << 8);
 
+        // "Bresser-WaterTimer"
         /* clang-format off */
         data_t *data = data_make(
-                "model",         "",              DATA_STRING, bresser_garden_model(source_id), // "Bresser-WaterTimer"
+                "model",         "",              DATA_COND, model_id == BRESSER_SOILMOISTURE, DATA_STRING, "Bresser-SoilMoisture",
+                "model",         "",              DATA_COND, model_id == BRESSER_WATERTIMER,   DATA_STRING, "Bresser-WaterTimer",
+                "model",         "",              DATA_COND, model_id == BRESSER_GATEWAY,      DATA_STRING, "Bresser-Gateway",
+                "model",         "",              DATA_COND, model_id == BRESSER_UNKNOWN,      DATA_STRING, "Bresser-Garden",
                 "msg_name",      "",              DATA_STRING, "Watering",
                 "id",            "",              DATA_FORMAT, "%u",   DATA_INT,    source_id,
                 "sensor_number", "",              DATA_FORMAT, "%u",   DATA_INT,    sensor_number,
@@ -711,9 +736,13 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int unknown            = b[22];         // 0x42 observed, meaning unknown
         int flow_rate          = (int8_t)b[24]; // signed: app range -20..+20 %, e.g. -20 -> 0xec
 
+        // "Bresser-Gateway"
         /* clang-format off */
         data_t *data = data_make(
-                "model",           "",              DATA_STRING, bresser_garden_model(source_id), // "Bresser-Gateway"
+                "model",           "",              DATA_COND, model_id == BRESSER_SOILMOISTURE, DATA_STRING, "Bresser-SoilMoisture",
+                "model",           "",              DATA_COND, model_id == BRESSER_WATERTIMER,   DATA_STRING, "Bresser-WaterTimer",
+                "model",           "",              DATA_COND, model_id == BRESSER_GATEWAY,      DATA_STRING, "Bresser-Gateway",
+                "model",           "",              DATA_COND, model_id == BRESSER_UNKNOWN,      DATA_STRING, "Bresser-Garden",
                 "msg_name",        "",              DATA_STRING, "Schedule config",
                 "id",              "",              DATA_FORMAT, "%u",   DATA_INT,    source_id,
                 "target_id",       "",              DATA_FORMAT, "%u",   DATA_INT,    target_id,
@@ -740,9 +769,13 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         int has_channel = (msg_length == 0x03 && b[12] == 0x04); // b[13] = RF channel (1/2/3)
 
+        // "Bresser-Gateway"
         /* clang-format off */
         data_t *data = data_make(
-                "model",          "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-Gateway"
+                "model",          "",            DATA_COND, model_id == BRESSER_SOILMOISTURE, DATA_STRING, "Bresser-SoilMoisture",
+                "model",          "",            DATA_COND, model_id == BRESSER_WATERTIMER,   DATA_STRING, "Bresser-WaterTimer",
+                "model",          "",            DATA_COND, model_id == BRESSER_GATEWAY,      DATA_STRING, "Bresser-Gateway",
+                "model",          "",            DATA_COND, model_id == BRESSER_UNKNOWN,      DATA_STRING, "Bresser-Garden",
                 "msg_name",       "",            DATA_STRING, "Config change",
                 "id",             "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",      "",            DATA_FORMAT, "%u", DATA_INT, target_id,
@@ -800,9 +833,13 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             np++;
         }
 
+        // "Bresser-Gateway"
         /* clang-format off */
         data_t *data = data_make(
-                "model",       "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-Gateway"
+                "model",       "",            DATA_COND, model_id == BRESSER_SOILMOISTURE, DATA_STRING, "Bresser-SoilMoisture",
+                "model",       "",            DATA_COND, model_id == BRESSER_WATERTIMER,   DATA_STRING, "Bresser-WaterTimer",
+                "model",       "",            DATA_COND, model_id == BRESSER_GATEWAY,      DATA_STRING, "Bresser-Gateway",
+                "model",       "",            DATA_COND, model_id == BRESSER_UNKNOWN,      DATA_STRING, "Bresser-Garden",
                 "msg_name",    "",            DATA_STRING, "Schedule",
                 "id",          "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",   "",            DATA_FORMAT, "%u", DATA_INT, target_id,
@@ -822,20 +859,25 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // manual run (mode b[13]: 0 stop / 1 normal / 2 misting; duration_s b[14:16]), else Heartbeat.
     else if (msg_type == 0x21 && msg_length >= 0x03) {
 
-        int variant        = b[12];
-        int mode           = b[13];
-        int duration_s     = (msg_length >= 0x04) ? b[14] : 0;
-        if (msg_length >= 0x05)
+        int variant    = b[12];
+        int mode       = b[13];
+        int duration_s = (msg_length >= 0x04) ? b[14] : 0;
+        if (msg_length >= 0x05) {
             duration_s |= b[15] << 8; // 2-byte LE, like every other duration in this decoder
+        }
         int is_run         = (variant == 0x02);
         char const *status = !is_run ? "Heartbeat" : (mode == 0 ? "Run stop" : "Run start");
 
         char msg[41];
         print_payload_hex(msg, b, msg_length);
 
+        // "Bresser-Gateway"
         /* clang-format off */
         data_t *data = data_make(
-                "model",                "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-Gateway"
+                "model",                "",            DATA_COND, model_id == BRESSER_SOILMOISTURE, DATA_STRING, "Bresser-SoilMoisture",
+                "model",                "",            DATA_COND, model_id == BRESSER_WATERTIMER,   DATA_STRING, "Bresser-WaterTimer",
+                "model",                "",            DATA_COND, model_id == BRESSER_GATEWAY,      DATA_STRING, "Bresser-Gateway",
+                "model",                "",            DATA_COND, model_id == BRESSER_UNKNOWN,      DATA_STRING, "Bresser-Garden",
                 "msg_name",             "",            DATA_STRING, status,
                 "id",                   "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",            "",            DATA_FORMAT, "%u", DATA_INT, target_id,
@@ -865,13 +907,18 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int water_usage = has_run ? (b[14] | (b[15] << 8)) : 0; // last COMPLETED run, 0.1 L units
         int remaining_s = has_run ? (b[19] | (b[20] << 8)) : 0;
         int duration_s  = has_run ? (b[22] | (b[23] << 8)) : 0;
+
         char const *status = (msg_type == 0xa0) ? "Acknowledgement" : (has_run ? "Run response" : "Beacon");
         char msg[41];
         print_payload_hex(msg, b, msg_length);
 
+        // "Bresser-WaterTimer"
         /* clang-format off */
         data_t *data = data_make(
-                "model",           "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-WaterTimer"
+                "model",           "",            DATA_COND, model_id == BRESSER_SOILMOISTURE, DATA_STRING, "Bresser-SoilMoisture",
+                "model",           "",            DATA_COND, model_id == BRESSER_WATERTIMER,   DATA_STRING, "Bresser-WaterTimer",
+                "model",           "",            DATA_COND, model_id == BRESSER_GATEWAY,      DATA_STRING, "Bresser-Gateway",
+                "model",           "",            DATA_COND, model_id == BRESSER_UNKNOWN,      DATA_STRING, "Bresser-Garden",
                 "msg_name",        "",            DATA_STRING, status,
                 "id",              "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",       "",            DATA_FORMAT, "%u", DATA_INT, target_id,
@@ -904,9 +951,13 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         char msg[41];
         print_payload_hex(msg, b, msg_length);
 
+        // "Bresser-Gateway"
         /* clang-format off */
         data_t *data = data_make(
-                "model",        "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-Gateway"
+                "model",        "",            DATA_COND, model_id == BRESSER_SOILMOISTURE, DATA_STRING, "Bresser-SoilMoisture",
+                "model",        "",            DATA_COND, model_id == BRESSER_WATERTIMER,   DATA_STRING, "Bresser-WaterTimer",
+                "model",        "",            DATA_COND, model_id == BRESSER_GATEWAY,      DATA_STRING, "Bresser-Gateway",
+                "model",        "",            DATA_COND, model_id == BRESSER_UNKNOWN,      DATA_STRING, "Bresser-Garden",
                 "msg_name",     "",            DATA_STRING, "Status response",
                 "id",           "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",    "",            DATA_FORMAT, "%u", DATA_INT, target_id,
@@ -931,9 +982,13 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         char msg[41];
         print_payload_hex(msg, b, msg_length);
 
+        // "Bresser-Gateway"
         /* clang-format off */
         data_t *data = data_make(
-                "model",        "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-Gateway"
+                "model",        "",            DATA_COND, model_id == BRESSER_SOILMOISTURE, DATA_STRING, "Bresser-SoilMoisture",
+                "model",        "",            DATA_COND, model_id == BRESSER_WATERTIMER,   DATA_STRING, "Bresser-WaterTimer",
+                "model",        "",            DATA_COND, model_id == BRESSER_GATEWAY,      DATA_STRING, "Bresser-Gateway",
+                "model",        "",            DATA_COND, model_id == BRESSER_UNKNOWN,      DATA_STRING, "Bresser-Garden",
                 "msg_name",     "",            DATA_STRING, "Moisture response",
                 "id",           "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",    "",            DATA_FORMAT, "%u", DATA_INT, target_id,
@@ -972,9 +1027,13 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int remaining_s = has_run ? (b[21] | (b[22] << 8)) : 0;
         int duration_s  = has_run ? (b[24] | (b[25] << 8)) : 0;
 
+        // "Bresser-WaterTimer"
         /* clang-format off */
         data_t *data = data_make(
-                "model",        "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-WaterTimer"
+                "model",        "",            DATA_COND, model_id == BRESSER_SOILMOISTURE, DATA_STRING, "Bresser-SoilMoisture",
+                "model",        "",            DATA_COND, model_id == BRESSER_WATERTIMER,   DATA_STRING, "Bresser-WaterTimer",
+                "model",        "",            DATA_COND, model_id == BRESSER_GATEWAY,      DATA_STRING, "Bresser-Gateway",
+                "model",        "",            DATA_COND, model_id == BRESSER_UNKNOWN,      DATA_STRING, "Bresser-Garden",
                 "msg_name",     "",            DATA_STRING, status,
                 "id",           "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",    "",            DATA_FORMAT, "%u", DATA_INT, target_id,
@@ -1005,9 +1064,13 @@ static int bresser_garden_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         char msg[41];
         print_payload_hex(msg, b, msg_length);
 
+        // "Bresser-SoilMoisture" "Bresser-WaterTimer" "Bresser-Gateway" "Bresser-Garden"
         /* clang-format off */
         data_t *data = data_make(
-                "model",           "",            DATA_STRING, bresser_garden_model(source_id), // "Bresser-SoilMoisture" "Bresser-WaterTimer" "Bresser-Gateway" "Bresser-Garden"
+                "model",           "",            DATA_COND, model_id == BRESSER_SOILMOISTURE, DATA_STRING, "Bresser-SoilMoisture",
+                "model",           "",            DATA_COND, model_id == BRESSER_WATERTIMER,   DATA_STRING, "Bresser-WaterTimer",
+                "model",           "",            DATA_COND, model_id == BRESSER_GATEWAY,      DATA_STRING, "Bresser-Gateway",
+                "model",           "",            DATA_COND, model_id == BRESSER_UNKNOWN,      DATA_STRING, "Bresser-Garden",
                 "msg_name",        "",            DATA_STRING, "Unknown msg",
                 "id",              "",            DATA_FORMAT, "%u", DATA_INT, source_id,
                 "target_id",       "",            DATA_FORMAT, "%u", DATA_INT, target_id,

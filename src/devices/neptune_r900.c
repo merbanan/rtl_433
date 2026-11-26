@@ -215,7 +215,8 @@ static int neptune_r900_decode_common(r_device *decoder, bitbuffer_t *bitbuffer,
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",       "",    DATA_STRING, is_bcd ? "Neptune-R900BCD" : "Neptune-R900",
+            "model",       "",    DATA_COND,   is_bcd,  DATA_STRING, "Neptune-R900BCD",
+            "model",       "",    DATA_COND,   !is_bcd, DATA_STRING, "Neptune-R900",
             "id",          "",    DATA_INT,    meter_id,
             "unkn1",       "",    DATA_INT,    unkn1,
             "metertype",   "",    DATA_INT,    metertype,

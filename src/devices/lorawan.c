@@ -47,8 +47,7 @@ static int lorawan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char hex[2 * LORAWAN_MAX_FRAME_LEN + 1];
     data_t *data = data_make(
             "model",        "",             DATA_STRING, "LoRaWAN",
-            "message_type", "Message type", DATA_STRING,
-                    lorawan_message_type_name(frame.message_type),
+            "message_type", "Message type", DATA_STRING, lorawan_message_type_name(frame.message_type),
             "major",        "Major",        DATA_INT, frame.major,
             NULL);
 
@@ -63,8 +62,7 @@ static int lorawan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     else if (frame.message_type == 1) {
         if (!frame.join_accept_decrypted) {
-            data = data_hex(data, "encrypted", "Encrypted join accept", NULL,
-                    frame.join_accept_encrypted, frame.join_accept_encrypted_len, hex);
+            data = data_hex(data, "encrypted", "Encrypted join accept", NULL, frame.join_accept_encrypted, frame.join_accept_encrypted_len, hex);
         }
         else {
             char join_nonce[7];
@@ -76,13 +74,10 @@ static int lorawan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             data = data_str(data, "join_nonce", "JoinNonce", NULL, join_nonce);
             data = data_str(data, "net_id", "NetID", NULL, net_id);
             data = data_str(data, "dev_addr", "DevAddr", NULL, dev_addr);
-            data = data_int(data, "dl_settings", "DLSettings", "0x%02x",
-                    frame.join_accept[10]);
-            data = data_int(data, "rx_delay", "RXDelay", NULL,
-                    frame.join_accept[11]);
+            data = data_int(data, "dl_settings", "DLSettings", "0x%02x", frame.join_accept[10]);
+            data = data_int(data, "rx_delay", "RXDelay", NULL, frame.join_accept[11]);
             if (frame.len == 33) {
-                data = data_hex(data, "cf_list", "CFList", NULL,
-                        &frame.join_accept[12], 16, hex);
+                data = data_hex(data, "cf_list", "CFList", NULL, &frame.join_accept[12], 16, hex);
             }
         }
     }
@@ -96,32 +91,27 @@ static int lorawan_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data = data_int(data, "fcnt", "FCnt", NULL, b[6] | b[7] << 8);
         data = data_str(data, "fcnt_full", "Full FCnt", NULL, counter);
         if (frame.fopts_len) {
-            data = data_hex(data, "fopts", "FOpts", NULL,
-                    frame.fopts, frame.fopts_len, hex);
+            data = data_hex(data, "fopts", "FOpts", NULL, frame.fopts, frame.fopts_len, hex);
         }
         if (frame.has_fport) {
             data = data_int(data, "fport", "FPort", NULL, frame.fport);
             if (frame.frm_payload_len) {
-                data = data_hex(data, "frm_payload_encrypted", "Encrypted FRMPayload",
-                        NULL, frame.frm_payload_encrypted, frame.frm_payload_len, hex);
+                data = data_hex(data, "frm_payload_encrypted", "Encrypted FRMPayload", NULL, frame.frm_payload_encrypted, frame.frm_payload_len, hex);
                 if (frame.frm_payload_decrypted) {
-                    data = data_hex(data, "frm_payload", "Decrypted FRMPayload",
-                            NULL, frame.frm_payload, frame.frm_payload_len, hex);
+                    data = data_hex(data, "frm_payload", "Decrypted FRMPayload", NULL, frame.frm_payload, frame.frm_payload_len, hex);
                 }
             }
         }
     }
     else {
-        data = data_hex(data, "payload", "Payload", NULL,
-                frame.payload, frame.payload_len, hex);
+        data = data_hex(data, "payload", "Payload", NULL, frame.payload, frame.payload_len, hex);
     }
 
     if (frame.mic_verified) {
         data = data_str(data, "mic", "Integrity", NULL, "CMAC");
     }
     else if (frame.mic) {
-        data = data_hex(data, "mic_raw", "MIC (unverified)", NULL,
-                frame.mic, 4, hex);
+        data = data_hex(data, "mic_raw", "MIC (unverified)", NULL, frame.mic, 4, hex);
     }
     decoder_output_data(decoder, data);
     return 1;

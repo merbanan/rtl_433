@@ -175,13 +175,18 @@ static int elsys_ers_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int const voc   = measurements[0x1c].present;
     int const sound = measurements[0x15].present;
     int const co2   = measurements[0x06].present;
+    int const other = !eye && !voc && !sound && !co2;
 
     char dev_addr[9];
     char counter[11];
     lorawan_format_reverse(dev_addr, &bitbuffer->bb[0][1], 4);
     snprintf(counter, sizeof(counter), "%u", frame.fcnt);
     data_t *data = data_make(
-            "model",    "",        DATA_STRING, eye ? "ELSYS-ERSEye" : voc ? "ELSYS-ERSVOC" : sound ? "ELSYS-ERSSound" : co2 ? "ELSYS-ERSCO2" : "ELSYS-ERS",
+            "model",    "",        DATA_COND, eye, DATA_STRING, "ELSYS-ERSEye",
+            "model",    "",        DATA_COND, voc, DATA_STRING, "ELSYS-ERSVOC",
+            "model",    "",        DATA_COND, sound, DATA_STRING, "ELSYS-ERSSound",
+            "model",    "",        DATA_COND, co2, DATA_STRING, "ELSYS-ERSCO2",
+            "model",    "",        DATA_COND, other, DATA_STRING, "ELSYS-ERS",
             "id",       "DevAddr", DATA_STRING, dev_addr,
             "fport",    "FPort",   DATA_INT, frame.fport,
             "fcnt",     "FCnt",    DATA_STRING, counter,
@@ -192,28 +197,22 @@ static int elsys_ers_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data = data_dbl(data, "temperature_C", "Temperature", "%.1f C", (double)value);
     }
     if (measurements[0x02].present) {
-        data = data_int(data, "humidity", "Humidity", "%d %%",
-                measurements[0x02].value[0]);
+        data = data_int(data, "humidity", "Humidity", "%d %%", measurements[0x02].value[0]);
     }
     if (measurements[0x04].present) {
-        data = data_int(data, "light_lux", "Light", "%d lux",
-                read_be16(measurements[0x04].value));
+        data = data_int(data, "light_lux", "Light", "%d lux", read_be16(measurements[0x04].value));
     }
     if (measurements[0x05].present) {
-        data = data_int(data, "motion_count", "PIR motion events", NULL,
-                measurements[0x05].value[0]);
+        data = data_int(data, "motion_count", "PIR motion events", NULL, measurements[0x05].value[0]);
     }
     if (measurements[0x06].present) {
-        data = data_int(data, "co2_ppm", "Carbon dioxide", "%d ppm",
-                read_be16(measurements[0x06].value));
+        data = data_int(data, "co2_ppm", "Carbon dioxide", "%d ppm", read_be16(measurements[0x06].value));
     }
     if (measurements[0x07].present) {
-        data = data_int(data, "battery_mV", "Battery voltage", "%d mV",
-                read_be16(measurements[0x07].value));
+        data = data_int(data, "battery_mV", "Battery voltage", "%d mV", read_be16(measurements[0x07].value));
     }
     if (measurements[0x11].present) {
-        data = data_int(data, "occupancy", "Occupancy", NULL,
-                measurements[0x11].value[0]);
+        data = data_int(data, "occupancy", "Occupancy", NULL, measurements[0x11].value[0]);
     }
     if (measurements[0x13].present) {
         uint8_t const *value = measurements[0x13].value;
@@ -225,20 +224,15 @@ static int elsys_ers_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
         float const min_temp = value[0] + minimum * 0.1f;
         float const max_temp = value[0] + maximum * 0.1f;
-        data = data_dbl(data, "room_ir_min_C", "Room IR minimum", "%.1f C",
-                (double)min_temp);
-        data = data_dbl(data, "room_ir_max_C", "Room IR maximum", "%.1f C",
-                (double)max_temp);
+        data = data_dbl(data, "room_ir_min_C", "Room IR minimum", "%.1f C", (double)min_temp);
+        data = data_dbl(data, "room_ir_max_C", "Room IR maximum", "%.1f C", (double)max_temp);
     }
     if (measurements[0x15].present) {
-        data = data_int(data, "sound_peak_dB", "Peak sound", "%d dB",
-                measurements[0x15].value[0]);
-        data = data_int(data, "sound_avg_dB", "Average sound", "%d dB",
-                measurements[0x15].value[1]);
+        data = data_int(data, "sound_peak_dB", "Peak sound", "%d dB", measurements[0x15].value[0]);
+        data = data_int(data, "sound_avg_dB", "Average sound", "%d dB", measurements[0x15].value[1]);
     }
     if (measurements[0x1c].present) {
-        data = data_int(data, "voc_ppb", "Volatile organic compounds", "%d ppb",
-                read_be16(measurements[0x1c].value));
+        data = data_int(data, "voc_ppb", "Volatile organic compounds", "%d ppb", read_be16(measurements[0x1c].value));
     }
     if (has_common_age > 0 && common_age) {
         data = data_int(data, "age_s", "Measurement age", "%d s", common_age);
