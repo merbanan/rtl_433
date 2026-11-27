@@ -116,7 +116,8 @@ function style_check(filename) {
         log(`::error file=${filename},line=${line_number},col=${len - 1}::STICKY-BRACE error`)
         errors++
       }
-      if (!txt && (line.indexOf('if(') >= 0 || line.indexOf('for(') >= 0 || line.indexOf('while(') >= 0)) {
+      if (!txt && (line.indexOf(' if(') >= 0 || line.indexOf(' for(') >= 0 || line.indexOf(' while(') >= 0)) {
+        // actually we want '\bif(' but there should always be a plain space anyway
         log(`::error file=${filename},line=${line_number},col=${len - 1}::STICKY-PAREN error`)
         errors++
       }
