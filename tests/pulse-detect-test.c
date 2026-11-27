@@ -32,7 +32,7 @@ typedef struct {
     pulse_detect_fsk_t fsk;
     pulse_data_t pulses;
     pulse_data_t fsk_pulses;
-    uint64_t fsk_start; ///< FSK package start, recorded on START, RESTART and RETRY
+    uint64_t fsk_start; ///< FSK package start, recorded on START and RESTART
     unsigned mode; ///< One of FSK_PULSE_DETECTOR_*
     unsigned reject; ///< Number of FSK packages to reject per run, like an undecodable package
     unsigned reject_left;
@@ -45,6 +45,20 @@ typedef struct {
         exit(1); \
     } \
 } while (0)
+
+static void record(result_t *result, int type, pulse_data_t const *data, unsigned offset, unsigned len)
+{
+    unsigned i = result->count++;
+    CHECK(i < PACKAGES);
+    CHECK(data->num_pulses > 0 && data->num_pulses <= PD_MAX_PULSES);
+    result->type[i] = type;
+    result->start[i] = offset + len - data->start_ago;
+    result->end[i] = offset + len - data->end_ago;
+    result->data[i] = *data;
+    // Compare stream positions, independent of the current buffer end.
+    result->data[i].start_ago = 0;
+    result->data[i].end_ago = 0;
+}
 
 static void process(detector_t *d, unsigned offset, unsigned len, result_t *result)
 {
@@ -61,15 +75,14 @@ static void process(detector_t *d, unsigned offset, unsigned len, result_t *resu
         pulse_data_t *data = &d->pulses;
         int const fsk = pulse_detect_fsk_package(&d->fsk, fm + offset, &span, event,
                 &d->pulses, &d->fsk_pulses, d->mode);
-        if (event == PULSE_DETECT_START || event == PULSE_DETECT_RESTART || event == PULSE_DETECT_RETRY) {
+        if (event == PULSE_DETECT_START || event == PULSE_DETECT_RESTART) {
             d->fsk_start = d->fsk_pulses.offset;
             d->rejected  = 0;
         }
         if (fsk && !d->rejected && d->reject_left) {
-            // Keep the OOK package, but try FSK again on its next pulses.
+            // Keep the OOK package, FSK is tried again on its next pulse.
             d->reject_left -= 1;
             d->rejected = 1;
-            pulse_detect_retry_fsk(d->ook);
         }
         else if (fsk && !d->rejected) {
             pulse_detect_fsk_finalize(&d->fsk, &d->pulses, &d->fsk_pulses, d->mode);
@@ -81,17 +94,13 @@ static void process(detector_t *d, unsigned offset, unsigned len, result_t *resu
             type = PULSE_DATA_OOK;
         }
         if (type) {
-            unsigned i = result->count++;
-            CHECK(i < PACKAGES);
-            CHECK(data->num_pulses > 0 && data->num_pulses <= PD_MAX_PULSES);
             CHECK(offset + len - data->start_ago == (type == PULSE_DATA_FSK ? d->fsk_start : d->pulses.offset));
-            result->type[i] = type;
-            result->start[i] = offset + len - data->start_ago;
-            result->end[i] = offset + len - data->end_ago;
-            result->data[i] = *data;
-            // Compare stream positions, independent of the current buffer end.
-            result->data[i].start_ago = 0;
-            result->data[i].end_ago = 0;
+            record(result, type, data, offset, len);
+        }
+        if (type == PULSE_DATA_FSK && d->pulses.num_pulses > 0) {
+            // The pulses before the FSK burst are an OOK package ending at the burst.
+            d->pulses.end_ago = d->fsk_pulses.start_ago;
+            record(result, PULSE_DATA_OOK, &d->pulses, offset, len);
         }
         if (event == PULSE_DETECT_END)
             break;
@@ -145,7 +154,10 @@ static void check_chunks(detector_t *d, char const *name, unsigned len,
     static result_t reference;
     static result_t actual;
     run(d, len, SAMPLES, &reference);
-    CHECK(reference.count == count);
+    if (reference.count != count) {
+        fprintf(stderr, "%s mode %u: %u packages, expected %u\n", name, d->mode, reference.count, count);
+        exit(1);
+    }
     if (count) {
         CHECK(reference.type[0] == first_type);
         CHECK(reference.start[0] == 2048);
@@ -247,14 +259,58 @@ int main(void)
             check_chunks(&d, "FSK short gap", SAMPLES, 1, PULSE_DATA_FSK);
         }
 
-        // A short key-up blip before the FSK burst restarts FSK detection on the
-        // burst (longest blip and shortest gap at 250 kHz).
-        memset(am, 0, sizeof(am));
-        carrier(2048 - 49 - 50, 49, 0);
-        carrier(2048, 4096, 1);
-        fsk_tail(6144, 10, 0);
-        check_chunks(&d, "FSK after key-up blip", SAMPLES, 1, PULSE_DATA_FSK);
-        // A short burst after a lead-in is OOK data, even with enough FSK runs.
+        // FSK detection runs on every pulse. A burst after a key-up blip is FSK,
+        // the blip before it is an OOK package of its own, ending at the burst.
+        {
+            static result_t result;
+            memset(am, 0, sizeof(am));
+            carrier(2048 - 49 - 50, 49, 0);
+            carrier(2048, 4096, 1);
+            fsk_tail(6144, 10, 0);
+            check_chunks(&d, "FSK after key-up blip", SAMPLES, 2, PULSE_DATA_FSK);
+            run(&d, SAMPLES, SAMPLES, &result);
+            CHECK(result.type[1] == PULSE_DATA_OOK && result.data[1].num_pulses == 1);
+            CHECK(result.start[1] == 2048 - 49 - 50 && result.end[1] == 2048);
+        }
+        // Any pulses before the burst, e.g. an interfering transmission.
+        {
+            static result_t result;
+            memset(am, 0, sizeof(am));
+            for (unsigned i = 0; i < 4; ++i)
+                carrier(1100 + i * 120, 60, 0);
+            carrier(1560, 300, 0);
+            carrier(2048 - 49 - 50, 49, 0);
+            carrier(2048, 4096, 1);
+            fsk_tail(6144, 10, 0);
+            check_chunks(&d, "FSK after interferer", SAMPLES, 2, PULSE_DATA_FSK);
+            run(&d, SAMPLES, SAMPLES, &result);
+            CHECK(result.type[1] == PULSE_DATA_OOK && result.data[1].num_pulses == 6);
+            CHECK(result.start[1] == 1100 && result.end[1] == 2048);
+        }
+        // An FSK package after an OOK package starts at its own first pulse.
+        {
+            static result_t result;
+            memset(am, 0, sizeof(am));
+            for (unsigned i = 0; i < 4; ++i)
+                carrier(2048 + i * 128, 64, 0);
+            carrier(20000, 4096, 1);
+            fsk_tail(24096, 10, 0);
+            check_chunks(&d, "FSK after OOK package", SAMPLES, 2, PULSE_DATA_OOK);
+            run(&d, SAMPLES, SAMPLES, &result);
+            CHECK(result.type[1] == PULSE_DATA_FSK && result.start[1] == 20000);
+        }
+        // A burst after a dip shorter than 200 us continues the previous carrier, it is OOK data.
+        {
+            static result_t result;
+            memset(am, 0, sizeof(am));
+            carrier(2048, 800, 0);
+            carrier(2048 + 800 + 49, 4096, 1);
+            fsk_tail(2048 + 800 + 49 + 4096, 10, 0);
+            run(&d, SAMPLES, SAMPLES, &result);
+            CHECK(result.count == 1 && result.type[0] == PULSE_DATA_OOK && result.start[0] == 2048);
+            CHECK(result.data[0].num_pulses == 2);
+        }
+        // A short burst after other pulses is OOK data, even with enough FSK runs.
         {
             static result_t result;
             memset(am, 0, sizeof(am));
@@ -265,17 +321,6 @@ int main(void)
             fsk_tail(2048 + 1500, 10, 0);
             run(&d, SAMPLES, SAMPLES, &result);
             CHECK(result.count == 1 && result.type[0] == PULSE_DATA_OOK && result.start[0] == 2048 - 49 - 50);
-        }
-        // A longer first pulse or a shorter gap is OOK data, not a lead-in.
-        for (unsigned k = 0; k < 2; ++k) {
-            unsigned const blip = k ? 49 : 50;
-            unsigned const gap  = k ? 49 : 50;
-            static result_t result;
-            memset(am, 0, sizeof(am));
-            carrier(2048, blip, 0);
-            carrier(2048 + blip + gap, 4096, 1);
-            run(&d, SAMPLES, SAMPLES, &result);
-            CHECK(result.count == 1 && result.type[0] == PULSE_DATA_OOK && result.start[0] == 2048);
         }
 
         // A rejected FSK package stays OOK and FSK is tried again on its next pulse.
@@ -292,7 +337,8 @@ int main(void)
             d.reject = 1;
             for (unsigned i = 0; i < sizeof(chunks) / sizeof(*chunks); ++i) {
                 run(&d, SAMPLES, chunks[i], &result);
-                CHECK(result.count == 1 && result.type[0] == PULSE_DATA_FSK && result.start[0] == 3748);
+                CHECK(result.count == 2 && result.type[0] == PULSE_DATA_FSK && result.start[0] == 3748);
+                CHECK(result.type[1] == PULSE_DATA_OOK && result.start[1] == 2048 && result.data[1].num_pulses == 1);
             }
             d.reject = 0;
         }

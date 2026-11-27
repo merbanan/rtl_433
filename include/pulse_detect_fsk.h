@@ -56,7 +56,6 @@ typedef struct {
     int16_t minn;
     int16_t midd;
     int skip_samples;
-    int restarted;        ///< Detection restarted on the second envelope pulse after a lead-in
     unsigned first_pulse; ///< Index of the envelope pulse detection started on
 
     int16_t median_samples[3]; ///< Median filter history
@@ -134,7 +133,8 @@ void pulse_detect_fsk_minmax_wrap_up(pulse_detect_fsk_t *s, pulse_data_t *fsk_pu
 /// PULSE_DETECT_PULSE can complete a package, which the caller then accepts with
 /// pulse_detect_fsk_finalize(). A ready package left unaccepted is unchanged.
 /// PULSE_DETECT_START resets the detector and pulse data,
-/// PULSE_DETECT_RESTART and PULSE_DETECT_RETRY do the same starting at the new envelope pulse.
+/// PULSE_DETECT_RESTART does the same starting at the new envelope pulse.
+/// On a later pulse than the first only a long burst is accepted as FSK.
 /// The caller ages fsk_pulses->start_ago once per input buffer.
 ///
 /// @param s Internal state
