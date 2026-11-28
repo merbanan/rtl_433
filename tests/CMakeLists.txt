@@ -71,6 +71,22 @@ add_test(flex_decoder_w_getter_and_format_specifier bash -c
         -X 'n=name,m=FSK_PCM,s=10,l=10,r=10240,get=@2:{32}:code:%x' \
         -r empty_file.cu8")
 
+# Elero TempoTel 2 field records with example addresses. The operator held UP.
+# The motor reply came from a separate DOWN trial.
+# Both codes include the reconstructed on-air CRC and whitening.
+add_test(elero_addressed_command
+    ../src/rtl_433 -c 0 -R 372 -F json
+    -y {287}a723a723c424ef15db08651e4f2af3e93e7935caaade331cda1212bf72dcbc45199e3f06)
+set_tests_properties(elero_addressed_command PROPERTIES
+    PASS_REGULAR_EXPRESSION "ABCDEF.*channel.*01.*command.*Continuous up.*command_code.*33.*destinations.*123456")
+
+add_test(elero_motor_reply
+    ../src/rtl_433 -c 0 -R 372 -F json
+    -y {287}a723a723c4bfaf15cf083c6dbc59801a4c7935caabadc06ed958551f615cee657abf66ac)
+set_tests_properties(elero_motor_reply PROPERTIES
+    PASS_REGULAR_EXPRESSION "123456.*state.*Moving down.*state_code.*11.*destinations.*ABCDEF"
+    FAIL_REGULAR_EXPRESSION "command")
+
 # OpenSSL-generated LoRaWAN 1.0.x uplink containing an ELSYS ERS CO2 payload.
 add_test(elsys_ers_lorawan
     ../src/rtl_433
