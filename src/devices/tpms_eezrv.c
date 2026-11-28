@@ -45,6 +45,10 @@ Data collection parameters on URH software were as follows:
  Using rtl_433 software, packets were detected using the following command line entry:
  rtl_433 -X "n=Carchet,m=OOK_MC_ZEROBIT,s=50,l=50,r=1000,invert" -s 1M
 
+ The decoder slices the half-bits as PCM with 50 us width and Manchester decodes
+ the row (IEEE 802.3, high-low is a 0), which validates every symbol. This yields
+ the data below directly, only the preamble reads as 0000 instead of FFFF.
+
  Data layout:
 
     PRE CC IIIIII PP TT FF FF
@@ -72,33 +76,26 @@ Decode example:
 
 static int tpms_eezrv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    // preamble is ffff
-    uint8_t const preamble_pattern[] = {0xff, 0xff}; // full 16-bit preamble
-
     if (bitbuffer->num_rows != 1) {
         return DECODE_ABORT_EARLY;
     }
-    int pos = 0;
-    bitbuffer_invert(bitbuffer);
-    pos = bitbuffer_search(bitbuffer, 0, pos, preamble_pattern, sizeof(preamble_pattern) * 8);
-    if (pos >= bitbuffer->bits_per_row[0]) {
-        decoder_log(decoder, 3, __func__, "Preamble not found");
-        return DECODE_ABORT_EARLY;
+    // 2 bytes preamble + 1 byte chk + 7 byte data are 80 Manchester coded bits,
+    // i.e. 160 PCM half-bits plus a trailing bit
+    if (bitbuffer->bits_per_row[0] < 160) {
+        return DECODE_ABORT_LENGTH;
     }
-    // The preamble must start at 0, we ca not anchor it to the data
-    if (pos > 0) {
-        decoder_log(decoder, 1, __func__, "Likely false positive");
-        return DECODE_ABORT_EARLY;
-    }
-    // Check for 2 bytes preamble + 1 byte chk + 7 byte data
-    if (pos + 10 * 8 > bitbuffer->bits_per_row[0]) {
-        decoder_log(decoder, 2, __func__, "Length check fail");
+    bitbuffer_t packet = {0};
+    bitbuffer_manchester_decode(bitbuffer, 0, 0, &packet, 0);
+    // The decode stops at the first invalid Manchester symbol, the whole packet
+    // must be valid and exactly 80 bits, a longer run is e.g. the preamble burst
+    if (packet.bits_per_row[0] != 10 * 8) {
+        decoder_logf(decoder, 2, __func__, "Manchester length check fail (%u bits)", packet.bits_per_row[0]);
         return DECODE_ABORT_LENGTH;
     }
     uint8_t b[7]  = {0};
     uint8_t cc[1] = {0};
-    bitbuffer_extract_bytes(bitbuffer, 0, pos + 16, cc, sizeof(cc) * 8);
-    bitbuffer_extract_bytes(bitbuffer, 0, pos + 24, b, sizeof(b) * 8);
+    bitbuffer_extract_bytes(&packet, 0, 16, cc, sizeof(cc) * 8);
+    bitbuffer_extract_bytes(&packet, 0, 24, b, sizeof(b) * 8);
 
     // Verify checksum
     // If the checksum is greater than 0xFF then the MSB is set.
@@ -113,9 +110,33 @@ static int tpms_eezrv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
+    // Reject iMars T240 frames, see tpms_imars_t240.c. That protocol shares the
+    // modulation and the 80 bit length, and its frames can pass the 8 bit checksum.
+    // The iMars bytes B0..B7 are the inverted check byte and data bytes, the frame
+    // has B7 == B0 and matching low nibbles in B0 and B1. The per-unit checksum
+    // constant is not tested, so iMars units not known to that decoder match too.
+    uint8_t m[8];
+    m[0] = ~cc[0];
+    for (unsigned i = 0; i < sizeof(b); ++i) {
+        m[i + 1] = ~b[i];
+    }
+    if (m[7] == m[0] && (m[0] & 0x0f) == (m[1] & 0x0f)) {
+        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY iMars T240 frame");
+        return DECODE_FAIL_SANITY;
+    }
+
+    int flags1 = b[5];
+    int flags2 = b[6];
+
+    // Known flags1 bits are 0x80 low battery, 0x20 inflating, 0x10 fast leak and
+    // 0x40 observed but unknown, the low nibble is always clear. Known flags2 bits
+    // are 0x01 the pressure MSB and 0x20 seen during low battery testing.
+    if ((flags1 & 0x0f) || (flags2 & 0xde)) {
+        decoder_logf(decoder, 2, __func__, "DECODE_FAIL_SANITY unknown flags %02x%02x", flags1, flags2);
+        return DECODE_FAIL_SANITY;
+    }
+
     int temperature_C      = b[4] - 50;
-    int flags1             = b[5];
-    int flags2             = b[6];
     int fast_leak_detected = (flags1 & 0x10);      // fast leak - reports every second
     int infl_detected      = (flags1 & 0x20) >> 5; // inflating - reports every 15 - 20 sec
 
@@ -167,7 +188,7 @@ static char const *const output_fields[] = {
 
 r_device const tpms_eezrv = {
         .name        = "EezTire E618, Carchet TPMS, TST-507 TPMS",
-        .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
+        .modulation  = OOK_PULSE_PCM,
         .short_width = 50,
         .long_width  = 50,
         .reset_limit = 120,
