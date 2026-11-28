@@ -368,6 +368,7 @@
     DECL(eberle_instat868r1) \
     DECL(watchman_plus) \
     DECL(baldr_hcs528arf) \
+DECL(baldr_hcs706) \
     DECL(kidde_smoke) \
     DECL(tpms_jansite_ty588) \
     DECL(oregon_scientific_wmr500) \

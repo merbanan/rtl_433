@@ -166,6 +166,7 @@ add_library(r_433 STATIC
     devices/badger_orion_endpoint.c
     devices/badger_water.c
     devices/baldr_hcs528arf.c
+    devices/baldr_hcs706.c
     devices/baldr_rain.c
     devices/baldr_therm.c
     devices/baylan_um1.c
