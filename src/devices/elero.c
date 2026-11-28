@@ -20,24 +20,24 @@ issue #3083 (https://github.com/merbanan/rtl_433/issues/3083), from
 real captures and cross-checked against the independent
 QuadCorei8085/elero_protocol and andyboeh/esphome-elero projects.
 
-A CC1101-style GFSK packet: 13 us/bit (75 kbps), 0x55 preamble, then a
-32 bit sync word 0xa723a723 -- except the real payload starts 1 bit
-before the naive end of that 32 bit pattern (i.e. only the first 31
-bits of the printed sync actually belong to the sync, the very next
-bit is already the first payload bit). IBM/CCITT data whitening
-(`ibm_whitening()`) follows, then:
+The CC1101 uses GFSK at 76.8 kbit/s (about 13 us/bit), a 0x55 preamble
+and the sync word 0xd391d391. The decoder matches the last 31 sync bits.
+After removal of IBM data whitening, the packet layout is:
 
-    len cnt typ typ2 hop syst chl src(3) bwd(3) fwd(3) ndst dst(ndst) p1 p2 enc(8) crc(2)
+    len cnt typ typ2 hop syst chl src(3) bwd(3) fwd(3) ndst dst(variable) p1 p2 enc(8) crc(2)
 
 - len: total following bytes, i.e. wire length is len+3 (this byte, then len bytes, then a 16 bit CRC)
-- cnt: plain 8 bit rolling counter, incremented on every transmission
-- typ, typ2, hop, syst: constant in every capture seen so far (0x45, 0x10, 0x05, 0x01)
-- chl: 0x11/0x22/0x03 for channel 1/2/3, 0xff for the "all channels" button
-- src, bwd, fwd: the sending remote's 24 bit address, repeated three times
-- ndst, dst: a list of `ndst` destination channel bytes (same values as chl); the
-  "all channels" button lists every channel (e.g. 11 22 03) instead of using 0xff
-- p1, p2: constant (0x00, 0x03) in every capture seen so far
-- enc: 8 byte obfuscated command block (see below)
+- cnt: sender counter. Repeated copies can have the same counter.
+- typ: 0x44/0x45/0x70 use one-byte channel selectors. Commands (0x69/0x6a)
+  and motor replies (0xc9/0xca) use three-byte destination addresses.
+- chl: header channel. On the Silent Gliss remote, the all-channel button
+  sets this to 0xff and lists the individual channels in dst. In recorded
+  0xca replies, this byte echoes the command counter.
+- src, bwd, fwd: 24-bit source and relay addresses
+- ndst, dst: destination count followed by that many selectors or addresses
+- p1, p2: two prefix bytes
+- enc: eight-byte encoded block. Decoded byte 2 holds the command.
+  On motor replies, decoded byte 6 holds the state.
 - crc: CRC-16, poly 0x8005, init 0xffff, over every preceding byte including len
 
 The `enc` block is NOT a checksum or a keyed rolling-code authenticator -- it's a
@@ -47,8 +47,10 @@ QuadCorei8085/elero_protocol's xor_decode.py and verified here against 38
 CRC-valid real captures across 4 channels: byte 2 of the decoded block is always
 0x20 for Up, 0x10 for Stop, 0x40 for Down, with bytes 0-1 always zero.
 
-GFSK at this deviation needs the `minmax` FSK pulse detector
-(`-Y minmax`), which is not the default -- won't decode without it.
+The addressed layout and payload fields are documented in
+https://github.com/manuschillerdev/esphome-elero/blob/c12eb4484ac1aa7b4662d2148a765e860b86b2d3/docs/PACKET_STRUCTURE.md
+
+The default FSK detector and `-Y minmax` both decode the Silent Gliss recordings.
 */
 
 // nibble substitution table, from QuadCorei8085/elero_protocol's xor_decode.py
@@ -56,8 +58,8 @@ static uint8_t const elero_nibble_table[16] = {
         0x0a, 0x03, 0x01, 0x0c, 0x0d, 0x07, 0x0f, 0x06,
         0x00, 0x08, 0x0b, 0x0e, 0x09, 0x02, 0x05, 0x04};
 
-// decode the 8 byte obfuscated command block in place
-static void elero_decode_command(uint8_t *msg)
+// Decode the eight-byte payload in place.
+static void elero_decode_payload(uint8_t *msg)
 {
     for (int i = 0; i < 8; ++i) {
         uint8_t nh = elero_nibble_table[(msg[i] >> 4) & 0xf];
@@ -89,10 +91,39 @@ static void elero_decode_command(uint8_t *msg)
     }
 }
 
+static char const *elero_command(unsigned type, uint8_t code)
+{
+    switch (code) {
+        case 0x00:
+            if (type == 0x44)
+                return "Release";
+            if (type == 0x69 || type == 0x6a)
+                return "Status request";
+            return NULL;
+        case 0x10: return "Stop";
+        case 0x20: return "Up";
+        case 0x21: return "Continuous up";
+        case 0x24: return "Tilt";
+        case 0x40: return "Down";
+        case 0x41: return "Continuous down";
+        case 0x44: return "Intermediate";
+        default:   return NULL;
+    }
+}
+
+static char const *elero_state(uint8_t code)
+{
+    static char const *const states[] = {
+            "Unknown", "Top", "Bottom", "Intermediate", "Tilt", "Blocked", "Overheated", "Timeout",
+            "Starting up", "Starting down", "Moving up", "Moving down", "Delete in remote", "Stopped",
+            "Top at tilt position", "Bottom at intermediate position", "Off", "On",
+    };
+    return code < sizeof(states) / sizeof(states[0]) ? states[code] : "?";
+}
+
 static int elero_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    // sync word 0xa723a723, but only the first 31 bits are actually sync,
-    // the payload follows immediately (see docstring above)
+    // Last 31 bits of 0xd391d391, left-aligned for bitbuffer_search().
     uint8_t const sync[]  = {0xa7, 0x23, 0xa7, 0x23};
     unsigned const sync_bits = 31;
 
@@ -112,7 +143,9 @@ static int elero_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
-    uint8_t frame[40] = {0};
+    // The supported 57-byte body contains 26 fixed bytes plus the destinations.
+    enum { MAX_BODY = 57, FIXED_BODY = 26, MAX_DEST_BYTES = MAX_BODY - FIXED_BODY };
+    uint8_t frame[1 + MAX_BODY + 2];
     unsigned avail_bytes = avail_bits / 8;
     if (avail_bytes > sizeof (frame)) {
         avail_bytes = sizeof (frame);
@@ -122,8 +155,8 @@ static int elero_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     unsigned length = frame[0];
     unsigned total  = length + 3; // len byte + length bytes + 2 byte crc
-    if (total > sizeof (frame) || avail_bytes < total) {
-        return DECODE_ABORT_LENGTH; // truncated capture
+    if (length < FIXED_BODY || avail_bytes < total) {
+        return DECODE_ABORT_LENGTH;
     }
 
     uint16_t crc_calc = crc16(frame, total - 2, 0x8005, 0xffff);
@@ -132,46 +165,68 @@ static int elero_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    unsigned ndst = frame[16];
-    if (17 + ndst + 2 + 8 + 2 > total) {
-        return DECODE_FAIL_SANITY; // dst list doesn't fit the frame
+    unsigned type = frame[2];
+    int status    = type == 0xc9 || type == 0xca;
+    int addressed = status || type == 0x69 || type == 0x6a;
+    if (!addressed && type != 0x44 && type != 0x45 && type != 0x70) {
+        return DECODE_FAIL_SANITY;
+    }
+
+    unsigned ndst       = frame[16];
+    unsigned dest_bytes = ndst * (addressed ? 3 : 1);
+    if (!ndst || FIXED_BODY + dest_bytes > length) {
+        return DECODE_FAIL_SANITY;
     }
 
     int counter  = frame[1];
     uint32_t src = (uint32_t)frame[7] << 16 | (uint32_t)frame[8] << 8 | frame[9];
 
-    char channel_str[11];
-    char *p = channel_str;
-    for (unsigned i = 0; i < ndst; ++i) {
-        p += sprintf(p, "%02X", frame[17 + i]);
+    char channel_str[2 * MAX_DEST_BYTES + 1];
+    if (addressed) {
+        snprintf(channel_str, sizeof(channel_str), "%02X", frame[6]);
+    }
+    else {
+        for (unsigned i = 0; i < ndst; ++i) {
+            snprintf(channel_str + 2 * i, 3, "%02X", frame[17 + i]);
+        }
     }
 
     uint8_t enc[8];
-    memcpy(enc, &frame[17 + ndst + 2], 8);
-    elero_decode_command(enc);
-
-    char const *command_str;
-    switch (enc[2]) {
-        case 0x20: command_str = "Up"; break;
-        case 0x10: command_str = "Stop"; break;
-        case 0x40: command_str = "Down"; break;
-        default:   command_str = "?"; break;
-    }
+    memcpy(enc, &frame[17 + dest_bytes + 2], sizeof(enc));
+    elero_decode_payload(enc);
 
     char id_str[7];
     snprintf(id_str, sizeof (id_str), "%06X", src);
 
+    decoder_logf(decoder, 1, __func__, "type %02x/%02x hop %02x header[6] %02x bwd %02x%02x%02x fwd %02x%02x%02x",
+            type, frame[3], frame[4], frame[6], frame[10], frame[11], frame[12], frame[13], frame[14], frame[15]);
+
+    char const *command = elero_command(type, enc[2]);
     /* clang-format off */
     data_t *data = data_make(
-            "model",       "",             DATA_STRING, "Elero",
-            "id",          "ID",           DATA_STRING, id_str,
-            "channel",     "Channel",      DATA_STRING, channel_str,
-            "command",     "Command",      DATA_STRING, command_str,
-            "counter",     "Counter",      DATA_INT,    counter,
-            "mic",         "Integrity",    DATA_STRING, "CRC",
+            "model",           "",                DATA_STRING, "Elero",
+            "id",              "ID",              DATA_STRING, id_str,
+            "channel",         "Channel",         DATA_COND, !status, DATA_STRING, channel_str,
+            "request_counter", "Request counter", DATA_COND, type == 0xca, DATA_INT, frame[6],
+            "command",         "Command",         DATA_COND, !status, DATA_STRING, command ? command : "?",
+            "command_code",    "Command code",    DATA_COND, !status && (addressed || !command), DATA_INT, enc[2],
+            "state",           "State",           DATA_COND, status, DATA_STRING, elero_state(enc[6]),
+            "state_code",      "State code",      DATA_COND, status, DATA_INT, enc[6],
+            "counter",         "Counter",         DATA_INT,    counter,
+            "mic",             "Integrity",       DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
+    if (addressed) {
+        char addresses[MAX_DEST_BYTES / 3][7];
+        char *destinations[MAX_DEST_BYTES / 3];
+        for (unsigned i = 0; i < ndst; ++i) {
+            uint8_t const *dst = &frame[17 + 3 * i];
+            snprintf(addresses[i], sizeof(addresses[i]), "%02X%02X%02X", dst[0], dst[1], dst[2]);
+            destinations[i] = addresses[i];
+        }
+        data = data_ary(data, "destinations", "Destinations", NULL, data_array(ndst, DATA_STRING, destinations));
+    }
     decoder_output_data(decoder, data);
     return 1;
 }
@@ -180,7 +235,12 @@ static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
+        "request_counter",
+        "destinations",
         "command",
+        "command_code",
+        "state",
+        "state_code",
         "counter",
         "mic",
         NULL,
