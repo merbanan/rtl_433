@@ -168,7 +168,15 @@ int pulse_slicer_pcm(pulse_data_t const *pulses, r_device *device)
         }
         // require at least min_count full bits preamble
         if (count >= min_count) {
-            f_short = f_long = (float)count / width;
+            // The first and last pairs are distorted by the start transient and the sync, exclude them
+            int est_width = width;
+            int est_count = count;
+            if (count >= 16) {
+                est_width -= pulses->pulse[n - count / 2] + pulses->gap[n - count / 2];
+                est_width -= pulses->pulse[n - 1] + pulses->gap[n - 1];
+                est_count -= 4;
+            }
+            f_short = f_long = (float)est_count / est_width;
             min_count = count;
             preamble_len = count;
             if (device->verbose > 1) {
