@@ -228,7 +228,7 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         fineoffset_wh1050_decode(decoder, bitbuffer, 7, TYPE_OOK);
     } else if (bits == 80 && preamble_byte == 0xff) {
         fineoffset_wh1050_decode(decoder, bitbuffer, 8, TYPE_OOK);
-    } else if (bits > 112 && bits < 760) {
+    } else if (bits > 112 && bits < 1000) {
         while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_fsk, sizeof(preamble_fsk) * 8)) + 72 <=
                 bitbuffer->bits_per_row[0]) {
             events += fineoffset_wh1050_decode(decoder, bitbuffer, bitpos + sizeof(preamble_fsk) * 8, TYPE_FSK);
