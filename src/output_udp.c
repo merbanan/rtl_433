@@ -64,10 +64,9 @@
         fprintf(stderr, "Winsock error %d.\n", WSAGetLastError());
     }
 #endif
-#ifdef ESP32
-    #include <tcpip_adapter.h>
-    #define _POSIX_HOST_NAME_MAX 128
-    #define gai_strerror strerror
+#ifdef ESP_PLATFORM
+    #include <esp_netif.h>
+    #include "compat_esp.h"
 #endif
 
 // _POSIX_HOST_NAME_MAX is broken in gcc-13 at least on MacOS
@@ -228,14 +227,14 @@ struct data_output *data_output_syslog_create(int log_level, const char *host, c
     syslog->output.output_free  = data_output_syslog_free;
     // Severity 5 "Notice", Facility 20 "local use 4"
     syslog->pri = 20 * 8 + 5;
-    #ifdef ESP32
-    const char* adapter_hostname = NULL;
-    tcpip_adapter_get_hostname(TCPIP_ADAPTER_IF_STA, &adapter_hostname);
-    if (adapter_hostname) {
-        memcpy(syslog->hostname, adapter_hostname, _POSIX_HOST_NAME_MAX);
+    #ifdef ESP_PLATFORM
+    char const *netif_hostname = NULL;
+    esp_netif_t *netif = esp_netif_get_default_netif();
+    if (netif && esp_netif_get_hostname(netif, &netif_hostname) == ESP_OK && netif_hostname) {
+        snprintf(syslog->hostname, sizeof(syslog->hostname), "%s", netif_hostname);
     }
     else {
-        syslog->hostname[0] = '\0';
+        gethostname(syslog->hostname, _POSIX_HOST_NAME_MAX + 1);
     }
     #else
     gethostname(syslog->hostname, _POSIX_HOST_NAME_MAX + 1);

@@ -96,6 +96,7 @@ add_library(r_433 STATIC
     baseband.c
     bit_util.c
     bitbuffer.c
+    compat_esp.c
     compat_paths.c
     compat_time.c
     confparse.c
@@ -134,6 +135,7 @@ add_library(r_433 STATIC
     rfraw.c
     samp_grab.c
     sdr.c
+    sdr_esp.c
     sigmf.c
     string_expand.c
     term_ctl.c
