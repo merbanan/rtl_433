@@ -20,21 +20,19 @@ issue #3083 (https://github.com/merbanan/rtl_433/issues/3083), from
 real captures and cross-checked against the independent
 QuadCorei8085/elero_protocol and andyboeh/esphome-elero projects.
 
-A CC1101-style GFSK packet: 13 us/bit (75 kbps), 0x55 preamble, then a
-32 bit sync word 0xa723a723 -- except the real payload starts 1 bit
-before the naive end of that 32 bit pattern (i.e. only the first 31
-bits of the printed sync actually belong to the sync, the very next
-bit is already the first payload bit). IBM/CCITT data whitening
-(`ibm_whitening()`) follows, then:
+The CC1101 uses GFSK at 76.8 kbit/s (about 13 us/bit), a 0x55 preamble
+and the sync word 0xd391d391. The decoder matches the last 31 sync bits.
+After removal of IBM data whitening, the packet layout is:
 
     len cnt typ typ2 hop syst chl src(3) bwd(3) fwd(3) ndst dst(variable) p1 p2 enc(8) crc(2)
 
 - len: total following bytes, i.e. wire length is len+3 (this byte, then len bytes, then a 16 bit CRC)
-- cnt: plain 8 bit rolling counter, incremented on every transmission
+- cnt: sender counter. Repeated copies can have the same counter.
 - typ: 0x44/0x45/0x70 use one-byte channel selectors. Commands (0x69/0x6a)
   and motor replies (0xc9/0xca) use three-byte destination addresses.
 - chl: header channel. On the Silent Gliss remote, the all-channel button
-  sets this to 0xff and lists the individual channels in dst.
+  sets this to 0xff and lists the individual channels in dst. In recorded
+  0xca replies, this byte echoes the command counter.
 - src, bwd, fwd: 24-bit source and relay addresses
 - ndst, dst: destination count followed by that many selectors or addresses
 - p1, p2: two prefix bytes
@@ -52,8 +50,7 @@ CRC-valid real captures across 4 channels: byte 2 of the decoded block is always
 The addressed layout and payload fields are documented in
 https://github.com/manuschillerdev/esphome-elero/blob/c12eb4484ac1aa7b4662d2148a765e860b86b2d3/docs/PACKET_STRUCTURE.md
 
-GFSK at this deviation needs the `minmax` FSK pulse detector
-(`-Y minmax`), which is not the default -- won't decode without it.
+The default FSK detector and `-Y minmax` both decode the Silent Gliss recordings.
 */
 
 // nibble substitution table, from QuadCorei8085/elero_protocol's xor_decode.py
@@ -102,7 +99,7 @@ static char const *elero_command(unsigned type, uint8_t code)
                 return "Release";
             if (type == 0x69 || type == 0x6a)
                 return "Status request";
-            return "?";
+            return NULL;
         case 0x10: return "Stop";
         case 0x20: return "Up";
         case 0x21: return "Continuous up";
@@ -110,7 +107,7 @@ static char const *elero_command(unsigned type, uint8_t code)
         case 0x40: return "Down";
         case 0x41: return "Continuous down";
         case 0x44: return "Intermediate";
-        default:   return "?";
+        default:   return NULL;
     }
 }
 
@@ -119,15 +116,14 @@ static char const *elero_state(uint8_t code)
     static char const *const states[] = {
             "Unknown", "Top", "Bottom", "Intermediate", "Tilt", "Blocked", "Overheated", "Timeout",
             "Starting up", "Starting down", "Moving up", "Moving down", "Delete in remote", "Stopped",
-            "Top tilt", "Bottom tilt", "Light off", "Light on",
+            "Top at tilt position", "Bottom at intermediate position", "Off", "On",
     };
     return code < sizeof(states) / sizeof(states[0]) ? states[code] : "?";
 }
 
 static int elero_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    // sync word 0xa723a723, but only the first 31 bits are actually sync,
-    // the payload follows immediately (see docstring above)
+    // Last 31 bits of 0xd391d391, left-aligned for bitbuffer_search().
     uint8_t const sync[]  = {0xa7, 0x23, 0xa7, 0x23};
     unsigned const sync_bits = 31;
 
@@ -202,17 +198,22 @@ static int elero_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char id_str[7];
     snprintf(id_str, sizeof (id_str), "%06X", src);
 
+    decoder_logf(decoder, 1, __func__, "type %02x/%02x hop %02x header[6] %02x bwd %02x%02x%02x fwd %02x%02x%02x",
+            type, frame[3], frame[4], frame[6], frame[10], frame[11], frame[12], frame[13], frame[14], frame[15]);
+
+    char const *command = elero_command(type, enc[2]);
     /* clang-format off */
     data_t *data = data_make(
-            "model",        "",              DATA_STRING, "Elero",
-            "id",           "ID",            DATA_STRING, id_str,
-            "channel",      "Channel",       DATA_STRING, channel_str,
-            "command",      "Command",       DATA_COND, !status, DATA_STRING, elero_command(type, enc[2]),
-            "command_code", "Command code",  DATA_COND, addressed && !status, DATA_INT, enc[2],
-            "state",        "State",         DATA_COND, status, DATA_STRING, elero_state(enc[6]),
-            "state_code",   "State code",    DATA_COND, status, DATA_INT, enc[6],
-            "counter",      "Counter",       DATA_INT,    counter,
-            "mic",          "Integrity",     DATA_STRING, "CRC",
+            "model",           "",                DATA_STRING, "Elero",
+            "id",              "ID",              DATA_STRING, id_str,
+            "channel",         "Channel",         DATA_COND, !status, DATA_STRING, channel_str,
+            "request_counter", "Request counter", DATA_COND, type == 0xca, DATA_INT, frame[6],
+            "command",         "Command",         DATA_COND, !status, DATA_STRING, command ? command : "?",
+            "command_code",    "Command code",    DATA_COND, !status && (addressed || !command), DATA_INT, enc[2],
+            "state",           "State",           DATA_COND, status, DATA_STRING, elero_state(enc[6]),
+            "state_code",      "State code",      DATA_COND, status, DATA_INT, enc[6],
+            "counter",         "Counter",         DATA_INT,    counter,
+            "mic",             "Integrity",       DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -234,6 +235,7 @@ static char const *const output_fields[] = {
         "model",
         "id",
         "channel",
+        "request_counter",
         "destinations",
         "command",
         "command_code",
